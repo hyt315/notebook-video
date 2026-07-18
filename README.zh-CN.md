@@ -5,6 +5,7 @@
 [![Validate](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml/badge.svg)](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml)
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video)](https://github.com/hyt315/notebook-video/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/hyt315/notebook-video/total)](https://github.com/hyt315/notebook-video/releases)
+[![Contributors](https://img.shields.io/github/contributors/hyt315/notebook-video)](CONTRIBUTORS.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 把中文科普脚本变成可复现的 2K 手账动画：语义字幕、确定性动效、跨平台渲染与自动质检，一条流程完成。
@@ -125,5 +126,7 @@ node scripts/notebook-video.mjs validate-official-example
 商用前请阅读 [NOTICE](NOTICE)、[DEPENDENCIES.md](DEPENDENCIES.md) 和生成工程里的 Remotion 提示。
 
 ## 参与贡献与安全
+
+本项目由 [hyt315](https://github.com/hyt315) 与 ChatGPT 的 Codex 模式协作完成。具体贡献与署名见 [CONTRIBUTORS.md](CONTRIBUTORS.md)。
 
 请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)、[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) 和 [CHANGELOG.md](CHANGELOG.md)。安全问题请通过 [GitHub 私密漏洞报告](SECURITY.md) 提交，不要公开发 Issue。

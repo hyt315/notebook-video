@@ -2,6 +2,13 @@
 
 All notable changes will be recorded here. The project follows semantic versioning once the first public release is created.
 
+## [1.0.3] - 2026-07-18
+
+### Fixed
+
+- Corrected contributor attribution so GitHub recognizes the Codex collaborator instead of the unrelated `noreply` account.
+- Clarified the current naming: ChatGPT is the desktop application, while Codex remains its coding mode and GitHub contributor identity.
+
 ## [1.0.2] - 2026-07-18
 
 ### Added
