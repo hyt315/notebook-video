@@ -5,6 +5,7 @@
 [![Validate](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml/badge.svg)](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml)
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video)](https://github.com/hyt315/notebook-video/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/hyt315/notebook-video/total)](https://github.com/hyt315/notebook-video/releases)
+[![Contributors](https://img.shields.io/github/contributors/hyt315/notebook-video)](CONTRIBUTORS.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 Turn a Chinese explainer script into a reproducible 2K notebook-style video—with semantic captions, deterministic motion, cross-platform rendering and automated QA.
@@ -127,5 +128,7 @@ The project code and skill content are Apache-2.0. Source Han Sans and Smiley Sa
 See [NOTICE](NOTICE), [DEPENDENCIES.md](DEPENDENCIES.md) and the generated project's Remotion notice before commercial use.
 
 ## Contributing and security
+
+This project is built by [hyt315](https://github.com/hyt315) with ChatGPT in Codex mode. See [CONTRIBUTORS.md](CONTRIBUTORS.md) for roles and attribution.
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) and [CHANGELOG.md](CHANGELOG.md). Report vulnerabilities through [GitHub Private Vulnerability Reporting](SECURITY.md), not a public issue.
