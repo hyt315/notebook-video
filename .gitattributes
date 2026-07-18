@@ -5,5 +5,6 @@
 *.wav binary
 *.png binary
 *.jpg binary
+*.webp binary
 *.mp4 binary
 *.zip binary
