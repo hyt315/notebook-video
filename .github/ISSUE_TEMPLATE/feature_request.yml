@@ -1,0 +1,25 @@
+name: Feature request
+description: Propose a focused improvement without replacing the official engine by default.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Describe the production problem, not only the desired implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Validation or visual evidence
+      description: Explain how the result can be tested; attach rendered evidence for visual changes.
+    validations:
+      required: true

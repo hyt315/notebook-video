@@ -1,0 +1,185 @@
+{
+  "style_version": "warm-ivory-remotion-2k30-v8-performance",
+  "composition": "NotebookVideoFilm",
+  "duration_frames": 900,
+  "parts": [
+    {
+      "id": "background",
+      "scene": "all",
+      "z": 0,
+      "layer_role": "background",
+      "occlusion_contract": "normal",
+      "exit_contract": "persistent",
+      "motion": []
+    },
+    {
+      "id": "chapter-chrome",
+      "scene": "all",
+      "z": 150,
+      "layer_role": "foreground",
+      "occlusion_contract": "always-visible",
+      "exit_contract": "persistent",
+      "motion": [
+        "section-change"
+      ]
+    },
+    {
+      "id": "subtitle",
+      "scene": "all",
+      "z": 200,
+      "layer_role": "subtitle",
+      "occlusion_contract": "highest",
+      "exit_contract": "persistent",
+      "motion": [
+        "word-reveal"
+      ]
+    },
+    {
+      "id": "stable-base",
+      "scene": 1,
+      "z": 70,
+      "layer_role": "base",
+      "occlusion_contract": "normal",
+      "exit_contract": "fully-outside-or-zero",
+      "motion": [
+        "spring-entry"
+      ]
+    },
+    {
+      "id": "effect-stack",
+      "scene": 1,
+      "z": 80,
+      "layer_role": "floating",
+      "occlusion_contract": "always-visible",
+      "exit_contract": "fully-outside-or-zero",
+      "motion": [
+        "reorder-into-grid"
+      ]
+    },
+    {
+      "id": "workshops",
+      "scene": 2,
+      "z": 75,
+      "layer_role": "base",
+      "occlusion_contract": "normal",
+      "exit_contract": "fully-outside-or-zero",
+      "motion": [
+        "staggered-entry",
+        "local-feedback"
+      ]
+    },
+    {
+      "id": "shared-track",
+      "scene": 3,
+      "z": 55,
+      "layer_role": "wire",
+      "occlusion_contract": "normal",
+      "exit_contract": "fully-outside-or-zero",
+      "motion": [
+        "directed-dash"
+      ]
+    },
+    {
+      "id": "task-stations",
+      "scene": 3,
+      "z": 78,
+      "layer_role": "base",
+      "occlusion_contract": "normal",
+      "exit_contract": "fully-outside-or-zero",
+      "motion": [
+        "state-feedback"
+      ]
+    },
+    {
+      "id": "persistent-task-card",
+      "scene": 3,
+      "z": 96,
+      "layer_role": "floating",
+      "occlusion_contract": "always-visible",
+      "exit_contract": "fully-outside-or-zero",
+      "motion": [
+        "shared-track-transfer",
+        "state-change",
+        "dynamic-shadow"
+      ]
+    },
+    {
+      "id": "assembly-core",
+      "scene": 3,
+      "z": 90,
+      "layer_role": "slot",
+      "occlusion_contract": "insertable",
+      "exit_contract": "scene-cut",
+      "motion": [
+        "unfold",
+        "magnet-lock"
+      ]
+    },
+    {
+      "id": "insertable-modules",
+      "scene": 3,
+      "z": 94,
+      "layer_role": "slot",
+      "occlusion_contract": "insertable",
+      "exit_contract": "arrive-at-destination",
+      "motion": [
+        "converge-to-slot",
+        "complete-occlusion"
+      ]
+    },
+    {
+      "id": "front-lip",
+      "scene": 3,
+      "z": 118,
+      "layer_role": "foreground",
+      "occlusion_contract": "always-visible",
+      "exit_contract": "scene-cut",
+      "motion": []
+    },
+    {
+      "id": "delivery-engine",
+      "scene": 4,
+      "z": 76,
+      "layer_role": "base",
+      "occlusion_contract": "normal",
+      "exit_contract": "final-hold",
+      "motion": [
+        "progressive-checks"
+      ]
+    },
+    {
+      "id": "delivery-artifacts",
+      "scene": 4,
+      "z": 88,
+      "layer_role": "floating",
+      "occlusion_contract": "always-visible",
+      "exit_contract": "final-hold",
+      "motion": [
+        "split-rail",
+        "dynamic-shadow"
+      ]
+    },
+    {
+      "id": "qa-scanner",
+      "scene": 4,
+      "z": 105,
+      "layer_role": "foreground",
+      "occlusion_contract": "normal",
+      "exit_contract": "fully-outside-or-zero",
+      "motion": [
+        "scan"
+      ]
+    },
+    {
+      "id": "final-result",
+      "scene": 4,
+      "z": 112,
+      "layer_role": "foreground",
+      "occlusion_contract": "always-visible",
+      "exit_contract": "final-hold",
+      "motion": [
+        "spring-entry"
+      ]
+    }
+  ]
+}

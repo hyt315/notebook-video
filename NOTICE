@@ -1,0 +1,13 @@
+Notebook Video
+Copyright 2026 Notebook Video contributors
+
+This product includes software developed as part of the Notebook Video project
+and bundles the following third-party materials:
+
+1. Source Han Sans CN fonts — SIL Open Font License 1.1. The original notice is retained at `assets/fonts/SourceHanSans-LICENSE.txt`.
+2. Smiley Sans font — SIL Open Font License 1.1. The original notice is retained at `assets/fonts/SmileySans-LICENSE.txt`.
+3. Procedurally generated WAV effects — reuse note retained at `assets/example-project/public/sfx/LICENSE.txt`.
+4. Remotion dependencies — governed by the proprietary Remotion License, not by the repository-level license. Generated projects include `REMOTION-LICENSE-NOTICE.md` and must retain its link to https://www.remotion.pro/license.
+5. TTS providers — no TTS client or generated narration is bundled. Provider services, SDKs and generated speech remain governed by their own terms.
+
+The repository-level license must not override these third-party license notices.

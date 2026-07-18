@@ -1,0 +1,14 @@
+interface:
+  display_name: "Notebook Video"
+  short_description: "\u4F7F\u7528\u9AD8\u6548 Remotion \u6D41\u7A0B\u751F\u6210 2K\
+    \ 30\u5E27\u6696\u767D\u5DE5\u7A0B\u624B\u8D26\u79D1\u666E\u89C6\u9891"
+  default_prompt: Use $notebook-video to create a complete native-30fps Chinese 2K
+    notebook explainer with synchronized narration, subtitles, efficient scene mounting,
+    automated QA, and editable source delivery.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

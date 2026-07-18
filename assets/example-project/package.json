@@ -1,0 +1,21 @@
+{
+  "name": "notebook-video-final-motion-system-v8-performance",
+  "private": true,
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "sync": "node sync-render-inputs.cjs",
+    "render": "npm run sync && remotion render NotebookVideoFilm renders/notebook-video-final-motion-system.mp4 --entry-point=src/index.tsx --codec=h264 --crf=16 --concurrency=4",
+    "still": "npm run sync && remotion still NotebookVideoFilm renders/preview.png --entry-point=src/index.tsx --frame=1000"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.489",
+    "@remotion/media": "4.0.489",
+    "remotion": "4.0.489",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {}
+}

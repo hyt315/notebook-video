@@ -1,0 +1,236 @@
+{
+  "version": "warm-ivory-remotion-2k30-v8-performance",
+  "status": "official-current",
+  "canonical_entry": "assets/example-project/src/index.tsx",
+  "canonical_composition": "NotebookVideoFilm",
+  "canvas": {
+    "width": 2560,
+    "height": 1440,
+    "design_width": 1920,
+    "design_height": 1080,
+    "design_scale": 1.3333333333,
+    "delivery_fps": 30,
+    "design_timeline_fps": 30,
+    "physical_motion_fps": 30,
+    "frame_quantizer": "designStep = designTimelineFps / physicalMotionFps; Math.floor(designFrame / designStep) * designStep",
+    "camera": "fixed",
+    "global_motion": false
+  },
+  "engine": {
+    "language": "TypeScript",
+    "view": "React",
+    "renderer": "Remotion 4.0.489",
+    "vector": "SVG",
+    "depth": "CSS dynamic shadow and restrained CSS 3D",
+    "encoder": "FFmpeg"
+  },
+  "palette": {
+    "ink": "#2b2924",
+    "muted": "#746956",
+    "paper": "#fffdf7",
+    "paper_warm": "#f7ecd8",
+    "ivory": "#f3e4c4",
+    "line": "#514a40",
+    "blue": "#2869b7",
+    "orange": "#ed5a32",
+    "green": "#43866a",
+    "gold": "#d2a128",
+    "red": "#bd4b3d",
+    "navy": "#2d3b4c",
+    "white": "#ffffff"
+  },
+  "background": {
+    "outer_gradient": "radial-gradient(circle at 18% 10%,#fff9e7 0,#eeddbb 44%,#c89f6b 82%,#a57a4f 100%)",
+    "page_bounds": [
+      42,
+      28,
+      1878,
+      1052
+    ],
+    "page": "#f3e4c4",
+    "page_outline": "rgba(73,60,43,.40)",
+    "page_shadow": "22px 27px 0 rgba(75,57,38,.25), 0 56px 104px rgba(42,25,12,.23), inset 0 1px 0 rgba(255,255,255,.42)",
+    "inner_bounds": [
+      72,
+      58,
+      1848,
+      1020
+    ],
+    "grid_spacing": 54,
+    "grid_opacity": 0.09,
+    "static_texture_opacity": 0.026,
+    "texture_animation": false
+  },
+  "fonts": {
+    "display": "SmileySans-Oblique.otf",
+    "body": "SourceHanSansCN-Regular.otf",
+    "bold": "SourceHanSansCN-Bold.otf",
+    "subtitle_px": 40,
+    "readability_floor_px": 17,
+    "preload_required": true
+  },
+  "chapter": {
+    "bounds": [
+      92,
+      74,
+      442,
+      156
+    ],
+    "number_width": 72,
+    "number_fill": "#ed5a32",
+    "micro_color": "#2869b7",
+    "z": 150
+  },
+  "header": {
+    "right": 88,
+    "top": 70,
+    "label": "NOTEBOOK VIDEO / FINAL MOTION SYSTEM",
+    "z": 140
+  },
+  "paper_component": {
+    "surface": "radial highlight + restrained fibre lines + warm ivory gradient",
+    "outline": "#4d463d",
+    "outline_px": 1.6,
+    "corner_radius_px": 12,
+    "dynamic_shadow": true,
+    "airborne_shadow_rule": "increase x/y offset and blur while decreasing alpha",
+    "landed_shadow_rule": "small close dark shadow",
+    "overshoot_count_max": 1,
+    "shadow_model": "two-level contact plus environment shadow linked to lift",
+    "permanent_blurred_halo": false
+  },
+  "subtitle_input": {
+    "required": true,
+    "name": "clean-white-torn-wave-input",
+    "bounds": [
+      188,
+      934,
+      1732,
+      1046
+    ],
+    "paper": "#fffdf7",
+    "dark_border": false,
+    "dark_side_marks": false,
+    "contour": "copy exact clipPath polygon from canonical Subtitle component",
+    "shadow": "drop-shadow(7px 8px 0 rgba(92,75,55,.22)) drop-shadow(0 14px 20px rgba(48,35,22,.14))",
+    "orange_locator_relative": [
+      28,
+      28,
+      38,
+      84
+    ],
+    "blue_ring_relative_right": 24,
+    "blue_ring_size": [
+      44,
+      44
+    ],
+    "text_center_x": 960,
+    "font_px": 40,
+    "safe_width_px": 1334,
+    "horizontal_padding_px": 105,
+    "one_line_only": true,
+    "reserve_full_phrase_width": true,
+    "trailing_punctuation_hidden": true,
+    "inner_line": false,
+    "search_bar_ui": false,
+    "z": 200,
+    "measurement": "browser DOM width after exact font load, converted from delivery scale to design pixels",
+    "measurement_gate": "CaptionFitGate"
+  },
+  "timing": {
+    "source_unit": "milliseconds",
+    "component_unit": "integer frames",
+    "conversion": "Math.round(ms * fps / 1000)",
+    "subtitle_lead_frames": 2,
+    "meaningful_state_interval_seconds": [
+      2,
+      4
+    ]
+  },
+  "audio": {
+    "default_voice": "provider-selected warm Mandarin voice",
+    "default_rate": "moderately brisk",
+    "declarative_remotion_audio": true,
+    "external_timeline_mix": false,
+    "narration_delay_frames": 0,
+    "target_lufs": -16,
+    "true_peak_dbtp": -1.5,
+    "sample_rate": 48000,
+    "prominent_bgm": false
+  },
+  "layers": {
+    "required_roles": [
+      "background",
+      "wire",
+      "base",
+      "slot",
+      "status",
+      "floating",
+      "foreground",
+      "chrome",
+      "subtitle"
+    ],
+    "floating_above_base": true,
+    "complete_exit_required": true,
+    "half_visible_exit_forbidden": true,
+    "slot_occlusion_only_after_crossing": true
+  },
+  "motion_system": {
+    "work_zone_min_gap_px": 70,
+    "central_temporary_transfer_limit": 1,
+    "preferred_large_semantic_objects": [
+      3,
+      5
+    ],
+    "persistent_task_object_for_continuous_process": true,
+    "shared_track_state_changes": true,
+    "inserted_part_below_front_lip": true,
+    "residual_fragment_forbidden": true,
+    "clear_previous_metaphor_before_next": true
+  },
+  "performance_system": {
+    "default_motion_fps": 30,
+    "default_render_fps": 30,
+    "default_delivery_fps": 30,
+    "duplicate_frame_delivery": false,
+    "active_scene_mounting": true,
+    "transition_scene_mount_limit": 2,
+    "dynamic_position_via_transform": true,
+    "caption_measurement_unmount_after_gate": true,
+    "static_surface_animation": false,
+    "concurrency_range": [2, 6],
+    "range_render_for_iteration": true
+  },
+  "encoding": {
+    "video_codec": "h264",
+    "render_crf": 16,
+    "audio_codec": "aac",
+    "audio_bitrate": "192k",
+    "pixel_format": "yuv420p",
+    "faststart": true
+  },
+  "aesthetic_system": {
+    "locked_constants": [
+      "C",
+      "TYPE",
+      "AESTHETIC",
+      "paperShadow",
+      "LineIcon",
+      "CheckBadge",
+      "Grade"
+    ],
+    "editable_surface": [
+      "COPY",
+      "narration",
+      "caption semantic lines",
+      "scene timings",
+      "topic-specific scene objects"
+    ],
+    "system_glyph_icons": false,
+    "single_line_icon_language": true,
+    "static_grade_only": true,
+    "animated_grain": false,
+    "same_four_act_grammar": true
+  },
+  "future_update_rule": "For future aesthetic changes, render a replacement and obtain user approval before overwriting this official example."
+}

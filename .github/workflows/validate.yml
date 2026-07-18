@@ -1,0 +1,40 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: assets/example-project/package-lock.json
+      - name: Check launchers and scripts
+        run: |
+          node --check scripts/notebook-video.mjs
+          for file in scripts/*.sh; do bash -n "$file"; done
+          python3 -m compileall -q scripts
+      - name: Validate skill and official example
+        run: |
+          test -z "$(find . -type d \( -name node_modules -o -name .tools -o -name .cache -o -name renders -o -name __pycache__ \) -print -quit)"
+          node scripts/notebook-video.mjs check-deps
+          node scripts/notebook-video.mjs validate-skill
+          node scripts/notebook-video.mjs validate-official-example
+      - name: Audit locked dependencies
+        working-directory: assets/example-project
+        run: npm audit --package-lock-only --ignore-scripts --audit-level=high
+      - name: Smoke-test project creation
+        run: |
+          mkdir "$RUNNER_TEMP/notebook-video-smoke"
+          node scripts/notebook-video.mjs new-project "$RUNNER_TEMP/notebook-video-smoke"
+          test -f "$RUNNER_TEMP/notebook-video-smoke/src/index.tsx"
+          test -f "$RUNNER_TEMP/notebook-video-smoke/public/SourceHanSans-LICENSE.txt"
