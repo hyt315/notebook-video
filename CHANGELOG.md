@@ -2,6 +2,20 @@
 
 All notable changes will be recorded here. The project follows semantic versioning once the first public release is created.
 
+## [1.0.2] - 2026-07-18
+
+### Added
+
+- A real 30-second animated showcase and four-scene preview rendered by the official engine.
+- Direct release, ZIP, HTTPS, SSH, GitHub CLI and raw-contract download paths.
+- Verified user-level and repository-level installation examples for Codex, Claude Code and Cursor.
+- A five-minute first-run example and an AI-assisted installation prompt.
+
+### Changed
+
+- Rewrote the English and Chinese landing pages around the output, shortest install path and real evidence.
+- Refined repository description, topics and tracked release metadata for discoverability.
+
 ## [1.0.1] - 2026-07-18
 
 ### Fixed
