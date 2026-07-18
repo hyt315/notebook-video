@@ -18,6 +18,10 @@ jobs:
           node-version: "20"
           cache: npm
           cache-dependency-path: assets/example-project/package-lock.json
+      - name: Install media tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
       - name: Check launchers and scripts
         run: |
           node --check scripts/notebook-video.mjs
