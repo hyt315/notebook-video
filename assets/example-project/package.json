@@ -11,9 +11,9 @@
     "still": "npm run sync && remotion still NotebookVideoFilm renders/preview.png --entry-point=src/index.tsx --frame=1000"
   },
   "dependencies": {
-    "@remotion/cli": "4.0.489",
-    "@remotion/media": "4.0.489",
-    "remotion": "4.0.489",
+    "@remotion/cli": "4.0.490",
+    "@remotion/media": "4.0.490",
+    "remotion": "4.0.490",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },
