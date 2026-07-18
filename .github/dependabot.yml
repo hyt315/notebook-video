@@ -6,14 +6,15 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
-      remotion:
-        patterns:
-          - "@remotion/*"
-          - remotion
       react:
         patterns:
           - react
           - react-dom
+    ignore:
+      # Remotion is a style-engine pin, not an ordinary library update.
+      # Upgrade it only with a rendered visual review and contract update.
+      - dependency-name: "@remotion/*"
+      - dependency-name: remotion
   - package-ecosystem: github-actions
     directory: /
     schedule:

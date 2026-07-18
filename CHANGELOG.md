@@ -2,6 +2,14 @@
 
 All notable changes will be recorded here. The project follows semantic versioning once the first public release is created.
 
+## [1.0.1] - 2026-07-18
+
+### Fixed
+
+- CI now checks Python syntax without creating forbidden `__pycache__` files.
+- GitHub Actions upgraded to pinned v7 commits with the current runtime.
+- Dependabot no longer proposes unreviewed changes to the style-locked Remotion engine.
+
 ## [1.0.0] - 2026-07-18
 
 ### Added
