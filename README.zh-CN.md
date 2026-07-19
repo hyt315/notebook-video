@@ -8,7 +8,7 @@
 [![Contributors](https://img.shields.io/github/contributors/hyt315/notebook-video)](CONTRIBUTORS.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-把中文科普脚本变成可复现的 2K 手账动画：语义字幕、确定性动效、跨平台渲染与自动质检，一条流程完成。
+把中文科普或推广脚本变成可复现的 2K 手账视频：按内容自动选择图文、纯文字或纯图形镜头，并把原创配图、语义字幕、确定性动效、跨平台渲染与自动质检放进同一条流程。
 
 [下载最新版](https://github.com/hyt315/notebook-video/releases/latest) · [安装为 Agent Skill](#安装为-agent-skill) · [查看 30 秒示例](assets/demo/notebook-video-demo.mp4)
 
@@ -19,6 +19,9 @@
 ## 它解决什么问题
 
 - **一条生产流程：** 脚本、分镜、TTS 时间数据、语义字幕、动效、渲染和质检不再散落。
+- **视觉导演而非套模板：** 具体对象用图片 + 文字，观点冲突用纯文字，流程关系用纯图形，避免整片只剩卡片平移。
+- **生图能力可插拔：** Codex 可直接调用内置生图能力提高上限；其他 Agent 可接等价工具、用户素材、授权素材或原生 SVG，不会被平台锁死。
+- **图片真正参与讲解：** 图片只负责对象和氛围，框选、箭头、文字、图表、时间和退场仍由 Remotion 精确控制。
 - **画面可复现：** 2560×1440 暖白工程手账系统直接固化在代码中，不让不同 AI 每次重新猜风格。
 - **中文字幕可读：** 按语义和停顿断句，产品名、数字、单位和固定术语不被拆开。
 - **开头真正留人：** 1.5 秒内给出有依据的爆点或矛盾，8 秒内建立问题，正文用证据回收。
@@ -35,7 +38,7 @@
 | Claude Code | `git clone https://github.com/hyt315/notebook-video.git ~/.claude/skills/notebook-video` | 要求 Claude Code 使用 `notebook-video` skill |
 | Cursor | `git clone https://github.com/hyt315/notebook-video.git ~/.cursor/skills/notebook-video` | 要求 Cursor Agent 使用 `notebook-video` skill |
 
-如果只想让某个项目使用，可分别克隆到项目里的 `.agents/skills/notebook-video`、`.claude/skills/notebook-video` 或 `.cursor/skills/notebook-video`。新安装后没有被识别时，重启对应 Agent。
+如果只想让某个项目使用，可分别克隆到项目里的 `.agents/skills/notebook-video`、`.claude/skills/notebook-video` 或 `.cursor/skills/notebook-video`。新安装后没有被识别时，刷新技能页面或开启新会话。
 
 Windows PowerShell 示例：
 
@@ -82,10 +85,11 @@ node scripts/notebook-video.mjs new-project ./my-video
 node scripts/notebook-video.mjs prepare-browser ./my-video
 ```
 
-修改 `my-video/narration.txt`、`storyboard.md`、语义字幕文本和场景对象。按 Provider 中立接口提供 `audio/narration.mp3` 与逐词时间 JSON，再生成字幕、渲染并质检：
+修改 `my-video/narration.txt`、`storyboard.md`、语义字幕文本和场景对象。先在分镜中为每个镜头选择 `image-text`、`pure-text` 或 `pure-graphic`；用到图片时，把素材放入 `public/illustrations/` 并登记到 `manifests/visual-assets.json`。按 Provider 中立接口提供 `audio/narration.mp3` 与逐词时间 JSON，再生成字幕、渲染并质检：
 
 ```bash
 node scripts/notebook-video.mjs build-semantic-captions ./my-video/audio/narration.mp3.json ./my-video/manifests/semantic-caption-lines.txt ./my-video/manifests/caption-cues.json --lead-ms 60
+node scripts/notebook-video.mjs validate-visual-plan ./my-video
 node scripts/notebook-video.mjs render ./my-video ./my-video/renders/final.mp4
 node scripts/notebook-video.mjs validate-video ./my-video/renders/final.mp4 EXPECTED_SECONDS ./my-video/renders/contact-sheet.jpg
 ```
@@ -98,6 +102,7 @@ node scripts/notebook-video.mjs validate-video ./my-video/renders/final.mp4 EXPE
 - Python 3.9 或更高版本
 - `PATH` 中可以调用 FFmpeg 与 FFprobe
 - 能运行 Remotion/Chrome 的环境
+- 可选的生图工具；没有时可用用户素材、授权素材或 SVG/Remotion 图形回退
 
 仓库不包含账号、API Key 或私人配置，只保留依赖清单和锁定版本。`node_modules`、渲染浏览器、外部 TTS、缓存和成片都在本机按需生成并从源码包排除。字体和少量程序生成音效是为了跨设备稳定渲染而保留的资产，并附许可证。详见 [DEPENDENCIES.md](DEPENDENCIES.md)。
 
@@ -107,7 +112,7 @@ node scripts/notebook-video.mjs validate-video ./my-video/renders/final.mp4 EXPE
 - `assets/example-project/`：唯一官方 Remotion 渲染引擎。
 - `assets/demo/`：由官方引擎真实渲染的公开示例。
 - `scripts/`：跨平台工程、字幕、渲染、打包与质检工具。
-- `references/`：视觉、时间、开头、性能和兼容性约束。
+- `references/`：视觉导演、生图、时间、开头、性能和兼容性约束。
 - `assets/fonts/`：内置字体及原始许可证。
 
 ## 验证修改
@@ -115,13 +120,14 @@ node scripts/notebook-video.mjs validate-video ./my-video/renders/final.mp4 EXPE
 ```bash
 node scripts/notebook-video.mjs validate-skill
 node scripts/notebook-video.mjs validate-official-example
+node scripts/notebook-video.mjs validate-visual-plan assets/example-project
 ```
 
 如果修改画面或时间轴，还要渲染受影响片段、查看规定关键帧，并执行 `SKILL.md` 中的视频与字幕检查。没有真实渲染证据，不要修改锁定视觉系统或核心渲染器。
 
 ## 许可证与第三方材料
 
-项目代码和技能内容使用 Apache-2.0。Source Han Sans 与 Smiley Sans 继续使用 SIL OFL 1.1。示例音效由程序生成并在工程内注明。Remotion 使用 source-available 的 Remotion License，并非 OSI 定义的开源许可证，部分组织可能需要商业许可。TTS 保持 Provider 中立，仓库不打包任何 TTS 客户端或凭据。
+项目代码和技能内容使用 Apache-2.0。Source Han Sans 与 Smiley Sans 继续使用 SIL OFL 1.1。示例音效由程序生成并在工程内注明。官方图文示例中的配图由 OpenAI 生图工具按用户要求生成，并在 `visual-assets.json` 中记录来源、用途、裁切和权利说明。Remotion 使用 source-available 的 Remotion License，并非 OSI 定义的开源许可证，部分组织可能需要商业许可。TTS 和生图 Provider 都保持可替换，仓库不打包任何客户端、账号或凭据。
 
 商用前请阅读 [NOTICE](NOTICE)、[DEPENDENCIES.md](DEPENDENCIES.md) 和生成工程里的 Remotion 提示。
 

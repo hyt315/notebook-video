@@ -20,6 +20,12 @@
 ## Visuals
 
 - Background, chapter, header and subtitle match the canonical example.
+- Every scene declares one primary mode: `image-text`, `pure-text` or `pure-graphic`.
+- Concrete subjects use original, supplied or licensed imagery when seeing the subject materially improves comprehension.
+- Generated imagery contains no baked labels, charts, logos or UI text; exact information remains in Remotion.
+- Every raster is registered in `visual-assets.json` with source, prompt/description, crop policy and rights.
+- Image scenes synchronize recognition, callout, relation and conclusion instead of placing a static image beside unrelated copy.
+- Generated images receive only restrained crop reveal or push-in motion; annotations move independently.
 - Every independently moving object is an independent component.
 - Every large object has one home zone and one destination zone.
 - Unrelated cards keep at least 70px separation, including airborne shadows.
@@ -30,11 +36,11 @@
 - Inserted modules finish fully behind the front lip with no residual fragment.
 - Temporary components exit completely; no half corner remains.
 - Dynamic shadow changes only when paper lifts.
-- In the official v7 engine, paper uses its locked lift-linked contact/environment shadow recipe; no component invents a conflicting shadow.
-- In the official v7 engine, display, title, body, label and micro copy use its locked type scale.
-- In the official v7 engine, system glyphs and emoji are not used as production icons; use its locked line-icon language.
-- In the official v7 engine, the whole-film grade is static and restrained; no animated grain or moving light texture.
-- In the official v7 engine, ordinary production edits stay inside `COPY`, narration, semantic captions, timing and topic-specific scene objects.
+- In the official v9 engine, paper uses its locked lift-linked contact/environment shadow recipe; no component invents a conflicting shadow.
+- In the official v9 engine, display, title, body, label and micro copy use its locked type scale.
+- In the official v9 engine, system glyphs and emoji are not used as production icons; use its locked line-icon language.
+- In the official v9 engine, the whole-film grade is static and restrained; no animated grain or moving light texture.
+- In the official v9 engine, ordinary production edits stay inside `COPY`, narration, semantic captions, visual plan, registered image assets, timing and topic-specific scene objects.
 - Data dashes move only during a real transfer and in the correct direction.
 - Text-bearing paper has visible padding on all sides.
 - Exact Chinese text and real brand assets are preserved.

@@ -9,5 +9,6 @@ and bundles the following third-party materials:
 3. Procedurally generated WAV effects — reuse note retained at `assets/example-project/public/sfx/LICENSE.txt`.
 4. Remotion dependencies — governed by the proprietary Remotion License, not by the repository-level license. Generated projects include `REMOTION-LICENSE-NOTICE.md` and must retain its link to https://www.remotion.pro/license.
 5. TTS providers — no TTS client or generated narration is bundled. Provider services, SDKs and generated speech remain governed by their own terms.
+6. Official visual-director illustration — generated with OpenAI image generation at the user's request. Its SHA-256, purpose, crop policy and redistribution note are retained at `assets/example-project/manifests/visual-assets.json`. No image-generation client or credential is bundled.
 
 The repository-level license must not override these third-party license notices.

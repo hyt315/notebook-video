@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "visual-director-workbench",
+      "path": "public/illustrations/visual-director.png",
+      "source_type": "ai-generated",
+      "provider": "OpenAI image generation",
+      "generated_on": "2026-07-18",
+      "sha256": "6abc6f4f4b51743a8926cfb20bc2b8416747e22ebacc5faf0310e3d93b75a09d",
+      "prompt_summary": "Wide warm-ivory hand-drawn creative workbench with a visual director, an image area, typography blocks and a node diagram; clear subject separation and no baked labels.",
+      "use_context": "Official scene-two image-plus-text workshop example",
+      "crop_policy": "Center crop with the director and three visual zones remaining recognizable; reserve overlay space inside the lower-right corner.",
+      "rights": "Generated for this project at the user's request; redistribution must follow the generation provider terms applicable to the publisher.",
+      "baked_text": false
+    }
+  ]
+}

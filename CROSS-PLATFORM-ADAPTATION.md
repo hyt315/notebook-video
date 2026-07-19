@@ -1,6 +1,6 @@
 # macOS + Windows cross-platform adaptation
 
-This build keeps one official `warm-ivory-remotion-2k30-v8-performance` Remotion project for every operating system. The component tree, fonts, assets, timing, subtitle geometry, native 30fps motion, 2K/30fps output and FFmpeg settings are shared. Only the launcher and filesystem layer adapt to the host OS.
+This build keeps one official `warm-ivory-remotion-2k30-v9-visual-director` Remotion project for every operating system. The component tree, fonts, registered image assets, timing, subtitle geometry, native 30fps motion, 2K/30fps output and FFmpeg settings are shared. Only the launcher, optional image-generation provider and filesystem layer adapt to the host OS.
 
 ## Universal entry
 

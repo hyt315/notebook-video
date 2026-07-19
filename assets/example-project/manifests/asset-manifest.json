@@ -1,7 +1,50 @@
 {
-  "style_version": "warm-ivory-remotion-2k30-v8-performance",
+  "style_version": "warm-ivory-remotion-2k30-v9-visual-director",
   "composition": "NotebookVideoFilm",
   "duration_frames": 900,
+  "visual_asset_ids": [
+    "visual-director-workbench"
+  ],
+  "scenes": [
+    {
+      "id": "upgrade-principle",
+      "start_frame": 0,
+      "end_frame": 195,
+      "visual_mode": "pure-text",
+      "visual_asset_ids": [],
+      "mount_contract": "start-inclusive-end-exclusive",
+      "exit_contract": "complete-exit"
+    },
+    {
+      "id": "independent-workshops",
+      "start_frame": 195,
+      "end_frame": 330,
+      "visual_mode": "image-text",
+      "visual_asset_ids": [
+        "visual-director-workbench"
+      ],
+      "mount_contract": "start-inclusive-end-exclusive",
+      "exit_contract": "complete-exit"
+    },
+    {
+      "id": "continuous-assembly",
+      "start_frame": 330,
+      "end_frame": 650,
+      "visual_mode": "pure-graphic",
+      "visual_asset_ids": [],
+      "mount_contract": "start-inclusive-end-exclusive",
+      "exit_contract": "complete-exit"
+    },
+    {
+      "id": "validated-delivery",
+      "start_frame": 650,
+      "end_frame": 900,
+      "visual_mode": "pure-graphic",
+      "visual_asset_ids": [],
+      "mount_contract": "start-inclusive-end-exclusive",
+      "exit_contract": "final-hold"
+    }
+  ],
   "parts": [
     {
       "id": "background",
@@ -66,6 +109,30 @@
       "motion": [
         "staggered-entry",
         "local-feedback"
+      ]
+    },
+    {
+      "id": "visual-director-image",
+      "scene": 2,
+      "z": 76,
+      "layer_role": "base",
+      "occlusion_contract": "normal",
+      "exit_contract": "fully-outside-or-zero",
+      "motion": [
+        "crop-reveal",
+        "restrained-push-in"
+      ]
+    },
+    {
+      "id": "visual-director-callouts",
+      "scene": 2,
+      "z": 82,
+      "layer_role": "annotation",
+      "occlusion_contract": "always-visible",
+      "exit_contract": "fully-outside-or-zero",
+      "motion": [
+        "phrase-timed-highlight",
+        "complete-exit"
       ]
     },
     {

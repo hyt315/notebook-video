@@ -1,6 +1,22 @@
 # Changelog
 
-All notable changes will be recorded here. The project follows semantic versioning once the first public release is created.
+All notable changes are recorded here. The project follows semantic versioning.
+
+## [1.1.0] - 2026-07-19
+
+### Added
+
+- A provider-neutral visual-director stage that selects `image-text`, `pure-text` or `pure-graphic` for every scene from the narration meaning.
+- Optional Codex image-generation enhancement with complete fallbacks for other agents and local environments.
+- Generated-image prompt, crop, provenance and redistribution records through `manifests/visual-assets.json`.
+- `validate-visual-plan` for scene modes, start-inclusive/end-exclusive lifetimes, raster existence, SHA-256 integrity and provenance.
+- An official Remotion image-plus-text example with the bitmap, callouts and exact labels animated as independent layers.
+- Microsoft Edge Read Aloud as the preferred zero-key Mandarin TTS adapter when available and appropriate.
+
+### Changed
+
+- Upgraded the official style contract from v8 performance to v9 visual director while preserving 2K/30fps rendering, semantic subtitles, declarative audio, complete exits and automated QA.
+- Updated the skill metadata, English/Chinese landing pages and project scaffolding for image-generation-aware production.
 
 ## [1.0.3] - 2026-07-18
 

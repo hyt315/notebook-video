@@ -135,8 +135,8 @@ const newProject = async ([targetArg]) => {
     'SmileySans-LICENSE.txt',
   ]) fs.copyFileSync(path.join(fontDir, name), path.join(publicDir, name));
   fs.mkdirSync(path.join(target, 'renders'), {recursive: true});
-  console.log(`Created official v8 performance Remotion notebook project: ${target}`);
-  console.log('Preserve the engine, background, subtitle, chrome, asset gate, audio tree and frame conventions. Replace topic content and semantic scene objects.');
+  console.log(`Created official v9 visual-director Remotion notebook project: ${target}`);
+  console.log('Preserve the engine, background, subtitle, chrome, asset gate, audio tree and frame conventions. Replace topic content, visual plan, registered imagery and semantic scene objects.');
   console.log('Narration audio is intentionally not bundled. Generate or supply licensed audio, then run sync before rendering.');
 };
 
@@ -306,13 +306,14 @@ const pythonCommandMap = new Map([
   ['validate-skill', ['validate-skill-consistency.py']],
   ['build-semantic-captions', ['build-semantic-captions.py']],
   ['validate-layering', ['validate-layering.py']],
+  ['validate-visual-plan', ['validate-visual-plan.py']],
   ['validate-caption-sync', ['validate-caption-sync.py']],
   ['validate-semantic-breaks', ['validate-semantic-breaks.py']],
   ['validate-official-example', ['validate-official-example.py']],
 ]);
 
 const usage = () => {
-  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT\n  validate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
+  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT\n  validate-visual-plan PROJECT_DIRECTORY\n  validate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };
 
 const main = async () => {

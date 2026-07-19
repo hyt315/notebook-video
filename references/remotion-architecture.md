@@ -20,12 +20,15 @@ project/
 ├── public/
 │   ├── fonts and licenses
 │   ├── narration.mp3
+│   ├── illustrations/
 │   └── sfx/
 ├── audio/narration.mp3.json
 ├── manifests/
 │   ├── semantic-caption-lines.txt
 │   ├── protected-caption-phrases.txt
-│   └── caption-cues.json
+│   ├── caption-cues.json
+│   ├── asset-manifest.json
+│   └── visual-assets.json
 ├── narration.txt
 ├── storyboard.md
 ├── package.json
@@ -39,14 +42,16 @@ Remotion is the only visual renderer. Python is limited to validation and determ
 Use this order:
 
 1. narration text;
-2. TTS audio plus measured word milliseconds;
-3. editor-authored semantic caption lines and protected phrases;
-4. semantic cues bound to exact TTS words and validated against protected boundaries;
-5. one-time millisecond-to-frame conversion;
-6. scene cut frames and object cue frames;
-7. React component tree;
-8. Remotion frame render;
-9. FFmpeg loudness normalization and validation.
+2. visual-mode decision during storyboarding and image-capability check;
+3. generated, supplied or native support-art plan plus raster provenance;
+4. TTS audio plus measured word milliseconds;
+5. editor-authored semantic caption lines and protected phrases;
+6. semantic cues bound to exact TTS words and validated against protected boundaries;
+7. one-time millisecond-to-frame conversion;
+8. scene cut frames and object cue frames;
+9. React component tree;
+10. Remotion frame render;
+11. FFmpeg loudness normalization and validation.
 
 Define delivery and design-time frame rates explicitly. Keep both at 30fps by default. Convert timing at module load or in a preprocessing script:
 
@@ -71,6 +76,7 @@ Never recompute timing differently in subtitles, animation and sound.
 Copy rather than recreate:
 
 - `AssetGate`: delays render until fonts and media are ready.
+- `Img`: renders registered raster support art while callouts remain separate components.
 - `Background`: fixed page, grid and static texture.
 - `Paper`: owns its surface, outline and dynamic shadow.
 - `Subtitle`: fixed white torn input without a dark border.
@@ -101,6 +107,8 @@ Text reveal, measured TTS boundaries, physical paper poses and action audio use 
 The default scene is a 900-frame design timeline. If narration requires a longer delivery while retaining the same authored scene geometry, set `TIMELINE_SCALE` and `DURATION` together (`DURATION = 900 * TIMELINE_SCALE`). Every scene mount guard, animation cue, caption boundary and action-audio `<Sequence from>` must derive from `useCurrentFrame()`, `q()` or `deliveryFrame()`; never read raw `useRawCurrentFrame()` in a scene. Before a full render, range-render across every scene boundary and inspect the final frame. This prevents an extended composition from unmounting all scenes or leaving sound cues at the original timing.
 
 Mount only scenes that can contribute pixels. Keep one scene mounted normally and at most two during a transition. Never hide every inactive scene with opacity. Read [performance-design.md](performance-design.md).
+
+Use start-inclusive and end-exclusive scene windows. A scene group owns its image, text, SVG and annotation layers. When the subject changes, unmount the outgoing group at its end frame; do not leave a hidden raster, callout or shadow under the next scene.
 
 Assign one owner to every visible object. A parent that uses transform, opacity, filter or isolation creates a stacking context; therefore sibling z-index values do not escape it. Keep objects that must overlap across a container in the same intended stacking context.
 
