@@ -1,6 +1,6 @@
 ---
 name: notebook-video
-description: Create complete Chinese 2K warm-ivory engineering-notebook explainer videos with React, TypeScript and Remotion, using a fast native-30fps pipeline, active-scene mounting, transform-based motion, deterministic timing, Chinese TTS word timing, declarative audio, H.264/AAC rendering and automated QA. Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or reproduce the established notebook-video visual style consistently without wasting render time on duplicate frames.
+description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion, choosing image-plus-text, pure-text or pure-graphic scenes from meaning and optionally using an available image-generation tool for original support art. Includes native-30fps motion, active-scene mounting, complete exits, Chinese TTS word timing, declarative audio, H.264/AAC rendering, provenance manifests and automated QA. Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine generated images, animated text and diagrams without producing a moving slide deck.
 ---
 
 # Create notebook explainer videos
@@ -9,7 +9,7 @@ Build a finished, validated MP4 and editable Remotion project. Treat this as a l
 
 ## Use the official engine first
 
-The official default is `warm-ivory-remotion-2k30-v8-performance`.
+The official default is `warm-ivory-remotion-2k30-v9-visual-director`.
 
 Before changing scenes, read:
 
@@ -18,6 +18,7 @@ Before changing scenes, read:
 3. [references/visual-system.md](references/visual-system.md)
 4. [references/official-skills-exemplar.md](references/official-skills-exemplar.md)
 5. [references/performance-design.md](references/performance-design.md)
+6. [references/visual-director.md](references/visual-director.md)
 
 Start every project by copying `assets/example-project`; do not rebuild the engine from memory. The source project and locked contract are authoritative. Create projects in an empty directory so stale files from an earlier run cannot survive.
 
@@ -39,7 +40,9 @@ Keep these official elements locked until the user approves a future rendered re
 - shared-track continuity when one object changes state across several stations;
 - real slot geometry: insertable parts cross the slot, move behind the front lip and disappear fully;
 - declarative narration and action effects inside the Remotion component tree;
-- font/audio asset preload gate before the first frame;
+- font/audio/image asset preload gate before the first frame;
+- a visual plan selecting image-plus-text, pure text or pure graphic from meaning;
+- optional generated imagery as preloaded Remotion assets with prompt, crop and rights records;
 - H.264/AAC output, automated QA, contact sheets and editable source package.
 
 Do not write an experimental change into this skill until the user sees the rendered film and explicitly approves it.
@@ -54,12 +57,14 @@ The official example already includes the centralized palette, type scale, paper
 Unless the user asks for less, deliver:
 
 1. narration and time-coded storyboard;
-2. semantic part manifest with layer and exit contracts;
-3. Chinese narration plus word timing JSON;
-4. one-line semantic caption cues plus a protected-phrase manifest;
-5. 2560×1440 H.264/AAC MP4;
-6. 24-frame contact sheet and motion checks for long films;
-7. editable source ZIP with fonts, licenses, audio and manifests.
+2. a visual plan identifying each scene as `image-text`, `pure-text` or `pure-graphic`;
+3. semantic part manifest with layer and exit contracts;
+4. `visual-assets.json` with source, prompt summary, crop policy and rights for every raster;
+5. Chinese narration plus word timing JSON;
+6. one-line semantic caption cues plus a protected-phrase manifest;
+7. 2560×1440 H.264/AAC MP4;
+8. 24-frame contact sheet and motion checks for long films;
+9. editable source ZIP with fonts, licenses, audio and manifests.
 
 Do not stop at prompts, still images, a silent animation or an unvalidated render.
 
@@ -74,7 +79,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./notebook-video-proje
 node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-project
 ```
 
-The copied project is the official 30-second Final Motion System project. It is the canonical proof for spacious composition, independent work zones, shared-track state changes, physical slot insertion and validated delivery. Preserve its helpers, subtitle component, background, chapter/header modules, audio tree, resource gate and final draw order. Replace topic-specific narration, copy, timings and scene objects.
+The copied project is the official 30-second Visual Director project. It is the canonical proof for spacious composition, image-plus-text callouts, pure typography, native SVG relationships, independent work zones, physical slot insertion and validated delivery. Preserve its helpers, subtitle component, background, chapter/header modules, audio tree, image/audio resource gate and final draw order. Replace topic-specific narration, copy, timings, generated or supplied imagery and scene objects.
 
 ## Production workflow
 
@@ -84,9 +89,27 @@ Infer known choices from the conversation. Confirm only choices that materially 
 
 Default to Chinese, 16:9, warm female narration, no prominent BGM and a duration appropriate to the content. Use the cold-open contract in [references/narrative-hook.md](references/narrative-hook.md): lead with a verified consequence or tension in the first 1.5 seconds, open an honest loop by 8 seconds, then return to normal explanation and later pay that loop off with evidence. Give each scene one main idea and one physical action.
 
-Present a compact narration/storyboard before an expensive render when the topic or claims are not already approved. A direct request to continue an established series is sufficient approval to proceed.
+Before writing the storyboard, inspect the available image-generation capability and assign one provisional visual mode to every planned scene. Include that mode in the compact narration/storyboard presented before an expensive render when the topic or claims are not already approved. A direct request to continue an established series is sufficient approval to proceed.
 
-### 2. Generate TTS and semantic captions
+### 2. Direct the visuals and generate support art
+
+Read [references/visual-director.md](references/visual-director.md). Before implementing scenes, write a compact visual plan with scene ID, time range, narration purpose, primary mode and complete-exit frame.
+
+Choose the mode from meaning:
+
+- concrete subject, environment or transformation → `image-text`;
+- contrast, slogan, misconception or keyword → `pure-text`;
+- process, system, quantity or relationship → `pure-graphic`.
+
+Inspect the current environment for an authorized image-generation capability. When one is available and the user has not prohibited it, generate original support art by default for concrete hero and explanation scenes where it materially improves the result. In Codex, use the built-in image-generation capability; elsewhere use an equivalent provider, user assets, licensed assets or native SVG. Image generation is an enhancement, never a requirement that blocks production.
+
+Generate bitmaps without baked labels, charts or UI text. Request crop-safe negative space and separated subjects. Put exact Chinese copy, arrows, highlights and diagrams in Remotion. Copy only used images into `public/illustrations/`, register them in `manifests/visual-assets.json`, preload them in `AssetGate`, and animate them with a restrained reveal or push-in plus phrase-timed annotations.
+
+```text
+node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-visual-plan ./notebook-video-project
+```
+
+### 3. Generate TTS and semantic captions
 
 Default target: a clear, warm Mandarin voice at a moderately brisk rate. Select the actual provider and voice from the user's available tools and licensing needs.
 
@@ -98,11 +121,11 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" sync ./notebook-video-project
 
 Read [references/subtitle-timing.md](references/subtitle-timing.md). Author the semantic lines manually from meaning and speech pauses before binding them to TTS words. Also author `manifests/protected-caption-phrases.txt`; include every product/model name, benchmark name, number-plus-unit expression, fixed technical term and short phrase whose meaning breaks if split. Character count is never allowed to choose a final caption boundary.
 
-The repository does not bundle or install a TTS client. Use an available platform TTS, commercial API, local model or another provider that fits the user's environment. Edge Read Aloud may be mentioned only as an external reference, never assumed or installed automatically. Adapt every provider to the same `narration.mp3` and word-timing JSON contract. Never commit generated narration unless its source, voice and redistribution rights are documented. Read [references/tts-audio.md](references/tts-audio.md).
+The repository does not bundle or install a TTS client. Use an available platform TTS, commercial API, local model or another provider that fits the user's environment. When no paid provider is selected, prefer Microsoft Edge Read Aloud as the zero-key adapter when it is reachable and its terms fit the intended use. Do not hardcode a proxy. Adapt every provider to the same `narration.mp3` and word-timing JSON contract. Never commit generated narration unless its source, voice and redistribution rights are documented. Read [references/tts-audio.md](references/tts-audio.md).
 
 Convert milliseconds to frames once at the data boundary with `Math.round(ms * fps / 1000)`. Components compare integers only. Keep protected phrases, complete clauses and short sentence tails together.
 
-### 3. Model independent parts and layers
+### 4. Model independent parts and layers
 
 Read [references/independent-parts.md](references/independent-parts.md). Every object that moves at a different time is a separate component with:
 
@@ -120,18 +143,19 @@ Floating objects stay above lower bases. Insertable cards pass behind a front li
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-layering ./notebook-video-project/manifests/asset-manifest.json
 ```
 
-### 4. Preserve the visual contract
+### 5. Preserve the visual contract
 
 Reuse the exact components in `assets/example-project/src/index.tsx`:
 
 - `Background`, `Paper`;
 - `Subtitle`, `Chrome`;
 - `AssetGate`, `Sound`;
+- generated or supplied `Img` layers and their independent callouts;
 - stepped-frame helpers `q`, `ease`, `pop`.
 
 Do not replace the subtitle input with a straight box, rounded search bar, dark bordered strip or inner sine line. Do not add global camera motion, random drift, animated noise, heavy blur or unrelated particles.
 
-### 5. Animate progressively
+### 6. Animate progressively
 
 Read [references/motion-design.md](references/motion-design.md) and, for the opening, [references/narrative-hook.md](references/narrative-hook.md). Build each scene in this order:
 
@@ -146,17 +170,17 @@ For a process explanation, prefer one persistent task object moving through a sh
 
 Add a meaningful state change every 2–4 seconds. Use dynamic shadow only when a paper object lifts: farther/softer while airborne, closer/darker on landing. Use one restrained overshoot. Move SVG dash offsets only while data is transferring.
 
-### 6. Keep audio declarative
+### 7. Keep audio declarative
 
 Read [references/tts-audio.md](references/tts-audio.md). Put narration and action effects in the Remotion tree with `<Audio>` and frame-based `<Sequence>`. Preview the real mix before export.
 
 Use effects only on visible actions. Keep speech primary. Do not add an untracked narration delay. Use FFmpeg after render only for encoding, loudness normalization and validation, not for inventing the timeline.
 
-### 7. Preload assets
+### 8. Preload assets
 
-Keep `AssetGate` active. Wait for `document.fonts.ready` and all audio/image assets before `continueRender()`. Never remove the gate to make a render start faster.
+Keep `AssetGate` active. Wait for `document.fonts.ready` and all audio/image assets before `continueRender()`. Register every raster in `manifests/visual-assets.json`; unused generations do not belong in the project. Never remove the gate to make a render start faster.
 
-### 8. Render and normalize
+### 9. Render and normalize
 
 ```text
 node "<SKILL_DIR>/scripts/notebook-video.mjs" render ./notebook-video-project ./notebook-video-project/renders/final.mp4
@@ -178,7 +202,7 @@ During iteration, render only the changed scene range for review. Frame numbers 
 node "<SKILL_DIR>/scripts/notebook-video.mjs" render-range ./notebook-video-project ./notebook-video-project/renders/scene-review.mp4 START_FRAME END_FRAME
 ```
 
-### 9. Validate the actual result
+### 10. Validate the actual result
 
 Read [references/quality-checklist.md](references/quality-checklist.md).
 
@@ -192,13 +216,15 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-video ./notebook-video-pr
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-caption-sync ./notebook-video-project/audio/narration.mp3.json ./notebook-video-project/manifests/caption-cues.json
 
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-semantic-breaks ./notebook-video-project/manifests/caption-cues.json ./notebook-video-project/manifests/protected-caption-phrases.txt
+
+node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-visual-plan ./notebook-video-project
 ```
 
 Inspect the opening, every scene boundary, longest caption, every hover/insert midpoint and final frame. For films over 60 seconds, inspect a 24-frame sheet plus at least two dense motion sheets covering the most complex movements. The opening also needs a 0–360-frame range render and the cold-open review gate from [references/narrative-hook.md](references/narrative-hook.md).
 
-Reject any render containing black frames, subtitle overflow, a protected phrase split across cues, mechanically character-counted captions, dark side marks on the subtitle, missing fonts, half-visible exited objects, incorrect stacking, static data lines during transfer or action sounds without visible actions.
+Reject any render containing black frames, subtitle overflow, a protected phrase split across cues, mechanically character-counted captions, dark side marks on the subtitle, missing fonts, half-visible exited objects, incorrect stacking, static data lines during transfer, action sounds without visible actions, unregistered raster assets, generated text baked into imagery or a static image-card sequence that does not synchronize image, annotation and narration.
 
-### 10. Package
+### 11. Package
 
 ```text
 node "<SKILL_DIR>/scripts/notebook-video.mjs" package ./notebook-video-project ./notebook-video-project-source.zip
@@ -220,5 +246,6 @@ Include narration, timing JSON, source, manifests, chosen audio, fonts and licen
 - [references/tts-audio.md](references/tts-audio.md): TTS, declarative effects and mix.
 - [references/quality-checklist.md](references/quality-checklist.md): delivery acceptance criteria.
 - [references/performance-design.md](references/performance-design.md): binding 30fps pipeline, scene lifetime, transform, caching, concurrency and range-render rules.
+- [references/visual-director.md](references/visual-director.md): visual-mode selection, image-generation capability fallback, asset prompts, provenance and scene exits.
 - [references/cross-platform-compatibility.md](references/cross-platform-compatibility.md): binding macOS/Windows parity contract, universal commands and browser preparation.
 - [references/windows-compatibility.md](references/windows-compatibility.md): additional Windows setup, path rules and troubleshooting without changing render output.

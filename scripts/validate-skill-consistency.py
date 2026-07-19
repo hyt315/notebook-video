@@ -27,7 +27,8 @@ def main() -> None:
     joined = '\n'.join(p.read_text(encoding='utf-8', errors='ignore') for p in text_files)
     for token in ('from PIL', 'import PIL', 'Pillow', 'build-caption-timing.py', 'aesthetic-candidate-project',
                   'candidate-awaiting-render-approval', 'new-aesthetic-candidate.sh',
-                  'validate-aesthetic-candidate.py', 'locked-style-contract-v7-candidate.json'):
+                  'validate-aesthetic-candidate.py', 'locked-style-contract-v7-candidate.json',
+                  'warm-ivory-remotion-2k30-v8-performance'):
         if token in joined:
             problems.append(f"obsolete token remains: {token}")
 
@@ -59,6 +60,8 @@ def main() -> None:
         SKILL / 'DEPENDENCIES.md',
         SKILL / 'references' / 'cross-platform-compatibility.md',
         SKILL / 'references' / 'windows-compatibility.md',
+        SKILL / 'references' / 'visual-director.md',
+        SKILL / 'scripts' / 'validate-visual-plan.py',
     )
     for required in required_cross_platform:
         if not required.is_file():
@@ -86,7 +89,7 @@ def main() -> None:
         if any(name.startswith(('renders/', 'node_modules/')) for name in names):
             problems.append('packager included renders or node_modules')
 
-    active_docs = [SKILL / 'SKILL.md', SKILL / 'references' / 'subtitle-timing.md', SKILL / 'references' / 'remotion-architecture.md', SKILL / 'references' / 'official-skills-exemplar.md', SKILL / 'references' / 'narrative-hook.md']
+    active_docs = [SKILL / 'SKILL.md', SKILL / 'references' / 'subtitle-timing.md', SKILL / 'references' / 'remotion-architecture.md', SKILL / 'references' / 'official-skills-exemplar.md', SKILL / 'references' / 'narrative-hook.md', SKILL / 'references' / 'visual-director.md']
     for doc in active_docs:
         text = doc.read_text(encoding='utf-8')
         for obsolete_command in ('python3 scripts/', 'bash "$SKILL_DIR/scripts/', 'scripts/new-project.sh`'):
@@ -110,7 +113,7 @@ def main() -> None:
         raise SystemExit(len(problems))
 
     subprocess.run([sys.executable, str(SKILL / 'scripts' / 'validate-official-example.py')], check=True)
-    print('Skill-wide consistency validation passed: single official v8 performance track, no obsolete renderer residue, stale render inputs or contract mismatch')
+    print('Skill-wide consistency validation passed: single official v9 visual-director track, no obsolete renderer residue, stale render inputs or contract mismatch')
 
 
 if __name__ == '__main__':

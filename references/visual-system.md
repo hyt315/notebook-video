@@ -34,7 +34,7 @@ Background marks remain subordinate to all semantic objects.
 
 ## Paper and depth
 
-Use the official v7 `Paper` implementation unchanged. The paper surface, outline and shadow move together; do not add unused wrapper primitives merely to satisfy documentation.
+Use the official v9 `Paper` implementation unchanged. The paper surface, outline and shadow move together; do not add unused wrapper primitives merely to satisfy documentation.
 
 At rest, use a close dark offset shadow. When a card lifts, increase x/y offset and blur while lowering alpha. On landing, return to the close shadow and permit one restrained spring overshoot.
 

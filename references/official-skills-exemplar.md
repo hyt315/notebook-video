@@ -1,6 +1,6 @@
-# Official Final Motion System exemplar
+# Official Visual Director exemplar
 
-The binding exemplar is the 30-second “Final Motion System” Remotion project, configured at native 2560×1440 and 30fps with native 30fps physical motion. It preserves the established aesthetic complexity while avoiding duplicate frames and inactive-scene work.
+The binding exemplar is a 30-second Remotion project configured at native 2560×1440 and 30fps with native 30fps physical motion. It preserves the established aesthetic complexity while demonstrating the three primary scene modes: image-plus-text, pure text and pure graphic.
 
 ## Required starting point
 
@@ -26,6 +26,9 @@ Keep these components and behaviors:
 - declarative `Sound` tree;
 - integer-frame caption preprocessing;
 - complete exit of obsolete components.
+- `Img` assets preloaded through `AssetGate`;
+- generated-image callouts kept as independent Remotion layers;
+- `manifests/visual-assets.json` provenance and crop contracts;
 - one semantic action per spatial zone;
 - one persistent task card for a continuous process;
 - a shared visible track with state changes at real stations;
@@ -34,24 +37,27 @@ Keep these components and behaviors:
 
 Topic-specific heroes, copy, props and scene metaphors must change for the new subject.
 
-## Approved architecture story
+## Approved visual story
 
 The exemplar demonstrates the intended production grammar:
 
 1. contrast a stable base with a disordered effect stack;
 2. reorganize effects into an object system with explicit ownership;
-3. show independent script, voice, caption and visual work zones;
+3. show independent script, voice, caption and visual work zones, with the visual zone combining an original image and live callouts;
 4. move one task card through a shared track and change its state at each station;
 5. converge independent modules into a physical assembly slot with correct occlusion;
 6. validate and end with concrete MP4, project and QA artifacts.
 
-The same grammar may be adapted to other topics without mentioning software architecture.
+The same engineering helpers may be adapted to other topics. The four-act subject matter is only an exemplar; production scenes must choose their primary visual mode from the narration meaning. Read [visual-director.md](visual-director.md).
 
 ## Rejection conditions
 
 Reject the render if:
 
 - any non-Remotion visual renderer is introduced without explicit user approval;
+- a generated image is treated as the complete video instead of an asset animated and explained by Remotion;
+- exact labels or diagrams are baked into generated imagery;
+- a raster asset lacks provenance, crop policy or redistribution notes;
 - the background, subtitle or chapter system is reconstructed from memory;
 - the subtitle gains dark side marks, a straight border or an inner wave;
 - shadows remain identical while cards lift;

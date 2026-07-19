@@ -33,6 +33,7 @@ jobs:
           node scripts/notebook-video.mjs check-deps
           node scripts/notebook-video.mjs validate-skill
           node scripts/notebook-video.mjs validate-official-example
+          node scripts/notebook-video.mjs validate-visual-plan assets/example-project
       - name: Audit locked dependencies
         working-directory: assets/example-project
         run: npm audit --package-lock-only --ignore-scripts --audit-level=high
@@ -42,3 +43,5 @@ jobs:
           node scripts/notebook-video.mjs new-project "$RUNNER_TEMP/notebook-video-smoke"
           test -f "$RUNNER_TEMP/notebook-video-smoke/src/index.tsx"
           test -f "$RUNNER_TEMP/notebook-video-smoke/public/SourceHanSans-LICENSE.txt"
+          test -f "$RUNNER_TEMP/notebook-video-smoke/public/illustrations/visual-director.png"
+          test -f "$RUNNER_TEMP/notebook-video-smoke/manifests/visual-assets.json"

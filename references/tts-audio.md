@@ -17,7 +17,13 @@ The adapter must write:
 
 Save the audio as `audio/narration.mp3` and the array as `audio/narration.mp3.json`. Times are integer milliseconds, monotonically increasing, and every item contains non-empty `part`, `start` and `end` fields. The concatenated `part` text must match the narration used for semantic subtitle lines after whitespace normalization.
 
-Possible providers include a platform TTS tool, Azure Speech, another commercial API, a local speech model, or Edge Read Aloud as an external reference. This list is advisory only. Do not install or call a provider without user authorization, and verify that its terms cover the intended distribution.
+Possible providers include a platform TTS tool, Azure Speech, another commercial API, a local speech model, or Microsoft Edge Read Aloud. This list is advisory only. Do not install or call a provider without user authorization, and verify that its terms cover the intended distribution.
+
+## Preferred zero-key adapter
+
+When the user has not selected a paid provider, prefer Edge Read Aloud if the environment can reach it and the intended use fits its terms. For Mandarin, start with a warm neural voice such as `zh-CN-XiaoxiaoNeural`, then adjust rate from the real narration duration rather than from character count.
+
+Use a currently available client as an external adapter; do not add it to the skill dependencies. If the environment requires an HTTP proxy, pass the live `HTTPS_PROXY` value to the client for that invocation. Never copy a transient proxy endpoint into project files. Preserve the service-provided word-boundary JSON and adapt it to the canonical array contract below.
 
 Target a clear, warm Mandarin voice at a moderately brisk rate. Synthesize fresh audio after every narration change and keep the generated word-boundary JSON.
 

@@ -1,5 +1,5 @@
 {
-  "name": "notebook-video-final-motion-system-v8-performance",
+  "name": "notebook-video-visual-director-v9",
   "private": true,
   "license": "Apache-2.0",
   "engines": {
@@ -7,8 +7,8 @@
   },
   "scripts": {
     "sync": "node sync-render-inputs.cjs",
-    "render": "npm run sync && remotion render NotebookVideoFilm renders/notebook-video-final-motion-system.mp4 --entry-point=src/index.tsx --codec=h264 --crf=16 --concurrency=4",
-    "still": "npm run sync && remotion still NotebookVideoFilm renders/preview.png --entry-point=src/index.tsx --frame=1000"
+    "render": "npm run sync && remotion render NotebookVideoFilm renders/notebook-video-visual-director.mp4 --entry-point=src/index.tsx --codec=h264 --crf=16 --concurrency=4",
+    "still": "npm run sync && remotion still NotebookVideoFilm renders/preview.png --entry-point=src/index.tsx --frame=260"
   },
   "dependencies": {
     "@remotion/cli": "4.0.489",

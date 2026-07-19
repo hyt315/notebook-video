@@ -10,7 +10,7 @@ from pathlib import Path
 SKILL = Path(__file__).resolve().parent.parent
 EXAMPLE = SKILL / "assets" / "example-project"
 CONTRACT = SKILL / "references" / "locked-style-contract.json"
-STYLE = "warm-ivory-remotion-2k30-v8-performance"
+STYLE = "warm-ivory-remotion-2k30-v9-visual-director"
 
 
 def require_text(path: Path, required: list[str], forbidden: list[str] | None = None) -> None:
@@ -42,6 +42,11 @@ def main() -> None:
         raise SystemExit("performance contract changed")
     if contract["engine"]["renderer"] != "Remotion 4.0.489":
         raise SystemExit("renderer pin changed")
+    director = contract["visual_director"]
+    if director["primary_scene_modes"] != ["image-text", "pure-text", "pure-graphic"]:
+        raise SystemExit("visual director modes changed")
+    if not director["provider_neutral_fallback"] or not director["codex_imagegen_enhancement"]:
+        raise SystemExit("universal image-generation capability contract changed")
     subtitle = contract["subtitle_input"]
     if subtitle["bounds"] != [188, 934, 1732, 1046]:
         raise SystemExit("subtitle bounds changed")
@@ -53,6 +58,13 @@ def main() -> None:
         raise SystemExit("official asset manifest style version is stale")
     if manifest.get("duration_frames") != 900:
         raise SystemExit("official asset manifest duration must match the 900-frame composition")
+    scenes = manifest.get("scenes", [])
+    if [scene.get("visual_mode") for scene in scenes] != ["pure-text", "image-text", "pure-graphic", "pure-graphic"]:
+        raise SystemExit("official visual-mode exemplar changed")
+    if [scene.get("visual_asset_ids") for scene in scenes] != [[], ["visual-director-workbench"], [], []]:
+        raise SystemExit("official scene-to-visual-asset mapping changed")
+    if manifest.get("visual_asset_ids") != ["visual-director-workbench"]:
+        raise SystemExit("official visual asset IDs changed")
 
     source = EXAMPLE / "src" / "index.tsx"
     require_text(
@@ -65,7 +77,14 @@ def main() -> None:
             "const msFrame=(ms:number)=>Math.round(ms*FPS/1000)",
             "const q=(f:number)=>{const step=BASE_FPS/MOTION_FPS",
             "const AssetGate=()",
+            "timeoutInMilliseconds:60000",
             "Required audio failed to load",
+            "Required image failed to load",
+            "illustrations/visual-director.png",
+            "<Img src={staticFile('illustrations/visual-director.png')}",
+            "IMAGE + TYPE",
+            "看见 → 标注 → 结论",
+            "visible=ease(local,start,start+10)",
             "const CaptionFitGate=",
             "if(done)return null",
             "getBoundingClientRect().width/DESIGN_SCALE",
@@ -84,7 +103,10 @@ def main() -> None:
             "<Sequence",
             "<Audio src={staticFile('narration.mp3')}",
             "<Fonts/><AssetGate/><CaptionFitGate/><Sound/>",
-            "f<205&&<FinalActOne/>",
+            "f<195&&<FinalActOne/>",
+            "f>=195&&f<330&&<FinalActTwo/>",
+            "f>=330&&f<650&&<FinalActThree/>",
+            "f>=650&&<FinalActFour/>",
             "const FinalDemo=()=>{const f=q(useCurrentFrame())",
             "from={deliveryFrame(f)}",
             "translate3d",
@@ -96,6 +118,7 @@ def main() -> None:
             "render.py", "inner_wave", "camera_drift", "from PIL", "Pillow",
             "CardSpec", "FeatureCard", "FilmScene", "BigModule",
             "StageOne", "StageTwo", "StageThree", "WideDemo",
+            "f<205&&<FinalActOne/>", "f>=185&&f<345&&<FinalActTwo/>",
         ],
     )
 
@@ -112,7 +135,7 @@ def main() -> None:
     for name in ("react", "react-dom"):
         if package["dependencies"].get(name) != "19.2.7":
             raise SystemExit(f"dependency pin changed: {name}")
-    if package.get("name") != "notebook-video-final-motion-system-v8-performance":
+    if package.get("name") != "notebook-video-visual-director-v9":
         raise SystemExit("official package identity is stale")
     if "network-shim" in " ".join(package.get("scripts", {}).values()):
         raise SystemExit("environment-specific network shim is still forced by package scripts")
@@ -133,6 +156,8 @@ def main() -> None:
     for name in ("SourceHanSansCN-Regular.otf", "SourceHanSansCN-Bold.otf", "SmileySans-Oblique.otf"):
         if not (SKILL / "assets" / "fonts" / name).is_file():
             raise SystemExit(f"missing bundled font: {name}")
+    if not (EXAMPLE / "public" / "illustrations" / "visual-director.png").is_file():
+        raise SystemExit("missing official generated-image exemplar")
 
     for rel in (
         "scripts/notebook-video.mjs",
@@ -151,9 +176,10 @@ def main() -> None:
             raise SystemExit(f"missing cross-platform support file: {rel}")
 
     run(sys.executable, str(SKILL / "scripts" / "validate-layering.py"), str(EXAMPLE / "manifests" / "asset-manifest.json"))
+    run(sys.executable, str(SKILL / "scripts" / "validate-visual-plan.py"), str(EXAMPLE))
     run(sys.executable, str(SKILL / "scripts" / "validate-caption-sync.py"), str(EXAMPLE / "audio" / "narration.mp3.json"), str(cues_path))
     run(sys.executable, str(SKILL / "scripts" / "validate-semantic-breaks.py"), str(cues_path), str(EXAMPLE / "manifests" / "protected-caption-phrases.txt"))
-    print("Official warm-ivory v8 performance 2K/30 Final Motion System exemplar is internally consistent and style-locked")
+    print("Official warm-ivory v9 visual-director 2K/30 exemplar is internally consistent and style-locked")
 
 
 if __name__ == "__main__":

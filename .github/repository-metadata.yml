@@ -1,5 +1,5 @@
 repository: hyt315/notebook-video
-description: Agent Skill for turning Chinese explainer scripts into reproducible 2K notebook videos with semantic captions and automated QA.
+description: Visual-director Agent Skill for reproducible 2K Chinese Remotion videos with original imagery, animated text and automated QA.
 topics:
   - agent-skills
   - ai-video
@@ -7,6 +7,7 @@ topics:
   - explainer-video
   - motion-graphics
   - remotion
+  - image-generation
   - subtitles
   - text-to-speech
   - typescript
@@ -22,5 +23,5 @@ ruleset:
   block-force-push: true
   block-deletion: true
 release:
-  tag: v1.0.3
-  title: Notebook Video v1.0.3
+  tag: v1.1.0
+  title: Notebook Video v1.1.0

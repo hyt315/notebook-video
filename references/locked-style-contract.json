@@ -1,5 +1,5 @@
 {
-  "version": "warm-ivory-remotion-2k30-v8-performance",
+  "version": "warm-ivory-remotion-2k30-v9-visual-director",
   "status": "official-current",
   "canonical_entry": "assets/example-project/src/index.tsx",
   "canonical_composition": "NotebookVideoFilm",
@@ -188,6 +188,36 @@
     "residual_fragment_forbidden": true,
     "clear_previous_metaphor_before_next": true
   },
+  "visual_director": {
+    "decision_before_storyboard": true,
+    "primary_scene_modes": [
+      "image-text",
+      "pure-text",
+      "pure-graphic"
+    ],
+    "mode_selected_from_meaning": true,
+    "image_generation_optional_capability": true,
+    "codex_imagegen_enhancement": true,
+    "provider_neutral_fallback": true,
+    "generated_bitmap_is_asset_layer_only": true,
+    "exact_text_and_diagrams_rendered_in_remotion": true
+  },
+  "image_assets": {
+    "directory": "public/illustrations",
+    "provenance_manifest": "manifests/visual-assets.json",
+    "preload_required": true,
+    "generated_baked_text": false,
+    "crop_safe_prompt_required": true,
+    "overlay_negative_space_required": true,
+    "unused_generation_forbidden": true,
+    "uncertain_redistribution_rights_forbidden": true
+  },
+  "scene_lifetime": {
+    "mount_contract": "start-inclusive-end-exclusive",
+    "group_owns_all_layers": true,
+    "outgoing_annotation_clears_before_next_subject": true,
+    "boundary_review_required": true
+  },
   "performance_system": {
     "default_motion_fps": 30,
     "default_render_fps": 30,
@@ -223,6 +253,9 @@
       "COPY",
       "narration",
       "caption semantic lines",
+      "visual plan",
+      "generated or supplied image assets",
+      "image provenance manifest",
       "scene timings",
       "topic-specific scene objects"
     ],
@@ -230,7 +263,8 @@
     "single_line_icon_language": true,
     "static_grade_only": true,
     "animated_grain": false,
-    "same_four_act_grammar": true
+    "fixed_four_act_grammar": false,
+    "adaptive_scene_modes": true
   },
   "future_update_rule": "For future aesthetic changes, render a replacement and obtain user approval before overwriting this official example."
 }
