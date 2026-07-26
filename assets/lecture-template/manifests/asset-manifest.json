@@ -1,0 +1,74 @@
+{
+  "style_version": "warm-ivory-remotion-2k30-v9-visual-director",
+  "composition": "NotebookVideoFilm",
+  "duration_frames": 900,
+  "visual_asset_ids": [],
+  "scenes": [
+    {
+      "id": "collaborative-world",
+      "start_frame": 0,
+      "end_frame": 205,
+      "visual_mode": "pure-graphic",
+      "visual_asset_ids": [],
+      "mount_contract": "start-inclusive-end-exclusive",
+      "exit_contract": "complete-exit"
+    },
+    {
+      "id": "step-one-contribute",
+      "start_frame": 205,
+      "end_frame": 377,
+      "visual_mode": "pure-graphic",
+      "visual_asset_ids": [],
+      "mount_contract": "start-inclusive-end-exclusive",
+      "exit_contract": "complete-exit"
+    },
+    {
+      "id": "ship-and-operate",
+      "start_frame": 377,
+      "end_frame": 571,
+      "visual_mode": "pure-graphic",
+      "visual_asset_ids": [],
+      "mount_contract": "start-inclusive-end-exclusive",
+      "exit_contract": "complete-exit"
+    },
+    {
+      "id": "three-skills-cta",
+      "start_frame": 571,
+      "end_frame": 900,
+      "visual_mode": "pure-text",
+      "visual_asset_ids": [],
+      "mount_contract": "start-inclusive-end-exclusive",
+      "exit_contract": "final-hold"
+    }
+  ],
+  "parts": [
+    {"id": "background", "scene": "all", "z": 0, "layer_role": "background", "occlusion_contract": "normal", "exit_contract": "persistent", "motion": []},
+    {"id": "chapter-chrome", "scene": "all", "z": 150, "layer_role": "foreground", "occlusion_contract": "always-visible", "exit_contract": "persistent", "motion": ["section-change"]},
+    {"id": "subtitle", "scene": "all", "z": 200, "layer_role": "subtitle", "occlusion_contract": "highest", "exit_contract": "persistent", "motion": ["word-reveal"]},
+
+    {"id": "local-disk", "scene": 1, "z": 60, "layer_role": "base", "occlusion_contract": "normal", "exit_contract": "fully-outside-or-zero", "motion": ["spring-entry"]},
+    {"id": "world-globe", "scene": 1, "z": 70, "layer_role": "base", "occlusion_contract": "normal", "exit_contract": "fully-outside-or-zero", "motion": ["spring-entry"]},
+    {"id": "repo-nodes", "scene": 1, "z": 72, "layer_role": "base", "occlusion_contract": "normal", "exit_contract": "fully-outside-or-zero", "motion": ["staggered-entry", "directed-dash"]},
+    {"id": "world-headline", "scene": 1, "z": 85, "layer_role": "base", "occlusion_contract": "normal", "exit_contract": "fully-outside-or-zero", "motion": ["spring-entry"]},
+    {"id": "node-labels", "scene": 1, "z": 82, "layer_role": "annotation", "occlusion_contract": "always-visible", "exit_contract": "fully-outside-or-zero", "motion": ["phrase-timed-highlight"]},
+    {"id": "mascot-hero", "scene": 1, "z": 96, "layer_role": "floating", "occlusion_contract": "always-visible", "exit_contract": "fully-outside-or-zero", "motion": ["spring-entry"]},
+
+    {"id": "step-rail-2", "scene": 2, "z": 78, "layer_role": "base", "occlusion_contract": "normal", "exit_contract": "fully-outside-or-zero", "motion": ["state-feedback"]},
+    {"id": "steps-list-2", "scene": 2, "z": 76, "layer_role": "base", "occlusion_contract": "normal", "exit_contract": "fully-outside-or-zero", "motion": ["staggered-entry"]},
+    {"id": "branch-track", "scene": 2, "z": 55, "layer_role": "wire", "occlusion_contract": "normal", "exit_contract": "fully-outside-or-zero", "motion": ["directed-dash"]},
+    {"id": "skill-tag-contribute", "scene": 2, "z": 82, "layer_role": "annotation", "occlusion_contract": "always-visible", "exit_contract": "fully-outside-or-zero", "motion": ["phrase-timed-highlight"]},
+    {"id": "task-card", "scene": 2, "z": 96, "layer_role": "floating", "occlusion_contract": "always-visible", "exit_contract": "fully-outside-or-zero", "motion": ["shared-track-transfer", "dynamic-shadow"]},
+    {"id": "pr-card", "scene": 2, "z": 94, "layer_role": "floating", "occlusion_contract": "always-visible", "exit_contract": "fully-outside-or-zero", "motion": ["converge-to-slot"]},
+
+    {"id": "repo-building", "scene": 3, "z": 70, "layer_role": "base", "occlusion_contract": "normal", "exit_contract": "fully-outside-or-zero", "motion": ["spring-entry"]},
+    {"id": "ops-dashboard", "scene": 3, "z": 72, "layer_role": "base", "occlusion_contract": "normal", "exit_contract": "fully-outside-or-zero", "motion": ["progressive-checks"]},
+    {"id": "skill-tags-ship", "scene": 3, "z": 82, "layer_role": "annotation", "occlusion_contract": "always-visible", "exit_contract": "fully-outside-or-zero", "motion": ["phrase-timed-highlight"]},
+    {"id": "repo-modules", "scene": 3, "z": 94, "layer_role": "floating", "occlusion_contract": "always-visible", "exit_contract": "fully-outside-or-zero", "motion": ["converge-to-slot"]},
+    {"id": "release-rocket", "scene": 3, "z": 96, "layer_role": "floating", "occlusion_contract": "always-visible", "exit_contract": "fully-outside-or-zero", "motion": ["spring-entry"]},
+
+    {"id": "agent-core", "scene": 4, "z": 75, "layer_role": "base", "occlusion_contract": "normal", "exit_contract": "final-hold", "motion": ["spring-entry"]},
+    {"id": "ep-tags", "scene": 4, "z": 82, "layer_role": "annotation", "occlusion_contract": "always-visible", "exit_contract": "final-hold", "motion": ["phrase-timed-highlight"]},
+    {"id": "skill-cards", "scene": 4, "z": 94, "layer_role": "floating", "occlusion_contract": "always-visible", "exit_contract": "final-hold", "motion": ["staggered-entry", "dynamic-shadow"]},
+    {"id": "cta-bar", "scene": 4, "z": 96, "layer_role": "floating", "occlusion_contract": "always-visible", "exit_contract": "final-hold", "motion": ["spring-entry"]}
+  ]
+}

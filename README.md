@@ -19,9 +19,9 @@ Turn a Chinese explainer or promotional script into a reproducible 2K notebook-s
 ## Why use it
 
 - **One production contract:** script, storyboard, TTS timing, semantic captions, motion, render and QA stay in one workflow.
-- **A visual director, not a scene template:** concrete subjects use image plus text, verbal contrast uses pure typography, and processes use native graphics instead of repeating card slides.
-- **Pluggable image generation:** Codex can use its built-in image capability; other agents can use an equivalent tool, user assets, licensed assets or native SVG without platform lock-in.
-- **Images participate in the explanation:** the bitmap supplies subject and atmosphere while Remotion owns exact callouts, arrows, text, diagrams, timing and exits.
+- **Lecture composition by default:** multi-zone scenes drawn entirely with code — SVG diagrams, mascots, progressive checklists and annotation stickers synchronized frame-accurately to the narration — so any agent in any environment reproduces the style without an image model.
+- **Image generation as an optional add-on:** offered to the user for concrete hero scenes; the result depends on the image quality of the current tool, and Codex with its built-in image capability is the best-suited environment for it.
+- **Images participate in the explanation:** when the add-on is used, the bitmap supplies subject and atmosphere while Remotion owns exact callouts, arrows, text, diagrams, timing and exits.
 - **Reproducible visuals:** the 2560×1440 warm-ivory notebook system is code, not a style prompt an AI must reinterpret.
 - **Readable Chinese captions:** line breaks follow meaning and pauses; protected names, numbers and units stay together.
 - **Honest retention hooks:** show a sourced payoff or tension within 1.5 seconds, open a question by 8 seconds, and resolve it later with evidence.
@@ -87,7 +87,7 @@ node scripts/notebook-video.mjs new-project ./my-video
 node scripts/notebook-video.mjs prepare-browser ./my-video
 ```
 
-Edit `my-video/narration.txt`, `storyboard.md`, `manifests/semantic-caption-lines.txt` and the scene objects. Assign `image-text`, `pure-text` or `pure-graphic` to every scene. Put used rasters in `public/illustrations/` and register them in `manifests/visual-assets.json`. Supply provider-neutral `audio/narration.mp3` and word timing JSON, then build captions, render and verify:
+Edit `my-video/narration.txt`, `storyboard.md`, `manifests/semantic-caption-lines.txt` and the scene objects. The default project is the lecture template: pure code-drawn `pure-text`/`pure-graphic` scenes (add `--classic` to `new-project` for the image-plus-text exemplar after accepting the image add-on). On the default route `manifests/visual-assets.json` stays empty; with the add-on, put used rasters in `public/illustrations/` and register them there. Supply provider-neutral `audio/narration.mp3` and word timing JSON — the bundled `scripts/tts-openai-compatible.py` adapter works with any OpenAI-compatible TTS endpoint — then build captions, render and verify:
 
 ```bash
 node scripts/notebook-video.mjs build-semantic-captions ./my-video/audio/narration.mp3.json ./my-video/manifests/semantic-caption-lines.txt ./my-video/manifests/caption-cues.json --lead-ms 60
@@ -111,10 +111,11 @@ No credentials or API keys are included. The repository stores dependency manife
 ## Repository map
 
 - `SKILL.md` — agent operating contract and enforced workflow.
-- `assets/example-project/` — official runnable Remotion engine.
-- `assets/demo/` — outputs rendered from that engine for public evaluation.
+- `assets/lecture-template/` — default runnable project: the code-drawn lecture route with layered source and a bundled TTS adapter.
+- `assets/example-project/` — classic visual-director exemplar for the optional image add-on.
+- `assets/demo/` — outputs rendered from the engine for public evaluation.
 - `scripts/` — cross-platform project, caption, render, package and QA tools.
-- `references/` — visual-director, image-generation, timing, hook, performance and compatibility contracts.
+- `references/` — lecture-composition, visual-director, image-generation, timing, hook, performance and compatibility contracts.
 - `assets/fonts/` — bundled fonts and original license notices.
 
 ## Validate a change
@@ -122,6 +123,7 @@ No credentials or API keys are included. The repository stores dependency manife
 ```bash
 node scripts/notebook-video.mjs validate-skill
 node scripts/notebook-video.mjs validate-official-example
+node scripts/notebook-video.mjs validate-visual-plan assets/lecture-template
 node scripts/notebook-video.mjs validate-visual-plan assets/example-project
 ```
 
