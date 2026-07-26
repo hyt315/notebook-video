@@ -1,11 +1,13 @@
 ---
 name: notebook-video
-description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion, choosing image-plus-text, pure-text or pure-graphic scenes from meaning and optionally using an available image-generation tool for original support art. Includes native-30fps motion, active-scene mounting, complete exits, Chinese TTS word timing, declarative audio, H.264/AAC rendering, provenance manifests and automated QA. Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine generated images, animated text and diagrams without producing a moving slide deck.
+description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion. The default visual route is lecture composition: multi-zone scenes drawn entirely with code (SVG diagrams, mascots, progressive checklists, annotation stickers) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering, provenance manifests and automated QA. Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
 ---
 
 # Create notebook explainer videos
 
 Build a finished, validated MP4 and editable Remotion project. Treat this as a low-freedom production system, not a visual prompt. Remotion is the only visual rendering engine in the current skill.
+
+**Default visual route: lecture composition.** Every scene is drawn with code (SVG + rich synchronized text), so any AI in any environment can reproduce the established style without an image-generation model — read [references/lecture-composition.md](references/lecture-composition.md) before directing scenes. Image generation is an optional add-on: ask the user once whether they want generated support art for concrete hero scenes, and only then use it for that subset.
 
 ## Use the official engine first
 
@@ -16,11 +18,12 @@ Before changing scenes, read:
 1. [references/locked-style-contract.json](references/locked-style-contract.json)
 2. [references/remotion-architecture.md](references/remotion-architecture.md)
 3. [references/visual-system.md](references/visual-system.md)
-4. [references/official-skills-exemplar.md](references/official-skills-exemplar.md)
-5. [references/performance-design.md](references/performance-design.md)
-6. [references/visual-director.md](references/visual-director.md)
+4. [references/lecture-composition.md](references/lecture-composition.md)
+5. [references/official-skills-exemplar.md](references/official-skills-exemplar.md)
+6. [references/performance-design.md](references/performance-design.md)
+7. [references/visual-director.md](references/visual-director.md)
 
-Start every project by copying `assets/example-project`; do not rebuild the engine from memory. The source project and locked contract are authoritative. Create projects in an empty directory so stale files from an earlier run cannot survive.
+Start every project by copying a bundled template through `new-project`; do not rebuild the engine from memory. The default copy is `assets/lecture-template` (pure code-drawn lecture route); `--classic` copies `assets/example-project`, the visual-director exemplar whose hero scene demonstrates the optional image add-on. The source projects and locked contract are authoritative. Create projects in an empty directory so stale files from an earlier run cannot survive.
 
 Keep these official elements locked until the user approves a future rendered replacement:
 
@@ -41,7 +44,7 @@ Keep these official elements locked until the user approves a future rendered re
 - real slot geometry: insertable parts cross the slot, move behind the front lip and disappear fully;
 - declarative narration and action effects inside the Remotion component tree;
 - font/audio/image asset preload gate before the first frame;
-- a visual plan selecting image-plus-text, pure text or pure graphic from meaning;
+- a visual plan selecting lecture-route pure text/graphic scenes by default, with image-plus-text only after the user accepts the add-on;
 - optional generated imagery as preloaded Remotion assets with prompt, crop and rights records;
 - H.264/AAC output, automated QA, contact sheets and editable source package.
 
@@ -79,7 +82,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./notebook-video-proje
 node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-project
 ```
 
-The copied project is the official 30-second Visual Director project. It is the canonical proof for spacious composition, image-plus-text callouts, pure typography, native SVG relationships, independent work zones, physical slot insertion and validated delivery. Preserve its helpers, subtitle component, background, chapter/header modules, audio tree, image/audio resource gate and final draw order. Replace topic-specific narration, copy, timings, generated or supplied imagery and scene objects.
+The default copy is the lecture template: a validated 30-second film whose source is layered into a locked core, a reusable component library (paper cards, mascot, icons, checklists, rails, gauges) and a clearly marked content layer to rewrite per topic. It is the canonical proof for multi-zone lecture composition, frame-accurate speech sync, demonstrative animation and series component reuse. `new-project ./dir --classic` instead copies the original 30-second Visual Director exemplar (image-plus-text callouts and physical slot insertion) for productions that accepted the image add-on. In both cases preserve the helpers, subtitle component, background, chapter/header modules, audio tree, resource gates and final draw order; replace topic-specific narration, copy, timings, imagery and scene objects.
 
 ## Production workflow
 
@@ -89,21 +92,19 @@ Infer known choices from the conversation. Confirm only choices that materially 
 
 Default to Chinese, 16:9, warm female narration, no prominent BGM and a duration appropriate to the content. Use the cold-open contract in [references/narrative-hook.md](references/narrative-hook.md): lead with a verified consequence or tension in the first 1.5 seconds, open an honest loop by 8 seconds, then return to normal explanation and later pay that loop off with evidence. Give each scene one main idea and one physical action.
 
-Before writing the storyboard, inspect the available image-generation capability and assign one provisional visual mode to every planned scene. Include that mode in the compact narration/storyboard presented before an expensive render when the topic or claims are not already approved. A direct request to continue an established series is sufficient approval to proceed.
+Before writing the storyboard, assign one provisional visual mode to every planned scene along the default lecture route, and ask the user once whether they want the optional image-generation add-on for concrete hero scenes. Include the modes in the compact narration/storyboard presented before an expensive render when the topic or claims are not already approved. A direct request to continue an established series is sufficient approval to proceed.
 
-### 2. Direct the visuals and generate support art
+### 2. Direct the visuals
 
-Read [references/visual-director.md](references/visual-director.md). Before implementing scenes, write a compact visual plan with scene ID, time range, narration purpose, primary mode and complete-exit frame.
+Read [references/lecture-composition.md](references/lecture-composition.md) first; it defines the default route (multi-zone scenes, code-drawn graphics, cue-frame sync, demonstrative animation). Then read [references/visual-director.md](references/visual-director.md) for mode selection details. Before implementing scenes, write a compact visual plan with scene ID, time range, narration purpose, primary mode and complete-exit frame.
 
 Choose the mode from meaning:
 
-- concrete subject, environment or transformation → `image-text`;
+- process, system, quantity or relationship → `pure-graphic` (default for explanations);
 - contrast, slogan, misconception or keyword → `pure-text`;
-- process, system, quantity or relationship → `pure-graphic`.
+- concrete subject, environment or transformation → `pure-graphic` on the default route, or `image-text` only when the user accepted the image add-on.
 
-Inspect the current environment for an authorized image-generation capability. When one is available and the user has not prohibited it, generate original support art by default for concrete hero and explanation scenes where it materially improves the result. In Codex, use the built-in image-generation capability; elsewhere use an equivalent provider, user assets, licensed assets or native SVG. Image generation is an enhancement, never a requirement that blocks production.
-
-Generate bitmaps without baked labels, charts or UI text. Request crop-safe negative space and separated subjects. Put exact Chinese copy, arrows, highlights and diagrams in Remotion. Copy only used images into `public/illustrations/`, register them in `manifests/visual-assets.json`, preload them in `AssetGate`, and animate them with a restrained reveal or push-in plus phrase-timed annotations.
+The add-on question is asked once per production: some environments have no image model and many have weak ones, so generated art is an enhancement the user opts into, never a requirement that blocks production. When offering it, state plainly that the result depends on the image-generation quality of the current tool, and that the built-in image generation in Codex is the best-suited environment for this add-on. When accepted and available, generate bitmaps without baked labels, charts or UI text; request crop-safe negative space and separated subjects; put exact Chinese copy, arrows, highlights and diagrams in Remotion. Copy only used images into `public/illustrations/`, register them in `manifests/visual-assets.json`, preload them in `AssetGate`, and animate them with a restrained reveal or push-in plus phrase-timed annotations. On the default route `visual-assets.json` stays empty.
 
 ```text
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-visual-plan ./notebook-video-project
@@ -121,7 +122,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" sync ./notebook-video-project
 
 Read [references/subtitle-timing.md](references/subtitle-timing.md). Author the semantic lines manually from meaning and speech pauses before binding them to TTS words. Also author `manifests/protected-caption-phrases.txt`; include every product/model name, benchmark name, number-plus-unit expression, fixed technical term and short phrase whose meaning breaks if split. Character count is never allowed to choose a final caption boundary.
 
-The repository does not bundle or install a TTS client. Use an available platform TTS, commercial API, local model or another provider that fits the user's environment. When no paid provider is selected, prefer Microsoft Edge Read Aloud as the zero-key adapter when it is reachable and its terms fit the intended use. Do not hardcode a proxy. Adapt every provider to the same `narration.mp3` and word-timing JSON contract. Never commit generated narration unless its source, voice and redistribution rights are documented. Read [references/tts-audio.md](references/tts-audio.md).
+The repository does not bundle or install a TTS client. Use an available platform TTS, commercial API, local model or another provider that fits the user's environment. The lecture template ships `scripts/tts-openai-compatible.py`, a provider-neutral chapter-segmented adapter for any OpenAI-compatible chat TTS endpoint (configured only through `TTS_API_BASE`/`TTS_API_KEY`/`TTS_MODEL` environment variables); it measures each paragraph's real duration so chapter boundaries and scene cuts never drift, and writes `manifests/chapters.json` with exact chapter frames. When no such endpoint is selected, prefer Microsoft Edge Read Aloud as the zero-key adapter when it is reachable and its terms fit the intended use. Do not hardcode a proxy. Adapt every provider to the same `narration.mp3` and word-timing JSON contract. Never commit generated narration unless its source, voice and redistribution rights are documented. Read [references/tts-audio.md](references/tts-audio.md).
 
 Convert milliseconds to frames once at the data boundary with `Math.round(ms * fps / 1000)`. Components compare integers only. Keep protected phrases, complete clauses and short sentence tails together.
 
@@ -145,12 +146,12 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-layering ./notebook-video
 
 ### 5. Preserve the visual contract
 
-Reuse the exact components in `assets/example-project/src/index.tsx`:
+Reuse the exact components in the copied template (`assets/lecture-template/src/index.tsx`, or `assets/example-project/src/index.tsx` with `--classic`):
 
 - `Background`, `Paper`;
 - `Subtitle`, `Chrome`;
 - `AssetGate`, `Sound`;
-- generated or supplied `Img` layers and their independent callouts;
+- the code-drawn component library (`Mascot`, `LineIcon`, `CheckBadge`, checklists, rails, gauges) or, on the classic route, generated `Img` layers and their independent callouts;
 - stepped-frame helpers `q`, `ease`, `pop`.
 
 Do not replace the subtitle input with a straight box, rounded search bar, dark bordered strip or inner sine line. Do not add global camera motion, random drift, animated noise, heavy blur or unrelated particles.
@@ -235,6 +236,7 @@ Include narration, timing JSON, source, manifests, chosen audio, fonts and licen
 ## Resource map
 
 - [references/locked-style-contract.json](references/locked-style-contract.json): binding tokens, coordinates and rejection flags.
+- [references/lecture-composition.md](references/lecture-composition.md): the default multi-zone code-drawn route, cue-frame sync procedure and self-check list.
 - [references/official-aesthetic-system.md](references/official-aesthetic-system.md): locked aesthetic core and ordinary editable surface.
 - [references/remotion-architecture.md](references/remotion-architecture.md): project structure, data flow and component contracts.
 - [references/official-skills-exemplar.md](references/official-skills-exemplar.md): canonical project and reuse rules.

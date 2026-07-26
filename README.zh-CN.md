@@ -19,9 +19,9 @@
 ## 它解决什么问题
 
 - **一条生产流程：** 脚本、分镜、TTS 时间数据、语义字幕、动效、渲染和质检不再散落。
-- **视觉导演而非套模板：** 具体对象用图片 + 文字，观点冲突用纯文字，流程关系用纯图形，避免整片只剩卡片平移。
-- **生图能力可插拔：** Codex 可直接调用内置生图能力提高上限；其他 Agent 可接等价工具、用户素材、授权素材或原生 SVG，不会被平台锁死。
-- **图片真正参与讲解：** 图片只负责对象和氛围，框选、箭头、文字、图表、时间和退场仍由 Remotion 精确控制。
+- **默认讲课式画面：** 多元素分区场景全部用代码绘制——SVG 示意图、吉祥物、逐条点亮的清单、贴纸标注，全部逐帧对齐旁白；任何环境里的任何 Agent 都能复刻同款风格，不依赖生图模型。
+- **生图是可选附加项：** 开工前向用户询问一次是否启用；效果取决于当前工具的生图质量，在 Codex 里使用内置生图能力最为合适。
+- **图片真正参与讲解：** 启用附加项时，图片只负责对象和氛围，框选、箭头、文字、图表、时间和退场仍由 Remotion 精确控制。
 - **画面可复现：** 2560×1440 暖白工程手账系统直接固化在代码中，不让不同 AI 每次重新猜风格。
 - **中文字幕可读：** 按语义和停顿断句，产品名、数字、单位和固定术语不被拆开。
 - **开头真正留人：** 1.5 秒内给出有依据的爆点或矛盾，8 秒内建立问题，正文用证据回收。
@@ -85,7 +85,7 @@ node scripts/notebook-video.mjs new-project ./my-video
 node scripts/notebook-video.mjs prepare-browser ./my-video
 ```
 
-修改 `my-video/narration.txt`、`storyboard.md`、语义字幕文本和场景对象。先在分镜中为每个镜头选择 `image-text`、`pure-text` 或 `pure-graphic`；用到图片时，把素材放入 `public/illustrations/` 并登记到 `manifests/visual-assets.json`。按 Provider 中立接口提供 `audio/narration.mp3` 与逐词时间 JSON，再生成字幕、渲染并质检：
+修改 `my-video/narration.txt`、`storyboard.md`、语义字幕文本和场景对象。默认拷贝的是讲课式模板（纯代码绘制的 `pure-text`/`pure-graphic` 场景）；用户接受生图附加项后，可用 `new-project ./my-video --classic` 拷贝图文示例工程。默认路线下 `manifests/visual-assets.json` 保持为空；启用附加项时才把素材放入 `public/illustrations/` 并登记。按 Provider 中立接口提供 `audio/narration.mp3` 与逐词时间 JSON（模板自带的 `scripts/tts-openai-compatible.py` 适配任何 OpenAI 兼容 TTS 端点），再生成字幕、渲染并质检：
 
 ```bash
 node scripts/notebook-video.mjs build-semantic-captions ./my-video/audio/narration.mp3.json ./my-video/manifests/semantic-caption-lines.txt ./my-video/manifests/caption-cues.json --lead-ms 60
@@ -109,10 +109,11 @@ node scripts/notebook-video.mjs validate-video ./my-video/renders/final.mp4 EXPE
 ## 仓库结构
 
 - `SKILL.md`：Agent 的完整操作合同和强制流程。
-- `assets/example-project/`：唯一官方 Remotion 渲染引擎。
+- `assets/lecture-template/`：默认工程模板：讲课式纯代码路线，源码分层标注并自带 TTS 适配器。
+- `assets/example-project/`：经典视觉导演示例，供启用生图附加项的制作使用。
 - `assets/demo/`：由官方引擎真实渲染的公开示例。
 - `scripts/`：跨平台工程、字幕、渲染、打包与质检工具。
-- `references/`：视觉导演、生图、时间、开头、性能和兼容性约束。
+- `references/`：讲课式画面、视觉导演、生图、时间、开头、性能和兼容性约束。
 - `assets/fonts/`：内置字体及原始许可证。
 
 ## 验证修改
@@ -120,6 +121,7 @@ node scripts/notebook-video.mjs validate-video ./my-video/renders/final.mp4 EXPE
 ```bash
 node scripts/notebook-video.mjs validate-skill
 node scripts/notebook-video.mjs validate-official-example
+node scripts/notebook-video.mjs validate-visual-plan assets/lecture-template
 node scripts/notebook-video.mjs validate-visual-plan assets/example-project
 ```
 

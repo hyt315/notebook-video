@@ -115,15 +115,21 @@ const checkDeps = async () => {
   console.log(`Remotion production dependencies are ready on ${process.platform}.`);
 };
 
-const newProject = async ([targetArg]) => {
-  if (!targetArg) fail('Usage: notebook-video new-project PROJECT_DIRECTORY', 2);
+const newProject = async (args) => {
+  const classic = args.includes('--classic');
+  const targetArg = args.find((a) => a !== '--classic');
+  if (!targetArg) fail('Usage: notebook-video new-project PROJECT_DIRECTORY [--classic]', 2);
   const target = resolvePath(targetArg);
   if (fs.existsSync(target)) {
     if (!fs.statSync(target).isDirectory()) fail(`Target exists and is not a directory: ${target}`);
     if (fs.readdirSync(target).length > 0) fail(`Target directory must be empty to prevent stale project files: ${target}`);
   } else fs.mkdirSync(target, {recursive: true});
 
-  fs.cpSync(path.join(SKILL_DIR, 'assets', 'example-project'), target, {recursive: true, force: true});
+  // Default is the lecture template: pure code-drawn SVG scenes that work in
+  // every environment. --classic copies the original visual-director exemplar
+  // whose hero scene demonstrates the optional image-generation add-on.
+  const templateDir = classic ? 'example-project' : 'lecture-template';
+  fs.cpSync(path.join(SKILL_DIR, 'assets', templateDir), target, {recursive: true, force: true});
   const fontDir = path.join(SKILL_DIR, 'assets', 'fonts');
   const publicDir = path.join(target, 'public');
   fs.mkdirSync(publicDir, {recursive: true});
@@ -135,7 +141,12 @@ const newProject = async ([targetArg]) => {
     'SmileySans-LICENSE.txt',
   ]) fs.copyFileSync(path.join(fontDir, name), path.join(publicDir, name));
   fs.mkdirSync(path.join(target, 'renders'), {recursive: true});
-  console.log(`Created official v9 visual-director Remotion notebook project: ${target}`);
+  if (classic) {
+    console.log(`Created official v9 visual-director Remotion notebook project: ${target}`);
+  } else {
+    console.log(`Created official lecture-template Remotion notebook project (pure code-drawn SVG default): ${target}`);
+    console.log('Multi-zone lecture composition rules: references/lecture-composition.md. Image generation stays an optional add-on offered separately.');
+  }
   console.log('Preserve the engine, background, subtitle, chrome, asset gate, audio tree and frame conventions. Replace topic content, visual plan, registered imagery and semantic scene objects.');
   console.log('Narration audio is intentionally not bundled. Generate or supply licensed audio, then run sync before rendering.');
 };
@@ -313,7 +324,7 @@ const pythonCommandMap = new Map([
 ]);
 
 const usage = () => {
-  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT\n  validate-visual-plan PROJECT_DIRECTORY\n  validate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
+  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--classic]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT\n  validate-visual-plan PROJECT_DIRECTORY\n  validate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };
 
 const main = async () => {
