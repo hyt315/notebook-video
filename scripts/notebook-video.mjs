@@ -275,13 +275,15 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   const audioStream = streams.find((s) => s.codec_type === 'audio');
   if (!videoStream || !audioStream) fail('Both video and audio streams are required.');
   if (videoStream.codec_name !== 'h264' || audioStream.codec_name !== 'aac') fail('Expected H.264 video and AAC audio.');
-  if (videoStream.width !== 2560 || videoStream.height !== 1440) fail(`Expected 2560x1440, got ${videoStream.width}x${videoStream.height}.`);
+  // Two locked delivery canvases: 2560x1440 (16:9) and 1920x1440 (4:3).
+  const canvasOk = videoStream.height === 1440 && (videoStream.width === 2560 || videoStream.width === 1920);
+  if (!canvasOk) fail(`Expected 2560x1440 or 1920x1440, got ${videoStream.width}x${videoStream.height}.`);
   const expectedFps = Number(process.env.NOTEBOOK_VIDEO_FPS || 30);
   if (videoStream.r_frame_rate !== `${expectedFps}/1`) fail(`Expected ${expectedFps}fps, got ${videoStream.r_frame_rate}.`);
   if (String(audioStream.sample_rate) !== '48000' || Number(audioStream.channels) !== 2) fail('Expected 48kHz stereo audio.');
   const duration = Number(data.format?.duration);
   if (Math.abs(duration - expected) > 0.2) fail(`Duration mismatch: ${duration} vs ${expected}`);
-  console.log(`container valid: H.264/AAC 2560x1440 ${expectedFps}fps, ${duration.toFixed(3)}s`);
+  console.log(`container valid: H.264/AAC ${videoStream.width}x${videoStream.height} ${expectedFps}fps, ${duration.toFixed(3)}s`);
 
   const black = await run('ffmpeg', ['-hide_banner', '-i', video, '-vf', 'blackdetect=d=0.15:pix_th=0.02', '-an', '-f', 'null', '-'], {capture: true, allowFailure: true});
   const blackLog = `${black.stdout}\n${black.stderr}`;

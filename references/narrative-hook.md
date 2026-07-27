@@ -38,6 +38,24 @@ The callback must add evidence or causality, not merely repeat the headline. Exa
 - The normal chapter label may appear after the payoff is legible; it must not cover or delay the hero claim.
 - Make the callback visually related to the opener: reuse the hero object, number, rail, module or status state so the viewer recognizes the answer.
 
+## Three proven first-sentence templates
+
+Write the first spoken sentence from one of these shapes, then verify it against the source material. Data point: result-first openings outperform feature-statement openings by more than 2x on completion rate, and 78% of high-completion videos front-load the core conflict or result.
+
+1. **Result first** — state the verified outcome before any context: "一条命令，能让你写崩的代码一秒回到十分钟前。"
+2. **Curiosity gap** — name a mistake or blind spot most viewers do not know they have: "你花399买的课，GitHub上大概率有人免费开源了。"
+3. **Conflict / contrast** — open on the concrete disaster or before/after gap the video resolves: "两个人改同一个文件，一提交，队友三天的代码直接消失。"
+
+Never open with audience labeling or roadmap sentences ("作为XX专业的学生…", "上一课我们学了…", "这一期我们聊聊…"). Series continuity references belong after the pivot, never in the first sentence.
+
+## First-three-seconds motion density
+
+High-retention openings average close to three visual changes in the first three seconds; a single slow title pop reads as static. Requirements:
+
+- at least **three distinct visual actions** inside the first 90 native frames (hero statement lands, then two supporting elements enter or change state);
+- the hero statement is a full-screen hammer frame (displayL or larger) that lands within 45 frames, with one short accent sound at its landing frame;
+- the regular multi-zone layout and chapter chrome begin only after the hammer frame has been legible for at least 1 second.
+
 ## Opening review gate
 
 Before full render, range-render 0–360 native frames and inspect at 0.5s, 2s, 4s, 8s and 10s. Reject and rewrite the opening when any condition is true:

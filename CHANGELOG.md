@@ -2,6 +2,20 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [1.3.0] - 2026-07-26
+
+### Added
+
+- `references/canvas-modes.md`: two delivery canvases now coexist — 16:9 (2560×1440, default) and 4:3 (1920×1440, taller mobile presence). The mode is asked once at kickoff and decides every layout coordinate; the reference carries the full parameter table (design space, subtitle strip margins, subtitle safe width, two-column budgets), a mechanical 4:3 re-layout procedure and the mobile-readability font floor. Both modes were verified on full-length productions.
+- `references/pacing-rhythm.md`: the energy-curve contract — hammer frames (one full-screen quotable line per 60–90 seconds), fast/slow chapter alternation with per-segment TTS pace instructions, breathing gaps between chapters, reduced density at the close, plus a pre-render pacing gate.
+- Three proven first-sentence templates in `references/narrative-hook.md` (result first / curiosity gap / conflict-contrast) with an action-density gate for the first 3 seconds, and a ban on audience-labeling or roadmap openers.
+
+### Changed
+
+- `SKILL.md` kickoff now asks the canvas mode (16:9 or 4:3) once per production and binds the copywriting step to the cold-open and pacing contracts.
+- `validate-video` accepts both locked canvases (2560×1440 and 1920×1440); the locked style contract defines both modes including subtitle bounds.
+- Lecture template font floor raised for phone readability: body 26 / label 22 / footnote 18 (titles and subtitles unchanged).
+
 ## [1.2.0] - 2026-07-26
 
 ### Added

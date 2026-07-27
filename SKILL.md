@@ -28,7 +28,7 @@ Start every project by copying a bundled template through `new-project`; do not 
 Keep these official elements locked until the user approves a future rendered replacement:
 
 - React + TypeScript + Remotion rendering core;
-- fixed 2560×1440 camera and native 30fps motion, render and delivery;
+- fixed native 30fps motion, render and delivery on one of two locked canvases: 2560×1440 (16:9) or 1920×1440 (4:3), chosen once at kickoff;
 - no duplicate-frame upconversion; use 60fps only when motion is authored natively at 60fps;
 - mount only the active scene, with at most two scenes during a short transition;
 - animate moving objects with transforms instead of per-frame layout properties;
@@ -65,7 +65,7 @@ Unless the user asks for less, deliver:
 4. `visual-assets.json` with source, prompt summary, crop policy and rights for every raster;
 5. Chinese narration plus word timing JSON;
 6. one-line semantic caption cues plus a protected-phrase manifest;
-7. 2560×1440 H.264/AAC MP4;
+7. delivery-canvas H.264/AAC MP4 (2560×1440 or 1920×1440);
 8. 24-frame contact sheet and motion checks for long films;
 9. editable source ZIP with fonts, licenses, audio and manifests.
 
@@ -90,7 +90,9 @@ The default copy is the lecture template: a validated 30-second film whose sourc
 
 Infer known choices from the conversation. Confirm only choices that materially change the result: factual claims, platform/aspect ratio, real brand assets, CTA, voice or music.
 
-Default to Chinese, 16:9, warm female narration, no prominent BGM and a duration appropriate to the content. Use the cold-open contract in [references/narrative-hook.md](references/narrative-hook.md): lead with a verified consequence or tension in the first 1.5 seconds, open an honest loop by 8 seconds, then return to normal explanation and later pay that loop off with evidence. Give each scene one main idea and one physical action.
+Ask the user once at kickoff which canvas mode this production uses: **16:9** (default, landscape players) or **4:3** (taller mobile presence). The answer decides every layout coordinate; read [references/canvas-modes.md](references/canvas-modes.md) for the parameter table shared by both modes.
+
+Default to Chinese, warm female narration, no prominent BGM and a duration appropriate to the content. Use the cold-open contract in [references/narrative-hook.md](references/narrative-hook.md): lead with a verified consequence or tension in the first 1.5 seconds, open an honest loop by 8 seconds, then return to normal explanation and later pay that loop off with evidence. Plan the film's energy curve with [references/pacing-rhythm.md](references/pacing-rhythm.md): hammer frames, fast/slow chapter alternation, chapter breathing and a sparse ending beat. Give each scene one main idea and one physical action.
 
 Before writing the storyboard, assign one provisional visual mode to every planned scene along the default lecture route, and ask the user once whether they want the optional image-generation add-on for concrete hero scenes. Include the modes in the compact narration/storyboard presented before an expensive render when the topic or claims are not already approved. A direct request to continue an established series is sufficient approval to proceed.
 
@@ -189,7 +191,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" render ./notebook-video-project ./
 
 The launcher runs `npm ci` automatically when dependencies are absent. It resolves macOS and Windows paths, invokes the pinned Remotion CLI through Node and uses the same render arguments on both systems. `prepare-browser` may be run once after project creation; restricted environments may provide an exact browser path through `REMOTION_BROWSER_EXECUTABLE`.
 
-Render the composition at 2560×1440 and 30fps. Keep motion, Remotion rendering and final delivery at the same rate. Do not render 30 unique poses into a 60fps duplicate-frame container: it doubles browser work without adding smoothness. Keep the 1920×1080 design coordinate system inside a native 2K composition and scale it by 4/3 so CSS, SVG and text rasterize at delivery resolution. Normalize to about -16 LUFS with a true peak no higher than -1.5dBTP, 48kHz stereo AAC. Preserve video duration and add `faststart`.
+Render the composition at the kickoff canvas (2560×1440 for 16:9, 1920×1440 for 4:3) and 30fps. Keep motion, Remotion rendering and final delivery at the same rate. Do not render 30 unique poses into a 60fps duplicate-frame container: it doubles browser work without adding smoothness. Keep the design coordinate system (1920×1080 or 1440×1080) inside the native composition and scale it by 4/3 so CSS, SVG and text rasterize at delivery resolution. Normalize to about -16 LUFS with a true peak no higher than -1.5dBTP, 48kHz stereo AAC. Preserve video duration and add `faststart`.
 
 Run a short concurrency benchmark once on a new machine, then reuse its recommendation:
 
@@ -212,7 +214,8 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-video ./notebook-video-pr
 
 # Subtitle width is measured inside the real Remotion browser by CaptionFitGate
 # after the exact bundled font loads. The 4/3 delivery scale is converted back
-# to design pixels before comparison with the locked 1334px safe width.
+# to design pixels before comparison with the locked safe width
+# (1334px on 16:9, 1060px on 4:3).
 
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-caption-sync ./notebook-video-project/audio/narration.mp3.json ./notebook-video-project/manifests/caption-cues.json
 
@@ -244,6 +247,8 @@ Include narration, timing JSON, source, manifests, chosen audio, fonts and licen
 - [references/independent-parts.md](references/independent-parts.md): decomposition, stacking and exit rules.
 - [references/motion-design.md](references/motion-design.md): motion curves and scene rhythm.
 - [references/narrative-hook.md](references/narrative-hook.md): binding cold-open, callback and opening review rules.
+- [references/pacing-rhythm.md](references/pacing-rhythm.md): hammer frames, fast/slow chapter alternation, breathing and ending beat.
+- [references/canvas-modes.md](references/canvas-modes.md): 16:9 and 4:3 canvas parameters and the mobile readability type floor.
 - [references/subtitle-timing.md](references/subtitle-timing.md): semantic captions and integer-frame conversion.
 - [references/tts-audio.md](references/tts-audio.md): TTS, declarative effects and mix.
 - [references/quality-checklist.md](references/quality-checklist.md): delivery acceptance criteria.

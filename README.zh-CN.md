@@ -113,7 +113,7 @@ node scripts/notebook-video.mjs validate-video ./my-video/renders/final.mp4 EXPE
 - `assets/example-project/`：经典视觉导演示例，供启用生图附加项的制作使用。
 - `assets/demo/`：由官方引擎真实渲染的公开示例。
 - `scripts/`：跨平台工程、字幕、渲染、打包与质检工具。
-- `references/`：讲课式画面、视觉导演、生图、时间、开头、性能和兼容性约束。
+- `references/`：讲课式画面、双画布模式（16:9 / 4:3）、节奏起伏、视觉导演、生图、时间、开头、性能和兼容性约束。
 - `assets/fonts/`：内置字体及原始许可证。
 
 ## 验证修改
