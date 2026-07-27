@@ -275,9 +275,9 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   const audioStream = streams.find((s) => s.codec_type === 'audio');
   if (!videoStream || !audioStream) fail('Both video and audio streams are required.');
   if (videoStream.codec_name !== 'h264' || audioStream.codec_name !== 'aac') fail('Expected H.264 video and AAC audio.');
-  // Two locked delivery canvases: 2560x1440 (16:9) and 1920x1440 (4:3).
-  const canvasOk = videoStream.height === 1440 && (videoStream.width === 2560 || videoStream.width === 1920);
-  if (!canvasOk) fail(`Expected 2560x1440 or 1920x1440, got ${videoStream.width}x${videoStream.height}.`);
+  // Three locked delivery canvases: 2560x1440 (16:9), 1920x1440 (4:3), 1440x1920 (3:4 portrait).
+  const canvasOk = (videoStream.height === 1440 && (videoStream.width === 2560 || videoStream.width === 1920)) || (videoStream.width === 1440 && videoStream.height === 1920);
+  if (!canvasOk) fail(`Expected 2560x1440, 1920x1440 or 1440x1920, got ${videoStream.width}x${videoStream.height}.`);
   const expectedFps = Number(process.env.NOTEBOOK_VIDEO_FPS || 30);
   if (videoStream.r_frame_rate !== `${expectedFps}/1`) fail(`Expected ${expectedFps}fps, got ${videoStream.r_frame_rate}.`);
   if (String(audioStream.sample_rate) !== '48000' || Number(audioStream.channels) !== 2) fail('Expected 48kHz stereo audio.');

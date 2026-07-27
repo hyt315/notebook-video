@@ -2,6 +2,18 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [1.5.0] - 2026-07-27
+
+### Added
+
+- Third locked canvas: **3:4 portrait** (1440×1920 delivery, 1080×1440 design space) for portrait feeds such as Douyin. Full parameter column in `references/canvas-modes.md` plus a portrait authoring procedure: single-column stacked zones, subtitle strip at the bottom (margins 50, bottom 40, height 104), Smiley subtitle at 40px with a 900px width gate. Verified on a produced pilot; 9:16 was tested and rejected (dead lower band under platform UI).
+- `validate-video` accepts the 1440×1920 container; `validate-visual-plan` canvas gate now knows all three modes and additionally cross-checks the design-space height and the subtitle strip bottom offset.
+- `references/locked-style-contract.json` defines the 3:4 mode (bounds, safe width, per-mode subtitle font sizes).
+
+### Changed
+
+- SKILL.md kickoff question offers three canvases; canvas-modes.md consolidated per-mode subtitle sizes (44 landscape / 40 portrait) that v1.4.0 left stated only for landscape.
+
 ## [1.4.0] - 2026-07-27
 
 ### Added

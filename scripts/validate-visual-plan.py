@@ -16,8 +16,9 @@ ALLOWED_SOURCES = {"ai-generated", "user-supplied", "licensed-third-party"}
 # Locked parameter sets per delivery canvas. A film that mixes values from two
 # modes ships a subtitle strip or design space sized for the other canvas.
 CANVAS_MODES = {
-    2560: {"label": "16:9", "design_width": 1920, "subtitle_safe_width": 1334, "subtitle_margin": 188},
-    1920: {"label": "4:3", "design_width": 1440, "subtitle_safe_width": 1060, "subtitle_margin": 60},
+    2560: {"label": "16:9", "design_width": 1920, "design_height": 1080, "subtitle_safe_width": 1334, "subtitle_margin": 188, "subtitle_bottom": 34},
+    1920: {"label": "4:3", "design_width": 1440, "design_height": 1080, "subtitle_safe_width": 1060, "subtitle_margin": 60, "subtitle_bottom": 34},
+    1440: {"label": "3:4 portrait", "design_width": 1080, "design_height": 1440, "subtitle_safe_width": 900, "subtitle_margin": 50, "subtitle_bottom": 40},
 }
 
 
@@ -33,14 +34,14 @@ def validate_canvas_mode(project: Path) -> list[str]:
     width = int(comp.group(1))
     mode = CANVAS_MODES.get(width)
     if mode is None:
-        return [f"canvas: Composition width {width} is not a locked canvas (2560 or 1920)"]
+        return [f"canvas: Composition width {width} is not a locked canvas (2560, 1920 or 1440)"]
     errors: list[str] = []
     label = mode["label"]
 
-    wrapper = re.search(r"width:(\d+),height:1080,transform:'scale\(", text)
-    if wrapper and int(wrapper.group(1)) != mode["design_width"]:
+    wrapper = re.search(r"width:(\d+),height:(\d+),transform:'scale\(", text)
+    if wrapper and (int(wrapper.group(1)) != mode["design_width"] or int(wrapper.group(2)) != mode["design_height"]):
         errors.append(
-            f"canvas: {label} film wrapper must use design width {mode['design_width']}, found {wrapper.group(1)}"
+            f"canvas: {label} film wrapper must use design space {mode['design_width']}x{mode['design_height']}, found {wrapper.group(1)}x{wrapper.group(2)}"
         )
 
     safe = re.search(r"subtitleSafeWidth:(\d+)", text)
@@ -49,13 +50,17 @@ def validate_canvas_mode(project: Path) -> list[str]:
             f"canvas: {label} subtitleSafeWidth must be {mode['subtitle_safe_width']}, found {safe.group(1)}"
         )
 
-    strip = re.search(r"left:(\d+),right:(\d+),bottom:34,height:112", text)
+    strip = re.search(r"left:(\d+),right:(\d+),bottom:(\d+),height:\d+,zIndex:200", text)
     if strip:
-        left, right = int(strip.group(1)), int(strip.group(2))
+        left, right, bottom = int(strip.group(1)), int(strip.group(2)), int(strip.group(3))
         expected = mode["subtitle_margin"]
         if left != expected or right != expected:
             errors.append(
                 f"canvas: {label} subtitle strip margins must be {expected}/{expected}, found {left}/{right}"
+            )
+        if bottom != mode["subtitle_bottom"]:
+            errors.append(
+                f"canvas: {label} subtitle strip bottom must be {mode['subtitle_bottom']}, found {bottom}"
             )
     return errors
 
