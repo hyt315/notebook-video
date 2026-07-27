@@ -31,6 +31,8 @@ Between chapters insert a breath of 0.5–1 second: the outgoing scene completes
 
 The final chapter drops density on purpose: at most three elements (wrap-up line, mascot, closing card) so the film visibly lands instead of stopping mid-texture.
 
+For knowledge films the closing card is a save hook, not a follow plea: recommendation algorithms weight saves and shares above completion for this genre. Give viewers a concrete reason to save — "点个收藏，下次写崩了翻出来照着敲" names the exact future moment they will need the film — and pair it with a code-drawn star that draws its outline and fills on the spoken word. When the film belongs to a series, add a one-line next-episode teaser under the save card; keep platform references to the compliant "主页可以查看" wording with no account names or links.
+
 ## Review gate
 
 Before the full render, check on the contact sheet or range renders:

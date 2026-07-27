@@ -125,3 +125,12 @@ Answer every question with yes; fix the scene otherwise.
 7. Did the standard QA battery pass (`validate-visual-plan`,
    `validate-layering`, `validate-caption-sync`,
    `validate-semantic-breaks`, `validate-video`)?
+8. Is all reading text pure ink (`C.ink`)? The muted tone is reserved
+   for decorative kickers and struck-through contrast words; body copy
+   in muted gray fails on phone screens.
+9. Do content cards extend down to about 40px above the subtitle strip
+   (bottom edge near y=876 in the 1080 design space)? A film whose
+   lower quarter stays empty wastes exactly the area phones show
+   largest.
+10. Does every SVG element keep at least 24px clearance from its
+    neighbors, with no text label sitting on top of a graphic?

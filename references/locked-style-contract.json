@@ -148,13 +148,8 @@
       38,
       84
     ],
-    "blue_ring_relative_right": 24,
-    "blue_ring_size": [
-      44,
-      44
-    ],
     "text_center_x": 960,
-    "font_px": 40,
+    "font_px": 44,
     "safe_width_px": 1334,
     "horizontal_padding_px": 105,
     "one_line_only": true,
@@ -178,7 +173,10 @@
         1380,
         1046
       ]
-    }
+    },
+    "font_family": "Smiley (SmileySans-Oblique), fallback SourceHan",
+    "letter_spacing_px": 1.2,
+    "right_decoration": "none (blue ring removed in v1.4.0)"
   },
   "timing": {
     "source_unit": "milliseconds",
