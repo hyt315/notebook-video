@@ -39,3 +39,7 @@ microL:18 microS:16
 ```
 
 Display/title tiers and `subtitle:40` stay as in the locked core. Never author content text below 16px design size; if a note only fits below that, cut it or move it into the narration.
+
+## Full-canvas vertical budget
+
+Content must use the full height between the chapter chrome and the subtitle strip: card tops start near y=190 and card bottoms reach about y=876 (40px of breathing room above the strip) in the 1080 design space. Two-column explainer scenes therefore use card heights near 686. An empty lower quarter is a layout defect, not negative space: on a phone the area just above the subtitle is the largest, most-read region of the frame. Bottom-anchored conclusion strips inside each card are the standard way to consume that height.

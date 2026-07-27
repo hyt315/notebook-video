@@ -2,6 +2,19 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [1.4.0] - 2026-07-27
+
+### Added
+
+- Standard delivery pace: the lecture template now ships `scripts/speed-post.py`, a deterministic post-synthesis step (`atempo=1.10`, pitch unchanged, loudness re-normalized) that also scales every timestamp in `narration.mp3.json` and `manifests/chapters.json` by the same factor. Documented in `references/tts-audio.md`; raw teaching-tone synthesis measures ~305 chars/min and prompt wording cannot hit a target pace reliably, so 336 chars/min is fixed in post.
+- Save-hook ending contract in `references/pacing-rhythm.md`: knowledge-genre closing cards ask for a save with a concrete future moment (algorithms weight saves above completion for this genre), pair it with a code-drawn star animation, and keep platform references to the compliant wording without account names or links.
+- Full-canvas vertical budget in `references/canvas-modes.md`: card bottoms reach ~40px above the subtitle strip; an empty lower quarter is a layout defect on phone screens.
+- Three new pre-render self-check items in `references/lecture-composition.md`: body copy is pure ink (muted reserved for decorative kickers), cards consume the vertical budget, and SVG elements keep 24px clearance with no label over a graphic.
+
+### Changed
+
+- Subtitle strip refined: font switches to bundled Smiley Sans (designed for video subtitles, SIL OFL) at 44px with 1.2px tracking; the meaning-free blue ring decoration is removed while the orange locator bar stays. Template, caption width gate and `references/locked-style-contract.json` updated together. Verified on a produced pilot and a full episode.
+
 ## [1.3.1] - 2026-07-26
 
 ### Fixed

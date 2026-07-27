@@ -27,6 +27,10 @@ Why it is the recommended shape for long films: it synthesizes each narration pa
 
 Segment audio is cached by a hash of model, voice and paragraph text, so editing one paragraph re-synthesizes only that paragraph.
 
+## Standard delivery pace
+
+Raw synthesis with a patient teaching prompt lands near 305 characters per minute, which viewers on short-video platforms read as slow. Prompt wording cannot control pace precisely (any "faster" instruction overshoots past 400), so pace is fixed deterministically after synthesis: run the bundled `scripts/speed-post.py PROJECT_DIR 1.10`, which applies `atempo=1.10` (pitch unchanged), re-normalizes loudness, and divides every timestamp in `narration.mp3.json` and `manifests/chapters.json` by the same factor. The result is 336 characters per minute, verified across full productions. Every downstream consumer (captions, scene boundaries, sound tables) stays self-consistent because they all derive from the scaled timing files. Run it once, immediately after synthesis and before building captions; never re-run it on already-scaled output.
+
 ## Zero-key fallback adapter
 
 When no OpenAI-compatible endpoint or paid provider is selected, prefer Edge Read Aloud if the environment can reach it and the intended use fits its terms. For Mandarin, start with a warm neural voice such as `zh-CN-XiaoxiaoNeural`, then adjust rate from the real narration duration rather than from character count.
