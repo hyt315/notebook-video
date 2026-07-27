@@ -14,7 +14,36 @@
     "physical_motion_fps": 30,
     "frame_quantizer": "designStep = designTimelineFps / physicalMotionFps; Math.floor(designFrame / designStep) * designStep",
     "camera": "fixed",
-    "global_motion": false
+    "global_motion": false,
+    "mode_selection": "asked once at kickoff; 16:9 is the default",
+    "modes": {
+      "16:9": {
+        "width": 2560,
+        "height": 1440,
+        "design_width": 1920,
+        "design_height": 1080,
+        "subtitle_bounds": [
+          188,
+          934,
+          1732,
+          1046
+        ],
+        "subtitle_safe_width": 1334
+      },
+      "4:3": {
+        "width": 1920,
+        "height": 1440,
+        "design_width": 1440,
+        "design_height": 1080,
+        "subtitle_bounds": [
+          60,
+          934,
+          1380,
+          1046
+        ],
+        "subtitle_safe_width": 1060
+      }
+    }
   },
   "engine": {
     "language": "TypeScript",
@@ -135,7 +164,21 @@
     "search_bar_ui": false,
     "z": 200,
     "measurement": "browser DOM width after exact font load, converted from delivery scale to design pixels",
-    "measurement_gate": "CaptionFitGate"
+    "measurement_gate": "CaptionFitGate",
+    "bounds_by_mode": {
+      "16:9": [
+        188,
+        934,
+        1732,
+        1046
+      ],
+      "4:3": [
+        60,
+        934,
+        1380,
+        1046
+      ]
+    }
   },
   "timing": {
     "source_unit": "milliseconds",
@@ -228,7 +271,10 @@
     "dynamic_position_via_transform": true,
     "caption_measurement_unmount_after_gate": true,
     "static_surface_animation": false,
-    "concurrency_range": [2, 6],
+    "concurrency_range": [
+      2,
+      6
+    ],
     "range_render_for_iteration": true
   },
   "encoding": {

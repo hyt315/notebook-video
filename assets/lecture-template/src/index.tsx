@@ -31,7 +31,7 @@ const deliveryFrame=(designFrame:number)=>Math.round(designFrame*FPS*TIMELINE_SC
 
 // LOCKED AESTHETIC CORE: ordinary production runs must not edit this block.
 const C={ink:'#2b2924',muted:'#746956',blue:'#2869b7',orange:'#ed5a32',green:'#43866a',gold:'#d2a128',red:'#bd4b3d',navy:'#2d3b4c',paper:'#fffdf7',paperWarm:'#f7ecd8',paperBase:'#f3e4c4',line:'#514a40',white:'#fff'};
-const TYPE={displayXL:58,displayL:50,displayML:45,displayM:43,displayS:36,displayXS:34,titleXL:32,titleL:30,titleM:28,titleS:27,titleXS:26,bodyL:21,bodyM:20,bodyS:19,labelL:18,labelM:17,labelS:16,microL:15,microS:13,subtitle:40};
+const TYPE={displayXL:58,displayL:50,displayML:45,displayM:43,displayS:36,displayXS:34,titleXL:32,titleL:30,titleM:28,titleS:27,titleXS:26,bodyL:26,bodyM:24,bodyS:23,labelL:22,labelM:21,labelS:20,microL:18,microS:16,subtitle:40};
 const AESTHETIC={subtitleSafeWidth:1334,paperRadius:12,paperOutline:1.6,textureOpacity:.026,gridOpacity:.09,gradeWarmth:.055,gradeVignette:.06};
 
 // EDITABLE CONTENT SURFACE — 换题材时从这里开始改

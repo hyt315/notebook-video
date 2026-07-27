@@ -115,7 +115,7 @@ No credentials or API keys are included. The repository stores dependency manife
 - `assets/example-project/` — classic visual-director exemplar for the optional image add-on.
 - `assets/demo/` — outputs rendered from the engine for public evaluation.
 - `scripts/` — cross-platform project, caption, render, package and QA tools.
-- `references/` — lecture-composition, visual-director, image-generation, timing, hook, performance and compatibility contracts.
+- `references/` — lecture-composition, canvas-modes (16:9 / 4:3), pacing-rhythm, visual-director, image-generation, timing, hook, performance and compatibility contracts.
 - `assets/fonts/` — bundled fonts and original license notices.
 
 ## Validate a change
