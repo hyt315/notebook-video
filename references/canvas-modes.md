@@ -22,10 +22,11 @@ Vertical space is identical in both modes (1080 design height); only horizontal 
 
 ## Authoring a 4:3 film
 
-1. Start from the lecture template, then set the four 4:3 values above in `src/index.tsx` (`Composition` width, Film wrapper width, subtitle margins, `subtitleSafeWidth`).
+1. Start from the lecture template, then set the four 4:3 values above in `src/index.tsx` (`Composition` width, Film wrapper width, subtitle margins, `subtitleSafeWidth`). All four must change together — a real production shipped a 4:3 film with 16:9 subtitle margins because one of the four was missed.
 2. Lay out scenes in the 1440-wide space. Convert a 16:9 two-column scene by narrowing both cards (not by dropping a zone); wide SVG diagrams may be wrapped in `transform:scale(0.85)` with `transformOrigin:'0 0'` instead of redrawing.
 3. Caption lines must pass the 1060px width gate; prefer splitting a long semantic line over shrinking the subtitle font.
 4. `validate-video` accepts both 2560×1440 and 1920×1440 containers; every other QA gate is unchanged.
+5. `validate-visual-plan` cross-checks the four values against the `Composition` width and fails on any mixed-mode file, so run it before every render.
 
 ## Mobile readability type floor (both modes)
 

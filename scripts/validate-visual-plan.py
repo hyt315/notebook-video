@@ -1,16 +1,63 @@
 #!/usr/bin/env python3
-"""Validate visual modes, scene lifetimes and raster-asset provenance."""
+"""Validate visual modes, scene lifetimes, raster-asset provenance and canvas-mode consistency."""
 
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 
 
 ALLOWED_MODES = {"image-text", "pure-text", "pure-graphic"}
 ALLOWED_SOURCES = {"ai-generated", "user-supplied", "licensed-third-party"}
+
+# Locked parameter sets per delivery canvas. A film that mixes values from two
+# modes ships a subtitle strip or design space sized for the other canvas.
+CANVAS_MODES = {
+    2560: {"label": "16:9", "design_width": 1920, "subtitle_safe_width": 1334, "subtitle_margin": 188},
+    1920: {"label": "4:3", "design_width": 1440, "subtitle_safe_width": 1060, "subtitle_margin": 60},
+}
+
+
+def validate_canvas_mode(project: Path) -> list[str]:
+    """Cross-check composition width, design wrapper, subtitle safe width and strip margins."""
+    src = project / "src" / "index.tsx"
+    if not src.is_file():
+        return []
+    text = src.read_text(encoding="utf-8")
+    comp = re.search(r"<Composition[^>]*width=\{(\d+)\}", text)
+    if not comp:
+        return []
+    width = int(comp.group(1))
+    mode = CANVAS_MODES.get(width)
+    if mode is None:
+        return [f"canvas: Composition width {width} is not a locked canvas (2560 or 1920)"]
+    errors: list[str] = []
+    label = mode["label"]
+
+    wrapper = re.search(r"width:(\d+),height:1080,transform:'scale\(", text)
+    if wrapper and int(wrapper.group(1)) != mode["design_width"]:
+        errors.append(
+            f"canvas: {label} film wrapper must use design width {mode['design_width']}, found {wrapper.group(1)}"
+        )
+
+    safe = re.search(r"subtitleSafeWidth:(\d+)", text)
+    if safe and int(safe.group(1)) != mode["subtitle_safe_width"]:
+        errors.append(
+            f"canvas: {label} subtitleSafeWidth must be {mode['subtitle_safe_width']}, found {safe.group(1)}"
+        )
+
+    strip = re.search(r"left:(\d+),right:(\d+),bottom:34,height:112", text)
+    if strip:
+        left, right = int(strip.group(1)), int(strip.group(2))
+        expected = mode["subtitle_margin"]
+        if left != expected or right != expected:
+            errors.append(
+                f"canvas: {label} subtitle strip margins must be {expected}/{expected}, found {left}/{right}"
+            )
+    return errors
 
 
 def validate(project: Path) -> list[str]:
@@ -99,6 +146,7 @@ def validate(project: Path) -> list[str]:
         errors.append(f"visual asset IDs differ between manifests: {sorted(declared)} != {sorted(asset_ids)}")
     if scene_asset_ids != declared:
         errors.append(f"scene visual asset IDs differ from project declaration: {sorted(scene_asset_ids)} != {sorted(declared)}")
+    errors.extend(validate_canvas_mode(project))
     return errors
 
 

@@ -2,6 +2,13 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [1.3.1] - 2026-07-26
+
+### Fixed
+
+- `validate-visual-plan` now cross-checks canvas-mode consistency inside `src/index.tsx`: the `Composition` width (2560 or 1920) must agree with the film wrapper design width, `subtitleSafeWidth` and the subtitle strip margins. A mixed-mode file — for example a 4:3 film keeping the 16:9 subtitle margins, which shipped once and misplaced the subtitle strip — now fails validation with a precise error instead of passing silently.
+- `references/canvas-modes.md` marks the four 4:3 values as change-together and adds the pre-render `validate-visual-plan` step.
+
 ## [1.3.0] - 2026-07-26
 
 ### Added
