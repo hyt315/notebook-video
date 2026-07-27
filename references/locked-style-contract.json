@@ -42,6 +42,20 @@
           1046
         ],
         "subtitle_safe_width": 1060
+      },
+      "3:4": {
+        "width": 1440,
+        "height": 1920,
+        "design_width": 1080,
+        "design_height": 1440,
+        "subtitle_bounds": [
+          50,
+          1296,
+          1030,
+          1400
+        ],
+        "subtitle_safe_width": 900,
+        "subtitle_font_px": 40
       }
     }
   },
@@ -172,11 +186,22 @@
         934,
         1380,
         1046
+      ],
+      "3:4": [
+        50,
+        1296,
+        1030,
+        1400
       ]
     },
     "font_family": "Smiley (SmileySans-Oblique), fallback SourceHan",
     "letter_spacing_px": 1.2,
-    "right_decoration": "none (blue ring removed in v1.4.0)"
+    "right_decoration": "none (blue ring removed in v1.4.0)",
+    "font_px_by_mode": {
+      "16:9": 44,
+      "4:3": 44,
+      "3:4": 40
+    }
   },
   "timing": {
     "source_unit": "milliseconds",
