@@ -2,6 +2,17 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [1.6.0] - 2026-07-27
+
+### Added
+
+- `references/portrait-illustration-system.md`: the illustration-first grammar for 3:4 portrait, verified on a produced pilot. Codifies the text-vs-graphic role split (in-scene text is a short label; full narration lives in the subtitle strip), a reusable code-drawn figure cast with subtle idle motion, a persistent faint **Ambient** scatter layer that removes empty negative space, a text-emphasis kit (highlighter marker, hand-drawn underline, contrast label pair, fast pop count-up), the three-band scene structure (heading / hero illustration / payoff), and proven process/checklist/end beat patterns.
+- Guardrails carried into the doc: author strictly in the 1080×1440 design space (coordinates beyond 1080 clip), keep chapter-chrome `stage` boundaries identical to the scene-cut frames, and check the contact sheet for any transient mostly-background frame or a `0`-dwelling counter.
+
+### Changed
+
+- SKILL.md portrait kickoff now points to `references/portrait-illustration-system.md` alongside `canvas-modes.md`.
+
 ## [1.5.0] - 2026-07-27
 
 ### Added
