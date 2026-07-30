@@ -69,3 +69,13 @@ Patterns proven on the pilot:
 - **Author in the 1080×1440 design space, not 1440×1920.** The film wraps content in a 1080×1440 layer scaled ×1.333; coordinates beyond width 1080 overflow the right edge and get clipped. Full cards ≤980 wide, center axis x=540.
 - **Chapter chrome boundaries must equal the scene-cut frames.** After setting scene frame ranges, set `Chrome` `stage` boundaries and the `FinalDemo` switch to the *same* frames; a mismatch shows the wrong chapter title over a scene.
 - **No transient empty frame and no `0`-dwell counter** — check the contact sheet for a frame that is mostly background; if found, enlarge the current hero or bring the next element's reveal earlier.
+- **An icon must fit inside its container.** Render an inline SVG smaller than the box that holds it (e.g. a 34px glyph in a 48px chip); a glyph as large as or larger than its frame spills over the rounded corners and reads as broken.
+- **Stacked panels and lines need real vertical gaps.** Leave ≥50px between a card's bottom edge and the next line or number below it; a box whose bottom just touches the following text looks like an overlap bug on a phone.
+
+## 7. Choosing the vehicle: text and graphics stay co-stars
+
+The illustration-first rule in section 1 is about *role* (short in-scene labels, with the full narration in the subtitle strip) — it is **not** a mandate to draw everything. Over-correcting into all-illustration-plus-labels drops the lecture route's core property that the viewer can learn from the text alone. Pick the vehicle per beat by what the beat is:
+
+- **Text-forward** — a titled `Paper` panel, a ticking checklist, good/bad comparison cards, or a big pull-number: use for definitions, principles, rules, lists, sources, comparisons, warnings and shock numbers. Give the text real typographic treatment; do not shrink it to a lone label under a big picture.
+- **Graphic-forward** — the illustration is the hero and text is a short label: use for scenes, processes, objects, transformations and relationships.
+- **Either way, the beat must stand alone** — legible from the text alone or from the animation alone. A three-step "what to do" list is a checklist, not three drawings; a scam phone call is a scene, not a bullet list.

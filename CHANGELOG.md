@@ -2,6 +2,12 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [1.6.1] - 2026-07-30
+
+### Changed
+
+- `references/portrait-illustration-system.md` gains a "choosing the vehicle" section: illustration-first is about role, not a mandate to draw everything — pick text-forward panels/checklists for definitions, lists, comparisons, sources and shock numbers, and illustration for scenes/processes, with every beat legible from the text alone or the animation alone. Two guardrails added: an inline icon must render smaller than its container box (or it spills over the corners), and stacked panels/lines need ≥50px vertical gaps to avoid a phone-screen overlap.
+
 ## [1.6.0] - 2026-07-27
 
 ### Added
