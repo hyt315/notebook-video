@@ -31,6 +31,20 @@ Segment audio is cached by a hash of model, voice and paragraph text, so editing
 
 Raw synthesis with a patient teaching prompt lands near 305 characters per minute, which viewers on short-video platforms read as slow. Prompt wording cannot control pace precisely (any "faster" instruction overshoots past 400), so pace is fixed deterministically after synthesis: run the bundled `scripts/speed-post.py PROJECT_DIR 1.10`, which applies `atempo=1.10` (pitch unchanged), re-normalizes loudness, and divides every timestamp in `narration.mp3.json` and `manifests/chapters.json` by the same factor. The result is 336 characters per minute, verified across full productions. Every downstream consumer (captions, scene boundaries, sound tables) stays self-consistent because they all derive from the scaled timing files. Run it once, immediately after synthesis and before building captions; never re-run it on already-scaled output.
 
+## Polyphone handling
+
+Chinese TTS is unreliable on polyphones (多音字): one character has several readings and the model guesses from context, so 重装 ("reinstall", 重 = chóng) is often voiced as zhòng. The adapter feeds plain narration text with no pinyin/SSML channel, and `narration.txt` is also the subtitle source, so a wrong reading cannot be patched after synthesis.
+
+Fix it at the source. While writing `narration.txt`, rewrite every easily-misread polyphone into a reading-unambiguous, meaning-equivalent phrase, and mirror the same edit into `manifests/semantic-caption-lines.txt`. This removes the ambiguity entirely (100% reliable) instead of hoping the model reads context correctly, and keeping the replacement close in character count means chapter frames barely shift. Production-verified rewrites:
+
+- 重装（电脑/系统）→ 重新装（重 zhòng vs chóng）
+- 批量重命名 → 批量重新命名（重）
+- 输一行命令 → 输入一条命令（行 háng vs xíng）
+- 钉在屏幕上 → 贴在屏幕上（钉 dìng vs dīng）
+- 一模一样 → 长得一样（模 mú vs mó）
+
+Also update any on-screen card text that echoes the rewritten phrase so caption, narration and graphics stay consistent. Polyphones a modern model usually reads correctly in context (调色 tiáo, 时长 cháng, 模型 mó) may stay, but spot-check them at QA. When a mispronunciation still slips through, edit `narration.txt` at the source and re-run synthesis → speed-post → captions → render; never attempt a post-hoc audio patch.
+
 ## Zero-key fallback adapter
 
 When no OpenAI-compatible endpoint or paid provider is selected, prefer Edge Read Aloud if the environment can reach it and the intended use fits its terms. For Mandarin, start with a warm neural voice such as `zh-CN-XiaoxiaoNeural`, then adjust rate from the real narration duration rather than from character count.
