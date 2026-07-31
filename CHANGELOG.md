@@ -2,6 +2,12 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [1.6.2] - 2026-07-31
+
+### Changed
+
+- `references/tts-audio.md` and the SKILL.md TTS step add a **polyphone (多音字) handling** rule: rewrite easily-misread polyphones into reading-unambiguous, meaning-equivalent phrases directly in `narration.txt` (and mirror them into `manifests/semantic-caption-lines.txt`) instead of relying on TTS context or SSML. The adapter feeds plain text with no pinyin channel and the narration doubles as subtitle text, so a wrong reading can only be prevented at the source; keeping replacements close in character count means chapter frames barely shift. Ships a table of production-verified rewrites (重装→重新装, 批量重命名→批量重新命名, 输一行命令→输入一条命令, 钉在屏幕上→贴在屏幕上, 一模一样→长得一样) and a reminder to update matching on-screen card text.
+
 ## [1.6.1] - 2026-07-30
 
 ### Changed
