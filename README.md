@@ -7,9 +7,11 @@
 **简体中文 · [English](./README.en.md)**
 
 [![License: MIT](https://img.shields.io/github/license/hyt315/notebook-video)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](SKILL.md)
 [![Remotion](https://img.shields.io/badge/Remotion-4.0-ff6b6b)](https://remotion.dev)
+[![Stars](https://img.shields.io/github/stars/hyt315/notebook-video?style=social)](https://github.com/hyt315/notebook-video/stargazers)
 
 </div>
 
@@ -30,6 +32,16 @@
 | 📐 **三种画布** | 16:9（2560×1440）、4:3（1920×1440）、3:4 竖屏，移动端可读性字号下限内置 |
 | ✅ **自动化 QA** | 字幕宽度实测门（CaptionFitGate）、分层校验、语义断句校验、视觉计划校验等多道质量门 |
 | 🔄 **跨平台统一命令** | 同一个 Node 启动器在 macOS Terminal / Windows CMD / PowerShell 下行为一致 |
+
+---
+
+## 📚 演示示例
+
+![Notebook Video 成片演示](assets/demo/notebook-video-demo.webp)
+
+▶️ [观看完整演示视频（MP4）](assets/demo/notebook-video-demo.mp4) · 主视觉参考：[hero.png](assets/demo/hero.png)
+
+> 以上即 lecture-template 路线的真实产出风格：暖白手账底、代码绘制的多区域场景、词级同步字幕。
 
 ---
 
