@@ -7,9 +7,11 @@
 **English · [简体中文](./README.md)**
 
 [![License: MIT](https://img.shields.io/github/license/hyt315/notebook-video)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](SKILL.md)
 [![Remotion](https://img.shields.io/badge/Remotion-4.0-ff6b6b)](https://remotion.dev)
+[![Stars](https://img.shields.io/github/stars/hyt315/notebook-video?style=social)](https://github.com/hyt315/notebook-video/stargazers)
 
 </div>
 
@@ -30,6 +32,16 @@ Science explainers, notebook-style animations, product promos, concept walkthrou
 | 📐 **Three canvases** | 16:9 (2560×1440), 4:3 (1920×1440), 3:4 portrait, with a built-in mobile-readability type floor |
 | ✅ **Automated QA** | Caption width measured gate (CaptionFitGate), layering validation, semantic break validation, visual plan validation and more |
 | 🔄 **Cross-platform unified commands** | One Node launcher behaves identically on macOS Terminal / Windows CMD / PowerShell |
+
+---
+
+## 📚 Demo
+
+![Notebook Video demo](assets/demo/notebook-video-demo.webp)
+
+▶️ [Watch the full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · Hero visual: [hero.png](assets/demo/hero.png)
+
+> This is the real output style of the lecture-template route: warm-ivory notebook surface, code-drawn multi-zone scenes, word-level synced captions.
 
 ---
 
