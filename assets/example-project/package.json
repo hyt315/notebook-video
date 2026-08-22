@@ -14,8 +14,8 @@
     "@remotion/cli": "4.0.489",
     "@remotion/media": "4.0.489",
     "remotion": "4.0.489",
-    "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {}
 }
