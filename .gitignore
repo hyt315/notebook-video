@@ -17,3 +17,6 @@ Thumbs.db
 !.env.example
 *.key
 *.pem
+
+# Mimosa 安全扫描插件本地工作目录
+.mimosa/
