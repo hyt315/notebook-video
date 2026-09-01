@@ -83,16 +83,16 @@
     "white": "#ffffff"
   },
   "background": {
-    "outer_gradient": "radial-gradient(circle at 18% 10%,#fff9e7 0,#eeddbb 44%,#c89f6b 82%,#a57a4f 100%)",
+    "outer_gradient": null,
     "page_bounds": [
-      42,
-      28,
-      1878,
-      1052
+      0,
+      0,
+      1920,
+      1080
     ],
     "page": "#f3e4c4",
-    "page_outline": "rgba(73,60,43,.40)",
-    "page_shadow": "22px 27px 0 rgba(75,57,38,.25), 0 56px 104px rgba(42,25,12,.23), inset 0 1px 0 rgba(255,255,255,.42)",
+    "page_outline": null,
+    "page_shadow": null,
     "inner_bounds": [
       72,
       58,

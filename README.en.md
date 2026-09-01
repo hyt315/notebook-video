@@ -41,6 +41,14 @@ Science explainers, notebook-style animations, product promos, concept walkthrou
 
 ▶️ [Watch the full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · Hero visual: [hero.png](assets/demo/hero.png)
 
+**Three canvas versions** (same project, switched by the `CANVAS` flag):
+
+| Canvas | Preview | Download |
+| --- | --- | --- |
+| 16:9 landscape (default) | [![16:9](assets/demo/notebook-video-demo.webp)](assets/demo/notebook-video-demo.mp4) | [notebook-video-demo.mp4](assets/demo/notebook-video-demo.mp4) |
+| 4:3 mobile-friendly | [![4:3](assets/demo/notebook-video-demo-43.webp)](assets/demo/notebook-video-demo-43.mp4) | [notebook-video-demo-43.mp4](assets/demo/notebook-video-demo-43.mp4) |
+| 3:4 portrait (Douyin) | [![3:4](assets/demo/notebook-video-demo-34.webp)](assets/demo/notebook-video-demo-34.mp4) | [notebook-video-demo-34.mp4](assets/demo/notebook-video-demo-34.mp4) |
+
 > This is the real output style of the lecture-template route: warm-ivory notebook surface, code-drawn multi-zone scenes, word-level synced captions.
 
 ---

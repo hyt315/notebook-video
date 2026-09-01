@@ -42,8 +42,10 @@ def synthesize(api_base, api_key, model, voice, style_prompt, text, out_wav, ret
     if style_prompt:
         messages.append({"role": "user", "content": style_prompt})
     messages.append({"role": "assistant", "content": text})
-    payload = {"model": model, "messages": messages,
-               "audio": {"format": "wav", "voice": voice}}
+    audio_opts = {"format": "wav"}
+    if voice:
+        audio_opts["voice"] = voice
+    payload = {"model": model, "messages": messages, "audio": audio_opts}
     last = None
     for attempt in range(retries):
         try:

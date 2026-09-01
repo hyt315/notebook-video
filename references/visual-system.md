@@ -14,12 +14,10 @@ Treat this as a low-freedom system. Copy the canonical components from `assets/e
 
 Use the official `Background` implementation unchanged:
 
-- warm radial desk outside the page;
-- ivory page from `(42,28)` to `(1878,1052)`;
-- inner rule from `(72,58)` to `(1848,1020)`;
-- 54px low-contrast grid;
+- full-canvas ivory surface (`C.paperBase`) with no outer desk band, page outline or page shadow — the paper is the frame itself, so no nested frame rings appear on small screens;
+- 54px low-contrast grid inside the inner rule, `(72,58)` to `(1848,1020)`;
 - static restrained dot texture controlled by `AESTHETIC.textureOpacity`;
-- fixed shadows and no frame-to-frame texture change.
+- no frame-to-frame texture change.
 
 Background marks remain subordinate to all semantic objects.
 

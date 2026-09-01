@@ -2,6 +2,23 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [1.7.0] - 2026-09-01
+
+### Changed
+
+- **Background redesigned to a full-canvas paper surface** (`Background` in the lecture template): the warm radial desk band outside the page, the 1.7px page outline and the offset page shadow are removed. The ivory surface (`C.paperBase`) now covers the whole canvas; the 54px grid and static dot texture stay inside the inner rule. On narrow/phone frames the paper is no longer surrounded by nested rails and rings.
+- **Card text alignment fixes** in the lecture template: node card labels (`仓库/Star/Issue/Fork/PR`) are drawn inside the card whitespace instead of hanging below the card edge, and the step list in the contribution scene is compacted (item height 56→48, gap 12→8, container `top/bottom` 120/96→116/104) so the bottom `github-oss-contribute` pill no longer overlaps the fourth step.
+- **TTS adapter** (`tts-openai-compatible.py`): the `voice` field is now omitted when empty instead of sending `"voice": ""` — MiMo voicedesign models reject the empty string with HTTP 400.
+- **Demo assets replaced**: `assets/demo/notebook-video-demo.mp4` (1280×720) and `notebook-video-demo.webp` are fresh renders of the updated template with chapter-synced narration, no black/letterbox frames and the new full-canvas background. New canvas variants were added: `notebook-video-demo-43.mp4` (4:3) and `notebook-video-demo-34.mp4` (3:4 portrait) with matching animated webp previews, and the READMEs now show a three-canvas demo gallery.
+
+### Added
+
+- **One template, three canvases**: the lecture template ships a `CANVAS` switch (`'16:9' | '4:3' | '3:4'`) in `src/index.tsx`. Composition, film wrapper, subtitle strip, chrome and safe-width values come from the locked per-mode table; the 4:3 landscape reuses the landscape scene set inside a scaled wrapper, and the 3:4 portrait film uses its own single-column `*P` scene set (verified in the rendered demo). The template caption data set was refreshed to the 30s chapter-synced timeline (scene cuts 216/396/600).
+
+### Docs
+
+- `references/visual-system.md` background section and `references/locked-style-contract.json` background tokens updated to the full-canvas contract (`outer_gradient`/`page_outline`/`page_shadow` now `null`, `page_bounds` = full canvas).
+
 ## [1.6.2] - 2026-07-31
 
 ### Changed

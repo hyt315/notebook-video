@@ -1,6 +1,6 @@
 # Canvas modes: 16:9, 4:3 and 3:4 portrait
 
-Three delivery canvases coexist in this skill. Ask the user once at kickoff which one this production uses; the answer decides every layout coordinate for the film. All modes share the same aesthetic core, component library, subtitle pipeline, TTS workflow and QA gates. Nothing else about the production changes.
+Three delivery canvases coexist in this skill. Ask the user once at kickoff which one this production uses; the answer decides every layout coordinate for the film. Since v1.7.0 the lecture template ships all three layouts behind the `CANVAS` constant in `assets/lecture-template/src/index.tsx` (`'16:9' | '4:3' | '3:4'`): composition, wrapper, subtitle strip, chrome and safe-width values apply automatically, and the portrait film uses its bundled `*P` scene set. The tables below remain authoritative for custom layouts. All modes share the same aesthetic core, component library, subtitle pipeline, TTS workflow and QA gates. Nothing else about the production changes.
 
 - **16:9** is the default for landscape platforms with a 16:9 player (for example Bilibili).
 - **4:3** trades side width for a taller mobile presence: on a phone feed the same fonts render about one third larger. Choose it for landscape films whose primary audience watches on phones.

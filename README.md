@@ -41,6 +41,14 @@
 
 ▶️ [观看完整演示视频（MP4）](assets/demo/notebook-video-demo.mp4) · 主视觉参考：[hero.png](assets/demo/hero.png)
 
+**三种画幅版本**（同一工程，`CANVAS` 开关切换）：
+
+| 画幅 | 预览 | 下载 |
+| --- | --- | --- |
+| 16:9 横屏（默认） | [![16:9](assets/demo/notebook-video-demo.webp)](assets/demo/notebook-video-demo.mp4) | [notebook-video-demo.mp4](assets/demo/notebook-video-demo.mp4) |
+| 4:3 竖屏友好 | [![4:3](assets/demo/notebook-video-demo-43.webp)](assets/demo/notebook-video-demo-43.mp4) | [notebook-video-demo-43.mp4](assets/demo/notebook-video-demo-43.mp4) |
+| 3:4 竖屏（抖音） | [![3:4](assets/demo/notebook-video-demo-34.webp)](assets/demo/notebook-video-demo-34.mp4) | [notebook-video-demo-34.mp4](assets/demo/notebook-video-demo-34.mp4) |
+
 > 以上即 lecture-template 路线的真实产出风格：暖白手账底、代码绘制的多区域场景、词级同步字幕。
 
 ---
