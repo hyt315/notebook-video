@@ -106,7 +106,7 @@ Choose the mode from meaning:
 - contrast, slogan, misconception or keyword → `pure-text`;
 - concrete subject, environment or transformation → `pure-graphic` on the default route, or `image-text` only when the user accepted the image add-on.
 
-The add-on question is asked once per production: some environments have no image model and many have weak ones, so generated art is an enhancement the user opts into, never a requirement that blocks production. When offering it, state plainly that the result depends on the image-generation quality of the current tool, and that the built-in image generation in Codex is the best-suited environment for this add-on. When accepted and available, generate bitmaps without baked labels, charts or UI text; request crop-safe negative space and separated subjects; put exact Chinese copy, arrows, highlights and diagrams in Remotion. Copy only used images into `public/illustrations/`, register them in `manifests/visual-assets.json`, preload them in `AssetGate`, and animate them with a restrained reveal or push-in plus phrase-timed annotations. On the default route `visual-assets.json` stays empty.
+The add-on question is asked once per production: some environments have no image model and many have weak ones, so generated art is an enhancement the user opts into, never a requirement that blocks production. When offering it, state plainly that the result depends on the image-generation quality of the current tool, and that the built-in image generation in Codex is the best-suited environment for this add-on. When accepted and available, generate bitmaps without baked labels, charts or UI text; request crop-safe negative space and separated subjects; put exact Chinese copy, arrows, highlights and diagrams in Remotion. Copy only used images into `public/illustrations/`, register them in `assets/lecture-template/manifests/visual-assets.json`, preload them in `AssetGate`, and animate them with a restrained reveal or push-in plus phrase-timed annotations. On the default route `visual-assets.json` stays empty.
 
 ```text
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-visual-plan ./notebook-video-project
@@ -122,11 +122,11 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" build-semantic-captions ./notebook
 node "<SKILL_DIR>/scripts/notebook-video.mjs" sync ./notebook-video-project
 ```
 
-Read [references/subtitle-timing.md](references/subtitle-timing.md). Author the semantic lines manually from meaning and speech pauses before binding them to TTS words. Also author `manifests/protected-caption-phrases.txt`; include every product/model name, benchmark name, number-plus-unit expression, fixed technical term and short phrase whose meaning breaks if split. Character count is never allowed to choose a final caption boundary.
+Read [references/subtitle-timing.md](references/subtitle-timing.md). Author the semantic lines manually from meaning and speech pauses before binding them to TTS words. Also author `assets/lecture-template/manifests/protected-caption-phrases.txt`; include every product/model name, benchmark name, number-plus-unit expression, fixed technical term and short phrase whose meaning breaks if split. Character count is never allowed to choose a final caption boundary.
 
 Rewrite easily-misread polyphones (多音字) into reading-unambiguous synonyms directly in the narration source (e.g. 重装→重新装, 输一行命令→输入一条命令, 一模一样→长得一样) and mirror the edit into the caption lines: the TTS path has no reliable pinyin/SSML channel and `narration.txt` doubles as the subtitle text, so a wrong reading can only be prevented at the source. See [references/tts-audio.md](references/tts-audio.md).
 
-The repository does not bundle or install a TTS client. Use an available platform TTS, commercial API, local model or another provider that fits the user's environment. The lecture template ships `scripts/tts-openai-compatible.py`, a provider-neutral chapter-segmented adapter for any OpenAI-compatible chat TTS endpoint (configured only through `TTS_API_BASE`/`TTS_API_KEY`/`TTS_MODEL` environment variables); it measures each paragraph's real duration so chapter boundaries and scene cuts never drift, and writes `manifests/chapters.json` with exact chapter frames. When no such endpoint is selected, prefer Microsoft Edge Read Aloud as the zero-key adapter when it is reachable and its terms fit the intended use. Do not hardcode a proxy. Adapt every provider to the same `narration.mp3` and word-timing JSON contract. Never commit generated narration unless its source, voice and redistribution rights are documented. Read [references/tts-audio.md](references/tts-audio.md).
+The repository does not bundle or install a TTS client. Use an available platform TTS, commercial API, local model or another provider that fits the user's environment. The lecture template ships `assets/lecture-template/scripts/tts-openai-compatible.py`, a provider-neutral chapter-segmented adapter for any OpenAI-compatible chat TTS endpoint (configured only through `TTS_API_BASE`/`TTS_API_KEY`/`TTS_MODEL` environment variables); it measures each paragraph's real duration so chapter boundaries and scene cuts never drift, and writes `chapters.json` with exact chapter frames (into the project `manifests/` folder). When no such endpoint is selected, prefer Microsoft Edge Read Aloud as the zero-key adapter when it is reachable and its terms fit the intended use. Do not hardcode a proxy. Adapt every provider to the same `narration.mp3` and word-timing JSON contract. Never commit generated narration unless its source, voice and redistribution rights are documented. Read [references/tts-audio.md](references/tts-audio.md).
 
 Convert milliseconds to frames once at the data boundary with `Math.round(ms * fps / 1000)`. Components compare integers only. Keep protected phrases, complete clauses and short sentence tails together.
 
@@ -183,7 +183,7 @@ Use effects only on visible actions. Keep speech primary. Do not add an untracke
 
 ### 8. Preload assets
 
-Keep `AssetGate` active. Wait for `document.fonts.ready` and all audio/image assets before `continueRender()`. Register every raster in `manifests/visual-assets.json`; unused generations do not belong in the project. Never remove the gate to make a render start faster.
+Keep `AssetGate` active. Wait for `document.fonts.ready` and all audio/image assets before `continueRender()`. Register every raster in `assets/lecture-template/manifests/visual-assets.json`; unused generations do not belong in the project. Never remove the gate to make a render start faster.
 
 ### 9. Render and normalize
 
@@ -237,6 +237,14 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" package ./notebook-video-project .
 ```
 
 Include narration, timing JSON, source, manifests, chosen audio, fonts and licenses. Exclude `node_modules`, caches, temporary frames, unused voices and secrets.
+
+## Regression self-test
+
+After any change to the engine, template, QA scripts or reference docs, run the bundled regression self-test. Good fixtures must pass and each broken fixture (protected phrase split across cues, mismatched caption sync, non-video input) must be rejected by the matching gate:
+
+```text
+python "<SKILL_DIR>/scripts/selftest.py"
+```
 
 ## Resource map
 
