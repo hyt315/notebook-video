@@ -1,17 +1,19 @@
-<div align="center">
-
 # 📓 Notebook Video / 手账风教学视频制作
 
-**用代码绘制 2K 中文教学视频：React + SVG + Remotion，帧精确同步 TTS 配音，无需图像生成模型。**
+<div align="center">
 
-**简体中文 · [English](./README.en.md)**
+**用代码绘制 2K 中文教学视频：React + SVG + Remotion，帧精确同步 TTS 配音，多画布比例适配。**
 
-[![License: MIT](https://img.shields.io/github/license/hyt315/notebook-video)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
+**Programmatic 2K animated video engine with React, SVG and Remotion — frame-accurate TTS synchronization with zero image model dependencies.**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](CHANGELOG.md)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](SKILL.md)
 [![Remotion](https://img.shields.io/badge/Remotion-4.0-ff6b6b)](https://remotion.dev)
-[![Stars](https://img.shields.io/github/stars/hyt315/notebook-video?style=social)](https://github.com/hyt315/notebook-video/stargazers)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](SKILL.md)
+[![GitHub Stars](https://img.shields.io/github/stars/hyt315/notebook-video?style=social)](https://github.com/hyt315/notebook-video/stargazers)
+
+[English](./README.en.md) | [中文](./README.md)
 
 </div>
 
@@ -19,184 +21,169 @@
 
 ## 📖 这是什么？
 
-做科普视频、手账风动画、产品宣传片、讲解一个概念——**Notebook Video** 是一个 AI Agent Skill，用 **React + TypeScript + Remotion** 绘制 2K 暖白手账风格教学视频。**默认路线是 Lecture Composition**：多区域场景全部用代码绘制（SVG 图表、吉祥物、进度清单、注释贴纸），帧精确同步中文 TTS 词时间，**不依赖图像生成模型**（图像生成是可选的附加项）。输出 H.264/AAC MP4 + 可编辑的 Remotion 项目源码包。
+做科普视频、手账风动画、产品宣传片、讲解一个技术概念——**Notebook Video** 是一个专为 AI Agent 打造的专业级视频制作技能。它使用 **React + TypeScript + Remotion** 纯代码绘制 2K 暖白手账风格教学视频。
 
-### ✨ 核心特性
-
-| 特性 | 说明 |
-|------|------|
-| 🎬 **代码驱动视频** | React + TypeScript + Remotion 绘制，SVG 图表/动画完全由代码控制，任何 AI 环境都能复现一致风格 |
-| 📝 **中文 TTS 配音** | 帧精确的 TTS 词时间同步，自动生成语义字幕与音效，支持多模型平台 |
-| 🎨 **Lecture Composition 默认路线** | 多区域场景（主内容区 + 吉祥物 + 注释贴纸），纯代码绘制，不依赖图像生成 |
-| 🖼️ **图像生成可选附加** | 需要实拍感主视觉时，可为具体主场景生成图像（Visual Director 路线，`--classic` 模板） |
-| 📐 **三种画布** | 16:9（2560×1440）、4:3（1920×1440）、3:4 竖屏，移动端可读性字号下限内置 |
-| ✅ **自动化 QA** | 字幕宽度实测门（CaptionFitGate）、分层校验、语义断句校验、视觉计划校验等多道质量门 |
-| 🔄 **跨平台统一命令** | 同一个 Node 启动器在 macOS Terminal / Windows CMD / PowerShell 下行为一致 |
+**默认路线是 Lecture Composition（多区域纯代码排版）**：所有 SVG 图表、吉祥物插画、进度清单与注释贴纸全部由代码高保真绘制，帧精确同步中文 TTS 配音词时间，**完全不依赖外部生图大模型**。输出高质量 H.264/AAC MP4 以及完整可复用的 Remotion 源码工程包。
 
 ---
 
-## 📚 演示示例
+## ✨ 核心特性
+
+| 核心模块 | 覆盖功能 | 带来价值 |
+|---|---|---|
+| 🎬 **代码驱动全景渲染** | React + TypeScript + Remotion 绘制，SVG 图表与动效完全由代码精确控制 | 任何 AI 环境均能 100% 稳定复现统一视觉风格 |
+| 📝 **帧精确中文 TTS 同步** | 毫秒级对齐 TTS 词级时间戳，自动生成语义断句字幕、音效与动画节拍 | 告别字幕对不准、音画脱节的剪辑烦恼 |
+| 📐 **三大主流画布比例** | 16:9（2560×1440 讲座横屏）、4:3（1920×1440 经典）、3:4（1080×1440 竖屏社媒） | 同一套代码一键切换画幅，移动端自适应字号下限保障 |
+| 🎨 **Lecture 纯代码主路线** | 主内容看板 + 吉祥物插画 + 注释贴纸多区域排版，纯 SVG 矢量绘制 | 零 API 生图消耗，秒级渲染，排版极度工整 |
+| 🖼️ **Visual Director 附加路线** | 支持在关键主场景接入实拍或定制图像生成（`--classic` 模板路线） | 兼顾纯代码严谨性与实拍艺术表现力 |
+| ✅ **全自动多重 QA 门禁** | 字幕宽度实测门（CaptionFitGate）、分层布局校验、断句校验等多道自动化门禁 | 自动化确保 0 字幕溢出、0 视觉重叠、0 渲染崩溃 |
+
+---
+
+## 🎨 视觉成片与多画幅演示
 
 ![Notebook Video 成片演示](assets/demo/notebook-video-demo.webp)
 
 ▶️ [观看完整演示视频（MP4）](assets/demo/notebook-video-demo.mp4) · 主视觉参考：[hero.png](assets/demo/hero.png)
 
-**三种画幅版本**（同一工程，`CANVAS` 开关切换）：
+### 三大画布比例适配矩阵
 
-| 画幅 | 预览 | 下载 |
-| --- | --- | --- |
-| 16:9 横屏（默认） | [![16:9](assets/demo/notebook-video-demo.webp)](assets/demo/notebook-video-demo.mp4) | [notebook-video-demo.mp4](assets/demo/notebook-video-demo.mp4) |
-| 4:3 竖屏友好 | [![4:3](assets/demo/notebook-video-demo-43.webp)](assets/demo/notebook-video-demo-43.mp4) | [notebook-video-demo-43.mp4](assets/demo/notebook-video-demo-43.mp4) |
-| 3:4 竖屏（抖音） | [![3:4](assets/demo/notebook-video-demo-34.webp)](assets/demo/notebook-video-demo-34.mp4) | [notebook-video-demo-34.mp4](assets/demo/notebook-video-demo-34.mp4) |
+| 画布比例 | 分辨率 | 视频预览 | 适用场景 |
+|---|---|---|---|
+| **16:9 横屏** (默认) | 2560×1440 (2K) | [![16:9](assets/demo/notebook-video-demo.webp)](assets/demo/notebook-video-demo.mp4) | B站 / YouTube / 讲座演练 / 官网宣传 |
+| **4:3 经典** | 1920×1440 | [![4:3](assets/demo/notebook-video-demo-43.webp)](assets/demo/notebook-video-demo-43.mp4) | iPad 演示 / 论文解说 / 复古教学 |
+| **3:4 竖屏** | 1080×1440 | [![3:4](assets/demo/notebook-video-demo-34.webp)](assets/demo/notebook-video-demo-34.mp4) | 抖音 / 小红书 / 视频号竖屏流 |
 
-> 以上即 lecture-template 路线的真实产出风格：暖白手账底、代码绘制的多区域场景、词级同步字幕。
+---
+
+## 📊 视频制作 11 步全流程架构
+
+```
+[输入: 用户提供知识主题 / 文案脚本]
+                       │
+     [Step 1~2: 锁定内容与视觉构思] ──> 确定大纲、分镜结构与画布比例
+                       │
+     [Step 3: 词级 TTS 配音生成] ───> 获取精准毫秒级词时间戳
+                       │
+     [Step 4~5: 场景分层与代码绘制] ─> 编写 React 组件与 SVG 矢量图表
+                       │
+     [Step 6~7: 动画节拍与多画幅适配] -> 帧精确对齐配音波形与字幕
+                       │
+     [Step 8: 自动化 QA 门禁扫描] ──> CaptionFitGate / 溢出与分层校验
+                       │
+     [Step 9~11: Remotion 渲染与交付] -> 输出 2K MP4 + 完整源码 ZIP
+```
 
 ---
 
 ## 🚀 快速开始
 
-> ✨ **一句话装进 AI Agent**：把下面这段话直接发给你的 AI 助手，它会自动完成安装——
->
-> ```text
-> 请安装 notebook-video Skill：把 https://github.com/hyt315/notebook-video 克隆到你的 skills 目录（Claude Code：~/.claude/skills/notebook-video/；Cursor：~/.cursor/skills/；Codex/ChatGPT：项目内 .agent/skills/），并确认 SKILL.md、references/、scripts/ 都在。以后我要做「科普视频 / 手账风动画 / 产品宣传片 / 讲解概念」时，按 SKILL.md 的流程用 Lecture Composition 路线制作。
-> ```
+这是一个标准的 AI Agent Skill —— 安装到你的 AI 助手后即可直接使用。
 
-### 安装命令（一行）
+### 方式 A：把一句话发给任意 Agent（最推荐、最通用）
 
-| 平台 | 安装命令 |
-|------|----------|
-| **Claude Code** | `git clone https://github.com/hyt315/notebook-video.git ~/.claude/skills/notebook-video` |
-| **Codex** | `git clone https://github.com/hyt315/notebook-video.git ~/.codex/skills/notebook-video` |
-| **Cursor** | `git clone https://github.com/hyt315/notebook-video.git ~/.cursor/skills/notebook-video` |
+把下面这句话直接复制发送给你的 AI 助手，它会自动识别环境并克隆到正确的技能目录：
 
-### Skills 目录路径说明
+> 请安装 notebook-video 技能：克隆 `https://github.com/hyt315/notebook-video` 到你的 skills 目录（如 `~/.claude/skills/notebook-video` 或 `~/.agents/skills/notebook-video`），并确认安装成功。以后我要做「科普视频 / 手账风动画 / 产品宣传片 / 讲解概念」时，按 SKILL.md 的 11 步工作流制作 2K 视频。
 
-| 平台 | 个人级（全局） | 项目级 |
-|------|---------------|--------|
-| **Claude Code** | `~/.claude/skills/` | `.claude/skills/`（项目根目录） |
-| **Codex** | `~/.codex/skills/` | `.codex/skills/`（项目根目录） |
-| **Cursor** | `~/.cursor/skills/` | `.cursor/skills/` 或 `.agents/skills/`（项目根目录） |
-
-> 每个 Skill 都要有自己的文件夹，不要把 SKILL.md 直接扔进 skills/ 根目录。
-
----
-
-## 💬 触发方式
-
-对 AI 说以下任意一类话，即会触发本技能：
-
-- 「做科普视频」「做手账风视频」「做定格动画」
-- 「做一个 AI 视频」「产品宣传片」
-- 「介绍一个概念」「讲解产品/技能」
-- 「制作 30 秒到几分钟的视频」「网站动画转 MP4」
-- 「加中文配音/字幕/音效」「快速生成 2K 视频」
-
-## ⚙️ 前置条件
-
-- **Node.js**（运行统一启动器与 Remotion 渲染）
-- 浏览器内核（首次渲染前用 `prepare-browser` 自动准备 Chromium）
-- 中文 TTS 服务（任选支持的模型平台）
-- 不确定依赖是否齐全？跑一次体检：`node "<SKILL_DIR>/scripts/notebook-video.mjs" check-deps`
-
-## 📦 输出交付物
-
-一次完整制作会交付（除非你要求精简）：
-
-1. 旁白文稿 + 时间码分镜脚本
-2. 视觉计划（每个场景标注 `image-text` / `pure-text` / `pure-graphic`）
-3. 语义分段清单（含图层与出场契约）
-4. `visual-assets.json`（每张位图的来源、提示词摘要、裁剪策略与版权）
-5. 中文旁白 + 词级时间 JSON
-6. 单行语义字幕 cues + 受保护短语清单
-7. 交付画布 H.264/AAC MP4（2560×1440 或 1920×1440）
-8. 长片附 24 帧 contact sheet 与运动检查
-9. 可编辑源码 ZIP（含字体、许可证、音频与清单）
-
----
-
-## 📥 下载 / 安装
+### 方式 B：GitHub CLI 2.90+（一行命令）
 
 ```bash
-# HTTPS
-git clone https://github.com/hyt315/notebook-video.git
+gh skill install hyt315/notebook-video notebook-video --agent claude-code --scope user
+```
 
-# SSH
-git clone git@github.com:hyt315/notebook-video.git
+### 方式 C：多平台手动安装
 
-# GitHub CLI
-gh repo clone hyt315/notebook-video
+| 平台 | 用户级安装路径 | 项目级安装路径 |
+|---|---|---|
+| **Claude Code** | `git clone https://github.com/hyt315/notebook-video.git ~/.claude/skills/notebook-video` | `.claude/skills/notebook-video` |
+| **Codex** | `git clone https://github.com/hyt315/notebook-video.git ~/.codex/skills/notebook-video` | `.codex/skills/notebook-video` |
+| **Cursor** | `git clone https://github.com/hyt315/notebook-video.git ~/.cursor/skills/notebook-video` | `.cursor/skills/notebook-video` |
+| **通用 Agents** | `git clone https://github.com/hyt315/notebook-video.git ~/.agents/skills/notebook-video` | `.agents/skills/notebook-video` |
 
-# ZIP
-# https://github.com/hyt315/notebook-video/archive/refs/heads/main.zip
+### 方式 D：本地运行回归自测
 
-# 单文件（仅 SKILL.md）
-curl -O https://raw.githubusercontent.com/hyt315/notebook-video/main/SKILL.md
+```powershell
+python scripts/selftest.py
 ```
 
 ---
 
-## 📁 文件结构（核心）
+## ⚙️ 前置依赖与极速体检
+
+- **Node.js 18+**（Remotion 渲染引擎依赖）；
+- 首次渲染前使用 `node scripts/notebook-video.mjs check-deps` 进行环境依赖自动检测与 Chromium 内核准备。
+
+---
+
+## 🔒 质量与安全原则
+
+- **零破坏只读检查**：依赖体检与前置校验默认只读测量，不擅自修改系统环境变量；
+- **确定性可复现**：纯代码驱动，杜绝大模型偶发随机性导致的画面崩坏；
+- **全源码完整交付**：成片不仅交付 MP4，同时交付整套干净的 Remotion React 源码包。
+
+---
+
+## 📥 下载与获取
+
+| 方式 | 命令 / 链接 |
+|---|---|
+| **HTTPS** | `git clone https://github.com/hyt315/notebook-video.git` |
+| **SSH** | `git clone git@github.com:hyt315/notebook-video.git` |
+| **GitHub CLI** | `gh repo clone hyt315/notebook-video` |
+| **ZIP 压缩包** | [下载 ZIP](https://github.com/hyt315/notebook-video/archive/refs/heads/main.zip) |
+| **Tar 归档** | [下载 Tar](https://github.com/hyt315/notebook-video/archive/refs/heads/main.tar.gz) |
+| **单文件 (SKILL.md)** | `curl -O https://raw.githubusercontent.com/hyt315/notebook-video/main/SKILL.md` |
+
+---
+
+## 📁 文件结构
 
 ```
 notebook-video/
-├── SKILL.md                     # 技能入口（11 步生产工作流）
-├── references/                  # 18 个参考手册（视觉系统/构图/字幕/性能/QA/跨平台等）
+├── SKILL.md                          # 核心技能定义与 11 步视频工作流
+├── README.md                         # 中文说明文档
+├── README.en.md                      # 英文说明文档
+├── CHANGELOG.md                      # 版本发布记录
+├── LICENSE                           # MIT 开源许可证
+├── .gitignore                        # Git 忽略规则
+├── CONTRIBUTING.md                   # 社区贡献指南
+├── CODE_OF_CONDUCT.md                # 行为准则
+├── SECURITY.md                       # 安全策略
+├── SUPPORT.md                        # 支持渠道
+├── manifest.json                     # 技能元数据清单
+├── agents/                           # 多 Agent 平台元数据
+├── assets/demo/                      # 视频与动图预览资产
 ├── scripts/
-│   └── notebook-video.mjs       # 统一 Node 启动器（check-deps/new-project/render/package…）
-├── assets/
-│   ├── lecture-template/        # 默认路线模板（纯代码 Lecture Composition，30 秒成片）
-│   ├── example-project/         # 经典路线示例（Visual Director，含图像附加项）
-│   └── fonts/                   # 中文字体（思源黑体 + Smiley Sans，含许可证）
-├── agents/openai.yaml
-├── LICENSE / NOTICE
-├── README.md  /  README.en.md  # 双语说明（本文件为中文）
-├── CHANGELOG.md
-├── .github/                     # Issue/PR 模板 + CI(validate) + Dependabot
-└── CONTRIBUTING.md / CODE_OF_CONDUCT.md / SECURITY.md
+│   ├── notebook-video.mjs            # 跨平台 Node 统一启动器
+│   ├── validate_repo.py              # 结构与隐私安全验证器
+│   └── selftest.py                   # 自动化回归自测脚本
+└── references/                       # 视觉设计、TTS 节拍与 Remotion 手册
 ```
 
 ---
 
-## ▶️ 快速使用
+## ❓ 常见问题 (FAQ)
 
-所有操作通过**统一 Node 启动器**完成（macOS Terminal / Windows CMD / PowerShell 通用）：
-
-```bash
-# 0. 依赖体检 + 技能自检
-node "<SKILL_DIR>/scripts/notebook-video.mjs" check-deps
-node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-skill
-
-# 1. 创建新项目（默认 lecture 模板；--classic 为图像附加路线）
-node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./notebook-video-project
-
-# 2. 准备浏览器内核（首次渲染前）
-node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-project
-
-# 3. 按 SKILL.md 的 11 步工作流制作（锁内容 → 导视觉 → TTS → 分层 → 动画 → 渲染 → 校验）
-
-# 4. 打包交付源码 ZIP
-node "<SKILL_DIR>/scripts/notebook-video.mjs" package ./notebook-video-project ./source.zip
-```
-
-两条模板路线：
-
-| 路线 | 命令 | 适用 |
-|------|------|------|
-| **Lecture（默认）** | `new-project ./dir` | 纯代码绘制，多区域构图，不依赖图像生成 |
-| **Classic** | `new-project ./dir --classic` | 图文标注 + 物理插槽，接受图像生成附加项时使用 |
+- **Q: 制作视频必须花钱调用生图 AI API 吗？**  
+  A: 完全不需要。默认的 Lecture Composition 路线 100% 采用 React + SVG 代码绘制多区域场景，零生图成本。
+- **Q: 为什么字幕不会出现遮挡或换行截断？**  
+  A: 技能内置 `CaptionFitGate` 真实测量门，在渲染前精确计算每个文字的像素级宽度，彻底杜绝溢出。
+- **Q: 渲染出的视频支持哪些平台？**  
+  A: 输出标准 H.264/AAC 编码的 2K MP4 视频，原生支持 B站、YouTube、抖音、小红书、微信视频号全平台。
 
 ---
 
-## 🤝 贡献 / 反馈
+## 🤝 参与贡献
 
-- 报 Bug / 提建议：用仓库的 Issue 模板
-- 贡献：见 [CONTRIBUTING.md](CONTRIBUTING.md)，改动前跑 `validate-skill` 与相关验证脚本
-- 漏洞报告：见 [SECURITY.md](SECURITY.md)（私有漏洞报告，勿走公开 Issue）
+欢迎提交 Issue 与 Pull Request！详见 [CONTRIBUTING.md](CONTRIBUTING.md)。如果这个技能对你有帮助，欢迎在 GitHub 上点个 [Star ⭐](https://github.com/hyt315/notebook-video/stargazers)！
 
 ---
 
-## 📜 License
+## 📄 开源协议
 
-[MIT](LICENSE) © 2026 hyt315 · Remotion 组件许可见 [NOTICE](NOTICE)
+本项目采用 [MIT 许可证](LICENSE) 开源。
 
-> 🌏 **English version: [README.en.md](./README.en.md)**
+---
+
+> 🌏 **English: [README.en.md](./README.en.md)**
