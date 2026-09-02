@@ -62,7 +62,7 @@
   "engine": {
     "language": "TypeScript",
     "view": "React",
-    "renderer": "Remotion 4.0.489",
+    "renderer": "Remotion ^4.0.0",
     "vector": "SVG",
     "depth": "CSS dynamic shadow and restrained CSS 3D",
     "encoder": "FFmpeg"

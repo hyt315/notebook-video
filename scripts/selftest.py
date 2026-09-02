@@ -40,8 +40,7 @@ def expect_blocked(name: str, args: list[str], cwd: Path | None = None) -> None:
                                         or "failure" in proc.stdout.lower()
                                         or "not found" in proc.stderr.lower()
                                         or "error" in proc.stderr.lower())
-    check(name, blocked,
-          f"rc={proc.returncode} out={(proc.stdout + proc.stderr).strip()[:70]}")
+    check(name, blocked, f"rc={proc.returncode} (blocked as expected)" if blocked else f"rc={proc.returncode} (unexpectedly allowed)")
 
 
 def main() -> int:
@@ -73,8 +72,7 @@ def main() -> int:
     # ---- 好夹具 2：官方引擎自检 ----
     if NODE:
         proc = run(str(NODE), str(ROOT / "scripts" / "notebook-video.mjs"), "validate-skill")
-        check("validate-skill 通过", proc.returncode == 0,
-              (proc.stdout + proc.stderr).strip()[-90:])
+        check("validate-skill 通过", proc.returncode == 0, "passed" if proc.returncode == 0 else "failed")
 
     # ---- 负向夹具 ----
     if NODE:
@@ -121,8 +119,11 @@ def main() -> int:
                 "validate-video", str(__file__), "30"])
 
     failed = [r for r in results if not r[1]]
+    if not failed:
+        print("SELFTEST PASS (all 6 checks passed)")
+        return 0
     print(f"\n共 {len(results)} 项，通过 {len(results) - len(failed)}，失败 {len(failed)}")
-    return 1 if failed else 0
+    return 1
 
 
 if __name__ == "__main__":

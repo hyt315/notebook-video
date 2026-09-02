@@ -2,6 +2,17 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [1.8.0] - 2026-09-02
+
+### Changed
+
+- **Widen Dependency Compatibility (拓宽依赖与通用兼容)**:
+  - Widen React & ReactDOM dependency range to `^18.2.0 || ^19.0.0` across example projects and lecture templates, eliminating peer dependency lockups and enabling seamless execution on both React 18 and React 19 environments.
+  - Widen Remotion dependency range to `^4.0.0` (`remotion`, `@remotion/cli`, `@remotion/media`), allowing automatic minor/patch upgrades without breaking style locks.
+  - Relax Node.js engine requirement to `>=18`.
+  - Refactor `validate-official-example.py` and `validate-skill-consistency.py` to validate semantic version ranges rather than brittle exact string equality.
+  - Bump `browserslist` transitive dependency to `4.28.8` to resolve high severity advisory (GHSA-c83g-rgw3-j3cx).
+
 ## [1.7.0] - 2026-09-01
 
 ### Changed

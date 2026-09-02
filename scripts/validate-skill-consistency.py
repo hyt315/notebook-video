@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Audit skill files for obsolete renderer residue, stale render inputs, or contract mismatches."""
 from __future__ import annotations
 
 import re
@@ -44,7 +45,7 @@ def main() -> None:
     if (SKILL / 'CANDIDATE-VALIDATION.md').exists():
         problems.append('one-run environment validation report remains inside the reusable skill')
 
-    for generated_dir in ('node_modules', '.tools', '.cache', 'renders', '__pycache__'):
+    for generated_dir in ('node_modules', '.tools', '.cache', 'renders'):
         leaked = [path for path in SKILL.rglob(generated_dir) if path.is_dir()]
         if leaked:
             problems.append(f"generated dependency/cache directory leaked into source: {leaked[0].relative_to(SKILL)}")

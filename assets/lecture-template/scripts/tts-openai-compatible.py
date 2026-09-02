@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Chapter-segmented TTS adapter for any OpenAI-compatible chat TTS endpoint.
 
 Provider-neutral: point it at any service that accepts a chat/completions

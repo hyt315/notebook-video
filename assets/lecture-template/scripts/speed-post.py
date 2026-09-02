@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Post-process TTS output to the standard pace: atempo speed-up plus
 timestamp scaling, so every downstream consumer stays self-consistent.
 

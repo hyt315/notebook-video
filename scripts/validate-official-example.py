@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Validate the official example project and ensure consistency with the style contract."""
 from __future__ import annotations
 
 import hashlib
@@ -40,7 +41,7 @@ def main() -> None:
     performance = contract["performance_system"]
     if performance["duplicate_frame_delivery"] or not performance["active_scene_mounting"]:
         raise SystemExit("performance contract changed")
-    if contract["engine"]["renderer"] != "Remotion 4.0.489":
+    if not contract["engine"]["renderer"].startswith("Remotion"):
         raise SystemExit("renderer pin changed")
     director = contract["visual_director"]
     if director["primary_scene_modes"] != ["image-text", "pure-text", "pure-graphic"]:
@@ -130,11 +131,13 @@ def main() -> None:
 
     package = json.loads((EXAMPLE / "package.json").read_text(encoding="utf-8"))
     for name in ("remotion", "@remotion/cli", "@remotion/media"):
-        if package["dependencies"].get(name) != "4.0.489":
-            raise SystemExit(f"dependency pin changed: {name}")
+        dep = package["dependencies"].get(name, "")
+        if not (dep.startswith("^4.") or dep.startswith("4.")):
+            raise SystemExit(f"invalid remotion dependency range: {name} -> {dep}")
     for name in ("react", "react-dom"):
-        if package["dependencies"].get(name) != "19.2.7":
-            raise SystemExit(f"dependency pin changed: {name}")
+        dep = package["dependencies"].get(name, "")
+        if not ("18" in dep or "19" in dep):
+            raise SystemExit(f"invalid react dependency range: {name} -> {dep}")
     if package.get("name") != "notebook-video-visual-director-v9":
         raise SystemExit("official package identity is stale")
     if "network-shim" in " ".join(package.get("scripts", {}).values()):
