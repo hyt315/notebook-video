@@ -57,8 +57,7 @@ const easeOutSoft=(f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b],
 const pop=(f:number,start:number,stiffness=132)=>spring({frame:f-start,fps:BASE_FPS,config:{damping:17,stiffness,mass:.86}});
 const paperShadow=(lift:number)=>`0 1px 2px rgba(61,47,33,.10),0 ${6+10*lift}px ${16+18*lift}px rgba(61,47,33,${.08+.10*lift}),0 ${18+26*lift}px ${30+34*lift}px rgba(49,35,22,${.06+.08*lift}),inset 0 1px 0 rgba(255,255,255,.7)`;
 
-const preloadAudio=(src:string)=>new Promise<void>((resolve,reject)=>{const audio=new window.Audio(staticFile(src));audio.oncanplaythrough=()=>resolve();audio.onerror=()=>reject(new Error(`Required audio failed to load: ${src}`));audio.load()});
-const AssetGate=()=>{const [handle]=useState(()=>delayRender('waiting for fonts and audio assets',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash'),document.fonts.load('500 40px Space'),document.fonts.ready,...['narration.mp3','sfx/paper-rustle.wav','sfx/paper-tap.wav','sfx/data-whoosh.wav','sfx/chime.wav'].map(preloadAudio)]).then(()=>{if(live)continueRender(handle)}).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);return null};
+const AssetGate=()=>{const [handle]=useState(()=>delayRender('waiting for fonts',{timeoutInMilliseconds:120000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash'),document.fonts.load('500 40px Space'),document.fonts.ready]).then(()=>{if(live)continueRender(handle)}).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);return null};
 
 // Non-visual QA gate: measure every full cue with the real loaded font.
 const CaptionFitGate=()=>{const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load('400 40px Kai'),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){cancelRender(new Error('Subtitle measurement node is unavailable'));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const overflow=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''})).filter(row=>row.width>AESTHETIC.subtitleSafeWidth+.5);if(overflow.length){cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);if(done)return null;return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:'Kai,sans-serif',fontSize:MODE.subFont,fontWeight:400,whiteSpace:'nowrap',letterSpacing:1.2}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</div>};
@@ -92,21 +91,45 @@ const LineIcon:React.FC<{kind:IconKind,size?:number,color?:string,strokeWidth?:n
 // CheckBadge：绿色对勾徽章，配合“清单逐条点亮”模式使用（on 时 pop 弹出）。
 const CheckBadge:React.FC<{size?:number}>=({size=30})=><span style={{width:size,height:size,borderRadius:999,background:C.green,color:C.white,display:'inline-grid',placeItems:'center',flex:'0 0 auto'}}><LineIcon kind="check" size={size*.62} color={C.white} strokeWidth={2.7}/></span>;
 
-// Mascot：系列吉祥物（代码绘制的 git 猫）。f 传本地帧可眨眼，wave 挥手。
-// 这是“系列 IP 复用”的示例：同一频道的片子重复使用同一吉祥物与组件。
-const Mascot:React.FC<{size?:number;f?:number;wave?:boolean}>=({size=180,f=0,wave=false})=>{const blink=(f%54)<3?0.12:1;const arm=wave?Math.sin(f*0.28)*20:6;return <svg width={size} height={size} viewBox="0 0 100 100" style={{overflow:'visible'}}>
-  <ellipse cx={50} cy={92} rx={30} ry={5} fill="rgba(61,47,33,.18)"/>
-  <path d="M23 32 L31 8 L46 26 Z" fill={C.paper} stroke={C.line} strokeWidth={2.4} strokeLinejoin="round"/>
-  <path d="M77 32 L69 8 L54 26 Z" fill={C.paper} stroke={C.line} strokeWidth={2.4} strokeLinejoin="round"/>
-  <rect x={17} y={22} width={66} height={62} rx={24} fill={C.paper} stroke={C.line} strokeWidth={2.6}/>
-  <ellipse cx={38} cy={45} rx={5} ry={6.5*blink} fill={C.ink}/>
-  <ellipse cx={62} cy={45} rx={5} ry={6.5*blink} fill={C.ink}/>
-  <circle cx={40} cy={44} r={1.4} fill={C.white}/><circle cx={64} cy={44} r={1.4} fill={C.white}/>
-  <path d="M45 55 Q50 60 55 55" fill="none" stroke={C.ink} strokeWidth={2.2} strokeLinecap="round"/>
-  <circle cx={30} cy={56} r={4} fill="rgba(237,90,50,.28)"/><circle cx={70} cy={56} r={4} fill="rgba(237,90,50,.28)"/>
-  <g><path d="M42 74 L58 68 M42 74 L58 80" fill="none" stroke={C.blue} strokeWidth={2.6}/><circle cx={42} cy={74} r={3.6} fill={C.orange}/><circle cx={58} cy={68} r={3.6} fill={C.green}/><circle cx={58} cy={80} r={3.6} fill={C.gold}/></g>
-  <g transform={`rotate(${arm} 82 60)`}><circle cx={87} cy={52} r={7.5} fill={C.paper} stroke={C.line} strokeWidth={2.2}/></g>
-</svg>};
+// Mascot：系列吉祥物（代码绘制的 git 猫）。f 传本地帧可眨眼、自然呼吸，wave 挥手。
+const Mascot:React.FC<{size?:number;f?:number;wave?:boolean}>=({size=180,f=0,wave=false})=>{
+  const blink=(f%54)<3?0.12:1;
+  const arm=wave?Math.sin(f*0.28)*20:6;
+  const breath=1+0.016*Math.sin(f*0.16);
+  return <svg width={size} height={size} viewBox="0 0 100 100" style={{overflow:'visible',transform:`scale(${breath})`,transformOrigin:'50% 90%'}}>
+    <ellipse cx={50} cy={92} rx={30} ry={5} fill="rgba(61,47,33,.18)"/>
+    <path d="M23 32 L31 8 L46 26 Z" fill={C.paper} stroke={C.line} strokeWidth={2.4} strokeLinejoin="round"/>
+    <path d="M77 32 L69 8 L54 26 Z" fill={C.paper} stroke={C.line} strokeWidth={2.4} strokeLinejoin="round"/>
+    <rect x={17} y={22} width={66} height={62} rx={24} fill={C.paper} stroke={C.line} strokeWidth={2.6}/>
+    <ellipse cx={38} cy={45} rx={5} ry={6.5*blink} fill={C.ink}/>
+    <ellipse cx={62} cy={45} rx={5} ry={6.5*blink} fill={C.ink}/>
+    <circle cx={40} cy={44} r={1.4} fill={C.white}/><circle cx={64} cy={44} r={1.4} fill={C.white}/>
+    <path d="M45 55 Q50 60 55 55" fill="none" stroke={C.ink} strokeWidth={2.2} strokeLinecap="round"/>
+    <circle cx={30} cy={56} r={4} fill="rgba(237,90,50,.28)"/><circle cx={70} cy={56} r={4} fill="rgba(237,90,50,.28)"/>
+    <g><path d="M42 74 L58 68 M42 74 L58 80" fill="none" stroke={C.blue} strokeWidth={2.6}/><circle cx={42} cy={74} r={3.6} fill={C.orange}/><circle cx={58} cy={68} r={3.6} fill={C.green}/><circle cx={58} cy={80} r={3.6} fill={C.gold}/></g>
+    <g transform={`rotate(${arm} 82 60)`}><circle cx={87} cy={52} r={7.5} fill={C.paper} stroke={C.line} strokeWidth={2.2}/></g>
+  </svg>;
+};
+
+// RollDigit：Tibo 式字符/数字 3D 滚轮翻牌——带 cos 投影压缩 + 3D 旋转 + 颜色过渡
+const RollDigit:React.FC<{fromChar:string;toChar:string;start:number;duration?:number;frame?:number;fontSize:number;fontFamily?:string;fontWeight?:number|string;colorFrom?:string;colorTo?:string;style?:React.CSSProperties}>=({fromChar,toChar,start,duration=13,frame,fontSize,fontFamily,fontWeight=700,colorFrom=C.muted,colorTo=C.green,style})=>{
+  const f=frame??q(useCurrentFrame());
+  const progress=easeOutSoft(f,start,start+duration);
+  const turnPhase=progress;
+  const outgoingPhase=Math.max(0,Math.min(1,turnPhase/0.56));
+  const incomingPhase=Math.max(0,Math.min(1,(turnPhase-0.44)/0.56));
+  const outgoingTurn=interpolate(outgoingPhase,[0,1],[0,-90]);
+  const incomingTurn=interpolate(incomingPhase,[0,1],[90,0]);
+  const outgoingY=interpolate(outgoingPhase,[0,1],[0,-fontSize*0.32]);
+  const incomingY=interpolate(incomingPhase,[0,1],[fontSize*0.32,0]);
+  const outgoingScaleY=progress>=1?1:Math.max(0.001,Math.cos((Math.abs(outgoingTurn)*Math.PI)/180));
+  const incomingScaleY=Math.max(0.001,Math.cos((Math.abs(incomingTurn)*Math.PI)/180));
+  const color=interpolateColors(progress,[0,1],[colorFrom,colorTo]);
+  return <span style={{display:'inline-block',position:'relative',overflow:'visible',verticalAlign:'baseline',perspective:600,...style}}>
+    <span style={{display:'inline-block',color,fontSize,fontFamily,fontWeight,opacity:progress>=1||turnPhase<=0.56?1:0,transform:`translateY(${progress>=1?0:outgoingY}px) scaleY(${outgoingScaleY})`,transformOrigin:'50% 100%'}}>{fromChar}</span>
+    <span style={{position:'absolute',left:0,top:0,color,fontSize,fontFamily,fontWeight,opacity:turnPhase>=0.44&&progress<1?1:0,transform:`translateY(${incomingY}px) scaleY(${incomingScaleY})`,transformOrigin:'50% 0%'}}>{toChar}</span>
+  </span>;
+};
 
 // JumpInText：Tibo 式逐字入场——每个字独立 3D 翻转（rotateX）+ 上移 + 错峰弹出。
 // items 支持多段（颜色/字体/字号混排），母容器带 perspective；stagger=每字错峰帧数。
@@ -212,7 +235,15 @@ const SceneShip=()=>{const f=q(useCurrentFrame()),l=f-416,opacity=stageFade(f,39
     <JumpInText frame={l} items={[{text:'第三步：运营',color:C.navy}]} fontSize={TYPE.displayS} start={91}/>
     <div style={{fontSize:TYPE.titleXS,fontWeight:700,marginTop:8,color:C.muted}}>分流 · 审查 · 按时发版</div>
     <div style={{position:'absolute',left:60,top:150,right:60,height:120}}><Gauge label="Issue 分流" color={C.orange} v={g1} x={20}/><Gauge label="PR 审查" color={C.blue} v={g2} x={330}/><Gauge label="Release" color={C.green} v={g3} x={640}/></div>
-    <div style={{position:'absolute',left:60,bottom:120,display:'flex',alignItems:'center',gap:20,opacity:ease(l,177,208)}}><span style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.titleL,color:C.muted}}>v1.0</span><span style={{fontSize:TYPE.titleL,color:C.orange}}>→</span><span style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.displayS,color:C.green,transform:`scale(${.7+.3*pop(l,180)})`,display:'inline-block'}}>v1.1</span></div>
+    <div style={{position:'absolute',left:60,bottom:116,display:'flex',alignItems:'center',gap:16,opacity:ease(l,177,208)}}>
+      <div style={{display:'flex',alignItems:'center',gap:4,padding:'4px 14px',background:C.paper,border:`2px solid ${C.line}`,borderRadius:10,boxShadow:paperShadow(0.15)}}>
+        <span style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.titleL,color:C.ink}}>v1.</span>
+        <RollDigit fromChar="0" toChar="1" start={182} duration={13} frame={l} fontSize={TYPE.displayS} fontFamily="Space" fontWeight={700} colorFrom={C.muted} colorTo={C.green}/>
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:6,color:C.green,fontFamily:'Space,Kai',fontWeight:700,fontSize:TYPE.bodyM,opacity:ease(l,194,212),transform:`translateX(${10*(1-ease(l,194,212))}px)`}}>
+        <CheckBadge size={24}/> 准备发版
+      </div>
+    </div>
     <svg width={120} height={160} style={{position:'absolute',right:70,bottom:60,transform:`translateY(${-150*rocket}px)`,opacity:ease(l,175,197)}} viewBox="0 0 120 160"><path d="M60 6 C86 40 86 88 60 120 C34 88 34 40 60 6 Z" fill={C.paper} stroke={C.red} strokeWidth={4}/><circle cx={60} cy={54} r={13} fill="#e9f1fc" stroke={C.blue} strokeWidth={3}/><path d="M40 96 L24 128 L44 116 Z" fill={C.orange} stroke={C.red} strokeWidth={3} strokeLinejoin="round"/><path d="M80 96 L96 128 L76 116 Z" fill={C.orange} stroke={C.red} strokeWidth={3} strokeLinejoin="round"/><path d="M50 120 q10 24 20 0" fill={C.gold} opacity={.9}/></svg>
     <div style={{position:'absolute',left:40,right:40,bottom:30,height:42,background:'#eadcc1',border:`2px solid ${C.navy}`,borderRadius:10,display:'grid',placeItems:'center',fontFamily:'Space',fontWeight:600,fontSize:TYPE.bodyM,color:C.navy,opacity:ease(l,188,217)}}>github-oss-ops</div>
   </Paper>
@@ -297,7 +328,15 @@ const SceneShipP=()=>{const f=q(useCurrentFrame()),l=f-416,opacity=stageFade(f,3
     <JumpInText frame={l} items={[{text:'第三步：运营',color:C.navy}]} fontSize={TYPE.displayS} start={91}/>
     <div style={{fontSize:TYPE.titleXS,fontWeight:700,marginTop:8,color:C.muted}}>分流 · 审查 · 按时发版</div>
     <div style={{position:'absolute',left:28,top:180,right:28,height:120}}><Gauge label="Issue 分流" color={C.orange} v={g1} x={40}/><Gauge label="PR 审查" color={C.blue} v={g2} x={398}/><Gauge label="Release" color={C.green} v={g3} x={756}/></div>
-    <div style={{position:'absolute',left:28,top:360,display:'flex',alignItems:'center',gap:20,opacity:ease(l,177,208)}}><span style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.titleL,color:C.muted}}>v1.0</span><span style={{fontSize:TYPE.titleL,color:C.orange}}>→</span><span style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.displayS,color:C.green,transform:`scale(${.7+.3*pop(l,180)})`,display:'inline-block'}}>v1.1</span></div>
+    <div style={{position:'absolute',left:28,top:360,display:'flex',alignItems:'center',gap:16,opacity:ease(l,177,208)}}>
+      <div style={{display:'flex',alignItems:'center',gap:4,padding:'4px 14px',background:C.paper,border:`2px solid ${C.line}`,borderRadius:10,boxShadow:paperShadow(0.15)}}>
+        <span style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.titleL,color:C.ink}}>v1.</span>
+        <RollDigit fromChar="0" toChar="1" start={182} duration={13} frame={l} fontSize={TYPE.displayS} fontFamily="Space" fontWeight={700} colorFrom={C.muted} colorTo={C.green}/>
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:6,color:C.green,fontFamily:'Space,Kai',fontWeight:700,fontSize:TYPE.bodyM,opacity:ease(l,194,212),transform:`translateX(${10*(1-ease(l,194,212))}px)`}}>
+        <CheckBadge size={24}/> 准备发版
+      </div>
+    </div>
     <svg width={120} height={160} style={{position:'absolute',right:40,bottom:90,transform:`translateY(${-150*rocket}px)`,opacity:ease(l,175,197)}} viewBox="0 0 120 160"><path d="M60 6 C86 40 86 88 60 120 C34 88 34 40 60 6 Z" fill={C.paper} stroke={C.red} strokeWidth={4}/><circle cx={60} cy={54} r={13} fill="#e9f1fc" stroke={C.blue} strokeWidth={3}/><path d="M40 96 L24 128 L44 116 Z" fill={C.orange} stroke={C.red} strokeWidth={3} strokeLinejoin="round"/><path d="M80 96 L96 128 L76 116 Z" fill={C.orange} stroke={C.red} strokeWidth={3} strokeLinejoin="round"/><path d="M50 120 q10 24 20 0" fill={C.gold} opacity={.9}/></svg>
     <div style={{position:'absolute',left:34,right:34,bottom:24,height:42,background:'#eadcc1',border:`2px solid ${C.navy}`,borderRadius:10,display:'grid',placeItems:'center',fontFamily:'Space',fontWeight:600,fontSize:TYPE.bodyM,color:C.navy,opacity:ease(l,188,217)}}>github-oss-ops</div>
   </Paper>
@@ -315,10 +354,7 @@ const SceneSkillsP=()=>{const f=q(useCurrentFrame()),l=f-682,opacity=ease(f,662,
   <Paper style={{left:50,top:1170,width:980,height:96,zIndex:96,display:'grid',placeItems:'center',borderColor:C.orange,opacity:cta,transform:`translateY(${22*(1-cta)}px) scale(${.96+.04*pop(l,286)})`}}><div style={{display:'flex',alignItems:'center',gap:16}}><JumpInText frame={l} items={[{text:'主页搜',color:C.muted,fontSize:TYPE.titleM}]} fontSize={TYPE.titleM} start={287}/><WaveText frame={l} text="github.com/hyt315" fontSize={TYPE.displayS} colorFrom="#f0b39e" colorTo={C.orange} start={291} fontFamily="Space" fontWeight={600}/></div></Paper>
 </div>};
 
-
 // ---- CameraRig：全局镜头层（Tibo 式推拉/聚焦）。
-// 用 translate+scale 模拟相机：焦点随叙事移动，关键帧段内贝塞尔缓动；
-// scale 恒 >=1 保证不露底，场景交叉淡变发生在镜头连续运动之中。
 const CAM_KEYS_L=[
   {f:0,s:1,x:960,y:540},
   {f:48,s:1,x:960,y:540},
@@ -368,15 +404,22 @@ const CameraRig:React.FC<{children:React.ReactNode}>=({children})=>{
 
 const FinalDemo=()=>{const f=q(useCurrentFrame());if(isPortrait)return <>{f<213&&<SceneWorldP/>}{f>=213&&f<416&&<SceneContributeP/>}{f>=416&&f<682&&<SceneShipP/>}{f>=682&&<SceneSkillsP/>}</>;return <>{f<213&&<SceneWorld/>}{f>=213&&f<416&&<SceneContribute/>}{f>=416&&f<682&&<SceneShip/>}{f>=682&&<SceneSkills/>}</>};
 
-// Sound：声音也是声明式的——rustle=换章，whoosh=传输，tap=元素入场，chime=完成。
-// 帧号同样来自 cue 表；只在画面上真正发生动作的帧放音效。
-const Sound=()=> <>
-  <Audio src={staticFile('narration.mp3')} volume={1}/>
-  {[4,218,420,686].map(f=><Sequence key={`r${f}`} from={deliveryFrame(f)} layout="none"><Audio src={staticFile('sfx/paper-rustle.wav')} volume={.13}/></Sequence>)}
-  {[53,317,593].map(f=><Sequence key={`w${f}`} from={deliveryFrame(f)} layout="none"><Audio src={staticFile('sfx/data-whoosh.wav')} volume={.12}/></Sequence>)}
-  {[18,90,242,317,455,477,499,718,738,758].map(f=><Sequence key={`t${f}`} from={deliveryFrame(f)} layout="none"><Audio src={staticFile('sfx/paper-tap.wav')} volume={.15}/></Sequence>)}
-  {[143,343,611,988].map(f=><Sequence key={`c${f}`} from={deliveryFrame(f)} layout="none"><Audio src={staticFile('sfx/chime.wav')} volume={.18}/></Sequence>)}
-</>;
+// Sound：声音也是声明式的——BGM 垫底 + 精准音效（换章 rustle、传输 whoosh、要点 tap、完成 chime、点击 click、翻牌 toggle、吸附 drop）
+const Sound=()=>{
+  const f=useCurrentFrame();
+  const bgmVol=interpolate(f,[0,30,DURATION-45,DURATION],[0,0.08,0.08,0],{...clamp,easing:Easing.linear});
+  return <>
+    <Audio src={staticFile('narration.mp3')} volume={1}/>
+    <Audio src={staticFile('sfx/bgm.mp3')} volume={bgmVol} loop/>
+    {[4,218,420,686].map(sf=><Sequence key={`r${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/paper-rustle.wav')} volume={.12}/></Sequence>)}
+    {[53,317,593].map(sf=><Sequence key={`w${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/data-whoosh.wav')} volume={.11}/></Sequence>)}
+    {[18,90,242,317,455,477,499,718,738,758].map(sf=><Sequence key={`t${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/paper-tap.wav')} volume={.14}/></Sequence>)}
+    {[143,343,611,988].map(sf=><Sequence key={`c${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/chime.wav')} volume={.16}/></Sequence>)}
+    {[256,470,724,975].map(sf=><Sequence key={`ck${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/click.ogg')} volume={.18}/></Sequence>)}
+    {[598].map(sf=><Sequence key={`tg${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/toggle.ogg')} volume={.20}/></Sequence>)}
+    {[45,225,430,700].map(sf=><Sequence key={`dp${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/drop.ogg')} volume={.14}/></Sequence>)}
+  </>;
+};
 
 const Grade=()=> <AbsoluteFill style={{pointerEvents:'none',zIndex:190}}><AbsoluteFill style={{opacity:AESTHETIC.gradeWarmth,mixBlendMode:'soft-light',background:'radial-gradient(circle at 24% 8%,rgba(255,249,224,.9),transparent 48%),linear-gradient(180deg,rgba(255,244,216,.14),rgba(84,55,28,.08))'}}/><AbsoluteFill style={{boxShadow:`inset 0 0 150px rgba(66,42,22,${AESTHETIC.gradeVignette})`}}/></AbsoluteFill>;
 const Film=()=> <AbsoluteFill style={{overflow:'hidden',background:C.paperBase}}><div style={{position:'absolute',left:0,top:0,width:MODE.designW,height:MODE.designH,transform:'scale(1.3333333333)',transformOrigin:'0 0',fontFamily:'Kai,sans-serif',color:C.ink,overflow:'hidden'}}><Fonts/><AssetGate/><CaptionFitGate/><Sound/><Background/>{CANVAS==='4:3'?<div style={{position:'absolute',left:0,top:(MODE.designH-810)/2,width:1920,height:1080,transform:'scale(0.75)',transformOrigin:'top left'}}><Chrome/><CameraRig><FinalDemo/></CameraRig></div>:<><Chrome/><CameraRig><FinalDemo/></CameraRig></>}<Grade/><Subtitle/></div></AbsoluteFill>;

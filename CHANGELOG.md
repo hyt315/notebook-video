@@ -2,6 +2,17 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [2.0.0] - 2026-09-02
+
+### Changed
+
+- **Cinematic Motion & Audio System (质感与音效体系大版本跃迁)**:
+  - *Tibo-style 3D Mechanical RollDigit*: added `RollDigit` component utilizing projection-compressed `rotateX` 3D flipping with `cos` perspective scaling, replacing plain pop-in transitions for numerical and version releases (`v1.0` -> `v1.1` release with green `RELEASED` badge).
+  - *Idle Life & Micro-Interactions*: upgraded mascot with sinusoidal breathing motion (`1 + 0.016*sin(f*0.16)`) and natural arm-waving lifespans.
+  - *Curated Audio & Lo-Fi BGM System*: integrated ambient Lo-Fi background track (`bgm.mp3`) with gentle fade-in and decay at volume `0.08` (voice-safe), accompanied by high-frequency CC0 UI feedback audio cues (`toggle.ogg` mechanical flip, `click.ogg` step trigger, `drop.ogg` card magnetic snap-in).
+  - *Three-Canvas Demo Suite Refreshed*: fully re-rendered 2K demos and animated WebP previews across all three delivery formats — 16:9 (`notebook-video-demo.mp4` / `.webp`), 4:3 (`notebook-video-demo-43.mp4` / `.webp`), and 3:4 portrait (`notebook-video-demo-34.mp4` / `.webp`).
+  - *Native Browser Rendering Engine*: configured direct native Chrome/Edge binary binding for instant multi-threaded zero-download rendering.
+
 ## [1.9.0] - 2026-09-02
 
 ### Changed
