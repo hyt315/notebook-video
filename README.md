@@ -156,7 +156,7 @@ notebook-video/
 ├── assets/demo/                      # 视频与动图预览资产
 ├── scripts/
 │   ├── notebook-video.mjs            # 跨平台 Node 统一启动器
-│   ├── validate_repo.py              # 结构与隐私安全验证器
+│   ├── validate-official-example.py  # 官方示例一致性验证器
 │   └── selftest.py                   # 自动化回归自测脚本
 └── references/                       # 视觉设计、TTS 节拍与 Remotion 手册
 ```

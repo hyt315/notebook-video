@@ -31,7 +31,7 @@ components from the template instead of inventing new drawing styles.
 A scene is not one hero object. Split the 1920×1080 design canvas into
 3–5 functional zones, for example:
 
-- left: explanation panel (`Paper` with a Smiley title + body copy);
+- left: explanation panel (`Paper` with a WenKai title + body copy);
 - right or center: the graphic demonstration area;
 - bottom or side: a progressive checklist or comparison cards;
 - floating: small annotation stickers that appear on cue.

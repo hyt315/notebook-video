@@ -36,7 +36,7 @@ Keep these official elements locked until the user approves a future rendered re
 - stable upper-left chapter card and upper-right technical header;
 - clean white lower torn-wave subtitle input with no dark side artifacts;
 - orange left locator, blue right status ring and centered 40px Chinese text;
-- Source Han Sans CN body and Smiley Sans display emphasis;
+- LXGW WenKai Lite as the unified CJK typeface plus Clash Display / Space Grotesk Latin accents;
 - TTS word timing converted once to integer absolute frames;
 - independent semantic parts with explicit z-order, entry and complete exit;
 - a spatial density budget: one hero action per zone, no temporary stack in the center;

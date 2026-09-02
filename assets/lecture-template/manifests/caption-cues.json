@@ -1,887 +1,950 @@
 {
-  "source": "notebook-video-demo\\audio\\narration.mp3.json",
-  "lead_ms": 60,
-  "segmentation": "semantic",
   "cues": [
     {
-      "text": "你写的代码，还躺在硬盘里吗？",
+      "text": "你写的代码，",
       "words": [
         {
           "part": "你",
           "start": 0,
-          "end": 195
+          "end": 171
         },
         {
           "part": "写",
-          "start": 195,
-          "end": 390
+          "start": 171,
+          "end": 343
         },
         {
           "part": "的",
-          "start": 390,
-          "end": 584
+          "start": 343,
+          "end": 514
         },
         {
           "part": "代",
-          "start": 584,
-          "end": 779
+          "start": 514,
+          "end": 686
         },
         {
           "part": "码",
-          "start": 779,
-          "end": 974
+          "start": 686,
+          "end": 857
         },
         {
           "part": "，",
-          "start": 974,
-          "end": 1169
-        },
-        {
-          "part": "还",
-          "start": 1169,
-          "end": 1364
-        },
-        {
-          "part": "躺",
-          "start": 1364,
-          "end": 1559
-        },
-        {
-          "part": "在",
-          "start": 1559,
-          "end": 1753
-        },
-        {
-          "part": "硬",
-          "start": 1753,
-          "end": 1948
-        },
-        {
-          "part": "盘",
-          "start": 1948,
-          "end": 2143
-        },
-        {
-          "part": "里",
-          "start": 2143,
-          "end": 2338
-        },
-        {
-          "part": "吗",
-          "start": 2338,
-          "end": 2533
-        },
-        {
-          "part": "？",
-          "start": 2533,
-          "end": 2727
+          "start": 857,
+          "end": 1029
         }
       ],
       "start_ms": 0,
-      "speech_end_ms": 2727,
-      "reveal_end_ms": 2727,
+      "speech_end_ms": 1029,
+      "reveal_end_ms": 1029,
       "start": 0.0,
-      "speech_end": 2.727,
-      "reveal_end": 2.727
+      "speech_end": 1.029,
+      "reveal_end": 1.029
     },
     {
-      "text": "在GitHub，全世界的开发者，正一起造软件。",
+      "text": "还躺在硬盘里吗？",
+      "words": [
+        {
+          "part": "还",
+          "start": 1029,
+          "end": 1200
+        },
+        {
+          "part": "躺",
+          "start": 1200,
+          "end": 1371
+        },
+        {
+          "part": "在",
+          "start": 1371,
+          "end": 1543
+        },
+        {
+          "part": "硬",
+          "start": 1543,
+          "end": 1714
+        },
+        {
+          "part": "盘",
+          "start": 1714,
+          "end": 1886
+        },
+        {
+          "part": "里",
+          "start": 1886,
+          "end": 2057
+        },
+        {
+          "part": "吗",
+          "start": 2057,
+          "end": 2229
+        },
+        {
+          "part": "？",
+          "start": 2229,
+          "end": 2400
+        }
+      ],
+      "start_ms": 1029,
+      "speech_end_ms": 2400,
+      "reveal_end_ms": 2400,
+      "start": 1.029,
+      "speech_end": 2.4,
+      "reveal_end": 2.4
+    },
+    {
+      "text": "在GitHub，全世界的开发者，",
       "words": [
         {
           "part": "在",
-          "start": 2727,
-          "end": 2922
+          "start": 2750,
+          "end": 2924
         },
         {
           "part": "G",
-          "start": 2922,
-          "end": 3117
+          "start": 2924,
+          "end": 3098
         },
         {
           "part": "i",
-          "start": 3117,
-          "end": 3312
+          "start": 3098,
+          "end": 3272
         },
         {
           "part": "t",
-          "start": 3312,
-          "end": 3507
+          "start": 3272,
+          "end": 3446
         },
         {
           "part": "H",
-          "start": 3507,
-          "end": 3702
+          "start": 3446,
+          "end": 3620
         },
         {
           "part": "u",
-          "start": 3702,
-          "end": 3896
+          "start": 3620,
+          "end": 3793
         },
         {
           "part": "b",
-          "start": 3896,
-          "end": 4091
+          "start": 3793,
+          "end": 3967
         },
         {
           "part": "，",
-          "start": 4091,
-          "end": 4286
+          "start": 3967,
+          "end": 4141
         },
         {
           "part": "全",
-          "start": 4286,
-          "end": 4481
+          "start": 4141,
+          "end": 4315
         },
         {
           "part": "世",
-          "start": 4481,
-          "end": 4676
+          "start": 4315,
+          "end": 4489
         },
         {
           "part": "界",
-          "start": 4676,
-          "end": 4870
+          "start": 4489,
+          "end": 4663
         },
         {
           "part": "的",
-          "start": 4870,
-          "end": 5065
+          "start": 4663,
+          "end": 4837
         },
         {
           "part": "开",
-          "start": 5065,
-          "end": 5260
+          "start": 4837,
+          "end": 5011
         },
         {
           "part": "发",
-          "start": 5260,
-          "end": 5455
+          "start": 5011,
+          "end": 5185
         },
         {
           "part": "者",
-          "start": 5455,
-          "end": 5650
+          "start": 5185,
+          "end": 5359
         },
         {
           "part": "，",
-          "start": 5650,
-          "end": 5845
-        },
+          "start": 5359,
+          "end": 5533
+        }
+      ],
+      "start_ms": 2750,
+      "speech_end_ms": 5533,
+      "reveal_end_ms": 5533,
+      "start": 2.75,
+      "speech_end": 5.533,
+      "reveal_end": 5.533
+    },
+    {
+      "text": "正一起造软件。",
+      "words": [
         {
           "part": "正",
-          "start": 5845,
-          "end": 6039
+          "start": 5533,
+          "end": 5707
         },
         {
           "part": "一",
-          "start": 6039,
-          "end": 6234
+          "start": 5707,
+          "end": 5880
         },
         {
           "part": "起",
-          "start": 6234,
-          "end": 6429
+          "start": 5880,
+          "end": 6054
         },
         {
           "part": "造",
-          "start": 6429,
-          "end": 6624
+          "start": 6054,
+          "end": 6228
         },
         {
           "part": "软",
-          "start": 6624,
-          "end": 6819
+          "start": 6228,
+          "end": 6402
         },
         {
           "part": "件",
-          "start": 6819,
-          "end": 7013
+          "start": 6402,
+          "end": 6576
         },
         {
           "part": "。",
-          "start": 7013,
-          "end": 7208
+          "start": 6576,
+          "end": 6750
         }
       ],
-      "start_ms": 2667,
-      "speech_end_ms": 7208,
-      "reveal_end_ms": 7208,
-      "start": 2.667,
-      "speech_end": 7.208,
-      "reveal_end": 7.208
+      "start_ms": 5533,
+      "speech_end_ms": 6750,
+      "reveal_end_ms": 6750,
+      "start": 5.533,
+      "speech_end": 6.75,
+      "reveal_end": 6.75
     },
     {
       "text": "想入场，其实只要三步。",
       "words": [
         {
           "part": "想",
-          "start": 7208,
-          "end": 7403
+          "start": 7100,
+          "end": 7289
         },
         {
           "part": "入",
-          "start": 7403,
-          "end": 7597
+          "start": 7289,
+          "end": 7478
         },
         {
           "part": "场",
-          "start": 7597,
-          "end": 7792
+          "start": 7478,
+          "end": 7667
         },
         {
           "part": "，",
-          "start": 7792,
-          "end": 7987
+          "start": 7667,
+          "end": 7856
         },
         {
           "part": "其",
-          "start": 7987,
-          "end": 8181
+          "start": 7856,
+          "end": 8045
         },
         {
           "part": "实",
-          "start": 8181,
-          "end": 8376
+          "start": 8045,
+          "end": 8235
         },
         {
           "part": "只",
-          "start": 8376,
-          "end": 8571
+          "start": 8235,
+          "end": 8424
         },
         {
           "part": "要",
-          "start": 8571,
-          "end": 8766
+          "start": 8424,
+          "end": 8613
         },
         {
           "part": "三",
-          "start": 8766,
-          "end": 8961
+          "start": 8613,
+          "end": 8802
         },
         {
           "part": "步",
-          "start": 8961,
-          "end": 9155
+          "start": 8802,
+          "end": 8991
         },
         {
           "part": "。",
-          "start": 9155,
-          "end": 9350
+          "start": 8991,
+          "end": 9180
         }
       ],
-      "start_ms": 7148,
-      "speech_end_ms": 9350,
-      "reveal_end_ms": 9350,
-      "start": 7.148,
-      "speech_end": 9.35,
-      "reveal_end": 9.35
+      "start_ms": 7100,
+      "speech_end_ms": 9180,
+      "reveal_end_ms": 9180,
+      "start": 7.1,
+      "speech_end": 9.18,
+      "reveal_end": 9.18
     },
     {
-      "text": "第一步，参与别人的项目，交出第一个PR。",
+      "text": "第一步，参与别人的项目，",
       "words": [
         {
           "part": "第",
-          "start": 9350,
-          "end": 9545
+          "start": 9530,
+          "end": 9730
         },
         {
           "part": "一",
-          "start": 9545,
-          "end": 9740
+          "start": 9730,
+          "end": 9930
         },
         {
           "part": "步",
-          "start": 9740,
-          "end": 9935
-        },
-        {
-          "part": "，",
-          "start": 9935,
+          "start": 9930,
           "end": 10130
         },
         {
-          "part": "参",
+          "part": "，",
           "start": 10130,
-          "end": 10324
+          "end": 10330
+        },
+        {
+          "part": "参",
+          "start": 10330,
+          "end": 10530
         },
         {
           "part": "与",
-          "start": 10324,
-          "end": 10519
+          "start": 10530,
+          "end": 10730
         },
         {
           "part": "别",
-          "start": 10519,
-          "end": 10714
+          "start": 10730,
+          "end": 10930
         },
         {
           "part": "人",
-          "start": 10714,
-          "end": 10909
+          "start": 10930,
+          "end": 11130
         },
         {
           "part": "的",
-          "start": 10909,
-          "end": 11104
+          "start": 11130,
+          "end": 11330
         },
         {
           "part": "项",
-          "start": 11104,
-          "end": 11298
+          "start": 11330,
+          "end": 11530
         },
         {
           "part": "目",
-          "start": 11298,
-          "end": 11493
+          "start": 11530,
+          "end": 11730
         },
         {
           "part": "，",
-          "start": 11493,
-          "end": 11688
-        },
+          "start": 11730,
+          "end": 11930
+        }
+      ],
+      "start_ms": 9530,
+      "speech_end_ms": 11930,
+      "reveal_end_ms": 11930,
+      "start": 9.53,
+      "speech_end": 11.93,
+      "reveal_end": 11.93
+    },
+    {
+      "text": "交出第一个PR。",
+      "words": [
         {
           "part": "交",
-          "start": 11688,
-          "end": 11883
+          "start": 11930,
+          "end": 12130
         },
         {
           "part": "出",
-          "start": 11883,
-          "end": 12078
+          "start": 12130,
+          "end": 12330
         },
         {
           "part": "第",
-          "start": 12078,
-          "end": 12273
+          "start": 12330,
+          "end": 12530
         },
         {
           "part": "一",
-          "start": 12273,
-          "end": 12467
+          "start": 12530,
+          "end": 12730
         },
         {
           "part": "个",
-          "start": 12467,
-          "end": 12662
+          "start": 12730,
+          "end": 12930
         },
         {
           "part": "P",
-          "start": 12662,
-          "end": 12857
+          "start": 12930,
+          "end": 13130
         },
         {
           "part": "R",
-          "start": 12857,
-          "end": 13052
+          "start": 13130,
+          "end": 13330
         },
         {
           "part": "。",
-          "start": 13052,
-          "end": 13247
+          "start": 13330,
+          "end": 13530
         }
       ],
-      "start_ms": 9290,
-      "speech_end_ms": 13247,
-      "reveal_end_ms": 13247,
-      "start": 9.29,
-      "speech_end": 13.247,
-      "reveal_end": 13.247
+      "start_ms": 11930,
+      "speech_end_ms": 13530,
+      "reveal_end_ms": 13530,
+      "start": 11.93,
+      "speech_end": 13.53,
+      "reveal_end": 13.53
     },
     {
-      "text": "第二步，把作品整理成专业的开源仓库。",
+      "text": "第二步，把作品整理成",
       "words": [
         {
           "part": "第",
-          "start": 13247,
-          "end": 13441
+          "start": 13880,
+          "end": 14076
         },
         {
           "part": "二",
-          "start": 13441,
-          "end": 13636
+          "start": 14076,
+          "end": 14271
         },
         {
           "part": "步",
-          "start": 13636,
-          "end": 13831
+          "start": 14271,
+          "end": 14467
         },
         {
           "part": "，",
-          "start": 13831,
-          "end": 14026
+          "start": 14467,
+          "end": 14662
         },
         {
           "part": "把",
-          "start": 14026,
-          "end": 14221
+          "start": 14662,
+          "end": 14858
         },
         {
           "part": "作",
-          "start": 14221,
-          "end": 14416
+          "start": 14858,
+          "end": 15053
         },
         {
           "part": "品",
-          "start": 14416,
-          "end": 14610
+          "start": 15053,
+          "end": 15249
         },
         {
           "part": "整",
-          "start": 14610,
-          "end": 14805
+          "start": 15249,
+          "end": 15444
         },
         {
           "part": "理",
-          "start": 14805,
-          "end": 15000
+          "start": 15444,
+          "end": 15640
         },
         {
           "part": "成",
-          "start": 15000,
-          "end": 15195
-        },
+          "start": 15640,
+          "end": 15836
+        }
+      ],
+      "start_ms": 13880,
+      "speech_end_ms": 15836,
+      "reveal_end_ms": 15836,
+      "start": 13.88,
+      "speech_end": 15.836,
+      "reveal_end": 15.836
+    },
+    {
+      "text": "专业的开源仓库。",
+      "words": [
         {
           "part": "专",
-          "start": 15195,
-          "end": 15390
+          "start": 15836,
+          "end": 16031
         },
         {
           "part": "业",
-          "start": 15390,
-          "end": 15584
+          "start": 16031,
+          "end": 16227
         },
         {
           "part": "的",
-          "start": 15584,
-          "end": 15779
+          "start": 16227,
+          "end": 16422
         },
         {
           "part": "开",
-          "start": 15779,
-          "end": 15974
+          "start": 16422,
+          "end": 16618
         },
         {
           "part": "源",
-          "start": 15974,
-          "end": 16169
+          "start": 16618,
+          "end": 16813
         },
         {
           "part": "仓",
-          "start": 16169,
-          "end": 16364
+          "start": 16813,
+          "end": 17009
         },
         {
           "part": "库",
-          "start": 16364,
-          "end": 16559
+          "start": 17009,
+          "end": 17204
         },
         {
           "part": "。",
-          "start": 16559,
-          "end": 16753
+          "start": 17204,
+          "end": 17400
         }
       ],
-      "start_ms": 13187,
-      "speech_end_ms": 16753,
-      "reveal_end_ms": 16753,
-      "start": 13.187,
-      "speech_end": 16.753,
-      "reveal_end": 16.753
+      "start_ms": 15836,
+      "speech_end_ms": 17400,
+      "reveal_end_ms": 17400,
+      "start": 15.836,
+      "speech_end": 17.4,
+      "reveal_end": 17.4
     },
     {
-      "text": "第三步，学会运营，按时发布新版本。",
+      "text": "第三步，学会运营，",
       "words": [
         {
           "part": "第",
-          "start": 16753,
-          "end": 16948
+          "start": 17750,
+          "end": 18023
         },
         {
           "part": "三",
-          "start": 16948,
-          "end": 17143
+          "start": 18023,
+          "end": 18296
         },
         {
           "part": "步",
-          "start": 17143,
-          "end": 17338
+          "start": 18296,
+          "end": 18569
         },
         {
           "part": "，",
-          "start": 17338,
-          "end": 17533
+          "start": 18569,
+          "end": 18842
         },
         {
           "part": "学",
-          "start": 17533,
-          "end": 17727
+          "start": 18842,
+          "end": 19115
         },
         {
           "part": "会",
-          "start": 17727,
-          "end": 17922
+          "start": 19115,
+          "end": 19388
         },
         {
           "part": "运",
-          "start": 17922,
-          "end": 18117
+          "start": 19388,
+          "end": 19661
         },
         {
           "part": "营",
-          "start": 18117,
-          "end": 18312
+          "start": 19661,
+          "end": 19934
         },
         {
           "part": "，",
-          "start": 18312,
-          "end": 18507
-        },
+          "start": 19934,
+          "end": 20206
+        }
+      ],
+      "start_ms": 17750,
+      "speech_end_ms": 20206,
+      "reveal_end_ms": 20206,
+      "start": 17.75,
+      "speech_end": 20.206,
+      "reveal_end": 20.206
+    },
+    {
+      "text": "按时发布新版本。",
+      "words": [
         {
           "part": "按",
-          "start": 18507,
-          "end": 18702
+          "start": 20206,
+          "end": 20479
         },
         {
           "part": "时",
-          "start": 18702,
-          "end": 18896
+          "start": 20479,
+          "end": 20752
         },
         {
           "part": "发",
-          "start": 18896,
-          "end": 19091
+          "start": 20752,
+          "end": 21025
         },
         {
           "part": "布",
-          "start": 19091,
-          "end": 19286
+          "start": 21025,
+          "end": 21298
         },
         {
           "part": "新",
-          "start": 19286,
-          "end": 19481
+          "start": 21298,
+          "end": 21571
         },
         {
           "part": "版",
-          "start": 19481,
-          "end": 19676
+          "start": 21571,
+          "end": 21844
         },
         {
           "part": "本",
-          "start": 19676,
-          "end": 19870
+          "start": 21844,
+          "end": 22117
         },
         {
           "part": "。",
-          "start": 19870,
-          "end": 20065
+          "start": 22117,
+          "end": 22390
         }
       ],
-      "start_ms": 16693,
-      "speech_end_ms": 20065,
-      "reveal_end_ms": 20065,
-      "start": 16.693,
-      "speech_end": 20.065,
-      "reveal_end": 20.065
+      "start_ms": 20206,
+      "speech_end_ms": 22390,
+      "reveal_end_ms": 22390,
+      "start": 20.206,
+      "speech_end": 22.39,
+      "reveal_end": 22.39
     },
     {
-      "text": "这三步，我做成了三个AI技能。",
+      "text": "这三步，我做成了",
       "words": [
         {
           "part": "这",
-          "start": 20065,
-          "end": 20260
+          "start": 22740,
+          "end": 22985
         },
         {
           "part": "三",
-          "start": 20260,
-          "end": 20455
+          "start": 22985,
+          "end": 23231
         },
         {
           "part": "步",
-          "start": 20455,
-          "end": 20650
+          "start": 23231,
+          "end": 23476
         },
         {
           "part": "，",
-          "start": 20650,
-          "end": 20845
+          "start": 23476,
+          "end": 23721
         },
         {
           "part": "我",
-          "start": 20845,
-          "end": 21039
+          "start": 23721,
+          "end": 23967
         },
         {
           "part": "做",
-          "start": 21039,
-          "end": 21234
+          "start": 23967,
+          "end": 24212
         },
         {
           "part": "成",
-          "start": 21234,
-          "end": 21429
+          "start": 24212,
+          "end": 24457
         },
         {
           "part": "了",
-          "start": 21429,
-          "end": 21624
-        },
+          "start": 24457,
+          "end": 24703
+        }
+      ],
+      "start_ms": 22740,
+      "speech_end_ms": 24703,
+      "reveal_end_ms": 24703,
+      "start": 22.74,
+      "speech_end": 24.703,
+      "reveal_end": 24.703
+    },
+    {
+      "text": "三个AI技能。",
+      "words": [
         {
           "part": "三",
-          "start": 21624,
-          "end": 21819
+          "start": 24703,
+          "end": 24948
         },
         {
           "part": "个",
-          "start": 21819,
-          "end": 22013
+          "start": 24948,
+          "end": 25193
         },
         {
           "part": "A",
-          "start": 22013,
-          "end": 22208
+          "start": 25193,
+          "end": 25439
         },
         {
           "part": "I",
-          "start": 22208,
-          "end": 22403
+          "start": 25439,
+          "end": 25684
         },
         {
           "part": "技",
-          "start": 22403,
-          "end": 22597
+          "start": 25684,
+          "end": 25929
         },
         {
           "part": "能",
-          "start": 22597,
-          "end": 22792
+          "start": 25929,
+          "end": 26175
         },
         {
           "part": "。",
-          "start": 22792,
-          "end": 22987
+          "start": 26175,
+          "end": 26420
         }
       ],
-      "start_ms": 20005,
-      "speech_end_ms": 22987,
-      "reveal_end_ms": 22987,
-      "start": 20.005,
-      "speech_end": 22.987,
-      "reveal_end": 22.987
+      "start_ms": 24703,
+      "speech_end_ms": 26420,
+      "reveal_end_ms": 26420,
+      "start": 24.703,
+      "speech_end": 26.42,
+      "reveal_end": 26.42
     },
     {
       "text": "让智能体陪你走完全程。",
       "words": [
         {
           "part": "让",
-          "start": 22987,
-          "end": 23181
+          "start": 26770,
+          "end": 27090
         },
         {
           "part": "智",
-          "start": 23181,
-          "end": 23376
+          "start": 27090,
+          "end": 27410
         },
         {
           "part": "能",
-          "start": 23376,
-          "end": 23571
+          "start": 27410,
+          "end": 27730
         },
         {
           "part": "体",
-          "start": 23571,
-          "end": 23766
+          "start": 27730,
+          "end": 28050
         },
         {
           "part": "陪",
-          "start": 23766,
-          "end": 23961
+          "start": 28050,
+          "end": 28370
         },
         {
           "part": "你",
-          "start": 23961,
-          "end": 24155
+          "start": 28370,
+          "end": 28690
         },
         {
           "part": "走",
-          "start": 24155,
-          "end": 24350
+          "start": 28690,
+          "end": 29010
         },
         {
           "part": "完",
-          "start": 24350,
-          "end": 24545
+          "start": 29010,
+          "end": 29330
         },
         {
           "part": "全",
-          "start": 24545,
-          "end": 24740
+          "start": 29330,
+          "end": 29650
         },
         {
           "part": "程",
-          "start": 24740,
-          "end": 24935
+          "start": 29650,
+          "end": 29970
         },
         {
           "part": "。",
-          "start": 24935,
-          "end": 25130
+          "start": 29970,
+          "end": 30290
         }
       ],
-      "start_ms": 22927,
-      "speech_end_ms": 25130,
-      "reveal_end_ms": 25130,
-      "start": 22.927,
-      "speech_end": 25.13,
-      "reveal_end": 25.13
+      "start_ms": 26770,
+      "speech_end_ms": 30290,
+      "reveal_end_ms": 30290,
+      "start": 26.77,
+      "speech_end": 30.29,
+      "reveal_end": 30.29
     },
     {
       "text": "三期视频，一期一步。",
       "words": [
         {
           "part": "三",
-          "start": 25130,
-          "end": 25324
+          "start": 30640,
+          "end": 30976
         },
         {
           "part": "期",
-          "start": 25324,
-          "end": 25519
+          "start": 30976,
+          "end": 31312
         },
         {
           "part": "视",
-          "start": 25519,
-          "end": 25714
+          "start": 31312,
+          "end": 31648
         },
         {
           "part": "频",
-          "start": 25714,
-          "end": 25909
+          "start": 31648,
+          "end": 31984
         },
         {
           "part": "，",
-          "start": 25909,
-          "end": 26104
+          "start": 31984,
+          "end": 32320
         },
         {
           "part": "一",
-          "start": 26104,
-          "end": 26298
+          "start": 32320,
+          "end": 32656
         },
         {
           "part": "期",
-          "start": 26298,
-          "end": 26493
+          "start": 32656,
+          "end": 32992
         },
         {
           "part": "一",
-          "start": 26493,
-          "end": 26688
+          "start": 32992,
+          "end": 33328
         },
         {
           "part": "步",
-          "start": 26688,
-          "end": 26883
+          "start": 33328,
+          "end": 33664
         },
         {
           "part": "。",
-          "start": 26883,
-          "end": 27078
+          "start": 33664,
+          "end": 34000
         }
       ],
-      "start_ms": 25070,
-      "speech_end_ms": 27078,
-      "reveal_end_ms": 27078,
-      "start": 25.07,
-      "speech_end": 27.078,
-      "reveal_end": 27.078
+      "start_ms": 30640,
+      "speech_end_ms": 34000,
+      "reveal_end_ms": 34000,
+      "start": 30.64,
+      "speech_end": 34.0,
+      "reveal_end": 34.0
     },
     {
       "text": "主页搜hyt315，现在出发。",
       "words": [
         {
           "part": "主",
-          "start": 27078,
-          "end": 27273
+          "start": 34350,
+          "end": 34563
         },
         {
           "part": "页",
-          "start": 27273,
-          "end": 27467
+          "start": 34563,
+          "end": 34777
         },
         {
           "part": "搜",
-          "start": 27467,
-          "end": 27662
+          "start": 34777,
+          "end": 34990
         },
         {
           "part": "h",
-          "start": 27662,
-          "end": 27857
+          "start": 34990,
+          "end": 35203
         },
         {
           "part": "y",
-          "start": 27857,
-          "end": 28052
+          "start": 35203,
+          "end": 35417
         },
         {
           "part": "t",
-          "start": 28052,
-          "end": 28247
+          "start": 35417,
+          "end": 35630
         },
         {
           "part": "3",
-          "start": 28247,
-          "end": 28441
+          "start": 35630,
+          "end": 35843
         },
         {
           "part": "1",
-          "start": 28441,
-          "end": 28636
+          "start": 35843,
+          "end": 36057
         },
         {
           "part": "5",
-          "start": 28636,
-          "end": 28831
+          "start": 36057,
+          "end": 36270
         },
         {
           "part": "，",
-          "start": 28831,
-          "end": 29026
+          "start": 36270,
+          "end": 36483
         },
         {
           "part": "现",
-          "start": 29026,
-          "end": 29221
+          "start": 36483,
+          "end": 36697
         },
         {
           "part": "在",
-          "start": 29221,
-          "end": 29416
+          "start": 36697,
+          "end": 36910
         },
         {
           "part": "出",
-          "start": 29416,
-          "end": 29610
+          "start": 36910,
+          "end": 37123
         },
         {
           "part": "发",
-          "start": 29610,
-          "end": 29805
+          "start": 37123,
+          "end": 37337
         },
         {
           "part": "。",
-          "start": 29805,
-          "end": 30000
+          "start": 37337,
+          "end": 37550
         }
       ],
-      "start_ms": 27018,
-      "speech_end_ms": 30000,
-      "reveal_end_ms": 30000,
-      "start": 27.018,
-      "speech_end": 30.0,
-      "reveal_end": 30.0
+      "start_ms": 34350,
+      "speech_end_ms": 37550,
+      "reveal_end_ms": 37550,
+      "start": 34.35,
+      "speech_end": 37.55,
+      "reveal_end": 37.55
     }
   ]
 }

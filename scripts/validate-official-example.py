@@ -89,7 +89,7 @@ def main() -> None:
             "const CaptionFitGate=",
             "if(done)return null",
             "getBoundingClientRect().width/DESIGN_SCALE",
-            "document.fonts.load('400 40px SourceHan')",
+            "document.fonts.load('400 40px Kai')",
             "const C={ink:'#2b2924'",
             "const TYPE={displayXL:58",
             "const AESTHETIC={subtitleSafeWidth:1334",
@@ -156,7 +156,7 @@ def main() -> None:
     for name in ("paper-rustle.wav", "paper-tap.wav", "data-whoosh.wav", "chime.wav"):
         if not (EXAMPLE / "public" / "sfx" / name).is_file():
             raise SystemExit(f"missing declarative action sound: {name}")
-    for name in ("SourceHanSansCN-Regular.otf", "SourceHanSansCN-Bold.otf", "SmileySans-Oblique.otf"):
+    for name in ("LXGWWenKaiLite-Regular.ttf", "LXGWWenKaiLite-Medium.ttf", "LICENSE-OFL-1.1-LXGW.txt"):
         if not (SKILL / "assets" / "fonts" / name).is_file():
             raise SystemExit(f"missing bundled font: {name}")
     if not (EXAMPLE / "public" / "illustrations" / "visual-director.png").is_file():

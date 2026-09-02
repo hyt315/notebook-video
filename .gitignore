@@ -5,6 +5,8 @@ __pycache__/
 .tools/
 renders/
 *.mp4
+!assets/demo/*.mp4
+narration.mp3
 *.mov
 *.webm
 *.zip

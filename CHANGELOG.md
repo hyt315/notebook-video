@@ -2,6 +2,20 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [1.9.0] - 2026-09-02
+
+### Changed
+
+- **Premium motion upgrade (质感升级固化)**: the lecture template is now a cinematic-quality baseline that any future skill video inherits:
+  - *CameraRig dual-canvas camera*: per-canvas keyframe tables (16:9 landscape and 3:4 portrait), Tibo-style exponential lag follow-focus, per-chapter slow push-ins.
+  - *JumpInText / WaveText*: per-glyph 3D flip-in (rotateX + stagger + spring) for chapter and scene titles; per-letter wave typing with color gradient for the CTA latin string.
+  - *Subtitle redesign*: torn-paper bar removed, pure centered text pinned near the bottom, per-word/per-character fade-slide with a 180ms lead; word spacing only at CJK<->Latin boundaries.
+  - *Globe intro*: multi-keyframe rotate-in (150deg to 360deg with a mid-scale bulge) replacing the plain pop-in.
+  - *Palette softened*: lighter ivory paper, reduced grid/texture/vignette, soft layered card shadows and thinner outlines.
+- **Typography**: unified to LXGW WenKai Lite (SIL OFL 1.1; Regular + Medium) for all CJK copy, with Clash Display / Space Grotesk Latin accents. Legacy Smiley Sans / Source Han Sans assets, font-faces and license files are removed; the example-project is unified to the same stack.
+- **MiMo narration**: the 30s demo timeline was re-voiced through the MiMo TTS adapter (37.55s), and the whole scene timeline was remapped word-by-word to 1126 frames (new scene starts 0/213/416/682; caption cues rebuilt to 16 semantic lines). Narration audio stays unbundled per repository convention.
+- **Demo assets**: `assets/demo/notebook-video-demo.mp4` and its animated webp are refreshed for 16:9 only; the 4:3 and 3:4 previews keep the previous renders.
+
 ## [1.8.0] - 2026-09-02
 
 ### Changed

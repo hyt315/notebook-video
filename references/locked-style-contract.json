@@ -105,7 +105,7 @@
     "texture_animation": false
   },
   "fonts": {
-    "display": "SmileySans-Oblique.otf",
+    "display": "LXGWWenKaiLite-Regular.ttf",
     "body": "SourceHanSansCN-Regular.otf",
     "bold": "SourceHanSansCN-Bold.otf",
     "subtitle_px": 40,
@@ -194,7 +194,7 @@
         1400
       ]
     },
-    "font_family": "Smiley (SmileySans-Oblique), fallback SourceHan",
+    "font_family": "LXGW WenKai Lite (Kai), fallback latin Space Grotesk / Clash Display",
     "letter_spacing_px": 1.2,
     "right_decoration": "none (blue ring removed in v1.4.0)",
     "font_px_by_mode": {

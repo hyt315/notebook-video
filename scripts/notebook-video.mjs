@@ -134,11 +134,9 @@ const newProject = async (args) => {
   const publicDir = path.join(target, 'public');
   fs.mkdirSync(publicDir, {recursive: true});
   for (const name of [
-    'SourceHanSansCN-Regular.otf',
-    'SourceHanSansCN-Bold.otf',
-    'SourceHanSans-LICENSE.txt',
-    'SmileySans-Oblique.otf',
-    'SmileySans-LICENSE.txt',
+    'LXGWWenKaiLite-Regular.ttf',
+    'LXGWWenKaiLite-Medium.ttf',
+    'LICENSE-OFL-1.1-LXGW.txt',
   ]) fs.copyFileSync(path.join(fontDir, name), path.join(publicDir, name));
   fs.mkdirSync(path.join(target, 'renders'), {recursive: true});
   if (classic) {

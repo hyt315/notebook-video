@@ -16,7 +16,7 @@ Three delivery canvases coexist in this skill. Ask the user once at kickoff whic
 | Delivery scale | 4/3 | 4/3 | 4/3 |
 | Subtitle strip `left/right` | 188 | 60 | 50 |
 | Subtitle strip `bottom`/`height` | 34/112 | 34/112 | 40/104 |
-| `TYPE.subtitle` (Smiley) | 44 | 44 | 40 |
+| `TYPE.subtitle` (WenKai Lite) | 44 | 44 | 40 |
 | `AESTHETIC.subtitleSafeWidth` | 1334 | 1060 | 900 |
 | Usable content width (after paper margins) | ~1700 | ~1250 | ~980 |
 | Column layout | two columns | two narrowed columns | single column, cards stacked |
@@ -32,7 +32,7 @@ The multi-zone style is preserved in every mode — never reduce the number of z
 
 ## Authoring a 3:4 portrait film
 
-1. Set every 3:4 column value above together: `Composition` 1440×1920, wrapper 1080×1440, subtitle margins 50, bottom 40, height 104, `TYPE.subtitle` 40, `subtitleSafeWidth` 900. The caption width gate must measure at the same 40px Smiley setting.
+1. Set every 3:4 column value above together: `Composition` 1440×1920, wrapper 1080×1440, subtitle margins 50, bottom 40, height 104, `TYPE.subtitle` 40, `subtitleSafeWidth` 900. The caption width gate must measure at the same 40px WenKai setting.
 2. Chapter chrome moves to y≈80; content region runs y≈200–1290; the subtitle strip sits at the bottom as in landscape modes.
 3. Two-column scenes become stacked zones: full-width cards (~980 wide) laid top to bottom, each keeping its own bottom-anchored conclusion strip. Timeline SVGs stretch to ~900 wide — often larger than their landscape versions.
 4. Caption lines must pass the 900px gate at 40px; portrait lines break shorter (about 13 CJK characters).

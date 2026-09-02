@@ -23,9 +23,9 @@ Background marks remain subordinate to all semantic objects.
 
 ## Typography
 
-- Source Han Sans CN Regular: subtitles and body.
-- Source Han Sans CN Bold: headings.
-- Smiley Sans: short display emphasis only.
+- LXGW WenKai Lite Regular: subtitles and body.
+- LXGW WenKai Lite Medium: headings.
+- Clash Display / Space Grotesk: Latin accents, EP tags and code-ish strings.
 - Subtitle: 40px.
 - Avoid readable text below 17px.
 - Include fonts and license files in the editable package.
