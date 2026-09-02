@@ -46,16 +46,13 @@ Do not add dynamic shadow to fixed panels. Do not use large permanent blurred ha
 
 ## Subtitle input
 
-Use the exact `Subtitle` component. It is a clean white torn paper strip:
+Use the exact `Subtitle` component. Pure text pinned near the bottom - no bar, no torn contour:
 
-- left/right: 188px;
-- bottom: 34px;
-- height: 112px;
-- no border;
-- exact canonical clip-path polygon;
-- two restrained brown drop shadows;
-- orange locator 28px from the left;
-- blue ring 24px from the right;
+- left/right: 188px; bottom: 18px;
+- one centered line, WenKai Lite 44px (40px on 3:4), letterSpacing 1.6;
+- per-word reveal with per-character stagger (0.9 frames); words fade-slide 6px over ~2.5 frames;
+- 180ms lead over the TTS word start; a hidden full-width placeholder keeps the line from shifting horizontally;
+- only a soft text shadow; never a dark border, side marks, orange locator or blue ring.
 - 1334px safe text width;
 - one centered 40px line.
 

@@ -4,12 +4,17 @@
 
 Deliver at native 30fps. Keep scene constants, physical poses, subtitle reveal and output in the same 30fps coordinate system. Do not duplicate frames into a 60fps container. For an intentional stop-motion accent, quantize only that component to 15fps so each pose holds for two output frames.
 
-Keep the camera fixed. Motion belongs to independently modeled objects.
+The global camera moves: **CameraRig** wraps every scene as one continuous track on the delivery canvas (per-canvas keyframe tables: 16:9 and 3:4; 4:3 reuses the landscape track). Keep scale always >=1 so the canvas never shows outside the stage, and keep the built-in exponential lag follow-focus. Author exactly one slow push or focus drift per chapter; all other motion belongs to independently modeled objects.
 
 Keep stable layout coordinates fixed and animate movement with `translate3d`, rotate, scale and opacity. Mount only the active scene, plus the incoming scene during a short transition.
 
 ## Standard motions
 
+- Camera push: chapter level, 8-14% scale, focus follows the narration target with the built-in lag.
+- JumpInText title: per-glyph 3D flip-in (rotateX ~88deg from the baseline, 12px rise, spring over-bounce, ~1.6-frame stagger). Always for chapter and scene titles.
+- WaveText latin: per-letter wave typing with a color gradient (10-frame wave, 4 keyframe offsets), for CTA latin strings.
+- Figure roll-in: multi-keyframe rotation (150deg to 360deg with a mid-scale bulge) instead of a plain pop for emblem graphics.
+- Subtitle reveal: one word at a time, chars inside a word stagger by 0.9 frames, 6px fade-slide, 180ms lead over the word start; never a decorative bar.
 - Paper entry: cubic ease-out, one 8–13% overshoot, settle within about 0.8s.
 - Paper lift: raise position and increase shadow distance/blur while lowering shadow alpha.
 - Paper landing: close/darken shadow, compress no more than 3%, then settle once.

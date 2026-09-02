@@ -49,7 +49,7 @@ def main() -> None:
     if not director["provider_neutral_fallback"] or not director["codex_imagegen_enhancement"]:
         raise SystemExit("universal image-generation capability contract changed")
     subtitle = contract["subtitle_input"]
-    if subtitle["bounds"] != [188, 934, 1732, 1046]:
+    if subtitle["bounds"] != [188, 1006, 1732, 1062]:
         raise SystemExit("subtitle bounds changed")
     if subtitle["dark_border"] or subtitle["dark_side_marks"] or subtitle["inner_line"]:
         raise SystemExit("subtitle artifact rejection flags changed")

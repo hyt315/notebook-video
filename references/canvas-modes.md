@@ -14,8 +14,8 @@ Three delivery canvases coexist in this skill. Ask the user once at kickoff whic
 | Design coordinate space | 1920×1080 | 1440×1080 | 1080×1440 |
 | Film wrapper `width`/`height` | 1920/1080 | 1440/1080 | 1080/1440 |
 | Delivery scale | 4/3 | 4/3 | 4/3 |
-| Subtitle strip `left/right` | 188 | 60 | 50 |
-| Subtitle strip `bottom`/`height` | 34/112 | 34/112 | 40/104 |
+| Subtitle text `left/right` | 188 | 60 | 50 |
+| Subtitle text `bottom` (no bar) | 18 | 18 | 18 |
 | `TYPE.subtitle` (WenKai Lite) | 44 | 44 | 40 |
 | `AESTHETIC.subtitleSafeWidth` | 1334 | 1060 | 900 |
 | Usable content width (after paper margins) | ~1700 | ~1250 | ~980 |

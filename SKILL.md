@@ -7,7 +7,7 @@ description: Create complete Chinese 2K warm-ivory engineering-notebook explaine
 
 Build a finished, validated MP4 and editable Remotion project. Treat this as a low-freedom production system, not a visual prompt. Remotion is the only visual rendering engine in the current skill.
 
-**Default visual route: lecture composition.** Every scene is drawn with code (SVG + rich synchronized text), so any AI in any environment can reproduce the established style without an image-generation model — read [references/lecture-composition.md](references/lecture-composition.md) before directing scenes. Image generation is an optional add-on: ask the user once whether they want generated support art for concrete hero scenes, and only then use it for that subset.
+**Default visual route: lecture composition.** Every scene is drawn with code (SVG + rich synchronized text), so any AI in any environment can reproduce the established style without an image-generation model — read [references/lecture-composition.md](references/lecture-composition.md), [references/motion-design.md](references/motion-design.md) and [references/visual-system.md](references/visual-system.md) before directing scenes. Image generation is an optional add-on: ask the user once whether they want generated support art for concrete hero scenes, and only then use it for that subset.
 
 ## Use the official engine first
 
@@ -28,13 +28,14 @@ Start every project by copying a bundled template through `new-project`; do not 
 Keep these official elements locked until the user approves a future rendered replacement:
 
 - React + TypeScript + Remotion rendering core;
+- locked premium motion contracts shipped in the template and carried into every new production: CameraRig dual-canvas lag camera, JumpInText per-glyph 3D flip titles, WaveText letter-wave CTA typing, multi-keyframe figure roll-ins and per-word subtitle reveal (see references/motion-design.md);
 - fixed native 30fps motion, render and delivery on one of three locked canvases: 2560×1440 (16:9), 1920×1440 (4:3) or 1440×1920 (3:4 portrait), chosen once at kickoff;
 - no duplicate-frame upconversion; use 60fps only when motion is authored natively at 60fps;
 - mount only the active scene, with at most two scenes during a short transition;
 - animate moving objects with transforms instead of per-frame layout properties;
 - bright layered warm-ivory notebook background;
 - stable upper-left chapter card and upper-right technical header;
-- clean white lower torn-wave subtitle input with no dark side artifacts;
+- bottom-pinned pure caption text with per-word reveal, no decorative bar;
 - orange left locator, blue right status ring and centered 40px Chinese text;
 - LXGW WenKai Lite as the unified CJK typeface plus Clash Display / Space Grotesk Latin accents;
 - TTS word timing converted once to integer absolute frames;

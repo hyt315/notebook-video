@@ -52,12 +52,11 @@
 
 ## Subtitle
 
-- Clean white torn-wave input is present in every scene.
-- No dark border, black side mark, inner line or rounded search-bar shape.
-- One centered line, 40px Source Han Sans CN.
-- `CaptionFitGate` measures every fully revealed cue with the loaded Source Han font in the real render browser; every cue fits within 1334px.
-- Partial reveal does not shift horizontally.
-- Orange locator and blue ring remain fixed.
+- Bottom-pinned pure caption text is present in every scene (no bar, no torn contour).
+- No dark border, black side mark, inner line, orange locator or blue ring.
+- One centered line, WenKai Lite 44px (40px on 3:4).
+- `CaptionFitGate` measures every fully revealed cue with the loaded WenKai font in the real render browser; every cue fits within the canvas safe width.
+- Partial reveal does not shift horizontally (hidden full-width placeholder).
 - Internal punctuation remains; trailing punctuation is hidden visually.
 - Caption segmentation is explicitly `semantic`, never `draft-character-count`.
 - Every model/product name, benchmark, number-plus-unit expression and fixed technical term is listed in the protected-phrase manifest.

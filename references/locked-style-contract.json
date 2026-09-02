@@ -144,64 +144,22 @@
   },
   "subtitle_input": {
     "required": true,
-    "name": "clean-white-torn-wave-input",
+    "name": "bottom-pinned-pure-caption-reveal",
     "bounds": [
       188,
-      934,
+      1006,
       1732,
-      1046
+      1062
     ],
-    "paper": "#fffdf7",
+    "paper": "none (transparent, no bar)",
     "dark_border": false,
     "dark_side_marks": false,
-    "contour": "copy exact clipPath polygon from canonical Subtitle component",
-    "shadow": "drop-shadow(7px 8px 0 rgba(92,75,55,.22)) drop-shadow(0 14px 20px rgba(48,35,22,.14))",
-    "orange_locator_relative": [
-      28,
-      28,
-      38,
-      84
-    ],
-    "text_center_x": 960,
-    "font_px": 44,
-    "safe_width_px": 1334,
-    "horizontal_padding_px": 105,
-    "one_line_only": true,
-    "reserve_full_phrase_width": true,
-    "trailing_punctuation_hidden": true,
-    "inner_line": false,
-    "search_bar_ui": false,
-    "z": 200,
-    "measurement": "browser DOM width after exact font load, converted from delivery scale to design pixels",
-    "measurement_gate": "CaptionFitGate",
-    "bounds_by_mode": {
-      "16:9": [
-        188,
-        934,
-        1732,
-        1046
-      ],
-      "4:3": [
-        60,
-        934,
-        1380,
-        1046
-      ],
-      "3:4": [
-        50,
-        1296,
-        1030,
-        1400
-      ]
-    },
-    "font_family": "LXGW WenKai Lite (Kai), fallback latin Space Grotesk / Clash Display",
-    "letter_spacing_px": 1.2,
-    "right_decoration": "none (blue ring removed in v1.4.0)",
-    "font_px_by_mode": {
-      "16:9": 44,
-      "4:3": 44,
-      "3:4": 40
-    }
+    "contour": "none",
+    "shadow": "text-shadow 0 2px 8px rgba(58,44,28,.28)",
+    "orange_locator_relative": null,
+    "blue_ring_relative": null,
+    "measure_gate": "CaptionFitGate with loaded WenKai Lite over subtitleSafeWidth",
+    "inner_line": false
   },
   "timing": {
     "source_unit": "milliseconds",

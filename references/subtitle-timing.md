@@ -35,7 +35,7 @@ Create `startFrame` and `endFrame` for cues and words once. Subtitle, animation 
 - Reveal at measured word starts with about 60ms of visual lead, equal to two frames at 30fps.
 - Keep the completed cue until the next cue.
 - Reserve the complete phrase width from the first word.
-- Keep the strip, orange locator and blue ring fixed.
+- Keep the pinned pure caption text fixed (no bar, no locator, no ring).
 - Preserve internal punctuation.
 - Hide only trailing punctuation visually.
 - Keep one line within 1334px.

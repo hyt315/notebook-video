@@ -43,7 +43,7 @@ Stable semantic IDs must remain separate from display labels. Changing visible c
 - Treat generated bitmaps as animated assets, never as the finished scene.
 - Keep exact labels and diagrams outside the bitmap as live Remotion layers.
 - Record source, prompt summary, crop policy and rights for every raster asset.
-- Keep the clean torn-paper subtitle at one centered 40px line.
+- Keep the bottom-pinned pure caption text at one centered line (no torn bar).
 - Use browser-native caption measurement after the exact font is loaded.
 - Use the official palette and type scale; do not invent per-scene styling.
 - Use lift-linked paper shadows only for moving paper.

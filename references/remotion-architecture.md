@@ -79,7 +79,7 @@ Copy rather than recreate:
 - `Img`: renders registered raster support art while callouts remain separate components.
 - `Background`: fixed page, grid and static texture.
 - `Paper`: owns its surface, outline and dynamic shadow.
-- `Subtitle`: fixed white torn input without a dark border.
+- `Subtitle`: bottom-pinned pure caption text with per-word reveal; no bar, no dark border.
 - `Chrome`: stable chapter and technical header.
 - `Sound`: narration and action effects with frame-based `Sequence`.
 
