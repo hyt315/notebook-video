@@ -2,6 +2,16 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [2.1.0] - 2026-09-02
+
+### Changed
+
+- **Elastic Glyph Wave Typography (4段双轴弹性波浪跳字与点亮系统)**:
+  - *Tibo-style 4-Stage Overshoot JumpInText*: fully ported and tuned the physical spring wave trajectory (`waveY: [14px, -6px, 1.5px, 0px]`, `waveX: [3px, -1px, 0px, 0px]`, `rotX: [40deg, -5deg, 0deg]`), delivering tactile bounce and per-glyph ignition color transition (`activeColor -> ink`).
+  - *Caveat Latin Handwriting Sub-system*: integrated `Caveat-Latin.woff2` hand-drawn annotation stickers (`lonely code`, `start small`, `packaging`, `ongoing triage`, `always by your side`) for rich multi-tier typographic hierarchy.
+  - *Zero-Overlap & Zero-Flicker Transitions*: implemented strict lifecycle boundary isolation (`396~412f` exit, `416f` mount) eliminating the 14s transition collision; replaced floating Module overlays with smooth `Staggered Stack Inset` file lists, completely curing 16s flicker and 17s card-header collisions.
+  - *Canonical Tri-Aspect Rendering Engine*: cleanly unified responsive rendering across all 3 official 2K canvases (16:9 `2560×1440`, 4:3 `1920×1440`, 3:4 `1440×1920`) with dedicated layout compositions (`NotebookVideoFilm-16x9`, `NotebookVideoFilm-4x3`, `NotebookVideoFilm-3x4`).
+
 ## [2.0.0] - 2026-09-02
 
 ### Changed
