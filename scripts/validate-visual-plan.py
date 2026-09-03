@@ -138,7 +138,7 @@ def validate(project: Path) -> list[str]:
             target = project / rel
             if not target.is_file() or target.stat().st_size == 0:
                 errors.append(f"{label}: missing or empty asset {rel}")
-            elif asset.get("sha256") != hashlib.sha256(target.read_bytes()).hexdigest():
+            elif str(asset.get("sha256") or "").lower() != hashlib.sha256(target.read_bytes()).hexdigest():
                 errors.append(f"{label}: sha256 does not match {rel}")
         if asset.get("source_type") == "ai-generated":
             if not asset.get("provider") or not asset.get("prompt_summary"):

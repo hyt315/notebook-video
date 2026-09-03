@@ -1,5 +1,17 @@
 # TTS and declarative audio
 
+## Contents
+
+- [Provider-neutral TTS contract](#provider-neutral-tts-contract)
+- [Recommended adapter](#recommended-adapter-chapter-segmented-openai-compatible)
+- [Standard delivery pace](#standard-delivery-pace)
+- [Polyphone handling](#polyphone-handling)
+- [Zero-key fallback adapter](#zero-key-fallback-adapter)
+- [Remotion audio tree](#remotion-audio-tree)
+- [Sound vocabulary](#sound-vocabulary)
+- [Mix and export](#mix-and-export)
+- [Re-voicing without re-timing](#re-voicing-without-re-timing)
+
 ## Provider-neutral TTS contract
 
 The project does not bundle generated narration. Before synthesis, record the provider, voice, generation date, governing terms and whether public/commercial redistribution is allowed.
@@ -91,3 +103,17 @@ Do not place effects on invisible actions or every small movement.
 - Export 48kHz stereo AAC at about 192kbps.
 
 Use FFmpeg after Remotion for normalization and encoding only. Do not maintain a separate action timeline in a shell script.
+
+## Re-voicing without re-timing
+
+When the narration text is locked but the voice changes (another voice design or model), keep every scene frame valid by aligning the new audio to the approved timeline instead of re-authoring scenes:
+
+```text
+python scripts/match-timing.py ./my-film --lock
+python <TTS adapter> ./my-film
+python scripts/speed-post.py ./my-film 1.10
+python scripts/match-timing.py ./my-film
+node "<SKILL_DIR>/scripts/notebook-video.mjs" build-semantic-captions ./my-film/audio/narration.mp3.json ./my-film/manifests/semantic-caption-lines.txt ./my-film/manifests/caption-cues.json --lead-ms 60
+```
+
+`--lock` snapshots the approved `manifests/chapters.json` to `manifests/chapters-timing-lock.json`. The default mode stretches each new chapter to its locked duration (`atempo`, pitch unchanged), re-joins with the standard gap, re-normalizes loudness and scales the word timings onto the locked frame table, so chapter starts, scene guards and sound frames do not move. Ratios outside 0.5–2.0 per chapter are refused. Rebuild captions afterwards because intra-chapter word timing always changes with a new voice.

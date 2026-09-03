@@ -2,6 +2,22 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [2.1.1] - 2026-09-03
+
+### Added
+
+- **Re-voicing workflow (`scripts/match-timing.py`)**: when the narration text is locked but the voice (or model) changes, snapshot the approved `manifests/chapters.json` with `--lock`, then align the new synthesis back to it — per-chapter pitch-preserving `atempo`, standard-gap re-join, loudness re-normalization and word-timing rescale. Chapter starts, scene guards and sound frames do not move; rebuild semantic captions afterwards. Verified on a 4996-frame / 22-chapter production across three voice passes.
+
+### Fixed
+
+- **Case-insensitive visual-asset hashes**: `validate-visual-plan` now accepts uppercase `sha256` digests (e.g. from `Get-FileHash`) instead of rejecting them as mismatches.
+
+### Docs
+
+- **Long-film path** (`references/remotion-architecture.md`): for newly authored long films keep `TIMELINE_SCALE = 1` and set `DURATION` to the total delivery frame count with all timing authored in delivery frames; notes the bundled template ships a 1126-frame timeline.
+- **Bundler authoring pitfall** (`references/remotion-architecture.md`): documents the observed misparse of adjacent generic-annotated arrow components after dense JSX (error misreported on the following line) with verified workarounds.
+- **Re-voicing procedure** (`references/tts-audio.md`): lock → synthesize → speed-post → match → rebuild-captions sequence.
+
 ## [2.1.0] - 2026-09-02
 
 ### Changed

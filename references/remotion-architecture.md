@@ -106,6 +106,14 @@ Text reveal, measured TTS boundaries, physical paper poses and action audio use 
 
 The default scene is a 900-frame design timeline. If narration requires a longer delivery while retaining the same authored scene geometry, set `TIMELINE_SCALE` and `DURATION` together (`DURATION = 900 * TIMELINE_SCALE`). Every scene mount guard, animation cue, caption boundary and action-audio `<Sequence from>` must derive from `useCurrentFrame()`, `q()` or `deliveryFrame()`; never read raw `useRawCurrentFrame()` in a scene. Before a full render, range-render across every scene boundary and inspect the final frame. This prevents an extended composition from unmounting all scenes or leaving sound cues at the original timing.
 
+### Long-film path: keep `TIMELINE_SCALE = 1`
+
+For a newly authored long film (verified at 4996 frames / 22 chapters), the simplest consistent setup is to keep `TIMELINE_SCALE = 1` and set `DURATION` to the total delivery frame count, authoring every mount guard, cue, boundary and sound frame directly in delivery frames. This satisfies the invariant above with no fractional scale math. (The bundled lecture template ships a 1126-frame timeline; the 900-frame figure matches the visual-director example project.)
+
+### Authoring pitfall: adjacent generic-annotated arrow components
+
+The pinned bundler has been observed to misparse `const X: React.FC<A> = (props) => { ... }` when it immediately follows a component whose body ends in dense JSX (for example a `.map` returning nested elements). The reported error points at the innocent following line (`Expected identifier but found "("`), so do not edit the reported line first. Workarounds that all parse reliably: write the component as a `function` declaration, return the preceding value from an explicit `<div>` instead of a bare `<>` fragment split across lines, or separate the two components with a plain statement. Isolate the trigger by transforming growing prefixes of the file with the bundler's esbuild `tsx` loader before touching scene logic.
+
 Mount only scenes that can contribute pixels. Keep one scene mounted normally and at most two during a transition. Never hide every inactive scene with opacity. Read [performance-design.md](performance-design.md).
 
 Use start-inclusive and end-exclusive scene windows. A scene group owns its image, text, SVG and annotation layers. When the subject changes, unmount the outgoing group at its end frame; do not leave a hidden raster, callout or shadow under the next scene.
