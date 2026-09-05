@@ -2,6 +2,18 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [2.2.0] - 2026-09-05
+
+### Added
+
+- **Theme pack system (四主题皮肤体系)**: the lecture template's locked aesthetic core is now a pluggable skin behind a one-line `src/theme/active.ts` switch, selected at kickoff via `new-project ./dir --style=<id>` and enforced per-theme by contract docs and QA gates. Layout coordinates, type scale, motion contracts and validators are shared and unchanged; themes swap palette, card skin, background decoration, grade and subtitle chrome only. Progressive disclosure preserved: a production reads exactly one theme contract.
+  - *`paper` (default)*: the original warm-ivory notebook, byte-identical rendering (SSIM 1.0 regression on frames 100/300/550/900).
+  - *`cel` (动漫赛璐璐·分镜风)*: near-white base, 5px ink borders with hard offset shadows, deterministic ±1° panel tilt, halftone dots and speed lines, boxed ink subtitle, locked `Burst` explosion-sticker extra.
+  - *`sticker` (卡通贴纸·手账风)*: pale mint grid paper, white-outlined sticker cards, hand-drawn doodles, washi-tape subtitle chip, locked `Tape` extra.
+  - *`flat` (现代扁平·几何风)*: cool gray-blue base, indigo mega-circle, Memphis accents, thick ink borders with white inset liner, solid ink subtitle bar with dual accent ticks.
+- **Scene soft-color tokens**: ~20 previously hardcoded scene colors (globe tint, branch lines, merge dots, idle fills, chapter-number gradient, CTA wave start, gauge tracks, check glow, stage tint, header pair) now route through 13 mandatory `ThemePalette` tokens; every theme ships its own set with `paper` keeping pixel-identical historical values.
+- **Theme docs & gates**: `references/theme-system.md` plus per-theme contracts (`theme-cel.md`, `theme-sticker.md`, `theme-flat.md`) written as locked checklists with rejection flags; `validate-skill` verifies the theme pack integrity and a paper-defaulting switch; `selftest` grows to 9 checks including illegal `--style` rejection without polluting the target directory.
+
 ## [2.1.1] - 2026-09-03
 
 ### Added
