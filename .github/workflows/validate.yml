@@ -34,6 +34,7 @@ jobs:
           node scripts/notebook-video.mjs validate-skill
           node scripts/notebook-video.mjs validate-official-example
           node scripts/notebook-video.mjs validate-visual-plan assets/example-project
+          python3 scripts/selftest.py
       - name: Audit locked dependencies
         working-directory: assets/example-project
         run: npm audit --package-lock-only --ignore-scripts --audit-level=high
@@ -53,3 +54,8 @@ jobs:
           test -f "$RUNNER_TEMP/notebook-video-smoke-classic/public/LICENSE-OFL-1.1-LXGW.txt"
           test -f "$RUNNER_TEMP/notebook-video-smoke-classic/public/illustrations/visual-director.png"
           test -f "$RUNNER_TEMP/notebook-video-smoke-classic/manifests/visual-assets.json"
+          mkdir "$RUNNER_TEMP/notebook-video-smoke-cel"
+          node scripts/notebook-video.mjs new-project "$RUNNER_TEMP/notebook-video-smoke-cel" --style=cel
+          test -f "$RUNNER_TEMP/notebook-video-smoke-cel/src/theme/cel.tsx"
+          grep -q "from './cel'" "$RUNNER_TEMP/notebook-video-smoke-cel/src/theme/active.ts"
+          awk 'NR==1{print}' "$RUNNER_TEMP/notebook-video-smoke-cel/src/theme/active.ts" | grep -q "import"
