@@ -115,10 +115,15 @@ const checkDeps = async () => {
   console.log(`Remotion production dependencies are ready on ${process.platform}.`);
 };
 
+const THEME_IDS = ['paper', 'cel', 'sticker', 'flat'];
+
 const newProject = async (args) => {
   const classic = args.includes('--classic');
-  const targetArg = args.find((a) => a !== '--classic');
-  if (!targetArg) fail('Usage: notebook-video new-project PROJECT_DIRECTORY [--classic]', 2);
+  const styleFlag = args.find((a) => a.startsWith('--style='));
+  const style = styleFlag ? styleFlag.slice('--style='.length) : 'paper';
+  if (!THEME_IDS.includes(style)) fail(`Unknown style "${style}". Valid values: ${THEME_IDS.join(', ')}`, 2);
+  const targetArg = args.find((a) => a !== '--classic' && !a.startsWith('--style='));
+  if (!targetArg) fail('Usage: notebook-video new-project PROJECT_DIRECTORY [--classic] [--style=paper|cel|sticker|flat]', 2);
   const target = resolvePath(targetArg);
   if (fs.existsSync(target)) {
     if (!fs.statSync(target).isDirectory()) fail(`Target exists and is not a directory: ${target}`);
@@ -130,6 +135,12 @@ const newProject = async (args) => {
   // whose hero scene demonstrates the optional image-generation add-on.
   const templateDir = classic ? 'example-project' : 'lecture-template';
   fs.cpSync(path.join(SKILL_DIR, 'assets', templateDir), target, {recursive: true, force: true});
+  // Theme selection rewrites the one-line theme switch in the copied project.
+  if (!classic && style !== 'paper') {
+    const activePath = path.join(target, 'src', 'theme', 'active.ts');
+    if (!fs.existsSync(activePath)) fail(`Theme switch is missing in the copied template: ${activePath}`);
+    fs.writeFileSync(activePath, `import {THEME} from './${style}';\nexport {THEME};\n`);
+  }
   const fontDir = path.join(SKILL_DIR, 'assets', 'fonts');
   const publicDir = path.join(target, 'public');
   fs.mkdirSync(publicDir, {recursive: true});
@@ -143,6 +154,7 @@ const newProject = async (args) => {
     console.log(`Created official v9 visual-director Remotion notebook project: ${target}`);
   } else {
     console.log(`Created official lecture-template Remotion notebook project (pure code-drawn SVG default): ${target}`);
+    console.log(`Theme locked to "${style}". Style contract: references/theme-${style}.md.`);
     console.log('Multi-zone lecture composition rules: references/lecture-composition.md. Image generation stays an optional add-on offered separately.');
   }
   console.log('Preserve the engine, background, subtitle, chrome, asset gate, audio tree and frame conventions. Replace topic content, visual plan, registered imagery and semantic scene objects.');
@@ -324,7 +336,7 @@ const pythonCommandMap = new Map([
 ]);
 
 const usage = () => {
-  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--classic]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT\n  validate-visual-plan PROJECT_DIRECTORY\n  validate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
+  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--classic] [--style=paper|cel|sticker|flat]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT\n  validate-visual-plan PROJECT_DIRECTORY\n  validate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };
 
 const main = async () => {
