@@ -25,6 +25,8 @@ Before changing scenes, read:
 
 Start every project by copying a bundled template through `new-project`; do not rebuild the engine from memory. The default copy is `assets/lecture-template` (pure code-drawn lecture route); `--classic` copies `assets/example-project`, the visual-director exemplar whose hero scene demonstrates the optional image add-on. The source projects and locked contract are authoritative. Create projects in an empty directory so stale files from an earlier run cannot survive.
 
+**Theme selection.** The lecture template ships four locked skins selected once at kickoff: `paper` (default warm-ivory notebook), `cel` (anime cel-shading storyboard), `sticker` (cartoon sticker journal) and `flat` (modern flat geometric). Pass `--style=<id>` to `new-project` and read only that theme's contract afterwards — [references/theme-system.md](references/theme-system.md) explains the boundary, and each theme doc is mutually exclusive by design so an A×16:9 production never loads the other skins' rules. Themes swap palette, card skin, background decoration and subtitle chrome only; every layout coordinate, type scale, motion contract and QA gate is shared and unchanged.
+
 Keep these official elements locked until the user approves a future rendered replacement:
 
 - React + TypeScript + Remotion rendering core;
@@ -79,7 +81,7 @@ Use the cross-platform Node launcher. Replace `<SKILL_DIR>` with the skill direc
 ```text
 node "<SKILL_DIR>/scripts/notebook-video.mjs" check-deps
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-skill
-node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./notebook-video-project
+node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./notebook-video-project --style=cel
 node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-project
 ```
 
@@ -91,7 +93,7 @@ The default copy is the lecture template: a validated 30-second film whose sourc
 
 Infer known choices from the conversation. Confirm only choices that materially change the result: factual claims, platform/aspect ratio, real brand assets, CTA, voice or music.
 
-Ask the user once at kickoff which canvas mode this production uses: **16:9** (default, landscape players), **4:3** (taller mobile presence) or **3:4 portrait** (native for portrait feeds such as Douyin). The answer decides every layout coordinate; read [references/canvas-modes.md](references/canvas-modes.md) for the parameter table shared by both modes. On **3:4 portrait** also read [references/portrait-illustration-system.md](references/portrait-illustration-system.md): the illustration is the hero, in-scene text is a short label (full narration lives in the subtitle strip), and a persistent faint ambient layer plus a code-drawn figure cast, highlighter markers and contrast labels keep the tall frame from reading empty.
+Ask the user once at kickoff which canvas mode this production uses: **16:9** (default, landscape players), **4:3** (taller mobile presence) or **3:4 portrait** (native for portrait feeds such as Douyin), and which theme skin: **paper** (default warm-ivory), **cel** (anime cel-shading), **sticker** (cartoon sticker journal) or **flat** (modern flat geometric). Both answers are passed to `new-project` (`--style=<id>`) and decide every skin decision; read only the selected theme's contract in [references/theme-cel.md](references/theme-cel.md), [references/theme-sticker.md](references/theme-sticker.md) or [references/theme-flat.md](references/theme-flat.md) (the paper default keeps [references/visual-system.md](references/visual-system.md)). The canvas answer decides every layout coordinate; read [references/canvas-modes.md](references/canvas-modes.md) for the parameter table shared by both modes. On **3:4 portrait** also read [references/portrait-illustration-system.md](references/portrait-illustration-system.md): the illustration is the hero, in-scene text is a short label (full narration lives in the subtitle strip), and a persistent faint ambient layer plus a code-drawn figure cast, highlighter markers and contrast labels keep the tall frame from reading empty.
 
 Default to Chinese, warm female narration, no prominent BGM and a duration appropriate to the content. Use the cold-open contract in [references/narrative-hook.md](references/narrative-hook.md): lead with a verified consequence or tension in the first 1.5 seconds, open an honest loop by 8 seconds, then return to normal explanation and later pay that loop off with evidence. Plan the film's energy curve with [references/pacing-rhythm.md](references/pacing-rhythm.md): hammer frames, fast/slow chapter alternation, chapter breathing and a sparse ending beat. Give each scene one main idea and one physical action.
 
@@ -250,6 +252,10 @@ python "<SKILL_DIR>/scripts/selftest.py"
 ## Resource map
 
 - [references/locked-style-contract.json](references/locked-style-contract.json): binding tokens, coordinates and rejection flags.
+- [references/theme-system.md](references/theme-system.md): theme boundary (what a skin may and may not change) and the locked theme list.
+- [references/theme-cel.md](references/theme-cel.md): cel (anime cel-shading) theme contract.
+- [references/theme-sticker.md](references/theme-sticker.md): sticker (cartoon sticker journal) theme contract.
+- [references/theme-flat.md](references/theme-flat.md): flat (modern flat geometric) theme contract.
 - [references/lecture-composition.md](references/lecture-composition.md): the default multi-zone code-drawn route, cue-frame sync procedure and self-check list.
 - [references/official-aesthetic-system.md](references/official-aesthetic-system.md): locked aesthetic core and ordinary editable surface.
 - [references/remotion-architecture.md](references/remotion-architecture.md): project structure, data flow and component contracts.
