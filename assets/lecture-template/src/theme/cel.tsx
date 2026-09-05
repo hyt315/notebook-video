@@ -1,5 +1,5 @@
 import React from 'react';
-import {AbsoluteFill} from 'remotion';
+import {AbsoluteFill, Img, staticFile} from 'remotion';
 import {useCanvas} from './canvas';
 import type {Theme} from './types';
 
@@ -62,34 +62,15 @@ const panelTilt = (style?: React.CSSProperties) => {
   return (((Math.round(left) + Math.round(top)) % 5) - 2) * 0.5;
 };
 
+// 背景（LOCKED）：固定资产图，每比例一张（2560×1440 / 1920×1440 / 1440×1920），
+// 像素与画布一一对应；含半调网点、速度线、爆炸贴。禁止改回代码自绘背景。
+const BG_BY_MODE = {'16:9': 'bg-cel-169.jpg', '4:3': 'bg-cel-43.jpg', '3:4': 'bg-cel-34.jpg'} as const;
+
 const Background: React.FC = () => {
-  const {mode} = useCanvas();
-  return <>
-    <AbsoluteFill style={{background: palette.paperBase}} />
-    {/* 半调网点：右上汇聚渐隐（所有比例共用百分比锚点） */}
-    <AbsoluteFill style={{
-      backgroundImage: `radial-gradient(${palette.ink} 1.8px, transparent 2.4px)`,
-      backgroundSize: '20px 20px', opacity: 0.11,
-      WebkitMaskImage: 'radial-gradient(circle at 88% 8%, black 0%, transparent 48%)',
-      maskImage: 'radial-gradient(circle at 88% 8%, black 0%, transparent 48%)',
-    }} />
-    {/* 半调网点：左下弱呼应 */}
-    <AbsoluteFill style={{
-      backgroundImage: `radial-gradient(${palette.ink} 1.6px, transparent 2.2px)`,
-      backgroundSize: '18px 18px', opacity: 0.08,
-      WebkitMaskImage: 'radial-gradient(circle at 6% 96%, black 0%, transparent 42%)',
-      maskImage: 'radial-gradient(circle at 6% 96%, black 0%, transparent 42%)',
-    }} />
-    {/* 速度线：左上 16 束扇形汇聚 */}
-    <svg width={mode.designW} height={mode.designH} style={{position: 'absolute', inset: 0}}>
-      {Array.from({length: 16}).map((_, i) => {
-        const ang = (i / 16) * Math.PI / 2.2 + 0.12;
-        const x1 = -40 + Math.cos(ang) * 260, y1 = -40 + Math.sin(ang) * 260;
-        const x2 = -40 + Math.cos(ang) * 680, y2 = -40 + Math.sin(ang) * 680;
-        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={palette.ink} strokeWidth={3.6} opacity={0.22} />;
-      })}
-    </svg>
-  </>;
+  const {canvas} = useCanvas();
+  return <AbsoluteFill style={{background: palette.paperBase}}>
+    <Img src={staticFile(BG_BY_MODE[canvas])} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+  </AbsoluteFill>;
 };
 
 const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) => {

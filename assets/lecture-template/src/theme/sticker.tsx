@@ -1,5 +1,5 @@
 import React from 'react';
-import {AbsoluteFill} from 'remotion';
+import {AbsoluteFill, Img, staticFile} from 'remotion';
 import {useCanvas} from './canvas';
 import type {Theme} from './types';
 
@@ -55,34 +55,15 @@ const aesthetic: Theme['aesthetic'] = {
 const paperShadow = (lift: number) =>
   `0 ${4 + 4 * lift}px 0 rgba(74,59,47,${0.12 + 0.05 * lift}),0 ${10 + 12 * lift}px ${22 + 16 * lift}px rgba(74,59,47,${0.17 + 0.07 * lift})`;
 
-// ---- 手绘涂鸦（按画布比例锁定锚点，形状比例不随画布拉伸） ----------------
-const doodle = {
-  heart: (cx: number, cy: number, s: number) =>
-    `M${cx} ${cy + s * 0.32} C${cx - s} ${cy - s * 0.5} ${cx - s * 0.34} ${cy - s * 1.04} ${cx} ${cy - s * 0.36} C${cx + s * 0.34} ${cy - s * 1.04} ${cx + s} ${cy - s * 0.5} ${cx} ${cy + s * 0.32} Z`,
-  cross: (cx: number, cy: number, s: number) =>
-    `M${cx - s / 2} ${cy - s / 2} l${s} ${s} M${cx + s / 2} ${cy - s / 2} l${-s} ${s}`,
-  wave: (x: number, y: number, w: number) =>
-    `M${x} ${y} q${w * 0.25} ${-w * 0.28} ${w * 0.5} 0 t${w * 0.5} 0`,
-  spiral: (cx: number, cy: number, s: number) =>
-    `M${cx} ${cy} c${s * 0.5} ${-s * 0.2} ${s * 0.85} ${s * 0.25} ${s * 0.5} ${s * 0.6} c${-s * 0.35} ${s * 0.3} ${-s * 0.85} ${-s * 0.05} ${-s * 0.5} ${-s * 0.6}`,
-  zig: (x: number, y: number, w: number) =>
-    `M${x} ${y} q${w * 0.16} ${-w * 0.32} ${w * 0.33} 0 q${w * 0.16} ${w * 0.32} ${w * 0.33} 0`,
-};
+// 背景（LOCKED）：固定资产图，每比例一张（2560×1440 / 1920×1440 / 1440×1920），
+// 像素与画布一一对应；含薄荷网格纸、四角涂鸦、和纸胶带。禁止改回代码自绘背景。
+const BG_BY_MODE = {'16:9': 'bg-sticker-169.jpg', '4:3': 'bg-sticker-43.jpg', '3:4': 'bg-sticker-34.jpg'} as const;
 
 const Background: React.FC = () => {
-  const {mode} = useCanvas();
-  const dw = mode.designW, dh = mode.designH;
-  return <>
-    <AbsoluteFill style={{background: palette.paperBase}} />
-    <AbsoluteFill style={{backgroundImage: `repeating-linear-gradient(0deg,transparent 0 41px,rgba(120,95,70,${aesthetic.gridOpacity}) 42px),repeating-linear-gradient(90deg,transparent 0 41px,rgba(120,95,70,${aesthetic.gridOpacity}) 42px)`}} />
-    <svg width={dw} height={dh} style={{position: 'absolute', inset: 0}} fill="none" strokeLinecap="round">
-      <path d={doodle.heart(dw * 0.90, dh * 0.17, 30)} stroke={palette.orange} strokeWidth={5} />
-      <path d={doodle.cross(dw * 0.855, dh * 0.25, 26)} stroke={palette.blue} strokeWidth={5} />
-      <path d={doodle.wave(dw * 0.06, dh * 0.865, 120)} stroke={palette.green} strokeWidth={5} />
-      <path d={doodle.spiral(dw * 0.928, dh * 0.815, 44)} stroke={palette.gold} strokeWidth={5} />
-      <path d={doodle.zig(dw * 0.13, dh * 0.148, 60)} stroke={palette.gold} strokeWidth={5} />
-    </svg>
-  </>;
+  const {canvas} = useCanvas();
+  return <AbsoluteFill style={{background: palette.paperBase}}>
+    <Img src={staticFile(BG_BY_MODE[canvas])} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+  </AbsoluteFill>;
 };
 
 // 白边贴纸卡：内圈细墨线（贴纸印刷边）+ 外圈白边（模切边）+ 加深软影，三层保证边界可见。
