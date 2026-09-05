@@ -38,7 +38,14 @@ const aesthetic: Theme['aesthetic'] = {
 
 // 硬偏移墨影：无模糊，随 lift 同步加大位移（举起感），不使用柔和投影。
 const paperShadow = (lift: number) =>
-  `${5 + 5 * lift}px ${5 + 5 * lift}px 0 rgba(20,17,15,0.92)`;
+  `${7 + 7 * lift}px ${7 + 7 * lift}px 0 rgba(20,17,15,0.92)`;
+
+// 分镜格微旋转（LOCKED）：由卡片位置哈希出 ±1° 内的固定倾角，
+// 同一张卡永远同一个角度，与动效 transform 叠加而不冲突。
+const panelTilt = (style?: React.CSSProperties) => {
+  const left = Number(style?.left ?? 0), top = Number(style?.top ?? 0);
+  return (((Math.round(left) + Math.round(top)) % 5) - 2) * 0.5;
+};
 
 const Background: React.FC = () => {
   const {mode} = useCanvas();
@@ -46,32 +53,35 @@ const Background: React.FC = () => {
     <AbsoluteFill style={{background: palette.paperBase}} />
     {/* 半调网点：右上汇聚渐隐（所有比例共用百分比锚点） */}
     <AbsoluteFill style={{
-      backgroundImage: `radial-gradient(${palette.ink} 1.6px, transparent 2.2px)`,
-      backgroundSize: '22px 22px', opacity: 0.10,
-      WebkitMaskImage: 'radial-gradient(circle at 88% 8%, black 0%, transparent 46%)',
-      maskImage: 'radial-gradient(circle at 88% 8%, black 0%, transparent 46%)',
+      backgroundImage: `radial-gradient(${palette.ink} 1.8px, transparent 2.4px)`,
+      backgroundSize: '20px 20px', opacity: 0.16,
+      WebkitMaskImage: 'radial-gradient(circle at 88% 8%, black 0%, transparent 55%)',
+      maskImage: 'radial-gradient(circle at 88% 8%, black 0%, transparent 55%)',
     }} />
     {/* 半调网点：左下弱呼应 */}
     <AbsoluteFill style={{
-      backgroundImage: `radial-gradient(${palette.ink} 1.4px, transparent 2px)`,
-      backgroundSize: '20px 20px', opacity: 0.07,
-      WebkitMaskImage: 'radial-gradient(circle at 6% 96%, black 0%, transparent 40%)',
-      maskImage: 'radial-gradient(circle at 6% 96%, black 0%, transparent 40%)',
+      backgroundImage: `radial-gradient(${palette.ink} 1.6px, transparent 2.2px)`,
+      backgroundSize: '18px 18px', opacity: 0.11,
+      WebkitMaskImage: 'radial-gradient(circle at 6% 96%, black 0%, transparent 46%)',
+      maskImage: 'radial-gradient(circle at 6% 96%, black 0%, transparent 46%)',
     }} />
     {/* 速度线：左上 16 束扇形汇聚 */}
     <svg width={mode.designW} height={mode.designH} style={{position: 'absolute', inset: 0}}>
       {Array.from({length: 16}).map((_, i) => {
         const ang = (i / 16) * Math.PI / 2.2 + 0.12;
         const x1 = -40 + Math.cos(ang) * 260, y1 = -40 + Math.sin(ang) * 260;
-        const x2 = -40 + Math.cos(ang) * 560, y2 = -40 + Math.sin(ang) * 560;
-        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={palette.ink} strokeWidth={3.2} opacity={0.16} />;
+        const x2 = -40 + Math.cos(ang) * 680, y2 = -40 + Math.sin(ang) * 680;
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={palette.ink} strokeWidth={3.6} opacity={0.30} />;
       })}
     </svg>
   </>;
 };
 
-const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) =>
-  <div style={{position: 'absolute', backgroundColor: palette.paper, border: `${aesthetic.paperOutline}px solid ${borderColor || palette.ink}`, borderRadius: aesthetic.paperRadius, color: palette.ink, boxShadow: paperShadow(lift), ...style}}>{children}</div>;
+const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) => {
+  const {transform, ...rest} = style ?? {};
+  const tilt = panelTilt(style);
+  return <div style={{position: 'absolute', backgroundColor: palette.paper, border: `5px solid ${borderColor || palette.ink}`, borderRadius: aesthetic.paperRadius, color: palette.ink, boxShadow: paperShadow(lift), ...rest, transform: `${transform ? transform + ' ' : ''}rotate(${tilt}deg)`}}>{children}</div>;
+};
 
 // 赛璐璐只保留极轻墨角暗角，不加暖色柔光。
 const Grade: React.FC = () => <AbsoluteFill style={{pointerEvents: 'none', zIndex: 190}}>
@@ -80,7 +90,7 @@ const Grade: React.FC = () => <AbsoluteFill style={{pointerEvents: 'none', zInde
 
 const SubtitleChrome: Theme['SubtitleChrome'] = ({mode, children}) =>
   <div style={{position: 'absolute', left: 0, right: 0, bottom: 44, zIndex: 200, display: 'flex', justifyContent: 'center'}}>
-    <div style={{background: palette.white, border: `4px solid ${palette.ink}`, boxShadow: `6px 6px 0 ${palette.ink}`, padding: '12px 34px', maxWidth: mode.safe}}>
+    <div style={{background: palette.white, border: `5px solid ${palette.ink}`, boxShadow: `8px 8px 0 ${palette.ink}`, padding: '12px 34px', maxWidth: mode.safe}}>
       <div style={{fontFamily: 'Kai', fontSize: mode.subFont, fontWeight: 700, lineHeight: 1.18, letterSpacing: 1.6, color: palette.ink, whiteSpace: 'nowrap'}}>
         {children}
       </div>
