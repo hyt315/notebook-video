@@ -29,6 +29,20 @@ const palette: Theme['palette'] = {
   lineBlue: 'rgba(59,78,216,0.35)',
   lineGreen: 'rgba(55,201,155,0.35)',
   white: '#ffffff',
+  // 场景层柔色
+  skyTint: '#e8ebfb',
+  blueLine: 'rgba(59,78,216,0.40)',
+  dotIdle: '#d9d4cb',
+  mutedFill: 'rgba(111,106,99,0.22)',
+  mutedBar: 'rgba(111,106,99,0.20)',
+  mutedWash: 'rgba(111,106,99,0.12)',
+  orangeSoft: '#ff8d70',
+  orangeDeep: '#e04e2f',
+  gaugeTrack: 'rgba(25,25,25,0.14)',
+  greenGlow: 'rgba(55,201,155,0.35)',
+  stageTint: 'rgba(247,243,236,0.5)',
+  headerAccent: '#ffffff',
+  headerSub: 'rgba(255,255,255,0.78)',
 };
 
 const aesthetic: Theme['aesthetic'] = {
@@ -45,8 +59,10 @@ const Background: React.FC = () => {
   const dw = mode.designW, dh = mode.designH;
   return <>
     <AbsoluteFill style={{background: palette.paperBase}} />
-    {/* 右上大圆色块（压出画面，所有比例同一锚点） */}
-    <div style={{position: 'absolute', left: dw * 0.72, top: -dh * 0.13, width: dw * 0.42, height: dw * 0.42, borderRadius: '50%', background: palette.blue, opacity: 0.96}} />
+    {/* 右上大圆色块：压出画面右缘，占右侧约 42%（demo 同款体量） */}
+    <div style={{position: 'absolute', left: dw * 0.583, top: -dh * 0.13, width: dw * 0.51, height: dw * 0.51, borderRadius: '50%', background: palette.blue, opacity: 0.96}} />
+    {/* 黄色圆角方块：卡片下方与字幕条上沿之间 */}
+    <div style={{position: 'absolute', left: dw * 0.583, top: dh * 0.732, width: dw * 0.104, height: dw * 0.104, borderRadius: dw * 0.025, background: palette.gold, transform: 'rotate(14deg)'}} />
     {/* 孟菲斯点缀：按画布比例锁定锚点 */}
     <svg width={dw} height={dh} style={{position: 'absolute', inset: 0}} fill="none">
       <circle cx={dw * 0.125} cy={dh * 0.815} r={46} stroke={palette.orange} strokeWidth={10} />

@@ -15,6 +15,20 @@ export interface ThemePalette {
   paper: string; paperWarm: string; paperBase: string;
   line: string; lineOrange: string; lineBlue: string; lineGreen: string;
   white: string;
+  // ---- 场景层柔色 token（引擎引用，主题必须提供；paper 为历史精确值）----
+  skyTint: string;      // 地球/舷窗淡色填充
+  blueLine: string;     // git main 主干线
+  dotIdle: string;      // 未点亮的合并圆点
+  mutedFill: string;    // 步骤圆未激活底色
+  mutedBar: string;     // 代码条未激活底色
+  mutedWash: string;    // LOCAL HOST 胶囊底色
+  orangeSoft: string;   // CTA 波浪字起始色
+  orangeDeep: string;   // 章节序号渐变深色端
+  gaugeTrack: string;   // 仪表盘轨道底色
+  greenGlow: string;    // 对勾徽章投影色
+  stageTint: string;    // 舞台背板暖色端
+  headerAccent: string; // 技术头部主色（flat 上须在色块上可读）
+  headerSub: string;    // 技术头部副色
 }
 
 export interface ThemeAesthetic {

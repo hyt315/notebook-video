@@ -29,6 +29,20 @@ const palette: Theme['palette'] = {
   lineBlue: 'rgba(43,109,232,0.30)',
   lineGreen: 'rgba(29,158,87,0.30)',
   white: '#ffffff',
+  // 场景层柔色
+  skyTint: '#e4edfd',
+  blueLine: 'rgba(43,109,232,0.38)',
+  dotIdle: '#ddd2c2',
+  mutedFill: 'rgba(122,111,99,0.25)',
+  mutedBar: 'rgba(122,111,99,0.22)',
+  mutedWash: 'rgba(122,111,99,0.12)',
+  orangeSoft: '#f2795e',
+  orangeDeep: '#c22a20',
+  gaugeTrack: 'rgba(20,17,15,0.14)',
+  greenGlow: 'rgba(29,158,87,0.35)',
+  stageTint: 'rgba(255,246,232,0.5)',
+  headerAccent: '#2b6de8',
+  headerSub: '#7a6f63',
 };
 
 const aesthetic: Theme['aesthetic'] = {

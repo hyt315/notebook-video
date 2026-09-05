@@ -85,7 +85,7 @@ const Paper=THEME.Paper;
 
 type IconKind='check'|'play'|'project'|'report';
 const LineIcon:React.FC<{kind:IconKind,size?:number,color?:string,strokeWidth?:number}>=({kind,size=28,color='currentColor',strokeWidth=2.2})=>{const common={fill:'none',stroke:color,strokeWidth,strokeLinecap:'round' as const,strokeLinejoin:'round' as const};return <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">{kind==='check'&&<path {...common} d="M7 16.5l5.6 5.5L25 9.8"/>}{kind==='play'&&<><rect {...common} x="5" y="6" width="22" height="20" rx="3"/><path {...common} d="M13 11.5l8 4.5-8 4.5z"/></>}{kind==='project'&&<><rect {...common} x="6" y="7" width="20" height="18" rx="2.5"/><path {...common} d="M10 12h12M10 16h8M10 20h6"/></>}{kind==='report'&&<><path {...common} d="M9 5h10l5 5v17H9z"/><path {...common} d="M19 5v6h5M13 16h7M13 20h7"/></>}</svg>};
-const CheckBadge:React.FC<{size?:number}>=({size=30})=><span style={{width:size,height:size,borderRadius:999,background:C.green,color:C.white,display:'inline-grid',placeItems:'center',flex:'0 0 auto',boxShadow:'0 2px 8px rgba(22,163,74,0.3)'}}><LineIcon kind="check" size={size*.62} color={C.white} strokeWidth={2.7}/></span>;
+const CheckBadge:React.FC<{size?:number}>=({size=30})=><span style={{width:size,height:size,borderRadius:999,background:C.green,color:C.white,display:'inline-grid',placeItems:'center',flex:'0 0 auto',boxShadow:`0 2px 8px ${C.greenGlow}`}}><LineIcon kind="check" size={size*.62} color={C.white} strokeWidth={2.7}/></span>;
 
 // Mascot：系列吉祥物（代码绘制的 git 猫）。f 传本地帧可眨眼、自然呼吸，wave 挥手。
 const Mascot:React.FC<{size?:number;f?:number;wave?:boolean}>=({size=180,f=0,wave=false})=>{
@@ -200,7 +200,7 @@ const Chrome=()=>{
   const f=q(useCurrentFrame()),stage=f<213?0:f<416?1:f<682?2:3,starts=[0,213,416,682],local=f-starts[stage],p=pop(local,-8),titles=COPY.chapterTitles;
   return <>
     <Paper lift={0.3} style={{left:isPortrait?40:92,top:isPortrait?80:74,width:isPortrait?330:392,height:isPortrait?76:82,zIndex:150,display:'flex',alignItems:'center',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${.96+.04*p})`,overflow:'hidden',padding:0}}>
-      <div style={{width:isPortrait?60:72,height:'100%',background:`linear-gradient(135deg,${C.orange},#e8704c)`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:isPortrait?28:31,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
+      <div style={{width:isPortrait?60:72,height:'100%',background:`linear-gradient(135deg,${C.orange},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:isPortrait?28:31,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
       <div style={{padding:isPortrait?'8px 14px':'10px 18px',flex:1}}>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           <PillTag text={COPY.chromeKicker} color={C.blue} bg={C.blueLight} fontSize={TYPE.microS}/>
@@ -209,8 +209,8 @@ const Chrome=()=>{
       </div>
     </Paper>
     <div style={{position:'absolute',right:isPortrait?40:88,top:isPortrait?76:70,zIndex:140,textAlign:'right'}}>
-      <div style={{fontSize:TYPE.labelM,fontWeight:700,letterSpacing:4,color:C.blue,fontFamily:'Clash,Space'}}>{COPY.header}</div>
-      <div style={{fontSize:TYPE.microL,marginTop:6,color:C.muted,fontFamily:'Space,Kai'}}>{COPY.headerSub}</div>
+      <div style={{fontSize:TYPE.labelM,fontWeight:700,letterSpacing:4,color:C.headerAccent,fontFamily:'Clash,Space'}}>{COPY.header}</div>
+      <div style={{fontSize:TYPE.microL,marginTop:6,color:C.headerSub,fontFamily:'Space,Kai'}}>{COPY.headerSub}</div>
     </div>
   </>;
 };
@@ -227,17 +227,17 @@ const SceneWorld=()=>{
   const dim=ease(l,51,92,1,.42),roll=easeOutSoft(l,45,78),rollS=interpolate(roll,[0,.5,.82,1],[.82,1.06,.98,1]),rollR=interpolate(roll,[0,1],[150,360]),rollO=ease(l,43,62);
   return <div style={{position:'absolute',inset:0,opacity}}>
     {/* 右侧几何大切角舞台背板 */}
-    <div style={{position:'absolute',left:560,top:170,width:1220,height:620,borderRadius:28,background:'linear-gradient(145deg,rgba(255,255,255,0.85),rgba(244,238,230,0.45))',border:`1px solid ${C.line}`,boxShadow:paperShadow(0.1),opacity:rollO}}/>
+    <div style={{position:'absolute',left:560,top:170,width:1220,height:620,borderRadius:28,background:`linear-gradient(145deg,rgba(255,255,255,0.85),${C.stageTint})`,border:`1px solid ${C.line}`,boxShadow:paperShadow(0.1),opacity:rollO}}/>
     
     <Paper lift={0.2} borderColor={C.muted} style={{left:120,top:300,width:350,height:260,zIndex:60,padding:'26px 28px',opacity:dim,transform:`translateY(${26*(1-pop(l,4))}px) scale(${.94+.06*pop(l,4)})`}}>
       <div style={{display:'flex',alignItems:'center',gap:8}}>
-        <PillTag text="LOCAL HOST" color={C.muted} bg="rgba(118,110,101,0.1)"/>
+        <PillTag text="LOCAL HOST" color={C.muted} bg={C.mutedWash}/>
         <span style={{fontFamily:'Caveat',fontSize:20,color:C.orange,transform:'rotate(-4deg)'}}>lonely code</span>
       </div>
       <JumpInText frame={l} items={[{text:'本地硬盘',color:C.ink,colorActive:C.orange}]} fontSize={TYPE.displayS} start={7} style={{justifyContent:'flex-start',marginTop:8}}/>
       <div style={{fontSize:TYPE.bodyM,fontWeight:700,marginTop:6,color:C.muted}}>代码只躺在你电脑里</div>
       <div style={{position:'absolute',left:28,right:28,top:136,bottom:24}}>
-        {[0,1,2,3].map(i=><div key={i} style={{height:10,margin:'10px 0',width:`${76-i*11}%`,background:i===0?C.orange:'rgba(118,110,101,0.18)',borderRadius:4,opacity:pop(l,12+i*6)}}/>)}
+        {[0,1,2,3].map(i=><div key={i} style={{height:10,margin:'10px 0',width:`${76-i*11}%`,background:i===0?C.orange:C.mutedBar,borderRadius:4,opacity:pop(l,12+i*6)}}/>)}
       </div>
     </Paper>
     
@@ -245,7 +245,7 @@ const SceneWorld=()=>{
     
     <div style={{position:'absolute',left:600,top:200,width:1160,height:600,zIndex:72,opacity:rollO,transform:`rotate(${rollR}deg) scale(${rollS})`,transformOrigin:'50% 50%'}}>
       <svg width={1160} height={600} viewBox="0 0 1160 600" style={{overflow:'visible'}}>
-        <circle cx={580} cy={300} r={140} fill="#eef5fc" stroke={C.blue} strokeWidth={3.5} opacity={0.95}/>
+        <circle cx={580} cy={300} r={140} fill={C.skyTint} stroke={C.blue} strokeWidth={3.5} opacity={0.95}/>
         <ellipse cx={580} cy={300} rx={56} ry={140} fill="none" stroke={C.blue} strokeWidth={1.8} opacity={.45}/>
         <ellipse cx={580} cy={300} rx={110} ry={140} fill="none" stroke={C.blue} strokeWidth={1.8} opacity={.3}/>
         <line x1={440} y1={300} x2={720} y2={300} stroke={C.blue} strokeWidth={1.8} opacity={.45}/>
@@ -277,7 +277,7 @@ const StepRail:React.FC<{active:number;l:number;start:number}>=({active,l,start}
   return <div style={{position:'absolute',left:360,top:180,width:1200,height:72,zIndex:78,display:'flex',gap:24,justifyContent:'center'}}>
     {steps.map((s,i)=>{const on=i===active,p=pop(l,start+i*7);
       return <div key={s[0]} style={{width:360,height:68,display:'flex',alignItems:'center',gap:16,padding:'0 24px',background:on?C.paper:'rgba(255,255,255,0.6)',border:`${on?2.4:1.2}px solid ${on?s[2]:C.line}`,borderRadius:14,boxShadow:on?paperShadow(0.3):'none',opacity:p,transform:`translateY(${16*(1-p)}px) scale(${on?1:.96})`}}>
-        <span style={{width:36,height:36,borderRadius:99,background:on?s[2]:'rgba(118,110,101,0.2)',color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:20}}>{s[0]}</span>
+        <span style={{width:36,height:36,borderRadius:99,background:on?s[2]:C.mutedFill,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:20}}>{s[0]}</span>
         <span style={{fontFamily:'Kai',fontWeight:700,fontSize:TYPE.titleM,color:on?s[2]:C.muted}}>{s[1]}</span>
       </div>;
     })}
@@ -296,11 +296,11 @@ const SceneContribute=()=>{
   return <div style={{position:'absolute',inset:0,opacity,transform:`translateX(${-exitSlide}px)`}}>
     <StepRail active={0} l={l} start={6}/>
     <svg width="1920" height="1080" style={{position:'absolute',inset:0,zIndex:55}}>
-      <path d="M150 560 H1080" fill="none" stroke="rgba(37,99,235,0.25)" strokeWidth={7} strokeLinecap="round"/>
+      <path d="M150 560 H1080" fill="none" stroke={C.blueLine} strokeWidth={7} strokeLinecap="round"/>
       <path d="M150 700 H760 Q840 700 880 620 L910 566" fill="none" stroke={C.orange} strokeWidth={6} strokeDasharray="14 10" strokeDashoffset={-l*4} opacity={.95}/>
       <text x="150" y="534" fill={C.blue} fontFamily="Space,Kai" fontWeight="600" fontSize="28">main 主干</text>
       <text x="150" y="742" fill={C.orange} fontFamily="Space,Kai" fontWeight="600" fontSize="28">你的分支</text>
-      <circle cx={910} cy={562} r={14} fill={merge>.4?C.green:'#d8d0c4'} opacity={ease(l,99,120)} style={{filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.15))'}}/>
+      <circle cx={910} cy={562} r={14} fill={merge>.4?C.green:C.dotIdle} opacity={ease(l,99,120)} style={{filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.15))'}}/>
     </svg>
     
     <Paper lift={Math.sin(Math.PI*t)*.4+0.1} borderColor={C.orange} style={{left:cardX,top:648,width:210,height:96,zIndex:96,padding:'16px 18px',opacity:ease(l,39,56)*ease(l,130,142,1,0),transform:`translateY(${-90*Math.sin(Math.PI*t)*(cardX<700?1:.4)}px)`}}>
@@ -340,7 +340,7 @@ const SceneContribute=()=>{
 // SCENE 3 — step two & three: prep and operate (416 ~ 680 frames, absolute 0 overlap)
 const Gauge:React.FC<{label:string;color:string;v:number;x:number}>=({label,color,v,x})=> <div style={{position:'absolute',left:x,top:0,width:130,textAlign:'center'}}>
   <svg width={110} height={70} viewBox="0 0 110 70">
-    <path d="M12 62 A43 43 0 0 1 98 62" fill="none" stroke="rgba(60,50,40,0.12)" strokeWidth={8} strokeLinecap="round"/>
+    <path d="M12 62 A43 43 0 0 1 98 62" fill="none" stroke={C.gaugeTrack} strokeWidth={8} strokeLinecap="round"/>
     <path d="M12 62 A43 43 0 0 1 98 62" fill="none" stroke={color} strokeWidth={8} strokeLinecap="round" strokeDasharray={135} strokeDashoffset={135*(1-v)}/>
   </svg>
   <div style={{fontSize:TYPE.labelL,fontWeight:700,marginTop:2,color:C.ink}}>{label}</div>
@@ -421,7 +421,7 @@ const SceneShip=()=>{
       
       <svg width={120} height={160} style={{position:'absolute',right:70,bottom:60,transform:`translateY(${-150*rocket}px)`,opacity:ease(l,175,197)}} viewBox="0 0 120 160">
         <path d="M60 6 C86 40 86 88 60 120 C34 88 34 40 60 6 Z" fill={C.paper} stroke={C.red} strokeWidth={3.5}/>
-        <circle cx={60} cy={54} r={13} fill="#eef5fc" stroke={C.blue} strokeWidth={2.8}/>
+        <circle cx={60} cy={54} r={13} fill={C.skyTint} stroke={C.blue} strokeWidth={2.8}/>
         <path d="M40 96 L24 128 L44 116 Z" fill={C.orange} stroke={C.red} strokeWidth={2.8} strokeLinejoin="round"/>
         <path d="M80 96 L96 128 L76 116 Z" fill={C.orange} stroke={C.red} strokeWidth={2.8} strokeLinejoin="round"/>
         <path d="M50 120 q10 24 20 0" fill={C.gold} opacity={.9}/>
@@ -468,7 +468,7 @@ const SceneSkills=()=>{
     <Paper lift={0.4} borderColor={C.orange} style={{left:460,top:724,width:1000,height:104,zIndex:96,display:'grid',placeItems:'center',opacity:cta,transform:`translateY(${22*(1-cta)}px) scale(${.96+.04*pop(l,286)})`}}>
       <div style={{display:'flex',alignItems:'center',gap:16}}>
         <JumpInText frame={l} items={[{text:'主页搜',color:C.muted,fontSize:TYPE.titleM}]} fontSize={TYPE.titleM} start={287}/>
-        <WaveText frame={l} text="github.com/hyt315" fontSize={TYPE.displayS} colorFrom="#f09070" colorTo={C.orange} start={291} fontFamily="Space" fontWeight={700}/>
+        <WaveText frame={l} text="github.com/hyt315" fontSize={TYPE.displayS} colorFrom={C.orangeSoft} colorTo={C.orange} start={291} fontFamily="Space" fontWeight={700}/>
       </div>
     </Paper>
   </div>;
@@ -480,7 +480,7 @@ const StepRailP:React.FC<{active:number;l:number;start:number}>=({active,l,start
   return <div style={{position:'absolute',left:70,top:190,width:940,height:68,zIndex:78,display:'flex',gap:20,justifyContent:'center'}}>
     {steps.map((s,i)=>{const on=i===active,p=pop(l,start+i*7);
       return <div key={s[0]} style={{width:300,height:64,display:'flex',alignItems:'center',gap:12,padding:'0 16px',background:on?C.paper:'rgba(255,255,255,0.6)',border:`${on?2.4:1.2}px solid ${on?s[2]:C.line}`,borderRadius:14,boxShadow:on?paperShadow(0.3):'none',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${on?1:.96})`}}>
-        <span style={{width:34,height:34,borderRadius:99,background:on?s[2]:'rgba(118,110,101,0.2)',color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:19}}>{s[0]}</span>
+        <span style={{width:34,height:34,borderRadius:99,background:on?s[2]:C.mutedFill,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:19}}>{s[0]}</span>
         <span style={{fontFamily:'Kai',fontWeight:700,fontSize:TYPE.titleXS,color:on?s[2]:C.muted}}>{s[1]}</span>
       </div>;
     })}
@@ -493,17 +493,17 @@ const SceneWorldP=()=>{
   const opacity=stageFade(f,0,205);
   const dim=ease(l,51,92,1,.42),roll=easeOutSoft(l,45,78),rollS=interpolate(roll,[0,.5,.82,1],[.82,1.06,.98,1]),rollR=interpolate(roll,[0,1],[150,360]),rollO=ease(l,43,62);
   return <div style={{position:'absolute',inset:0,opacity}}>
-    <div style={{position:'absolute',left:50,top:460,width:980,height:560,borderRadius:24,background:'linear-gradient(145deg,rgba(255,255,255,0.85),rgba(244,238,230,0.45))',border:`1px solid ${C.line}`,boxShadow:paperShadow(0.1),opacity:rollO}}/>
+    <div style={{position:'absolute',left:50,top:460,width:980,height:560,borderRadius:24,background:`linear-gradient(145deg,rgba(255,255,255,0.85),${C.stageTint})`,border:`1px solid ${C.line}`,boxShadow:paperShadow(0.1),opacity:rollO}}/>
     
     <Paper lift={0.2} borderColor={C.muted} style={{left:60,top:190,width:960,height:230,zIndex:60,padding:'22px 26px',opacity:dim,transform:`translateY(${26*(1-pop(l,4))}px) scale(${.94+.06*pop(l,4)})`}}>
       <div style={{display:'flex',alignItems:'center',gap:8}}>
-        <PillTag text="LOCAL HOST" color={C.muted} bg="rgba(118,110,101,0.1)"/>
+        <PillTag text="LOCAL HOST" color={C.muted} bg={C.mutedWash}/>
         <span style={{fontFamily:'Caveat',fontSize:20,color:C.orange,transform:'rotate(-4deg)'}}>lonely code</span>
       </div>
       <JumpInText frame={l} items={[{text:'本地硬盘',color:C.ink,colorActive:C.orange}]} fontSize={TYPE.displayS} start={7} style={{justifyContent:'flex-start',marginTop:6}}/>
       <div style={{fontSize:TYPE.bodyM,fontWeight:700,marginTop:6,color:C.muted}}>代码只躺在你电脑里</div>
       <div style={{position:'absolute',left:26,right:26,top:124,bottom:18}}>
-        {[0,1,2,3].map(i=><div key={i} style={{height:10,margin:'10px 0',width:`${74-i*9}%`,background:i===0?C.orange:'rgba(118,110,101,0.18)',borderRadius:4,opacity:pop(l,12+i*6)}}/>)}
+        {[0,1,2,3].map(i=><div key={i} style={{height:10,margin:'10px 0',width:`${74-i*9}%`,background:i===0?C.orange:C.mutedBar,borderRadius:4,opacity:pop(l,12+i*6)}}/>)}
       </div>
     </Paper>
     
@@ -511,7 +511,7 @@ const SceneWorldP=()=>{
     
     <div style={{position:'absolute',left:80,top:520,width:1160,height:600,zIndex:72,transform:'scale(0.776)',transformOrigin:'left top',opacity:rollO}}>
       <svg width={1160} height={600} viewBox="0 0 1160 600" style={{overflow:'visible'}}>
-        <circle cx={580} cy={300} r={140} fill="#eef5fc" stroke={C.blue} strokeWidth={3.5} opacity={0.95}/>
+        <circle cx={580} cy={300} r={140} fill={C.skyTint} stroke={C.blue} strokeWidth={3.5} opacity={0.95}/>
         <ellipse cx={580} cy={300} rx={56} ry={140} fill="none" stroke={C.blue} strokeWidth={1.8} opacity={.45}/>
         <ellipse cx={580} cy={300} rx={110} ry={140} fill="none" stroke={C.blue} strokeWidth={1.8} opacity={.3}/>
         <line x1={440} y1={300} x2={720} y2={300} stroke={C.blue} strokeWidth={1.8} opacity={.45}/>
@@ -549,11 +549,11 @@ const SceneContributeP=()=>{
   return <div style={{position:'absolute',inset:0,opacity,transform:`translateX(${-exitSlide}px)`}}>
     <StepRailP active={0} l={l} start={6}/>
     <svg width={1080} height={1440} style={{position:'absolute',inset:0,zIndex:55}}>
-      <path d="M80 640 H760" fill="none" stroke="rgba(37,99,235,0.25)" strokeWidth={7} strokeLinecap="round"/>
+      <path d="M80 640 H760" fill="none" stroke={C.blueLine} strokeWidth={7} strokeLinecap="round"/>
       <path d="M80 760 H590 Q660 760 700 700 L732 652" fill="none" stroke={C.orange} strokeWidth={6} strokeDasharray="14 10" strokeDashoffset={-l*4} opacity={.95}/>
       <text x="80" y="612" fill={C.blue} fontFamily="Space,Kai" fontWeight="600" fontSize="28">main 主干</text>
       <text x="80" y="802" fill={C.orange} fontFamily="Space,Kai" fontWeight="600" fontSize="28">你的分支</text>
-      <circle cx={732} cy={648} r={14} fill={merge>.4?C.green:'#d8d0c4'} opacity={ease(l,99,120)} style={{filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.15))'}}/>
+      <circle cx={732} cy={648} r={14} fill={merge>.4?C.green:C.dotIdle} opacity={ease(l,99,120)} style={{filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.15))'}}/>
     </svg>
     
     <Paper lift={Math.sin(Math.PI*t)*.4+0.1} borderColor={C.orange} style={{left:cardX,top:700,width:210,height:96,zIndex:96,padding:'16px 18px',opacity:ease(l,39,56)*ease(l,130,142,1,0),transform:`translateY(${-90*Math.sin(Math.PI*t)*(cardX<400?1:.4)}px)`}}>
@@ -643,7 +643,7 @@ const SceneShipP=()=>{
           <CheckBadge size={26}/> 准备发版
         </div>
       </div>
-      <svg width={120} height={160} style={{position:'absolute',right:40,bottom:90,transform:`translateY(${-150*rocket}px)`,opacity:ease(l,175,197)}} viewBox="0 0 120 160"><path d="M60 6 C86 40 86 88 60 120 C34 88 34 40 60 6 Z" fill={C.paper} stroke={C.red} strokeWidth={3.5}/><circle cx={60} cy={54} r={13} fill="#eef5fc" stroke={C.blue} strokeWidth={2.8}/><path d="M40 96 L24 128 L44 116 Z" fill={C.orange} stroke={C.red} strokeWidth={2.8} strokeLinejoin="round"/><path d="M80 96 L96 128 L76 116 Z" fill={C.orange} stroke={C.red} strokeWidth={2.8} strokeLinejoin="round"/><path d="M50 120 q10 24 20 0" fill={C.gold} opacity={.9}/></svg>
+      <svg width={120} height={160} style={{position:'absolute',right:40,bottom:90,transform:`translateY(${-150*rocket}px)`,opacity:ease(l,175,197)}} viewBox="0 0 120 160"><path d="M60 6 C86 40 86 88 60 120 C34 88 34 40 60 6 Z" fill={C.paper} stroke={C.red} strokeWidth={3.5}/><circle cx={60} cy={54} r={13} fill={C.skyTint} stroke={C.blue} strokeWidth={2.8}/><path d="M40 96 L24 128 L44 116 Z" fill={C.orange} stroke={C.red} strokeWidth={2.8} strokeLinejoin="round"/><path d="M80 96 L96 128 L76 116 Z" fill={C.orange} stroke={C.red} strokeWidth={2.8} strokeLinejoin="round"/><path d="M50 120 q10 24 20 0" fill={C.gold} opacity={.9}/></svg>
       <div style={{position:'absolute',left:34,right:34,bottom:24,height:44,background:C.blueLight,border:`1.5px solid ${C.navy}`,borderRadius:12,display:'grid',placeItems:'center',fontFamily:'Space',fontWeight:600,fontSize:TYPE.bodyM,color:C.navy,opacity:ease(l,188,217)}}>github-oss-ops</div>
     </Paper>
   </div>;
@@ -669,7 +669,7 @@ const SceneSkillsP=()=>{
         <div style={{position:'absolute',left:28,bottom:22,display:'flex',alignItems:'center',gap:10,color:C.muted,fontSize:TYPE.labelL,fontWeight:700}}><CheckBadge size={26}/>智能体陪你走完</div>
       </Paper>;
     })}
-    <Paper lift={0.4} borderColor={C.orange} style={{left:50,top:1170,width:980,height:96,zIndex:96,display:'grid',placeItems:'center',opacity:cta,transform:`translateY(${22*(1-cta)}px) scale(${.96+.04*pop(l,286)})`}}><div style={{display:'flex',alignItems:'center',gap:16}}><JumpInText frame={l} items={[{text:'主页搜',color:C.muted,fontSize:TYPE.titleM}]} fontSize={TYPE.titleM} start={287}/><WaveText frame={l} text="github.com/hyt315" fontSize={TYPE.displayS} colorFrom="#f09070" colorTo={C.orange} start={291} fontFamily="Space" fontWeight={700}/></div></Paper>
+    <Paper lift={0.4} borderColor={C.orange} style={{left:50,top:1170,width:980,height:96,zIndex:96,display:'grid',placeItems:'center',opacity:cta,transform:`translateY(${22*(1-cta)}px) scale(${.96+.04*pop(l,286)})`}}><div style={{display:'flex',alignItems:'center',gap:16}}><JumpInText frame={l} items={[{text:'主页搜',color:C.muted,fontSize:TYPE.titleM}]} fontSize={TYPE.titleM} start={287}/><WaveText frame={l} text="github.com/hyt315" fontSize={TYPE.displayS} colorFrom={C.orangeSoft} colorTo={C.orange} start={291} fontFamily="Space" fontWeight={700}/></div></Paper>
   </div>;
 };
 
