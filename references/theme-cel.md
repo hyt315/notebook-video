@@ -18,8 +18,9 @@ Anime cel-shading storyboard: thick ink outlines, flat saturated fills, hard off
 
 - Card skin: `5px` solid ink border, `8px` corner radius, hard offset ink shadow `7px 7px 0` (grows with lift, never blurs). Every card carries a deterministic micro-tilt of ±1° hashed from its position — the same card always keeps the same tilt, and scene motion transforms compose on top of it.
 
-- Background decoration: halftone dot field (20px pitch, 0.16 opacity) fading from the top-right, a weaker echo at bottom-left (18px pitch, 0.11), and 16 speed lines fanning from the top-left corner (3.6px stroke, 0.30 opacity, 680px reach). Anchored by canvas ratio; identical on all three canvases.
-- Grade: ink vignette only (`inset 0 0 120px`, 0.05 alpha). No warm soft-light layer.
+- Background decoration: halftone dot field (20px pitch, 0.11 opacity) fading from the top-right, a weaker echo at bottom-left (18px pitch, 0.08), and 16 speed lines fanning from the top-left corner (3.6px stroke, 0.22 opacity, 680px reach). Anchored by canvas ratio; identical on all three canvases.
+- Grade: ink vignette only (`inset 0 0 120px`, 0.028 alpha). No warm soft-light layer. The paper must stay bright: never deepen decoration densities to compensate for weak contrast.
+
 - Subtitle: centered white box with `5px` ink border and `8px 8px 0` ink offset shadow, bold Kai text. No tape, no solid bar.
 
 ## Theme extra components

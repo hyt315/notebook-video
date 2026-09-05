@@ -22,8 +22,8 @@ const palette: Theme['palette'] = {
   red: '#e8382a',
   navy: '#191919',
   paper: '#ffffff',
-  paperWarm: '#f7f3ec',
-  paperBase: '#f7f3ec',
+  paperWarm: '#f2f4f7',
+  paperBase: '#f2f4f7',
   line: 'rgba(25,25,25,0.16)',
   lineOrange: 'rgba(255,93,59,0.35)',
   lineBlue: 'rgba(59,78,216,0.35)',
@@ -40,7 +40,7 @@ const palette: Theme['palette'] = {
   orangeDeep: '#e04e2f',
   gaugeTrack: 'rgba(25,25,25,0.14)',
   greenGlow: 'rgba(55,201,155,0.35)',
-  stageTint: 'rgba(247,243,236,0.5)',
+  stageTint: 'rgba(242,244,247,0.5)',
   headerAccent: '#ffffff',
   headerSub: 'rgba(255,255,255,0.78)',
 };
@@ -69,7 +69,7 @@ const Background: React.FC = () => {
       <path d={`M${dw * 0.853} ${dh * 0.089} l60 0 M${dw * 0.883} ${dh * 0.059} l0 60`} stroke={palette.gold} strokeWidth={12} strokeLinecap="round" />
       <path d={`M${dw * 0.063} ${dh * 0.278} q30 -40 60 0 t60 0`} stroke={palette.blue} strokeWidth={9} strokeLinecap="round" />
       {Array.from({length: 5}).map((_, r) => Array.from({length: 6}).map((_, c) =>
-        <circle key={`${r}-${c}`} cx={dw * 0.056 + c * 26} cy={dh * 0.52 + r * 26} r={4.5} fill={palette.ink} opacity={0.5} />))}
+        <circle key={`${r}-${c}`} cx={dw * 0.056 + c * 26} cy={dh * 0.52 + r * 26} r={4.5} fill={palette.ink} opacity={0.35} />))}
     </svg>
   </>;
 };

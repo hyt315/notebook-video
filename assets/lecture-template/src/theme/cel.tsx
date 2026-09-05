@@ -22,8 +22,8 @@ const palette: Theme['palette'] = {
   red: '#e8382a',
   navy: '#14110f',
   paper: '#ffffff',
-  paperWarm: '#fff6e8',
-  paperBase: '#fff6e8',
+  paperWarm: '#fffaec',
+  paperBase: '#fffaec',
   line: 'rgba(20,17,15,0.18)',
   lineOrange: 'rgba(232,56,42,0.30)',
   lineBlue: 'rgba(43,109,232,0.30)',
@@ -47,7 +47,7 @@ const palette: Theme['palette'] = {
 
 const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 8, paperOutline: 4.5,
-  textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: .05,
+  textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: .028,
 };
 
 // 硬偏移墨影：无模糊，随 lift 同步加大位移（举起感），不使用柔和投影。
@@ -68,16 +68,16 @@ const Background: React.FC = () => {
     {/* 半调网点：右上汇聚渐隐（所有比例共用百分比锚点） */}
     <AbsoluteFill style={{
       backgroundImage: `radial-gradient(${palette.ink} 1.8px, transparent 2.4px)`,
-      backgroundSize: '20px 20px', opacity: 0.16,
-      WebkitMaskImage: 'radial-gradient(circle at 88% 8%, black 0%, transparent 55%)',
-      maskImage: 'radial-gradient(circle at 88% 8%, black 0%, transparent 55%)',
+      backgroundSize: '20px 20px', opacity: 0.11,
+      WebkitMaskImage: 'radial-gradient(circle at 88% 8%, black 0%, transparent 48%)',
+      maskImage: 'radial-gradient(circle at 88% 8%, black 0%, transparent 48%)',
     }} />
     {/* 半调网点：左下弱呼应 */}
     <AbsoluteFill style={{
       backgroundImage: `radial-gradient(${palette.ink} 1.6px, transparent 2.2px)`,
-      backgroundSize: '18px 18px', opacity: 0.11,
-      WebkitMaskImage: 'radial-gradient(circle at 6% 96%, black 0%, transparent 46%)',
-      maskImage: 'radial-gradient(circle at 6% 96%, black 0%, transparent 46%)',
+      backgroundSize: '18px 18px', opacity: 0.08,
+      WebkitMaskImage: 'radial-gradient(circle at 6% 96%, black 0%, transparent 42%)',
+      maskImage: 'radial-gradient(circle at 6% 96%, black 0%, transparent 42%)',
     }} />
     {/* 速度线：左上 16 束扇形汇聚 */}
     <svg width={mode.designW} height={mode.designH} style={{position: 'absolute', inset: 0}}>
@@ -85,7 +85,7 @@ const Background: React.FC = () => {
         const ang = (i / 16) * Math.PI / 2.2 + 0.12;
         const x1 = -40 + Math.cos(ang) * 260, y1 = -40 + Math.sin(ang) * 260;
         const x2 = -40 + Math.cos(ang) * 680, y2 = -40 + Math.sin(ang) * 680;
-        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={palette.ink} strokeWidth={3.6} opacity={0.30} />;
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={palette.ink} strokeWidth={3.6} opacity={0.22} />;
       })}
     </svg>
   </>;

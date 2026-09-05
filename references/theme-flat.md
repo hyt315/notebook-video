@@ -9,7 +9,7 @@ Modern flat geometric: bold color blocks, thick ink borders with offset solid sh
 ## Locked tokens (do not invent alternatives)
 
 - Canvas: identical to the shared canvas contract (16:9 / 4:3 / 3:4). Layout coordinates are unchanged from the default; only skin and decoration change.
-- Base surface: bone `#f7f3ec`; cards pure white.
+- Base surface: cool light gray-blue `#f2f4f7`; cards pure white. The cool tone is the point: it must never drift back toward a warm paper white.
 - Ink: `#191919` for borders, bars and body text.
 - Accents: coral `#ff5d3b` (primary/orange slot), indigo `#3b4ed8` (blue slot), mint `#37c99b` (green slot), sun `#ffcf3f` (gold slot).
 - Card skin: `3.5px` ink border, `20px` radius, offset solid shadow `7px 7px 0 rgba(25,25,25,0.9)`; lift extends the offset slightly. No blur anywhere.
