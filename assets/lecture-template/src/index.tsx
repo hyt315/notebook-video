@@ -25,46 +25,20 @@ import cueData from './caption-cues.json';
 // ============================================================================
 
 // Keep authored scene time separate from delivery frames.
+import {MODES, CanvasMode, CanvasContext, useCanvas} from './theme/canvas';
+import {THEME} from './theme/active';
 const BASE_FPS=30,FPS=30,MOTION_FPS=30,TIMELINE_SCALE=1,DURATION=1126,DESIGN_SCALE=4/3;
-const MODES={
-  '16:9':{compW:2560,compH:1440,designW:1920,designH:1080,subMar:188,subBottom:34,subH:112,safe:1334,subFont:44,scale:4/3},
-  '4:3':{compW:1920,compH:1440,designW:1440,designH:1080,subMar:60,subBottom:34,subH:112,safe:1060,subFont:44,scale:4/3},
-  '3:4':{compW:1440,compH:1920,designW:1080,designH:1440,subMar:50,subBottom:40,subH:104,safe:900,subFont:40,scale:4/3},
-} as const;
-type CanvasMode=keyof typeof MODES;
-const CanvasContext=React.createContext<{canvas:CanvasMode;isPortrait:boolean;mode:typeof MODES['16:9']}>({
-  canvas:'16:9',
-  isPortrait:false,
-  mode:MODES['16:9'],
-});
-const useCanvas=()=>React.useContext(CanvasContext);
 const useCurrentFrame=()=>useRawCurrentFrame()*BASE_FPS/FPS/TIMELINE_SCALE;
 const deliveryFrame=(designFrame:number)=>Math.round(designFrame*FPS*TIMELINE_SCALE/BASE_FPS);
 
-// LOCKED AESTHETIC CORE: modern premium palette inspired by clean lecture & top SaaS motion.
-const C={
-  ink:'#1a1918',
-  muted:'#766e65',
-  blue:'#2563eb',
-  blueLight:'rgba(37,99,235,0.08)',
-  orange:'#d95a34',
-  orangeLight:'rgba(217,90,52,0.08)',
-  green:'#16a34a',
-  greenLight:'rgba(22,163,74,0.08)',
-  gold:'#d97706',
-  red:'#dc2626',
-  navy:'#1e293b',
-  paper:'#ffffff',
-  paperWarm:'#faf5ee',
-  paperBase:'#faf7f2',
-  line:'rgba(60,50,40,0.11)',
-  lineOrange:'rgba(217,90,52,0.25)',
-  lineBlue:'rgba(37,99,235,0.25)',
-  lineGreen:'rgba(22,163,74,0.25)',
-  white:'#ffffff'
-};
+// LOCKED AESTHETIC CORE：美学核由主题包提供（src/theme/active.ts 选定），
+// 调色板 / 美学参数 / 卡片皮肤 / 背景 / 调色层全部来自 THEME，本层不做任何风格判断。
+const C=THEME.palette;
+const AESTHETIC=THEME.aesthetic;
+const paperShadow=THEME.paperShadow;
+const Background=THEME.Background;
+const Grade=THEME.Grade;
 const TYPE={displayXL:58,displayL:50,displayML:45,displayM:43,displayS:36,displayXS:34,titleXL:32,titleL:30,titleM:28,titleS:27,titleXS:26,bodyL:26,bodyM:24,bodyS:23,labelL:22,labelM:21,labelS:20,microL:18,microS:16,subtitle:44};
-const AESTHETIC={subtitleSafeWidth:1334,paperRadius:16,paperOutline:1.0,textureOpacity:.012,gridOpacity:.035,gradeWarmth:.022,gradeVignette:.035};
 
 // EDITABLE CONTENT SURFACE — 换题材时从这里开始改
 const COPY={
@@ -81,7 +55,6 @@ const q=(f:number)=>{const step=BASE_FPS/MOTION_FPS;return Math.floor(f/step)*st
 const ease=(f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b],[from,to],{...clamp,easing:Easing.inOut(Easing.cubic)});
 const easeOutSoft=(f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b],[from,to],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
 const pop=(f:number,start:number,stiffness=132)=>spring({frame:f-start,fps:BASE_FPS,config:{damping:17,stiffness,mass:.86}});
-const paperShadow=(lift:number)=>`0 2px 6px rgba(40,32,24,${0.04+0.04*lift}),0 ${8+12*lift}px ${20+24*lift}px rgba(40,32,24,${0.05+0.06*lift}),inset 0 1px 0 rgba(255,255,255,0.9)`;
 
 const AssetGate=()=>{const [handle]=useState(()=>delayRender('waiting for fonts',{timeoutInMilliseconds:120000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash'),document.fonts.load('500 40px Space'),document.fonts.load('400 40px Caveat'),document.fonts.ready]).then(()=>{if(live)continueRender(handle)}).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);return null};
 
@@ -102,19 +75,13 @@ const Fonts=()=> <style>{`
 *{box-sizing:border-box}html,body{margin:0;background:${C.paperBase}}body{font-family:Kai,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
 `}</style>;
 
-const Background=()=> <>
-  <AbsoluteFill style={{background:C.paperBase}}/>
-  <div style={{position:'absolute',left:60,top:50,right:60,bottom:50,backgroundImage:`repeating-linear-gradient(0deg,transparent 0 53px,rgba(90,75,60,${AESTHETIC.gridOpacity}) 54px),repeating-linear-gradient(90deg,transparent 0 53px,rgba(90,75,60,${AESTHETIC.gridOpacity}) 54px),radial-gradient(circle at 20% 10%,rgba(255,255,255,0.7),transparent 45%),radial-gradient(circle at 80% 85%,rgba(217,90,52,0.04),transparent 50%)`}}/>
-  <AbsoluteFill style={{opacity:AESTHETIC.textureOpacity,mixBlendMode:'multiply',backgroundImage:'radial-gradient(#30251a 0.5px,transparent .7px)',backgroundSize:'8px 8px'}}/>
-</>;
-
 // ---- 可复用组件库 -------------------------------------------
 const PillTag:React.FC<{text:string;color?:string;bg?:string;fontSize?:number;fontFamily?:string;fontWeight?:number|string;style?:React.CSSProperties}>=({text,color=C.orange,bg=C.orangeLight,fontSize=TYPE.microS,fontFamily='Space,Kai',fontWeight=700,style})=>{
   return <span style={{display:'inline-flex',alignItems:'center',padding:'4px 12px',borderRadius:999,background:bg,color,fontSize,fontFamily,fontWeight,letterSpacing:0.8,border:`1px solid ${color}2a`,...style}}>{text}</span>;
 };
 
-// Paper：现代通透纯白卡片容器。
-const Paper:React.FC<{children:React.ReactNode;style?:React.CSSProperties;lift?:number;borderColor?:string}>=({children,style,lift=0,borderColor})=> <div style={{position:'absolute',backgroundColor:C.paper,backgroundImage:'radial-gradient(circle at 18% 9%,rgba(255,255,255,0.9),transparent 36%),linear-gradient(175deg,#ffffff 0%,#fdfbf8 100%)',border:`${AESTHETIC.paperOutline}px solid ${borderColor||C.line}`,borderRadius:AESTHETIC.paperRadius,color:C.ink,boxShadow:paperShadow(lift),...style}}>{children}</div>;
+// Paper：卡片容器，皮肤由主题包提供（src/theme/active.ts）。
+const Paper=THEME.Paper;
 
 type IconKind='check'|'play'|'project'|'report';
 const LineIcon:React.FC<{kind:IconKind,size?:number,color?:string,strokeWidth?:number}>=({kind,size=28,color='currentColor',strokeWidth=2.2})=>{const common={fill:'none',stroke:color,strokeWidth,strokeLinecap:'round' as const,strokeLinejoin:'round' as const};return <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">{kind==='check'&&<path {...common} d="M7 16.5l5.6 5.5L25 9.8"/>}{kind==='play'&&<><rect {...common} x="5" y="6" width="22" height="20" rx="3"/><path {...common} d="M13 11.5l8 4.5-8 4.5z"/></>}{kind==='project'&&<><rect {...common} x="6" y="7" width="20" height="18" rx="2.5"/><path {...common} d="M10 12h12M10 16h8M10 20h6"/></>}{kind==='report'&&<><path {...common} d="M9 5h10l5 5v17H9z"/><path {...common} d="M19 5v6h5M13 16h7M13 20h7"/></>}</svg>};
@@ -210,9 +177,8 @@ const Subtitle=()=>{
   if(!cue)cue=[...captions].reverse().find((c:any)=>c.startFrame<=f);
   const full=cue?cleanTail(cue.text):'';
   const words=cue?cue.words.filter((w:any)=>w.startFrame<=f+lead):[];
-  return <div style={{position:'absolute',left:mode.subMar,right:mode.subMar,bottom:20,zIndex:200,display:'grid',placeItems:'center'}}>
-    <div style={{width:mode.safe,display:'grid',placeItems:'center',fontFamily:'Kai',fontSize:mode.subFont,lineHeight:1.18,letterSpacing:1.6,color:C.ink,textShadow:'0 1px 4px rgba(255,255,255,0.8), 0 2px 10px rgba(40,30,20,0.15)',whiteSpace:'nowrap'}}>
-      <span style={{position:'relative'}}>
+  return <THEME.SubtitleChrome mode={mode}>
+    <span style={{position:'relative'}}>
         <span style={{visibility:'hidden'}}>{full}</span>
         <span style={{position:'absolute',left:0,top:0}}>
           {words.map((w:any,wi:number)=>{
@@ -225,9 +191,8 @@ const Subtitle=()=>{
             })}</span>;
           })}
         </span>
-      </span>
-    </div>
-  </div>;
+    </span>
+  </THEME.SubtitleChrome>;
 };
 
 const Chrome=()=>{
@@ -780,8 +745,6 @@ const Sound=()=>{
     {[45,225,430,700].map(sf=><Sequence key={`dp${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/drop.ogg')} volume={.14}/></Sequence>)}
   </>;
 };
-
-const Grade=()=> <AbsoluteFill style={{pointerEvents:'none',zIndex:190}}><AbsoluteFill style={{opacity:AESTHETIC.gradeWarmth,mixBlendMode:'soft-light',background:'radial-gradient(circle at 24% 8%,rgba(255,249,224,.9),transparent 48%),linear-gradient(180deg,rgba(255,244,216,.14),rgba(84,55,28,.08))'}}/><AbsoluteFill style={{boxShadow:`inset 0 0 150px rgba(66,42,22,${AESTHETIC.gradeVignette})`}}/></AbsoluteFill>;
 
 const FilmLayout:React.FC<{canvas:CanvasMode}>=({canvas})=>{
   const mode=MODES[canvas]||MODES['16:9'];
