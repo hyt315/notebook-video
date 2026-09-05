@@ -41,4 +41,6 @@ export interface Theme {
   Grade: React.FC;
   /** 字幕容器：负责定位与外壳；内部的逐词浮现由引擎渲染为 children 传入。 */
   SubtitleChrome: React.FC<{mode: ModeSpec; children?: React.ReactNode}>;
+  /** 主题专属锁定构件（如赛璐璐爆炸贴、贴纸胶带），场景层只传内容参数。 */
+  extras?: Record<string, React.FC<any>>;
 }
