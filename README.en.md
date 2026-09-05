@@ -46,13 +46,11 @@ Explainer videos, animated educational lectures, product showcases, or technical
 
 ▶️ [Watch full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · Hero Asset: [hero.png](assets/demo/hero.png)
 
-### 3 Aspect Ratio Compatibility Matrix
+### Default Canvas: 16:9 Landscape
 
 | Aspect Ratio | Resolution | Video Demo | Best For |
 |---|---|---|---|
 | **16:9 Landscape** (Default) | 2560×1440 (2K) | [![16:9](assets/demo/notebook-video-demo.webp)](assets/demo/notebook-video-demo.mp4) | YouTube / Desktop / Lecture Walkthroughs |
-| **4:3 Classic** | 1920×1440 | [![4:3](assets/demo/notebook-video-demo-43.webp)](assets/demo/notebook-video-demo-43.mp4) | iPad presentations / Research explainers |
-| **3:4 Portrait** | 1080×1440 | [![3:4](assets/demo/notebook-video-demo-34.webp)](assets/demo/notebook-video-demo-34.mp4) | TikTok / Reels / Mobile short feeds |
 
 ---
 

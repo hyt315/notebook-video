@@ -13,6 +13,7 @@ All notable changes are recorded here. The project follows semantic versioning.
   - *`flat` (现代扁平·几何风)*: cool gray-blue base, indigo mega-circle, Memphis accents, thick ink borders with white inset liner, solid ink subtitle bar with dual accent ticks.
 - **Scene soft-color tokens**: ~20 previously hardcoded scene colors (globe tint, branch lines, merge dots, idle fills, chapter-number gradient, CTA wave start, gauge tracks, check glow, stage tint, header pair) now route through 13 mandatory `ThemePalette` tokens; every theme ships its own set with `paper` keeping pixel-identical historical values.
 - **Theme docs & gates**: `references/theme-system.md` plus per-theme contracts (`theme-cel.md`, `theme-sticker.md`, `theme-flat.md`) written as locked checklists with rejection flags; `validate-skill` verifies the theme pack integrity and a paper-defaulting switch; `selftest` grows to 9 checks including illegal `--style` rejection without polluting the target directory.
+- **Single 16:9 demo in sticker skin**: the bundled demo asset is now one 16:9 (2560×1440) full-film rendered in the `sticker` theme, replacing the old three-canvas demo set; `assets/demo/demo-43/34` files and README ratio matrix rows are removed accordingly.
 
 ## [2.1.1] - 2026-09-03
 
