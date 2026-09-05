@@ -1,4 +1,113 @@
 {
   "version": 1,
-  "assets": []
+  "assets": [
+    {
+      "id": "bg-cel-169",
+      "path": "public/bg-cel-169.jpg",
+      "source_type": "ai-generated",
+      "provider": "Trae GenerateImage",
+      "prompt_summary": "Anime cel storyboard background: aged near-white paper, halftone dot fields, bottom-left explosion star with checkerboard, bottom-right red/blue stars and radiating speed lines; decorations confined to corners, center clean.",
+      "use_context": "cel theme fixed background, 16:9 canvas, full-bleed Background layer",
+      "crop_policy": "none-pixel-exact",
+      "rights": "project-owned",
+      "baked_text": false,
+      "sha256": "ce7a094f36054f05d4aa0dd19795fff1fafb83b4054340f82809d7a70b436f6f"
+    },
+    {
+      "id": "bg-cel-43",
+      "path": "public/bg-cel-43.jpg",
+      "source_type": "ai-generated",
+      "provider": "Trae GenerateImage",
+      "prompt_summary": "Anime cel storyboard background: aged near-white paper, halftone dot fields, bottom-left explosion star with checkerboard, bottom-right red/blue stars and radiating speed lines; decorations confined to corners, center clean.",
+      "use_context": "cel theme fixed background, 4:3 canvas, full-bleed Background layer",
+      "crop_policy": "none-pixel-exact",
+      "rights": "project-owned",
+      "baked_text": false,
+      "sha256": "1f1af3779c691adad5bc87b6178efebd6e266acaa1a65685f962fd89b3c4b15a"
+    },
+    {
+      "id": "bg-cel-34",
+      "path": "public/bg-cel-34.jpg",
+      "source_type": "ai-generated",
+      "provider": "Trae GenerateImage",
+      "prompt_summary": "Anime cel storyboard background: aged near-white paper, halftone dot fields, bottom-left explosion star with checkerboard, bottom-right red/blue stars and radiating speed lines; decorations confined to corners, center clean.",
+      "use_context": "cel theme fixed background, 3:4 canvas, full-bleed Background layer",
+      "crop_policy": "none-pixel-exact",
+      "rights": "project-owned",
+      "baked_text": false,
+      "sha256": "1024fb087433bd1d53c398eedafe67b93100415626f75a15b9dafccc5844aa31"
+    },
+    {
+      "id": "bg-sticker-169",
+      "path": "public/bg-sticker-169.jpg",
+      "source_type": "ai-generated",
+      "provider": "Trae GenerateImage",
+      "prompt_summary": "Sticker journal background: pale mint grid paper with uniform tone, corner doodles (heart, cross, wave, spiral, zigzag) and washi tape strips at the edges, center clean; doodles clear of the chapter tag and title header zones.",
+      "use_context": "sticker theme fixed background, 16:9 canvas, full-bleed Background layer",
+      "crop_policy": "none-pixel-exact",
+      "rights": "project-owned",
+      "baked_text": false,
+      "sha256": "b2cc825b4aab9416469c328ee753e9cf9980b75fdf2bafec0af24360552fa7b6"
+    },
+    {
+      "id": "bg-sticker-43",
+      "path": "public/bg-sticker-43.jpg",
+      "source_type": "ai-generated",
+      "provider": "Trae GenerateImage",
+      "prompt_summary": "Sticker journal background: pale mint grid paper with uniform tone, corner doodles (heart, cross, wave, spiral, zigzag) and washi tape strips at the edges, center clean; doodles clear of the chapter tag and title header zones.",
+      "use_context": "sticker theme fixed background, 4:3 canvas, full-bleed Background layer",
+      "crop_policy": "none-pixel-exact",
+      "rights": "project-owned",
+      "baked_text": false,
+      "sha256": "3afae6c34a2ee03c0044b12b660ba66321356a8094dc79389b861da9ceeeeb93"
+    },
+    {
+      "id": "bg-sticker-34",
+      "path": "public/bg-sticker-34.jpg",
+      "source_type": "ai-generated",
+      "provider": "Trae GenerateImage",
+      "prompt_summary": "Sticker journal background: pale mint grid paper with uniform tone, corner doodles (heart, cross, wave, spiral, zigzag) and washi tape strips at the edges, center clean; doodles clear of the chapter tag and title header zones.",
+      "use_context": "sticker theme fixed background, 3:4 canvas, full-bleed Background layer",
+      "crop_policy": "none-pixel-exact",
+      "rights": "project-owned",
+      "baked_text": false,
+      "sha256": "524ab895fbeb17cfd5ca61e6d106cff05236d00e0dfadebfda695a632d4fc8b7"
+    },
+    {
+      "id": "bg-flat-169",
+      "path": "public/bg-flat-169.jpg",
+      "source_type": "ai-generated",
+      "provider": "Trae GenerateImage",
+      "prompt_summary": "Flat geometric background: pale gray-blue grained paper, indigo blob monster peeking from the bottom edge bottom-right (gold antenna ball, big eyes, blush, smile), tiny mint hill with coral square monster peeking bottom-left, ~85% whitespace.",
+      "use_context": "flat theme fixed background, 16:9 canvas, full-bleed Background layer",
+      "crop_policy": "none-pixel-exact",
+      "rights": "project-owned",
+      "baked_text": false,
+      "sha256": "846cd626cf11a2ddca8ec0d1f664f43619365a69502bed606d97447ce3714c91"
+    },
+    {
+      "id": "bg-flat-43",
+      "path": "public/bg-flat-43.jpg",
+      "source_type": "ai-generated",
+      "provider": "Trae GenerateImage",
+      "prompt_summary": "Flat geometric background: pale gray-blue grained paper, indigo blob monster peeking from the bottom edge bottom-right (gold antenna ball, big eyes, blush, smile), tiny mint hill with coral square monster peeking bottom-left, ~85% whitespace.",
+      "use_context": "flat theme fixed background, 4:3 canvas, full-bleed Background layer",
+      "crop_policy": "none-pixel-exact",
+      "rights": "project-owned",
+      "baked_text": false,
+      "sha256": "4dc5364dbb54f7d2d4d5be0dc8edae9f38f034b71069cb982b60d4dbcde01e9c"
+    },
+    {
+      "id": "bg-flat-34",
+      "path": "public/bg-flat-34.jpg",
+      "source_type": "ai-generated",
+      "provider": "Trae GenerateImage",
+      "prompt_summary": "Flat geometric background: pale gray-blue grained paper, indigo blob monster peeking from the bottom edge bottom-right (gold antenna ball, big eyes, blush, smile), tiny mint hill with coral square monster peeking bottom-left, ~85% whitespace.",
+      "use_context": "flat theme fixed background, 3:4 canvas, full-bleed Background layer",
+      "crop_policy": "none-pixel-exact",
+      "rights": "project-owned",
+      "baked_text": false,
+      "sha256": "e1d24e96671ab831a039feb8b237f47a5a453ab2b39266c636ae5c105cf21a10"
+    }
+  ]
 }
