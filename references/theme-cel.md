@@ -14,7 +14,7 @@ Anime cel-shading storyboard: thick ink outlines, flat saturated fills, hard off
 
 - Ink: `#14110f` for outlines and body text.
 
-- Accents: red `#e8382a` (primary/orange slot), blue `#2b6de8`, green `#1d9e57`, yellow `#ffc62b` (gold slot).
+- Accents: red `#e8382a` (primary/orange slot), blue `#2b6de8`, green `#24bc6e`, yellow `#f2b721` (gold slot). Blue and red are the co-leads (same saturation ≈80 / lightness ≈54 step); green and gold are derived on the same step — never invent off-step colors.
 
 - Card skin: `5px` solid ink border, `8px` corner radius, hard offset ink shadow `7px 7px 0` (grows with lift, never blurs). Every card carries a deterministic micro-tilt of ±1° hashed from its position — the same card always keeps the same tilt, and scene motion transforms compose on top of it.
 

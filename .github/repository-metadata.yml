@@ -23,5 +23,5 @@ ruleset:
   block-force-push: true
   block-deletion: true
 release:
-  tag: v2.0.0
-  title: Notebook Video v2.0.0
+  tag: v2.3.0
+  title: Notebook Video v2.3.0

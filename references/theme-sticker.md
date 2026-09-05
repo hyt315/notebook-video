@@ -14,9 +14,9 @@ Cartoon sticker journal: white-outlined sticker cards, washi tape, marker highli
 
 - Ink: `#4a3b2f` for text and outlines.
 
-- Accents: pink `#ff8fa3` (primary/orange slot), sky `#8ecae6` / blue `#4f9fd8`, mint `#7fd8be` / green `#4fb894`, butter `#ffd166` (gold slot).
+- Accents: pink `#ff8fa3` (primary/orange slot, the lead), sky `#8ecae6` / blue `#5ca9e0`, mint `#7fd8be` / green `#61d188`, butter `#ffd166` (gold slot). All accents sit on one pastel step (high lightness, low harshness) derived from the pink lead — never invent off-step colors.
 
-- Card skin: pure white sticker with a `5px` white outline (the sticker edge) and a soft two-layer shadow (no border). Radius `22px`. Lift deepens the shadow only; the outline never changes.
+- Card skin: pure white sticker with a `2.5px` soft-brown print edge (`rgba(74,59,47,0.55)`, the printed sticker art line), a `5px` white outline (the die-cut edge) and a soft two-layer shadow (deepened: 0.12/0.17 base alphas so the white edge stays readable on the mint page). Radius `22px`. Lift deepens the shadow only; the outline never changes.
 
 - Background doodles (locked, by canvas-ratio anchors): heart (top-right), cross (below it), wave (bottom-left), spiral (bottom-right), zigzag (top-left). All 5px stroked, single accent colors. Nothing else may be drawn on the background.
 
@@ -40,7 +40,7 @@ Cartoon sticker journal: white-outlined sticker cards, washi tape, marker highli
 
 ## Rejection flags
 
-- Ink borders on cards (that is the cel theme's language).
+- Heavy ink borders on cards (5px cel-style ink frames); only the locked 2.5px soft-brown print edge is allowed.
 
 - Tapes exceeding one per corner or rotating outside −14°…+10°.
 

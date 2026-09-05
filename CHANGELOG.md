@@ -2,6 +2,18 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [2.3.0] - 2026-09-05
+
+### Changed
+
+- **Per-theme color systems re-derived on locked S/L steps (三主题配色同阶梯重推导)**: every accent now sits on one saturation/lightness step under a single lead hue per theme — `cel` keeps blue+red co-leads (S≈80/L≈54) with green `#24bc6e` and gold `#f2b721` lifted onto the step; `sticker` keeps the pink lead and lifts blue `#5ca9e0` / green `#61d188` into the pastel band; `flat` keeps the indigo lead with coral `#f05f42`, mint `#41d27b` and sun `#f0c63c` derived underneath. Theme contracts record the step rule with a "no off-step colors" flag.
+- **`flat` redesign: geometric little monsters (几何小怪兽)** replaces the mega-circle + Memphis set: a locked indigo blob monster (bottom-right) and a coral square monster (bottom-left, −8° tilt) with star / exclamation / squiggle props; the chapter header switches to dark ink on the pale base (the white-on-circle pairing is gone with the circle).
+- **`flat` card & subtitle**: cards drop the 3.5px ink border + white inset liner for a 2px neutral gray hairline plus a colored offset solid shadow (indigo by default, follows the scene's semantic accent color); the full-width ink subtitle bar becomes a floating indigo pill with hard offset ink shadow and coral/mint dots.
+
+### Fixed
+
+- **Invisible frames on non-default themes**: example/annotation boxes across `cel`/`sticker`/`flat` used hairlines at 0.11–0.18 alpha and fills at 0.08–0.10 alpha that melted into the cards; line tokens now start at 0.42–0.45 alpha and light fills at 0.17–0.30. `sticker` cards gain a 2.5px soft-brown print edge plus a deepened two-layer shadow so the white die-cut edge stays readable on the mint page. `paper` (default) is untouched and renders byte-identical.
+
 ## [2.2.0] - 2026-09-05
 
 ### Added
