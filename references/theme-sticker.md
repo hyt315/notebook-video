@@ -9,7 +9,7 @@ Cartoon sticker journal: white-outlined sticker cards, washi tape, marker highli
 ## Locked tokens (do not invent alternatives)
 
 - Canvas: identical to the shared canvas contract (16:9 / 4:3 / 3:4). Layout coordinates are unchanged from the default; only skin and decoration change.
-- Base surface: warm cream `#fdf6ea` grid paper (42px pitch, 0.10 alpha).
+- Base surface: pale mint `#f4f9f4` grid paper (42px pitch, 0.10 alpha). Never cream — the mint undertone is the sticker theme's signature.
 - Ink: `#4a3b2f` for text and outlines.
 - Accents: pink `#ff8fa3` (primary/orange slot), sky `#8ecae6` / blue `#4f9fd8`, mint `#7fd8be` / green `#4fb894`, butter `#ffd166` (gold slot).
 - Card skin: pure white sticker with a `5px` white outline (the sticker edge) and a soft two-layer shadow (no border). Radius `22px`. Lift deepens the shadow only; the outline never changes.
