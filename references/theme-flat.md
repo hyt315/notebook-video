@@ -1,4 +1,4 @@
-# Theme contract: flat (modern flat geometric monsters)
+﻿# Theme contract: flat (modern flat geometric monsters)
 
 Status: LOCKED. This theme ships fully implemented in `assets/lecture-template/src/theme/flat.tsx`. Production runs select it with `new-project ./dir --style=flat` and never edit the theme file. Read this document instead of the other theme docs; the three style contracts are mutually exclusive by design (progressive disclosure).
 
@@ -18,10 +18,7 @@ Modern flat geometric with playful character: gray-hairline white cards with col
 
 - Card skin: pure white card with a `2px` neutral gray hairline (`rgba(25,25,25,0.30)`, defines the top/left edges on the pale surface — not an ink frame), `20px` radius, offset solid shadow `7px 7px 0` in indigo `#3b4ed8` by default — when a scene passes a semantic accent color the shadow takes that color, so each card reads as a color-blocked tile; lift extends the offset slightly. No ink border, no inset liner, no blur anywhere.
 
-- Background monsters (locked, canvas-ratio anchors, flat solid fills only):
-  - **Round blob monster** bottom-right (`0.930w, 0.860h`, body radius `0.052w`, indigo): gold antenna ball, two white eyes with ink pupils looking toward the content, small smile arc, two stub legs. The top-right corner is reserved for the chapter header — nothing may overlap it.
-  - **Square monster** bottom-left (`0.075w, 0.845h`, side `0.058w`, coral, −8° tilt): raised arms, white eyes with ink pupils, zigzag mouth, stub feet.
-  - Props: gold 4-point star (`0.185w, 0.140h`), small coral star (`0.790w, 0.620h`), mint exclamation mark (`0.945w, 0.480h`, 10° tilt), indigo squiggle (left-middle). Nothing else may be drawn on the background.
+- Background (LOCKED fixed raster): one AI-generated image per canvas ratio, selected automatically from `public/bg-flat-<169|43|34>.jpg` (`16:9` 2560×1440, `4:3` 1920×1440, `3:4` 1440×1920 — pixel-exact, no crop, no stretch). The image carries the complete background language: pale gray-blue `#f2f4f7` grained paper, an indigo round blob monster peeking from the bottom edge bottom-right (gold antenna ball, big eyes, blush, smile — head and shoulders only), a mint hill bottom-left with a tiny coral square monster peeking out, ~85% clean whitespace, top corners and center reserved for content. The code-drawn SVG monster/props background is retired; never restore it and never draw extra elements on top of the image.
 
 - Grade: none by design. Color contrast carries the composition; do not add soft-light warmth or vignette.
 
@@ -33,7 +30,7 @@ Modern flat geometric with playful character: gray-hairline white cards with col
 
 - Scene graphics use geometric primitives (rects, circles, bars) with flat fills and hard-edged strokes; no gradients, no soft shadows, no blur.
 
-- White cards keep full opacity so text stays readable; the corner monsters never overlap the content zones — verify on the first frame of each scene.
+- White cards keep full opacity so text stays readable; the monsters in the background image never overlap the content zones — verify on the first frame of each scene.
 
 - Emphasis color rotation (coral → indigo → mint) follows the existing semantic color slots.
 
@@ -41,11 +38,11 @@ Modern flat geometric with playful character: gray-hairline white cards with col
 
 - Any blur, gradient or vignette.
 
-- The old giant indigo circle / Memphis set, or any background element beyond the locked monsters + props.
+- Restoring the code-drawn SVG monster/props background, or drawing any extra element on top of the locked background image.
 
 - Subtitle rendered as a full-width bar, or as a floating white chip (that belongs to cel/sticker).
 
 - Ink-bordered cards or white inset liners (that is the cel theme's language; flat cards carry only the 2px gray hairline plus colored shadows).
 
-- Monsters moved to non-locked positions, recolored, or given gradients/outlines.
+- Replacing or regenerating the background images with off-palette colors, or stretching a wrong-ratio image onto a canvas.
 

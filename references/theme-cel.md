@@ -1,4 +1,4 @@
-# Theme contract: cel (anime cel-shading storyboard)
+﻿# Theme contract: cel (anime cel-shading storyboard)
 
 Status: LOCKED. This theme ships fully implemented in `assets/lecture-template/src/theme/cel.tsx`. Production runs select it with `new-project ./dir --style=cel` and never edit the theme file. Read this document instead of the other theme docs; the three style contracts are mutually exclusive by design (progressive disclosure).
 
@@ -18,7 +18,7 @@ Anime cel-shading storyboard: thick ink outlines, flat saturated fills, hard off
 
 - Card skin: `5px` solid ink border, `8px` corner radius, hard offset ink shadow `7px 7px 0` (grows with lift, never blurs). Every card carries a deterministic micro-tilt of ±1° hashed from its position — the same card always keeps the same tilt, and scene motion transforms compose on top of it.
 
-- Background decoration: halftone dot field (20px pitch, 0.11 opacity) fading from the top-right, a weaker echo at bottom-left (18px pitch, 0.08), and 16 speed lines fanning from the top-left corner (3.6px stroke, 0.22 opacity, 680px reach). Anchored by canvas ratio; identical on all three canvases.
+- Background (LOCKED fixed raster): one AI-generated image per canvas ratio, selected automatically from `public/bg-cel-<169|43|34>.jpg` (`16:9` 2560×1440, `4:3` 1920×1440, `3:4` 1440×1920 — pixel-exact, no crop, no stretch). The image carries the complete background language: aged near-white paper with print grain, halftone dot fields, an explosion star with checkerboard accents at bottom-left, red/blue star marks and radiating speed lines at bottom-right — all decorations confined to three corner clusters, the center kept clean for content. The code-drawn halftone/speed-line background is retired; never restore it and never draw extra ornaments on top of the image.
 
 - Grade: ink vignette only (`inset 0 0 120px`, 0.028 alpha). No warm soft-light layer. The paper must stay bright: never deepen decoration densities to compensate for weak contrast.
 
@@ -42,7 +42,7 @@ Anime cel-shading storyboard: thick ink outlines, flat saturated fills, hard off
 
 - Any blurred or soft drop shadow.
 
-- Halftone or speed-line densities differing from the locked values, or newly invented background ornaments.
+- Restoring the code-drawn halftone/speed-line background, drawing extra ornaments on top of the locked background image, or stretching a wrong-ratio image onto a canvas.
 
 - A Burst sticker exceeding one per scene, or text longer than 3 characters.
 

@@ -1,4 +1,4 @@
-# Theme contract: sticker (cartoon sticker journal)
+﻿# Theme contract: sticker (cartoon sticker journal)
 
 Status: LOCKED. This theme ships fully implemented in `assets/lecture-template/src/theme/sticker.tsx`. Production runs select it with `new-project ./dir --style=sticker` and never edit the theme file. Read this document instead of the other theme docs; the three style contracts are mutually exclusive by design (progressive disclosure).
 
@@ -18,7 +18,7 @@ Cartoon sticker journal: white-outlined sticker cards, washi tape, marker highli
 
 - Card skin: pure white sticker with a `2.5px` soft-brown print edge (`rgba(74,59,47,0.55)`, the printed sticker art line), a `5px` white outline (the die-cut edge) and a soft two-layer shadow (deepened: 0.12/0.17 base alphas so the white edge stays readable on the mint page). Radius `22px`. Lift deepens the shadow only; the outline never changes.
 
-- Background doodles (locked, by canvas-ratio anchors): heart (top-right), cross (below it), wave (bottom-left), spiral (bottom-right), zigzag (top-left). All 5px stroked, single accent colors. Nothing else may be drawn on the background.
+- Background (LOCKED fixed raster): one AI-generated image per canvas ratio, selected automatically from `public/bg-sticker-<169|43|34>.jpg` (`16:9` 2560×1440, `4:3` 1920×1440, `3:4` 1440×1920 — pixel-exact, no crop, no stretch). The image carries the complete background language: pale mint grid paper with a uniform paper tone (no color patches), corner doodles (heart, cross, wave, spiral, zigzag) and washi-tape strips kept to the edges, center left clean — doodles never collide with the chapter tag (top-left) or the title header (top-right). The code-drawn grid/doodle background is retired; never restore it and never draw extra elements on top of the image.
 
 - Grade: warm ink vignette (`inset 0 0 130px`, 0.04 alpha). No soft-light warmth.
 
@@ -46,5 +46,5 @@ Cartoon sticker journal: white-outlined sticker cards, washi tape, marker highli
 
 - Card tilt beyond ±2°, or any tilt applied to a moving card.
 
-- Newly invented background doodles, or subtitle rendered as a boxed/barred shape.
+- Newly invented background doodles, restoring the code-drawn grid/doodle background, drawing on top of the locked background image, or stretching a wrong-ratio image onto a canvas; subtitle rendered as a boxed/barred shape.
 
