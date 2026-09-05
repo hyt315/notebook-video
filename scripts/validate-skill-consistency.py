@@ -68,6 +68,23 @@ def main() -> None:
         if not required.is_file():
             problems.append(f"missing cross-platform entry: {required.relative_to(SKILL)}")
 
+    # Theme pack integrity: four locked skins plus the engine contract and docs.
+    theme_dir = SKILL / 'assets' / 'lecture-template' / 'src' / 'theme'
+    for theme_file in ('types.ts', 'canvas.ts', 'paper.tsx', 'cel.tsx', 'sticker.tsx', 'flat.tsx', 'active.ts'):
+        if not (theme_dir / theme_file).is_file():
+            problems.append(f"missing theme pack file: assets/lecture-template/src/theme/{theme_file}")
+    for theme_doc in ('theme-system.md', 'theme-cel.md', 'theme-sticker.md', 'theme-flat.md'):
+        if not (SKILL / 'references' / theme_doc).is_file():
+            problems.append(f"missing theme contract doc: references/{theme_doc}")
+    if theme_dir.is_dir():
+        active = (theme_dir / 'active.ts').read_text(encoding='utf-8', errors='ignore')
+        if "from './paper'" not in active:
+            problems.append("theme switch active.ts must ship defaulting to './paper'")
+        for theme_id in ('cel', 'sticker', 'flat'):
+            theme_src = (theme_dir / f'{theme_id}.tsx').read_text(encoding='utf-8', errors='ignore')
+            if not re.search(r"useCanvas\(\)", theme_src) and theme_id != 'flat':
+                problems.append(f"theme {theme_id}.tsx must anchor decoration via useCanvas()")
+
     with tempfile.TemporaryDirectory(prefix='notebook-video-package-test-') as temp:
         root = Path(temp)
         project = root / 'project'

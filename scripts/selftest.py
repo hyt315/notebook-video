@@ -35,11 +35,10 @@ def run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
 
 def expect_blocked(name: str, args: list[str], cwd: Path | None = None) -> None:
     proc = run(*args, cwd=cwd)
-    blocked = proc.returncode != 0 and ("ERROR" in proc.stdout or "ERROR" in proc.stderr
-                                        or str(proc.returncode) == "1"
-                                        or "failure" in proc.stdout.lower()
-                                        or "not found" in proc.stderr.lower()
-                                        or "error" in proc.stderr.lower())
+    combined = f"{proc.stdout}{proc.stderr}".lower()
+    blocked = proc.returncode != 0 and ("error" in combined or "unknown" in combined
+                                        or "failure" in combined or "not found" in combined
+                                        or "missing" in combined or "invalid" in combined)
     check(name, blocked, f"rc={proc.returncode} (blocked as expected)" if blocked else f"rc={proc.returncode} (unexpectedly allowed)")
 
 
@@ -59,15 +58,46 @@ def main() -> int:
         "scripts/validate-visual-plan.py",
         "scripts/validate-video.cmd",
         "assets/lecture-template/src/index.tsx",
+        "assets/lecture-template/src/theme/active.ts",
+        "assets/lecture-template/src/theme/canvas.ts",
+        "assets/lecture-template/src/theme/types.ts",
+        "assets/lecture-template/src/theme/paper.tsx",
+        "assets/lecture-template/src/theme/cel.tsx",
+        "assets/lecture-template/src/theme/sticker.tsx",
+        "assets/lecture-template/src/theme/flat.tsx",
         "assets/lecture-template/scripts/tts-openai-compatible.py",
         "assets/lecture-template/manifests/asset-manifest.json",
         "assets/lecture-template/manifests/caption-cues.json",
         "references/lecture-composition.md",
         "references/visual-system.md",
         "references/canvas-modes.md",
+        "references/theme-system.md",
+        "references/theme-cel.md",
+        "references/theme-sticker.md",
+        "references/theme-flat.md",
     ]
     missing = [f for f in files if not (ROOT / f).is_file()]
     check("关键产物齐全", not missing, f"missing: {missing}" if missing else f"{len(files)} files")
+
+    # ---- 好夹具 2：主题开关默认 paper（出厂状态） ----
+    active = ROOT / "assets" / "lecture-template" / "src" / "theme" / "active.ts"
+    if active.is_file():
+        ok = "from './paper'" in active.read_text(encoding="utf-8")
+        check("主题开关默认 paper", ok, "default" if ok else "active.ts 被改到非默认主题")
+    else:
+        check("主题开关默认 paper", False, "active.ts 缺失")
+
+    # ---- 负向夹具：--style 非法值被拦 ----
+    if NODE:
+        with tempfile.TemporaryDirectory() as td:
+            expect_blocked("负向：非法 --style 被拦", [
+                str(NODE), str(ROOT / "scripts" / "notebook-video.mjs"),
+                "new-project", str(Path(td) / "proj"), "--style=neon"])
+            leftover = Path(td) / "proj"
+            if leftover.exists() and any(leftover.iterdir()):
+                check("负向：非法 --style 不产生半成品", False, "目标目录被污染")
+            else:
+                check("负向：非法 --style 不产生半成品", True, "clean")
 
     # ---- 好夹具 2：官方引擎自检 ----
     if NODE:
@@ -120,7 +150,7 @@ def main() -> int:
 
     failed = [r for r in results if not r[1]]
     if not failed:
-        print("SELFTEST PASS (all 6 checks passed)")
+        print(f"SELFTEST PASS (all {len(results)} checks passed)")
         return 0
     print(f"\n共 {len(results)} 项，通过 {len(results) - len(failed)}，失败 {len(failed)}")
     return 1
