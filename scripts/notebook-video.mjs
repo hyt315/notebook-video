@@ -215,7 +215,14 @@ const remotionRender = async ({project, composition, output, frames, concurrency
   }
   nodeArgs.push(remotionCli, 'render', composition, output, '--entry-point=src/index.tsx', '--codec=h264', '--crf=16', `--concurrency=${concurrency}`);
   if (frames) nodeArgs.push(`--frames=${frames}`);
-  const browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE;
+  // Browser resolution: explicit env wins, then the local Remotion cache that
+  // `prepare-browser` already populated — never trigger a fresh 100MB+ shell
+  // download when a cached copy exists on this machine.
+  let browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE;
+  if (!browserExecutable && process.platform === 'win32') {
+    const cached = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'remotion-browser', 'chrome-headless-shell', 'win64', 'chrome-headless-shell.exe');
+    if (fs.existsSync(cached)) browserExecutable = cached;
+  }
   if (browserExecutable) {
     const resolved = resolvePath(browserExecutable);
     if (!fs.existsSync(resolved)) fail(`REMOTION_BROWSER_EXECUTABLE does not exist: ${resolved}`);
@@ -271,6 +278,32 @@ const benchmarkRender = async ([projectArg, composition = 'NotebookVideoFilm']) 
   console.log(`Recommended: REMOTION_CONCURRENCY=${results[0].concurrency}`);
 };
 
+const reviewFrames = async ([projectArg, outputArg, startArg, endArg, composition = 'NotebookVideoFilm']) => {
+  if (!projectArg || !outputArg || startArg === undefined || endArg === undefined) fail('Usage: notebook-video review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]', 2);
+  const start = Number(startArg), end = Number(endArg);
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start) fail(`Invalid frame range: ${startArg}-${endArg}`);
+  const project = resolvePath(projectArg), output = resolvePath(outputArg);
+  await syncProjectAssets([project]);
+  const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
+  const fps = Number(process.env.NOTEBOOK_VIDEO_FPS || 30);
+  await remotionRender({project, composition, output, frames: `${start}-${end}`, concurrency});
+  // 一次 bundle/一次浏览器：范围视频 + 自动接触片一步到位。
+  // 多帧视觉检查用本命令替代逐帧 still，实测约省 3 倍时间（bundle 与浏览器开销只付一次）。
+  const contact = path.join(path.dirname(output), path.basename(output).replace(/\.mp4$/i, '') + '-contact.jpg');
+  await makeContactSheet(output, contact, (end - start + 1) / fps);
+  console.log(`Rendered review range ${start}-${end}: ${output}`);
+  console.log(`Contact sheet: ${contact}`);
+};
+
+const makeContactSheet = async (video, contact, durationSec) => {
+  const count = durationSec > 60 ? 24 : 12;
+  const tile = count === 24 ? '4x6' : '4x3';
+  const rate = (count / durationSec).toFixed(12).replace(/0+$/, '').replace(/\.$/, '');
+  ensureParent(contact);
+  await run('ffmpeg', ['-y', '-loglevel', 'error', '-i', video, '-vf', `fps=${rate},scale=640:360,tile=${tile}`, '-frames:v', '1', contact]);
+  return contact;
+};
+
 const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   if (!videoArg || !expectedArg) fail('Usage: notebook-video validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]', 2);
   const video = resolvePath(videoArg);
@@ -308,11 +341,7 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   if (peak > -1) fail(`True peak too high: ${peak} dBTP`);
   console.log(`audio valid: ${integrated.toFixed(1)} LUFS, ${peak.toFixed(1)} dBTP`);
 
-  const count = expected > 60 ? 24 : 12;
-  const tile = count === 24 ? '4x6' : '4x3';
-  const rate = (count / expected).toFixed(12).replace(/0+$/, '').replace(/\.$/, '');
-  ensureParent(contact);
-  await run('ffmpeg', ['-y', '-loglevel', 'error', '-i', video, '-vf', `fps=${rate},scale=640:360,tile=${tile}`, '-frames:v', '1', contact]);
+  await makeContactSheet(video, contact, expected);
   console.log('No black frames detected.');
   console.log(`Contact sheet: ${contact}`);
 };
@@ -336,7 +365,7 @@ const pythonCommandMap = new Map([
 ]);
 
 const usage = () => {
-  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--classic] [--style=paper|cel|sticker|flat]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT\n  validate-visual-plan PROJECT_DIRECTORY\n  validate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
+  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--classic] [--style=paper|cel|sticker|flat]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT\n  validate-visual-plan PROJECT_DIRECTORY\n  validate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };
 
 const main = async () => {
@@ -354,6 +383,7 @@ const main = async () => {
     case 'prepare-browser': return prepareBrowser(args);
     case 'benchmark-render': return benchmarkRender(args);
     case 'render-range': return renderRange(args);
+    case 'review-frames': return reviewFrames(args);
     case 'render': return render(args);
     case 'validate-video': return validateVideo(args);
     case 'package': return packageProject(args);

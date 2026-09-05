@@ -1,7 +1,8 @@
----
+***
+
 name: notebook-video
 description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion. The default visual route is lecture composition: multi-zone scenes drawn entirely with code (SVG diagrams, mascots, progressive checklists, annotation stickers) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering, provenance manifests and automated QA. Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
----
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # Create notebook explainer videos
 
@@ -30,29 +31,48 @@ Start every project by copying a bundled template through `new-project`; do not 
 Keep these official elements locked until the user approves a future rendered replacement:
 
 - React + TypeScript + Remotion rendering core;
+
 - locked premium motion contracts shipped in the template and carried into every new production: CameraRig dual-canvas lag camera, JumpInText per-glyph 3D flip titles, WaveText letter-wave CTA typing, multi-keyframe figure roll-ins and per-word subtitle reveal (see references/motion-design.md);
+
 - fixed native 30fps motion, render and delivery on one of three locked canvases: 2560×1440 (16:9), 1920×1440 (4:3) or 1440×1920 (3:4 portrait), chosen once at kickoff;
+
 - no duplicate-frame upconversion; use 60fps only when motion is authored natively at 60fps;
+
 - mount only the active scene, with at most two scenes during a short transition;
+
 - animate moving objects with transforms instead of per-frame layout properties;
+
 - bright layered warm-ivory notebook background;
+
 - stable upper-left chapter card and upper-right technical header;
+
 - bottom-pinned pure caption text with per-word reveal, no decorative bar;
+
 - orange left locator, blue right status ring and centered 40px Chinese text;
+
 - LXGW WenKai Lite as the unified CJK typeface plus Clash Display / Space Grotesk Latin accents;
+
 - TTS word timing converted once to integer absolute frames;
+
 - independent semantic parts with explicit z-order, entry and complete exit;
+
 - a spatial density budget: one hero action per zone, no temporary stack in the center;
+
 - shared-track continuity when one object changes state across several stations;
+
 - real slot geometry: insertable parts cross the slot, move behind the front lip and disappear fully;
+
 - declarative narration and action effects inside the Remotion component tree;
+
 - font/audio/image asset preload gate before the first frame;
+
 - a visual plan selecting lecture-route pure text/graphic scenes by default, with image-plus-text only after the user accepts the add-on;
+
 - optional generated imagery as preloaded Remotion assets with prompt, crop and rights records;
+
 - H.264/AAC output, automated QA, contact sheets and editable source package.
 
 Do not write an experimental change into this skill until the user sees the rendered film and explicitly approves it.
-
 
 ## Preserved aesthetic layer
 
@@ -76,7 +96,7 @@ Do not stop at prompts, still images, a silent animation or an unvalidated rende
 
 ## Create a project
 
-Use the cross-platform Node launcher. Replace `<SKILL_DIR>` with the skill directory. The same universal command works in macOS Terminal, Windows Command Prompt and Windows PowerShell. macOS/Linux may use the `.sh` aliases and Windows may use `scripts\notebook-video.cmd`; every wrapper delegates to the same Node implementation.
+Use the cross-platform Node launcher. Replace `<SKILL_DIR>` with the skill directory. The same universal command works in macOS Terminal, Windows Command Prompt and Windows PowerShell. macOS/Linux may use the `.sh` aliases and Windows may use `scripts\notebook-video.cmd`; every wrapper delegates to the same Node implementation. All Python checkers and shell wrappers are invoked only through `scripts/notebook-video.mjs` — never call a `scripts/*.py` or `scripts/*.sh` directly, so the command surface stays a single documented entry.
 
 ```text
 node "<SKILL_DIR>/scripts/notebook-video.mjs" check-deps
@@ -106,7 +126,9 @@ Read [references/lecture-composition.md](references/lecture-composition.md) firs
 Choose the mode from meaning:
 
 - process, system, quantity or relationship → `pure-graphic` (default for explanations);
+
 - contrast, slogan, misconception or keyword → `pure-text`;
+
 - concrete subject, environment or transformation → `pure-graphic` on the default route, or `image-text` only when the user accepted the image add-on.
 
 The add-on question is asked once per production: some environments have no image model and many have weak ones, so generated art is an enhancement the user opts into, never a requirement that blocks production. When offering it, state plainly that the result depends on the image-generation quality of the current tool, and that the built-in image generation in Codex is the best-suited environment for this add-on. When accepted and available, generate bitmaps without baked labels, charts or UI text; request crop-safe negative space and separated subjects; put exact Chinese copy, arrows, highlights and diagrams in Remotion. Copy only used images into `public/illustrations/`, register them in `assets/lecture-template/manifests/visual-assets.json`, preload them in `AssetGate`, and animate them with a restrained reveal or push-in plus phrase-timed annotations. On the default route `visual-assets.json` stays empty.
@@ -138,9 +160,13 @@ Convert milliseconds to frames once at the data boundary with `Math.round(ms * f
 Read [references/independent-parts.md](references/independent-parts.md). Every object that moves at a different time is a separate component with:
 
 - stable ID and scene;
+
 - layer role and numeric z-order;
+
 - entry, active and complete-exit frames;
+
 - motion and occlusion contracts;
+
 - narrative reason for decorative motion.
 
 Before animating, assign every moving object one home zone and one destination zone. Keep at least 70px visual separation between unrelated cards. Do not let more than one temporary transfer object occupy the central corridor at once. If a scene becomes crowded, enlarge and redistribute the objects or remove completed parts; never shrink everything into a pile.
@@ -156,9 +182,13 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-layering ./notebook-video
 Reuse the exact components in the copied template (`assets/lecture-template/src/index.tsx`, or `assets/example-project/src/index.tsx` with `--classic`):
 
 - `Background`, `Paper`;
+
 - `Subtitle`, `Chrome`;
+
 - `AssetGate`, `Sound`;
+
 - the code-drawn component library (`Mascot`, `LineIcon`, `CheckBadge`, checklists, rails, gauges) or, on the classic route, generated `Img` layers and their independent callouts;
+
 - stepped-frame helpers `q`, `ease`, `pop`.
 
 Do not replace the subtitle input with a straight box, rounded search bar, dark bordered strip or inner sine line. Do not add global camera motion, random drift, animated noise, heavy blur or unrelated particles.
@@ -210,6 +240,12 @@ During iteration, render only the changed scene range for review. Frame numbers 
 node "<SKILL_DIR>/scripts/notebook-video.mjs" render-range ./notebook-video-project ./notebook-video-project/renders/scene-review.mp4 START_FRAME END_FRAME
 ```
 
+For multi-frame visual checks, prefer a single range render over several single stills: one bundle + one browser launch serves the whole range, and measured 4-frame checks drop from \~13s (four serial stills) to \~4s. The dedicated compound command additionally writes a contact sheet in the same call, so inspect the mp4 frame-by-frame and the jpg in one pass:
+
+```text
+node "<SKILL_DIR>/scripts/notebook-video.mjs" review-frames ./notebook-video-project ./notebook-video-project/renders/scene-review.mp4 START_FRAME END_FRAME
+```
+
 ### 10. Validate the actual result
 
 Read [references/quality-checklist.md](references/quality-checklist.md).
@@ -252,24 +288,46 @@ python "<SKILL_DIR>/scripts/selftest.py"
 ## Resource map
 
 - [references/locked-style-contract.json](references/locked-style-contract.json): binding tokens, coordinates and rejection flags.
+
 - [references/theme-system.md](references/theme-system.md): theme boundary (what a skin may and may not change) and the locked theme list.
+
 - [references/theme-cel.md](references/theme-cel.md): cel (anime cel-shading) theme contract.
+
 - [references/theme-sticker.md](references/theme-sticker.md): sticker (cartoon sticker journal) theme contract.
+
 - [references/theme-flat.md](references/theme-flat.md): flat (modern flat geometric) theme contract.
+
 - [references/lecture-composition.md](references/lecture-composition.md): the default multi-zone code-drawn route, cue-frame sync procedure and self-check list.
+
 - [references/official-aesthetic-system.md](references/official-aesthetic-system.md): locked aesthetic core and ordinary editable surface.
+
 - [references/remotion-architecture.md](references/remotion-architecture.md): project structure, data flow and component contracts.
+
 - [references/official-skills-exemplar.md](references/official-skills-exemplar.md): canonical project and reuse rules.
+
 - [references/visual-system.md](references/visual-system.md): exact background, cards, subtitle and typography.
+
 - [references/independent-parts.md](references/independent-parts.md): decomposition, stacking and exit rules.
+
 - [references/motion-design.md](references/motion-design.md): motion curves and scene rhythm.
+
 - [references/narrative-hook.md](references/narrative-hook.md): binding cold-open, callback and opening review rules.
+
 - [references/pacing-rhythm.md](references/pacing-rhythm.md): hammer frames, fast/slow chapter alternation, breathing and ending beat.
+
 - [references/canvas-modes.md](references/canvas-modes.md): 16:9, 4:3 and 3:4 portrait canvas parameters and the mobile readability type floor.
+
 - [references/subtitle-timing.md](references/subtitle-timing.md): semantic captions and integer-frame conversion.
+
 - [references/tts-audio.md](references/tts-audio.md): TTS, declarative effects and mix.
+
 - [references/quality-checklist.md](references/quality-checklist.md): delivery acceptance criteria.
+
 - [references/performance-design.md](references/performance-design.md): binding 30fps pipeline, scene lifetime, transform, caching, concurrency and range-render rules.
+
 - [references/visual-director.md](references/visual-director.md): visual-mode selection, image-generation capability fallback, asset prompts, provenance and scene exits.
+
 - [references/cross-platform-compatibility.md](references/cross-platform-compatibility.md): binding macOS/Windows parity contract, universal commands and browser preparation.
+
 - [references/windows-compatibility.md](references/windows-compatibility.md): additional Windows setup, path rules and troubleshooting without changing render output.
+
