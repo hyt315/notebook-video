@@ -46,6 +46,8 @@ Explainer videos, animated educational lectures, product showcases, or technical
 
 ▶️ [Watch full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · Hero Asset: [hero.png](assets/demo/hero.png)
 
+▶️ [Component library showcase (v2.5, 54s)](assets/demo/notebook-video-components-demo.mp4) — 26 locked icons, seven components (CodeBlock / BrowserChrome / Connector / Checklist / CountUp / ProgressBar / Callout), three transitions, type motion, physical parts and all four theme skins, rendered in the cel theme.
+
 ### Default Canvas: 16:9 Landscape
 
 | Aspect Ratio | Resolution | Video Demo | Best For |

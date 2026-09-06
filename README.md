@@ -46,6 +46,8 @@
 
 ▶️ [观看完整演示视频（MP4）](assets/demo/notebook-video-demo.mp4) · 主视觉参考：[hero.png](assets/demo/hero.png)
 
+▶️ [组件库全技能演示（v2.5，54 秒）](assets/demo/notebook-video-components-demo.mp4) — 26 枚锁定图标、CodeBlock / BrowserChrome / Connector / Checklist / CountUp / ProgressBar / Callout 七大组件、三式转场、文字动效、物理件与四主题皮肤，cel 主题渲染。
+
 ### 默认画布：16:9 横屏
 
 | 画布比例             | 分辨率            | 视频预览                                                                                 | 适用场景                       |
