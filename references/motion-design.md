@@ -25,6 +25,14 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 - Complete exit: move the entire component outside the canvas or remove it after it is fully out; never leave a clipped corner.
 - Character reaction: move separate arms, face or body parts; do not wobble one flattened character image.
 
+## Locked motion pack
+
+- Spring presets: use `popS(f, start, preset)` with `SPRINGS` — `snappy` for small UI ticks and code lines, `soft` (identical to the legacy `pop`) for cards and lists, `bouncy` for callouts and celebratory beats. Do not hand-tune new damping/stiffness values per scene.
+- Scene transitions: wrap the incoming scene in `TransitionIn` (`flip` = page turn when the metaphor changes, `slide` = cover-over for a lateral topic shift, `wipe` = edge reveal for a detail focus). **No scene overlap, ever**: the outgoing scene must finish its exit and fully unmount (or reach opacity 0) before the incoming transition starts — no frame may show two scenes at once. Only the incoming scene carries the transition effect. Use at most one transition style per film and keep clean cuts elsewhere.
+- Camera script: build new keyframe tracks with `camScript(x, y, duration).hold(f).to(f, {x, y, s}).done()` instead of raw keyframe tables; it guarantees first/last frame coverage. The same easing and exponential lag follow-focus apply.
+- Stop-motion accent: `useSteppedFrame(15)` quantizes a component to 15fps so each pose holds two output frames. Reserve it for sticker-style charm; never apply it to subtitles, transfers or the camera.
+- Component motion stays inside the locked library: `Connector` animates dash flow only during transfer, `Checklist` rows slide in with staggered `soft` springs, `CodeBlock` lines enter with `snappy` springs, `CountUp` eases with the standard soft-out curve.
+
 ## Scene grammar
 
 Build progressively:

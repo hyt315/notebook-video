@@ -83,8 +83,36 @@ const PillTag:React.FC<{text:string;color?:string;bg?:string;fontSize?:number;fo
 // Paper：卡片容器，皮肤由主题包提供（src/theme/active.ts）。
 const Paper=THEME.Paper;
 
-type IconKind='check'|'play'|'project'|'report';
-const LineIcon:React.FC<{kind:IconKind,size?:number,color?:string,strokeWidth?:number}>=({kind,size=28,color='currentColor',strokeWidth=2.2})=>{const common={fill:'none',stroke:color,strokeWidth,strokeLinecap:'round' as const,strokeLinejoin:'round' as const};return <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">{kind==='check'&&<path {...common} d="M7 16.5l5.6 5.5L25 9.8"/>}{kind==='play'&&<><rect {...common} x="5" y="6" width="22" height="20" rx="3"/><path {...common} d="M13 11.5l8 4.5-8 4.5z"/></>}{kind==='project'&&<><rect {...common} x="6" y="7" width="20" height="18" rx="2.5"/><path {...common} d="M10 12h12M10 16h8M10 20h6"/></>}{kind==='report'&&<><path {...common} d="M9 5h10l5 5v17H9z"/><path {...common} d="M19 5v6h5M13 16h7M13 20h7"/></>}</svg>};
+// LineIcon：锁定线性图标集（32 视窗 / 圆头描边），换题材从这里挑，不要新造风格。
+type IconKind='check'|'play'|'project'|'report'|'star'|'fork'|'branch'|'rocket'|'shield'|'terminal'|'cloud'|'link'|'bug'|'search'|'user'|'clock'|'download'|'upload'|'folder'|'chart'|'globe'|'lock'|'mail'|'calendar'|'heart'|'settings';
+const LineIcon:React.FC<{kind:IconKind,size?:number,color?:string,strokeWidth?:number}>=({kind,size=28,color='currentColor',strokeWidth=2.2})=>{const common={fill:'none',stroke:color,strokeWidth,strokeLinecap:'round' as const,strokeLinejoin:'round' as const};return <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
+{kind==='check'&&<path {...common} d="M7 16.5l5.6 5.5L25 9.8"/>}
+{kind==='play'&&<><rect {...common} x="5" y="6" width="22" height="20" rx="3"/><path {...common} d="M13 11.5l8 4.5-8 4.5z"/></>}
+{kind==='project'&&<><rect {...common} x="6" y="7" width="20" height="18" rx="2.5"/><path {...common} d="M10 12h12M10 16h8M10 20h6"/></>}
+{kind==='report'&&<><path {...common} d="M9 5h10l5 5v17H9z"/><path {...common} d="M19 5v6h5M13 16h7M13 20h7"/></>}
+{kind==='star'&&<path {...common} d="M16 4.5l3.5 7.2 7.9 1.1-5.7 5.5 1.3 7.8-7-3.7-7 3.7 1.3-7.8-5.7-5.5 7.9-1.1z"/>}
+{kind==='fork'&&<><circle {...common} cx="16" cy="6" r="2.6"/><circle {...common} cx="7" cy="26" r="2.6"/><circle {...common} cx="25" cy="26" r="2.6"/><path {...common} d="M16 8.6V15c0 3.2-5 3.8-7.2 6M16 15c0 3.2 5 3.8 7.2 6"/></>}
+{kind==='branch'&&<><circle {...common} cx="9" cy="7" r="2.6"/><circle {...common} cx="9" cy="25" r="2.6"/><circle {...common} cx="23" cy="7" r="2.6"/><path {...common} d="M9 9.6v12.8M23 9.6c0 5.6-6.5 5.4-10.4 8.2"/></>}
+{kind==='rocket'&&<><path {...common} d="M16 3c4.5 3.5 4.5 11 0 15.5C11.5 14 11.5 6.5 16 3z"/><circle {...common} cx="16" cy="10.5" r="1.8"/><path {...common} d="M12.4 15L8.7 21l3.1-1.6M19.6 15l3.7 6-3.1-1.6M14.5 20q1.5 4 3 0"/></>}
+{kind==='shield'&&<path {...common} d="M16 4l9.5 3.6v7.9c0 5.6-4.2 9.6-9.5 11.5-5.3-1.9-9.5-5.9-9.5-11.5V7.6z"/>}
+{kind==='terminal'&&<><rect {...common} x="4" y="6" width="24" height="20" rx="3"/><path {...common} d="M9 12.5l4.5 3.5-4.5 3.5M15.5 20h7"/></>}
+{kind==='cloud'&&<path {...common} d="M9.5 22.5a4.8 4.8 0 0 1-.7-9.5 6.2 6.2 0 0 1 12.1 1.6 3.9 3.9 0 0 1-1.4 7.9z"/>}
+{kind==='link'&&<><path {...common} d="M13.2 18.8l-1.9 1.9a4.3 4.3 0 0 1-6-6l1.9-1.9M18.8 13.2l1.9-1.9a4.3 4.3 0 0 0-6-6l-1.9 1.9"/><path {...common} d="M12 20l8-8"/></>}
+{kind==='bug'&&<><rect {...common} x="10" y="11" width="12" height="13" rx="6"/><circle {...common} cx="16" cy="8" r="3"/><path {...common} d="M13.5 5.5L12 3M18.5 5.5L20 3M10 14.5H5.5M10 19H6M11 23l-2.5 2.5M22 14.5h4.5M22 19h4M21 23l2.5 2.5"/></>}
+{kind==='search'&&<><circle {...common} cx="14" cy="14" r="8.5"/><path {...common} d="M20.5 20.5L27 27"/></>}
+{kind==='user'&&<><circle {...common} cx="16" cy="11" r="5"/><path {...common} d="M6 27c1.5-5 5.5-7.5 10-7.5s8.5 2.5 10 7.5"/></>}
+{kind==='clock'&&<><circle {...common} cx="16" cy="16" r="11"/><path {...common} d="M16 10v6l4.5 2.5"/></>}
+{kind==='download'&&<path {...common} d="M16 4v13.5M10.5 12L16 17.5 21.5 12M6 22v3.5A2.5 2.5 0 0 0 8.5 28h15a2.5 2.5 0 0 0 2.5-2.5V22"/>}
+{kind==='upload'&&<path {...common} d="M16 17.5V4M10.5 9.5L16 4l5.5 5.5M6 22v3.5A2.5 2.5 0 0 0 8.5 28h15a2.5 2.5 0 0 0 2.5-2.5V22"/>}
+{kind==='folder'&&<path {...common} d="M4 9a2.5 2.5 0 0 1 2.5-2.5h6L16 10h9.5A2.5 2.5 0 0 1 28 12.5v11A2.5 2.5 0 0 1 25.5 26h-19A2.5 2.5 0 0 1 4 23.5z"/>}
+{kind==='chart'&&<path {...common} d="M5 27h22M8.5 27v-8M16 27V9M23.5 27V15"/>}
+{kind==='globe'&&<><circle {...common} cx="16" cy="16" r="11"/><ellipse {...common} cx="16" cy="16" rx="5" ry="11"/><path {...common} d="M5 16h22"/></>}
+{kind==='lock'&&<><rect {...common} x="8" y="14" width="16" height="12" rx="2.5"/><path {...common} d="M11 14v-3.5a5 5 0 0 1 10 0V14M16 19v3"/></>}
+{kind==='mail'&&<><rect {...common} x="4" y="7" width="24" height="18" rx="2.5"/><path {...common} d="M5 9.5l11 8 11-8"/></>}
+{kind==='calendar'&&<><rect {...common} x="5" y="6.5" width="22" height="20" rx="2.5"/><path {...common} d="M5 12.5h22M11 4v5M21 4v5M11 17h3M18 17h3M11 21.5h3M18 21.5h3"/></>}
+{kind==='heart'&&<path {...common} d="M16 26S5.5 19.5 5.5 12.3A5.8 5.8 0 0 1 16 8.6a5.8 5.8 0 0 1 10.5 3.7C26.5 19.5 16 26 16 26z"/>}
+{kind==='settings'&&<><circle {...common} cx="16" cy="16" r="4.5"/><path {...common} d="M16 3.5v4M16 24.5v4M3.5 16h4M24.5 16h4M7.2 7.2l2.8 2.8M22 22l2.8 2.8M24.8 7.2L22 10M10 22l-2.8 2.8"/></>}
+</svg>};
 const CheckBadge:React.FC<{size?:number}>=({size=30})=><span style={{width:size,height:size,borderRadius:999,background:C.green,color:C.white,display:'inline-grid',placeItems:'center',flex:'0 0 auto',boxShadow:`0 2px 8px ${C.greenGlow}`}}><LineIcon kind="check" size={size*.62} color={C.white} strokeWidth={2.7}/></span>;
 
 // Mascot：系列吉祥物（代码绘制的 git 猫）。f 传本地帧可眨眼、自然呼吸，wave 挥手。
@@ -122,8 +150,8 @@ const RollDigit:React.FC<{fromChar:string;toChar:string;start:number;duration?:n
   const incomingScaleY=Math.max(0.001,Math.cos((Math.abs(incomingTurn)*Math.PI)/180));
   const color=interpolateColors(progress,[0,1],[colorFrom,colorTo]);
   return <span style={{display:'inline-block',position:'relative',overflow:'visible',verticalAlign:'baseline',perspective:600,...style}}>
-    <span style={{display:'inline-block',color,fontSize,fontFamily,fontWeight,opacity:progress>=1||turnPhase<=0.56?1:0,transform:`translateY(${progress>=1?0:outgoingY}px) scaleY(${outgoingScaleY})`,transformOrigin:'50% 100%'}}>{fromChar}</span>
-    <span style={{position:'absolute',left:0,top:0,color,fontSize,fontFamily,fontWeight,opacity:turnPhase>=0.44&&progress<1?1:0,transform:`translateY(${incomingY}px) scaleY(${incomingScaleY})`,transformOrigin:'50% 0%'}}>{toChar}</span>
+    <span style={{display:'inline-block',color,fontSize,fontFamily,fontWeight,opacity:turnPhase<=0.56?1:0,transform:`translateY(${progress>=1?0:outgoingY}px) scaleY(${outgoingScaleY})`,transformOrigin:'50% 100%'}}>{fromChar}</span>
+    <span style={{position:'absolute',left:0,top:0,color,fontSize,fontFamily,fontWeight,opacity:turnPhase>=0.44?1:0,transform:`translateY(${incomingY}px) scaleY(${incomingScaleY})`,transformOrigin:'50% 0%'}}>{toChar}</span>
   </span>;
 };
 
@@ -167,6 +195,133 @@ const WaveText:React.FC<{text:string;fontSize:number;colorFrom:string;colorTo:st
   return <div style={{display:'flex',justifyContent:'center',alignItems:'baseline',...style}}>
     {text.split('').map((ch,i)=>{const age=f-(start+i*stagger);const wave=smoothStep(age/10),col=interpolateColors(smoothStep(age/8),[0,1],[colorFrom,colorTo]);const wx=interpolate(wave,[.0,.28,.64,1],[10,-3,1,0]);const wy=interpolate(wave,[.0,.28,.64,1],[16,-16,4,0]);return <span key={i} style={{display:'inline-block',fontSize,fontFamily,fontWeight,letterSpacing,color:col,opacity:smoothStep((age+0.4)/1.5),transform:`translate(${wx}px,${wy}px)`}}>{ch}</span>})}
   </div>;
+};
+
+// ---- 通用组件扩展（v2.5 新增）------------------------------------------
+// SPRINGS：弹性预设三档。soft 与历史 pop() 默认参数完全一致，旧场景行为不变。
+const SPRINGS={snappy:{damping:16,stiffness:200,mass:.8},soft:{damping:17,stiffness:132,mass:.86},bouncy:{damping:11,stiffness:160,mass:.9}} as const;
+const popS=(f:number,start:number,preset:keyof typeof SPRINGS='soft')=>spring({frame:f-start,fps:BASE_FPS,config:SPRINGS[preset]});
+
+// useSteppedFrame：停帧点缀（默认 15fps，每个姿势占两输出帧，契约见 motion-design.md）。
+const useSteppedFrame=(stepFps=15)=>{const f=useCurrentFrame();return Math.floor(f*stepFps/BASE_FPS)*BASE_FPS/stepFps};
+
+// CodeBlock：终端风代码窗——三灯标题栏 + 语法色行 + 逐行滑入，可带光标。
+const CodeBlock:React.FC<{title?:string;lines:{text:string;color?:string}[];start:number;frame?:number;stagger?:number;cursor?:boolean;style?:React.CSSProperties}>=({title='terminal',lines,start,frame,stagger=8,cursor=false,style})=>{
+  const f=frame??q(useCurrentFrame());
+  return <Paper lift={.2} borderColor={C.navy} style={{padding:0,overflow:'hidden',...style}}>
+    <div style={{height:34,background:C.navy,display:'flex',alignItems:'center',gap:7,paddingLeft:14}}>
+      {[C.red,C.gold,C.green].map((c,i)=><span key={i} style={{width:11,height:11,borderRadius:99,background:c}}/>)}
+      <span style={{marginLeft:8,fontFamily:'Space',fontWeight:600,fontSize:13,letterSpacing:1,color:C.white,opacity:.85}}>{title}</span>
+    </div>
+    <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:9}}>
+      {lines.map((ln,i)=>{const p=popS(f,start+i*stagger,'snappy');const tail=cursor&&i===lines.length-1&&f>=start+i*stagger+2;
+        return <div key={i} style={{display:'flex',alignItems:'center',fontFamily:'Space',fontWeight:600,fontSize:TYPE.bodyM,color:ln.color||C.ink,opacity:p,transform:`translateX(${18*(1-p)}px)`,whiteSpace:'nowrap'}}>{ln.text}{tail&&<span style={{display:'inline-block',width:9,height:19,marginLeft:4,background:ln.color||C.ink,opacity:Math.floor(f/8)%2?0.15:0.9}}/>}</div>;})}
+    </div>
+  </Paper>;
+};
+
+// BrowserChrome：浏览器窗口——三灯 + 锁 + URL 胶囊，内容区放 children。
+const BrowserChrome:React.FC<{url:string;children?:React.ReactNode;lift?:number;style?:React.CSSProperties}>=({url,children,lift=.2,style})=>
+  <Paper lift={lift} borderColor={C.line} style={{padding:0,overflow:'hidden',...style}}>
+    <div style={{height:44,background:C.mutedWash,display:'flex',alignItems:'center',gap:12,padding:'0 16px',borderBottom:`1px solid ${C.line}`}}>
+      <div style={{display:'flex',gap:7}}>{[C.red,C.gold,C.green].map((c,i)=><span key={i} style={{width:11,height:11,borderRadius:99,background:c}}/>)}</div>
+      <div style={{flex:1,maxWidth:460,display:'flex',alignItems:'center',gap:7,background:C.paper,border:`1px solid ${C.line}`,borderRadius:999,padding:'4px 14px',color:C.muted}}>
+        <LineIcon kind="lock" size={14} color={C.muted} strokeWidth={2.6}/>
+        <span style={{fontFamily:'Space',fontWeight:600,fontSize:15,letterSpacing:.4,whiteSpace:'nowrap',overflow:'hidden'}}>{url}</span>
+      </div>
+    </div>
+    <div style={{position:'relative'}}>{children}</div>
+  </Paper>;
+
+// Connector：曲线连接件——贝塞尔弧线 + 可选流向虚线 / 箭头 / 标签，替代场景层手写 SVG。
+const Connector:React.FC<{from:{x:number;y:number};to:{x:number;y:number};bend?:number;color?:string;flow?:boolean;arrow?:boolean;label?:string;labelColor?:string;width?:number;frame?:number;style?:React.CSSProperties}>=({from,to,bend=46,color=C.blue,flow=false,arrow=true,label,labelColor,width=2.8,frame,style})=>{
+  const f=frame??q(useCurrentFrame());
+  const mx=(from.x+to.x)/2,my=(from.y+to.y)/2-bend;
+  const ang=Math.atan2(to.y-my,to.x-mx)*180/Math.PI;
+  const minX=Math.min(from.x,to.x,mx)-40,minY=Math.min(from.y,to.y,my)-40;
+  const W=Math.max(from.x,to.x,mx)-minX+80,H=Math.max(from.y,to.y,my)-minY+80;
+  return <div style={{position:'absolute',left:minX,top:minY,width:W,height:H,pointerEvents:'none',...style}}>
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{overflow:'visible'}}>
+      <path d={`M${from.x-minX} ${from.y-minY} Q${mx-minX} ${my-minY} ${to.x-minX} ${to.y-minY}`} fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeDasharray={flow?'9 8':undefined} strokeDashoffset={flow?-f*3:0}/>
+      {arrow&&<path d="M0 0l-11 -6.5v13z" fill={color} transform={`translate(${to.x-minX} ${to.y-minY}) rotate(${ang})`}/>}
+    </svg>
+    {label&&<span style={{position:'absolute',left:mx-minX,top:my-minY,transform:'translate(-50%,-50%)',fontFamily:'Space,Kai',fontWeight:700,fontSize:TYPE.labelM,color:labelColor||color,background:C.paper,padding:'2px 10px',borderRadius:999,border:`1px solid ${color}55`,whiteSpace:'nowrap'}}>{label}</span>}
+  </div>;
+};
+
+// Checklist：编号步骤清单——圆形序号 + 文案逐个滑入；done 给完成数，序号变对勾。
+const Checklist:React.FC<{items:string[];start:number;frame?:number;stagger?:number;colors?:string[];done?:number;rowH?:number;fontSize?:number;style?:React.CSSProperties}>=({items,start,frame,stagger=20,colors,done=-1,rowH=48,fontSize=TYPE.titleXS,style})=>{
+  const f=frame??q(useCurrentFrame());
+  const defaults=[C.orange,C.blue,C.green,C.gold,C.red,C.navy];
+  return <div style={{display:'flex',flexDirection:'column',...style}}>
+    {items.map((s,i)=>{const p=popS(f,start+i*stagger,'soft');const checked=done>=0?i<done:false;
+      return <div key={s} style={{display:'flex',alignItems:'center',gap:16,height:rowH,opacity:p,transform:`translateX(${24*(1-p)}px)`}}>
+        <span style={{width:38,height:38,borderRadius:99,background:colors?.[i]||defaults[i%defaults.length],color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:19,flex:'0 0 auto'}}>{checked?<LineIcon kind="check" size={22} color={C.white} strokeWidth={2.7}/>:i+1}</span>
+        <span style={{fontSize,fontWeight:700}}>{s}</span>
+      </div>;})}
+  </div>;
+};
+
+// CountUp：数字滚动计数——easeOutSoft 进度 + 颜色过渡，支持前后缀。
+const CountUp:React.FC<{to:number;from?:number;start:number;duration?:number;frame?:number;fontSize?:number;fontFamily?:string;fontWeight?:number|string;color?:string;colorFrom?:string;prefix?:string;suffix?:string;style?:React.CSSProperties}>=({to,from=0,start,duration=30,frame,fontSize=TYPE.displayS,fontFamily='Space',fontWeight=700,color=C.green,colorFrom=C.muted,prefix='',suffix='',style})=>{
+  const f=frame??q(useCurrentFrame());
+  const p=easeOutSoft(f,start,start+duration);
+  const v=Math.round(from+(to-from)*p);
+  const col=interpolateColors(p,[0,1],[colorFrom,color]);
+  return <span style={{fontFamily,fontSize,fontWeight,color:col,fontVariantNumeric:'tabular-nums',...style}}>{prefix}{v}{suffix}</span>;
+};
+
+// ProgressBar：进度条——轨道 + 填充 + 可选标签/百分比，v 由场景驱动（0~1）。
+const ProgressBar:React.FC<{v:number;color?:string;height?:number;label?:string;showPct?:boolean;style?:React.CSSProperties}>=({v,color=C.green,height=14,label,showPct=false,style})=>{
+  const pct=Math.round(Math.max(0,Math.min(1,v))*100);
+  return <div style={{...style}}>
+    {(label||showPct)&&<div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
+      {label&&<span style={{fontSize:TYPE.labelL,fontWeight:700,color:C.ink}}>{label}</span>}
+      {showPct&&<span style={{fontFamily:'Space',fontWeight:700,fontSize:TYPE.labelL,color}}>{pct}%</span>}
+    </div>}
+    <div style={{height,background:C.gaugeTrack,borderRadius:99,overflow:'hidden'}}>
+      <div style={{height:'100%',width:`${pct}%`,background:color,borderRadius:99}}/>
+    </div>
+  </div>;
+};
+
+// Callout：手绘标注——双描边椭圆圈 + Caveat 手写字，整体弹入。
+const Callout:React.FC<{x:number;y:number;w:number;h:number;text:string;textDy?:number;textDx?:number;color?:string;rotate?:number;start:number;frame?:number;fontSize?:number;style?:React.CSSProperties}>=({x,y,w,h,text,textDy=-46,textDx=0,color=C.orange,rotate=-2,start,frame,fontSize=22,style})=>{
+  const f=frame??q(useCurrentFrame());
+  const p=popS(f,start,'bouncy');
+  return <div style={{position:'absolute',left:x,top:y,width:w,height:h,zIndex:96,opacity:p,transform:`scale(${.7+.3*p}) rotate(${rotate}deg)`,transformOrigin:'50% 50%',...style}}>
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{overflow:'visible'}}>
+      <ellipse cx={w/2} cy={h/2} rx={w/2-3} ry={h/2-3} fill="none" stroke={color} strokeWidth={2.6} strokeLinecap="round" transform={`rotate(-1.5 ${w/2} ${h/2})`}/>
+      <ellipse cx={w/2} cy={h/2} rx={w/2-7} ry={h/2-6} fill="none" stroke={color} strokeWidth={1.6} opacity={.55} strokeDasharray="5 7" transform={`rotate(2 ${w/2} ${h/2})`}/>
+    </svg>
+    <div style={{position:'absolute',left:'50%',top:textDy,transform:`translateX(calc(-50% + ${textDx}px))`,fontFamily:'Caveat',fontSize,color,fontWeight:600,whiteSpace:'nowrap'}}>{text}</div>
+  </div>;
+};
+
+// TransitionIn：锁定转场三式，只包入场场景（出场场景保持静止或自行淡出）。
+// flip=纸张翻入（隐喻切换时用）/ slide=滑盖覆盖 / wipe=边缘擦除。
+const TransitionIn:React.FC<{kind:'flip'|'slide'|'wipe';start:number;duration?:number;frame?:number;color?:string;children?:React.ReactNode}>=({kind,start,duration=16,frame,color=C.orange,children})=>{
+  const f=frame??q(useCurrentFrame());
+  const {mode}=useCanvas();
+  const p=easeOutSoft(f,start,start+duration);
+  if(p<=0)return null;
+  if(kind==='flip')return <div style={{position:'absolute',inset:0,perspective:1600}}>
+    <div style={{position:'absolute',inset:0,transform:`rotateY(${-70*(1-p)}deg)`,transformOrigin:'0 50%',opacity:Math.min(1,p*2.2),boxShadow:`14px 0 44px rgba(40,30,20,${.18*(1-p)})`}}>{children}</div>
+  </div>;
+  if(kind==='slide')return <div style={{position:'absolute',inset:0,transform:`translateX(${(1-p)*mode.designW}px)`,boxShadow:`-16px 0 48px rgba(40,30,20,${.2*p})`}}>{children}</div>;
+  return <div style={{position:'absolute',inset:0,overflow:'hidden'}}>
+    <div style={{position:'absolute',inset:0,clipPath:`inset(0 ${(1-p)*100}% 0 0)`}}>{children}</div>
+    <div style={{position:'absolute',top:0,bottom:0,left:`calc(${p*100}% - 3px)`,width:6,background:color,opacity:p<1?1:0}}/>
+  </div>;
+};
+
+// camScript：镜头脚本构建器——链式声明 hold/to，自动补齐首尾帧，免手刻关键帧表。
+// 用法：camScript(960,540,DURATION).hold(48).to(197,{x:1165,y:495,s:1.15}).done()
+type CamKey={f:number;s:number;x:number;y:number};
+const camScript=(x:number,y:number,duration:number)=>{
+  const keys:CamKey[]=[{f:0,s:1,x,y}];let cur={x,y,s:1};
+  const api={hold:(f:number)=>{keys.push({f,...cur});return api},to:(f:number,p:Partial<{x:number;y:number;s:number}>)=>{cur={...cur,...p};keys.push({f,...cur});return api},done:()=>{keys.push({f:duration,...cur});return keys}};
+  return api;
 };
 
 const cleanTail=(s:string)=>s.replace(/[，。！？；：、,.!?;:\s]+$/g,'');

@@ -1,14 +1,14 @@
 # Locked visual system: warm ivory Remotion notebook
 
-Treat this as a low-freedom system. Copy the canonical components from `assets/example-project/src/index.tsx`.
+Treat this as a low-freedom system. Copy the canonical components from `assets/lecture-template/src/index.tsx` (or `assets/example-project/src/index.tsx` on the `--classic` route).
 
 ## Canvas and camera
 
-- 2560×1440, native 30fps, fixed camera.
+- 2560×1440, native 30fps. The only global camera is the official `CameraRig` (or the classic route's fixed camera).
 - Preserve a 1920×1080 design coordinate system and scale it by 4/3 inside the native 2K composition.
 - Animate physical paper poses natively at 30fps; do not create duplicate delivery frames.
 - Keep subtitle space clear from y=925 downward.
-- Do not add global zoom, shake, breathing, parallax, animated grain or depth-of-field.
+- Beyond `CameraRig`, do not add global zoom, shake, breathing, parallax, animated grain or depth-of-field.
 
 ## Background
 

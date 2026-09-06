@@ -2,6 +2,18 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [2.5.0] - 2026-09-06
+
+### Added
+
+- **Locked component library expansion (组件库扩容)**: `LineIcon` grows from 4 to 26 glyphs (star/fork/branch/rocket/shield/terminal/cloud/link/bug/search/user/clock/download/upload/folder/chart/globe/lock/mail/calendar/heart/settings) on the same 32-grid round-cap stroke language; seven new locked components — `CodeBlock` (terminal window with traffic lights, syntax-colored lines, per-line snappy spring entry, optional cursor), `BrowserChrome` (browser window with traffic lights + lock + URL capsule), `Connector` (bezier curve with optional flow dashes / arrow / label chip), `Checklist` (numbered rows with `done` check-state), `CountUp` (eased number roller with color transition), `ProgressBar` (track + fill + optional label/pct) and `Callout` (double-stroke hand-drawn ellipse with Caveat caption, bouncy entry). All components consume `ThemePalette` tokens only — zero hardcoded colors, so every theme skin applies automatically.
+- **Locked motion pack**: `SPRINGS`/`popS` three spring presets (`snappy` for UI ticks, `soft` identical to the legacy `pop`, `bouncy` for callouts), `TransitionIn` scene transitions (`flip` page turn / `slide` cover / `wipe` edge reveal), `camScript` chainable camera-keyframe builder with guaranteed first/last-frame coverage, and `useSteppedFrame(15)` stop-motion accent. Contract docs (`SKILL.md`, `references/motion-design.md`) record the presets, the at-most-one-transition-style-per-film rule and the **no-scene-overlap rule**: the outgoing scene must fully unmount before the incoming transition starts — no frame may show two scenes at once.
+
+### Fixed
+
+- **`RollDigit` settles on the wrong character**: after the roll completes, the outgoing span's opacity condition kept the *old* glyph visible and hid the new one, so version badges froze on the from-value (e.g. `v1.0` instead of `v1.1`). Both spans now key purely on the turn phase, so the settled state always shows the `to` character.
+- **`visual-system.md` stale camera wording**: the doc still said "fixed camera / no global zoom" from before `CameraRig` (v1.9.0); it now states CameraRig as the only legal global camera on the default route (the classic route keeps its fixed camera).
+
 ## [2.4.0] - 2026-09-05
 
 ### Changed
