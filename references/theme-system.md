@@ -3,9 +3,9 @@
 Status: LOCKED. Four themes ship with the skill: `paper` (default warm-ivory notebook), `cel`, `sticker`, `flat`. All four are fully implemented in `assets/lecture-template/src/theme/`. A production selects its theme once at kickoff via `new-project ./dir --style=<id>` and then reads only its own contract:
 
 - paper (default): the existing visual-system.md remains its contract; no separate file.
-- cel → [theme-cel.md](theme-cel.md)
-- sticker → [theme-sticker.md](theme-sticker.md)
-- flat → [theme-flat.md](theme-flat.md)
+- cel → `theme-cel.md`
+- sticker → `theme-sticker.md`
+- flat → `theme-flat.md`
 
 ## What a theme changes — and what it must never change
 

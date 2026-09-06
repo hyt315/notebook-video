@@ -47,4 +47,4 @@ Inspect entry, midpoint, rest and exit frames at full 2560×1440 delivery resolu
 
 Use generated raster images only for topic-specific illustration. Keep exact text, logos, wires and independently moving parts in code. Include transparent padding only when rotation requires it.
 
-Register each used raster in `manifests/visual-assets.json`. Treat the bitmap, each highlight box, each arrow and each explanation line as separate parts with their own timing. Preload the bitmap in `AssetGate`. Generated assets must not contain baked labels or charts; request crop-safe negative space and add exact information in Remotion. Read [visual-director.md](visual-director.md).
+Register each used raster in `manifests/visual-assets.json`. Treat the bitmap, each highlight box, each arrow and each explanation line as separate parts with their own timing. Preload the bitmap in `AssetGate`. Generated assets must not contain baked labels or charts; request crop-safe negative space and add exact information in Remotion. Read `visual-director.md`.

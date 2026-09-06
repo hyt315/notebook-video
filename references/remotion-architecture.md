@@ -114,7 +114,7 @@ For a newly authored long film (verified at 4996 frames / 22 chapters), the simp
 
 The pinned bundler has been observed to misparse `const X: React.FC<A> = (props) => { ... }` when it immediately follows a component whose body ends in dense JSX (for example a `.map` returning nested elements). The reported error points at the innocent following line (`Expected identifier but found "("`), so do not edit the reported line first. Workarounds that all parse reliably: write the component as a `function` declaration, return the preceding value from an explicit `<div>` instead of a bare `<>` fragment split across lines, or separate the two components with a plain statement. Isolate the trigger by transforming growing prefixes of the file with the bundler's esbuild `tsx` loader before touching scene logic.
 
-Mount only scenes that can contribute pixels. Keep one scene mounted normally and at most two during a transition. Never hide every inactive scene with opacity. Read [performance-design.md](performance-design.md).
+Mount only scenes that can contribute pixels. Keep one scene mounted normally and at most two during a transition. Never hide every inactive scene with opacity. Read `performance-design.md`.
 
 Use start-inclusive and end-exclusive scene windows. A scene group owns its image, text, SVG and annotation layers. When the subject changes, unmount the outgoing group at its end frame; do not leave a hidden raster, callout or shadow under the next scene.
 

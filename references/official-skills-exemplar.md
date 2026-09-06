@@ -48,7 +48,7 @@ The exemplar demonstrates the intended production grammar:
 5. converge independent modules into a physical assembly slot with correct occlusion;
 6. validate and end with concrete MP4, project and QA artifacts.
 
-The same engineering helpers may be adapted to other topics. The four-act subject matter is only an exemplar; production scenes must choose their primary visual mode from the narration meaning. Read [visual-director.md](visual-director.md).
+The same engineering helpers may be adapted to other topics. The four-act subject matter is only an exemplar; production scenes must choose their primary visual mode from the narration meaning. Read `visual-director.md`.
 
 ## Rejection conditions
 

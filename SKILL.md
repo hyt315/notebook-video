@@ -1,6 +1,6 @@
 ---
 name: notebook-video
-version: 2.5.0
+version: 2.6.0
 description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion. The default visual route is lecture composition: multi-zone scenes drawn entirely with code (SVG diagrams, mascots, progressive checklists, annotation stickers) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering, provenance manifests and automated QA. Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
 ---
 
@@ -46,9 +46,9 @@ Keep these official elements locked until the user approves a future rendered re
 
 - stable upper-left chapter card and upper-right technical header;
 
-- bottom-pinned pure caption text with per-word reveal, no decorative bar;
+- bottom-pinned pure caption text with per-word reveal, no decorative bar, no dark border or side artifacts;
 
-- orange left locator, blue right status ring and centered 40px Chinese text;
+- pure bottom subtitle with soft text shadow, no dark border, side marks, locator or ring;
 
 - LXGW WenKai Lite as the unified CJK typeface plus Clash Display / Space Grotesk Latin accents;
 
@@ -74,6 +74,10 @@ Keep these official elements locked until the user approves a future rendered re
 
 Do not write an experimental change into this skill until the user sees the rendered film and explicitly approves it.
 
+## Execution discipline and safety (Zero-Mutation 原则)
+
+执行纪律与安全约束（Zero-Mutation 原则）：脚本检测与视觉审查恪守纯只读排查原则，绝不擅自变动系统配置；对于完整渲染（render）、依赖安装或大构架重写等治理对策，须用户明确授权后方可执行。
+
 ## Preserved aesthetic layer
 
 The official example already includes the centralized palette, type scale, paper surface, lift-linked shadow, unified line icons, restrained static grade, browser-native subtitle measurement and a clearly marked `COPY` block. Ordinary production runs edit content and timing, not this aesthetic core. Read [references/official-aesthetic-system.md](references/official-aesthetic-system.md).
@@ -90,13 +94,45 @@ Unless the user asks for less, deliver:
 6. one-line semantic caption cues plus a protected-phrase manifest;
 7. delivery-canvas H.264/AAC MP4 (2560×1440 or 1920×1440);
 8. 24-frame contact sheet and motion checks for long films;
-9. editable source ZIP with fonts, licenses, audio and manifests.
+9. editable source ZIP with fonts, licenses, audio and manifests;
+10. delivery fact card verified against the baseline table below.
+
+### 交付指标事实卡 (Fact Card)
+
+| 层级 | 检查项 (Metric/Item) | 测量实值 (Value) | 正常基线 (Baseline) | 状态判定 (Status) |
+|---|---|---|---|:---:|
+| L1 基础层 | 交付画幅与帧率 | 2560×1440 / 1920×1440 | 锁定 30fps 原生无重复帧 | 🟢 正常 |
+| L1 基础层 | 响度与音频混音 | -16 LUFS / -1.5 dBTP | 48kHz 立体声 AAC | 🟢 正常 |
+| L2 核心层 | 字幕与台词对齐 | 词级整帧同步 (msFrame) | 零断行拆分/零边缘伪影 | 🟢 正常 |
+| L3 校验层 | 黑帧与图层穿透 | 0 处黑帧 / 零残留碎片 | 所有元件完整离场与遮挡 | 🟢 正常 |
 
 Do not stop at prompts, still images, a silent animation or an unvalidated render.
 
 ## Create a project
 
-Use the cross-platform Node launcher. Replace `<SKILL_DIR>` with the skill directory. The same universal command works in macOS Terminal, Windows Command Prompt and Windows PowerShell. macOS/Linux may use the `.sh` aliases and Windows may use `scripts\notebook-video.cmd`; every wrapper delegates to the same Node implementation. All Python checkers and shell wrappers are invoked only through `scripts/notebook-video.mjs` — never call a `scripts/*.py` or `scripts/*.sh` directly, so the command surface stays a single documented entry.
+Use the cross-platform Node launcher. Replace `<SKILL_DIR>` with the skill directory. The same universal command works in macOS Terminal, Windows Command Prompt and Windows PowerShell. macOS/Linux may use the `.sh` aliases and Windows may use `scripts\notebook-video.cmd`; every wrapper delegates to the same Node implementation. Python 辅助脚本（`scripts/*.py`）严格基于 Python 3.10+ 标准库实现，零第三方 pip 依赖 / zero external python dependencies.
+
+The underlying scripts in `scripts/`:
+- `scripts/notebook-video.mjs`: cross-platform CLI implementation;
+- `scripts/notebook-video.cmd`: Windows Command Prompt launcher;
+- `scripts/new-project.cmd` / `new-project.sh` (shell alias): project initialization;
+- `scripts/prepare-browser.sh` / `scripts/prepare-browser.cmd`: Remotion headless browser preparation;
+- `scripts/check-deps.sh` / `scripts/check-deps.cmd`: environment dependency checker;
+- `scripts/sync-project-assets.sh` / `scripts/sync-project-assets.cmd`: sync project assets and manifest;
+- `scripts/render-remotion.sh` / `scripts/render-remotion.cmd`: Remotion render pipeline invocation;
+- `scripts/validate-video.sh` / `scripts/validate-video.cmd`: video delivery validation;
+- `scripts/package-project.sh` / `scripts/package-project.cmd` / `scripts/package-project.py`: package project for export;
+- `scripts/build-semantic-captions.py`: semantic line break and cue builder;
+- `scripts/match-timing.py`: automated speech timing alignment;
+- `scripts/validate-visual-plan.py`: visual plan validation;
+- `scripts/validate-layering.py`: asset layering and z-order validation;
+- `scripts/validate-caption-sync.py`: caption word timing synchronization check;
+- `scripts/validate-semantic-breaks.py`: protected phrase and cue break validation;
+- `scripts/validate-official-example.py`: official example and style contract validation;
+- `scripts/validate-skill-consistency.py`: dual-template and repository-wide consistency gate;
+- `scripts/selftest.py`: end-to-end regression test suite.
+
+All Python checkers and shell wrappers are invoked through `scripts/notebook-video.mjs` (or run directly for QA/selftest).
 
 ```text
 node "<SKILL_DIR>/scripts/notebook-video.mjs" check-deps
@@ -285,49 +321,29 @@ After any change to the engine, template, QA scripts or reference docs, run the 
 python "<SKILL_DIR>/scripts/selftest.py"
 ```
 
-## Resource map
+## Reference Files (按需加载与行动指引)
 
-- [references/locked-style-contract.json](references/locked-style-contract.json): binding tokens, coordinates and rejection flags.
-
-- [references/theme-system.md](references/theme-system.md): theme boundary (what a skin may and may not change) and the locked theme list.
-
-- [references/theme-cel.md](references/theme-cel.md): cel (anime cel-shading) theme contract.
-
-- [references/theme-sticker.md](references/theme-sticker.md): sticker (cartoon sticker journal) theme contract.
-
-- [references/theme-flat.md](references/theme-flat.md): flat (modern flat geometric) theme contract.
-
-- [references/lecture-composition.md](references/lecture-composition.md): the default multi-zone code-drawn route, cue-frame sync procedure and self-check list.
-
-- [references/official-aesthetic-system.md](references/official-aesthetic-system.md): locked aesthetic core and ordinary editable surface.
-
-- [references/remotion-architecture.md](references/remotion-architecture.md): project structure, data flow and component contracts.
-
-- [references/official-skills-exemplar.md](references/official-skills-exemplar.md): canonical project and reuse rules.
-
-- [references/visual-system.md](references/visual-system.md): exact background, cards, subtitle and typography.
-
-- [references/independent-parts.md](references/independent-parts.md): decomposition, stacking and exit rules.
-
-- [references/motion-design.md](references/motion-design.md): motion curves and scene rhythm.
-
-- [references/narrative-hook.md](references/narrative-hook.md): binding cold-open, callback and opening review rules.
-
-- [references/pacing-rhythm.md](references/pacing-rhythm.md): hammer frames, fast/slow chapter alternation, breathing and ending beat.
-
-- [references/canvas-modes.md](references/canvas-modes.md): 16:9, 4:3 and 3:4 portrait canvas parameters and the mobile readability type floor.
-
-- [references/subtitle-timing.md](references/subtitle-timing.md): semantic captions and integer-frame conversion.
-
-- [references/tts-audio.md](references/tts-audio.md): TTS, declarative effects and mix.
-
-- [references/quality-checklist.md](references/quality-checklist.md): delivery acceptance criteria.
-
-- [references/performance-design.md](references/performance-design.md): binding 30fps pipeline, scene lifetime, transform, caching, concurrency and range-render rules.
-
-- [references/visual-director.md](references/visual-director.md): visual-mode selection, image-generation capability fallback, asset prompts, provenance and scene exits.
-
-- [references/cross-platform-compatibility.md](references/cross-platform-compatibility.md): binding macOS/Windows parity contract, universal commands and browser preparation.
-
-- [references/windows-compatibility.md](references/windows-compatibility.md): additional Windows setup, path rules and troubleshooting without changing render output.
+- [references/locked-style-contract.json](references/locked-style-contract.json): 渲染引擎契约，定义 binding tokens, coordinates and rejection flags.
+- [references/theme-system.md](references/theme-system.md): 选定主题时必读，定义 theme boundary 与四套锁定主题（paper/cel/sticker/flat）.
+- [references/theme-cel.md](references/theme-cel.md): 当选用 cel 皮肤时必读其专属色彩与图层契约.
+- [references/theme-sticker.md](references/theme-sticker.md): 当选用 sticker 皮肤时必读其专属贴纸边缘与阴影契约.
+- [references/theme-flat.md](references/theme-flat.md): 当选用 flat 皮肤时必读其扁平几何与色块契约.
+- [references/lecture-composition.md](references/lecture-composition.md): 制作讲解视频默认必读，包含多区域纯代码 SVG 构图、台词帧对齐与自检清单.
+- [references/official-aesthetic-system.md](references/official-aesthetic-system.md): 调整画面风格前必读，定义暖象牙色锁定美学核心与普通编辑面.
+- [references/remotion-architecture.md](references/remotion-architecture.md): 编写组件或调整时长前必读，定义项目结构、数据流与生命周期契约.
+- [references/official-skills-exemplar.md](references/official-skills-exemplar.md): 组装工程时必读，定义官方示例项目规范与复用规则.
+- [references/visual-system.md](references/visual-system.md): 绘制卡片与排版时必读，定义纸张质感、字阶与字幕坐标.
+- [references/independent-parts.md](references/independent-parts.md): 拆解动态元件时必读，定义独立部件分解、z-order 与进出场规则.
+- [references/motion-design.md](references/motion-design.md): 设定动效时必读，定义缓动曲线、图层进出节奏与镜头位移.
+- [references/narrative-hook.md](references/narrative-hook.md): 策划脚本时必读，定义 1.5 秒黄金开场 hook、悬念与首屏评审门.
+- [references/pacing-rhythm.md](references/pacing-rhythm.md): 编排章节时必读，定义全片重锤帧（Hammer frames）与快慢章节交替.
+- [references/canvas-modes.md](references/canvas-modes.md): 确定画幅时必读，定义 16:9, 4:3 与 3:4 竖屏画布参数与字阶底线.
+- [references/portrait-illustration-system.md](references/portrait-illustration-system.md): 制作 3:4 竖屏讲解视频时必读，定义竖屏插画主体、微环境与排版底线.
+- [references/subtitle-timing.md](references/subtitle-timing.md): 切分台词时必读，定义语义字幕断行、保护短语与整帧对齐.
+- [references/tts-audio.md](references/tts-audio.md): 合成配音时必读，定义 TTS 适配器、声明式音效与响度混音.
+- [references/quality-checklist.md](references/quality-checklist.md): 交付成片前必读，逐条核对零黑帧、无溢出、无伪影的验收清单.
+- [references/performance-design.md](references/performance-design.md): 优化渲染时必读，定义 30fps 原生管线、缓存、并发与局部试渲染.
+- [references/visual-director.md](references/visual-director.md): 选用可选生图时必读，定义视觉模式决策、生图提示词与出场契约.
+- [references/cross-platform-compatibility.md](references/cross-platform-compatibility.md): 跨平台运行时必读，定义 macOS/Windows 命令对齐与浏览器就绪.
+- [references/windows-compatibility.md](references/windows-compatibility.md): 在 Windows 下遇到环境异常时必读排错指引.
 

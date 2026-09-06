@@ -2,6 +2,22 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [2.6.0] - 2026-09-06
+
+### Added
+
+- **Dual-template consistency validation gate (`validate-skill-consistency.py`)**: expanded repository-wide validator to audit both `example-project` and `lecture-template` across layering, visual plan, speech caption sync, semantic breaks, and cue file parity, supporting structured `--json` read-only output.
+- **AST syntax regression gate & test suite (`tests/test_skill.py`)**: integrated AST parsing validation across all `scripts/*.py` in `selftest.py` and provided standard regression entry point `tests/test_skill.py`.
+- **Video Delivery Fact Card & Zero-Mutation discipline**: established standardized delivery metrics table in `SKILL.md` and explicit read-only / user authorization security policies.
+
+### Fixed
+
+- **`lecture-template` caption synchronization & semantic breaks**: synchronized 154 TTS word boundaries across 16 semantic cues (37.55s / 1126 frames) and aligned `manifests/caption-cues.json` with `src/caption-cues.json` and `audio/narration.mp3.json`.
+- **`new-project` broken documentation route**: fixed `--style=paper` pointing to non-existent `references/theme-paper.md`, redirecting to canonical `references/visual-system.md`.
+- **CLI unmapped timing tool**: mapped `scripts/match-timing.py` into cross-platform launcher `scripts/notebook-video.mjs` and updated reference commands.
+- **Reference documentation hierarchy**: added Table of Contents to `lecture-composition.md` and `windows-compatibility.md`; flattened nested reference citations to satisfy SK003 single-hop dispatch.
+- **Spec contradiction in `SKILL.md`**: removed obsolete locator ring description to align with locked visual system and quality checklist.
+
 ## [2.5.0] - 2026-09-06
 
 ### Added

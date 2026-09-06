@@ -12,6 +12,7 @@
 """
 from __future__ import annotations
 
+import ast
 import json
 import shutil
 import subprocess
@@ -78,6 +79,15 @@ def main() -> int:
     ]
     missing = [f for f in files if not (ROOT / f).is_file()]
     check("关键产物齐全", not missing, f"missing: {missing}" if missing else f"{len(files)} files")
+
+    # ---- 好夹具 1b：脚本 AST 静态语法解析门禁 ----
+    ast_errors = []
+    for py_script in (ROOT / "scripts").glob("*.py"):
+        try:
+            ast.parse(py_script.read_text(encoding="utf-8"), filename=str(py_script))
+        except SyntaxError as exc:
+            ast_errors.append(f"{py_script.name}: Syntax error: {exc}")
+    check("脚本 AST 语法解析", not ast_errors, f"errors: {ast_errors}" if ast_errors else "all scripts/*.py valid syntax")
 
     # ---- 好夹具 2：主题开关默认 paper（出厂状态） ----
     active = ROOT / "assets" / "lecture-template" / "src" / "theme" / "active.ts"

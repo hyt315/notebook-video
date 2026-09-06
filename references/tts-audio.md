@@ -109,10 +109,10 @@ Use FFmpeg after Remotion for normalization and encoding only. Do not maintain a
 When the narration text is locked but the voice changes (another voice design or model), keep every scene frame valid by aligning the new audio to the approved timeline instead of re-authoring scenes:
 
 ```text
-python scripts/match-timing.py ./my-film --lock
+node "<SKILL_DIR>/scripts/notebook-video.mjs" match-timing ./my-film --lock
 python <TTS adapter> ./my-film
-python scripts/speed-post.py ./my-film 1.10
-python scripts/match-timing.py ./my-film
+python ./my-film/scripts/speed-post.py ./my-film 1.10
+node "<SKILL_DIR>/scripts/notebook-video.mjs" match-timing ./my-film
 node "<SKILL_DIR>/scripts/notebook-video.mjs" build-semantic-captions ./my-film/audio/narration.mp3.json ./my-film/manifests/semantic-caption-lines.txt ./my-film/manifests/caption-cues.json --lead-ms 60
 ```
 

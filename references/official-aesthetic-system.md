@@ -5,7 +5,7 @@ This package contains one official aesthetic track and one canonical example pro
 
 ## Locked production grammar
 
-The v9 system preserves the fixed camera, subtitle geometry, native 30fps paper motion, declarative audio tree, asset gate and final draw order while allowing the scene grammar to follow meaning. Before storyboarding, select `image-text`, `pure-text` or `pure-graphic` for each scene. Read [visual-director.md](visual-director.md).
+The v9 system preserves the fixed camera, subtitle geometry, native 30fps paper motion, declarative audio tree, asset gate and final draw order while allowing the scene grammar to follow meaning. Before storyboarding, select `image-text`, `pure-text` or `pure-graphic` for each scene. Read `visual-director.md`.
 
 Generated imagery is an optional input layer. When an authorized image-generation tool is available, use it for concrete subjects and promotional hero shots where it improves comprehension. Keep exact text, arrows, diagrams and timing in Remotion. A project must remain buildable with user-supplied, licensed or native SVG assets when image generation is unavailable.
 

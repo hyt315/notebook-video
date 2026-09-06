@@ -2,6 +2,8 @@
 """Audit skill files for obsolete renderer residue, stale render inputs, or contract mismatches."""
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import subprocess
 import sys
@@ -131,7 +133,27 @@ def main() -> None:
         raise SystemExit(len(problems))
 
     subprocess.run([sys.executable, str(SKILL / 'scripts' / 'validate-official-example.py')], check=True)
-    print('Skill-wide consistency validation passed: single official v9 visual-director track, no obsolete renderer residue, stale render inputs or contract mismatch')
+
+    lecture = SKILL / 'assets' / 'lecture-template'
+    lecture_cues = lecture / 'manifests' / 'caption-cues.json'
+    lecture_src_cues = lecture / 'src' / 'caption-cues.json'
+    if hashlib.sha256(lecture_cues.read_bytes()).digest() != hashlib.sha256(lecture_src_cues.read_bytes()).digest():
+        raise SystemExit("lecture-template caption-cues mismatch between manifests/ and src/")
+
+    subprocess.run([sys.executable, str(SKILL / 'scripts' / 'validate-layering.py'), str(lecture / 'manifests' / 'asset-manifest.json')], check=True)
+    subprocess.run([sys.executable, str(SKILL / 'scripts' / 'validate-visual-plan.py'), str(lecture)], check=True)
+    subprocess.run([sys.executable, str(SKILL / 'scripts' / 'validate-caption-sync.py'), str(lecture / 'audio' / 'narration.mp3.json'), str(lecture_cues)], check=True)
+    subprocess.run([sys.executable, str(SKILL / 'scripts' / 'validate-semantic-breaks.py'), str(lecture_cues), str(lecture / 'manifests' / 'protected-caption-phrases.txt')], check=True)
+
+    if "--json" in sys.argv:
+        print(json.dumps({
+            "status": "pass",
+            "read_only": True,
+            "problems_count": len(problems),
+            "templates_validated": ["example-project", "lecture-template"],
+        }, indent=2))
+    else:
+        print('Skill-wide consistency validation passed: both templates valid, single official v9 visual-director track, no obsolete renderer residue, stale render inputs or contract mismatch')
 
 
 if __name__ == '__main__':

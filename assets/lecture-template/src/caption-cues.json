@@ -946,5 +946,8 @@
       "speech_end": 37.55,
       "reveal_end": 37.55
     }
-  ]
+  ],
+  "source": "audio/narration.mp3.json",
+  "lead_ms": 0,
+  "segmentation": "semantic"
 }

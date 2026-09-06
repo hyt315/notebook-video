@@ -1,5 +1,17 @@
 # Lecture composition: the default multi-zone visual route
 
+## Contents
+
+- [The six rules](#the-six-rules)
+  - [1. Pure code-drawn graphics](#1-pure-code-drawn-graphics)
+  - [2. Multi-zone layout](#2-multi-zone-layout)
+  - [3. Text and graphics are co-stars](#3-text-and-graphics-are-co-stars)
+  - [4. Frame-accurate speech sync](#4-frame-accurate-speech-sync)
+  - [5. Demonstrative animation](#5-demonstrative-animation)
+  - [6. Series component reuse](#6-series-component-reuse)
+- [Working the template](#working-the-template)
+- [Self-check before rendering](#self-check-before-rendering)
+
 This is the default visual route for every notebook video. It is pure
 code-drawn SVG plus rich synchronized text, so it works in every
 environment and never depends on an image-generation model. Follow the
@@ -11,7 +23,7 @@ production, ask the user once whether they want generated support art for
 concrete hero scenes, and tell them plainly: the add-on's quality depends
 entirely on the image-generation model of the current tool, and Codex
 with its built-in image generation is the best-suited environment for it.
-Only if they accept, follow [visual-director.md](visual-director.md) for
+Only if they accept, follow `visual-director.md` for
 that subset of scenes. When declined or unavailable, produce everything
 below with SVG only.
 
@@ -104,7 +116,7 @@ written next to the existing ones, in the same stroke and palette style.
   `Sound` frame lists: rewrite this layer for a new topic.
 
 To change duration, follow the duration-extension invariant in
-[remotion-architecture.md](remotion-architecture.md) and update
+`remotion-architecture.md` and update
 `DURATION`, the scene guards and `manifests/asset-manifest.json` together.
 
 ## Self-check before rendering

@@ -1,6 +1,6 @@
 # Pacing and rhythm contract
 
-A film whose every chapter has the same structure, density and speed loses viewers after a minute even when each scene is individually good. This contract makes energy rise and fall on purpose. It complements [narrative-hook.md](narrative-hook.md): the hook wins the first ten seconds, pacing keeps the rest.
+A film whose every chapter has the same structure, density and speed loses viewers after a minute even when each scene is individually good. This contract makes energy rise and fall on purpose. It complements `narrative-hook.md`: the hook wins the first ten seconds, pacing keeps the rest.
 
 ## Hammer frames
 

@@ -1,6 +1,18 @@
 # Windows-specific compatibility notes
 
-The binding two-platform contract is [cross-platform-compatibility.md](cross-platform-compatibility.md).
+## Contents
+
+- [Goal](#goal)
+- [Supported entry point](#supported-entry-point)
+- [Required applications](#required-applications)
+- [Paths](#paths)
+- [Python launcher differences](#python-launcher-differences)
+- [npm and native packages](#npm-and-native-packages)
+- [Rendering browser](#rendering-browser)
+- [FFmpeg output parity](#ffmpeg-output-parity)
+- [Common Windows failures](#common-windows-failures)
+
+The binding two-platform contract is `cross-platform-compatibility.md`.
 
 ## Goal
 
