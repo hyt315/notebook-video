@@ -1,6 +1,6 @@
 ---
 name: notebook-video
-version: 2.7.0
+version: 2.8.0
 description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion. The default visual route is lecture composition: multi-zone scenes drawn entirely with code (SVG diagrams, mascots, progressive checklists, annotation stickers) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering, provenance manifests and automated QA. Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
 ---
 
@@ -225,7 +225,7 @@ Reuse the exact components in the copied template (`assets/lecture-template/src/
 
 - `AssetGate`, `Sound`;
 
-- the code-drawn component library (`Mascot`, `LineIcon` (26 locked glyphs), `CheckBadge`, `PillTag`, `CodeBlock`, `BrowserChrome`, `Connector`, `Checklist`, `CountUp`, `ProgressBar`, `Callout`, `Gauge`, `StepRail`, plus the 6 anti-PPT interactive components: `BrainwaveEEG`, `VectorRadarSonar`, `BM25TokenRibbon`, `HookMountBay`, `RedactionScanner`, `ChipContract`) or, on the classic route, generated `Img` layers and their independent callouts;
+- the code-drawn component library (`Mascot`, `LineIcon` (26 locked glyphs), `CheckBadge`, `PillTag`, `CodeBlock`, `BrowserChrome`, `Connector`, `Checklist`, `CountUp`, `ProgressBar`, `Callout`, `Gauge`, `StepRail`, plus the 6 anti-PPT interactive components: `BrainwaveEEG`, `VectorRadarSonar`, `BM25TokenRibbon`, `HookMountBay`, `RedactionScanner`, `ChipContract`, plus the fxkit motion kit in `assets/lecture-template/src/fxkit.tsx` (see [references/fxkit.md](references/fxkit.md): `FitCard`/`fitH`, `Typewriter`, `PayPop`, `StampSeal`, `Funnel`, `ChatThread`, `MailScan`, `TimeRail`, `CompareBars`, `ProgressRing`, `ShakeX`, `BurstCallout`, `StaggerList`, `KenBurnsImg`, `EvidenceZoom`, `DiffView`, `ConfettiPop`, `SkeletonCard`)) or, on the classic route, generated `Img` layers and their independent callouts;
 
 - stepped-frame helpers `q`, `ease`, `pop`, plus the motion pack: `SPRINGS`/`popS` spring presets (snappy/soft/bouncy), `TransitionIn` scene transitions (flip/slide/wipe), `camScript` camera-track builder and `useSteppedFrame` stop-motion accent.
 

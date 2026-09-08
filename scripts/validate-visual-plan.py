@@ -107,6 +107,8 @@ def validate(project: Path) -> list[str]:
                 scene_asset_ids.update(referenced_assets)
             if scene.get("mount_contract") != "start-inclusive-end-exclusive":
                 errors.append(f"{label}: missing start-inclusive/end-exclusive mount contract")
+            if mode == "image-text" and not [a for a in (referenced_assets or []) if not a.startswith("bg-")]:
+                errors.append(f"{label}: image-text scenes must reference at least one non-background illustration asset")
             if scene.get("exit_contract") not in {"complete-exit", "final-hold"}:
                 errors.append(f"{label}: invalid scene exit contract")
             if index < len(scenes) - 1 and scene.get("exit_contract") == "final-hold":
@@ -116,6 +118,13 @@ def validate(project: Path) -> list[str]:
             errors.append("asset-manifest.json must contain a positive integer duration_frames")
         elif previous_end != duration:
             errors.append(f"scene coverage ends at {previous_end}, expected duration_frames {duration}")
+        index_tsx = project / "src" / "index.tsx"
+        if index_tsx.is_file():
+            ticket = re.search(r"DURATION=(\d+)", index_tsx.read_text(encoding="utf-8"))
+            if ticket and int(ticket.group(1)) != duration:
+                errors.append(
+                    f"asset-manifest duration_frames {duration} differs from src/index.tsx DURATION={ticket.group(1)} (retime drift: update both together)"
+                )
 
     visual_data = json.loads(visual_path.read_text(encoding="utf-8"))
     assets = visual_data.get("assets")

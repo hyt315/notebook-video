@@ -57,8 +57,12 @@ def main() -> int:
         "scripts/validate-semantic-breaks.py",
         "scripts/validate-layering.py",
         "scripts/validate-visual-plan.py",
+        "scripts/coords-lint.py",
+        "scripts/retime.py",
+        "scripts/audition.py",
         "scripts/validate-video.cmd",
         "assets/lecture-template/src/index.tsx",
+        "assets/lecture-template/src/fxkit.tsx",
         "assets/lecture-template/src/theme/active.ts",
         "assets/lecture-template/src/theme/canvas.ts",
         "assets/lecture-template/src/theme/types.ts",
@@ -70,6 +74,7 @@ def main() -> int:
         "assets/lecture-template/manifests/asset-manifest.json",
         "assets/lecture-template/manifests/caption-cues.json",
         "references/lecture-composition.md",
+        "references/fxkit.md",
         "references/visual-system.md",
         "references/canvas-modes.md",
         "references/theme-system.md",
@@ -96,6 +101,32 @@ def main() -> int:
         check("主题开关默认 paper", ok, "default" if ok else "active.ts 被改到非默认主题")
     else:
         check("主题开关默认 paper", False, "active.ts 缺失")
+
+    # ---- 好夹具 3：密钥防呆（被追踪文件里不许出现疑似 API Key）----
+    import re as _re
+    _keypat = _re.compile(r"sk-[A-Za-z0-9]{16,}")
+    try:
+        _tracked = subprocess.run(["git", "ls-files"], cwd=ROOT,
+                                  capture_output=True, text=True).stdout.splitlines()
+    except Exception:
+        _tracked = []
+    if _tracked:
+        _scan = [ROOT / p for p in _tracked if (ROOT / p).is_file() and (ROOT / p).name != "selftest.py"]
+    else:
+        _skip = {".git", "node_modules", "renders", ".cache", ".tools", "__pycache__"}
+        _suffix = {".md", ".py", ".mjs", ".tsx", ".ts", ".json", ".txt", ".cmd", ".sh", ".cjs", ".yml", ".yaml"}
+        _scan = [p for p in ROOT.rglob("*") if p.is_file() and p.suffix.lower() in _suffix
+                 and not any(part in _skip for part in p.relative_to(ROOT).parts)
+                 and p.name != "selftest.py"]
+    _hits = []
+    for _fp in _scan:
+        try:
+            _text = _fp.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        if _keypat.search(_text):
+            _hits.append(str(_fp.relative_to(ROOT)))
+    check("密钥防呆", not _hits, f"leaks: {_hits}" if _hits else "no tracked key-like tokens")
 
     # ---- 负向夹具：--style 非法值被拦 ----
     if NODE:

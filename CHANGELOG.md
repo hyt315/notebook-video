@@ -2,6 +2,22 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [2.8.0] - 2026-09-09
+
+### Added
+
+- **fxkit motion kit v2 (固定动效组件库)**: new `assets/lecture-template/src/fxkit.tsx` with 18 cel-locked, zero-dependency components — `FitCard`/`fitH` (overflow-proof cards with computed heights), `Typewriter` (typing with punctuation pauses), `PayPop` (payment notification), `StampSeal` (seal slam), `Funnel` (attempt funnel), `ChatThread` (dialogue bubbles), `MailScan` (email confirm), `TimeRail` (event timeline), `CompareBars`, `ProgressRing`, `ShakeX` (hammer shake), `BurstCallout` (3-char-safe sticker), `StaggerList`, `KenBurnsImg` (restrained push-in), `EvidenceZoom` (recognize → locate → conclude), `DiffView` (patch red/green), `ConfettiPop` (celebration burst), `SkeletonCard` (skeleton → content). Catalog and two iron laws (computed heights; scene-vs-card coordinates) in `references/fxkit.md`.
+- **CardFitGate (卡片防出格门)**: runtime browser gate in the lecture template that scans mounted scenes every 15 frames and `cancelRender`s on any text overflowing its card (transform-independent via offset chains; chrome/subtitle layers excluded). Caught 4 real overflows during the v2.8.0 film production.
+- **Coordinate reporter (`scripts/coords-lint.py`)**: read-only audit of overlay-component x/y literals; off-canvas values fail, suspicious card-frame values warn.
+- **Retiming tool (`scripts/retime.py`)**: one command rewrites `DURATION`, `asset-manifest.json` duration/scenes and prints the sound-frame remap table after narration changes.
+- **TTS audition strip + polyphone scanner (`scripts/audition.py`)**: builds a 30s first-lines audition from cached TTS segments (zero API calls) and scans `narration.txt` against the production polyphone table.
+- **Secret-leak guard in `selftest.py`**: fails if any tracked file contains a key-like token (`sk-` + 16 alphanumerics); TTS keys stay in local untracked `tts.env` by contract.
+
+### Fixed
+
+- **`lecture-template` duration drift**: `asset-manifest.json` said 900 frames while `src/index.tsx` `DURATION` and the caption track run 1126 frames; manifest corrected to 1126 (new `validate-visual-plan` DURATION cross-check now blocks this drift class).
+- **`validate-visual-plan` tightening**: added `DURATION` cross-check and the rule that `image-text` scenes must reference at least one non-background illustration.
+
 ## [2.7.0] - 2026-09-08
 
 ### Added

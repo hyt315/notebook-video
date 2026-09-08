@@ -1,7 +1,7 @@
 {
   "style_version": "warm-ivory-remotion-2k30-v9-visual-director",
   "composition": "NotebookVideoFilm",
-  "duration_frames": 900,
+  "duration_frames": 1126,
   "visual_asset_ids": [
     "bg-cel-169",
     "bg-cel-43",
@@ -74,7 +74,7 @@
     {
       "id": "three-skills-cta",
       "start_frame": 571,
-      "end_frame": 900,
+      "end_frame": 1126,
       "visual_mode": "pure-text",
       "visual_asset_ids": [
         "bg-cel-169",

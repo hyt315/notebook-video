@@ -58,6 +58,42 @@ const pop=(f:number,start:number,stiffness=132)=>spring({frame:f-start,fps:BASE_
 
 const AssetGate=()=>{const [handle]=useState(()=>delayRender('waiting for fonts',{timeoutInMilliseconds:120000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash'),document.fonts.load('500 40px Space'),document.fonts.load('400 40px Caveat'),document.fonts.ready]).then(()=>{if(live)continueRender(handle)}).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);return null};
 
+// CardFitGate：卡片防出格门。逐桶（15 帧）扫描已挂载场景：每个含文字的叶元素，
+// 用 offset 链（天然无视 transform 位移动画）累加其相对"最近卡片祖先"
+// （首个有不透明底 + 实线边框的祖先，即 Paper/FitCard 类卡片）的位置，
+// 超出卡片 padding 盒 2px 即 cancelRender。z>=140 的 chrome/字幕层跳过
+// （模板锁定层，各自有门）。无 delayRender NFC 阻塞；字体未就绪的桶跳过。
+const CardFitGate=()=>{
+  const f=q(useCurrentFrame());
+  const bucket=Math.floor(f/15);
+  useEffect(()=>{
+    const id=requestAnimationFrame(()=>{
+      try{
+        if(document.fonts.status!=='loaded') return;
+        const bad:string[]=[];
+        const opaque=(el:Element)=>{const s=getComputedStyle(el as HTMLElement);const bg=s.backgroundColor;const m=/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/.exec(bg);const alpha=m?(m[4]===undefined?1:parseFloat(m[4])):0;return alpha>0.9&&parseFloat(s.borderTopWidth)>0;};
+        document.querySelectorAll<HTMLElement>('div,span').forEach((el)=>{
+          if(!el.textContent||!el.textContent.trim()||el.children.length>0) return;
+          if(el.closest('[data-fit-skip]')) return;
+          let card:HTMLElement|null=null,n:HTMLElement|null=el.parentElement;
+          while(n&&n!==document.body){if(opaque(n)){card=n;break;}n=n.parentElement;}
+          if(!card) return;
+          const z=parseInt(getComputedStyle(card).zIndex||'0',10);
+          if(z>=140) return;
+          let x=0,y=0,m:HTMLElement|null=el;
+          while(m&&m!==card){x+=m.offsetLeft;y+=m.offsetTop;m=m.offsetParent as HTMLElement|null;}
+          if(m!==card) return;
+          const overB=y+el.offsetHeight-card.clientHeight,overR=x+el.offsetWidth-card.clientWidth;
+          if(overB>2||overR>2) bad.push(`@${f} “${(el.textContent||'').trim().slice(0,10)}”出${Math.max(0,Math.ceil(overB))}px`);
+        });
+        if(bad.length) cancelRender(new Error(`Card overflow: ${bad.slice(0,4).join(' | ')}`));
+      }catch(e){if(typeof console!=='undefined') console.warn('[CardFitGate]',e);}
+    });
+    return ()=>cancelAnimationFrame(id);
+  },[bucket]);
+  return null;
+};
+
 // Non-visual QA gate: measure every full cue with the real loaded font.
 const CaptionFitGate=()=>{const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load('400 40px Kai'),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){cancelRender(new Error('Subtitle measurement node is unavailable'));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const overflow=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''})).filter(row=>row.width>AESTHETIC.subtitleSafeWidth+.5);if(overflow.length){cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);if(done)return null;return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:'Kai,sans-serif',fontSize:44,fontWeight:400,whiteSpace:'nowrap',letterSpacing:1.2}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</div>};
 
@@ -1114,7 +1150,7 @@ const FilmLayout:React.FC<{canvas:CanvasMode}>=({canvas})=>{
   return <CanvasContext.Provider value={{canvas,isPortrait,mode}}>
     <AbsoluteFill style={{overflow:'hidden',background:C.paperBase}}>
       <div style={{position:'absolute',left:0,top:0,width:mode.designW,height:mode.designH,transform:`scale(${mode.scale})`,transformOrigin:'0 0',fontFamily:'Kai,sans-serif',color:C.ink,overflow:'hidden'}}>
-        <Fonts/><AssetGate/><CaptionFitGate/><Sound/><Background/>
+        <Fonts/><AssetGate/><CaptionFitGate/><CardFitGate/><Sound/><Background/>
         {canvas==='4:3'?<div style={{position:'absolute',left:0,top:(mode.designH-810)/2,width:1920,height:1080,transform:'scale(0.75)',transformOrigin:'top left'}}><Chrome/><CameraRig><FinalDemo/></CameraRig></div>:<><Chrome/><CameraRig><FinalDemo/></CameraRig></>}
         <Grade/>
         <Subtitle/>
