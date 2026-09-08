@@ -75,12 +75,32 @@ def probe_ms(path):
     return int(round(float(out.strip()) * 1000))
 
 
+
+def load_env(project):
+    candidates = [
+        os.path.join(project, "tts.env"),
+        os.path.join(project, ".env"),
+        os.path.join(os.path.dirname(__file__), "..", "tts.env"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "tts.env"),
+    ]
+    for p in candidates:
+        if os.path.isfile(p):
+            with open(p, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        os.environ.setdefault(k.strip(), v.strip())
+
 def main():
-    project = sys.argv[1]
-    api_base = os.environ["TTS_API_BASE"].rstrip("/")
-    api_key = os.environ["TTS_API_KEY"]
-    model = os.environ["TTS_MODEL"]
-    voice = sys.argv[2] if len(sys.argv) > 2 else os.environ.get("TTS_VOICE", "")
+    project = sys.argv[1] if len(sys.argv) > 1 else "."
+    load_env(project)
+    api_base = os.environ.get("TTS_API_BASE", "").rstrip("/")
+    api_key = os.environ.get("TTS_API_KEY", "")
+    if not api_key:
+        raise SystemExit("TTS_API_KEY is not set. Please set the TTS_API_KEY environment variable or create a tts.env/.env file.")
+    model = os.environ.get("TTS_MODEL", "mimo-v2.5-tts")
+    voice = sys.argv[2] if len(sys.argv) > 2 else os.environ.get("TTS_VOICE", "冰糖")
     style_prompt = os.environ.get("TTS_STYLE_PROMPT",
                                   "用清晰、温暖、有耐心的普通话讲解，语速适中，像面向新手的知识科普博主。")
 

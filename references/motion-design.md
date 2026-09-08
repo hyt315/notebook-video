@@ -1,5 +1,15 @@
 # Motion design contract
 
+## Contents
+
+- [Cadence](#cadence)
+- [Standard motions](#standard-motions)
+- [Camera Micro-Framing Invariant](#camera-micro-framing-invariant-镜头微运镜与防出界铁律)
+- [Anti-PPT Functional Component Invariant](#anti-ppt-functional-component-invariant-反-ppt-实体交互组件铁律)
+- [Transitions](#transitions)
+- [Stop-motion accent](#stop-motion-accent)
+- [Rejection flags](#rejection-flags)
+
 ## Cadence
 
 Deliver at native 30fps. Keep scene constants, physical poses, subtitle reveal and output in the same 30fps coordinate system. Do not duplicate frames into a 60fps container. For an intentional stop-motion accent, quantize only that component to 15fps so each pose holds for two output frames.
@@ -10,11 +20,11 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 
 ## Standard motions
 
-- Camera push: chapter level, 8-14% scale, focus follows the narration target with the built-in lag.
+- Camera push: chapter level, subtle breathing scale 1.00 ~ 1.018, horizontal drift strictly bounded within ±15px (x between 945 and 975), focus follows narration target without displacing active elements.
 - JumpInText title: per-glyph 3D flip-in (rotateX ~88deg from the baseline, 12px rise, spring over-bounce, ~1.6-frame stagger). Always for chapter and scene titles.
 - WaveText latin: per-letter wave typing with a color gradient (10-frame wave, 4 keyframe offsets), for CTA latin strings.
 - Figure roll-in: multi-keyframe rotation (150deg to 360deg with a mid-scale bulge) instead of a plain pop for emblem graphics.
-- Subtitle reveal: one word at a time, chars inside a word stagger by 0.9 frames, 6px fade-slide, 180ms lead over the word start; never a decorative bar.
+- Subtitle reveal: one word at a time, chars inside a word stagger by 0.9 frames, 6px fade-slide, 180ms lead over the word start; all trailing punctuation strictly eliminated; never a decorative bar.
 - Paper entry: cubic ease-out, one 8–13% overshoot, settle within about 0.8s.
 - Paper lift: raise position and increase shadow distance/blur while lowering shadow alpha.
 - Paper landing: close/darken shadow, compress no more than 3%, then settle once.
@@ -24,6 +34,39 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 - Slot insertion: remain above the base until crossing the slot, then pass behind the front lip.
 - Complete exit: move the entire component outside the canvas or remove it after it is fully out; never leave a clipped corner.
 - Character reaction: move separate arms, face or body parts; do not wobble one flattened character image.
+
+## Camera Micro-Framing Invariant (镜头微运镜与防出界铁律)
+
+To eliminate the static PPT feeling while preventing any active narration content from being pushed out of frame:
+
+1. **Strict Spatial Bounds (硬性位移约束)**:
+   - On 16:9 canvas (1920×1080 design stage):
+     - Horizontal position `x` is strictly bounded within `[945, 975]` (drift `≤ ±15px`);
+     - Vertical position `y` is strictly bounded within `[538, 542]` (drift `≤ ±4px`);
+     - Scale `s` is strictly bounded within `[1.00, 1.018]` (gentle breathing);
+   - On 3:4 portrait canvas (1080×1440 design stage):
+     - Horizontal position `x` is strictly bounded within `[530, 550]`, vertical `y` within `[710, 730]`, scale `s` within `[1.00, 1.02]`.
+
+2. **Semantic Synchronization (语意跟随)**:
+   - When narration explains the left card, concept, or terminal, the camera micro-drifts gently leftward (`x ≈ 948`);
+   - When narration shifts to the right data, benchmark, code block, or CTA, the camera micro-floats rightward (`x ≈ 974`);
+   - When transitioning between chapters or holding both sides, reset to center (`x = 960, s = 1.00`).
+
+3. **Absolute Rejection Flags**:
+   - Camera horizontal offset `|x - 960| > 25px` is strictly rejected;
+   - Moving camera away from the currently narrated card is strictly rejected;
+   - Any camera motion that causes the active narration card to come within 60px of the viewport edge is strictly rejected.
+
+## Anti-PPT Functional Component Invariant (组件防 PPT 化与功能实体化)
+
+Never stack plain text bullets inside generic rectangular boxes. Every explanation scene must incorporate at least one function-driven interactive component with physical state transitions synchronized to narration:
+
+- `BrainwaveEEG`: Oscilloscope cognitive pulse wave; flatlines to a straight red line upon session exit, memory flush, or failure.
+- `VectorRadarSonar`: Circular radar display with rotating scan line, vector cluster dots, and ANN metrics.
+- `BM25TokenRibbon`: Dynamic inverted index symbol meter with token tags and match scores.
+- `HookMountBay`: Modular connector dock where agent hook plug visibly inserts into target port and lights up green.
+- `RedactionScanner`: Real-time security preview with a red laser scanner sweeping over sensitive tokens and masking them to `[REDACTED_SECRET_KEY_*****]`.
+- `ChipContract`: Floating micro-hardware chip contract with LED indicators and pin headers moving along data pipelines.
 
 ## Locked motion pack
 

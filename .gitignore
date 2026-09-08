@@ -22,3 +22,6 @@ Thumbs.db
 
 # Mimosa 安全扫描插件本地工作目录
 .mimosa/
+*.env
+audit-report.txt
+.doctor/

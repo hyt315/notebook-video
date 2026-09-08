@@ -205,19 +205,28 @@ const popS=(f:number,start:number,preset:keyof typeof SPRINGS='soft')=>spring({f
 // useSteppedFrame：停帧点缀（默认 15fps，每个姿势占两输出帧，契约见 motion-design.md）。
 const useSteppedFrame=(stepFps=15)=>{const f=useCurrentFrame();return Math.floor(f*stepFps/BASE_FPS)*BASE_FPS/stepFps};
 
-// CodeBlock：终端风代码窗——三灯标题栏 + 语法色行 + 逐行滑入，可带光标。
-const CodeBlock:React.FC<{title?:string;lines:{text:string;color?:string}[];start:number;frame?:number;stagger?:number;cursor?:boolean;style?:React.CSSProperties}>=({title='terminal',lines,start,frame,stagger=8,cursor=false,style})=>{
+// CodeBlock：终端风代码窗——三灯标题栏 + 语法色行 + 逐行滑入，精致墨边紧凑投影。
+const CodeBlock:React.FC<{title?:string;lines:{text:string;color?:string;prefix?:string;start?:number}[];start?:number;frame?:number;stagger?:number;cursor?:boolean;style?:React.CSSProperties}>=({title='terminal',lines,start=0,frame,stagger=8,cursor=false,style})=>{
   const f=frame??q(useCurrentFrame());
-  return <Paper lift={.2} borderColor={C.navy} style={{padding:0,overflow:'hidden',...style}}>
-    <div style={{height:34,background:C.navy,display:'flex',alignItems:'center',gap:7,paddingLeft:14}}>
-      {[C.red,C.gold,C.green].map((c,i)=><span key={i} style={{width:11,height:11,borderRadius:99,background:c}}/>)}
-      <span style={{marginLeft:8,fontFamily:'Space',fontWeight:600,fontSize:13,letterSpacing:1,color:C.white,opacity:.85}}>{title}</span>
+  return <div style={{background:'#14110f',border:`2.2px solid ${C.ink}`,borderRadius:10,boxShadow:`3.5px 3.5px 0 ${C.ink}`,overflow:'hidden',...style}}>
+    <div style={{height:34,background:'#1f1b18',display:'flex',alignItems:'center',gap:7,paddingLeft:14,borderBottom:'1.5px solid #2d2621'}}>
+      {[C.red,C.gold,C.green].map((c,i)=><span key={i} style={{width:10,height:10,borderRadius:99,background:c,border:'1px solid #000'}}/>)}
+      <span style={{marginLeft:8,fontFamily:'Space,monospace',fontWeight:600,fontSize:13,letterSpacing:1,color:'#fdfdfb',opacity:.85}}>{title}</span>
     </div>
-    <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:9}}>
-      {lines.map((ln,i)=>{const p=popS(f,start+i*stagger,'snappy');const tail=cursor&&i===lines.length-1&&f>=start+i*stagger+2;
-        return <div key={i} style={{display:'flex',alignItems:'center',fontFamily:'Space',fontWeight:600,fontSize:TYPE.bodyM,color:ln.color||C.ink,opacity:p,transform:`translateX(${18*(1-p)}px)`,whiteSpace:'nowrap'}}>{ln.text}{tail&&<span style={{display:'inline-block',width:9,height:19,marginLeft:4,background:ln.color||C.ink,opacity:Math.floor(f/8)%2?0.15:0.9}}/>}</div>;})}
+    <div style={{padding:'14px 18px',display:'flex',flexDirection:'column',gap:9}}>
+      {lines.map((ln,i)=>{
+        const lnStart = ln.start ?? (start + i * stagger);
+        if (f < lnStart) return null;
+        const p=popS(f,lnStart,'snappy');
+        const isTail=cursor&&(i===lines.length-1||(lines[i+1]&&f<(lines[i+1].start??(start+(i+1)*stagger))));
+        return <div key={i} style={{display:'flex',alignItems:'center',fontFamily:'Space,Kai,monospace',fontWeight:600,fontSize:TYPE.bodyM,color:ln.color||'#fdfdfb',opacity:p,transform:`translateX(${18*(1-p)}px)`,whiteSpace:'nowrap'}}>
+          {ln.prefix&&<span style={{color:C.green,marginRight:8}}>{ln.prefix}</span>}
+          {ln.text}
+          {isTail&&<span style={{display:'inline-block',width:8,height:18,marginLeft:6,background:C.green,opacity:Math.floor(f/8)%2?0.15:0.95}}/>}
+        </div>;
+      })}
     </div>
-  </Paper>;
+  </div>;
 };
 
 // BrowserChrome：浏览器窗口——三灯 + 锁 + URL 胶囊，内容区放 children。
@@ -315,8 +324,197 @@ const TransitionIn:React.FC<{kind:'flip'|'slide'|'wipe';start:number;duration?:n
   </div>;
 };
 
+// ---- 标准化新奇交互组件库（防 PPT 化与功能实体化）------------------------
+// 1. BrainwaveEEG：脑电/示波仪（动态活跃认知脉冲 -> 会话中断/清空瞬间拉平直线 Flatline）
+const BrainwaveEEG: React.FC<{ frame: number; deadStart?: number; width?: number | string }> = ({ frame, deadStart = 99999, width = '100%' }) => {
+  const isDead = frame >= deadStart;
+  const pDead = ease(frame, deadStart, deadStart + 16);
+  const W = 680, H = 48;
+  const pts: string[] = [];
+  const freq = 0.14;
+  for (let x = 0; x <= W; x += 6) {
+    const normX = x / W;
+    const wave = Math.sin(frame * freq + normX * 18) * Math.cos(normX * 8);
+    const spike = (x > 220 && x < 260) ? Math.sin((x - 220) / 40 * Math.PI) * 16 : 0;
+    const y = H / 2 - (wave * 8 + spike) * (1 - pDead);
+    pts.push(`${x},${y.toFixed(1)}`);
+  }
+  return (
+    <div style={{ width, background: '#121212', borderRadius: 8, border: `2px solid ${isDead ? C.red : '#2b303c'}`, padding: '8px 14px', position: 'relative', overflow: 'hidden', boxShadow: `2.5px 2.5px 0 ${C.ink}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 99, background: isDead ? C.red : C.green, boxShadow: `0 0 6px ${isDead ? C.red : C.green}` }} />
+          <span style={{ fontFamily: 'Space,monospace', fontSize: 12, fontWeight: 700, color: isDead ? C.red : '#adb5bd', letterSpacing: 0.8 }}>
+            {isDead ? 'ALERT: CONTEXT FLUSHED (FLATLINE)' : 'LIVE AGENT COGNITIVE PULSE'}
+          </span>
+        </div>
+        <span style={{ fontFamily: 'Space,monospace', fontSize: 11, color: isDead ? C.red : C.green, fontWeight: 700 }}>
+          {isDead ? '0 RECALLED' : 'SYNCED: 100%'}
+        </span>
+      </div>
+      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
+        <line x1="0" y1={H / 2} x2={W} y2={H / 2} stroke="#222" strokeWidth="1" strokeDasharray="4 4" />
+        <polyline points={pts.join(' ')} fill="none" stroke={isDead ? C.red : C.green} strokeWidth={isDead ? 2.5 : 1.8} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+};
+
+// 2. VectorRadarSonar：向量雷达声呐仪（360°旋转波束扫描 + 高维语义聚类点高亮）
+const VectorRadarSonar: React.FC<{ frame: number; color?: string }> = ({ frame, color = C.blue }) => {
+  const rot = (frame * 3.5) % 360;
+  const dots = [
+    { x: 45, y: 35, col: C.blue }, { x: 105, y: 65, col: C.green }, { x: 70, y: 95, col: C.gold },
+    { x: 125, y: 30, col: C.blue }, { x: 35, y: 105, col: C.green }, { x: 90, y: 115, col: C.blue },
+  ];
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', background: '#f5f9ff', border: `2px solid ${color}`, borderRadius: 10, boxShadow: `2.5px 2.5px 0 ${color}` }}>
+      <div style={{ position: 'relative', width: 78, height: 78, flex: '0 0 78px', background: '#0e1726', borderRadius: 999, border: `2px solid ${color}`, overflow: 'hidden' }}>
+        <svg width="78" height="78" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="26" fill="none" stroke="rgba(43,109,232,0.35)" strokeWidth="1.2" />
+          <circle cx="70" cy="70" r="52" fill="none" stroke="rgba(43,109,232,0.35)" strokeWidth="1.2" />
+          <line x1="70" y1="0" x2="70" y2="140" stroke="rgba(43,109,232,0.25)" strokeWidth="1" />
+          <line x1="0" y1="70" x2="140" y2="70" stroke="rgba(43,109,232,0.25)" strokeWidth="1" />
+          {dots.map((d, i) => (
+            <circle key={i} cx={d.x} cy={d.y} r="3.5" fill={d.col} style={{ opacity: 0.8 + 0.2 * Math.sin(frame * 0.25 + i) }} />
+          ))}
+          <g transform={`rotate(${rot} 70 70)`}>
+            <line x1="70" y1="70" x2="140" y2="70" stroke={color} strokeWidth="2.2" opacity="0.95" />
+            <polygon points="70,70 140,40 140,70" fill="rgba(43,109,232,0.28)" />
+          </g>
+        </svg>
+      </div>
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color }}>向量雷达检索空间</span>
+          <span style={{ fontSize: 11, background: color, color: '#fff', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>EMBEDDINGS</span>
+        </div>
+        <div style={{ fontSize: 13, color: '#444', marginTop: 3, lineHeight: 1.3, fontWeight: 600 }}>高维语义聚类 · 毫秒级最近邻检索 (ANN)</div>
+        <div style={{ display: 'flex', gap: 6, marginTop: 5 }}>
+          <span style={{ fontSize: 11, fontFamily: 'Space,monospace', background: '#e1ecfe', color, padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>Append-Only</span>
+          <span style={{ fontSize: 11, fontFamily: 'Space,monospace', background: '#e1ecfe', color, padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>Local Zero-Cloud</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 3. BM25TokenRibbon：BM25 符号倒排标尺（动态词频矩阵与代码变量命中标签）
+const BM25TokenRibbon: React.FC<{ frame: number; tokens?: { name: string; score: string; active: boolean }[] }> = ({ frame, tokens = [
+  { name: 'auth_spec', score: '0.98', active: true },
+  { name: 'rs256_key', score: '0.94', active: true },
+  { name: 'db_pool', score: '0.91', active: false },
+  { name: 'redis_ttl', score: '0.86', active: false },
+] }) => {
+  return (
+    <div style={{ padding: '12px 16px', background: '#fffcf0', border: `2px solid ${C.gold}`, borderRadius: 10, boxShadow: `2.5px 2.5px 0 ${C.gold}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: C.ink }}>BM25 符号倒排矩阵</span>
+          <span style={{ fontSize: 11, background: C.gold, color: C.ink, padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>INVERTED INDEX</span>
+        </div>
+        <span style={{ fontSize: 11, fontFamily: 'Space,monospace', color: '#666', fontWeight: 600 }}>{tokens.filter(t => t.active).length} Tokens Matched</span>
+      </div>
+      <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {tokens.map((tk, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, background: tk.active ? '#fff' : '#f8f8f8', border: `1.5px solid ${tk.active ? C.gold : '#ccc'}`, borderRadius: 6, padding: '3px 8px', boxShadow: tk.active ? `1.5px 1.5px 0 ${C.ink}` : 'none' }}>
+            <span style={{ fontFamily: 'Space,monospace', fontSize: 12, fontWeight: 700, color: C.ink }}>#{tk.name}</span>
+            <span style={{ fontFamily: 'Space,monospace', fontSize: 11, background: tk.active ? '#fff3cd' : '#eee', color: tk.active ? '#b07200' : '#888', padding: '1px 4px', borderRadius: 3, fontWeight: 700 }}>{tk.score}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// 4. HookMountBay：自动钩子卡扣插槽（物理插头卡入 + 锁紧变绿灯）
+const HookMountBay: React.FC<{ frame: number; dockStart?: number; portLabel?: string; hookName?: string }> = ({ frame, dockStart = 0, portLabel = '~/.claude/settings.json', hookName = 'funes_hook' }) => {
+  const isDocked = frame >= dockStart;
+  const dockP = easeOutSoft(frame, dockStart, dockStart + 20);
+  return (
+    <div style={{ background: '#1c1815', border: `2.2px solid ${C.ink}`, borderRadius: 10, padding: '12px 16px', boxShadow: `3px 3px 0 ${C.ink}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 99, background: isDocked ? C.green : C.gold, boxShadow: `0 0 8px ${isDocked ? C.green : C.gold}` }} />
+          <span style={{ fontFamily: 'Space,monospace', fontSize: 12, fontWeight: 700, color: isDocked ? C.green : C.gold, letterSpacing: 0.8 }}>
+            {isDocked ? 'AGENT HOOK: MOUNTED & LOCKED' : 'WAITING FOR HOOK INJECTION'}
+          </span>
+        </div>
+        <span style={{ fontSize: 11, fontFamily: 'Space,monospace', color: '#999' }}>PORT: {portLabel}</span>
+      </div>
+      <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, transform: `translateX(${interpolate(dockP, [0, 1], [-18, 0])}px)` }}>
+          <div style={{ background: '#2b6de8', color: '#fff', fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 6, border: '1.2px solid #000' }}>
+            🔌 {hookName}
+          </div>
+          <span style={{ color: isDocked ? C.green : '#666', fontSize: 15 }}>➔</span>
+          <div style={{ background: isDocked ? '#ebfbee' : '#2d2825', border: `1.8px solid ${isDocked ? C.green : '#444'}`, color: isDocked ? C.green : '#888', fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 6 }}>
+            {isDocked ? '✔ Session Hook Registered' : 'Empty Hook Port'}
+          </div>
+        </div>
+        {isDocked && (
+          <span style={{ fontSize: 11, background: '#1e382b', color: C.green, border: `1px solid ${C.green}`, padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
+            AUTO PASSIVE SYNC
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// 5. RedactionScanner：敏感信息实时脱敏扫描仪（红外光束扫过实时掩码打码）
+const RedactionScanner: React.FC<{ frame: number; scanStart?: number; rawKey?: string; redactedKey?: string }> = ({ frame, scanStart = 0, rawKey = 'sk-live-99882410941829', redactedKey = '[REDACTED_SECRET_KEY_*****]' }) => {
+  const isScanning = frame >= scanStart;
+  const p = ease(frame, scanStart, scanStart + 35);
+  const scanX = interpolate(p, [0, 1], [0, 100]);
+  return (
+    <div style={{ background: '#14110f', border: `2.2px solid ${C.ink}`, borderRadius: 10, padding: '12px 16px', position: 'relative', overflow: 'hidden', boxShadow: `3px 3px 0 ${C.ink}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <LineIcon kind="shield" size={16} color={C.green} />
+          <span style={{ fontFamily: 'Space,monospace', fontSize: 12, fontWeight: 700, color: '#e0e0e0', letterSpacing: 0.8 }}>
+            GATEWAY SCANNER · SENSITIVE REDACTOR
+          </span>
+        </div>
+        <span style={{ fontSize: 10, fontFamily: 'Space,monospace', background: p >= 0.8 ? '#143823' : '#332612', color: p >= 0.8 ? C.green : C.gold, padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>
+          {p >= 0.8 ? 'PROTECTED (SANITIZED)' : 'INSPECTING TOKENS'}
+        </span>
+      </div>
+      <div style={{ position: 'relative', background: '#1f1b18', padding: '8px 12px', borderRadius: 6, fontFamily: 'Space,monospace', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflow: 'hidden' }}>
+        <div>
+          <span style={{ color: '#888' }}>raw_trace: </span>
+          <span style={{ color: p > 0.4 ? C.green : '#ff7b72', fontWeight: 700 }}>
+            {p > 0.4 ? `api_key: "${redactedKey}"` : `api_key: "${rawKey}"`}
+          </span>
+        </div>
+        {p > 0.6 && (
+          <span style={{ background: C.green, color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3 }}>
+            PASSED
+          </span>
+        )}
+        {isScanning && p < 1 && (
+          <div style={{ position: 'absolute', left: `${scanX}%`, top: 0, bottom: 0, width: 2.5, background: '#ff3b30', boxShadow: '0 0 8px #ff3b30' }} />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// 6. ChipContract：微硬件芯片流转卡（LED 灯 + 合约编号 + 沿管道流转）
+const ChipContract: React.FC<{ x: number; y: number; title: string; subtitle?: string; scale?: number; opacity?: number }> = ({ x, y, title, subtitle, scale = 1, opacity = 1 }) => {
+  return (
+    <div style={{ position: 'absolute', left: x, top: y, zIndex: 95, padding: '10px 18px', background: '#0e1726', border: `2.2px solid ${C.blue}`, borderRadius: 10, boxShadow: `3.5px 3.5px 0 ${C.ink}`, opacity, transform: `translate(-50%, -50%) scale(${scale})`, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ width: 10, height: 10, borderRadius: 99, background: C.green, boxShadow: `0 0 6px ${C.green}` }} />
+      <div>
+        <div style={{ fontSize: 11, fontFamily: 'Space,monospace', fontWeight: 700, color: C.blue, letterSpacing: 0.8 }}>{title}</div>
+        {subtitle && <div style={{ fontSize: 15, fontWeight: 700, color: '#ffffff', marginTop: 1 }}>{subtitle}</div>}
+      </div>
+    </div>
+  );
+};
+
 // camScript：镜头脚本构建器——链式声明 hold/to，自动补齐首尾帧，免手刻关键帧表。
-// 用法：camScript(960,540,DURATION).hold(48).to(197,{x:1165,y:495,s:1.15}).done()
+// 铁律（Camera Micro-Framing Invariant）：X 轴位移严格约束在 [945, 975] 范围（漂移 <= ±15px），S 约束在 [1.00, 1.018]，绝不可大幅右甩导致左侧被讲解内容出界！
 type CamKey={f:number;s:number;x:number;y:number};
 const camScript=(x:number,y:number,duration:number)=>{
   const keys:CamKey[]=[{f:0,s:1,x,y}];let cur={x,y,s:1};
@@ -324,6 +522,7 @@ const camScript=(x:number,y:number,duration:number)=>{
   return api;
 };
 
+// 严谨消除句末标点符号（保留句中逗号，句末逗号句号等一概消除）
 const cleanTail=(s:string)=>s.replace(/[，。！？；：、,.!?;:\s]+$/g,'');
 const Subtitle=()=>{
   const {mode}=useCanvas();
@@ -331,7 +530,9 @@ const Subtitle=()=>{
   let cue=captions.find((c:any)=>f>=c.startFrame-lead&&f<=c.endFrame+hold);
   if(!cue)cue=[...captions].reverse().find((c:any)=>c.startFrame<=f);
   const full=cue?cleanTail(cue.text):'';
+  const targetChars=full.length;
   const words=cue?cue.words.filter((w:any)=>w.startFrame<=f+lead):[];
+  let charSeq=0;
   return <THEME.SubtitleChrome mode={mode}>
     <span style={{position:'relative'}}>
         <span style={{visibility:'hidden'}}>{full}</span>
@@ -341,6 +542,8 @@ const Subtitle=()=>{
             const prev=wi>0?String(words[wi-1].part):'';
             const spaced=(wi>0&&!/[\s，。！？；：、,.!?;:（(]$/.test(prev)&&!/^[\s，。！？；：、,.!?;:）)]/.test(part)&&!((/[A-Za-z0-9]$/.test(prev)&&/^[A-Za-z0-9]/.test(part))||(/[一-鿿]$/.test(prev)&&/^[一-鿿]/.test(part))))?'\u00a0':'';
             return <span key={wi} style={{display:'inline-block'}}>{spaced}{part.split('').map((ch:any,ci:number)=>{
+              const idx=charSeq++;
+              if(idx>=targetChars) return null; // 铁律：严格消除任何词尾带出的句末标点符号
               const p=interpolate(f,[w.startFrame+ci*.9,w.startFrame+ci*.9+2.5],[0,1],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
               return <span key={ci} style={{display:'inline-block',opacity:p,transform:`translateY(${6*(1-p)}px)`}}>{ch}</span>;
             })}</span>;
@@ -828,22 +1031,26 @@ const SceneSkillsP=()=>{
   </div>;
 };
 
-// ---- CameraRig：全局镜头层（Tibo 式推拉/聚焦）。
+// ---- CameraRig：全局镜头层（语意协同微运镜，告别 PPT 僵硬感，严格杜绝出界）。
+// 镜头铁律（Camera Micro-Framing Invariant）：
+// 1. 16:9 画布下 X 轴位移必须严格约束在 [945, 975] 范围（漂移 <= ±15px），严禁任何卡片被移出视口；
+// 2. 缩放 S 严格约束在 [1.00, 1.018] 呼吸范围，Y 轴位移约束在 [538, 542]；
+// 3. 运镜方向必须与当前讲解内容同向：讲左卡时微向左聚（X≈948），讲右侧实测/数据时微向右浮（X≈974），换章平滑归位（X=960）。
 const CAM_KEYS_L=[
   {f:0,s:1,x:960,y:540},
   {f:48,s:1,x:960,y:540},
-  {f:143,s:1.14,x:1165,y:495},
-  {f:197,s:1.16,x:1185,y:505},
-  {f:248,s:1.02,x:700,y:610},
-  {f:328,s:1.05,x:820,y:595},
-  {f:390,s:1.03,x:880,y:580},
+  {f:143,s:1.015,x:972,y:542}, // 右侧全球开源视界
+  {f:197,s:1.018,x:974,y:542},
+  {f:248,s:1.012,x:948,y:538}, // 左侧 PR 步骤卡
+  {f:328,s:1.016,x:950,y:538},
+  {f:390,s:1.012,x:960,y:540},
   {f:449,s:1,x:960,y:540},
-  {f:613,s:1.03,x:960,y:485},
-  {f:669,s:1.02,x:960,y:500},
+  {f:613,s:1.014,x:948,y:538}, // 运营步骤卡
+  {f:669,s:1.016,x:965,y:540},
   {f:740,s:1,x:960,y:540},
-  {f:840,s:1.14,x:1495,y:535},
-  {f:950,s:1.03,x:1060,y:592},
-  {f:1056,s:1,x:960,y:552},
+  {f:840,s:1.016,x:974,y:542}, // 右侧发版与成果
+  {f:950,s:1.014,x:966,y:540},
+  {f:1056,s:1.012,x:960,y:540},
   {f:1126,s:1,x:960,y:540},
 ];
 // 3:4 竖屏专属镜头（画布 1080×1440，中心 540×720）：叙事焦点按竖屏布局标定

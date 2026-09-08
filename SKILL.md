@@ -1,6 +1,6 @@
 ---
 name: notebook-video
-version: 2.6.0
+version: 2.7.0
 description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion. The default visual route is lecture composition: multi-zone scenes drawn entirely with code (SVG diagrams, mascots, progressive checklists, annotation stickers) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering, provenance manifests and automated QA. Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
 ---
 
@@ -191,6 +191,8 @@ The repository does not bundle or install a TTS client. Use an available platfor
 
 Convert milliseconds to frames once at the data boundary with `Math.round(ms * fps / 1000)`. Components compare integers only. Keep protected phrases, complete clauses and short sentence tails together.
 
+**Subtitle Trailing Punctuation Strip Invariant**: Chinese and English sentence-final punctuation marks (`，。！？；、,.!?;:`) must be strictly stripped from the end of subtitle display lines. The Subtitle component in `index.tsx` enforces `cue.full.replace(/[，。！？；、,.!?;:\s]+$/, '')` as `cleanFull` and gates progressive character sequence rendering against `targetChars.length`. Trailing punctuation marks in the final rendered subtitle strip are strictly forbidden and constitute an immediate QA rejection flag.
+
 ### 4. Model independent parts and layers
 
 Read [references/independent-parts.md](references/independent-parts.md). Every object that moves at a different time is a separate component with:
@@ -223,7 +225,7 @@ Reuse the exact components in the copied template (`assets/lecture-template/src/
 
 - `AssetGate`, `Sound`;
 
-- the code-drawn component library (`Mascot`, `LineIcon` (26 locked glyphs), `CheckBadge`, `PillTag`, `CodeBlock`, `BrowserChrome`, `Connector`, `Checklist`, `CountUp`, `ProgressBar`, `Callout`, `Gauge`, `StepRail`) or, on the classic route, generated `Img` layers and their independent callouts;
+- the code-drawn component library (`Mascot`, `LineIcon` (26 locked glyphs), `CheckBadge`, `PillTag`, `CodeBlock`, `BrowserChrome`, `Connector`, `Checklist`, `CountUp`, `ProgressBar`, `Callout`, `Gauge`, `StepRail`, plus the 6 anti-PPT interactive components: `BrainwaveEEG`, `VectorRadarSonar`, `BM25TokenRibbon`, `HookMountBay`, `RedactionScanner`, `ChipContract`) or, on the classic route, generated `Img` layers and their independent callouts;
 
 - stepped-frame helpers `q`, `ease`, `pop`, plus the motion pack: `SPRINGS`/`popS` spring presets (snappy/soft/bouncy), `TransitionIn` scene transitions (flip/slide/wipe), `camScript` camera-track builder and `useSteppedFrame` stop-motion accent.
 
@@ -243,6 +245,10 @@ Read [references/motion-design.md](references/motion-design.md) and, for the ope
 For a process explanation, prefer one persistent task object moving through a shared track and changing state over spawning a new card at every step. Reuse a track only while the metaphor remains the same. When the metaphor changes, clear the old scene completely before the next one enters.
 
 Add a meaningful state change every 2–4 seconds. Use dynamic shadow only when a paper object lifts: farther/softer while airborne, closer/darker on landing. Use one restrained overshoot. Move SVG dash offsets only while data is transferring.
+
+**Camera Micro-Framing Invariant**: The virtual camera coordinate $X$ must remain strictly within $[945, 975]$ (maximum $\pm 15\text{px}$ displacement from the 960px center), and camera scale $S$ within $[1.00, 1.018]$. Large camera pans ($> 30\text{px}$) that displace the active narrative content or push cards off-screen are strictly forbidden and constitute a critical QA rejection.
+
+**Anti-PPT Functional Component Invariant**: Pure static card stacks ("a box with bullets") are forbidden for complex mechanisms. Technical concepts (search, memory, context, contracts, embeddings, security) MUST use active, purpose-built animated components (e.g. `BrainwaveEEG`, `VectorRadarSonar`, `BM25TokenRibbon`, `HookMountBay`, `RedactionScanner`, `ChipContract`) rather than generic text boxes.
 
 ### 7. Keep audio declarative
 

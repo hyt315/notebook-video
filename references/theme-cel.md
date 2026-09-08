@@ -1,4 +1,4 @@
-﻿# Theme contract: cel (anime cel-shading storyboard)
+# Theme contract: cel (anime cel-shading storyboard)
 
 Status: LOCKED. This theme ships fully implemented in `assets/lecture-template/src/theme/cel.tsx`. Production runs select it with `new-project ./dir --style=cel` and never edit the theme file. Read this document instead of the other theme docs; the three style contracts are mutually exclusive by design (progressive disclosure).
 
@@ -16,13 +16,13 @@ Anime cel-shading storyboard: thick ink outlines, flat saturated fills, hard off
 
 - Accents: red `#e8382a` (primary/orange slot), blue `#2b6de8`, green `#24bc6e`, yellow `#f2b721` (gold slot). Blue and red are the co-leads (same saturation ≈80 / lightness ≈54 step); green and gold are derived on the same step — never invent off-step colors.
 
-- Card skin: `5px` solid ink border, `8px` corner radius, hard offset ink shadow `7px 7px 0` (grows with lift, never blurs). Every card carries a deterministic micro-tilt of ±1° hashed from its position — the same card always keeps the same tilt, and scene motion transforms compose on top of it.
+- Card skin: `2.5px` solid ink border, `10px` corner radius, hard offset ink shadow `3px 3px 0` (grows with lift, never blurs). Every card carries a deterministic micro-tilt of ±0.35° hashed from its position — the same card always keeps the same tilt, and scene motion transforms compose on top of it. Borders must never exceed 2.5px to avoid clunky black slab appearance.
 
 - Background (LOCKED fixed raster): one AI-generated image per canvas ratio, selected automatically from `public/bg-cel-<169|43|34>.jpg` (`16:9` 2560×1440, `4:3` 1920×1440, `3:4` 1440×1920 — pixel-exact, no crop, no stretch). The image carries the complete background language: aged near-white paper with print grain, halftone dot fields, an explosion star with checkerboard accents at bottom-left, red/blue star marks and radiating speed lines at bottom-right — all decorations confined to three corner clusters, the center kept clean for content. The code-drawn halftone/speed-line background is retired; never restore it and never draw extra ornaments on top of the image.
 
 - Grade: ink vignette only (`inset 0 0 120px`, 0.028 alpha). No warm soft-light layer. The paper must stay bright: never deepen decoration densities to compensate for weak contrast.
 
-- Subtitle: centered white box with `5px` ink border and `8px 8px 0` ink offset shadow, bold Kai text. No tape, no solid bar.
+- Subtitle: centered white box with `2.5px` ink border and `3.5px 3.5px 0` ink offset shadow, bold Kai text. No tape, no solid bar. All trailing punctuation (，。！？等) strictly suppressed.
 
 ## Theme extra components
 
@@ -40,7 +40,11 @@ Anime cel-shading storyboard: thick ink outlines, flat saturated fills, hard off
 
 ## Rejection flags
 
+- Any card, block, or terminal border exceeding 2.5px, or shadow exceeding 4px (rejects bulky cartoon black slabs).
+
 - Any blurred or soft drop shadow.
+
+- Trailing punctuation visible at the end of any subtitle cue.
 
 - Restoring the code-drawn halftone/speed-line background, drawing extra ornaments on top of the locked background image, or stretching a wrong-ratio image onto a canvas.
 

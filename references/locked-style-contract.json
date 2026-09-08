@@ -159,7 +159,8 @@
     "orange_locator_relative": null,
     "blue_ring_relative": null,
     "measure_gate": "CaptionFitGate with loaded WenKai Lite over subtitleSafeWidth",
-    "inner_line": false
+    "inner_line": false,
+    "trailing_punctuation_forbidden": true
   },
   "timing": {
     "source_unit": "milliseconds",
@@ -210,7 +211,17 @@
     "shared_track_state_changes": true,
     "inserted_part_below_front_lip": true,
     "residual_fragment_forbidden": true,
-    "clear_previous_metaphor_before_next": true
+    "clear_previous_metaphor_before_next": true,
+    "camera_micro_framing_only": true,
+    "camera_x_bounds": [
+      945,
+      975
+    ],
+    "camera_scale_bounds": [
+      1.0,
+      1.018
+    ],
+    "anti_ppt_functional_components_required": true
   },
   "visual_director": {
     "decision_before_storyboard": true,

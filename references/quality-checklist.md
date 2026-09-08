@@ -49,6 +49,8 @@
 - No clutter from unrelated dots, scraps, steam or continuous movement.
 - No effect stack, miniature card pile or unused half-visible layer remains on screen.
 - No global zoom, shake, animated noise, posterize or full-screen page turn.
+- Camera Micro-Framing: Virtual camera X coordinate is strictly bounded within [945, 975] (<= +-15px) and scale within [1.00, 1.018]; large camera pans (> 30px) that displace active narrative content are strictly forbidden.
+- Anti-PPT Functional Components: Technical concepts (search, memory, context, contracts, embeddings, security) MUST use active animated components (`BrainwaveEEG`, `VectorRadarSonar`, `BM25TokenRibbon`, `HookMountBay`, `RedactionScanner`, `ChipContract`) rather than generic bullet text cards.
 
 ## Subtitle
 
@@ -57,7 +59,7 @@
 - One centered line, WenKai Lite 44px (40px on 3:4).
 - `CaptionFitGate` measures every fully revealed cue with the loaded WenKai font in the real render browser; every cue fits within the canvas safe width.
 - Partial reveal does not shift horizontally (hidden full-width placeholder).
-- Internal punctuation remains; trailing punctuation is hidden visually.
+- Internal punctuation remains; trailing punctuation (`，。！？；、,.!?;:`) is strictly stripped and hidden visually via `cleanFull` and gated character length. Trailing punctuation mark on screen is an immediate rejection flag.
 - Caption segmentation is explicitly `semantic`, never `draft-character-count`.
 - Every model/product name, benchmark, number-plus-unit expression and fixed technical term is listed in the protected-phrase manifest.
 - No protected phrase crosses a cue boundary; no ASCII identifier is split between cues.

@@ -47,19 +47,18 @@ const palette: Theme['palette'] = {
 };
 
 const aesthetic: Theme['aesthetic'] = {
-  subtitleSafeWidth: 1334, paperRadius: 8, paperOutline: 4.5,
+  subtitleSafeWidth: 1334, paperRadius: 10, paperOutline: 2.5,
   textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: .028,
 };
 
-// 硬偏移墨影：无模糊，随 lift 同步加大位移（举起感），不使用柔和投影。
+// 精致硬偏移墨影：紧凑利落，杜绝粗笨大黑框
 const paperShadow = (lift: number) =>
-  `${7 + 7 * lift}px ${7 + 7 * lift}px 0 rgba(20,17,15,0.92)`;
+  `${3 + 3 * lift}px ${3 + 3 * lift}px 0 rgba(20,17,15,0.88)`;
 
-// 分镜格微旋转（LOCKED）：由卡片位置哈希出 ±1° 内的固定倾角，
-// 同一张卡永远同一个角度，与动效 transform 叠加而不冲突。
+// 分镜格微旋转（LOCKED）：由卡片位置哈希出 ±0.7° 内的微倾角，灵动且不歪扭
 const panelTilt = (style?: React.CSSProperties) => {
   const left = Number(style?.left ?? 0), top = Number(style?.top ?? 0);
-  return (((Math.round(left) + Math.round(top)) % 5) - 2) * 0.5;
+  return (((Math.round(left) + Math.round(top)) % 5) - 2) * 0.35;
 };
 
 // 背景（LOCKED）：固定资产图，每比例一张（2560×1440 / 1920×1440 / 1440×1920），
@@ -76,7 +75,7 @@ const Background: React.FC = () => {
 const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) => {
   const {transform, ...rest} = style ?? {};
   const tilt = panelTilt(style);
-  return <div style={{position: 'absolute', backgroundColor: palette.paper, border: `5px solid ${borderColor || palette.ink}`, borderRadius: aesthetic.paperRadius, color: palette.ink, boxShadow: paperShadow(lift), ...rest, transform: `${transform ? transform + ' ' : ''}rotate(${tilt}deg)`}}>{children}</div>;
+  return <div style={{position: 'absolute', backgroundColor: palette.paper, border: `2.5px solid ${borderColor || palette.ink}`, borderRadius: aesthetic.paperRadius, color: palette.ink, boxShadow: paperShadow(lift), ...rest, transform: `${transform ? transform + ' ' : ''}rotate(${tilt}deg)`}}>{children}</div>;
 };
 
 // 赛璐璐只保留极轻墨角暗角，不加暖色柔光。
@@ -86,7 +85,7 @@ const Grade: React.FC = () => <AbsoluteFill style={{pointerEvents: 'none', zInde
 
 const SubtitleChrome: Theme['SubtitleChrome'] = ({mode, children}) =>
   <div style={{position: 'absolute', left: 0, right: 0, bottom: 44, zIndex: 200, display: 'flex', justifyContent: 'center'}}>
-    <div style={{background: palette.white, border: `5px solid ${palette.ink}`, boxShadow: `8px 8px 0 ${palette.ink}`, padding: '12px 34px', maxWidth: mode.safe}}>
+    <div style={{background: palette.white, border: `2.5px solid ${palette.ink}`, boxShadow: `3.5px 3.5px 0 ${palette.ink}`, padding: '10px 32px', maxWidth: mode.safe}}>
       <div style={{fontFamily: 'Kai', fontSize: mode.subFont, fontWeight: 700, lineHeight: 1.18, letterSpacing: 1.6, color: palette.ink, whiteSpace: 'nowrap'}}>
         {children}
       </div>

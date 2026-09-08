@@ -2,6 +2,19 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [2.7.0] - 2026-09-08
+
+### Added
+
+- **6 Anti-PPT Interactive Functional Components (反 PPT 实体交互组件库)**: added `BrainwaveEEG` (cognitive waveform pulse & flatline alert), `VectorRadarSonar` (360° sonar beam & clustered vector highlights), `BM25TokenRibbon` (keyword relevance scoring ribbon), `HookMountBay` (zero-overhead auto-mount slot & lock state), `RedactionScanner` (infrared laser scan & real-time secret asterisk masking), and `ChipContract` (high-tech circuit bus transfer capsule) to `assets/lecture-template/src/index.tsx`.
+- **Camera Micro-Framing Invariant (微运镜与防出界铁律)**: hard-locked virtual camera center drift within $X \in [945, 975]$ (maximum $\pm 15\text{px}$) and scale within $S \in [1.00, 1.018]$ in `camScript` and specification contracts, completely eliminating large camera shifts that throw left-side active content off-screen.
+- **Subtitle Trailing Punctuation Strip Invariant (字幕句末标点消除机制)**: implemented `targetChars` length gate in `Subtitle` component (`assets/lecture-template/src/index.tsx`) to preserve mid-sentence commas for natural rhythm while 100% eliminating trailing punctuation marks from rendered subtitles.
+- **Skill Doctor Audit PASS & SEI 100/100**: verified zero vulnerabilities with `skill-doctor`, cleaned test keys, added `*.env` and audit artifacts to `.gitignore`, and passed all 39 static and dynamic audit points.
+
+### Changed
+
+- **Cel Theme Aesthetic Refinement (动漫赛璐璐美学减重瘦身)**: slimmed `paperOutline` from 4.5px to locked 2.5px, reduced `paperShadow` from 7px block slabs to 3.5px crisp ink offset, narrowed `panelTilt` amplitude to 0.35, and locked `SubtitleChrome` and `CodeBlock` borders to 2.2px~2.5px.
+
 ## [2.6.0] - 2026-09-06
 
 ### Added
