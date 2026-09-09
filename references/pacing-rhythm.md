@@ -4,7 +4,7 @@ A film whose every chapter has the same structure, density and speed loses viewe
 
 ## Hammer frames
 
-Plan two or three hammer moments per film (roughly one per 60–90 seconds, never two in adjacent chapters). A hammer moment is the single most quotable line of a chapter shown as a full-screen statement:
+Use a hammer moment only when a key idea benefits from it; short films may need none. A hammer moment is the single most quotable line of a chapter shown as a full-screen statement:
 
 - one oversized sentence (displayL or larger) on an otherwise nearly empty paper, held 1.5–2.5 seconds;
 - all other zones exit completely before it enters; the multi-zone layout resumes after it;
@@ -19,25 +19,25 @@ Alternate chapter energy instead of keeping one speed:
 
 - **Slow chapters** (new concepts): fewer elements per beat, longer readable holds, state changes every 3–4 seconds.
 - **Fast chapters** (procedures, lists, montages): denser element entries, state changes every 1.5–2.5 seconds, clipped holds.
-- Never schedule two slow chapters back to back; separate them with a fast chapter or a hammer frame.
+- Avoid accidental uniformity, but do not force alternating energy when two difficult ideas both need time.
 
-With a chapter-segmented TTS adapter, give each paragraph its own style instruction: calmer and slightly slower for slow chapters, brisker with more energy for fast chapters and the hook. Keep one voice; vary delivery, not identity.
+If the selected TTS tool supports per-paragraph directions (the bundled adapter uses one style per run), vary delivery deliberately: calmer and slightly slower for slow chapters, brisker with more energy for fast chapters and the hook. Keep one voice; vary delivery, not identity.
 
 ## Chapter breathing
 
-Between chapters insert a breath of 0.5–1 second: the outgoing scene completes its exit, the paper stays briefly empty except chrome, then the incoming chapter's first element pops. Do not butt the last element of one chapter directly against the first element of the next. The existing rustle transition sound marks this breath.
+Use a breath when the narration pauses, not at every cut. Hold the current subject or a shared visual anchor during the pause. Empty paper is allowed only as a deliberate marked beat; do not add silent gaps that change an approved audio timeline.
 
 ## Ending beat
 
 The final chapter drops density on purpose: at most three elements (wrap-up line, mascot, closing card) so the film visibly lands instead of stopping mid-texture.
 
-For knowledge films the closing card is a save hook, not a follow plea: recommendation algorithms weight saves and shares above completion for this genre. Give viewers a concrete reason to save — "点个收藏，下次写崩了翻出来照着敲" names the exact future moment they will need the film — and pair it with a code-drawn star that draws its outline and fills on the spoken word. When the film belongs to a series, add a one-line next-episode teaser under the save card; keep platform references to the compliant "主页可以查看" wording with no account names or links.
+Choose a useful closing action from the brief; do not claim undocumented platform-ranking rules. Give viewers a concrete reason to save — "点个收藏，下次写崩了翻出来照着敲" names the exact future moment they will need the film — and pair it with a code-drawn star that draws its outline and fills on the spoken word. When the film belongs to a series, add a one-line next-episode teaser under the save card; keep platform references to the compliant "主页可以查看" wording with no account names or links.
 
 ## Review gate
 
 Before the full render, check on the contact sheet or range renders:
 
-- hammer frames exist, are alone on screen, and are spaced by at least one chapter;
-- no two adjacent chapters share the same energy level in the storyboard table;
-- every chapter boundary shows the breathing gap;
+- any planned hammer frame is readable and has a narrative reason;
+- energy changes follow the content rather than a compulsory alternating pattern;
+- every chapter boundary has an intentional cut, hold or continuity bridge;
 - the last scene is visibly sparser than the body chapters.

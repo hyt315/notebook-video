@@ -7,6 +7,7 @@ import argparse
 import json
 import re
 from pathlib import Path
+from timing_validation import timing_errors
 
 
 def normalized(text: str) -> str:
@@ -23,8 +24,11 @@ def main() -> None:
 
     words = json.loads(args.words_json.read_text(encoding="utf-8"))
     lines = [line.strip() for line in args.lines_txt.read_text(encoding="utf-8").splitlines() if line.strip()]
-    if not isinstance(words, list) or not words or not lines:
-        raise SystemExit("Expected a non-empty TTS word list and semantic line list")
+    errors = timing_errors(words)
+    if errors or not lines:
+        raise SystemExit("Invalid timing input: " + "; ".join(errors or ["semantic lines are empty"]))
+    if not 0 <= args.lead_ms <= 80:
+        raise SystemExit("Invalid lead: --lead-ms must be between 0 and 80")
 
     cursor = 0
     cues = []

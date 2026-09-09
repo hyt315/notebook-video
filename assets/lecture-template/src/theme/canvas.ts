@@ -10,7 +10,7 @@ export const MODES = {
   '3:4':  {compW: 1440, compH: 1920, designW: 1080, designH: 1440, subMar: 50,  subBottom: 40, subH: 104, safe: 900,  subFont: 40, scale: 4 / 3},
 } as const;
 export type CanvasMode = keyof typeof MODES;
-export type ModeSpec = typeof MODES['16:9'];
+export type ModeSpec = typeof MODES[CanvasMode];
 
 export const CanvasContext = React.createContext<{canvas: CanvasMode; isPortrait: boolean; mode: ModeSpec}>({
   canvas: '16:9',

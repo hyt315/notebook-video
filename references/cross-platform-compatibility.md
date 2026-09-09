@@ -14,8 +14,8 @@ macOS/Linux may use `.sh` aliases. Windows may use `.cmd` aliases. Both delegate
 
 ## Requirements on both systems
 
-- Node.js 18 or newer with npm;
-- Python 3;
+- Node.js 20 or newer with npm;
+- Python 3.10 or newer;
 - FFmpeg with `ffmpeg` and `ffprobe`;
 - network access for the first npm install and Remotion browser preparation, unless dependencies and the tested browser are already present.
 

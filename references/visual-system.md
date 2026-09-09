@@ -50,11 +50,10 @@ Use the exact `Subtitle` component. Pure text pinned near the bottom - no bar, n
 
 - left/right: 188px; bottom: 18px;
 - one centered line, WenKai Lite 44px (40px on 3:4), letterSpacing 1.6;
-- per-word reveal with per-character stagger (0.9 frames); words fade-slide 6px over ~2.5 frames;
-- 180ms lead over the TTS word start; a hidden full-width placeholder keeps the line from shifting horizontally;
+- per-word reveal; words fade-slide 6px over ~2.5 frames;
+- the cue file's lead (normally 60ms, at most 80ms), applied once; a hidden full-width placeholder keeps the line from shifting horizontally;
 - only a soft text shadow; never a dark border, side marks, orange locator or blue ring.
-- 1334px safe text width;
-- one centered 40px line.
+- safe text width comes from the selected canvas: 1334px (16:9), 1060px (4:3), 900px (3:4). The fit gate renders hidden text through the actual theme subtitle component, including its weight and letter spacing.
 
 The previous dark outline produced black side artifacts and is forbidden. The paper contour supplies the edge. Do not draw an inner sine line, cursor, progress line, rounded search bar or dark endpoint.
 
@@ -62,7 +61,7 @@ Reserve the fully revealed phrase width so partial reveal never shifts. Hide tra
 
 ## Information density
 
-Use one hero, three to seven supporting semantic parts, a visible relationship and local feedback. Keep enough negative space to identify the hierarchy. Do not fill empty space with decorative text, loose dots or unrelated paper scraps.
+Use one hero with only the supporting parts needed to explain its relationship or feedback. Keep enough negative space to identify the hierarchy. Do not fill empty space with decorative text, loose dots or unrelated paper scraps.
 
 ## Materials
 

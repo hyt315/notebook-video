@@ -49,8 +49,8 @@
 - No clutter from unrelated dots, scraps, steam or continuous movement.
 - No effect stack, miniature card pile or unused half-visible layer remains on screen.
 - No global zoom, shake, animated noise, posterize or full-screen page turn.
-- Camera Micro-Framing: Virtual camera X coordinate is strictly bounded within [945, 975] (<= +-15px) and scale within [1.00, 1.018]; large camera pans (> 30px) that displace active narrative content are strictly forbidden.
-- Anti-PPT Functional Components: Technical concepts (search, memory, context, contracts, embeddings, security) MUST use active animated components (`BrainwaveEEG`, `VectorRadarSonar`, `BM25TokenRibbon`, `HookMountBay`, `RedactionScanner`, `ChipContract`) rather than generic bullet text cards.
+- Camera bounds use the selected canvas: landscape x=945–975, scale=1–1.018; portrait x=530–550, y=710–730, scale=1–1.02. Local clipped image focus is separate from the content rig.
+- Each explanation has a visible semantic operation or deliberate evidence/reading hold. Specialized components are optional; unrelated animation does not count as explanation.
 
 ## Subtitle
 
@@ -78,7 +78,7 @@
 ## File validation
 
 - H.264 video and AAC audio are present.
-- 2560×1440 at native 30fps unless the user explicitly requested a genuinely native high-frame-rate production.
+- Selected 2K canvas: 2560×1440, 1920×1440 or 1440×1920 at native 30fps.
 - Audio is 48kHz stereo.
 - Video duration includes at least 0.7 seconds after narration.
 - No black frames or truncated ending.
@@ -88,4 +88,4 @@
 - Opening, scene boundaries, longest caption, hover/insert midpoints and closing frame are inspected manually.
 - Opening range 0–360 is inspected at 0.5s, 2s, 4s, 8s and 10s; the primary claim is visible by 1.5s and the deferred question is paid off later.
 
-Do not update the skill from a design proposal. Update only after the user approves the actual rendered film.
+Test implementation changes with actual renders. Obtain approval before replacing the established aesthetic or publishing a release. Automated gates do not certify narrative quality or acoustic alignment; see [testing](testing.md).

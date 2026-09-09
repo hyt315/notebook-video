@@ -53,7 +53,7 @@ Use this order:
 10. Remotion frame render;
 11. FFmpeg loudness normalization and validation.
 
-Define delivery and design-time frame rates explicitly. Keep both at 30fps by default. Convert timing at module load or in a preprocessing script:
+In the lecture template, mounting, chrome and scene-local frames read `asset-manifest.json`; do not maintain a second list of cut frames. Internal semantic cues, camera and sound still need review when narration changes. Define delivery and design-time frame rates explicitly. Keep both at 30fps by default. Convert timing at module load or in a preprocessing script:
 
 ```ts
 const msFrame = (ms: number) => Math.round(ms * FPS / 1000);
@@ -104,11 +104,11 @@ Text reveal, measured TTS boundaries, physical paper poses and action audio use 
 
 ### Duration extension invariant
 
-The default scene is a 900-frame design timeline. If narration requires a longer delivery while retaining the same authored scene geometry, set `TIMELINE_SCALE` and `DURATION` together (`DURATION = 900 * TIMELINE_SCALE`). Every scene mount guard, animation cue, caption boundary and action-audio `<Sequence from>` must derive from `useCurrentFrame()`, `q()` or `deliveryFrame()`; never read raw `useRawCurrentFrame()` in a scene. Before a full render, range-render across every scene boundary and inspect the final frame. This prevents an extended composition from unmounting all scenes or leaving sound cues at the original timing.
+The classic example is a 900-frame design timeline; the lecture template uses 1148 frames with a narration tail. If narration requires a longer delivery while retaining the same authored scene geometry, set `TIMELINE_SCALE` and `DURATION` together (`DURATION = 900 * TIMELINE_SCALE`). Every scene mount guard, animation cue, caption boundary and action-audio `<Sequence from>` must derive from `useCurrentFrame()`, `q()` or `deliveryFrame()`; never read raw `useRawCurrentFrame()` in a scene. Before a full render, range-render across every scene boundary and inspect the final frame. This prevents an extended composition from unmounting all scenes or leaving sound cues at the original timing.
 
 ### Long-film path: keep `TIMELINE_SCALE = 1`
 
-For a newly authored long film (verified at 4996 frames / 22 chapters), the simplest consistent setup is to keep `TIMELINE_SCALE = 1` and set `DURATION` to the total delivery frame count, authoring every mount guard, cue, boundary and sound frame directly in delivery frames. This satisfies the invariant above with no fractional scale math. (The bundled lecture template ships a 1126-frame timeline; the 900-frame figure matches the visual-director example project.)
+For a newly authored long film (verified at 4996 frames / 22 chapters), the simplest consistent setup is to keep `TIMELINE_SCALE = 1` and set `DURATION` to the total delivery frame count, authoring every mount guard, cue, boundary and sound frame directly in delivery frames. This satisfies the invariant above with no fractional scale math. (The bundled lecture template ships a 1148-frame timeline; the 900-frame figure matches the visual-director example project.)
 
 ### Authoring pitfall: adjacent generic-annotated arrow components
 

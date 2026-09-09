@@ -12,7 +12,7 @@ The one-line rule: **on portrait, the illustration is the hero and the in-scene 
 
 ## 2. Reusable code-drawn figure library
 
-Portrait scenes are carried by named character/object components drawn purely in SVG (no raster images), in the warm palette, sized by `viewBox` and scaled with the `size` prop. Give each a subtle idle animation so nothing sits dead-still.
+Portrait scenes are carried by named character/object components drawn purely in SVG (no raster images), in the warm palette, sized by `viewBox` and scaled with the `size` prop. Animate meaningful reactions; quiet holds are valid. Do not add idle motion solely to make every object move.
 
 ```tsx
 // A worried elder on the phone — bob + blinking-style micro motion
@@ -30,16 +30,16 @@ Build a small cast per topic (e.g. `ElderPhone`, `Scammer`, `Robot`, `FamilyShie
 - ground shadow ellipse under every standing figure for weight.
 - reuse the same cast across a series — this is the channel's visual IP.
 
-## 3. Ambient fill layer (kills "empty" negative space)
+## 3. Optional ambient fill
 
-Sequential reveal leaves early frames sparse and the wide beige margins read as void. Add one **persistent faint scatter layer** per scene, low opacity with a slow twinkle, behind the content (zIndex ~55):
+Sequential reveal leaves early frames sparse and the wide beige margins read as void. Prefer the selected theme's existing static background. Only add a faint, static supporting layer when it has a purpose; the following optional pattern should not be applied mechanically:
 
 ```tsx
 const AMB=[[70,300],[1004,280],[58,700],[1012,660],[92,1116],[1000,1120],[150,182],[930,178],[520,120],[300,1180],[788,1180],[40,940],[1030,940],[222,540],[862,520],[540,1266]] as const;
-const Ambient:React.FC<{f:number}>=({f})=><svg width={1080} height={1440} style={{position:'absolute',left:0,top:0,zIndex:55}} aria-hidden="true">{AMB.map((p,i)=>{const tw=0.05+0.07*(0.5+0.5*Math.sin(f*0.05+i*1.3));const k=i%3;return <g key={i} opacity={tw} transform={`translate(${p[0]} ${p[1]})`} stroke={C.muted} strokeWidth={2.4} fill="none" strokeLinecap="round">{k===0?<circle r={7}/>:k===1?<path d="M-7 0h14M0 -7v14"/>:<path d="M-8 4h5M-1 -2h5M6 4h4"/>}</g>;})}</svg>;
+const Ambient:React.FC<{f:number}>=({f})=><svg width={1080} height={1440} style={{position:'absolute',left:0,top:0,zIndex:55}} aria-hidden="true">{AMB.map((p,i)=>{const tw=0.08;const k=i%3;return <g key={i} opacity={tw} transform={`translate(${p[0]} ${p[1]})`} stroke={C.muted} strokeWidth={2.4} fill="none" strokeLinecap="round">{k===0?<circle r={7}/>:k===1?<path d="M-7 0h14M0 -7v14"/>:<path d="M-8 4h5M-1 -2h5M6 4h4"/>}</g>;})}</svg>;
 ```
 
-Marks sit in the margins/corners (never dead-center over content), 5–12% opacity. This alone removes most of the "空空荡荡" feeling.
+Marks sit in the margins/corners (never dead-center over content), 5–12% opacity. This is decoration, not a substitute for a well-sized hero or a semantic action.
 
 ## 4. Text emphasis kit
 
@@ -54,7 +54,7 @@ Short in-scene text still needs presence. Use, in order of preference:
 
 ## 5. Scene structural bands
 
-Keep three populated vertical bands inside the y200–1290 content region:
+Use these as optional alignment regions inside y200–1290, not three mandatory populated panels:
 - **Heading band** (top, ~y200–320): a short centered title, optionally highlighted.
 - **Hero band** (middle, ~y330–840): the code-drawn illustration/figure — the largest, most-read element.
 - **Payoff band** (lower, ~y850–1180): the punch label, the checklist, or the CTA.
@@ -67,15 +67,15 @@ Patterns proven on the pilot:
 ## 6. Guardrails learned the hard way
 
 - **Author in the 1080×1440 design space, not 1440×1920.** The film wraps content in a 1080×1440 layer scaled ×1.333; coordinates beyond width 1080 overflow the right edge and get clipped. Full cards ≤980 wide, center axis x=540.
-- **Chapter chrome boundaries must equal the scene-cut frames.** After setting scene frame ranges, set `Chrome` `stage` boundaries and the `FinalDemo` switch to the *same* frames; a mismatch shows the wrong chapter title over a scene.
-- **No transient empty frame and no `0`-dwell counter** — check the contact sheet for a frame that is mostly background; if found, enlarge the current hero or bring the next element's reveal earlier.
+- **Chapter chrome boundaries must equal the scene-cut frames.** The lecture template reads both from the asset manifest; a mismatch shows the wrong chapter title over a scene.
+- **No accidental empty frame and no unintended `0`-dwell counter** — check the contact sheet for a frame that is mostly background; if found, enlarge the current hero or bring the next element's reveal earlier.
 - **An icon must fit inside its container.** Render an inline SVG smaller than the box that holds it (e.g. a 34px glyph in a 48px chip); a glyph as large as or larger than its frame spills over the rounded corners and reads as broken.
 - **Stacked panels and lines need real vertical gaps.** Leave ≥50px between a card's bottom edge and the next line or number below it; a box whose bottom just touches the following text looks like an overlap bug on a phone.
 
 ## 7. Choosing the vehicle: text and graphics stay co-stars
 
-The illustration-first rule in section 1 is about *role* (short in-scene labels, with the full narration in the subtitle strip) — it is **not** a mandate to draw everything. Over-correcting into all-illustration-plus-labels drops the lecture route's core property that the viewer can learn from the text alone. Pick the vehicle per beat by what the beat is:
+The illustration-first rule in section 1 is about *role* (short in-scene labels, with the full narration in the subtitle strip) — it is **not** a mandate to draw everything. Do not duplicate full narration as a second reading task. Choose the clearest vehicle rather than requiring text and pictures to each restate all information. Pick the vehicle per beat by what the beat is:
 
 - **Text-forward** — a titled `Paper` panel, a ticking checklist, good/bad comparison cards, or a big pull-number: use for definitions, principles, rules, lists, sources, comparisons, warnings and shock numbers. Give the text real typographic treatment; do not shrink it to a lone label under a big picture.
 - **Graphic-forward** — the illustration is the hero and text is a short label: use for scenes, processes, objects, transformations and relationships.
-- **Either way, the beat must stand alone** — legible from the text alone or from the animation alone. A three-step "what to do" list is a checklist, not three drawings; a scam phone call is a scene, not a bullet list.
+- **Either way, the beat must be understandable** — visual and narration work together, while the scene's key relation remains legible. A three-step "what to do" list is a checklist, not three drawings; a scam phone call is a scene, not a bullet list.

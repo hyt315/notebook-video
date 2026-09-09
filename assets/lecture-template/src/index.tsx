@@ -2,6 +2,8 @@ import React,{useEffect,useRef,useState} from 'react';
 import {AbsoluteFill,Composition,Easing,Sequence,cancelRender,continueRender,delayRender,interpolate,interpolateColors,registerRoot,spring,staticFile,useCurrentFrame as useRawCurrentFrame} from 'remotion';
 import {Audio} from '@remotion/media';
 import cueData from './caption-cues.json';
+import sceneData from '../manifests/asset-manifest.json';
+import {followBranch, branchPath} from './process-path';
 
 // ============================================================================
 // LECTURE TEMPLATE · 讲课式默认模板（纯代码 SVG，不依赖任何生图能力）
@@ -27,7 +29,9 @@ import cueData from './caption-cues.json';
 // Keep authored scene time separate from delivery frames.
 import {MODES, CanvasMode, CanvasContext, useCanvas} from './theme/canvas';
 import {THEME} from './theme/active';
-const BASE_FPS=30,FPS=30,MOTION_FPS=30,TIMELINE_SCALE=1,DURATION=1126,DESIGN_SCALE=4/3;
+const BASE_FPS=30,FPS=30,MOTION_FPS=30,TIMELINE_SCALE=1,DURATION=1148,DESIGN_SCALE=4/3;
+const SCENES=sceneData.scenes;
+const useSceneFrame=(index:number)=>useCurrentFrame()-SCENES[index].start_frame;
 const useCurrentFrame=()=>useRawCurrentFrame()*BASE_FPS/FPS/TIMELINE_SCALE;
 const deliveryFrame=(designFrame:number)=>Math.round(designFrame*FPS*TIMELINE_SCALE/BASE_FPS);
 
@@ -58,56 +62,42 @@ const pop=(f:number,start:number,stiffness=132)=>spring({frame:f-start,fps:BASE_
 
 const AssetGate=()=>{const [handle]=useState(()=>delayRender('waiting for fonts',{timeoutInMilliseconds:120000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash'),document.fonts.load('500 40px Space'),document.fonts.load('400 40px Caveat'),document.fonts.ready]).then(()=>{if(live)continueRender(handle)}).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);return null};
 
-// CardFitGate：卡片防出格门。逐桶（15 帧）扫描已挂载场景：每个含文字的叶元素，
-// 用 offset 链（天然无视 transform 位移动画）累加其相对"最近卡片祖先"
-// （首个有不透明底 + 实线边框的祖先，即 Paper/FitCard 类卡片）的位置，
-// 超出卡片 padding 盒 2px 即 cancelRender。z>=140 的 chrome/字幕层跳过
-// （模板锁定层，各自有门）。无 delayRender NFC 阻塞；字体未就绪的桶跳过。
-const CardFitGate=()=>{
-  const f=q(useCurrentFrame());
-  const bucket=Math.floor(f/15);
-  useEffect(()=>{
-    const id=requestAnimationFrame(()=>{
-      try{
-        if(document.fonts.status!=='loaded') return;
-        const bad:string[]=[];
-        const opaque=(el:Element)=>{const s=getComputedStyle(el as HTMLElement);const bg=s.backgroundColor;const m=/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/.exec(bg);const alpha=m?(m[4]===undefined?1:parseFloat(m[4])):0;return alpha>0.9&&parseFloat(s.borderTopWidth)>0;};
-        document.querySelectorAll<HTMLElement>('div,span').forEach((el)=>{
-          if(!el.textContent||!el.textContent.trim()||el.children.length>0) return;
-          if(el.closest('[data-fit-skip]')) return;
-          let card:HTMLElement|null=null,n:HTMLElement|null=el.parentElement;
-          while(n&&n!==document.body){if(opaque(n)){card=n;break;}n=n.parentElement;}
-          if(!card) return;
-          const z=parseInt(getComputedStyle(card).zIndex||'0',10);
-          if(z>=140) return;
-          let x=0,y=0,m:HTMLElement|null=el;
-          while(m&&m!==card){x+=m.offsetLeft;y+=m.offsetTop;m=m.offsetParent as HTMLElement|null;}
-          if(m!==card) return;
-          const overB=y+el.offsetHeight-card.clientHeight,overR=x+el.offsetWidth-card.clientWidth;
-          if(overB>2||overR>2) bad.push(`@${f} “${(el.textContent||'').trim().slice(0,10)}”出${Math.max(0,Math.ceil(overB))}px`);
-        });
-        if(bad.length) cancelRender(new Error(`Card overflow: ${bad.slice(0,4).join(' | ')}`));
-      }catch(e){if(typeof console!=='undefined') console.warn('[CardFitGate]',e);}
-    });
-    return ()=>cancelAnimationFrame(id);
-  },[bucket]);
-  return null;
-};
+import {CardFitGate} from './layout-gate';
 
 // Non-visual QA gate: measure every full cue with the real loaded font.
-const CaptionFitGate=()=>{const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load('400 40px Kai'),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){cancelRender(new Error('Subtitle measurement node is unavailable'));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const overflow=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''})).filter(row=>row.width>AESTHETIC.subtitleSafeWidth+.5);if(overflow.length){cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);if(done)return null;return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:'Kai,sans-serif',fontSize:44,fontWeight:400,whiteSpace:'nowrap',letterSpacing:1.2}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</div>};
+const CaptionFitGate=()=>{
+  const {mode}=useCanvas();
+  const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false);
+  const [handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));
+  useEffect(()=>{
+    let live=true;
+    Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.ready]).then(()=>{
+      if(!live)return;
+      if(!ref.current){cancelRender(new Error('Subtitle measurement node is unavailable'));return;}
+      const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];
+      const overflow=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/mode.scale,text:row.textContent||''})).filter(row=>row.width>mode.safe+.5);
+      if(overflow.length){cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px ${x.text}`).join(' | ')}`));return;}
+      setDone(true);continueRender(handle);
+    }).catch(error=>{if(live)cancelRender(error);});
+    return ()=>{live=false;};
+  },[handle,mode]);
+  if(done)return null;
+  return <div ref={ref} data-fit-skip style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden'}}>
+    <THEME.SubtitleChrome mode={mode}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</THEME.SubtitleChrome>
+  </div>;
+};
 
 const Fonts=()=> <style>{`
 @font-face{font-family:Kai;src:url(${staticFile('LXGWWenKaiLite-Regular.ttf')}) format('truetype');font-weight:400}
 @font-face{font-family:Kai;src:url(${staticFile('LXGWWenKaiLite-Medium.ttf')}) format('truetype');font-weight:700}
-@font-face{font-family:Clash;src:url(${staticFile('fonts/ClashDisplay-Medium.woff2')}) format('woff2');font-weight:500}
-@font-face{font-family:Clash;src:url(${staticFile('fonts/ClashDisplay-Semibold.woff2')}) format('woff2');font-weight:600}
-@font-face{font-family:Clash;src:url(${staticFile('fonts/ClashDisplay-Bold.woff2')}) format('woff2');font-weight:700}
-@font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:400}
-@font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:500}
-@font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:600}
-@font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:700}
-@font-face{font-family:Caveat;src:url(${staticFile('fonts/Caveat-Latin.woff2')}) format('woff2');font-weight:400 700}
+@font-face{font-family:Clash;src:url(${staticFile('fonts/ClashDisplay-Medium.woff2')}) format('woff2');font-weight:500;unicode-range:U+0000-024F}
+@font-face{font-family:Clash;src:url(${staticFile('fonts/ClashDisplay-Semibold.woff2')}) format('woff2');font-weight:600;unicode-range:U+0000-024F}
+@font-face{font-family:Clash;src:url(${staticFile('fonts/ClashDisplay-Bold.woff2')}) format('woff2');font-weight:700;unicode-range:U+0000-024F}
+@font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:400;unicode-range:U+0000-024F}
+@font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:500;unicode-range:U+0000-024F}
+@font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:600;unicode-range:U+0000-024F}
+@font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:700;unicode-range:U+0000-024F}
+@font-face{font-family:Caveat;src:url(${staticFile('fonts/Caveat-Latin.woff2')}) format('woff2');font-weight:400 700;unicode-range:U+0000-024F}
 *{box-sizing:border-box}html,body{margin:0;background:${C.paperBase}}body{font-family:Kai,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
 `}</style>;
 
@@ -562,9 +552,8 @@ const camScript=(x:number,y:number,duration:number)=>{
 const cleanTail=(s:string)=>s.replace(/[，。！？；：、,.!?;:\s]+$/g,'');
 const Subtitle=()=>{
   const {mode}=useCanvas();
-  const f=useRawCurrentFrame(),lead=Math.round(FPS*.18),hold=Math.round(FPS*.05);
-  let cue=captions.find((c:any)=>f>=c.startFrame-lead&&f<=c.endFrame+hold);
-  if(!cue)cue=[...captions].reverse().find((c:any)=>c.startFrame<=f);
+  const f=useRawCurrentFrame(),lead=msFrame(Number((cueData as any).lead_ms??60));
+  const cue=[...captions].reverse().find((c:any)=>c.startFrame<=f);
   const full=cue?cleanTail(cue.text):'';
   const targetChars=full.length;
   const words=cue?cue.words.filter((w:any)=>w.startFrame<=f+lead):[];
@@ -575,12 +564,10 @@ const Subtitle=()=>{
         <span style={{position:'absolute',left:0,top:0}}>
           {words.map((w:any,wi:number)=>{
             const part=String(w.part);
-            const prev=wi>0?String(words[wi-1].part):'';
-            const spaced=(wi>0&&!/[\s，。！？；：、,.!?;:（(]$/.test(prev)&&!/^[\s，。！？；：、,.!?;:）)]/.test(part)&&!((/[A-Za-z0-9]$/.test(prev)&&/^[A-Za-z0-9]/.test(part))||(/[一-鿿]$/.test(prev)&&/^[一-鿿]/.test(part))))?'\u00a0':'';
-            return <span key={wi} style={{display:'inline-block'}}>{spaced}{part.split('').map((ch:any,ci:number)=>{
+            return <span key={wi} style={{display:'inline-block'}}>{part.split('').map((ch:any,ci:number)=>{
               const idx=charSeq++;
               if(idx>=targetChars) return null; // 铁律：严格消除任何词尾带出的句末标点符号
-              const p=interpolate(f,[w.startFrame+ci*.9,w.startFrame+ci*.9+2.5],[0,1],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
+              const p=interpolate(f,[w.startFrame-lead,w.startFrame-lead+2.5],[0,1],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
               return <span key={ci} style={{display:'inline-block',opacity:p,transform:`translateY(${6*(1-p)}px)`}}>{ch}</span>;
             })}</span>;
           })}
@@ -591,7 +578,7 @@ const Subtitle=()=>{
 
 const Chrome=()=>{
   const {isPortrait}=useCanvas();
-  const f=q(useCurrentFrame()),stage=f<213?0:f<416?1:f<682?2:3,starts=[0,213,416,682],local=f-starts[stage],p=pop(local,-8),titles=COPY.chapterTitles;
+  const f=q(useCurrentFrame()),stage=Math.max(0,SCENES.findIndex(s=>f>=s.start_frame&&f<s.end_frame)),starts=SCENES.map(s=>s.start_frame),local=f-starts[stage],p=pop(local,-8),titles=COPY.chapterTitles;
   return <>
     <Paper lift={0.3} style={{left:isPortrait?40:92,top:isPortrait?80:74,width:isPortrait?330:392,height:isPortrait?76:82,zIndex:150,display:'flex',alignItems:'center',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${.96+.04*p})`,overflow:'hidden',padding:0}}>
       <div style={{width:isPortrait?60:72,height:'100%',background:`linear-gradient(135deg,${C.orange},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:isPortrait?28:31,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
@@ -603,7 +590,7 @@ const Chrome=()=>{
       </div>
     </Paper>
     <div style={{position:'absolute',right:isPortrait?40:88,top:isPortrait?76:70,zIndex:140,textAlign:'right'}}>
-      <div style={{fontSize:TYPE.labelM,fontWeight:700,letterSpacing:4,color:C.headerAccent,fontFamily:'Clash,Space'}}>{COPY.header}</div>
+      <div style={{fontSize:TYPE.labelM,fontWeight:700,letterSpacing:4,color:C.headerAccent,fontFamily:'Clash,Space,Kai'}}>{COPY.header}</div>
       <div style={{fontSize:TYPE.microL,marginTop:6,color:C.headerSub,fontFamily:'Space,Kai'}}>{COPY.headerSub}</div>
     </div>
   </>;
@@ -615,9 +602,8 @@ const stageFade=(f:number,start:number,end:number)=>ease(f,start,start+15)*ease(
 // SCENE 1 — code is lonely -> GitHub collaborative world (0 ~ 212 frames)
 const NODES=[{x:250,y:150,c:C.orange,label:'仓库'},{x:930,y:120,c:C.gold,label:'Star'},{x:1000,y:360,c:C.green,label:'Fork'},{x:210,y:410,c:C.blue,label:'Issue'},{x:600,y:470,c:C.red,label:'PR'}];
 const SceneWorld=()=>{
-  const f=q(useCurrentFrame()),l=f;
-  if(f>212) return null;
-  const opacity=stageFade(f,0,205);
+  const l=q(useSceneFrame(0));
+  const opacity=1;
   const dim=ease(l,51,92,1,.42),roll=easeOutSoft(l,45,78),rollS=interpolate(roll,[0,.5,.82,1],[.82,1.06,.98,1]),rollR=interpolate(roll,[0,1],[150,360]),rollO=ease(l,43,62);
   return <div style={{position:'absolute',inset:0,opacity}}>
     {/* 右侧几何大切角舞台背板 */}
@@ -645,7 +631,7 @@ const SceneWorld=()=>{
         <line x1={440} y1={300} x2={720} y2={300} stroke={C.blue} strokeWidth={1.8} opacity={.45}/>
         <path d="M520 250 q30 -26 66 -6 q34 -16 52 14 q-10 34 -48 26 q-30 20 -60 -8 q-16 -30 -10 -26" fill={C.green} opacity={.22}/>
         {NODES.map((n,i)=>{const app=ease(l,72+i*9,98+i*9);const mx=(580+n.x)/2,my=(300+n.y)/2-46;return <g key={i} opacity={app}>
-          <path d={`M580 300 Q${mx} ${my} ${n.x} ${n.y}`} fill="none" stroke={n.c} strokeWidth={2.8} strokeDasharray="8 8" strokeDashoffset={-l*3.2}/>
+          <path d={`M580 300 Q${mx} ${my} ${n.x} ${n.y}`} fill="none" stroke={n.c} strokeWidth={2.8} strokeDasharray="8 8" strokeDashoffset={-Math.min(l,143)*3.2}/>
           <g transform={`scale(${.6+.4*pop(l,65+i*9)})`} style={{transformBox:'fill-box',transformOrigin:'center'} as any}>
             <rect x={n.x-42} y={n.y-32} width={84} height={64} rx={12} fill={C.paper} stroke={n.c} strokeWidth={2.4} style={{boxShadow:paperShadow(0.2)} as any}/>
             <rect x={n.x-42} y={n.y-32} width={84} height={14} rx={12} fill={n.c} opacity={.9}/>
@@ -679,25 +665,22 @@ const StepRail:React.FC<{active:number;l:number;start:number}>=({active,l,start}
 };
 
 const SceneContribute=()=>{
-  const f=q(useCurrentFrame()),l=f-213;
-  if(f<210||f>414) return null; // 严格区间硬隔离，杜绝 14 秒重叠！
-  const intro=ease(f,213,228);
-  const outro=ease(f,396,412,1,0); // 396~412 帧干净淡出
-  const exitSlide=ease(f,396,412,0,36); // 退出时向左微滑
-  const opacity=intro*outro;
-  const t=easeOutSoft(l,43,113);const merge=ease(l,105,134);const cardX=180+560*Math.min(1,t/0.72);
+  const l=q(useSceneFrame(1));
+  const opacity=1,exitSlide=0;
+  const route={start:{x:260,y:700},knee:{x:760,y:700},control:{x:840,y:700},turn:{x:880,y:620},end:{x:910,y:560}};
+  const t=ease(l,73,145),merge=ease(l,145,165),position=followBranch(route,t);
   const steps=['读懂项目规则','建立最小改动','提交你的 PR','通过 CI 与评审'];
   return <div style={{position:'absolute',inset:0,opacity,transform:`translateX(${-exitSlide}px)`}}>
     <StepRail active={0} l={l} start={6}/>
     <svg width="1920" height="1080" style={{position:'absolute',inset:0,zIndex:55}}>
       <path d="M150 560 H1080" fill="none" stroke={C.blueLine} strokeWidth={7} strokeLinecap="round"/>
-      <path d="M150 700 H760 Q840 700 880 620 L910 566" fill="none" stroke={C.orange} strokeWidth={6} strokeDasharray="14 10" strokeDashoffset={-l*4} opacity={.95}/>
+      <path d={branchPath(route)} fill="none" stroke={C.orange} strokeWidth={6} strokeDasharray="14 10" strokeDashoffset={-Math.max(0,Math.min(72,l-73))*4} opacity={.95}/>
       <text x="150" y="534" fill={C.blue} fontFamily="Space,Kai" fontWeight="600" fontSize="28">main 主干</text>
       <text x="150" y="742" fill={C.orange} fontFamily="Space,Kai" fontWeight="600" fontSize="28">你的分支</text>
-      <circle cx={910} cy={562} r={14} fill={merge>.4?C.green:C.dotIdle} opacity={ease(l,99,120)} style={{filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.15))'}}/>
+      <circle cx={910} cy={560} r={14} fill={merge>.4?C.green:C.dotIdle} opacity={ease(l,99,120)} style={{filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.15))'}}/>
     </svg>
     
-    <Paper lift={Math.sin(Math.PI*t)*.4+0.1} borderColor={C.orange} style={{left:cardX,top:648,width:210,height:96,zIndex:96,padding:'16px 18px',opacity:ease(l,39,56)*ease(l,130,142,1,0),transform:`translateY(${-90*Math.sin(Math.PI*t)*(cardX<700?1:.4)}px)`}}>
+    <Paper lift={Math.sin(Math.PI*t)*.4+0.1} borderColor={C.orange} style={{left:0,top:0,width:210,height:96,zIndex:96,padding:'16px 18px',opacity:ease(l,68,73)*ease(l,160,172,1,0),transform:`translate(${position.x-105}px,${position.y-48}px)`}}>
       <div style={{fontFamily:'Kai',fontWeight:700,fontSize:TYPE.titleS,color:C.orange}}>你的修改</div>
       <div style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.labelL,marginTop:6,color:C.muted}}>commit</div>
     </Paper>
@@ -741,12 +724,8 @@ const Gauge:React.FC<{label:string;color:string;v:number;x:number}>=({label,colo
 </div>;
 
 const SceneShip=()=>{
-  const f=q(useCurrentFrame()),l=f-416;
-  if(f<415||f>680) return null; // 严格在 416 帧才挂载，彻底消灭 14 秒重叠！
-  const intro=ease(f,416,432);
-  const outro=ease(f,660,676,1,0);
-  const exitSlide=ease(f,660,676,0,36);
-  const opacity=intro*outro;
+  const l=q(useSceneFrame(2));
+  const opacity=1,exitSlide=0;
   const ver=ease(l,177,219);const rocket=easeOutSoft(l,177,236);
   const g1=ease(l,135,177),g2=ease(l,152,194),g3=ease(l,169,211);
 
@@ -831,10 +810,9 @@ const SceneShip=()=>{
 // SCENE 4 — three AI skills + CTA (682 ~ 1126 frames)
 const SKILLS=[['github-oss-contribute','参与别人的项目','EP 1',C.orange],['github-oss-prep','发布自己的作品','EP 2',C.blue],['github-oss-ops','运营与持续发版','EP 3',C.green]] as const;
 const SceneSkills=()=>{
-  const f=q(useCurrentFrame()),l=f-682;
-  if(f<680) return null;
-  const opacity=ease(f,682,698);
-  const cta=ease(l,282,350);
+  const l=q(useSceneFrame(3));
+  const opacity=1;
+  const cta=ease(l,348,370),retire=ease(l,338,358,1,0);
   return <div style={{position:'absolute',inset:0,opacity}}>
     <div style={{position:'absolute',left:860,top:205,zIndex:75,textAlign:'center',opacity:pop(l,5),transform:`scale(${.7+.3*pop(l,5)})`}}>
       <Mascot size={150} f={l} wave/>
@@ -843,7 +821,7 @@ const SceneSkills=()=>{
     </div>
     
     {SKILLS.map((s,i)=>{
-      const p=pop(l,36+i*16);const x=200+i*530;
+      const p=pop(l,36+i*16)*retire;const x=200+i*530;
       return <Paper key={s[0]} lift={.3} borderColor={s[3]} style={{left:x,top:410,width:470,height:256,zIndex:94,padding:'28px 30px',opacity:p,transform:`translateY(${34*(1-p)}px) scale(${.92+.08*p})`}}>
         <div style={{position:'absolute',right:24,top:24}}>
           <PillTag text={s[2]} color={s[3]} bg={`${s[3]}18`} fontSize={TYPE.labelS}/>
@@ -854,15 +832,15 @@ const SceneSkills=()=>{
         <div style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.titleM,color:s[3],marginTop:16}}>{s[0]}</div>
         <div style={{fontSize:TYPE.titleXS,fontWeight:700,marginTop:10}}>{s[1]}</div>
         <div style={{position:'absolute',left:30,bottom:24,display:'flex',alignItems:'center',gap:10,color:C.muted,fontSize:TYPE.labelL,fontWeight:700}}>
-          <CheckBadge size={26}/>智能体陪你走完
+          {l>=121+i*24?<><CheckBadge size={26}/>智能体陪你走完</>:<span>选择这一步的技能</span>}
         </div>
       </Paper>;
     })}
     
-    <Paper lift={0.4} borderColor={C.orange} style={{left:460,top:724,width:1000,height:104,zIndex:96,display:'grid',placeItems:'center',opacity:cta,transform:`translateY(${22*(1-cta)}px) scale(${.96+.04*pop(l,286)})`}}>
+    <Paper lift={0.4} borderColor={C.orange} style={{left:460,top:724,width:1000,height:104,zIndex:96,display:'grid',placeItems:'center',opacity:cta,transform:`translateY(${22*(1-cta)}px) scale(${.96+.04*pop(l,348)})`}}>
       <div style={{display:'flex',alignItems:'center',gap:16}}>
-        <JumpInText frame={l} items={[{text:'主页搜',color:C.muted,fontSize:TYPE.titleM}]} fontSize={TYPE.titleM} start={287}/>
-        <WaveText frame={l} text="github.com/hyt315" fontSize={TYPE.displayS} colorFrom={C.orangeSoft} colorTo={C.orange} start={291} fontFamily="Space" fontWeight={700}/>
+        <JumpInText frame={l} items={[{text:'主页搜',color:C.muted,fontSize:TYPE.titleM}]} fontSize={TYPE.titleM} start={348}/>
+        <WaveText frame={l} text="github.com/hyt315" fontSize={TYPE.displayS} colorFrom={C.orangeSoft} colorTo={C.orange} start={352} fontFamily="Space" fontWeight={700}/>
       </div>
     </Paper>
   </div>;
@@ -882,9 +860,8 @@ const StepRailP:React.FC<{active:number;l:number;start:number}>=({active,l,start
 };
 
 const SceneWorldP=()=>{
-  const f=q(useCurrentFrame()),l=f;
-  if(f>212) return null;
-  const opacity=stageFade(f,0,205);
+  const l=q(useSceneFrame(0));
+  const opacity=1;
   const dim=ease(l,51,92,1,.42),roll=easeOutSoft(l,45,78),rollS=interpolate(roll,[0,.5,.82,1],[.82,1.06,.98,1]),rollR=interpolate(roll,[0,1],[150,360]),rollO=ease(l,43,62);
   return <div style={{position:'absolute',inset:0,opacity}}>
     <div style={{position:'absolute',left:50,top:460,width:980,height:560,borderRadius:24,background:`linear-gradient(145deg,rgba(255,255,255,0.85),${C.stageTint})`,border:`1px solid ${C.line}`,boxShadow:paperShadow(0.1),opacity:rollO}}/>
@@ -911,7 +888,7 @@ const SceneWorldP=()=>{
         <line x1={440} y1={300} x2={720} y2={300} stroke={C.blue} strokeWidth={1.8} opacity={.45}/>
         <path d="M520 250 q30 -26 66 -6 q34 -16 52 14 q-10 34 -48 26 q-30 20 -60 -8 q-16 -30 -10 -26" fill={C.green} opacity={.22}/>
         {NODES.map((n,i)=>{const app=ease(l,72+i*9,98+i*9);const mx=(580+n.x)/2,my=(300+n.y)/2-46;return <g key={i} opacity={app}>
-          <path d={`M580 300 Q${mx} ${my} ${n.x} ${n.y}`} fill="none" stroke={n.c} strokeWidth={2.8} strokeDasharray="8 8" strokeDashoffset={-l*3.2}/>
+          <path d={`M580 300 Q${mx} ${my} ${n.x} ${n.y}`} fill="none" stroke={n.c} strokeWidth={2.8} strokeDasharray="8 8" strokeDashoffset={-Math.min(l,143)*3.2}/>
           <g transform={`scale(${.6+.4*pop(l,65+i*9)})`} style={{transformBox:'fill-box',transformOrigin:'center'} as any}>
             <rect x={n.x-42} y={n.y-32} width={84} height={64} rx={12} fill={C.paper} stroke={n.c} strokeWidth={2.4} style={{boxShadow:paperShadow(0.2)} as any}/>
             <rect x={n.x-42} y={n.y-32} width={84} height={14} rx={12} fill={n.c} opacity={.9}/>
@@ -932,25 +909,22 @@ const SceneWorldP=()=>{
 };
 
 const SceneContributeP=()=>{
-  const f=q(useCurrentFrame()),l=f-213;
-  if(f<210||f>414) return null;
-  const intro=ease(f,213,228);
-  const outro=ease(f,396,412,1,0);
-  const exitSlide=ease(f,396,412,0,36);
-  const opacity=intro*outro;
-  const t=ease(l,43,113);const merge=ease(l,105,134);const cardX=80+520*Math.min(1,t/0.72);
+  const l=q(useSceneFrame(1));
+  const opacity=1,exitSlide=0;
+  const route={start:{x:200,y:760},knee:{x:590,y:760},control:{x:660,y:760},turn:{x:700,y:700},end:{x:732,y:640}};
+  const t=ease(l,73,145),merge=ease(l,145,165),position=followBranch(route,t);
   const steps=['读懂项目规则','建立最小改动','提交你的 PR','通过 CI 与评审'];
   return <div style={{position:'absolute',inset:0,opacity,transform:`translateX(${-exitSlide}px)`}}>
     <StepRailP active={0} l={l} start={6}/>
     <svg width={1080} height={1440} style={{position:'absolute',inset:0,zIndex:55}}>
       <path d="M80 640 H760" fill="none" stroke={C.blueLine} strokeWidth={7} strokeLinecap="round"/>
-      <path d="M80 760 H590 Q660 760 700 700 L732 652" fill="none" stroke={C.orange} strokeWidth={6} strokeDasharray="14 10" strokeDashoffset={-l*4} opacity={.95}/>
+      <path d={branchPath(route)} fill="none" stroke={C.orange} strokeWidth={6} strokeDasharray="14 10" strokeDashoffset={-Math.max(0,Math.min(72,l-73))*4} opacity={.95}/>
       <text x="80" y="612" fill={C.blue} fontFamily="Space,Kai" fontWeight="600" fontSize="28">main 主干</text>
       <text x="80" y="802" fill={C.orange} fontFamily="Space,Kai" fontWeight="600" fontSize="28">你的分支</text>
-      <circle cx={732} cy={648} r={14} fill={merge>.4?C.green:C.dotIdle} opacity={ease(l,99,120)} style={{filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.15))'}}/>
+      <circle cx={732} cy={640} r={14} fill={merge>.4?C.green:C.dotIdle} opacity={ease(l,99,120)} style={{filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.15))'}}/>
     </svg>
     
-    <Paper lift={Math.sin(Math.PI*t)*.4+0.1} borderColor={C.orange} style={{left:cardX,top:700,width:210,height:96,zIndex:96,padding:'16px 18px',opacity:ease(l,39,56)*ease(l,130,142,1,0),transform:`translateY(${-90*Math.sin(Math.PI*t)*(cardX<400?1:.4)}px)`}}>
+    <Paper lift={Math.sin(Math.PI*t)*.4+0.1} borderColor={C.orange} style={{left:0,top:0,width:210,height:96,zIndex:96,padding:'16px 18px',opacity:ease(l,68,73)*ease(l,160,172,1,0),transform:`translate(${position.x-105}px,${position.y-48}px)`}}>
       <div style={{fontFamily:'Kai',fontWeight:700,fontSize:TYPE.titleS,color:C.orange}}>你的修改</div>
       <div style={{fontSize:TYPE.labelL,fontWeight:700,marginTop:6,color:C.muted}}>commit</div>
     </Paper>
@@ -985,12 +959,8 @@ const SceneContributeP=()=>{
 };
 
 const SceneShipP=()=>{
-  const f=q(useCurrentFrame()),l=f-416;
-  if(f<415||f>680) return null;
-  const intro=ease(f,416,432);
-  const outro=ease(f,660,676,1,0);
-  const exitSlide=ease(f,660,676,0,36);
-  const opacity=intro*outro;
+  const l=q(useSceneFrame(2));
+  const opacity=1,exitSlide=0;
   const ver=ease(l,177,219);const rocket=ease(l,177,236);
   const g1=ease(l,135,177),g2=ease(l,152,194),g3=ease(l,169,211);
   return <div style={{position:'absolute',inset:0,opacity,transform:`translateX(${-exitSlide}px)`}}>
@@ -1044,15 +1014,15 @@ const SceneShipP=()=>{
 };
 
 const SceneSkillsP=()=>{
-  const f=q(useCurrentFrame()),l=f-682,opacity=ease(f,662,692);
-  const cta=ease(l,282,350);
+  const l=q(useSceneFrame(3)),opacity=1;
+  const cta=ease(l,348,370),retire=ease(l,338,358,1,0);
   return <div style={{position:'absolute',inset:0,opacity}}>
-    <div style={{position:'absolute',left:470,top:205,zIndex:75,textAlign:'center',opacity:pop(l,-27),transform:`scale(${.7+.3*pop(l,-27)})`}}>
+    <div style={{position:'absolute',left:470,top:180,zIndex:75,textAlign:'center',opacity:pop(l,-27),transform:`scale(${.7+.3*pop(l,-27)})`}}>
       <Mascot size={110} f={l} wave/>
       <div style={{fontFamily:'Space',fontWeight:700,fontSize:TYPE.titleM,color:C.navy,marginTop:2}}>AI AGENT</div>
     </div>
     {SKILLS.map((s,i)=>{
-      const p=pop(l,10+i*16);const y=340+i*265;
+      const p=pop(l,36+i*16)*retire;const y=340+i*265;
       return <Paper key={s[0]} lift={.3} borderColor={s[3]} style={{left:60,top:y,width:960,height:250,zIndex:94,padding:'24px 28px',opacity:p,transform:`translateY(${34*(1-p)}px) scale(${.92+.08*p})`}}>
         <div style={{position:'absolute',right:24,top:22}}>
           <PillTag text={s[2]} color={s[3]} bg={`${s[3]}18`} fontSize={TYPE.labelS}/>
@@ -1060,10 +1030,10 @@ const SceneSkillsP=()=>{
         <div style={{position:'absolute',left:24,top:26,width:56,height:56,borderRadius:16,background:s[3],display:'grid',placeItems:'center',color:C.white,boxShadow:`0 4px 14px ${s[3]}40`}}><LineIcon kind={['play','project','report'][i] as IconKind} size={32} color={C.white} strokeWidth={2.4}/></div>
         <div style={{position:'absolute',left:104,top:34,fontFamily:'Space',fontWeight:600,fontSize:TYPE.titleM,color:s[3]}}>{s[0]}</div>
         <div style={{position:'absolute',left:104,top:82,fontSize:TYPE.titleXS,fontWeight:700}}>{s[1]}</div>
-        <div style={{position:'absolute',left:28,bottom:22,display:'flex',alignItems:'center',gap:10,color:C.muted,fontSize:TYPE.labelL,fontWeight:700}}><CheckBadge size={26}/>智能体陪你走完</div>
+        <div style={{position:'absolute',left:28,bottom:22,display:'flex',alignItems:'center',gap:10,color:C.muted,fontSize:TYPE.labelL,fontWeight:700}}>{l>=121+i*24?<><CheckBadge size={26}/>智能体陪你走完</>:<span>选择这一步的技能</span>}</div>
       </Paper>;
     })}
-    <Paper lift={0.4} borderColor={C.orange} style={{left:50,top:1170,width:980,height:96,zIndex:96,display:'grid',placeItems:'center',opacity:cta,transform:`translateY(${22*(1-cta)}px) scale(${.96+.04*pop(l,286)})`}}><div style={{display:'flex',alignItems:'center',gap:16}}><JumpInText frame={l} items={[{text:'主页搜',color:C.muted,fontSize:TYPE.titleM}]} fontSize={TYPE.titleM} start={287}/><WaveText frame={l} text="github.com/hyt315" fontSize={TYPE.displayS} colorFrom={C.orangeSoft} colorTo={C.orange} start={291} fontFamily="Space" fontWeight={700}/></div></Paper>
+    <Paper lift={0.4} borderColor={C.orange} style={{left:50,top:1170,width:980,height:96,zIndex:96,display:'grid',placeItems:'center',opacity:cta,transform:`translateY(${22*(1-cta)}px) scale(${.96+.04*pop(l,348)})`}}><div style={{display:'flex',alignItems:'center',gap:16}}><JumpInText frame={l} items={[{text:'主页搜',color:C.muted,fontSize:TYPE.titleM}]} fontSize={TYPE.titleM} start={348}/><WaveText frame={l} text="github.com/hyt315" fontSize={TYPE.displayS} colorFrom={C.orangeSoft} colorTo={C.orange} start={352} fontFamily="Space" fontWeight={700}/></div></Paper>
   </div>;
 };
 
@@ -1090,23 +1060,7 @@ const CAM_KEYS_L=[
   {f:1126,s:1,x:960,y:540},
 ];
 // 3:4 竖屏专属镜头（画布 1080×1440，中心 540×720）：叙事焦点按竖屏布局标定
-const CAM_KEYS_P=[
-  {f:0,s:1,x:540,y:720},
-  {f:48,s:1,x:540,y:720},
-  {f:143,s:1.12,x:530,y:760},
-  {f:197,s:1.14,x:530,y:765},
-  {f:248,s:1.02,x:410,y:690},
-  {f:328,s:1.06,x:470,y:720},
-  {f:390,s:1.03,x:520,y:700},
-  {f:449,s:1,x:540,y:720},
-  {f:613,s:1.03,x:540,y:640},
-  {f:669,s:1.02,x:540,y:680},
-  {f:740,s:1,x:540,y:720},
-  {f:840,s:1.06,x:540,y:560},
-  {f:950,s:1.12,x:540,y:1180},
-  {f:1056,s:1.05,x:540,y:980},
-  {f:1126,s:1,x:540,y:720},
-];
+const CAM_KEYS_P=CAM_KEYS_L.map(k=>({f:k.f,s:Math.min(1.018,k.s),x:540+(k.x-960)*.6,y:720+(k.y-540)}));
 const camEase=Easing.bezier(.33,.12,.22,1);
 const camAt=(f:number,isPortrait:boolean)=>{const K=isPortrait?CAM_KEYS_P:CAM_KEYS_L;let i=0;while(i<K.length-2&&f>K[i+1].f)i++;const a=K[i],b=K[i+1];const t=interpolate(f,[a.f,b.f],[0,1],{...clamp,easing:camEase});return {s:a.s+(b.s-a.s)*t,x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};};
 const CameraRig:React.FC<{children:React.ReactNode}>=({children})=>{
@@ -1123,8 +1077,9 @@ const CameraRig:React.FC<{children:React.ReactNode}>=({children})=>{
 const FinalDemo=()=>{
   const {isPortrait}=useCanvas();
   const f=q(useCurrentFrame());
-  if(isPortrait)return <>{f<213&&<SceneWorldP/>}{f>=213&&f<416&&<SceneContributeP/>}{f>=416&&f<682&&<SceneShipP/>}{f>=682&&<SceneSkillsP/>}</>;
-  return <>{f<213&&<SceneWorld/>}{f>=213&&f<416&&<SceneContribute/>}{f>=416&&f<682&&<SceneShip/>}{f>=682&&<SceneSkills/>}</>;
+  const index=SCENES.findIndex(s=>f>=s.start_frame&&f<s.end_frame);
+  const Component=(isPortrait?[SceneWorldP,SceneContributeP,SceneShipP,SceneSkillsP]:[SceneWorld,SceneContribute,SceneShip,SceneSkills])[index];
+  return Component?<div data-scene-id={SCENES[index].id}><Component/></div>:null;
 };
 
 // Sound：声音也是声明式的——BGM 垫底 + 精准音效（换章 rustle、传输 whoosh、要点 tap、完成 chime、点击 click、翻牌 toggle、吸附 drop）

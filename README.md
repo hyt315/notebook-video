@@ -6,7 +6,7 @@
 
 **Programmatic 2K animated video engine with React, SVG and Remotion — frame-accurate TTS synchronization with zero image model dependencies.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](CHANGELOG.md)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
 [![Remotion](https://img.shields.io/badge/Remotion-4.0-ff6b6b)](https://remotion.dev)
@@ -27,16 +27,18 @@
 
 ***
 
+> 词级同步精度取决于时间戳来源：内置适配器测量章节，但字级时间为估计值。主视觉/辅助图片组合见 [镜头配方](references/shot-recipes.md)，验证边界与运行方式见 [测试说明](references/testing.md)，维护者可查看 [优化设计与兼容性说明](references/optimization-rationale.md)。
+
 ## ✨ 核心特性
 
 | 核心模块                         | 覆盖功能                                                       | 带来价值                       |
 | ---------------------------- | ---------------------------------------------------------- | -------------------------- |
-| 🎬 **代码驱动全景渲染**              | React + TypeScript + Remotion 绘制，SVG 图表与动效完全由代码精确控制        | 任何 AI 环境均能 100% 稳定复现统一视觉风格 |
+| 🎬 **代码驱动全景渲染**              | React + TypeScript + Remotion 绘制，SVG 图表与动效完全由代码精确控制        | 保留可复用的视觉基础，具体环境仍需验证 |
 | 📝 **帧精确中文 TTS 同步**          | 毫秒级对齐 TTS 词级时间戳，自动生成语义断句字幕、音效与动画节拍                         | 告别字幕对不准、音画脱节的剪辑烦恼          |
-| 📐 **三大主流画布比例**              | 16:9（2560×1440 讲座横屏）、4:3（1920×1440 经典）、3:4（1080×1440 竖屏社媒） | 同一套代码一键切换画幅，移动端自适应字号下限保障   |
-| 🎨 **Lecture 纯代码主路线**        | 主内容看板 + 吉祥物插画 + 注释贴纸多区域排版，纯 SVG 矢量绘制                       | 零 API 生图消耗，秒级渲染，排版极度工整     |
+| 📐 **三大主流画布比例**              | 16:9（2560×1440 讲座横屏）、4:3（1920×1440 经典）、3:4（1440×1920 竖屏交付） | 同一套代码一键切换画幅，移动端自适应字号下限保障   |
+| 🎨 **Lecture 纯代码主路线**        | 主内容看板 + 吉祥物插画 + 注释贴纸多区域排版，纯 SVG 矢量绘制                       | 不依赖生图 API，复用既有布局和动画     |
 | 🖼️ **Visual Director 附加路线** | 支持在关键主场景接入实拍或定制图像生成（`--classic` 模板路线）                      | 兼顾纯代码严谨性与实拍艺术表现力           |
-| ✅ **全自动多重 QA 门禁**            | 字幕宽度实测门（CaptionFitGate）、分层布局校验、断句校验等多道自动化门禁                | 自动化确保 0 字幕溢出、0 视觉重叠、0 渲染崩溃 |
+| ✅ **全自动多重 QA 门禁**            | 字幕宽度实测门（CaptionFitGate）、分层布局校验、断句校验等多道自动化门禁                | 自动检查数据与部分布局，最终仍需音频和画面审查 |
 
 ***
 
@@ -56,22 +58,11 @@
 
 ***
 
-## 📊 视频制作 11 步全流程架构
+## 📊 视频制作 7 步全流程架构
 
-```
-[输入: 用户提供知识主题 / 文案脚本]
-                       │
-     [Step 1~2: 锁定内容与视觉构思] ──> 确定大纲、分镜结构与画布比例
-                       │
-     [Step 3: 词级 TTS 配音生成] ───> 获取精准毫秒级词时间戳
-                       │
-     [Step 4~5: 场景分层与代码绘制] ─> 编写 React 组件与 SVG 矢量图表
-                       │
-     [Step 6~7: 动画节拍与多画幅适配] -> 帧精确对齐配音波形与字幕
-                       │
-     [Step 8: 自动化 QA 门禁扫描] ──> CaptionFitGate / 溢出与分层校验
-                       │
-     [Step 9~11: Remotion 渲染与交付] -> 输出 2K MP4 + 完整源码 ZIP
+```text
+内容与事实 → 复制模板 → 视觉动作与素材 → 配音和语义字幕
+→ 场景与动作同步 → 局部 QA / 完整渲染 → 测量验证与源码交付
 ```
 
 ***
@@ -84,7 +75,7 @@
 
 把下面这句话直接复制发送给你的 AI 助手，它会自动识别环境并克隆到正确的技能目录：
 
-> 请安装 notebook-video 技能：克隆 `https://github.com/hyt315/notebook-video` 到你的 skills 目录（如 `~/.claude/skills/notebook-video` 或 `~/.agents/skills/notebook-video`），并确认安装成功。以后我要做「科普视频 / 手账风动画 / 产品宣传片 / 讲解概念」时，按 SKILL.md 的 11 步工作流制作 2K 视频。
+> 请安装 notebook-video 技能：克隆 `https://github.com/hyt315/notebook-video` 到你的 skills 目录（如 `~/.claude/skills/notebook-video` 或 `~/.agents/skills/notebook-video`），并确认安装成功。以后我要做「科普视频 / 手账风动画 / 产品宣传片 / 讲解概念」时，按 SKILL.md 的 7 步工作流制作 2K 视频。
 
 ### 方式 B：GitHub CLI 2.90+（一行命令）
 
@@ -111,9 +102,9 @@ python scripts/selftest.py
 
 ## ⚙️ 前置依赖与极速体检
 
-- **Node.js 18+**（Remotion 渲染引擎依赖）；
+- **Node.js 20+**（Remotion 渲染引擎依赖）；
 
-- 首次渲染前使用 `node scripts/notebook-video.mjs check-deps` 进行环境依赖自动检测与 Chromium 内核准备。
+- 首次渲染前使用 `node scripts/notebook-video.mjs check-deps` 进行只读依赖检测；浏览器准备使用 `prepare-browser`。
 
 ***
 
@@ -144,16 +135,15 @@ python scripts/selftest.py
 
 ```
 notebook-video/
-├── SKILL.md                          # 核心技能定义与 11 步视频工作流
+├── SKILL.md                          # 核心技能定义与 7 步视频工作流
 ├── README.md                         # 中文说明文档
 ├── README.en.md                      # 英文说明文档
 ├── CHANGELOG.md                      # 版本发布记录
-├── LICENSE                           # MIT 开源许可证
+├── LICENSE                           # Apache-2.0 开源许可证
 ├── .gitignore                        # Git 忽略规则
 ├── CONTRIBUTING.md                   # 社区贡献指南
 ├── CODE_OF_CONDUCT.md                # 行为准则
 ├── SECURITY.md                       # 安全策略
-├── SUPPORT.md                        # 支持渠道
 ├── manifest.json                     # 技能元数据清单
 ├── agents/                           # 多 Agent 平台元数据
 ├── assets/demo/                      # 视频与动图预览资产
@@ -187,7 +177,7 @@ notebook-video/
 
 ## 📄 开源协议
 
-本项目采用 [MIT 许可证](LICENSE) 开源。
+本项目采用 [Apache-2.0 许可证](LICENSE) 开源。
 
 ***
 

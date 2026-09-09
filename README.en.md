@@ -6,7 +6,7 @@
 
 **用代码绘制 2K 中文教学视频：React + SVG + Remotion，帧精确同步 TTS 配音，多画布比例适配。**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](CHANGELOG.md)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
 [![Remotion](https://img.shields.io/badge/Remotion-4.0-ff6b6b)](https://remotion.dev)
@@ -27,16 +27,18 @@ Explainer videos, animated educational lectures, product showcases, or technical
 
 ---
 
+> The built-in TTS adapter measures chapters but estimates character timings. See [shot recipes](references/shot-recipes.md) for main/support image composition and [testing](references/testing.md) for verification scope. Maintainer notes: [design decisions and compatibility](references/optimization-rationale.md).
+
 ## ✨ Key Features
 
 | Core Module | Capabilities | Value Delivered |
 |---|---|---|
-| 🎬 **Code-Driven Rendering** | React + TypeScript + Remotion renders; all SVGs and animations controlled purely via code | 100% consistent aesthetic reproduction across any AI environment |
-| 📝 **Frame-Accurate TTS Sync** | Millisecond-level word timestamp alignment with automatic semantic captions & sound cues | Eliminates subtitle misalignment and audio-video desync |
+| 🎬 **Code-Driven Rendering** | React + TypeScript + Remotion renders; all SVGs and animations controlled purely via code | Reusable deterministic foundation, validated in the target environment |
+| 📝 **Frame-Accurate TTS Sync** | Millisecond-level word timestamp alignment with automatic semantic captions & sound cues | Checks timestamp consistency; acoustic precision depends on the source |
 | 📐 **3 Aspect Ratio Matrix** | 16:9 (2560×1440 2K Landscape), 4:3 (Classic), 3:4 (Portrait Feed) | One-click aspect ratio switching with mobile font-size bounds |
 | 🎨 **Lecture Pure Code Path** | Multi-zone layout (Main Board + Mascot + Sticky Notes) drawn via pure SVG | Zero image generation API cost, fast rendering, clean typography |
 | 🖼️ **Visual Director Path** | Optional image generation integration for key cinematic shots (`--classic` template) | Combines code precision with photorealistic creative flexibility |
-| ✅ **Automated QA Gates** | CaptionFitGate, layered layout validation, semantic break checks | 100% guarantee of zero text overflows and zero layout collisions |
+| ✅ **Automated QA Gates** | CaptionFitGate, layered layout validation, semantic break checks | Checks data and selected layout constraints; final audio/pixel review remains required |
 
 ---
 
@@ -56,22 +58,11 @@ Explainer videos, animated educational lectures, product showcases, or technical
 
 ---
 
-## 📊 11-Step Video Pipeline Architecture
+## 📊 7-Step Video Pipeline Architecture
 
-```
-[Input: User provides technical concept / topic script]
-                          │
-     [Step 1~2: Lock Concept & Visual Direction] ─> Outline, storyboard, aspect ratio
-                          │
-     [Step 3: Word-Level TTS Audio Sync] ────────> Millisecond-accurate word timestamps
-                          │
-     [Step 4~5: Layout Layering & Code Drawing] ──> React components & SVG diagrams
-                          │
-     [Step 6~7: Animation Pacing & Multi-Canvas] -> Frame-accurate waveform sync
-                          │
-     [Step 8: Automated QA Gate Verification] ───> CaptionFitGate & collision check
-                          │
-     [Step 9~11: Remotion Rendering & Package] ──> Output 2K MP4 + Editable Source ZIP
+```text
+Brief → Template → Visual actions/assets → Audio/semantic captions
+→ Synchronized scenes → Range QA/full render → Measured delivery/source package
 ```
 
 ---
@@ -84,7 +75,7 @@ This is an AI Agent Skill — install it into your AI assistant and you're ready
 
 Send this to your AI assistant and it will detect the platform and clone to the right skills directory:
 
-> Please install the notebook-video skill: clone `https://github.com/hyt315/notebook-video` into your skills directory (e.g. `~/.claude/skills/notebook-video` or `~/.agents/skills/notebook-video`) and confirm it works. When I ask to make an educational video, concept explainer, or showcase, use the 11-step Lecture Composition workflow to generate 2K videos.
+> Please install the notebook-video skill: clone `https://github.com/hyt315/notebook-video` into your skills directory (e.g. `~/.claude/skills/notebook-video` or `~/.agents/skills/notebook-video`) and confirm it works. When I ask to make an educational video, concept explainer, or showcase, use the 7-step Lecture Composition workflow to generate 2K videos.
 
 ### Option B: GitHub CLI 2.90+ (one command)
 
@@ -111,7 +102,7 @@ python scripts/selftest.py
 
 ## ⚙️ Prerequisites & Dependency Check
 
-- **Node.js 18+** (required for Remotion engine);
+- **Node.js 20+** (required for Remotion engine);
 - Run dependency preflight check: `node scripts/notebook-video.mjs check-deps`.
 
 ---
@@ -141,22 +132,21 @@ python scripts/selftest.py
 
 ```
 notebook-video/
-├── SKILL.md                          # Core skill definition and 11-step pipeline
+├── SKILL.md                          # Core skill definition and 7-step pipeline
 ├── README.md                         # Chinese documentation
 ├── README.en.md                      # English documentation
 ├── CHANGELOG.md                      # Version history
-├── LICENSE                           # MIT License
+├── LICENSE                           # Apache-2.0 License
 ├── .gitignore                        # Git ignore rules
 ├── CONTRIBUTING.md                   # Contribution guide
 ├── CODE_OF_CONDUCT.md                # Code of conduct
 ├── SECURITY.md                       # Security policy
-├── SUPPORT.md                        # Support channels
 ├── manifest.json                     # Skill manifest
 ├── agents/                           # Multi-agent metadata
 ├── assets/demo/                      # Demos & sample assets
 ├── scripts/
 │   ├── notebook-video.mjs            # Cross-platform runner
-│   ├── validate_repo.py              # Structure validator
+│   ├── validate-project.py              # Structure validator
 │   └── selftest.py                   # Automated regression test runner
 └── references/                       # Design systems & Remotion references
 ```
@@ -182,7 +172,7 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md). If this skill
 
 ## 📄 License
 
-Licensed under the [MIT License](LICENSE).
+Licensed under the [Apache-2.0 License](LICENSE).
 
 ---
 

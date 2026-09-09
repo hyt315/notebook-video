@@ -53,14 +53,14 @@ const findPython = () => {
     ? [['py', ['-3']], ['python', []], ['python3', []]]
     : [['python3', []], ['python', []]];
   for (const [command, prefix] of candidates) {
-    if (commandExists(command, [...prefix, '--version'])) return {command, prefix};
+    if (commandExists(command, [...prefix, '-c', 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'])) return {command, prefix};
   }
   return null;
 };
 
 const runPython = async (scriptName, args = [], options = {}) => {
   const python = findPython();
-  if (!python) throw new Error('Python 3 was not found. Install Python 3 and make py, python, or python3 available on PATH.');
+  if (!python) throw new Error('Python 3.10+ was not found. Install Python 3.10+ and make py, python, or python3 available on PATH.');
   const script = path.isAbsolute(scriptName) ? scriptName : path.join(SCRIPT_DIR, scriptName);
   return run(python.command, [...python.prefix, script, ...args], options);
 };
@@ -122,6 +122,7 @@ const newProject = async (args) => {
   const styleFlag = args.find((a) => a.startsWith('--style='));
   const style = styleFlag ? styleFlag.slice('--style='.length) : 'paper';
   if (!THEME_IDS.includes(style)) fail(`Unknown style "${style}". Valid values: ${THEME_IDS.join(', ')}`, 2);
+  if (classic && style !== 'paper') fail('--classic supports only paper; use the lecture template for theme selection', 2);
   const targetArg = args.find((a) => a !== '--classic' && !a.startsWith('--style='));
   if (!targetArg) fail('Usage: notebook-video new-project PROJECT_DIRECTORY [--classic] [--style=paper|cel|sticker|flat]', 2);
   const target = resolvePath(targetArg);
@@ -174,22 +175,34 @@ const syncProjectAssets = async ([projectArg]) => {
     const source = path.join(project, ...rel.split('/'));
     if (!isNonEmptyFile(source)) fail(`Required render input is missing or empty: ${source}`);
   }
+  await runPython('validate-caption-sync.py', [path.join(project, 'audio', 'narration.mp3.json'), path.join(project, 'manifests', 'caption-cues.json')]);
   for (const [from, to] of pairs) {
     const source = path.join(project, ...from.split('/'));
     const target = path.join(project, ...to.split('/'));
     ensureParent(target);
-    fs.copyFileSync(source, target);
+    if (!isNonEmptyFile(target) || hashFile(source) !== hashFile(target)) fs.copyFileSync(source, target);
     if (hashFile(source) !== hashFile(target)) fail(`Render input sync failed: ${from} -> ${to}`);
   }
   console.log('Synchronized canonical render inputs into public/ and src/.');
 };
 
+const ensureDependencies = async (project) => {
+  const cli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
+  const stamp = path.join(project, '.tools', 'dependency-lock.sha256');
+  const digest = hashFile(path.join(project, 'package-lock.json'));
+  if (!fs.existsSync(cli) || !fs.existsSync(stamp) || fs.readFileSync(stamp, 'utf8').trim() !== digest) {
+    await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
+    if (!fs.existsSync(cli)) throw new Error(`Remotion CLI is missing after npm ci: ${cli}`);
+    ensureParent(stamp);
+    fs.writeFileSync(stamp, digest);
+  }
+  return cli;
+};
+
 const prepareBrowser = async ([projectArg]) => {
   if (!projectArg) fail('Usage: notebook-video prepare-browser PROJECT_DIRECTORY', 2);
   const project = resolvePath(projectArg);
-  const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
-  if (!fs.existsSync(remotionCli)) await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
-  if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after npm ci: ${remotionCli}`);
+  const remotionCli = await ensureDependencies(project);
   const args = [remotionCli, 'browser', 'ensure'];
   const browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE;
   if (browserExecutable) {
@@ -201,12 +214,15 @@ const prepareBrowser = async ([projectArg]) => {
   console.log('Remotion rendering browser is ready.');
 };
 
-const suggestedConcurrency = () => Math.max(2, Math.min(6, Math.floor(os.availableParallelism() / 2)));
+const suggestedConcurrency = () => Math.max(1, Math.min(6, Math.floor(os.availableParallelism() / 2)));
+const renderConcurrency = () => {
+  const value = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
+  if (!Number.isInteger(value) || value < 1) throw new Error('REMOTION_CONCURRENCY must be a positive integer');
+  return value;
+};
 
 const remotionRender = async ({project, composition, output, frames, concurrency}) => {
-  const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
-  if (!fs.existsSync(remotionCli)) await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
-  if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after npm ci: ${remotionCli}`);
+  const remotionCli = await ensureDependencies(project);
   ensureParent(output);
   const nodeArgs = [];
   if (process.env.REMOTION_USE_NETWORK_SHIM === '1') {
@@ -214,7 +230,7 @@ const remotionRender = async ({project, composition, output, frames, concurrency
     if (!fs.existsSync(shim)) fail(`Optional network shim is missing: ${shim}`);
     nodeArgs.push('--require', shim);
   }
-  nodeArgs.push(remotionCli, 'render', composition, output, '--entry-point=src/index.tsx', '--codec=h264', '--crf=16', `--concurrency=${concurrency}`);
+  nodeArgs.push(remotionCli, 'render', 'src/index.tsx', composition, output, '--codec=h264', '--crf=16', `--concurrency=${concurrency}`);
   if (frames) nodeArgs.push(`--frames=${frames}`);
   // Browser resolution: explicit env wins, then the local Remotion cache that
   // `prepare-browser` already populated — never trigger a fresh 100MB+ shell
@@ -237,14 +253,18 @@ const render = async ([projectArg, outputArg, composition = 'NotebookVideoFilm']
   const project = resolvePath(projectArg);
   const output = resolvePath(outputArg);
   await syncProjectAssets([project]);
-  const raw = path.join(project, 'renders', '.remotion-raw.mp4');
-  fs.mkdirSync(path.dirname(raw), {recursive: true});
+  fs.mkdirSync(path.join(project, 'renders'), {recursive: true});
+  const temporary = fs.mkdtempSync(path.join(project, 'renders', '.render-'));
+  const raw = path.join(temporary, 'raw.mp4');
   ensureParent(output);
-  const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
+  const concurrency = renderConcurrency();
   console.log(`Rendering at concurrency ${concurrency}. Override with REMOTION_CONCURRENCY after running benchmark-render.`);
-  await remotionRender({project, composition, output: raw, concurrency});
-  await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', raw, '-map', '0:v:0', '-map', '0:a:0', '-c:v', 'copy', '-af', 'loudnorm=I=-16:LRA=11:TP=-1.5', '-ar', '48000', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', output]);
-  fs.rmSync(raw, {force: true});
+  try {
+    await remotionRender({project, composition, output: raw, concurrency});
+    await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', raw, '-map', '0:v:0', '-map', '0:a:0', '-c:v', 'copy', '-af', 'loudnorm=I=-16:LRA=11:TP=-1.5', '-ar', '48000', '-ac', '2', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', output]);
+  } finally {
+    fs.rmSync(temporary, {recursive: true, force: true});
+  }
   console.log(`Rendered and normalized: ${output}`);
 };
 
@@ -254,7 +274,7 @@ const renderRange = async ([projectArg, outputArg, startArg, endArg, composition
   if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start) fail(`Invalid frame range: ${startArg}-${endArg}`);
   const project = resolvePath(projectArg), output = resolvePath(outputArg);
   await syncProjectAssets([project]);
-  const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
+  const concurrency = renderConcurrency();
   await remotionRender({project, composition, output, frames: `${start}-${end}`, concurrency});
   console.log(`Rendered review range ${start}-${end}: ${output}`);
 };
@@ -285,7 +305,7 @@ const reviewFrames = async ([projectArg, outputArg, startArg, endArg, compositio
   if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start) fail(`Invalid frame range: ${startArg}-${endArg}`);
   const project = resolvePath(projectArg), output = resolvePath(outputArg);
   await syncProjectAssets([project]);
-  const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
+  const concurrency = renderConcurrency();
   const fps = Number(process.env.NOTEBOOK_VIDEO_FPS || 30);
   await remotionRender({project, composition, output, frames: `${start}-${end}`, concurrency});
   // 一次 bundle/一次浏览器：范围视频 + 自动接触片一步到位。
@@ -301,7 +321,9 @@ const makeContactSheet = async (video, contact, durationSec) => {
   const tile = count === 24 ? '4x6' : '4x3';
   const rate = (count / durationSec).toFixed(12).replace(/0+$/, '').replace(/\.$/, '');
   ensureParent(contact);
-  await run('ffmpeg', ['-y', '-loglevel', 'error', '-i', video, '-vf', `fps=${rate},scale=640:360,tile=${tile}`, '-frames:v', '1', contact]);
+  if (!Number.isFinite(durationSec) || durationSec <= 0) throw new Error('Invalid contact-sheet duration');
+  await run('ffmpeg', ['-y', '-loglevel', 'error', '-i', video, '-vf', `fps=${rate},scale=640:360:force_original_aspect_ratio=decrease,pad=640:360:(ow-iw)/2:(oh-ih)/2,tile=${tile}`, '-frames:v', '1', contact]);
+  if (!isNonEmptyFile(contact)) throw new Error(`Contact sheet was not generated: ${contact}`);
   return contact;
 };
 
@@ -326,20 +348,21 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   if (videoStream.r_frame_rate !== `${expectedFps}/1`) fail(`Expected ${expectedFps}fps, got ${videoStream.r_frame_rate}.`);
   if (String(audioStream.sample_rate) !== '48000' || Number(audioStream.channels) !== 2) fail('Expected 48kHz stereo audio.');
   const duration = Number(data.format?.duration);
+  if (!Number.isFinite(duration) || duration <= 0) fail('Invalid or unavailable media duration');
   if (Math.abs(duration - expected) > 0.2) fail(`Duration mismatch: ${duration} vs ${expected}`);
   console.log(`container valid: H.264/AAC ${videoStream.width}x${videoStream.height} ${expectedFps}fps, ${duration.toFixed(3)}s`);
 
-  const black = await run('ffmpeg', ['-hide_banner', '-i', video, '-vf', 'blackdetect=d=0.15:pix_th=0.02', '-an', '-f', 'null', '-'], {capture: true, allowFailure: true});
+  const black = await run('ffmpeg', ['-hide_banner', '-i', video, '-vf', 'blackdetect=d=0.15:pix_th=0.02', '-an', '-f', 'null', '-'], {capture: true});
   const blackLog = `${black.stdout}\n${black.stderr}`;
   if (/black_(start|end)/.test(blackLog)) fail(`Black frames detected:\n${blackLog.match(/.*black_(?:start|end).*$/gm)?.join('\n') ?? blackLog}`);
 
-  const loud = await run('ffmpeg', ['-hide_banner', '-i', video, '-af', 'loudnorm=I=-16:LRA=11:TP=-1.5:print_format=summary', '-f', 'null', '-'], {capture: true, allowFailure: true});
+  const loud = await run('ffmpeg', ['-hide_banner', '-i', video, '-af', 'loudnorm=I=-16:LRA=11:TP=-1.5:print_format=summary', '-f', 'null', '-'], {capture: true});
   const loudLog = `${loud.stdout}\n${loud.stderr}`;
   const integrated = Number(loudLog.match(/Input Integrated:\s*([-0-9.]+) LUFS/)?.[1]);
   const peak = Number(loudLog.match(/Input True Peak:\s*([-0-9.]+) dBTP/)?.[1]);
   if (!Number.isFinite(integrated) || !Number.isFinite(peak)) fail('Unable to parse loudness analysis from FFmpeg output.');
   if (integrated < -18 || integrated > -14) fail(`Integrated loudness outside target range: ${integrated} LUFS`);
-  if (peak > -1) fail(`True peak too high: ${peak} dBTP`);
+  if (peak > -1.5) fail(`True peak too high: ${peak} dBTP`);
   console.log(`audio valid: ${integrated.toFixed(1)} LUFS, ${peak.toFixed(1)} dBTP`);
 
   await makeContactSheet(video, contact, expected);
@@ -356,6 +379,10 @@ const packageProject = async ([projectArg, outputArg]) => {
 };
 
 const pythonCommandMap = new Map([
+  ['validate-project', ['validate-project.py']],
+  ['review-plan', ['review-plan.py']],
+  ['retime', ['retime.py']],
+  ['audition', ['audition.py']],
   ['validate-skill', ['validate-skill-consistency.py']],
   ['build-semantic-captions', ['build-semantic-captions.py']],
   ['validate-layering', ['validate-layering.py']],
@@ -367,7 +394,7 @@ const pythonCommandMap = new Map([
 ]);
 
 const usage = () => {
-  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--classic] [--style=paper|cel|sticker|flat]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT\n  validate-visual-plan PROJECT_DIRECTORY\n  validate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
+  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  validate-project PROJECT_DIRECTORY\n  review-plan PROJECT_DIRECTORY OUTPUT_JSON\n  retime PROJECT_DIRECTORY DURATION 0,s1,...,DURATION\n  audition PROJECT_DIRECTORY\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--classic] [--style=paper|cel|sticker|flat]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT\n  validate-visual-plan PROJECT_DIRECTORY\n  validate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };
 
 const main = async () => {

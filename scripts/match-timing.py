@@ -1,130 +1,109 @@
 #!/usr/bin/env python3
-"""Align re-voiced narration to a locked chapter timeline without re-timing scenes.
+"""Align active re-voiced segments to a locked chapter timeline.
 
-When the narration text is locked but the voice (or model) changes, chapter
-durations shift and every scene guard would drift. Instead of re-authoring
-scene timing, stretch each new chapter back to its approved duration:
-
-  python scripts/match-timing.py ./my-film --lock   # snapshot approved chapters
-  <run the TTS adapter + speed-post as usual>
-  python scripts/match-timing.py ./my-film          # align to the lock
-
-The default mode reads `manifests/chapters-timing-lock.json`, applies a
-pitch-preserving `atempo` per chapter segment produced by
-`assets/lecture-template/scripts/tts-openai-compatible.py`
-(`audio/seg{N}-*.wav`), re-joins with the standard silence gap, re-normalizes
-loudness (`loudnorm=I=-16:TP=-1.5:LRA=11`, 48kHz stereo) and scales the flat
-word-timing stream onto the locked frame table. Chapter ratios outside
-0.5-2.0 are refused. Rebuild semantic captions afterwards because
-intra-chapter word timing always changes with a new voice.
+Usage: python scripts/match-timing.py PROJECT_DIR [--lock]
+Uses manifests/tts-segments.json, or an unambiguous legacy segment cache.
+Each chapter is tempo-matched within 0.5-2.0, then padded/trimmed to its exact
+48kHz sample length. Leading silence, each gap, and any locked trailing
+silence are reconstructed from the lock, never from a fixed gap.wav.
+Word items are mapped by chapter interval, not by character count.
 """
-from __future__ import annotations
-
-import glob
+import importlib.util
 import json
 import os
-import re
-import subprocess
+from pathlib import Path
+import shutil
 import sys
+import tempfile
 
-GAP_MS = 350
-
-norm = lambda s: re.sub(r"\s+", "", s)
-
-
-def probe_ms(path: str) -> int:
-    out = subprocess.check_output(
-        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-         "-of", "default=noprint_wrappers=1:nokey=1", path], text=True)
-    return int(round(float(out.strip()) * 1000))
+_spec = importlib.util.spec_from_file_location(
+    "tts_audio", Path(__file__).resolve().parents[1] / "assets/lecture-template/scripts/tts-openai-compatible.py")
+audio = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(audio)
 
 
-def atempo_chain(rate: float) -> str:
-    parts: list[float] = []
-    r = rate
-    while r > 2.0:
-        parts.append(2.0)
-        r /= 2.0
-    while r < 0.5:
-        parts.append(0.5)
-        r /= 0.5
-    parts.append(r)
-    return ",".join("atempo=%.6f" % x for x in parts)
-
-
-def main() -> None:
+def main():
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
         print(__doc__)
         raise SystemExit(0 if len(sys.argv) > 1 else 2)
-    os.chdir(sys.argv[1])
-    if len(sys.argv) > 2 and sys.argv[2] == "--lock":
-        chapters = json.load(open("manifests/chapters.json", encoding="utf-8"))
-        json.dump(chapters, open("manifests/chapters-timing-lock.json", "w", encoding="utf-8"),
-                  ensure_ascii=False, indent=2)
-        print("locked %d chapters" % len(chapters))
+    root = Path(sys.argv[1]).resolve()
+    if len(sys.argv) > 2 and sys.argv[2] != "--lock":
+        raise ValueError("unknown option")
+    chapter_path = root / "manifests/chapters.json"
+    lock_path = root / "manifests/chapters-timing-lock.json"
+    mp3 = root / "audio/narration.mp3"
+    word_path = root / "audio/narration.mp3.json"
+    chapters = audio.validate_chapters(json.loads(chapter_path.read_text(encoding="utf-8")))
+    words = json.loads(word_path.read_text(encoding="utf-8"))
+    paragraphs = [p.strip() for p in (root / "narration.txt").read_text(encoding="utf-8").splitlines() if p.strip()]
+    groups = audio.map_words(words, chapters, paragraphs)
+    if len(sys.argv) > 2:
+        with tempfile.TemporaryDirectory(prefix=".timing-lock-", dir=mp3.parent) as tmp:
+            tmp = Path(tmp)
+            frames = audio.normalize_audio(mp3, tmp / "source.wav")
+            for ch in chapters:
+                ch["start_sample"], ch["end_sample"] = audio.chapter_samples(ch)
+            if chapters[-1]["end_sample"] > frames + 24:
+                raise ValueError("chapter timeline exceeds narration audio")
+            chapters[-1]["timeline_total_samples"] = max(frames, chapters[-1]["end_sample"])
+            audio.write_json(tmp / "lock.json", chapters)
+            os.replace(tmp / "lock.json", lock_path)
+        print(f"locked {len(chapters)} chapters")
         return
-
-    lock = json.load(open("manifests/chapters-timing-lock.json", encoding="utf-8"))
-    newch = json.load(open("manifests/chapters.json", encoding="utf-8"))
-    assert len(lock) == len(newch), (len(lock), len(newch))
-
-    paras = [p.strip() for p in open("narration.txt", encoding="utf-8") if p.strip()]
-    counts = [len(norm(p)) for p in paras]
-
-    segs: list[str] = []
-    for i in range(len(lock)):
-        ms = sorted(glob.glob(os.path.join("audio", "seg%d-*.wav" % (i + 1))))
-        ms = [m for m in ms if "matched" not in os.path.basename(m)]
-        assert len(ms) == 1, (i, ms)
-        segs.append(ms[0])
-
-    matched: list[str] = []
-    for i in range(len(lock)):
-        old_dur = lock[i]["end_ms"] - lock[i]["start_ms"]
-        real = probe_ms(segs[i])
-        rate = real / max(1, old_dur)
-        assert 0.4 <= rate <= 2.5, ("chapter ratio out of range", i + 1, round(rate, 3))
-        out = os.path.join("audio", "seg-matched%02d.wav" % (i + 1))
-        subprocess.check_call(["ffmpeg", "-y", "-loglevel", "error", "-i", segs[i],
-                               "-af", atempo_chain(rate), out])
-        matched.append(out)
-        print("ch%02d old=%dms new=%dms rate=%.3f" % (i + 1, old_dur, real, rate))
-
-    gap = os.path.join("audio", "gap.wav")
-    assert os.path.isfile(gap), "gap.wav missing: run the TTS adapter first"
-    concat_list = os.path.join("audio", "concat-matched.txt")
-    with open(concat_list, "w", encoding="utf-8") as f:
-        for i, seg in enumerate(matched):
-            if i:
-                f.write("file '%s'\n" % os.path.basename(gap))
-            f.write("file '%s'\n" % os.path.basename(seg))
-    joined = os.path.join("audio", "narration-matched.wav")
-    subprocess.check_call(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
-                           "-i", concat_list, "-c", "copy", joined])
-    out_mp3 = os.path.join("audio", "narration.mp3")
-    subprocess.check_call(["ffmpeg", "-y", "-loglevel", "error", "-i", joined,
-                           "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
-                           "-ar", "48000", "-ac", "2", "-b:a", "192k", out_mp3])
-
-    words = json.load(open(out_mp3 + ".json", encoding="utf-8"))
-    assert sum(counts) == len(words), (sum(counts), len(words))
-    scaled: list[dict] = []
-    k = 0
-    for i in range(len(lock)):
-        n0, n1 = newch[i]["start_ms"], newch[i]["end_ms"]
-        l0, l1 = lock[i]["start_ms"], lock[i]["end_ms"]
-        f = (l1 - l0) / max(1, (n1 - n0))
-        for _ in range(counts[i]):
-            w = dict(words[k])
-            k += 1
-            w["start"] = int(round(l0 + (w["start"] - n0) * f))
-            w["end"] = int(round(l0 + (w["end"] - n0) * f))
-            scaled.append(w)
-    assert k == len(words)
-    json.dump(scaled, open(out_mp3 + ".json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    json.dump(lock, open("manifests/chapters.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    total = lock[-1]["end_ms"]
-    print("matched total %d ms (%.2fs) = %d frames @30fps" % (total, total / 1000, round(total * 30 / 1000)))
+    lock = audio.validate_chapters(json.loads(lock_path.read_text(encoding="utf-8")))
+    if len(lock) != len(chapters):
+        raise ValueError("locked and current chapter counts differ")
+    segments = audio.active_segments(root, len(lock), paragraphs)
+    total = lock[-1].get("timeline_total_samples", audio.chapter_samples(lock[-1])[1])
+    if not isinstance(total, int) or isinstance(total, bool) or total < audio.chapter_samples(lock[-1])[1]:
+        raise ValueError("invalid locked total sample length")
+    scaled = []
+    for old, target, group in zip(chapters, lock, groups):
+        factor = (target["end_ms"] - target["start_ms"]) / (old["end_ms"] - old["start_ms"])
+        for word in group:
+            item = dict(word)
+            for edge in ("start", "end"):
+                item[edge] = round(target["start_ms"] + (word[edge] - old["start_ms"]) * factor)
+            scaled.append(item)
+    audio.map_words(scaled, lock, paragraphs)
+    with tempfile.TemporaryDirectory(prefix=".match-", dir=mp3.parent) as tmp:
+        tmp = Path(tmp)
+        # Normalize and check every ratio before rendering or publishing outputs.
+        prepared = []
+        for i, (segment, target) in enumerate(zip(segments, lock)):
+            source = tmp / f"source{i}.wav"
+            real = audio.normalize_audio(segment, source)
+            start, end = audio.chapter_samples(target)
+            rate = real / (end - start)
+            if not 0.5 <= rate <= 2.0:
+                raise ValueError(f"chapter {i + 1} ratio {rate:.6f} outside 0.5-2.0")
+            prepared.append((source, start, end, rate))
+        parts, position = [], 0
+        for i, (source, start, end, rate) in enumerate(prepared):
+            matched = tmp / f"seg-matched{i + 1:02d}.wav"
+            audio.normalize_audio(source, matched, f"atempo={rate:.12g}", end - start)
+            parts.extend([start - position, matched])
+            position = end
+        parts.append(total - position)
+        audio.join_pcm(parts, tmp / "joined.wav")
+        audio.normalize_audio(tmp / "joined.wav", tmp / "narration.wav",
+                              "loudnorm=I=-16:TP=-1.5:LRA=11", total)
+        audio.encode_mp3(tmp / "narration.wav", tmp / "narration.mp3")
+        audio.write_json(tmp / "words.json", scaled)
+        output_chapters = []
+        for target, current in zip(lock, chapters):
+            ch = dict(target)
+            ch["start_sample"], ch["end_sample"] = audio.chapter_samples(ch)
+            ch["timing_quality"] = current.get("timing_quality", "unspecified")
+            ch["chapter_timing_quality"] = "locked"
+            output_chapters.append(ch)
+        audio.write_json(tmp / "chapters.json", output_chapters)
+        # Retain the historical matched WAV filename as well as the current PCM.
+        shutil.copyfile(tmp / "narration.wav", tmp / "narration-matched.wav")
+        for source, target in [("narration.wav", mp3.with_suffix(".wav")), ("narration-matched.wav", mp3.parent / "narration-matched.wav"),
+                               ("narration.mp3", mp3), ("words.json", word_path), ("chapters.json", chapter_path)]:
+            os.replace(tmp / source, target)
+    print(f"matched total {total / 48:.3f} ms ({total} samples @48000Hz)")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 # fxkit：固定动效组件库（反 PPT 专用）
 
 `assets/lecture-template/src/fxkit.tsx`，v2 共 18 个组件，零新依赖
-（只用 remotion 原生 `spring`/`interpolate`），只做 transform/opacity 位移，
+（使用 Remotion 原生动画和 `Img` 加载门）。优先 transform/opacity；部分旧组件仍通过宽度或位置表现进度，
 cel 皮肤锁定（2.5px 墨线 + 硬偏移阴影 + 纯平填充，无渐变无模糊阴影），
 30fps 确定性（无随机数）。用法：
 
@@ -24,8 +24,8 @@ import {FitCard, Typewriter, PayPop, StampSeal, Funnel, ChatThread, MailScan, Ti
 | `CompareBars` | 对比条：宽度动画 + 差值 chip | `x,y,w,rows,delta` |
 | `ProgressRing` | 进度环：dashoffset 填充 + 中央标签 | `size,pct,label,color` |
 | `ShakeX` | 强调抖动：落点后 ±amp 衰减摆 3 次 | `start,dur,amp` |
-| `KenBurnsImg` | 克制推近：只放大不移出框（父容器须 `overflow:hidden`） | `src,zoom,dur,fit` |
-| `EvidenceZoom` | 证据三节拍：识别 → 定位推近 → 落结论 chip | `src,fx,fy,zoom,at,label` |
+| `KenBurnsImg` | 克制推近：只放大不移出框（父容器须 `overflow:hidden`） | `src,zoom,dur,fit,frame,start,exitStart` |
+| `EvidenceZoom` | 证据三节拍：识别 → 定位推近 → 落结论 chip | `src,fx,fy,zoom,at,label,focusAt,concludeAt,exitStart` |
 | `DiffView` | 补丁 diff：红删绿加，逐行滑入 | `x,y,w,title,lines[{k,text,at}]` |
 | `ConfettiPop` | 到账庆祝：N 碎片炸开旋转下落 | `x,y,maxR,n,start,dur` |
 | `SkeletonCard` | 骨架→内容：等待 beats 先占位 | `x,y,w,h,rows,revealAt` |
@@ -40,3 +40,5 @@ import {FitCard, Typewriter, PayPop, StampSeal, Funnel, ChatThread, MailScan, Ti
 2. **坐标看祖先**：`x/y` 永远相对于最近的 positioned 祖先。放在
    `Paper` 卡片内部时是"卡片相对坐标"；只有直接放在场景根 div 下
    才是场景坐标。S4 印章曾因写成场景坐标而飞出屏（渲染不报错）。
+
+图片组件在所有主题可导入；无 Burst 的主题安全隐藏该装饰。`EvidenceZoom` 焦点基于 cover 后的 viewport，边界钳制避免空边。完整组合见 [shot recipes](shot-recipes.md)。

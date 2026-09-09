@@ -1,20 +1,60 @@
 #!/usr/bin/env python3
-"""Verify subtitle text, word order and timings exactly match TTS boundaries."""
-
+"""Verify caption data consistency; this does not measure acoustic alignment."""
 from __future__ import annotations
 
 import argparse
 import json
 import re
 from pathlib import Path
+from timing_validation import timing_errors
 
 
 def normalized(text: str) -> str:
     return re.sub(r"\s+", "", text)
 
 
-def core(word: dict) -> tuple[str, int, int]:
-    return str(word["part"]), int(word["start"]), int(word["end"])
+def validate(source: object, data: object, max_lead_ms: int = 80) -> list[str]:
+    failures = timing_errors(source)
+    if not 0 <= max_lead_ms <= 80:
+        failures.append("max-lead-ms must be between 0 and 80")
+    if not isinstance(data, dict) or data.get("segmentation") != "semantic":
+        return failures + ["caption file must be marked segmentation=semantic"]
+    cues = data.get("cues")
+    if not isinstance(cues, list) or not cues:
+        return failures + ["Expected a non-empty subtitle cue list"]
+    flattened = []
+    previous_start = -1
+    for index, cue in enumerate(cues, 1):
+        if not isinstance(cue, dict):
+            failures.append(f"cue {index}: expected an object")
+            continue
+        words = cue.get("words")
+        errors = timing_errors(words)
+        if errors:
+            failures.extend(f"cue {index}: {e}" for e in errors)
+            continue
+        joined = "".join(word["part"] for word in words)
+        text = cue.get("text")
+        if not isinstance(text, str) or normalized(joined) != normalized(text):
+            failures.append(f"cue {index}: text differs from its TTS words")
+        start = cue.get("start_ms")
+        if type(start) is not int or start < 0 or start < previous_start:
+            failures.append(f"cue {index}: invalid or reordered start_ms")
+        else:
+            lead = words[0]["start"] - start
+            if not 0 <= lead <= max_lead_ms:
+                failures.append(f"cue {index}: visual lead {lead}ms exceeds 0–{max_lead_ms}ms")
+            previous_start = start
+        for key in ("speech_end_ms", "reveal_end_ms"):
+            if type(cue.get(key)) is not int or cue[key] != words[-1]["end"]:
+                failures.append(f"cue {index}: {key} must equal its last word end")
+        flattened.extend(words)
+    if flattened != source:
+        # Compare the canonical fields only; providers may attach confidence metadata.
+        core = lambda w: (w.get("part"), w.get("start"), w.get("end")) if isinstance(w, dict) else None
+        if not isinstance(source, list) or list(map(core, flattened)) != list(map(core, source)):
+            failures.append("flattened cue words do not exactly match the complete TTS word stream")
+    return failures
 
 
 def main() -> None:
@@ -23,39 +63,12 @@ def main() -> None:
     parser.add_argument("caption_cues_json", type=Path)
     parser.add_argument("--max-lead-ms", type=int, default=80)
     args = parser.parse_args()
-
     source = json.loads(args.tts_words_json.read_text(encoding="utf-8"))
     data = json.loads(args.caption_cues_json.read_text(encoding="utf-8"))
-    cues = data.get("cues", data) if isinstance(data, dict) else data
-    if not isinstance(source, list) or not isinstance(cues, list):
-        raise SystemExit("Expected a TTS word list and a subtitle cue list")
-
-    flattened = []
-    failures = []
-    if not isinstance(data, dict) or data.get("segmentation") != "semantic":
-        failures.append(
-            "caption file is not marked segmentation=semantic; mechanical draft cues cannot be rendered"
-        )
-    for index, cue in enumerate(cues, 1):
-        words = cue.get("words")
-        if not isinstance(words, list) or not words:
-            failures.append(f"cue {index}: missing word boundaries")
-            continue
-        joined = "".join(str(word["part"]) for word in words)
-        if normalized(joined) != normalized(str(cue.get("text", ""))):
-            failures.append(f"cue {index}: text differs from its TTS words")
-        lead = int(words[0]["start"]) - int(cue["start_ms"])
-        if lead < 0 or lead > args.max_lead_ms:
-            failures.append(f"cue {index}: visual lead {lead}ms exceeds 0–{args.max_lead_ms}ms")
-        flattened.extend(words)
-
-    if [core(word) for word in flattened] != [core(word) for word in source]:
-        failures.append("flattened cue words do not exactly match the complete TTS word stream")
+    failures = validate(source, data, args.max_lead_ms)
     if failures:
-        for failure in failures:
-            print(f"SYNC ERROR: {failure}")
-        raise SystemExit(f"{len(failures)} caption sync failure(s)")
-    print(f"Validated {len(source)} TTS word boundaries across {len(cues)} synchronized cues")
+        raise SystemExit("SYNC ERROR: " + "\nSYNC ERROR: ".join(failures))
+    print(f"Validated {len(source)} TTS word boundaries across {len(data['cues'])} synchronized cues")
 
 
 if __name__ == "__main__":

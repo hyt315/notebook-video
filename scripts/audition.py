@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """TTS 试听条 + 多音字扫描（本地，零 API 调用，只用已合成的 seg 缓存）。
 
-1. 试听条：把 audio/seg*.wav 每段取前 3 秒拼成 audition.mp3（约30秒），
+1. 试听条：按 manifests/tts-segments.json 的当前顺序，每段取前 3 秒拼成 audition.mp3，
    成片前先听 30 秒，读错在源头改 narration.txt，不返工。
 2. 多音字扫描：内置高危表扫 narration.txt，命中报行号 + 替换建议。
    （TTS 没有拼音通道，错读只能在源头改写，见技能 tts-audio.md）
@@ -11,10 +11,16 @@
 """
 from __future__ import annotations
 
-import re
-import subprocess
+import importlib.util
+import os
 import sys
+import tempfile
 from pathlib import Path
+
+_spec = importlib.util.spec_from_file_location(
+    "tts_audio", Path(__file__).resolve().parents[1] / "assets/lecture-template/scripts/tts-openai-compatible.py")
+audio_helpers = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(audio_helpers)
 
 # 高危多音字：原文片段 -> 改写建议（全部生产验证过）
 RISKY = [
@@ -48,29 +54,21 @@ def scan(narration: Path) -> int:
 
 def audition(project: Path) -> int:
     audio = project / "audio"
-    segs = sorted(audio.glob("seg*.wav"))
-    if not segs:
-        print("没有 seg 缓存，先跑 TTS 适配器")
-        return 1
-    cuts, lists = [], []
-    for k, seg in enumerate(segs):
-        cut = audio / f"_audit{k}.wav"
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(seg),
-                        "-t", "3", str(cut)], check=True)
-        cuts.append(cut)
-        lists.append(f"file '{cut.name}'")
-    (audio / "_audit.txt").write_text("\n".join(lists) + "\n", encoding="utf-8")
+    paragraphs = [p.strip() for p in (project / "narration.txt").read_text(encoding="utf-8").splitlines() if p.strip()]
+    segs = audio_helpers.active_segments(project, len(paragraphs), paragraphs)
     out = audio / "audition.mp3"
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
-                    "-i", str(audio / "_audit.txt"), "-ar", "48000", "-ac", "2",
-                    "-b:a", "128k", str(out)], check=True)
-    for cut in cuts:
-        cut.unlink()
-    (audio / "_audit.txt").unlink()
-    dur = subprocess.check_output(
-        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-         "-of", "default=noprint_wrappers=1:nokey=1", str(out)], text=True)
-    print(f"试听条：{out}（{float(dur.strip()):.1f}s，{len(segs)} 段首句连播）")
+    with tempfile.TemporaryDirectory(prefix=".audition-", dir=audio) as tmp:
+        tmp = Path(tmp)
+        cuts = []
+        for k, seg in enumerate(segs):
+            cut = tmp / f"cut{k}.wav"
+            audio_helpers.normalize_audio(seg, cut, "atrim=duration=3")
+            cuts.append(cut)
+        audio_helpers.join_pcm(cuts, tmp / "joined.wav")
+        duration = audio_helpers.pcm_frames(tmp / "joined.wav") / audio_helpers.SAMPLE_RATE
+        audio_helpers.encode_mp3(tmp / "joined.wav", tmp / "audition.mp3")
+        os.replace(tmp / "audition.mp3", out)
+    print(f"试听条：{out}（{duration:.1f}s，{len(segs)} 段首句连播）")
     return 0
 
 

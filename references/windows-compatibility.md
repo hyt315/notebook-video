@@ -38,7 +38,7 @@ The individual Windows wrappers `check-deps.cmd`, `new-project.cmd`, `sync-proje
 
 Make these commands available on `PATH`:
 
-- Node.js 18 or newer, including npm;
+- Node.js 20 or newer, including npm;
 - Python 3, exposed as `py -3`, `python`, or `python3`;
 - FFmpeg, including `ffmpeg` and `ffprobe`.
 

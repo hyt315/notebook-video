@@ -14,7 +14,7 @@
 
 Deliver at native 30fps. Keep scene constants, physical poses, subtitle reveal and output in the same 30fps coordinate system. Do not duplicate frames into a 60fps container. For an intentional stop-motion accent, quantize only that component to 15fps so each pose holds for two output frames.
 
-The global camera moves: **CameraRig** wraps every scene as one continuous track on the delivery canvas (per-canvas keyframe tables: 16:9 and 3:4; 4:3 reuses the landscape track). Keep scale always >=1 so the canvas never shows outside the stage, and keep the built-in exponential lag follow-focus. Author exactly one slow push or focus drift per chapter; all other motion belongs to independently modeled objects.
+The global camera moves: **CameraRig** wraps every scene as one continuous track on the delivery canvas (per-canvas keyframe tables: 16:9 and 3:4; 4:3 reuses the landscape track). Keep scale always >=1 so the canvas never shows outside the stage, and keep the built-in exponential lag follow-focus. Use a subtle focus adjustment only when it supports attention; it is not required per chapter. Chrome and subtitles remain outside the rig.
 
 Keep stable layout coordinates fixed and animate movement with `translate3d`, rotate, scale and opacity. Mount only the active scene, plus the incoming scene during a short transition.
 
@@ -24,7 +24,7 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 - JumpInText title: per-glyph 3D flip-in (rotateX ~88deg from the baseline, 12px rise, spring over-bounce, ~1.6-frame stagger). Always for chapter and scene titles.
 - WaveText latin: per-letter wave typing with a color gradient (10-frame wave, 4 keyframe offsets), for CTA latin strings.
 - Figure roll-in: multi-keyframe rotation (150deg to 360deg with a mid-scale bulge) instead of a plain pop for emblem graphics.
-- Subtitle reveal: one word at a time, chars inside a word stagger by 0.9 frames, 6px fade-slide, 180ms lead over the word start; all trailing punctuation strictly eliminated; never a decorative bar.
+- Subtitle reveal: one word at a time with a short 6px fade-slide and the cue file's lead (normally 60ms, at most 80ms); do not apply a second lead to the cue start; all trailing punctuation strictly eliminated; never a decorative bar.
 - Paper entry: cubic ease-out, one 8–13% overshoot, settle within about 0.8s.
 - Paper lift: raise position and increase shadow distance/blur while lowering shadow alpha.
 - Paper landing: close/darken shadow, compress no more than 3%, then settle once.
@@ -53,13 +53,13 @@ To eliminate the static PPT feeling while preventing any active narration conten
    - When transitioning between chapters or holding both sides, reset to center (`x = 960, s = 1.00`).
 
 3. **Absolute Rejection Flags**:
-   - Camera horizontal offset `|x - 960| > 25px` is strictly rejected;
+   - Reject offsets outside the selected canvas bounds above; portrait uses its own (540,720) center;
    - Moving camera away from the currently narrated card is strictly rejected;
    - Any camera motion that causes the active narration card to come within 60px of the viewport edge is strictly rejected.
 
 ## Anti-PPT Functional Component Invariant (组件防 PPT 化与功能实体化)
 
-Never stack plain text bullets inside generic rectangular boxes. Every explanation scene must incorporate at least one function-driven interactive component with physical state transitions synchronized to narration:
+Prefer an observable operation over a generic bullet stack. Reuse these specialized components only when they actually match the content; they are not mandatory and their idle motion alone does not explain a mechanism:
 
 - `BrainwaveEEG`: Oscilloscope cognitive pulse wave; flatlines to a straight red line upon session exit, memory flush, or failure.
 - `VectorRadarSonar`: Circular radar display with rotating scan line, vector cluster dots, and ANN metrics.
@@ -71,7 +71,7 @@ Never stack plain text bullets inside generic rectangular boxes. Every explanati
 ## Locked motion pack
 
 - Spring presets: use `popS(f, start, preset)` with `SPRINGS` — `snappy` for small UI ticks and code lines, `soft` (identical to the legacy `pop`) for cards and lists, `bouncy` for callouts and celebratory beats. Do not hand-tune new damping/stiffness values per scene.
-- Scene transitions: wrap the incoming scene in `TransitionIn` (`flip` = page turn when the metaphor changes, `slide` = cover-over for a lateral topic shift, `wipe` = edge reveal for a detail focus). **No scene overlap, ever**: the outgoing scene must finish its exit and fully unmount (or reach opacity 0) before the incoming transition starts — no frame may show two scenes at once. Only the incoming scene carries the transition effect. Use at most one transition style per film and keep clean cuts elsewhere.
+- Scene transitions: wrap the incoming scene in `TransitionIn` (`flip` = page turn when the metaphor changes, `slide` = cover-over for a lateral topic shift, `wipe` = edge reveal for a detail focus). Default to non-overlapping cuts. A deliberate overlap may mount at most two scenes with explicit ownership and no duplicate labels. A persistent image bridge can instead span the attention shift inside one scene without changing timeline duration. Only the incoming scene carries the transition effect. Use at most one transition style per film and keep clean cuts elsewhere.
 - Camera script: build new keyframe tracks with `camScript(x, y, duration).hold(f).to(f, {x, y, s}).done()` instead of raw keyframe tables; it guarantees first/last frame coverage. The same easing and exponential lag follow-focus apply.
 - Stop-motion accent: `useSteppedFrame(15)` quantizes a component to 15fps so each pose holds two output frames. Reserve it for sticker-style charm; never apply it to subtitles, transfers or the camera.
 - Component motion stays inside the locked library: `Connector` animates dash flow only during transfer, `Checklist` rows slide in with staggered `soft` springs, `CodeBlock` lines enter with `snappy` springs, `CountUp` eases with the standard soft-out curve.
@@ -87,7 +87,7 @@ Build progressively:
 5. readable hold;
 6. remove obsolete parts completely.
 
-Cause one meaningful semantic change every 2–4 seconds. Do not count random drift, blinking cursors, animated texture, global zoom or constant line motion.
+Aim for meaningful semantic changes around spoken beats, often 2–4 seconds apart; allow a longer intentional reading hold. Do not count random drift, blinking cursors, animated texture, global zoom or constant line motion.
 
 ## Spatial density budget
 

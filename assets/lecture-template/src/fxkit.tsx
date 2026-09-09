@@ -1,5 +1,6 @@
 import React from 'react';
-import {Easing, interpolate, spring, staticFile, useCurrentFrame} from 'remotion';
+import {Easing, Img, interpolate, spring, staticFile, useCurrentFrame} from 'remotion';
+import {focusTransform} from './image-focus';
 import {THEME} from './theme/active';
 
 // ============================================================================
@@ -17,7 +18,7 @@ import {THEME} from './theme/active';
 // ============================================================================
 
 const C = THEME.palette;
-const Burst = (THEME.extras as any).Burst as React.FC<{x:number;y:number;size:number;text:string;color?:string}>;
+const Burst = THEME.extras?.Burst as React.FC<{x:number;y:number;size:number;text:string;color?:string}> | undefined;
 
 // 与主模板一致的字阶镜像（只取本库用到的档位）
 export const FX_T = {displayL:50, displayS:36, titleM:28, titleS:27, titleXS:26, bodyM:24, labelL:22, labelM:21, labelS:20, microL:18} as const;
@@ -29,7 +30,7 @@ const ease = (f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b],[from
 const easeOutSoft = (f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b],[from,to],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
 const SPRINGS = {snappy:{damping:16,stiffness:200,mass:.8},soft:{damping:17,stiffness:132,mass:.86},bouncy:{damping:11,stiffness:160,mass:.9}} as const;
 const popS = (f:number,start:number,preset:keyof typeof SPRINGS='soft')=>spring({frame:f-start,fps:BASE_FPS,config:SPRINGS[preset]});
-const useF = (frame?:number)=>frame??useCurrentFrame();
+const useF = (frame?:number)=>{const current=useCurrentFrame();return frame??current;};
 // 序号哈希伪方差（确定性）：0~1
 const hash01 = (i:number)=>{const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x);};
 
@@ -42,7 +43,7 @@ export const fitH = (rows:{h:number;gapAfter?:number}[],padTop:number,padBottom:
 
 /** 离场样式：exitStart 之后 15 帧整体下移淡出（完整离场契约）。 */
 const exitStyle = (f:number,exitStart:number|undefined):React.CSSProperties=>{
-  if(exitStart===undefined) return {};
+  if(exitStart===undefined||f<exitStart) return {};
   const p = ease(f,exitStart,exitStart+15);
   return {opacity:1-p, transform:`translateY(${40*p}px)`};
 };
@@ -292,33 +293,33 @@ export const FXKIT_VERSION = 'fxkit-v2 · 18 components · cel-locked · no new 
 
 // ---- 14. KenBurnsImg：克制推近。只放大不移出框（父容器须 overflow:hidden），scale 1→zoom ----
 export const KenBurnsImg:React.FC<{
-  src:string;zoom?:number;dur?:number;start?:number;frame?:number;fit?:'width'|'height';style?:React.CSSProperties;
-}> = ({src,zoom=1.045,dur=90,start=0,frame,fit='width',style})=>{
+  src:string;zoom?:number;dur?:number;start?:number;frame?:number;fit?:'width'|'height';style?:React.CSSProperties;exitStart?:number;
+}> = ({src,zoom=1.045,dur=90,start=0,frame,fit='width',style,exitStart})=>{
   const f = useF(frame);
+  if(!Number.isFinite(zoom)||zoom<1||!Number.isFinite(dur)||dur<=0) throw new Error('Invalid image zoom or duration');
+  if(f<start||exitStart!==undefined&&f>=exitStart+15) return null;
   const p = easeOutSoft(f,start,start+dur);
-  return <div style={{overflow:'hidden',...style}}>
-    {fit==='width'
-      ? <img src={staticFile(src)} style={{width:'100%',display:'block',transform:`scale(${1+(zoom-1)*p})`,transformOrigin:'50% 45%'}}/>
-      : <img src={staticFile(src)} style={{height:'100%',width:'auto',margin:'0 auto',display:'block',transform:`scale(${1+(zoom-1)*p})`,transformOrigin:'50% 50%'}}/>}
+  return <div style={{overflow:'hidden',...style,...exitStyle(f,exitStart)}}>
+    <Img src={staticFile(src)} style={{width:fit==='width'?'100%':'auto',height:fit==='height'?'100%':undefined,margin:'0 auto',display:'block',transform:`scale(${1+(zoom-1)*p})`,transformOrigin:'50% 45%'}}/>
   </div>;
 };
 
 // ---- 15. EvidenceZoom：证据三节拍。识别（全景）→定位（推近焦点）→落结论（chip） ----
 export const EvidenceZoom:React.FC<{
   src:string;fx?:number;fy?:number;zoom?:number;at?:number;label?:string;
-  frame?:number;style?:React.CSSProperties;
-}> = ({src,fx=0.5,fy=0.5,zoom=1.8,at=0,label,frame,style})=>{
+  focusAt?:number;concludeAt?:number;exitStart?:number;frame?:number;style?:React.CSSProperties;
+}> = ({src,fx=0.5,fy=0.5,zoom=1.8,at=0,label,focusAt=at+40,concludeAt=at+100,exitStart,frame,style})=>{
   const f = useF(frame);
-  if(f<at) return null;
-  const box = (style||{}) as {width?:number;height?:number};
-  const W = typeof box.width==='number'?box.width:900, H = typeof box.height==='number'?box.height:260;
-  const p = easeOutSoft(f,at+40,at+100);
-  const s = 1+(zoom-1)*p;
-  const tx = (0.5-fx)*W*s, ty = (0.5-fy)*H*s;
-  const chip = f>=at+100?popS(f,at+100,'bouncy'):0;
-  return <div style={{position:'relative',overflow:'hidden',...style}}>
-    <img src={staticFile(src)} style={{width:'100%',display:'block',transform:`translate(${tx}px,${ty}px) scale(${s})`,transformOrigin:'0 0'}}/>
-    {label&&chip>0&&<span style={{position:'absolute',left:12,bottom:12,fontSize:FX_T.labelL,fontWeight:700,color:'#fff',background:C.green,border:`2px solid ${C.ink}`,borderRadius:999,padding:'4px 16px',opacity:chip,transform:`translateY(${10*(1-chip)}px)`,whiteSpace:'nowrap'}}>{label}</span>}
+  if(focusAt<at||concludeAt<=focusAt) throw new Error('Evidence beats must be ordered: at <= focusAt < concludeAt');
+  const W = typeof style?.width==='number'?style.width:900;
+  const H = typeof style?.height==='number'?style.height:260;
+  const p = easeOutSoft(f,focusAt,concludeAt);
+  const focus = focusTransform(W,H,fx,fy,zoom,p);
+  if(f<at||exitStart!==undefined&&f>=exitStart+15) return null;
+  const chip = f>=concludeAt?popS(f,concludeAt,'soft'):0;
+  return <div style={{position:'relative',overflow:'hidden',width:W,height:H,...style,...exitStyle(f,exitStart)}}>
+    <Img src={staticFile(src)} style={{width:'100%',height:'100%',objectFit:'cover',display:'block',transform:focus.transform,transformOrigin:'0 0'}}/>
+    {label&&chip>0&&<span style={{position:'absolute',left:12,bottom:12,maxWidth:'calc(100% - 24px)',fontSize:FX_T.labelL,fontWeight:700,color:'#fff',background:C.green,border:`2px solid ${C.ink}`,borderRadius:999,padding:'4px 16px',opacity:chip,transform:`translateY(${10*(1-chip)}px)`,whiteSpace:'nowrap'}}>{label}</span>}
   </div>;
 };
 

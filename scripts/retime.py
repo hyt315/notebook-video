@@ -1,18 +1,9 @@
 #!/usr/bin/env python3
-"""重定时工具（本地）：口播/章节变化后，一键重写时长相关的三处机械数字。
+"""Validate and update duration metadata; scene animation still needs cue review.
 
-只做机械事，不猜语义：
-  1. src/index.tsx 的 DURATION=<n>
-  2. manifests/asset-manifest.json 的 duration_frames + 各 scene 起止帧
-    （scene id 顺序必须与现状一致，只改数字不改结构）
-  3. 打印 Sound 音效帧重排建议表（场景起点/中点/完成点，人工确认后改）
-
-用法：
-  python scripts/retime.py PROJECT_DIR DURATION s1,s2,s3,...
-  例：python scripts/retime.py astra-video 4423 0,429,1243,1688,2698,3756,4423
-
-边界数 = 场景数 + 1，且首尾必须为 0 和 DURATION。改完必跑：
-  validate-visual-plan / validate-layering / 各场景边界 range-render。
+Usage: python scripts/retime.py PROJECT_DIR DURATION 0,s1,s2,...,DURATION
+No files are changed if the proposed boundaries or source contract are invalid.
+This is not an automatic re-authoring of narration, scene motion or sound cues.
 """
 from __future__ import annotations
 
@@ -22,41 +13,45 @@ import sys
 from pathlib import Path
 
 
-def main() -> int:
-    if len(sys.argv) < 4:
-        print(__doc__)
-        return 2
-    project = Path(sys.argv[1])
-    duration = int(sys.argv[2])
-    bounds = [int(x) for x in sys.argv[3].split(",")]
-    if bounds[0] != 0 or bounds[-1] != duration:
-        print("边界首尾必须为 0 和 DURATION")
-        return 2
-
+def retime(project: Path, duration: int, bounds: list[int]) -> None:
+    if duration <= 0 or len(bounds) < 2 or bounds[0] != 0 or bounds[-1] != duration:
+        raise ValueError("Invalid boundaries: require positive DURATION, first 0 and last DURATION")
+    if any(b <= a for a, b in zip(bounds, bounds[1:])):
+        raise ValueError("Invalid boundaries: frames must be strictly increasing")
     index_tsx = project / "src" / "index.tsx"
-    text = index_tsx.read_text(encoding="utf-8")
-    new_text, n = re.subn(r"DURATION=\d+", f"DURATION={duration}", text, count=1)
-    if n != 1:
-        print("src/index.tsx 里没有找到 DURATION=<n>")
-        return 1
-    index_tsx.write_text(new_text, encoding="utf-8")
-    print(f"DURATION -> {duration}")
-
     manifest_path = project / "manifests" / "asset-manifest.json"
+    text = index_tsx.read_text(encoding="utf-8")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     scenes = manifest["scenes"]
     if len(scenes) != len(bounds) - 1:
-        print(f"场景数 {len(scenes)} 与边界段数 {len(bounds) - 1} 对不上，不写 manifest")
-        return 1
+        raise ValueError(f"Invalid scene count: {len(scenes)} scenes, {len(bounds) - 1} intervals")
+    if any(scene.get("shots") for scene in scenes):
+        raise ValueError("Re-time shot/beat anchors explicitly before using retime; nested timings are not scaled")
+    new_text, n = re.subn(r"\bDURATION\s*=\s*\d+", f"DURATION={duration}", text)
+    if n != 1:
+        raise ValueError("Expected exactly one numeric DURATION in src/index.tsx")
     for scene, start, end in zip(scenes, bounds[:-1], bounds[1:]):
+        if any(type(beat.get('frame')) is not int or not start <= beat['frame'] < end for beat in scene.get('beats', [])):
+            raise ValueError('Re-anchor review beats inside their new scene before retiming')
         scene["start_frame"], scene["end_frame"] = start, end
     manifest["duration_frames"] = duration
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"asset-manifest: duration_frames={duration}，{len(scenes)} 场景边界已更新")
+    # Prepare both payloads before publishing either. Validation failures never mutate inputs.
+    payload = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
+    index_tsx.write_text(new_text, encoding="utf-8")
+    manifest_path.write_text(payload, encoding="utf-8")
+    print(f"Updated duration={duration} and {len(scenes)} scene windows")
+    print("Review scene motion, caption tail, camera and sound beats against the new narration before rendering.")
 
-    print("--- Sound 音效帧重排建议（场景起点/中点/完成点，确认后手改） ---")
-    for scene, start, end in zip(scenes, bounds[:-1], bounds[1:]):
-        print(f"{scene['id']}: rustle={start + 4} whoosh={(start + end) // 2} chime={end - 30}")
+
+def main() -> int:
+    if len(sys.argv) != 4:
+        print(__doc__)
+        return 2
+    try:
+        retime(Path(sys.argv[1]), int(sys.argv[2]), [int(x) for x in sys.argv[3].split(",")])
+    except (ValueError, KeyError, OSError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
     return 0
 
 

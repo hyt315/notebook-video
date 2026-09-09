@@ -42,7 +42,7 @@ const AssetGate=()=>{const [handle]=useState(()=>delayRender('waiting for fonts,
 
 // Non-visual QA gate: measure every full cue with the real loaded font.
 // getBoundingClientRect() includes the 4/3 parent scale, so convert back to design pixels.
-const CaptionFitGate=()=>{const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load('400 40px Kai'),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){cancelRender(new Error('Subtitle measurement node is unavailable'));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const overflow=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''})).filter(row=>row.width>AESTHETIC.subtitleSafeWidth+.5);if(overflow.length){cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);if(done)return null;return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:'Kai,sans-serif',fontSize:40,fontWeight:400,whiteSpace:'nowrap'}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</div>};
+const CaptionFitGate=()=>{const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load('400 40px Kai'),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){cancelRender(new Error('Subtitle measurement node is unavailable'));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const overflow=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''})).filter(row=>row.width>AESTHETIC.subtitleSafeWidth+.5);if(overflow.length){cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);if(done)return null;return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:'Kai,sans-serif',fontSize:TYPE.subtitle,fontWeight:400,letterSpacing:1.6,whiteSpace:'nowrap'}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</div>};
 
 const Fonts=()=> <style>{`
 @font-face{font-family:Kai;src:url(${staticFile('LXGWWenKaiLite-Regular.ttf')}) format('truetype');font-weight:400}
@@ -65,9 +65,24 @@ const LineIcon:React.FC<{kind:IconKind,size?:number,color?:string,strokeWidth?:n
 const CheckBadge:React.FC<{size?:number}>=({size=30})=><span style={{width:size,height:size,borderRadius:999,background:C.green,color:C.white,display:'inline-grid',placeItems:'center',flex:'0 0 auto'}}><LineIcon kind="check" size={size*.62} color={C.white} strokeWidth={2.7}/></span>;
 
 const cleanTail=(s:string)=>s.replace(/[，。！？；：、,.!?;:\s]+$/g,'');
-const Subtitle=()=>{const f=useRawCurrentFrame(),lead=Math.round(FPS*.18),hold=Math.round(FPS*.05);let cue=captions.find((c:any)=>f>=c.startFrame-lead&&f<=c.endFrame+hold);if(!cue)cue=[...captions].reverse().find((c:any)=>c.startFrame<=f);const full=cue?cleanTail(cue.text):'';const words=cue?cue.words.filter((w:any)=>w.startFrame<=f+lead):[];return <div style={{position:'absolute',left:188,right:188,bottom:18,zIndex:200,display:'grid',placeItems:'center',textShadow:'0 2px 8px rgba(58,44,28,.28)'}}>
-  <div style={{width:AESTHETIC.subtitleSafeWidth,display:'grid',placeItems:'center',fontSize:TYPE.subtitle,lineHeight:1.18,letterSpacing:1.6,whiteSpace:'nowrap'}}><span style={{position:'relative'}}><span style={{visibility:'hidden'}}>{full}</span><span style={{position:'absolute',left:0,top:0}}>{words.map((w:any,wi:number)=>{const part=String(w.part);const prev=wi>0?String(words[wi-1].part):'';const isLatin=/([A-Za-z0-9])/;const isHan=(ch:any)=>/[一-鿿]/.test(ch);const lc=prev.slice(-1),cc=part[0];const spaced=(wi>0&&!/[\s，。！？；：、,.!?;:（(]$/.test(prev)&&!/^[\s，。！？；：、,.!?;:）)]/.test(part)&&!((isLatin.test(lc)&&isLatin.test(cc))||(isHan.test(lc)&&isHan.test(cc))))?' ':'';return <span key={wi} style={{display:'inline-block'}}>{spaced}{part.split('').map((ch:any,ci:number)=>{const p=interpolate(f,[w.startFrame+ci*.9,w.startFrame+ci*.9+2.5],[0,1],{...clamp,easing:Easing.bezier(.16,1,.3,1)});return <span key={ci} style={{display:'inline-block',opacity:p,transform:`translateY(${6*(1-p)}px)`}}>{ch}</span>})}</span>})}</span></span></div>
-</div>};
+const Subtitle=()=>{
+  const f=useRawCurrentFrame(),lead=msFrame(Number((cueData as any).lead_ms??60));
+  const cue=[...captions].reverse().find((c:any)=>c.startFrame<=f);
+  const full=cue?cleanTail(cue.text):'';
+  const words=cue?cue.words.filter((w:any)=>w.startFrame<=f+lead):[];
+  let index=0;
+  return <div style={{position:'absolute',left:188,right:188,bottom:18,zIndex:200,display:'grid',placeItems:'center',textShadow:'0 2px 8px rgba(58,44,28,.28)'}}>
+    <div style={{width:AESTHETIC.subtitleSafeWidth,display:'grid',placeItems:'center',fontSize:TYPE.subtitle,lineHeight:1.18,letterSpacing:1.6,whiteSpace:'nowrap'}}>
+      <span style={{position:'relative'}}><span style={{visibility:'hidden'}}>{full}</span><span style={{position:'absolute',left:0,top:0}}>
+        {words.map((w:any,wi:number)=><span key={wi} style={{display:'inline-block'}}>{String(w.part).split('').map((ch,ci)=>{
+          if(index++>=full.length)return null;
+          const p=interpolate(f,[w.startFrame-lead,w.startFrame-lead+2.5],[0,1],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
+          return <span key={ci} style={{display:'inline-block',opacity:p,transform:`translateY(${6*(1-p)}px)`}}>{ch}</span>;
+        })}</span>)}
+      </span></span>
+    </div>
+  </div>;
+};
 
 const Chrome=()=>{const f=q(useCurrentFrame()),stage=f<195?0:f<330?1:f<650?2:3,starts=[0,195,330,650],local=f-starts[stage],p=pop(local,-8),titles=COPY.chapterTitles;return <>
   <Paper style={{left:92,top:74,width:350,height:82,zIndex:150,display:'flex',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${.96+.04*p})`}}><div style={{width:72,background:C.orange,color:C.white,display:'grid',placeItems:'center',fontFamily:'Kai',fontWeight:700,fontSize:31}}>{String(stage+1).padStart(2,'0')}</div><div style={{padding:'10px 16px'}}><div style={{fontSize:TYPE.microS,color:C.blue,fontWeight:700,letterSpacing:2}}>{COPY.chromeKicker}</div><div style={{fontSize:TYPE.titleS,fontWeight:700,marginTop:3}}>{titles[stage]}</div></div></Paper>

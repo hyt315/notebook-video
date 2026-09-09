@@ -1,6 +1,6 @@
 # Visual director and generated-image workflow
 
-Use this reference before storyboarding scenes. The skill remains provider-neutral: image generation is an optional capability enhancement, not a runtime requirement.
+Use this reference when storyboarding image-led or image-supported scenes. The skill remains provider-neutral: image generation is an optional capability enhancement, not a runtime requirement.
 
 ## 1. Choose the visual mode from meaning
 
@@ -12,7 +12,7 @@ Assign exactly one primary mode to every scene before building it.
 | Contrast, slogan, misconception, keyword or emotional beat | `pure-text` | Scale, replacement, underline, staggered explanation and typographic rhythm |
 | Process, system, relationship, quantity or state transition | `pure-graphic` | SVG paths, nodes, tracks, cards and state changes |
 
-Use `image-text` as the normal choice when a concrete subject benefits from being seen. Use the other modes deliberately; do not force a bitmap into an abstract relationship or turn every sentence into a poster.
+Use `image-text` when seeing a concrete subject materially improves understanding; code-drawn illustration remains a valid default. Use the other modes deliberately; do not force a bitmap into an abstract relationship or turn every sentence into a poster.
 
 ## 2. Detect available image capability
 
@@ -23,7 +23,7 @@ Before the storyboard, inspect the current environment for an image-generation t
 - If no generator is available, keep the same storyboard and replace the image layer with native SVG/Remotion illustration. Do not block the whole video.
 - Honor a user request to avoid generated images or external services.
 
-When image generation is available and not prohibited, generate original support art by default for hero shots, concrete explanations and atmosphere shots where it materially improves comprehension or promotion value. Do not ask for another confirmation unless a required reference image is missing.
+Offer optional generation once when it is available and materially useful, unless the user already authorized or declined it. Supplied or licensed assets are usable without a generation opt-in. Never infer tool availability from the agent product name. Keep the same narrative purpose with native SVG if generation is unavailable.
 
 ## 3. Generate assets for animation
 
@@ -68,9 +68,9 @@ Treat the bitmap, each callout, each arrow and each explanation line as independ
 
 ## 6. Enforce scene lifetime
 
-Use start-inclusive and end-exclusive scene windows. A scene owns all of its image, text, SVG and annotation layers. At the scene end, either unmount the whole group or drive every obsolete part to zero opacity or fully outside the canvas.
+Use start-inclusive and end-exclusive scene windows. A scene owns its layers. A deliberate shared image bridge has one explicit owner spanning the relevant beats, not duplicate copies in two scene groups. At the scene end, either unmount the whole group or drive every obsolete part to zero opacity or fully outside the canvas.
 
-Before the next scene enters, inspect these frames:
+Around each cut or shared-image transition, inspect these frames:
 
 1. last readable hold;
 2. middle of exit;

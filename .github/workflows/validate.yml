@@ -26,7 +26,7 @@ jobs:
         run: |
           node --check scripts/notebook-video.mjs
           for file in scripts/*.sh; do bash -n "$file"; done
-          python3 -c "from pathlib import Path; [compile(path.read_text(encoding='utf-8'), str(path), 'exec') for path in Path('scripts').glob('*.py')]"
+          python3 -c "from pathlib import Path; [compile(path.read_text(encoding='utf-8'), str(path), 'exec') for folder in ('scripts', 'assets/lecture-template/scripts') for path in Path(folder).glob('*.py')]"
       - name: Validate skill and official example
         run: |
           test -z "$(find . -type d \( -name node_modules -o -name .tools -o -name .cache -o -name renders -o -name __pycache__ \) -print -quit)"
@@ -35,6 +35,9 @@ jobs:
           node scripts/notebook-video.mjs validate-official-example
           node scripts/notebook-video.mjs validate-visual-plan assets/example-project
           python3 scripts/selftest.py
+          python3 -m unittest discover -s tests
+      - name: Real browser, canvas, image and failure-gate smoke tests
+        run: python3 scripts/render-smoke.py "$RUNNER_TEMP/notebook-video-browser-smoke"
       - name: Audit locked dependencies
         working-directory: assets/example-project
         run: npm audit --package-lock-only --ignore-scripts --audit-level=high

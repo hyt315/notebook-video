@@ -13,7 +13,7 @@
     "design_timeline_fps": 30,
     "physical_motion_fps": 30,
     "frame_quantizer": "designStep = designTimelineFps / physicalMotionFps; Math.floor(designFrame / designStep) * designStep",
-    "camera": "fixed",
+    "camera": "restrained content rig; chrome and subtitles fixed",
     "global_motion": false,
     "mode_selection": "asked once at kickoff; 16:9 is the default",
     "modes": {
@@ -106,8 +106,8 @@
   },
   "fonts": {
     "display": "LXGWWenKaiLite-Regular.ttf",
-    "body": "SourceHanSansCN-Regular.otf",
-    "bold": "SourceHanSansCN-Bold.otf",
+    "body": "LXGWWenKaiLite-Regular.ttf",
+    "bold": "LXGWWenKaiLite-Medium.ttf",
     "subtitle_px": 40,
     "readability_floor_px": 17,
     "preload_required": true
@@ -221,7 +221,8 @@
       1.0,
       1.018
     ],
-    "anti_ppt_functional_components_required": true
+    "anti_ppt_functional_components_required": false,
+    "semantic_action_required": true
   },
   "visual_director": {
     "decision_before_storyboard": true,

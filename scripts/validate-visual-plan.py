@@ -99,6 +99,22 @@ def validate(project: Path) -> list[str]:
                 errors.append(f"{label}: overlaps previous scene ({start} < {previous_end})")
             if start > previous_end:
                 errors.append(f"{label}: leaves an uncovered frame gap ({previous_end}..{start})")
+            beats = scene.get('beats', [])
+            if not isinstance(beats, list):
+                errors.append(f"{label}: beats must be an array")
+            else:
+                last_beat = start - 1
+                for beat in beats:
+                    if not isinstance(beat, dict):
+                        errors.append(f"{label}: beat must be an object")
+                        continue
+                    frame = beat.get('frame')
+                    if type(frame) is not int or not start <= frame < end or frame <= last_beat:
+                        errors.append(f"{label}: beat frames must be ordered inside the scene window")
+                    else:
+                        last_beat = frame
+                    if not isinstance(beat.get('action'), str) or not beat['action'].strip():
+                        errors.append(f"{label}: every beat needs an observable action")
             previous_end = end
             referenced_assets = scene.get("visual_asset_ids")
             if not isinstance(referenced_assets, list) or not all(isinstance(item, str) and item for item in referenced_assets):
@@ -120,7 +136,7 @@ def validate(project: Path) -> list[str]:
             errors.append(f"scene coverage ends at {previous_end}, expected duration_frames {duration}")
         index_tsx = project / "src" / "index.tsx"
         if index_tsx.is_file():
-            ticket = re.search(r"DURATION=(\d+)", index_tsx.read_text(encoding="utf-8"))
+            ticket = re.search(r"\bDURATION\s*=\s*(\d+)", index_tsx.read_text(encoding="utf-8"))
             if ticket and int(ticket.group(1)) != duration:
                 errors.append(
                     f"asset-manifest duration_frames {duration} differs from src/index.tsx DURATION={ticket.group(1)} (retime drift: update both together)"
@@ -144,7 +160,10 @@ def validate(project: Path) -> list[str]:
             errors.append(f"{label}: invalid source_type {asset.get('source_type')!r}")
         rel = asset.get("path")
         if isinstance(rel, str):
-            target = project / rel
+            target = (project / rel).resolve()
+            if not target.is_relative_to((project / 'public').resolve()) or (project / rel).is_symlink():
+                errors.append(f"{label}: asset must be a local file inside public/: {rel}")
+                continue
             if not target.is_file() or target.stat().st_size == 0:
                 errors.append(f"{label}: missing or empty asset {rel}")
             elif str(asset.get("sha256") or "").lower() != hashlib.sha256(target.read_bytes()).hexdigest():

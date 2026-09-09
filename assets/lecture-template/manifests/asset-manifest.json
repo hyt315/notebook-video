@@ -1,7 +1,7 @@
 {
   "style_version": "warm-ivory-remotion-2k30-v9-visual-director",
   "composition": "NotebookVideoFilm",
-  "duration_frames": 1126,
+  "duration_frames": 1148,
   "visual_asset_ids": [
     "bg-cel-169",
     "bg-cel-43",
@@ -17,7 +17,7 @@
     {
       "id": "collaborative-world",
       "start_frame": 0,
-      "end_frame": 205,
+      "end_frame": 213,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
@@ -31,12 +31,22 @@
         "bg-flat-34"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
-      "exit_contract": "complete-exit"
+      "exit_contract": "complete-exit",
+      "beats": [
+        {
+          "frame": 82,
+          "action": "Establish collaboration network"
+        },
+        {
+          "frame": 166,
+          "action": "Read the shared collaboration conclusion"
+        }
+      ]
     },
     {
       "id": "step-one-contribute",
-      "start_frame": 205,
-      "end_frame": 377,
+      "start_frame": 213,
+      "end_frame": 416,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
@@ -50,12 +60,22 @@
         "bg-flat-34"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
-      "exit_contract": "complete-exit"
+      "exit_contract": "complete-exit",
+      "beats": [
+        {
+          "frame": 286,
+          "action": "Move the same change along the branch"
+        },
+        {
+          "frame": 358,
+          "action": "Arrival becomes a pull request"
+        }
+      ]
     },
     {
       "id": "ship-and-operate",
-      "start_frame": 377,
-      "end_frame": 571,
+      "start_frame": 416,
+      "end_frame": 682,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
@@ -69,12 +89,22 @@
         "bg-flat-34"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
-      "exit_contract": "complete-exit"
+      "exit_contract": "complete-exit",
+      "beats": [
+        {
+          "frame": 475,
+          "action": "Project structure is ready"
+        },
+        {
+          "frame": 593,
+          "action": "Version changes and release begins"
+        }
+      ]
     },
     {
       "id": "three-skills-cta",
-      "start_frame": 571,
-      "end_frame": 1126,
+      "start_frame": 682,
+      "end_frame": 1148,
       "visual_mode": "pure-text",
       "visual_asset_ids": [
         "bg-cel-169",
@@ -88,7 +118,21 @@
         "bg-flat-34"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
-      "exit_contract": "final-hold"
+      "exit_contract": "final-hold",
+      "beats": [
+        {
+          "frame": 803,
+          "action": "Activate agent assistance"
+        },
+        {
+          "frame": 851,
+          "action": "All three assistance states active"
+        },
+        {
+          "frame": 1030,
+          "action": "Retire completed cards and show the CTA"
+        }
+      ]
     }
   ],
   "parts": [

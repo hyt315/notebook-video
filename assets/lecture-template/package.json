@@ -3,17 +3,17 @@
   "private": true,
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "sync": "node sync-render-inputs.cjs",
-    "render": "npm run sync && remotion render NotebookVideoFilm renders/notebook-video-visual-director.mp4 --entry-point=src/index.tsx --codec=h264 --crf=16 --concurrency=4",
-    "still": "npm run sync && remotion still NotebookVideoFilm renders/preview.png --entry-point=src/index.tsx --frame=260"
+    "render": "npm run sync && remotion render src/index.tsx NotebookVideoFilm renders/notebook-video-visual-director.mp4 --codec=h264 --crf=16 --concurrency=4",
+    "still": "npm run sync && remotion still src/index.tsx NotebookVideoFilm renders/preview.png --frame=260"
   },
   "dependencies": {
-    "@remotion/cli": "^4.0.0",
-    "@remotion/media": "^4.0.0",
-    "remotion": "^4.0.0",
+    "@remotion/cli": "4.0.489",
+    "@remotion/media": "4.0.489",
+    "remotion": "4.0.489",
     "react": "^18.2.0 || ^19.0.0",
     "react-dom": "^18.2.0 || ^19.0.0"
   },

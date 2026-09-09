@@ -2,6 +2,28 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [2.9.0] - 2026-09-09
+
+### Changed
+
+- Shorter, task-routed Skill instructions; visual direction now starts from an explanatory action rather than mandatory panel/widget counts. Image availability, permissions and timing-quality claims are consistent across references.
+- Lecture scene mounting, chapter chrome and local clocks consume the asset manifest. The sample branch follows its drawn route; assistance states follow narration beats; completed cards retire before the CTA. The timeline includes a 21-frame minimum speech tail with half-up frame rounding.
+- Keep existing themes/components and pinned Remotion 4.0.489. Runtime requirements are consistently Node 20+ and Python 3.10+; no new runtime dependency.
+
+### Fixed
+
+- Safe fxkit imports without theme extras; future exit cues no longer override entrances; image helpers use Remotion `Img` and bounded focal geometry.
+- Font-ready blocking card measurements, selected-canvas caption bounds, consistent subtitle lead/spacing, CJK header fallback and portrait camera/label geometry.
+- Normalize provider WAV formats before concatenation; cache complete synthesis identity; publish active segment provenance; preserve locked sample gaps during re-voicing; reject repeated speed processing. Character timing is explicitly estimated, not claimed as forced alignment.
+- Reject malformed timing/cue ends and invalid retiming before writing. FFmpeg analysis failures and missing contact sheets cannot pass QA. Sync preserves unchanged files; dependency installs track the lockfile; render invocations have distinct raw temporary files and explicit entry points.
+- Exclude known credential files, external symlinks and obsolete audio caches from source ZIPs, retaining active or unambiguous legacy segments needed for offline editing. Publish ZIPs atomically and never include the archive in itself.
+- Correct README license description to the existing Apache-2.0 LICENSE; no relicensing.
+
+### Added
+
+- One optional `EvidenceBridge` recipe that promotes supporting imagery and returns it to the same explanation, without changing the audio timeline.
+- `validate-project`, boundary/beat-aware `review-plan`, focused standard-library regression tests and real-browser rendering smoke tests covering themes, canvases, missing assets and negative layout fixtures.
+
 ## [2.8.0] - 2026-09-09
 
 ### Added
