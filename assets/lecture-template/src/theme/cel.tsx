@@ -49,6 +49,7 @@ const palette: Theme['palette'] = {
 const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 10, paperOutline: 2.5,
   textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: .028,
+  subtitleWeight: 700, subtitleLetterSpacing: 1.6, subtitlePadX: 64,
 };
 
 // 精致硬偏移墨影：紧凑利落，杜绝粗笨大黑框
@@ -110,6 +111,15 @@ export const Burst: React.FC<{x: number; y: number; size: number; text: string; 
     );
   };
 
+// 背景装饰区（LOCKED 声明）：背景位图里的画幅级高对比装饰所占矩形（1920×1080 设计坐标）。
+// 内容压到这些区域时必须坐在 CoverPanel 上，否则墨色文字会被网点和速度线吃掉。
+const backgroundDecorZones = [
+  {x: 0, y: 620, w: 820, h: 460},      // 左下：黄色爆炸贴 + 半调网点
+  {x: 1230, y: 560, w: 690, h: 520},   // 右下：黑色速度线 + 红/蓝星
+  {x: 1640, y: 370, w: 210, h: 210},   // 右上：红五角星
+  {x: 60, y: 400, w: 120, h: 120},     // 左中：蓝色方块
+];
+
 export const THEME: Theme = {
   id: 'cel',
   palette,
@@ -119,5 +129,6 @@ export const THEME: Theme = {
   Paper,
   Grade,
   SubtitleChrome,
+  backgroundDecorZones,
   extras: {Burst},
 };

@@ -364,10 +364,33 @@ const pythonCommandMap = new Map([
   ['validate-semantic-breaks', ['validate-semantic-breaks.py']],
   ['validate-official-example', ['validate-official-example.py']],
   ['match-timing', ['match-timing.py']],
+  ['resolve-shots', ['resolve-shots.py']],
+  ['validate-shot-motion', ['validate-shot-motion.py']],
+  ['validate-composition', ['validate-composition.py']],
 ]);
 
+// 组件接触表：把 NotebookVideoShowcase 渲染成 mp4，再抽 1fps 接触表 jpg。
+// 作用：让执行 AI 看见库组件形态，而不是读文字描述（references/media-routing.md §6）。
+const showcase = async (args, sheetOnly = false) => {
+  const positional = args.filter((a) => !a.startsWith('--'));
+  const [projectArg, outputArg] = positional;
+  if (!projectArg) fail(`Usage: notebook-video ${sheetOnly ? 'showcase-sheet' : 'showcase'} PROJECT_DIRECTORY [OUTPUT_FILE]`, 2);
+  const project = resolvePath(projectArg);
+  const mp4 = resolvePath(outputArg || path.join(project, 'renders', 'showcase.mp4'));
+  const jpg = resolvePath(outputArg || path.join(project, 'renders', 'showcase-sheet.jpg'));
+  ensureParent(mp4);
+  ensureParent(jpg);
+  if (!sheetOnly || !isNonEmptyFile(mp4)) {
+    const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
+    await remotionRender({project, composition: 'NotebookVideoShowcase', output: mp4, concurrency});
+  }
+  await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', mp4, '-vf', 'fps=1,scale=1280:-1,tile=3x2', '-frames:v', '1', '-q:v', '3', jpg]);
+  console.log(`Showcase contact sheet written: ${jpg}`);
+  console.log('Read it to pick components by sight; see references/media-routing.md §6.');
+};
+
 const usage = () => {
-  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--classic] [--style=paper|cel|sticker|flat]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT\n  validate-visual-plan PROJECT_DIRECTORY\n  validate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
+  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--classic] [--style=paper|cel|sticker|flat]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\nvalidate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };
 
 const main = async () => {
@@ -387,6 +410,8 @@ const main = async () => {
     case 'render-range': return renderRange(args);
     case 'review-frames': return reviewFrames(args);
     case 'render': return render(args);
+    case 'showcase': return showcase(args, false);
+    case 'showcase-sheet': return showcase(args, true);
     case 'validate-video': return validateVideo(args);
     case 'package': return packageProject(args);
     default: fail(`Unknown command: ${command}\nRun with --help for available commands.`, 2);

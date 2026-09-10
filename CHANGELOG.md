@@ -2,6 +2,55 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [2.9.0] - 2026-09-10
+
+> 版本说明：v2.9 / v3.0 两条线（受限配方、内容路由、限量文本架构）的优点已被本版吸收，
+> 因此不再保留这两条分支与旧 tag；本版即 main 线上的 v2.9.0。
+
+### Added
+
+- **`OverlapGate`（渲染期重叠/遮挡门禁，`src/overlap-gate.tsx`）**：本版最重要的新增。每 15 帧抽样一次，做两件事——① 文字**两两重叠**（用 `Range.getClientRects()` 量真实字形矩形，避免居中文本按整块宽度误报）；② 文字**被遮挡**（在文字块内取采样点调 `document.elementsFromPoint`，返回的是绘制顺序；排除祖先、透明蒙层、以及标了 `data-gate-allow` 的有意覆盖）。默认只警告，校准后可开 `mode="block"` 阻断渲染。**这一道门禁抓出了本版全部 10 类重叠缺陷中的每一类**，并且从"抓到 3 类真实重叠"到"全片零报告"走完了一个完整的门禁闭环。
+- **有意覆盖白名单约定**：`data-gate-allow="handoff" | "swap" | "value-swap"` 与 `data-gate-skip`。镜头交接叠帧、头部滑变双层、指标新旧值替换都属有意重叠，必须显式标注；不允许用白名单掩盖两个不同信息互相压字。
+- **多时钟动效六律**（写进 `motion-design.md`）：同一元素多属性错开时长的双时钟、入场/出场曲线不同、不要只动透明度、数值必须 `tabular-nums` + 固定小数位、进度动 `scaleX` 不动 `width`、过冲只给物体不给数值。另加"每镜保留一个缓慢环境运动"与"状态机推进要有动作"两条结构性要求。
+- **镜头边界交接**：`FinalDemo` 在每镜开头 10 帧把上一镜末帧叠在上层淡出，`Shot` 不再在镜末淡到全透明——**消灭了镜头边界的空帧**（逐帧审计实测每个边界都有 1–2 个空帧）。
+- **平移安全预算（镜头铁律之二）**：相机平移会整层移动内容，因此 `s=1.00` 时任何平移都会把内容推出画面（实测把走廊左侧站名裁掉）。新增 `panBudget()` 与 `camAt()` 运行时钳制，规则 `maxPanX = 960×(1−1/s)`，`validate-shot-motion.py` 用同一公式检查。**推论：纯静止镜头不能有取景偏移；想要偏心构图就必须带一个能覆盖它的缩放。**
+- **时序铁律：讲到哪、出现到哪**。元素出现帧必须绑定到 `SHOTS.Sx.beats` 的某个节拍，禁止在镜头开头把一屏元素一次性铺完；入场统一为 22 帧 `easeOut` + 22px 上浮 + 微缩放（`enterAt()`），同句内错峰 8–16 帧，镜末 18 帧干净淡出。写入 `scene-skeletons.md` §3.5 并给出可直接照抄的代码形状。
+- `locked-style-contract.json` 新增 `timing_system` 与 `readability_system` 两组契约。
+- **镜头层 (`src/shotkit.tsx`)：受限配方 + 出界数学证明。** 取代 v2.8 的 Camera Micro-Framing Invariant（x∈[945,975]、s∈[1.00,1.018]，景别变化 1.8%，等同定焦，且全片只有一条相机轨道）。现在每个 shot 声明六个意图之一（`establish` / `push-in` / `pull-back` / `pan-follow` / `reveal` / `micro-orbit`）加一个必须始终可见的 `anchor`；`safeCheck()` 与 `scripts/validate-shot-motion.py` 用同一套纯算术逐关键帧证明 anchor 不出界（因 `x/y/s` 在关键帧间单调、可见窗边界对其单调，故逐帧校验即为精确证明）。含 `DepthLayers` 景深视差（系数 0.35/0.70/1.00，层数 ≤3）与 3D 路径（CSS `zoom` 而非 `transform: scale`，避免 Chromium 先光栅化再放大导致文字发虚）。
+- **场景骨架层 (`src/stagekit.tsx`、`src/skeletons.tsx`)：四种骨架。** `Stage`（单体舞台：一个主体演化 3–6 个状态，`StageFrame` + `useStageMachine` + `PhaseRail` + `Attach`）、`Corridor`（持久对象沿轨道穿站）、`Split`（双栏对比）、`Zoom`（整体→聚焦→标注→回整体，纯代码局部放大）。默认强制"相邻场景不得同骨架、全片 ≥3 种"。
+- **介质层 (`src/media.tsx`、`src/kit.tsx`)：内容 → 视觉介质。** 新增 `ConsoleWindow`（控制台/窗口介质）、`MetricGrid`（指标网格）、`StampBanner`（结论吸底）；并把主题无关原子 `PillTag` / `LineIcon`(26 字形) / `CheckBadge` / `TYPE` 从 `index.tsx` 抽到 `src/kit.tsx`，使工程侧也能引用。新增 `references/media-routing.md` 的内容→介质路由表与 A/B 场景定义。
+- **组件接触表 (`src/showcase.tsx` + `NotebookVideoShowcase` Composition + `showcase` / `showcase-sheet` 命令）。** 6 页渲染 16 个构件 + 6 种镜头意图 + 4 种骨架，1fps 抽帧即得 6 张图。解决"能力存在但不可达"：让执行 AI 看图选型，而不是读 props 文档。
+- **分镜表与解析器 (`scripts/resolve-shots.py` + `manifests/shots.json`)。** 分镜表只声明"本镜覆盖哪几句 cue"与语义字段，解析器从 TTS 词级时间戳推出全部绝对帧，生成 `src/shots.ts`（相机关键帧已展开）与 `shots.resolved.json`。改台词后重跑即可，**不再手改几十处魔法帧号**。音效钉帧也改为相对所属镜头起点推导。
+- **两道构图门禁 (`scripts/validate-shot-motion.py`、`scripts/validate-composition.py`)。** 这是本版最重要的新增：v2.8 的强制条款全部空转（明文强制 6 个反 PPT 组件，实测 34 个库组件里 32 个引用数为 0，9 个校验脚本无一条能发现）。八项检查、P0 阻断渲染 / P1 仅警告，纯标准库只读，可直接进 CI。
+- **背景可读性契约。** 主题新增 `backgroundDecorZones`（cel 4 区、flat 2 区）；`CoverPanel` 提供内容底托，`BackgroundMute` 提供成片级羽化兜底。**锁定背景位图保持原样不改**——它很好看，只解决压在上面的文字被装饰吃掉的问题。
+- **四份新参考文档**：`shot-language.md`、`scene-skeletons.md`、`media-routing.md`、`composition-gate.md`。
+
+### Fixed
+
+- **`PhaseRail` 的入场动画是一段死代码**：`translateX(${(1 - reveal) * 0}` 乘以 0，整段推进没有可见动作。改成真实的每拍推进：圆点脉冲 + 光晕收放 + 连接线按拍画出 + 完成态用描线对勾。
+- **`ZoomStage` 变换顺序错误**：`translate(tx,ty) scale(k)` 里 `tx` 用的是未缩放单位，导致"要聚焦的点"不落在框心，且放大后内容被框裁掉（静态审计实测四个场景被裁 100–500px，其中一项指标完全移出画面）。改为三段式 `translate(框心) scale(k) translate(-焦点)`，并新增 `contentW/contentH` 按内容自动钳制缩放上限。
+- **`Corridor` 状态标签与站点标签只剩 3.6px**：状态标签从承载物下方 116px 改到上方 46px，站点标签下移 96px；退场中的标签锚在它自己的站点位置上（否则两个标签会叠在一起，门禁实测 3500px²）。到站反馈由"缩放入场"改为"圆环脉冲 + 对勾描线"。
+- **`MetricGrid` 新旧数值是同位置替换**，属有意重叠，已标 `data-gate-allow="value-swap"`；同时把替换改为两条互不相交的轨道（行程 56px），避免中途叠字。
+- **`SplitStage` 两侧同时同向入场读作"两张幻灯片"**：改为左侧先入场 6 帧；分隔线先画、徽章后落；胜出改为因果顺序（输方先暗+去饱和+下沉 → 赢方边框 → 赢方放大 → 徽章），输方的行逐行划掉。
+- **`StageFrame` 头部文本是硬切**：改为滑变双层（旧的 7 帧上移淡出、新的 12 帧落下淡入，两层错开 4 帧），且**完全由 `phase.at` 派生**——不用 `useRef` 记"上一帧"，因为 Remotion 逐帧乱序渲染，ref 跨帧状态不可靠。
+- **`ConsoleWindow` 高度默认值比内容高约 120px**（整块死黑）：改为按内容自适应；行节奏从 9 帧改到 16 帧（300ms 太快，光标读不出"移动"）；新增光标接棒、写入式 clip 擦除、ok/warn 行一闪、末行扫描。
+- **`validate-shot-motion.py` 读错了数据源**：它按 `shot["camera"]` 自己再"猜"一遍关键帧，而不是读解析器已展开的顶层 `keys`，于是校验的是一个假想的静止相机——**此前的 PASS 有一部分是空的**。改为优先读 `keys` 后，立刻暴露出 11 个镜头的平移超预算问题。教训：门禁必须与运行时读同一份真源。
+- **遮挡底托是硬边矩形**，下沿留下肉眼可见的水平接缝（38 秒处横切爆炸贴）。改为径向羽化渐变并去掉 1px 描边环。
+- **同一容器里"文档流标题 + 绝对定位组件"必然重叠**：绝对定位组件的 `x/y` 相对容器原点，而文档流标题也占容器顶部，两者精确压在一起（实测：走廊场景的"整个过程对你是透明的"与列表第一行叠成乱字）。
+- **章节卡与场景标签互相压字**（用户反馈"左上角文字每次都被盖住"）：移除与章节卡信息重复的场景标签胶囊，并把章节卡与页眉移到画幅贴角位置。
+- **`CaptionFitGate` 之前是"画幅盲"的**：硬编码 16:9 的 44px / 字重 400 / 字距 1.2 / 安全宽 1334，也没有计入主题字幕框内边距（cel 64px、sticker 72px、flat 108px）。结果是 **4:3 与 3:4 的字幕超宽静默通过、渲染后被裁切**，cel/sticker/flat 的字重与字距也量错了。现在字号/字重/字距/安全宽全部取自当前 canvas 与主题（新增 `subtitleWeight` / `subtitleLetterSpacing` / `subtitlePadX`），超 `mode.safe` 记 fail、超内边距记 warn。**修好之后会开始拦截以前静默放行的字幕——那正是门禁在工作**（本版实测拦下一条 1345px 的长字幕，已按语义拆分为两条）。
+- **`StageFrame` 的 `header` / `stamp` 槽缺少定位祖先**，槽内绝对定位构件（如 `StampBanner`）会跑到 StageFrame 顶部压住页眉。
+- **`CoverPanel` 的 wash 底板若用正 z-index，会盖住场景内所有 `z-index: auto` 的元素**（CSS 中正 z-index 稳定压过 auto）。实测导致整镜内容被压成 15% 不透明。wash 必须用**负 z-index**。
+- `motion-design.md` 删除旧的相机铁律整节，改为指向 `shot-language.md`；`quality-checklist.md`、`locked-style-contract.json` 同步改为"每镜受限配方 + anchor 证明 + 配额"的契约。
+
+### Changed
+
+- `NotebookVideoFilm` 不再使用全片级 `CameraRig`（连同 `CAM_KEYS_L` / `CAM_KEYS_P` 一并移除）。取景是**镜头级**的。`shotkit` 在无 3D 关键帧时走纯 `translate + scale`，且 `s=1.0 / x=960 / y=540` 时与 v2.8 定焦渲染逐像素一致。
+- `selftest.py` 的关键产物清单纳入 v2.10 的 8 个源文件、4 份文档与 3 个脚本。
+
+> 说明：本版所有结论来自 (a) 对成片逐帧审计、(b) 对 20 个场景的静态坐标审计、(c) 在真实无头浏览器里的实测 spike 三路交叉验证，而非推测。
+> 说明：模板自带的 30 秒样片仍保留 v2.8 的四个场景，作为**美学与技术基线**；场景语法请遵循
+> `references/scene-skeletons.md`，并参考 `NotebookVideoShowcase` 接触表。旧场景将被下一版替换。
 ## [2.8.0] - 2026-09-09
 
 ### Added

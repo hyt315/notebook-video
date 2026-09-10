@@ -4,7 +4,7 @@
 
 - [Cadence](#cadence)
 - [Standard motions](#standard-motions)
-- [Camera Micro-Framing Invariant](#camera-micro-framing-invariant-镜头微运镜与防出界铁律)
+- [Shot camera (受限配方 + 出界证明)](#shot-camera-镜头受限配方与出界证明)
 - [Anti-PPT Functional Component Invariant](#anti-ppt-functional-component-invariant-反-ppt-实体交互组件铁律)
 - [Transitions](#transitions)
 - [Stop-motion accent](#stop-motion-accent)
@@ -14,13 +14,13 @@
 
 Deliver at native 30fps. Keep scene constants, physical poses, subtitle reveal and output in the same 30fps coordinate system. Do not duplicate frames into a 60fps container. For an intentional stop-motion accent, quantize only that component to 15fps so each pose holds for two output frames.
 
-The global camera moves: **CameraRig** wraps every scene as one continuous track on the delivery canvas (per-canvas keyframe tables: 16:9 and 3:4; 4:3 reuses the landscape track). Keep scale always >=1 so the canvas never shows outside the stage, and keep the built-in exponential lag follow-focus. Author exactly one slow push or focus drift per chapter; all other motion belongs to independently modeled objects.
+The camera is **per shot**, not one film-wide track. Each shot declares one intent from a closed set and an `anchor` that must stay visible; the arithmetic proof lives in [shot-language.md](shot-language.md). Quotas: ≥3 camera moves per chapter, ≤1 per shot, 30–45 frames each, easeInOut, zoom ≤1.35 on shots carrying text, and the chrome card / header / subtitle sit **outside** the camera so they never move. Keep scale always >=1 so the canvas never shows outside the stage. Author `still` only deliberately — a film with no camera at all reads as page-turning.
 
 Keep stable layout coordinates fixed and animate movement with `translate3d`, rotate, scale and opacity. Mount only the active scene, plus the incoming scene during a short transition.
 
 ## Standard motions
 
-- Camera push: chapter level, subtle breathing scale 1.00 ~ 1.018, horizontal drift strictly bounded within ±15px (x between 945 and 975), focus follows narration target without displacing active elements.
+- Camera: one intent per shot (`establish` / `push-in` / `pull-back` / `pan-follow` / `reveal` / `micro-orbit`), parameters and zoom budgets per [shot-language.md](shot-language.md). The narrated `anchor` must stay fully inside the frame at every keyframe — proved by `scripts/validate-shot-motion.py`, not by keeping the camera still.
 - JumpInText title: per-glyph 3D flip-in (rotateX ~88deg from the baseline, 12px rise, spring over-bounce, ~1.6-frame stagger). Always for chapter and scene titles.
 - WaveText latin: per-letter wave typing with a color gradient (10-frame wave, 4 keyframe offsets), for CTA latin strings.
 - Figure roll-in: multi-keyframe rotation (150deg to 360deg with a mid-scale bulge) instead of a plain pop for emblem graphics.
@@ -35,27 +35,54 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 - Complete exit: move the entire component outside the canvas or remove it after it is fully out; never leave a clipped corner.
 - Character reaction: move separate arms, face or body parts; do not wobble one flattened character image.
 
-## Camera Micro-Framing Invariant (镜头微运镜与防出界铁律)
+## Motion polish: multi-clock motion (v2.9.0)
 
-To eliminate the static PPT feeling while preventing any active narration content from being pushed out of frame:
+**根因诊断**：模板里每个组件原本都是「一个元素的、一个属性、一条曲线、动完永久静止」。
+所有看起来丝滑的开源库都在动**同一元素的多个属性、用不同的时钟**，并且画面里永远有
+一个缓慢的背景运动。下面六条是把"丝滑"从形容词变成参数。
 
-1. **Strict Spatial Bounds (硬性位移约束)**:
-   - On 16:9 canvas (1920×1080 design stage):
-     - Horizontal position `x` is strictly bounded within `[945, 975]` (drift `≤ ±15px`);
-     - Vertical position `y` is strictly bounded within `[538, 542]` (drift `≤ ±4px`);
-     - Scale `s` is strictly bounded within `[1.00, 1.018]` (gentle breathing);
-   - On 3:4 portrait canvas (1080×1440 design stage):
-     - Horizontal position `x` is strictly bounded within `[530, 550]`, vertical `y` within `[710, 730]`, scale `s` within `[1.00, 1.02]`.
+1. **多时钟**：同一元素的位移与透明度用不同时长（参考 number-flow：位移 900ms / 透明度 450ms，
+   约 2:1）。本模板取：数值位移 27 帧 / 透明度 14 帧；卡片入场 透明度 16 帧 / 位移 20 帧。
+   同长同曲线会读成"一个刚体弹出"。
+2. **入场与出场曲线不同**：出场快而急（`Easing.in(Easing.quad)`，约为入场时长的 60%），
+   入场慢而稳（`Easing.bezier(0.16,1,0.3,1)`）。这是最容易被感知到的一条。
+3. **不要只动透明度**：每个淡入都配 10–24px 位移或 2–6% 缩放。30fps 下纯淡入只有
+   约 30 个可辨中间态，且没有空间线索。
+4. **数值用 `tabular-nums` + 固定小数位**（`fontVariantNumeric:'tabular-nums'`，
+   `minimumFractionDigits === maximumFractionDigits`）。否则数字每帧改变宽度、整格横向抖动
+   ——这是"看起来不丝滑"最常见的真实原因。
+5. **进度类动 `scaleX`，不动 `width`**（进度条、漏斗条、时间轨填充）。`width` 是布局属性，
+   会重排，而且会让圆角胶囊在动画中途被拉变形。父容器保留 `overflow:hidden` 与圆角。
+6. **过冲只给物体，不给数值**：印章/横幅可以 0.94→1.03→1 弹一下，百分比与环不能弹
+   （会短暂显示错误的数）。环要"落定"就给容器 scale 一个 1→1.03→1。
 
-2. **Semantic Synchronization (语意跟随)**:
-   - When narration explains the left card, concept, or terminal, the camera micro-drifts gently leftward (`x ≈ 948`);
-   - When narration shifts to the right data, benchmark, code block, or CTA, the camera micro-floats rightward (`x ≈ 974`);
-   - When transitioning between chapters or holding both sides, reset to center (`x = 960, s = 1.00`).
+配套的两条结构性要求：
+- **每镜保留一个全程缓慢的"环境运动"**（≤4% 幅度、周期 90–180 帧、`Easing.inOut(Easing.sin)`），
+  且**只在停驻时**呼吸——行驶/进行中不要抖动，"一直在微动"不算语义变化。
+- **状态机推进要有动作**：`PhaseRail` 的当前点脉冲 + 光晕、连接线按拍画出、完成态用
+  **描线**而不是缩放入场（对勾是笔画，应当画出来）。
 
-3. **Absolute Rejection Flags**:
-   - Camera horizontal offset `|x - 960| > 25px` is strictly rejected;
-   - Moving camera away from the currently narrated card is strictly rejected;
-   - Any camera motion that causes the active narration card to come within 60px of the viewport edge is strictly rejected.
+## Shot camera (镜头受限配方与出界证明)
+
+**v2.10 起取代旧的 Camera Micro-Framing Invariant。** 旧铁律把相机锁在 `x ∈ [945,975]`、`s ∈ [1.00,1.018]`
+（景别变化 1.8%，等同定焦），而且是**全片一条关键帧轨道**，所以每个镜头不可能有自己的取景；
+同时 3:4 的 `CAM_KEYS_P` 反而有 10 个关键帧越界且无人发现。两个极端都来自同一件事：**没有校验**。
+
+现行规则：
+
+1. **每个 shot 一个 intent**，取值仅限 `establish` / `push-in` / `pull-back` / `pan-follow` / `reveal` / `micro-orbit` / `still`；
+   曲线形状由 intent 决定，调用方只填少量参数 —— 自由曲线一律不接受。
+2. **每个 shot 必须声明 `anchor`**（本镜必须始终可见的矩形）。`safeCheck()` 与
+   `scripts/validate-shot-motion.py` 用同一套纯算术证明 `anchor` 在所有关键帧都落在可见窗内；
+   任一越界即 P0，阻断渲染。
+3. **配额**：每章 ≥3 次运镜、每镜 ≤1 次、单次 30–45 帧 easeInOut；全片 ≥3 种 intent。
+4. **缩放预算**：含文字的镜头 `s ≤ 1.35`，纯图形镜头 `s ≤ 1.60`；
+   需要"更大"时优先**把主角画大**，而不是把相机推近（推近会牺牲文字锐度）。
+5. **页眉 / 章节卡 / 字幕在相机之外**（屏幕空间），结构上不可能被运镜带动。
+6. **景深视差**：`DepthLayers` 系数只用 `0.35 / 0.70 / 1.00`，层数 ≤3，远层必须有真实内容。
+7. **不要**重新引入全片级相机轨道。取景是镜头级的。
+
+镜头部分的完整参数表与写法见 [shot-language.md](shot-language.md)（本文件只保留与动效相关的部分）。
 
 ## Anti-PPT Functional Component Invariant (组件防 PPT 化与功能实体化)
 

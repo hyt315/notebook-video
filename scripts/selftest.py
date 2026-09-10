@@ -56,6 +56,9 @@ def main() -> int:
         "scripts/validate-caption-sync.py",
         "scripts/validate-semantic-breaks.py",
         "scripts/validate-layering.py",
+        "scripts/resolve-shots.py",
+        "scripts/validate-shot-motion.py",
+        "scripts/validate-composition.py",
         "scripts/validate-visual-plan.py",
         "scripts/coords-lint.py",
         "scripts/retime.py",
@@ -63,6 +66,13 @@ def main() -> int:
         "scripts/validate-video.cmd",
         "assets/lecture-template/src/index.tsx",
         "assets/lecture-template/src/fxkit.tsx",
+        "assets/lecture-template/src/kit.tsx",
+        "assets/lecture-template/src/shotkit.tsx",
+        "assets/lecture-template/src/stagekit.tsx",
+        "assets/lecture-template/src/skeletons.tsx",
+        "assets/lecture-template/src/media.tsx",
+        "assets/lecture-template/src/insert.tsx",
+        "assets/lecture-template/src/showcase.tsx",
         "assets/lecture-template/src/theme/active.ts",
         "assets/lecture-template/src/theme/canvas.ts",
         "assets/lecture-template/src/theme/types.ts",
@@ -75,6 +85,10 @@ def main() -> int:
         "assets/lecture-template/manifests/caption-cues.json",
         "references/lecture-composition.md",
         "references/fxkit.md",
+        "references/shot-language.md",
+        "references/scene-skeletons.md",
+        "references/media-routing.md",
+        "references/composition-gate.md",
         "references/visual-system.md",
         "references/canvas-modes.md",
         "references/theme-system.md",
@@ -118,15 +132,20 @@ def main() -> int:
         _scan = [p for p in ROOT.rglob("*") if p.is_file() and p.suffix.lower() in _suffix
                  and not any(part in _skip for part in p.relative_to(ROOT).parts)
                  and p.name != "selftest.py"]
-    _hits = []
+    _hits, _unreadable = [], []
     for _fp in _scan:
         try:
             _text = _fp.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
+        except OSError as _e:
+            # 只吞「读不了这个文件」这一种情况；不吞解析/正则等其它异常，
+            # 并且把跳过的文件记下来，让"漏扫"可见（宽捕获 + continue = 门静默放行）。
+            _unreadable.append(f"{_fp.relative_to(ROOT)} ({_e.__class__.__name__})")
             continue
         if _keypat.search(_text):
             _hits.append(str(_fp.relative_to(ROOT)))
-    check("密钥防呆", not _hits, f"leaks: {_hits}" if _hits else "no tracked key-like tokens")
+    if _unreadable:
+        print("WARN 密钥防呆：以下文件未能读取，未参与扫描：" + ", ".join(_unreadable))
+    check("密钥防呆", not _hits, f"leaks: {_hits}" if _hits else "no key-like tokens")
 
     # ---- 负向夹具：--style 非法值被拦 ----
     if NODE:

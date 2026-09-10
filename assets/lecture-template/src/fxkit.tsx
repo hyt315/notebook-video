@@ -17,7 +17,9 @@ import {THEME} from './theme/active';
 // ============================================================================
 
 const C = THEME.palette;
-const Burst = (THEME.extras as any).Burst as React.FC<{x:number;y:number;size:number;text:string;color?:string}>;
+// extras 是可选契约：paper/flat 没有 extras，sticker 只有 Tape。必须用可选链，
+// 否则默认 paper 主题在 import 本文件的瞬间就会崩（v2.10 引入 fxkit 后才暴露）。
+const Burst = (THEME.extras as any)?.Burst as React.FC<{x:number;y:number;size:number;text:string;color?:string}> | undefined;
 
 // 与主模板一致的字阶镜像（只取本库用到的档位）
 export const FX_T = {displayL:50, displayS:36, titleM:28, titleS:27, titleXS:26, bodyM:24, labelL:22, labelM:21, labelS:20, microL:18} as const;
@@ -30,6 +32,10 @@ const easeOutSoft = (f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b
 const SPRINGS = {snappy:{damping:16,stiffness:200,mass:.8},soft:{damping:17,stiffness:132,mass:.86},bouncy:{damping:11,stiffness:160,mass:.9}} as const;
 const popS = (f:number,start:number,preset:keyof typeof SPRINGS='soft')=>spring({frame:f-start,fps:BASE_FPS,config:SPRINGS[preset]});
 const useF = (frame?:number)=>frame??useCurrentFrame();
+/** 单向脉冲 0-1-0：一次性强调（砸中/刷新），不是永久呼吸。 */
+const pulse=(f:number,at:number,dur=14)=>Math.sin(Math.PI*Math.max(0,Math.min(1,(f-at)/dur)));
+/** 出场曲线：比入场快而急（motion-design 六律之二）。 */
+const easeInQuad=(f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,Math.max(a+1,b)],[from,to],{...clamp,easing:Easing.in(Easing.quad)});
 // 序号哈希伪方差（确定性）：0~1
 const hash01 = (i:number)=>{const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x);};
 
@@ -66,8 +72,9 @@ export const Typewriter:React.FC<{
   const chars = String(text).split('');
   let budget = (f-start)*cps, shown = 0;
   for(const ch of chars){ if(budget<1) break; shown++; budget-=1; if(/[，。！？；：、,.!?;:]/.test(ch)) budget-=5*cps+2; }
-  const blink = Math.floor(f/9)%2===0;
-  return <span style={{fontSize,fontFamily,fontWeight,color,...style}}>{chars.slice(0,Math.max(0,shown)).join('')}{cursor&&shown<chars.length&&<span style={{display:'inline-block',width:fontSize*0.5,height:fontSize*1.05,marginLeft:6,background:color,verticalAlign:'-2px',opacity:blink?0.9:0.1}}/>}</span>;
+  // 光标：16 帧周期（约 0.53s，接近真实终端）+ 连续值软阶梯。9 帧方波在 30fps 下读作频闪。
+  const blinkPhase = 0.5+0.5*Math.cos((f/16)*Math.PI*2);
+  return <span style={{fontSize,fontFamily,fontWeight,color,...style}}>{chars.slice(0,Math.max(0,shown)).join('')}{cursor&&shown<chars.length&&<span style={{display:'inline-block',width:fontSize*0.5,height:fontSize*1.05,marginLeft:6,background:color,verticalAlign:'-2px',opacity:0.18+0.78*blinkPhase}}/>}</span>;
 };
 
 // ---- 3. PayPop：到账通知弹窗。从上滑入 + 金额滚动 + 可选 StampSeal 盖章 ----
@@ -98,8 +105,13 @@ export const StampSeal:React.FC<{
   const f = useF(frame);
   if(f<start) return null;
   const p = easeOutSoft(f,start,start+9);
-  const scale = interpolate(p,[0,1],[2.6,1]);
+  // 第二半：9 帧压到 1 之后再来一次 1 -> 1.06 -> 1 的回弹，外加一圈冲击波。
+  // 只有"压下去"的印章只是"一个圆变小了"；有回弹才读作"砸在纸上"。
+  const rebound = pulse(f,start+9,8);
+  const shock = pulse(f,start+9,12);
+  const scale = interpolate(p,[0,1],[2.6,1]) * (1 + 0.06*rebound);
   return <div style={{position:'absolute',left:x,top:y,width:size,height:size,zIndex:98,opacity:Math.min(1,p*1.6),transform:`scale(${scale}) rotate(-8deg)`}}>
+    {shock>0.02&&<span style={{position:'absolute',inset:-2,borderRadius:999,opacity:0.4*(1-shock),boxShadow:`0 0 0 ${shock*12}px ${color}`}}/>}
     <div style={{width:'100%',height:'100%',borderRadius:999,border:`4px solid ${color}`,display:'grid',placeItems:'center',background:'rgba(255,255,255,0.82)'}}>
       <span style={{fontWeight:700,fontSize:size*0.24,color,whiteSpace:'nowrap'}}>{text}</span>
     </div>
@@ -123,7 +135,7 @@ export const Funnel:React.FC<{
           <span style={{marginLeft:'auto',fontFamily:'Space',fontWeight:700,fontSize:FX_T.titleM,color:r.color}}>{r.count}</span>
         </div>
         <div style={{height:26,background:'#efe9dc',borderRadius:99,border:`2px solid ${C.ink}`,overflow:'hidden'}}>
-          <div style={{height:'100%',width:`${Math.max(4,r.ratio*100*wp)}%`,background:r.color,borderRadius:99}}/>
+          <div style={{height:'100%',width:'100%',background:r.color,borderRadius:99,transformOrigin:'left center',transform:`scaleX(${Math.max(0.04,r.ratio*wp)})`}}/>
         </div>
         {[0,1,2].map(d=>{
           const cyc = (f-s-10+d*9+hash01(i*3+d)*9)%36;
@@ -198,7 +210,7 @@ export const TimeRail:React.FC<{
   const prog = ease(f,first,last+40);
   return <div style={{position:'absolute',left:x,top:y,width:w,...exitStyle(f,exitStart)}}>
     <div style={{position:'relative',height:10,background:'#efe9dc',border:`2px solid ${C.ink}`,borderRadius:99,overflow:'hidden'}}>
-      <div style={{position:'absolute',left:0,top:0,bottom:0,width:`${prog*100}%`,background:C.blue}}/>
+      <div style={{position:'absolute',left:0,top:0,bottom:0,width:'100%',background:C.blue,transformOrigin:'left center',transform:`scaleX(${prog})`}}/>
     </div>
     <div style={{position:'relative',height:0}}>
       <div style={{position:'absolute',left:`calc(${prog*100}% - 11px)`,top:-26,width:22,height:22,borderRadius:99,background:C.orange,border:`2.5px solid ${C.ink}`}}/>
@@ -230,7 +242,7 @@ export const CompareBars:React.FC<{
           <span style={{marginLeft:'auto',fontFamily:'Space',fontWeight:700,fontSize:FX_T.titleXS,color:r.color}}>{r.value}</span>
         </div>
         <div style={{height:20,background:'#efe9dc',border:`2px solid ${C.ink}`,borderRadius:99,overflow:'hidden'}}>
-          <div style={{height:'100%',width:`${Math.max(3,r.pct*100*wp)}%`,background:r.color,borderRadius:99}}/>
+          <div style={{height:'100%',width:'100%',background:r.color,borderRadius:99,transformOrigin:'left center',transform:`scaleX(${Math.max(0.03,r.pct*wp)})`}}/>
         </div>
       </div>;
     })}
@@ -243,15 +255,24 @@ export const ProgressRing:React.FC<{
   size?:number;pct:number;label?:string;color?:string;start?:number;duration?:number;frame?:number;
 }> = ({size=96,pct,label,color=C.green,start=0,duration=36,frame})=>{
   const f = useF(frame);
-  const p = easeOutSoft(f,start,start+duration);
+  // 弧与数字用**不同时钟**（30 / 约 24 帧，数字晚 2 帧起步）：同一条曲线会让"数字就是那条弧"，
+  // 错开后读作"表盘在走、读数是跟读数"。默认总时长 30 帧（约 Magic UI 的 1s 节拍）。
+  const dur = duration===36?30:duration;
+  const p = easeOutSoft(f,start,start+dur);
+  const tp = easeOutSoft(f,start+2,start+2+Math.max(16,Math.round(dur*0.8)));
+  const shown = Math.max(0,Math.min(1,pct));
   const R = (size-14)/2, len = 2*Math.PI*R;
-  return <div style={{width:size,height:size,position:'relative',flex:'0 0 auto'}}>
+  const angD = -90 + 360*shown*p;
+  const capX = size/2 + R*Math.cos(angD*Math.PI/180), capY = size/2 + R*Math.sin(angD*Math.PI/180);
+  const land = pulse(f,start+dur,12); // 过冲只给容器：数值类动画不能弹（会短暂显示错误的数）
+  return <div style={{width:size,height:size,position:'relative',flex:'0 0 auto',transform:`scale(${1+0.03*land})`}}>
     <svg width={size} height={size}>
       <circle cx={size/2} cy={size/2} r={R} fill="none" stroke="#efe9dc" strokeWidth={11}/>
-      <circle cx={size/2} cy={size/2} r={R} fill="none" stroke={color} strokeWidth={11} strokeLinecap="round" strokeDasharray={len} strokeDashoffset={len*(1-Math.max(0,Math.min(1,pct))*p)} transform={`rotate(-90 ${size/2} ${size/2})`}/>
+      <circle cx={size/2} cy={size/2} r={R} fill="none" stroke={color} strokeWidth={11} strokeLinecap="round" strokeDasharray={len} strokeDashoffset={len*(1-shown*p)} transform={`rotate(-90 ${size/2} ${size/2})`}/>
+      {p>0.02&&p<1&&<circle cx={capX} cy={capY} r={5.5} fill={color}/>}
     </svg>
     <div style={{position:'absolute',inset:0,display:'grid',placeItems:'center',textAlign:'center'}}>
-      <div><div style={{fontFamily:'Space',fontWeight:700,fontSize:22,color}}>{Math.round(pct*100*p)}%</div>{label&&<div style={{fontSize:11,fontWeight:700,color:C.ink}}>{label}</div>}</div>
+      <div><div style={{fontFamily:'Space',fontWeight:700,fontSize:22,color,fontVariantNumeric:'tabular-nums'}}>{Math.round(shown*100*tp)}<span style={{fontSize:14,marginLeft:1}}>%</span></div>{label&&<div style={{fontSize:11,fontWeight:700,color:C.ink}}>{label}</div>}</div>
     </div>
   </div>;
 };
@@ -288,7 +309,7 @@ export const StaggerList:React.FC<{
   </div>;
 };
 
-export const FXKIT_VERSION = 'fxkit-v2 · 18 components · cel-locked · no new deps';
+export const FXKIT_VERSION = 'fxkit-v3 · 18 components · multi-clock motion · scaleX bars · no new deps';
 
 // ---- 14. KenBurnsImg：克制推近。只放大不移出框（父容器须 overflow:hidden），scale 1→zoom ----
 export const KenBurnsImg:React.FC<{
@@ -336,8 +357,13 @@ export const DiffView:React.FC<{
       {lines.map((ln,i)=>{
         if(f<ln.at) return null;
         const p = popS(f,ln.at,'snappy');
+        // 删除行从**左**退出、更快（12 帧 ease-in）；新增行从**右**进入、更稳（16 帧 ease-out）。
+        // 同向同速会毁掉补丁的语义——"这一行被拿走了 / 这一行被放进来了"。
+        const dir = ln.k==='-'?-1:1;
+        const mp = ln.k==='-'?easeInQuad(f,ln.at,ln.at+12):easeOutSoft(f,ln.at,ln.at+16);
+        const sweep = pulse(f,ln.at,16);
         const col = ln.k==='-'?'#ff7b72':ln.k==='+'?C.green:'#c9c2b8';
-        return <div key={i} style={{display:'flex',gap:10,fontFamily:'Space,monospace',fontWeight:600,fontSize:15,color:ln.k===' '?'#fdfdfb':col,background:ln.k===' '?'none':ln.k==='-'?'rgba(255,59,48,.12)':'rgba(36,188,110,.12)',borderRadius:6,padding:'3px 10px',opacity:p,transform:`translateX(${16*(1-p)}px)`,whiteSpace:'nowrap',overflow:'hidden'}}><span>{ln.k}</span><span>{ln.text}</span></div>;
+        return <div key={i} style={{position:'relative',display:'flex',gap:10,fontFamily:'Space,monospace',fontWeight:600,fontSize:15,color:ln.k===' '?'#fdfdfb':col,background:ln.k===' '?'none':ln.k==='-'?'rgba(255,59,48,.12)':'rgba(36,188,110,.12)',borderRadius:6,padding:'3px 10px',opacity:p*mp,transform:`translateX(${dir*16*(1-mp)}px)`,whiteSpace:'nowrap',overflow:'hidden'}}>{sweep>0.02&&<span style={{position:'absolute',inset:0,background:`rgba(255,255,255,${0.18*sweep})`,pointerEvents:'none'}}/>}<span>{ln.k}</span><span>{ln.text}</span></div>;
       })}
     </div>
   </div>;

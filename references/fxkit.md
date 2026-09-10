@@ -9,6 +9,34 @@ cel 皮肤锁定（2.5px 墨线 + 硬偏移阴影 + 纯平填充，无渐变无�
 import {FitCard, Typewriter, PayPop, StampSeal, Funnel, ChatThread, MailScan, TimeRail, CompareBars, ProgressRing, ShakeX, BurstCallout, StaggerList, fitH} from './fxkit';
 ```
 
+> **⚠️ 帧参数名（实测踩过，必读）**：fxkit 的帧参数叫 **`frame`**，而 v2.10 新增模块
+> （`shotkit` / `stagekit` / `media` / `skeletons` / `insert`）的帧参数叫 **`f`**。
+> 给 fxkit 组件传 `f={f}` 会被**静默忽略**，组件回落到 `useCurrentFrame()`（全局帧），
+> 于是动画整体错位，甚至抛 `Frame NaN`。**fxkit 传 `frame={f}`，新模块传 `f={f}`。**
+>
+> 另外每个组件的 `frame` 语义是**本镜本地帧**（0 起），不是全局帧；在 `ShotCamera` 内组合时必须传本地帧。
+
+## 本轮动效升级（v3，多时钟）
+
+| 组件 | 改了什么 | 为什么 |
+|---|---|---|
+| `StampSeal` | 砸下 9 帧后加一次 `1→1.06→1` 回弹 + 墨圈冲击波 | 只有"压下去"的印章只是"圆变小了"；有回弹才读作"砸在纸上" |
+| `ProgressRing` | 弧 30 帧 / 数字约 24 帧**双时钟**；弧端加行进圆点；过冲只给容器 | 同一条曲线会让"数字就是那条弧"；数值类动画不能弹（会短暂显示错误的数） |
+| `Funnel` / `CompareBars` / `TimeRail` | 进度由 `width` 改 `scaleX` | `width` 是布局属性会重排，且会让圆角胶囊在动画中途被拉变形 |
+| `DiffView` | 删除行向左快退（12 帧 ease-in）、新增行向右稳进（16 帧 ease-out）+ 落行高亮 | 补丁的语义就是"一侧拿走、一侧放进"，同向同速会毁掉这个语义 |
+| `Typewriter` | 光标 9 帧方波 → 16 帧软阶梯（约 0.53s） | 9 帧方波在 30fps 下读作频闪；这是全片看得最久的运动 |
+
+## 先看见，再选用
+
+`NotebookVideoShowcase` Composition 把本库 16 个构件渲染成 6 页接触表（1fps 抽帧即一页一图）：
+
+```text
+node scripts/notebook-video.mjs showcase PROJECT_DIR
+node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
+```
+
+选组件前先看接触表，比读 props 文档准确得多。新增组件时必须同时加进接触表。
+
 ## 组件一览
 
 | 组件 | 用途 | 关键 props |

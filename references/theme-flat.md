@@ -46,3 +46,15 @@ Modern flat geometric with playful character: gray-hairline white cards with col
 
 - Replacing or regenerating the background images with off-palette colors, or stretching a wrong-ratio image onto a canvas.
 
+## Background decoration zones (v2.10)
+
+`flat`'s locked background carries a large blue cartoon character at the lower right plus a green hill
+and red rounded square at the lower left — the same size class as the product mascot, so it can read as
+a second mascot. The image is locked; the readability rule is the same as `cel`:
+
+- content overlapping a declared zone sits on a `CoverPanel` (wash `z` below content, never above);
+- `BackgroundMute` is the film-level fallback.
+
+Declared zones (1920×1080 design space): `(1240,380,680,700)`, `(0,700,780,380)`.
+See [media-routing.md](media-routing.md) §4.
+

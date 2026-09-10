@@ -212,16 +212,64 @@
     "inserted_part_below_front_lip": true,
     "residual_fragment_forbidden": true,
     "clear_previous_metaphor_before_next": true,
-    "camera_micro_framing_only": true,
-    "camera_x_bounds": [
-      945,
-      975
+    "anti_ppt_functional_components_required": true,
+    "camera_is_per_shot": true,
+    "camera_intents": [
+      "establish",
+      "push-in",
+      "pull-back",
+      "pan-follow",
+      "reveal",
+      "micro-orbit",
+      "still"
     ],
-    "camera_scale_bounds": [
-      1.0,
-      1.018
+    "camera_anchor_proof_required": true,
+    "camera_min_moves_per_chapter": 3,
+    "camera_max_moves_per_shot": 1,
+    "camera_move_frames": [
+      30,
+      45
     ],
-    "anti_ppt_functional_components_required": true
+    "camera_zoom_max_text": 1.35,
+    "camera_zoom_max_graphic": 1.6,
+    "camera_chrome_outside_camera": true,
+    "depth_layers_max": 3,
+    "depth_parallax_coefficients": [
+      0.35,
+      0.7,
+      1.0
+    ],
+    "scene_skeletons": [
+      "Stage",
+      "Corridor",
+      "Split",
+      "Zoom"
+    ],
+    "adjacent_skeleton_must_differ": true,
+    "min_skeleton_kinds": 3,
+    "min_media_kinds": 3,
+    "live_component_required_per_explanation_scene": true,
+    "zones_per_scene": [
+      3,
+      5
+    ],
+    "bottom_quarter_must_be_filled": true,
+    "transition_kinds": [
+      "cut",
+      "handoff",
+      "whip",
+      "reveal",
+      "paper-turn"
+    ],
+    "entry_kinds": [
+      "rise",
+      "slide",
+      "fade",
+      "zoom"
+    ],
+    "camera_pan_budget_formula": "maxPanX=960*(1-1/s), maxPanY=540*(1-1/s)",
+    "camera_pan_clamped_at_runtime": true,
+    "camera_never_moves_chrome_or_subtitle": true
   },
   "visual_director": {
     "decision_before_storyboard": true,
@@ -304,5 +352,22 @@
     "fixed_four_act_grammar": false,
     "adaptive_scene_modes": true
   },
-  "future_update_rule": "For future aesthetic changes, render a replacement and obtain user approval before overwriting this official example."
+  "future_update_rule": "For future aesthetic changes, render a replacement and obtain user approval before overwriting this official example.",
+  "timing_system": {
+    "element_entrance_bound_to_cue_beat": true,
+    "entrance_frames": 22,
+    "entrance_easing": "bezier(0.16,1,0.3,1)",
+    "intra_beat_stagger_frames": [
+      8,
+      16
+    ],
+    "scene_exit_frames": 18,
+    "forbid_bulk_reveal_at_shot_start": true
+  },
+  "readability_system": {
+    "background_bitmaps_locked": true,
+    "decor_zone_cover_required": true,
+    "cover_plate_must_be_feathered": true,
+    "cover_plate_z_below_content": true
+  }
 }

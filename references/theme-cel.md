@@ -48,6 +48,26 @@ Anime cel-shading storyboard: thick ink outlines, flat saturated fills, hard off
 
 - Restoring the code-drawn halftone/speed-line background, drawing extra ornaments on top of the locked background image, or stretching a wrong-ratio image onto a canvas.
 
+## Background decoration zones (v2.10)
+
+The locked background bitmap carries **frame-scale, high-contrast** decorations: a yellow burst plus
+halftone dots at the lower left, black speed lines and a red/blue star at the lower right, a red star
+upper right and a small blue square at the left. They are part of the skin and are **not to be replaced
+or repainted** — but text placed on top of them gets eaten.
+
+`cel` therefore declares them in `theme.backgroundDecorZones`, and the rule is:
+
+- **Content that overlaps a decoration zone must sit on a `CoverPanel`** (`tone="paper"` for hero
+  content, `tone="wash"` for a quiet backing plate). Keep the plate's `z` **above the background and
+  below the content** — a wash at `z=40` will cover absolutely positioned elements inside the scene
+  (measured the hard way).
+- `BackgroundMute zones={[...]}` is the film-level fallback: a feathered warm wash over the declared
+  zones, so the decoration stays visible but legible text can sit on it.
+- Declared zones (1920×1080 design space): `(0,620,820,460)`, `(1230,560,690,520)`,
+  `(1640,370,210,210)`, `(60,400,120,120)`.
+
+See [media-routing.md](media-routing.md) §4 for the mechanics.
+
 - A Burst sticker exceeding one per scene, or text longer than 3 characters.
 
 - Subtitle rendered as a bar, tape strip or any non-boxed shape.

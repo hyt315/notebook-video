@@ -1,0 +1,514 @@
+{
+  "$comment": "官方模板分镜表（GitHub 开源三部曲 EP0）。声明的帧号来自 caption-cues.json 的 cue 起始帧，由 scripts/resolve-shots.py 解析；不要手写帧号。",
+  "duration": 1150,
+  "theme": "paper",
+  "canvas": "16:9",
+  "shots": [
+    {
+      "id": "S1",
+      "chapter": "代码不再孤独",
+      "skeleton": "Stage",
+      "cues": [
+        0,
+        3
+      ],
+      "media": [
+        "console",
+        "graphic"
+      ],
+      "live": [
+        "ConsoleWindow",
+        "StampBanner"
+      ],
+      "camera": {
+        "intent": "establish",
+        "at": 24,
+        "dur": 38,
+        "x": 960,
+        "y": 540,
+        "from": 1.0,
+        "to": 1.03
+      },
+      "anchor": {
+        "x": 200,
+        "y": 170,
+        "w": 1520,
+        "h": 710
+      },
+      "contentBand": {
+        "x": 160,
+        "y": 130,
+        "w": 1600,
+        "h": 780
+      },
+      "hero": {
+        "name": "本地仓库",
+        "size": 640,
+        "kind": "text"
+      },
+      "zones": 4,
+      "bottomFill": true,
+      "cover": "paper",
+      "transition": "cut",
+      "entry": "rise",
+      "beats": [
+        {
+          "cue": 0,
+          "offset": 0
+        },
+        {
+          "cue": 1,
+          "offset": 0
+        },
+        {
+          "cue": 2,
+          "offset": 0
+        },
+        {
+          "cue": 3,
+          "offset": 0
+        },
+        {
+          "cue": 4,
+          "offset": 0
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "chapter": "入场三步",
+      "skeleton": "Corridor",
+      "cues": [
+        4,
+        4
+      ],
+      "media": [
+        "graphic",
+        "chart"
+      ],
+      "live": [
+        "StampSeal"
+      ],
+      "camera": {
+        "intent": "pan-follow",
+        "at": 8,
+        "dur": 40,
+        "fromX": 920,
+        "fromY": 540,
+        "x": 1000,
+        "y": 540,
+        "from": 1.06,
+        "to": 1.06
+      },
+      "anchor": {
+        "x": 220,
+        "y": 180,
+        "w": 1480,
+        "h": 700
+      },
+      "contentBand": {
+        "x": 160,
+        "y": 130,
+        "w": 1600,
+        "h": 780
+      },
+      "hero": {
+        "name": "三步轨道",
+        "size": 140,
+        "kind": "text"
+      },
+      "zones": 3,
+      "bottomFill": true,
+      "cover": "paper",
+      "transition": "handoff",
+      "entry": "rise",
+      "beats": [
+        {
+          "cue": 4,
+          "offset": 0
+        },
+        {
+          "cue": 5,
+          "offset": 0
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "chapter": "入场三步",
+      "skeleton": "Zoom",
+      "cues": [
+        5,
+        6
+      ],
+      "media": [
+        "code",
+        "console"
+      ],
+      "live": [
+        "DiffView",
+        "Typewriter"
+      ],
+      "camera": {
+        "intent": "reveal",
+        "at": 30,
+        "dur": 38,
+        "x": 970,
+        "y": 526,
+        "from": 1.04,
+        "to": 1.1
+      },
+      "anchor": {
+        "x": 200,
+        "y": 170,
+        "w": 1520,
+        "h": 710
+      },
+      "contentBand": {
+        "x": 160,
+        "y": 130,
+        "w": 1600,
+        "h": 780
+      },
+      "hero": {
+        "name": "第一个 PR",
+        "size": 620,
+        "kind": "text"
+      },
+      "zones": 4,
+      "bottomFill": true,
+      "cover": "paper",
+      "transition": "reveal",
+      "entry": "zoom",
+      "beats": [
+        {
+          "cue": 5,
+          "offset": 0
+        },
+        {
+          "cue": 6,
+          "offset": 0
+        },
+        {
+          "cue": 7,
+          "offset": 0
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "chapter": "第二步 · 发布",
+      "skeleton": "Split",
+      "cues": [
+        7,
+        8
+      ],
+      "media": [
+        "text",
+        "code"
+      ],
+      "live": [
+        "FitCard",
+        "StaggerList"
+      ],
+      "camera": {
+        "intent": "push-in",
+        "at": 18,
+        "dur": 36,
+        "x": 960,
+        "y": 526,
+        "from": 1.04,
+        "to": 1.1
+      },
+      "anchor": {
+        "x": 200,
+        "y": 170,
+        "w": 1520,
+        "h": 710
+      },
+      "contentBand": {
+        "x": 160,
+        "y": 130,
+        "w": 1600,
+        "h": 780
+      },
+      "hero": {
+        "name": "仓库清单",
+        "size": 620,
+        "kind": "text"
+      },
+      "zones": 4,
+      "bottomFill": true,
+      "cover": "paper",
+      "transition": "handoff",
+      "entry": "slide",
+      "beats": [
+        {
+          "cue": 7,
+          "offset": 0
+        },
+        {
+          "cue": 8,
+          "offset": 0
+        },
+        {
+          "cue": 9,
+          "offset": 0
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "chapter": "第三步 · 运营与三技能",
+      "skeleton": "Stage",
+      "cues": [
+        9,
+        10
+      ],
+      "media": [
+        "chart",
+        "metric"
+      ],
+      "live": [
+        "Funnel",
+        "ProgressRing"
+      ],
+      "camera": {
+        "intent": "push-in",
+        "at": 20,
+        "dur": 38,
+        "x": 960,
+        "y": 530,
+        "from": 1.03,
+        "to": 1.08
+      },
+      "anchor": {
+        "x": 200,
+        "y": 170,
+        "w": 1520,
+        "h": 710
+      },
+      "contentBand": {
+        "x": 160,
+        "y": 130,
+        "w": 1600,
+        "h": 780
+      },
+      "hero": {
+        "name": "运营控制台",
+        "size": 620,
+        "kind": "text"
+      },
+      "zones": 4,
+      "bottomFill": true,
+      "cover": "paper",
+      "transition": "cut",
+      "entry": "fade",
+      "beats": [
+        {
+          "cue": 9,
+          "offset": 0
+        },
+        {
+          "cue": 10,
+          "offset": 0
+        },
+        {
+          "cue": 11,
+          "offset": 0
+        }
+      ]
+    },
+    {
+      "id": "S6",
+      "chapter": "第三步 · 运营与三技能",
+      "skeleton": "Corridor",
+      "cues": [
+        11,
+        12
+      ],
+      "media": [
+        "graphic",
+        "text"
+      ],
+      "live": [
+        "StampSeal"
+      ],
+      "camera": {
+        "intent": "pan-follow",
+        "at": 8,
+        "dur": 40,
+        "fromX": 1000,
+        "fromY": 540,
+        "x": 920,
+        "y": 540,
+        "from": 1.06,
+        "to": 1.06
+      },
+      "anchor": {
+        "x": 220,
+        "y": 180,
+        "w": 1480,
+        "h": 700
+      },
+      "contentBand": {
+        "x": 160,
+        "y": 130,
+        "w": 1600,
+        "h": 780
+      },
+      "hero": {
+        "name": "三个技能",
+        "size": 140,
+        "kind": "text"
+      },
+      "zones": 3,
+      "bottomFill": true,
+      "cover": "paper",
+      "transition": "handoff",
+      "entry": "rise",
+      "beats": [
+        {
+          "cue": 11,
+          "offset": 0
+        },
+        {
+          "cue": 12,
+          "offset": 0
+        },
+        {
+          "cue": 13,
+          "offset": 0
+        }
+      ]
+    },
+    {
+      "id": "S7",
+      "chapter": "第三步 · 运营与三技能",
+      "skeleton": "Zoom",
+      "cues": [
+        13,
+        13
+      ],
+      "media": [
+        "console",
+        "text"
+      ],
+      "live": [
+        "ChatThread",
+        "SkeletonCard"
+      ],
+      "camera": {
+        "intent": "reveal",
+        "at": 26,
+        "dur": 38,
+        "x": 970,
+        "y": 540,
+        "from": 1.04,
+        "to": 1.08
+      },
+      "anchor": {
+        "x": 200,
+        "y": 170,
+        "w": 1520,
+        "h": 710
+      },
+      "contentBand": {
+        "x": 160,
+        "y": 130,
+        "w": 1600,
+        "h": 780
+      },
+      "hero": {
+        "name": "智能体",
+        "size": 600,
+        "kind": "text"
+      },
+      "zones": 3,
+      "bottomFill": true,
+      "cover": "paper",
+      "transition": "reveal",
+      "entry": "zoom",
+      "beats": [
+        {
+          "cue": 13,
+          "offset": 0
+        },
+        {
+          "cue": 13,
+          "offset": 100
+        },
+        {
+          "cue": 14,
+          "offset": 0
+        }
+      ]
+    },
+    {
+      "id": "S8",
+      "chapter": "第三步 · 运营与三技能",
+      "skeleton": "Stage",
+      "cues": [
+        14,
+        15
+      ],
+      "media": [
+        "metric",
+        "text"
+      ],
+      "live": [
+        "MetricGrid",
+        "StampBanner"
+      ],
+      "camera": {
+        "intent": "pull-back",
+        "at": 16,
+        "dur": 40,
+        "x": 960,
+        "y": 540,
+        "from": 1.1,
+        "to": 1.0
+      },
+      "anchor": {
+        "x": 200,
+        "y": 170,
+        "w": 1520,
+        "h": 710
+      },
+      "contentBand": {
+        "x": 160,
+        "y": 130,
+        "w": 1600,
+        "h": 780
+      },
+      "hero": {
+        "name": "三期计划",
+        "size": 600,
+        "kind": "text"
+      },
+      "zones": 3,
+      "bottomFill": true,
+      "cover": "paper",
+      "transition": "handoff",
+      "entry": "fade",
+      "beats": [
+        {
+          "cue": 14,
+          "offset": 0
+        },
+        {
+          "cue": 14,
+          "offset": 100
+        },
+        {
+          "cue": 15,
+          "offset": 0
+        },
+        {
+          "cue": 15,
+          "offset": 96
+        }
+      ]
+    }
+  ]
+}

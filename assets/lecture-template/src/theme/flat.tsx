@@ -49,6 +49,7 @@ const palette: Theme['palette'] = {
 const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 20, paperOutline: 0,
   textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: 0,
+  subtitleWeight: 700, subtitleLetterSpacing: 1.6, subtitlePadX: 108,
 };
 
 // 偏移实色影：无模糊、无墨边，主题蓝实色偏移（几何感不悬浮）。
@@ -88,6 +89,13 @@ const SubtitleChrome: Theme['SubtitleChrome'] = ({mode, children}) =>
     </div>
   </div>;
 
+// 背景装饰区（LOCKED 声明）：画幅级高对比装饰所占矩形（1920×1080 设计坐标）。
+// flat 的背景右下角有一个大卡通角色、左下角有绿丘与红方块，压在上面的文字会被吃掉。
+const backgroundDecorZones = [
+  {x: 1240, y: 380, w: 680, h: 700},   // 右下：蓝色卡通角色
+  {x: 0, y: 700, w: 780, h: 380},      // 左下：绿色丘 + 红色方块
+];
+
 export const THEME: Theme = {
   id: 'flat',
   palette,
@@ -96,5 +104,6 @@ export const THEME: Theme = {
   Background,
   Paper,
   Grade,
+  backgroundDecorZones,
   SubtitleChrome,
 };

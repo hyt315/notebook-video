@@ -9,8 +9,27 @@
   - [4. Frame-accurate speech sync](#4-frame-accurate-speech-sync)
   - [5. Demonstrative animation](#5-demonstrative-animation)
   - [6. Series component reuse](#6-series-component-reuse)
+- [Skeletons, media and camera (v2.10)](#skeletons-media-and-camera-v210)
 - [Working the template](#working-the-template)
 - [Self-check before rendering](#self-check-before-rendering)
+
+## Skeletons, media and camera (v2.10)
+
+The six rules below describe the visual language. Three further layers decide **how a scene is framed
+and what medium it uses**, and they are enforced by machine gates:
+
+1. **Skeletons** — pick one of `Stage` (one subject evolving through 3–6 states), `Corridor` (a
+   persistent object travelling a shared track), `Split` (two columns compared) or `Zoom`
+   (whole → focus → annotate → back). Adjacent scenes must not share a skeleton and the film must use
+   at least three. See [scene-skeletons.md](scene-skeletons.md).
+2. **Media** — every scene must answer "what medium does this passage use" before "which card".
+   At least three distinct media per film, and at least one live component per explanation scene.
+   Pure card-and-bullets scenes are rejected. See [media-routing.md](media-routing.md).
+3. **Camera** — one intent per shot plus a provably-visible `anchor`, ≥3 moves per chapter. See
+   [shot-language.md](shot-language.md).
+
+All three are checked by `scripts/validate-composition.py` and `scripts/validate-shot-motion.py`;
+read [composition-gate.md](composition-gate.md) before rendering.
 
 This is the default visual route for every notebook video. It is pure
 code-drawn SVG plus rich synchronized text, so it works in every

@@ -54,3 +54,36 @@ Stable semantic IDs must remain separate from display labels. Changing visible c
 ## Future updates
 
 For future aesthetic changes, work in a disposable project copy, render the complete film, obtain user approval, and only then overwrite the official example and contract.
+
+## Locked official elements (原文迁自 SKILL.md)
+
+Keep these official elements locked until the user approves a future rendered replacement:
+
+- React + TypeScript + Remotion rendering core;
+- locked premium motion contracts shipped in the template: `JumpInText` per-glyph 3D flip titles, `WaveText` letter-wave CTA typing, multi-keyframe figure roll-ins, per-word subtitle reveal, and the v2.9 shot layer (see [shot-language.md](shot-language.md));
+- fixed native 30fps motion, rendered and delivered on one of three locked canvases: 2560×1440 (16:9), 1920×1440 (4:3) or 1440×1920 (3:4 portrait), chosen once at kickoff;
+- no duplicate-frame upconversion; use 60fps only when motion is authored natively at 60fps;
+- mount only the active scene, with at most two scenes during a short handoff;
+- animate moving objects with transforms instead of per-frame layout properties (**progress bars animate `scaleX`, never `width`**);
+- bright layered warm-ivory notebook background;
+- stable top-left chapter card and top-right technical header, both **outside** the shot camera;
+- bottom-pinned pure caption text with per-word reveal, no decorative bar, no dark border or side artifacts;
+- pure bottom subtitle with soft text shadow, no dark border, side marks, locator or ring;
+- LXGW WenKai Lite as the unified CJK typeface plus Clash Display / Space Grotesk Latin accents;
+- TTS word timing converted once to integer absolute frames;
+- independent semantic parts with explicit z-order, entry and complete exit;
+- a spatial density budget: one hero action per zone, no temporary stack in the center;
+- a shot layer: every shot declares one camera intent from the closed set plus an `anchor` that `validate-shot-motion.py` must prove stays visible (restricted recipes, not free curves — and not frozen framing);
+- four scene skeletons (`Stage` / `Corridor` / `Split` / `Zoom`) with **no two adjacent scenes sharing one**, and at least three per film;
+- content→medium routing: at least three distinct visual media per film, and at least one live state-changing component per explanation scene (**a pure card-and-bullets scene is a gate failure**);
+- a shot table that references narration cues instead of hard-coded frame numbers ([scene-skeletons.md](scene-skeletons.md));
+- background readability via `CoverPanel`: the locked background bitmaps stay as they are, and content overlapping a declared decoration zone sits on a feathered backing plate ([media-routing.md](media-routing.md));
+- shared-track continuity when one object changes state across several stations;
+- real slot geometry: insertable parts cross the slot, move behind the front lip and disappear fully;
+- declarative narration and action effects inside the Remotion component tree;
+- font/audio/image asset preload gate before the first frame;
+- a visual plan selecting pure text/graphic scenes by default, with image-plus-text only after the user accepts the add-on;
+- optional generated imagery as preloaded Remotion assets with prompt, crop and rights records;
+- H.264/AAC output, automated QA, contact sheets and editable source package.
+
+Do not write an experimental change into this skill until the user sees the rendered film and explicitly approves it.

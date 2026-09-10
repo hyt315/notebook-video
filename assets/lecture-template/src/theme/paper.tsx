@@ -46,6 +46,7 @@ const palette: Theme['palette'] = {
 const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 16, paperOutline: 1.0,
   textureOpacity: .012, gridOpacity: .035, gradeWarmth: .022, gradeVignette: .035,
+  subtitleWeight: 400, subtitleLetterSpacing: 1.6, subtitlePadX: 0,
 };
 
 const paperShadow = (lift: number) =>

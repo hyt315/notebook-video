@@ -1,12 +1,33 @@
-# 时间码分镜：GitHub 三部曲 · 30 秒先导片（EP0）
+# 时间码分镜：GitHub 开源三部曲 EP0（官方模板示例片）
 
-纯代码绘制（SVG + Remotion 动画），无位图；图文并茂、动画讲解。
+paper 皮肤 · 16:9 · 1150 帧（38.3 秒）· 4 章 8 镜 · 4 种骨架
 
-| 时间 | 帧 | 章节 | 视觉模式 | 核心画面（含讲解动画） |
-|---|---|---|---|---|
-| 00:00–06.8 | 0–205 | 代码不再孤独 | pure-graphic | 左侧灰调「本地硬盘」卡（代码只躺在电脑里）→ 箭头 → 右侧「GitHub 协作世界」：地球 + 仓库节点沿分支弧线连出，节点标注 仓库/Star/Fork/PR/Issue；吉祥物挥手入场；底部标题「全世界一起造软件」 |
-| 06.8–12.6 | 205–377 | 第一步 · 参与 | pure-graphic | 顶部三步进度条（①参与高亮）；主演示：任务卡沿「你的分支」前进，在汇合点并入 main，生成「PR」卡并打勾；右侧步骤清单 读懂规则→最小改动→提交PR→通过评审 逐条点亮；底部技能标签 github-oss-contribute |
-| 12.6–19.0 | 377–571 | 第二步·三步 · 发布运营 | pure-graphic | 左半「发布」：README/LICENSE/CI 模块滑入仓库楼；标签 github-oss-prep。右半「运营」：Issue分流/PR审查/Release 三只仪表点亮，版本号 v1.0→v1.1，火箭升空；标签 github-oss-ops |
-| 19.0–30.0 | 571–900 | 三个 AI 技能 | pure-text | 三张技能卡（contribute/prep/ops）飞入排列，各带 EP1/EP2/EP3 标；中间「AI AGENT」吉祥物核心；大 CTA「github.com/hyt315」弹出收尾（final-hold） |
+> 本文件由 `manifests/shots.json`（语义分镜表）派生，**帧号不手写**：
+> 改台词 → 改 `narration.txt` 与 `manifests/semantic-caption-lines.txt` → 重跑 `scripts/resolve-shots.py`。
 
-固定约束：镜头不移动；每个区域一个主动作；全部为代码绘制，无烘焙文字进图形；旧元素完整退场；字幕输入始终最上层。
+## 镜头表
+
+| 镜 | 帧 | 时长 | 章 | 骨架 | 视觉介质 | 镜头意图 | 转场 | 入场 | 活性组件 |
+|---|---|---|---|---|---|---|---|---|---|
+| S1 | 0–213 | 7.1s | 代码不再孤独 | Stage | console / graphic | establish | cut | rise | ConsoleWindow · StampBanner |
+| S2 | 213–286 | 2.4s | 入场三步 | Corridor | graphic / chart | pan-follow | handoff | rise | StampSeal |
+| S3 | 286–416 | 4.3s | 入场三步 | Zoom | code / console | reveal | reveal | zoom | DiffView · Typewriter |
+| S4 | 416–532 | 3.9s | 第二步 · 发布 | Split | text / code | push-in | handoff | slide | FitCard · StaggerList |
+| S5 | 532–682 | 5.0s | 第三步 · 运营与三技能 | Stage | chart / metric | push-in | cut | fade | Funnel · ProgressRing |
+| S6 | 682–803 | 4.0s | 第三步 · 运营与三技能 | Corridor | graphic / text | pan-follow | handoff | rise | StampSeal |
+| S7 | 803–919 | 3.9s | 第三步 · 运营与三技能 | Zoom | console / text | reveal | reveal | zoom | ChatThread · SkeletonCard |
+| S8 | 919–1150 | 7.7s | 第三步 · 运营与三技能 | Stage | metric / text | pull-back | handoff | fade | MetricGrid · StampBanner |
+
+## 多样性（门禁 P0）
+
+- 骨架：4 种（Corridor / Split / Stage / Zoom）；相邻不同款：无相邻重复
+- 视觉介质：6 种（chart / code / console / graphic / metric / text）
+- 每章运镜：代码不再孤独 1 次；入场三步 2 次；第二步 · 发布 1 次；第三步 · 运营与三技能 4 次
+
+## 固定约束
+
+- 页眉 / 章节卡 / 字幕在 `ShotCamera` 之外（屏幕空间），不被运镜带动；
+- 内容坐在羽化底托上（负 z），背景装饰保持原样；
+- 每镜只挂载活动场景，旧元素完整离场；
+- 音效钉帧相对所属镜头起点推导；
+- 本片场景按 16:9 设计空间编写；4:3 / 3:4 需要各自的版面重排。

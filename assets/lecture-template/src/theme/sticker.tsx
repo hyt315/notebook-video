@@ -49,6 +49,7 @@ const palette: Theme['palette'] = {
 const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 22, paperOutline: 0,
   textureOpacity: 0, gridOpacity: .10, gradeWarmth: 0, gradeVignette: .04,
+  subtitleWeight: 700, subtitleLetterSpacing: 1.6, subtitlePadX: 72,
 };
 
 // 贴纸影：柔和双层扩散影（加深版，保证白边卡在浅底上可辨识），白边由 Paper 的 outline 承担。

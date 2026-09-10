@@ -27,7 +27,20 @@ import cueData from './caption-cues.json';
 // Keep authored scene time separate from delivery frames.
 import {MODES, CanvasMode, CanvasContext, useCanvas} from './theme/canvas';
 import {THEME} from './theme/active';
-const BASE_FPS=30,FPS=30,MOTION_FPS=30,TIMELINE_SCALE=1,DURATION=1126,DESIGN_SCALE=4/3;
+import type {IconKind} from './kit';
+import {PillTag, LineIcon, CheckBadge, TYPE} from './kit';
+// v2.10 视觉体系四层：镜头 / 骨架 / 介质 / 门禁。用法见 references/shot-language.md、
+// scene-skeletons.md、media-routing.md、composition-gate.md。
+import {BackgroundMute, CoverPanel, DepthLayers, ShotCamera, camAt, shotCam, stillCam} from './shotkit';
+import {Attach, PhaseRail, StageFrame, useStageMachine} from './stagekit';
+import {InsertShot, PaperTurn, RevealMask, TRANSITIONS, WhipStreak, useHandoff} from './insert';
+import {ConsoleWindow, MetricGrid, StampBanner} from './media';
+import {Corridor, SplitStage, ZoomStage} from './skeletons';
+import {Showcase, SHOWCASE_PAGES} from './showcase';
+import {OverlapGate} from './overlap-gate';
+import {SHOTS, SHOT_IDS, SHOT_TOTAL} from './shots';
+import {SCENES} from './scenes';
+const BASE_FPS=30,FPS=30,MOTION_FPS=30,TIMELINE_SCALE=1,DURATION=SHOT_TOTAL,DESIGN_SCALE=4/3;
 const useCurrentFrame=()=>useRawCurrentFrame()*BASE_FPS/FPS/TIMELINE_SCALE;
 const deliveryFrame=(designFrame:number)=>Math.round(designFrame*FPS*TIMELINE_SCALE/BASE_FPS);
 
@@ -38,15 +51,18 @@ const AESTHETIC=THEME.aesthetic;
 const paperShadow=THEME.paperShadow;
 const Background=THEME.Background;
 const Grade=THEME.Grade;
-const TYPE={displayXL:58,displayL:50,displayML:45,displayM:43,displayS:36,displayXS:34,titleXL:32,titleL:30,titleM:28,titleS:27,titleXS:26,bodyL:26,bodyM:24,bodyS:23,labelL:22,labelM:21,labelS:20,microL:18,microS:16,subtitle:44};
 
 // EDITABLE CONTENT SURFACE — 换题材时从这里开始改
 const COPY={
-  chapterTitles:['代码不再孤独','第一步 · 参与','发布与运营','三个AI技能'],
+  chapterTitles:['代码不再孤独','入场三步','第二步 · 发布','第三步 · 运营与三技能'],
   chromeKicker:'GITHUB 新手三部曲',
   header:'开源之路 / OPEN SOURCE',
   headerSub:'CONTRIBUTE · PREP · OPS / EP0',
 } as const;
+
+// 章节 = 分镜表里各章首镜。章节卡与页眉由此驱动，不手写帧号。
+const CHAPTER_SHOTS=['S1','S2','S4','S5'] as const;
+const CHAPTER_STARTS=CHAPTER_SHOTS.map((id)=>SHOTS[id].from);
 
 const clamp={extrapolateLeft:'clamp' as const,extrapolateRight:'clamp' as const};
 const msFrame=(ms:number)=>Math.round(ms*FPS/1000);
@@ -95,7 +111,11 @@ const CardFitGate=()=>{
 };
 
 // Non-visual QA gate: measure every full cue with the real loaded font.
-const CaptionFitGate=()=>{const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load('400 40px Kai'),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){cancelRender(new Error('Subtitle measurement node is unavailable'));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const overflow=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''})).filter(row=>row.width>AESTHETIC.subtitleSafeWidth+.5);if(overflow.length){cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);if(done)return null;return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:'Kai,sans-serif',fontSize:44,fontWeight:400,whiteSpace:'nowrap',letterSpacing:1.2}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</div>};
+// 画幅感知（v2.10 修复）：字号 / 字重 / 字距 / 安全宽全部取自当前 canvas 与主题。
+// 旧版硬编码 16:9 的 44px/400/1334，导致 4:3 与 3:4 的字幕超宽静默通过、渲染后被裁切；
+// 同时没有计入主题字幕框的内边距（cel 64px / sticker 72px / flat 108px）。
+// 判定：> mode.safe 记 fail（真的会被裁切）；> mode.safe - subtitlePadX 只 warn（会顶到内边）。
+const CaptionFitGate=()=>{const {mode}=useCanvas();const safe=mode.safe,innerSafe=safe-(AESTHETIC.subtitlePadX??0),weight=AESTHETIC.subtitleWeight??400,ls=AESTHETIC.subtitleLetterSpacing??1.6;const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load(`${weight} ${mode.subFont}px Kai`),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){cancelRender(new Error('Subtitle measurement node is unavailable'));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const widths=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''}));const overflow=widths.filter(row=>row.width>safe+.5);const tight=widths.filter(row=>row.width>innerSafe+.5&&row.width<=safe+.5);if(tight.length&&typeof console!=='undefined')console.warn(`[CaptionFitGate] ${tight.length} 条字幕超过内边距安全宽 ${innerSafe}px（未裁切但会顶到字幕框内边）：${tight.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px`).join(' | ')}`);if(overflow.length){cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px>${safe}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle,mode.subFont,safe,innerSafe,weight,ls]);if(done)return null;return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:'Kai,sans-serif',fontSize:mode.subFont,fontWeight:weight,whiteSpace:'nowrap',letterSpacing:ls}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</div>};
 
 const Fonts=()=> <style>{`
 @font-face{font-family:Kai;src:url(${staticFile('LXGWWenKaiLite-Regular.ttf')}) format('truetype');font-weight:400}
@@ -112,44 +132,11 @@ const Fonts=()=> <style>{`
 `}</style>;
 
 // ---- 可复用组件库 -------------------------------------------
-const PillTag:React.FC<{text:string;color?:string;bg?:string;fontSize?:number;fontFamily?:string;fontWeight?:number|string;style?:React.CSSProperties}>=({text,color=C.orange,bg=C.orangeLight,fontSize=TYPE.microS,fontFamily='Space,Kai',fontWeight=700,style})=>{
-  return <span style={{display:'inline-flex',alignItems:'center',padding:'4px 12px',borderRadius:999,background:bg,color,fontSize,fontFamily,fontWeight,letterSpacing:0.8,border:`1px solid ${color}2a`,...style}}>{text}</span>;
-};
 
 // Paper：卡片容器，皮肤由主题包提供（src/theme/active.ts）。
 const Paper=THEME.Paper;
 
-// LineIcon：锁定线性图标集（32 视窗 / 圆头描边），换题材从这里挑，不要新造风格。
-type IconKind='check'|'play'|'project'|'report'|'star'|'fork'|'branch'|'rocket'|'shield'|'terminal'|'cloud'|'link'|'bug'|'search'|'user'|'clock'|'download'|'upload'|'folder'|'chart'|'globe'|'lock'|'mail'|'calendar'|'heart'|'settings';
-const LineIcon:React.FC<{kind:IconKind,size?:number,color?:string,strokeWidth?:number}>=({kind,size=28,color='currentColor',strokeWidth=2.2})=>{const common={fill:'none',stroke:color,strokeWidth,strokeLinecap:'round' as const,strokeLinejoin:'round' as const};return <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-{kind==='check'&&<path {...common} d="M7 16.5l5.6 5.5L25 9.8"/>}
-{kind==='play'&&<><rect {...common} x="5" y="6" width="22" height="20" rx="3"/><path {...common} d="M13 11.5l8 4.5-8 4.5z"/></>}
-{kind==='project'&&<><rect {...common} x="6" y="7" width="20" height="18" rx="2.5"/><path {...common} d="M10 12h12M10 16h8M10 20h6"/></>}
-{kind==='report'&&<><path {...common} d="M9 5h10l5 5v17H9z"/><path {...common} d="M19 5v6h5M13 16h7M13 20h7"/></>}
-{kind==='star'&&<path {...common} d="M16 4.5l3.5 7.2 7.9 1.1-5.7 5.5 1.3 7.8-7-3.7-7 3.7 1.3-7.8-5.7-5.5 7.9-1.1z"/>}
-{kind==='fork'&&<><circle {...common} cx="16" cy="6" r="2.6"/><circle {...common} cx="7" cy="26" r="2.6"/><circle {...common} cx="25" cy="26" r="2.6"/><path {...common} d="M16 8.6V15c0 3.2-5 3.8-7.2 6M16 15c0 3.2 5 3.8 7.2 6"/></>}
-{kind==='branch'&&<><circle {...common} cx="9" cy="7" r="2.6"/><circle {...common} cx="9" cy="25" r="2.6"/><circle {...common} cx="23" cy="7" r="2.6"/><path {...common} d="M9 9.6v12.8M23 9.6c0 5.6-6.5 5.4-10.4 8.2"/></>}
-{kind==='rocket'&&<><path {...common} d="M16 3c4.5 3.5 4.5 11 0 15.5C11.5 14 11.5 6.5 16 3z"/><circle {...common} cx="16" cy="10.5" r="1.8"/><path {...common} d="M12.4 15L8.7 21l3.1-1.6M19.6 15l3.7 6-3.1-1.6M14.5 20q1.5 4 3 0"/></>}
-{kind==='shield'&&<path {...common} d="M16 4l9.5 3.6v7.9c0 5.6-4.2 9.6-9.5 11.5-5.3-1.9-9.5-5.9-9.5-11.5V7.6z"/>}
-{kind==='terminal'&&<><rect {...common} x="4" y="6" width="24" height="20" rx="3"/><path {...common} d="M9 12.5l4.5 3.5-4.5 3.5M15.5 20h7"/></>}
-{kind==='cloud'&&<path {...common} d="M9.5 22.5a4.8 4.8 0 0 1-.7-9.5 6.2 6.2 0 0 1 12.1 1.6 3.9 3.9 0 0 1-1.4 7.9z"/>}
-{kind==='link'&&<><path {...common} d="M13.2 18.8l-1.9 1.9a4.3 4.3 0 0 1-6-6l1.9-1.9M18.8 13.2l1.9-1.9a4.3 4.3 0 0 0-6-6l-1.9 1.9"/><path {...common} d="M12 20l8-8"/></>}
-{kind==='bug'&&<><rect {...common} x="10" y="11" width="12" height="13" rx="6"/><circle {...common} cx="16" cy="8" r="3"/><path {...common} d="M13.5 5.5L12 3M18.5 5.5L20 3M10 14.5H5.5M10 19H6M11 23l-2.5 2.5M22 14.5h4.5M22 19h4M21 23l2.5 2.5"/></>}
-{kind==='search'&&<><circle {...common} cx="14" cy="14" r="8.5"/><path {...common} d="M20.5 20.5L27 27"/></>}
-{kind==='user'&&<><circle {...common} cx="16" cy="11" r="5"/><path {...common} d="M6 27c1.5-5 5.5-7.5 10-7.5s8.5 2.5 10 7.5"/></>}
-{kind==='clock'&&<><circle {...common} cx="16" cy="16" r="11"/><path {...common} d="M16 10v6l4.5 2.5"/></>}
-{kind==='download'&&<path {...common} d="M16 4v13.5M10.5 12L16 17.5 21.5 12M6 22v3.5A2.5 2.5 0 0 0 8.5 28h15a2.5 2.5 0 0 0 2.5-2.5V22"/>}
-{kind==='upload'&&<path {...common} d="M16 17.5V4M10.5 9.5L16 4l5.5 5.5M6 22v3.5A2.5 2.5 0 0 0 8.5 28h15a2.5 2.5 0 0 0 2.5-2.5V22"/>}
-{kind==='folder'&&<path {...common} d="M4 9a2.5 2.5 0 0 1 2.5-2.5h6L16 10h9.5A2.5 2.5 0 0 1 28 12.5v11A2.5 2.5 0 0 1 25.5 26h-19A2.5 2.5 0 0 1 4 23.5z"/>}
-{kind==='chart'&&<path {...common} d="M5 27h22M8.5 27v-8M16 27V9M23.5 27V15"/>}
-{kind==='globe'&&<><circle {...common} cx="16" cy="16" r="11"/><ellipse {...common} cx="16" cy="16" rx="5" ry="11"/><path {...common} d="M5 16h22"/></>}
-{kind==='lock'&&<><rect {...common} x="8" y="14" width="16" height="12" rx="2.5"/><path {...common} d="M11 14v-3.5a5 5 0 0 1 10 0V14M16 19v3"/></>}
-{kind==='mail'&&<><rect {...common} x="4" y="7" width="24" height="18" rx="2.5"/><path {...common} d="M5 9.5l11 8 11-8"/></>}
-{kind==='calendar'&&<><rect {...common} x="5" y="6.5" width="22" height="20" rx="2.5"/><path {...common} d="M5 12.5h22M11 4v5M21 4v5M11 17h3M18 17h3M11 21.5h3M18 21.5h3"/></>}
-{kind==='heart'&&<path {...common} d="M16 26S5.5 19.5 5.5 12.3A5.8 5.8 0 0 1 16 8.6a5.8 5.8 0 0 1 10.5 3.7C26.5 19.5 16 26 16 26z"/>}
-{kind==='settings'&&<><circle {...common} cx="16" cy="16" r="4.5"/><path {...common} d="M16 3.5v4M16 24.5v4M3.5 16h4M24.5 16h4M7.2 7.2l2.8 2.8M22 22l2.8 2.8M24.8 7.2L22 10M10 22l-2.8 2.8"/></>}
-</svg>};
-const CheckBadge:React.FC<{size?:number}>=({size=30})=><span style={{width:size,height:size,borderRadius:999,background:C.green,color:C.white,display:'inline-grid',placeItems:'center',flex:'0 0 auto',boxShadow:`0 2px 8px ${C.greenGlow}`}}><LineIcon kind="check" size={size*.62} color={C.white} strokeWidth={2.7}/></span>;
+// LineIcon / PillTag / CheckBadge 已抽到 src/kit.tsx（主题无关原子，工程侧同样可引用）。
 
 // Mascot：系列吉祥物（代码绘制的 git 猫）。f 传本地帧可眨眼、自然呼吸，wave 挥手。
 const Mascot:React.FC<{size?:number;f?:number;wave?:boolean}>=({size=180,f=0,wave=false})=>{
@@ -591,7 +578,7 @@ const Subtitle=()=>{
 
 const Chrome=()=>{
   const {isPortrait}=useCanvas();
-  const f=q(useCurrentFrame()),stage=f<213?0:f<416?1:f<682?2:3,starts=[0,213,416,682],local=f-starts[stage],p=pop(local,-8),titles=COPY.chapterTitles;
+  const f=q(useCurrentFrame()),stage=Math.max(0,CHAPTER_STARTS.filter((x)=>f>=x).length-1),local=f-CHAPTER_STARTS[stage],p=pop(local,-8),titles=COPY.chapterTitles;
   return <>
     <Paper lift={0.3} style={{left:isPortrait?40:92,top:isPortrait?80:74,width:isPortrait?330:392,height:isPortrait?76:82,zIndex:150,display:'flex',alignItems:'center',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${.96+.04*p})`,overflow:'hidden',padding:0}}>
       <div style={{width:isPortrait?60:72,height:'100%',background:`linear-gradient(135deg,${C.orange},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:isPortrait?28:31,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
@@ -599,7 +586,7 @@ const Chrome=()=>{
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           <PillTag text={COPY.chromeKicker} color={C.blue} bg={C.blueLight} fontSize={TYPE.microS}/>
         </div>
-        <JumpInText key={stage} items={[{text:titles[stage]}]} fontSize={TYPE.titleS} start={starts[stage]+8} stagger={1.1} style={{marginTop:3,justifyContent:'flex-start'}}/>
+        <JumpInText key={stage} items={[{text:titles[stage]}]} fontSize={TYPE.titleS} start={CHAPTER_STARTS[stage]+8} stagger={1.1} style={{marginTop:3,justifyContent:'flex-start'}}/>
       </div>
     </Paper>
     <div style={{position:'absolute',right:isPortrait?40:88,top:isPortrait?76:70,zIndex:140,textAlign:'right'}}>
@@ -611,538 +598,50 @@ const Chrome=()=>{
 
 const stageFade=(f:number,start:number,end:number)=>ease(f,start,start+15)*ease(f,end-15,end,1,0);
 
-// ---- 场景内容层 -----------------------------------
-// SCENE 1 — code is lonely -> GitHub collaborative world (0 ~ 212 frames)
-const NODES=[{x:250,y:150,c:C.orange,label:'仓库'},{x:930,y:120,c:C.gold,label:'Star'},{x:1000,y:360,c:C.green,label:'Fork'},{x:210,y:410,c:C.blue,label:'Issue'},{x:600,y:470,c:C.red,label:'PR'}];
-const SceneWorld=()=>{
-  const f=q(useCurrentFrame()),l=f;
-  if(f>212) return null;
-  const opacity=stageFade(f,0,205);
-  const dim=ease(l,51,92,1,.42),roll=easeOutSoft(l,45,78),rollS=interpolate(roll,[0,.5,.82,1],[.82,1.06,.98,1]),rollR=interpolate(roll,[0,1],[150,360]),rollO=ease(l,43,62);
-  return <div style={{position:'absolute',inset:0,opacity}}>
-    {/* 右侧几何大切角舞台背板 */}
-    <div style={{position:'absolute',left:560,top:170,width:1220,height:620,borderRadius:28,background:`linear-gradient(145deg,rgba(255,255,255,0.85),${C.stageTint})`,border:`1px solid ${C.line}`,boxShadow:paperShadow(0.1),opacity:rollO}}/>
-    
-    <Paper lift={0.2} borderColor={C.muted} style={{left:120,top:300,width:350,height:260,zIndex:60,padding:'26px 28px',opacity:dim,transform:`translateY(${26*(1-pop(l,4))}px) scale(${.94+.06*pop(l,4)})`}}>
-      <div style={{display:'flex',alignItems:'center',gap:8}}>
-        <PillTag text="LOCAL HOST" color={C.muted} bg={C.mutedWash}/>
-        <span style={{fontFamily:'Caveat',fontSize:20,color:C.orange,transform:'rotate(-4deg)'}}>lonely code</span>
-      </div>
-      <JumpInText frame={l} items={[{text:'本地硬盘',color:C.ink,colorActive:C.orange}]} fontSize={TYPE.displayS} start={7} style={{justifyContent:'flex-start',marginTop:8}}/>
-      <div style={{fontSize:TYPE.bodyM,fontWeight:700,marginTop:6,color:C.muted}}>代码只躺在你电脑里</div>
-      <div style={{position:'absolute',left:28,right:28,top:136,bottom:24}}>
-        {[0,1,2,3].map(i=><div key={i} style={{height:10,margin:'10px 0',width:`${76-i*11}%`,background:i===0?C.orange:C.mutedBar,borderRadius:4,opacity:pop(l,12+i*6)}}/>)}
-      </div>
-    </Paper>
-    
-    <div style={{position:'absolute',left:490,top:405,fontSize:60,color:C.orange,zIndex:75,opacity:ease(l,42,60),transform:`translateX(${-14*(1-ease(l,42,60))}px)`}}>→</div>
-    
-    <div style={{position:'absolute',left:600,top:200,width:1160,height:600,zIndex:72,opacity:rollO,transform:`rotate(${rollR}deg) scale(${rollS})`,transformOrigin:'50% 50%'}}>
-      <svg width={1160} height={600} viewBox="0 0 1160 600" style={{overflow:'visible'}}>
-        <circle cx={580} cy={300} r={140} fill={C.skyTint} stroke={C.blue} strokeWidth={3.5} opacity={0.95}/>
-        <ellipse cx={580} cy={300} rx={56} ry={140} fill="none" stroke={C.blue} strokeWidth={1.8} opacity={.45}/>
-        <ellipse cx={580} cy={300} rx={110} ry={140} fill="none" stroke={C.blue} strokeWidth={1.8} opacity={.3}/>
-        <line x1={440} y1={300} x2={720} y2={300} stroke={C.blue} strokeWidth={1.8} opacity={.45}/>
-        <path d="M520 250 q30 -26 66 -6 q34 -16 52 14 q-10 34 -48 26 q-30 20 -60 -8 q-16 -30 -10 -26" fill={C.green} opacity={.22}/>
-        {NODES.map((n,i)=>{const app=ease(l,72+i*9,98+i*9);const mx=(580+n.x)/2,my=(300+n.y)/2-46;return <g key={i} opacity={app}>
-          <path d={`M580 300 Q${mx} ${my} ${n.x} ${n.y}`} fill="none" stroke={n.c} strokeWidth={2.8} strokeDasharray="8 8" strokeDashoffset={-l*3.2}/>
-          <g transform={`scale(${.6+.4*pop(l,65+i*9)})`} style={{transformBox:'fill-box',transformOrigin:'center'} as any}>
-            <rect x={n.x-42} y={n.y-32} width={84} height={64} rx={12} fill={C.paper} stroke={n.c} strokeWidth={2.4} style={{boxShadow:paperShadow(0.2)} as any}/>
-            <rect x={n.x-42} y={n.y-32} width={84} height={14} rx={12} fill={n.c} opacity={.9}/>
-          </g>
-        </g>;})}
-      </svg>
-      {NODES.map((n,i)=><div key={i} style={{position:'absolute',left:n.x-42,top:n.y-6,width:84,textAlign:'center',fontFamily:'Space,Kai',fontWeight:700,fontSize:TYPE.bodyM,color:n.c,opacity:ease(l,84+i*9,104+i*9)}}>{n.label}</div>)}
-      <div style={{position:'absolute',left:512,top:286,color:C.blue,fontFamily:'Clash',fontWeight:600,fontSize:TYPE.microL,letterSpacing:1.5}}>GitHub</div>
-    </div>
-    
-    <div style={{position:'absolute',left:150,top:595,zIndex:96,opacity:ease(l,95,117),transform:`translateY(${20*(1-ease(l,95,117))}px)`}}><Mascot size={150} f={l} wave/></div>
-    
-    <Paper lift={0.3} borderColor={C.green} style={{left:560,top:748,width:840,height:88,zIndex:85,display:'flex',alignItems:'center',justifyContent:'center',gap:12,opacity:ease(l,124,143),transform:`translateY(${18*(1-pop(l,124))}px)`}}>
-      <PillTag text="GLOBAL OPEN SOURCE" color={C.green} bg={C.greenLight}/>
-      <JumpInText frame={l} items={[{text:'全世界的开发者，',color:C.ink,colorActive:C.green},{text:'一起造软件',color:C.green,colorActive:C.orange}]} fontSize={TYPE.titleL} start={125}/>
-    </Paper>
-  </div>;
-};
-
-// SCENE 2 — step one: contribute a PR (213 ~ 414 frames, clean exit before 414)
-const StepRail:React.FC<{active:number;l:number;start:number}>=({active,l,start})=>{
-  const steps=[['01','参与',C.orange],['02','发布',C.blue],['03','运营',C.green]] as const;
-  return <div style={{position:'absolute',left:360,top:180,width:1200,height:72,zIndex:78,display:'flex',gap:24,justifyContent:'center'}}>
-    {steps.map((s,i)=>{const on=i===active,p=pop(l,start+i*7);
-      return <div key={s[0]} style={{width:360,height:68,display:'flex',alignItems:'center',gap:16,padding:'0 24px',background:on?C.paper:'rgba(255,255,255,0.6)',border:`${on?2.4:1.2}px solid ${on?s[2]:C.line}`,borderRadius:14,boxShadow:on?paperShadow(0.3):'none',opacity:p,transform:`translateY(${16*(1-p)}px) scale(${on?1:.96})`}}>
-        <span style={{width:36,height:36,borderRadius:99,background:on?s[2]:C.mutedFill,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:20}}>{s[0]}</span>
-        <span style={{fontFamily:'Kai',fontWeight:700,fontSize:TYPE.titleM,color:on?s[2]:C.muted}}>{s[1]}</span>
-      </div>;
-    })}
-  </div>;
-};
-
-const SceneContribute=()=>{
-  const f=q(useCurrentFrame()),l=f-213;
-  if(f<210||f>414) return null; // 严格区间硬隔离，杜绝 14 秒重叠！
-  const intro=ease(f,213,228);
-  const outro=ease(f,396,412,1,0); // 396~412 帧干净淡出
-  const exitSlide=ease(f,396,412,0,36); // 退出时向左微滑
-  const opacity=intro*outro;
-  const t=easeOutSoft(l,43,113);const merge=ease(l,105,134);const cardX=180+560*Math.min(1,t/0.72);
-  const steps=['读懂项目规则','建立最小改动','提交你的 PR','通过 CI 与评审'];
-  return <div style={{position:'absolute',inset:0,opacity,transform:`translateX(${-exitSlide}px)`}}>
-    <StepRail active={0} l={l} start={6}/>
-    <svg width="1920" height="1080" style={{position:'absolute',inset:0,zIndex:55}}>
-      <path d="M150 560 H1080" fill="none" stroke={C.blueLine} strokeWidth={7} strokeLinecap="round"/>
-      <path d="M150 700 H760 Q840 700 880 620 L910 566" fill="none" stroke={C.orange} strokeWidth={6} strokeDasharray="14 10" strokeDashoffset={-l*4} opacity={.95}/>
-      <text x="150" y="534" fill={C.blue} fontFamily="Space,Kai" fontWeight="600" fontSize="28">main 主干</text>
-      <text x="150" y="742" fill={C.orange} fontFamily="Space,Kai" fontWeight="600" fontSize="28">你的分支</text>
-      <circle cx={910} cy={562} r={14} fill={merge>.4?C.green:C.dotIdle} opacity={ease(l,99,120)} style={{filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.15))'}}/>
-    </svg>
-    
-    <Paper lift={Math.sin(Math.PI*t)*.4+0.1} borderColor={C.orange} style={{left:cardX,top:648,width:210,height:96,zIndex:96,padding:'16px 18px',opacity:ease(l,39,56)*ease(l,130,142,1,0),transform:`translateY(${-90*Math.sin(Math.PI*t)*(cardX<700?1:.4)}px)`}}>
-      <div style={{fontFamily:'Kai',fontWeight:700,fontSize:TYPE.titleS,color:C.orange}}>你的修改</div>
-      <div style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.labelL,marginTop:6,color:C.muted}}>commit</div>
-    </Paper>
-    
-    <Paper lift={.4} borderColor={C.green} style={{left:840,top:426,width:260,height:112,zIndex:94,padding:'16px 20px',opacity:merge,transform:`scale(${.7+.3*pop(l,109)})`}}>
-      <div style={{display:'flex',alignItems:'center',gap:12}}>
-        <span style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.titleM,color:C.green}}>Pull Request</span>
-      </div>
-      <div style={{fontSize:TYPE.labelL,fontWeight:700,marginTop:8,color:C.muted}}>把改动交给项目</div>
-      <div style={{position:'absolute',right:16,top:16,transform:`scale(${pop(l,130)})`}}><CheckBadge size={30}/></div>
-    </Paper>
-    
-    <Paper lift={0.25} borderColor={C.blue} style={{left:1180,top:290,width:590,height:440,zIndex:76,padding:'34px 40px',transform:`translateX(${40*(1-pop(l,9))}px)`,opacity:pop(l,9)}}>
-      <div style={{display:'flex',alignItems:'center',gap:8}}>
-        <PillTag text="EP 1 · CONTRIBUTE" color={C.blue} bg={C.blueLight}/>
-        <span style={{fontFamily:'Caveat',fontSize:20,color:C.blue,transform:'rotate(-2deg)'}}>start small</span>
-      </div>
-      <JumpInText frame={l} items={[{text:'第一步：参与开源',color:C.blue,colorActive:C.orange}]} fontSize={TYPE.displayS} start={11} style={{justifyContent:'flex-start',marginTop:8}}/>
-      <div style={{position:'absolute',left:40,right:40,top:126,bottom:100}}>
-        {steps.map((s,i)=>{const p=pop(l,39+i*20);
-          return <div key={s} style={{display:'flex',alignItems:'center',gap:16,height:48,marginBottom:8,opacity:p,transform:`translateX(${24*(1-p)}px)`}}>
-            <span style={{width:38,height:38,borderRadius:99,background:[C.orange,C.blue,C.green,C.gold][i],color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:19}}>{i+1}</span>
-            <span style={{fontSize:TYPE.titleXS,fontWeight:700}}>{s}</span>
-          </div>;
-        })}
-      </div>
-      <div style={{position:'absolute',left:40,right:40,bottom:32,height:44,background:C.greenLight,border:`1.5px solid ${C.green}`,borderRadius:12,display:'grid',placeItems:'center',fontFamily:'Space',fontWeight:600,fontSize:TYPE.bodyL,color:C.green,letterSpacing:1,opacity:ease(l,120,140)}}>
-        github-oss-contribute
-      </div>
-    </Paper>
-  </div>;
-};
-
-// SCENE 3 — step two & three: prep and operate (416 ~ 680 frames, absolute 0 overlap)
-const Gauge:React.FC<{label:string;color:string;v:number;x:number}>=({label,color,v,x})=> <div style={{position:'absolute',left:x,top:0,width:130,textAlign:'center'}}>
-  <svg width={110} height={70} viewBox="0 0 110 70">
-    <path d="M12 62 A43 43 0 0 1 98 62" fill="none" stroke={C.gaugeTrack} strokeWidth={8} strokeLinecap="round"/>
-    <path d="M12 62 A43 43 0 0 1 98 62" fill="none" stroke={color} strokeWidth={8} strokeLinecap="round" strokeDasharray={135} strokeDashoffset={135*(1-v)}/>
-  </svg>
-  <div style={{fontSize:TYPE.labelL,fontWeight:700,marginTop:2,color:C.ink}}>{label}</div>
-</div>;
-
-const SceneShip=()=>{
-  const f=q(useCurrentFrame()),l=f-416;
-  if(f<415||f>680) return null; // 严格在 416 帧才挂载，彻底消灭 14 秒重叠！
-  const intro=ease(f,416,432);
-  const outro=ease(f,660,676,1,0);
-  const exitSlide=ease(f,660,676,0,36);
-  const opacity=intro*outro;
-  const ver=ease(l,177,219);const rocket=easeOutSoft(l,177,236);
-  const g1=ease(l,135,177),g2=ease(l,152,194),g3=ease(l,169,211);
-
-  const stdFiles=[
-    {name:'README.md',desc:'完整说明文档',color:C.blue,start:24},
-    {name:'LICENSE',desc:'开源协议授权',color:C.green,start:48},
-    {name:'CI / Actions',desc:'自动化质量门禁',color:C.gold,start:72},
-  ];
-
-  return <div style={{position:'absolute',inset:0,opacity,transform:`translateX(${-exitSlide}px)`}}>
-    <Paper lift={0.2} borderColor={C.orange} style={{left:120,top:250,width:560,height:470,zIndex:70,padding:'26px 32px',transform:`translateY(${26*(1-pop(l,5))}px) scale(${.95+.05*pop(l,5)})`,opacity:pop(l,5)}}>
-      <div style={{display:'flex',alignItems:'center',gap:8}}>
-        <PillTag text="EP 2 · PREP" color={C.orange} bg={C.orangeLight}/>
-        <span style={{fontFamily:'Caveat',fontSize:20,color:C.orange,transform:'rotate(3deg)'}}>packaging</span>
-      </div>
-      <JumpInText frame={l} items={[{text:'第二步：发布',color:C.orange,colorActive:C.blue}]} fontSize={TYPE.displayS} start={7} style={{justifyContent:'flex-start',marginTop:4,whiteSpace:'nowrap'}}/>
-      <div style={{fontSize:TYPE.titleXS,fontWeight:700,marginTop:4,color:C.muted}}>整理成专业开源仓库</div>
-      
-      {/* 标准化文件仓库容器（平滑依次滑入点亮，彻底消除 16 秒瞬闪） */}
-      <div style={{position:'absolute',left:40,right:40,top:148,height:218,background:'rgba(255,255,255,0.75)',border:`1.5px solid ${C.orange}`,borderRadius:'14px',boxShadow:paperShadow(0.12),overflow:'hidden'}}>
-        <div style={{height:30,background:C.orange,display:'flex',alignItems:'center',paddingLeft:16}}>
-          <span style={{fontFamily:'Space',color:C.white,fontWeight:700,fontSize:13,letterSpacing:1}}>STANDARDIZED TEMPLATE</span>
-        </div>
-        <div style={{padding:'8px 16px',display:'flex',flexDirection:'column',gap:6}}>
-          {stdFiles.map((item,i)=>{
-            const p=pop(l,item.start);
-            return <div key={item.name} style={{height:46,background:C.paper,border:`1.5px solid ${item.color}`,borderRadius:10,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 16px',boxShadow:paperShadow(0.15),opacity:p,transform:`translateX(${20*(1-p)}px) scale(${.96+.04*p})`}}>
-              <div style={{display:'flex',alignItems:'center',gap:10}}>
-                <span style={{width:10,height:10,borderRadius:99,background:item.color}}/>
-                <span style={{fontFamily:'Space',fontWeight:700,fontSize:TYPE.bodyM,color:C.ink}}>{item.name}</span>
-                <span style={{fontSize:TYPE.labelM,fontWeight:600,color:C.muted}}>({item.desc})</span>
-              </div>
-              <span style={{fontFamily:'Space',fontSize:12,fontWeight:700,color:item.color,background:`${item.color}15`,padding:'2px 8px',borderRadius:6}}>READY</span>
-            </div>;
-          })}
-        </div>
-      </div>
-      <div style={{position:'absolute',left:34,right:34,bottom:24,height:40,background:C.orangeLight,border:`1.5px solid ${C.orange}`,borderRadius:12,display:'grid',placeItems:'center',fontFamily:'Space',fontWeight:600,fontSize:TYPE.bodyM,color:C.orange,opacity:ease(l,95,130)}}>
-        github-oss-prep
-      </div>
-    </Paper>
-    
-    <Paper lift={0.25} borderColor={C.navy} style={{left:740,top:250,width:1020,height:470,zIndex:72,padding:'26px 36px',transform:`translateY(${26*(1-pop(l,89))}px) scale(${.95+.05*pop(l,89)})`,opacity:pop(l,89)}}>
-      <div style={{display:'flex',alignItems:'center',gap:8}}>
-        <PillTag text="EP 3 · OPS" color={C.blue} bg={C.blueLight}/>
-        <span style={{fontFamily:'Caveat',fontSize:20,color:C.blue,transform:'rotate(-2deg)'}}>ongoing triage</span>
-      </div>
-      <JumpInText frame={l} items={[{text:'第三步：运营',color:C.navy,colorActive:C.green}]} fontSize={TYPE.displayS} start={96} style={{justifyContent:'flex-start',marginTop:4,whiteSpace:'nowrap'}}/>
-      <div style={{fontSize:TYPE.titleXS,fontWeight:700,marginTop:4,color:C.muted}}>分流 · 审查 · 按时发版</div>
-      
-      <div style={{position:'absolute',left:60,top:140,right:60,height:120}}>
-        <Gauge label="Issue 分流" color={C.orange} v={g1} x={20}/>
-        <Gauge label="PR 审查" color={C.blue} v={g2} x={330}/>
-        <Gauge label="Release" color={C.green} v={g3} x={640}/>
-      </div>
-      
-      <div style={{position:'absolute',left:60,bottom:110,display:'flex',alignItems:'center',gap:16,opacity:ease(l,177,208)}}>
-        <div style={{display:'flex',alignItems:'center',gap:4,padding:'6px 16px',background:C.paper,border:`1.5px solid ${C.line}`,borderRadius:12,boxShadow:paperShadow(0.2)}}>
-          <span style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.titleL,color:C.ink}}>v1.</span>
-          <RollDigit fromChar="0" toChar="1" start={182} duration={13} frame={l} fontSize={TYPE.displayS} fontFamily="Space" fontWeight={700} colorFrom={C.muted} colorTo={C.green}/>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:6,color:C.green,fontFamily:'Space,Kai',fontWeight:700,fontSize:TYPE.bodyM,opacity:ease(l,194,212),transform:`translateX(${10*(1-ease(l,194,212))}px)`}}>
-          <CheckBadge size={26}/> 准备发版
-        </div>
-      </div>
-      
-      <svg width={120} height={160} style={{position:'absolute',right:70,bottom:60,transform:`translateY(${-150*rocket}px)`,opacity:ease(l,175,197)}} viewBox="0 0 120 160">
-        <path d="M60 6 C86 40 86 88 60 120 C34 88 34 40 60 6 Z" fill={C.paper} stroke={C.red} strokeWidth={3.5}/>
-        <circle cx={60} cy={54} r={13} fill={C.skyTint} stroke={C.blue} strokeWidth={2.8}/>
-        <path d="M40 96 L24 128 L44 116 Z" fill={C.orange} stroke={C.red} strokeWidth={2.8} strokeLinejoin="round"/>
-        <path d="M80 96 L96 128 L76 116 Z" fill={C.orange} stroke={C.red} strokeWidth={2.8} strokeLinejoin="round"/>
-        <path d="M50 120 q10 24 20 0" fill={C.gold} opacity={.9}/>
-      </svg>
-      
-      <div style={{position:'absolute',left:40,right:40,bottom:24,height:40,background:C.blueLight,border:`1.5px solid ${C.navy}`,borderRadius:12,display:'grid',placeItems:'center',fontFamily:'Space',fontWeight:600,fontSize:TYPE.bodyM,color:C.navy,opacity:ease(l,188,217)}}>
-        github-oss-ops
-      </div>
-    </Paper>
-  </div>;
-};
-
-// SCENE 4 — three AI skills + CTA (682 ~ 1126 frames)
-const SKILLS=[['github-oss-contribute','参与别人的项目','EP 1',C.orange],['github-oss-prep','发布自己的作品','EP 2',C.blue],['github-oss-ops','运营与持续发版','EP 3',C.green]] as const;
-const SceneSkills=()=>{
-  const f=q(useCurrentFrame()),l=f-682;
-  if(f<680) return null;
-  const opacity=ease(f,682,698);
-  const cta=ease(l,282,350);
-  return <div style={{position:'absolute',inset:0,opacity}}>
-    <div style={{position:'absolute',left:860,top:205,zIndex:75,textAlign:'center',opacity:pop(l,5),transform:`scale(${.7+.3*pop(l,5)})`}}>
-      <Mascot size={150} f={l} wave/>
-      <div style={{fontFamily:'Space',fontWeight:700,fontSize:TYPE.titleM,color:C.navy,marginTop:4,letterSpacing:3}}>AI AGENT</div>
-      <div style={{fontFamily:'Caveat',fontSize:22,color:C.orange,marginTop:2}}>always by your side</div>
-    </div>
-    
-    {SKILLS.map((s,i)=>{
-      const p=pop(l,36+i*16);const x=200+i*530;
-      return <Paper key={s[0]} lift={.3} borderColor={s[3]} style={{left:x,top:410,width:470,height:256,zIndex:94,padding:'28px 30px',opacity:p,transform:`translateY(${34*(1-p)}px) scale(${.92+.08*p})`}}>
-        <div style={{position:'absolute',right:24,top:24}}>
-          <PillTag text={s[2]} color={s[3]} bg={`${s[3]}18`} fontSize={TYPE.labelS}/>
-        </div>
-        <div style={{width:56,height:56,borderRadius:16,background:s[3],display:'grid',placeItems:'center',color:C.white,boxShadow:`0 4px 14px ${s[3]}40`}}>
-          <LineIcon kind={['play','project','report'][i] as IconKind} size={32} color={C.white} strokeWidth={2.4}/>
-        </div>
-        <div style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.titleM,color:s[3],marginTop:16}}>{s[0]}</div>
-        <div style={{fontSize:TYPE.titleXS,fontWeight:700,marginTop:10}}>{s[1]}</div>
-        <div style={{position:'absolute',left:30,bottom:24,display:'flex',alignItems:'center',gap:10,color:C.muted,fontSize:TYPE.labelL,fontWeight:700}}>
-          <CheckBadge size={26}/>智能体陪你走完
-        </div>
-      </Paper>;
-    })}
-    
-    <Paper lift={0.4} borderColor={C.orange} style={{left:460,top:724,width:1000,height:104,zIndex:96,display:'grid',placeItems:'center',opacity:cta,transform:`translateY(${22*(1-cta)}px) scale(${.96+.04*pop(l,286)})`}}>
-      <div style={{display:'flex',alignItems:'center',gap:16}}>
-        <JumpInText frame={l} items={[{text:'主页搜',color:C.muted,fontSize:TYPE.titleM}]} fontSize={TYPE.titleM} start={287}/>
-        <WaveText frame={l} text="github.com/hyt315" fontSize={TYPE.displayS} colorFrom={C.orangeSoft} colorTo={C.orange} start={291} fontFamily="Space" fontWeight={700}/>
-      </div>
-    </Paper>
-  </div>;
-};
-
-// ---- 3:4 portrait scene set (single-column stacking) -------------
-const StepRailP:React.FC<{active:number;l:number;start:number}>=({active,l,start})=>{
-  const steps=[['01','参与',C.orange],['02','发布',C.blue],['03','运营',C.green]] as const;
-  return <div style={{position:'absolute',left:70,top:190,width:940,height:68,zIndex:78,display:'flex',gap:20,justifyContent:'center'}}>
-    {steps.map((s,i)=>{const on=i===active,p=pop(l,start+i*7);
-      return <div key={s[0]} style={{width:300,height:64,display:'flex',alignItems:'center',gap:12,padding:'0 16px',background:on?C.paper:'rgba(255,255,255,0.6)',border:`${on?2.4:1.2}px solid ${on?s[2]:C.line}`,borderRadius:14,boxShadow:on?paperShadow(0.3):'none',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${on?1:.96})`}}>
-        <span style={{width:34,height:34,borderRadius:99,background:on?s[2]:C.mutedFill,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:19}}>{s[0]}</span>
-        <span style={{fontFamily:'Kai',fontWeight:700,fontSize:TYPE.titleXS,color:on?s[2]:C.muted}}>{s[1]}</span>
-      </div>;
-    })}
-  </div>;
-};
-
-const SceneWorldP=()=>{
-  const f=q(useCurrentFrame()),l=f;
-  if(f>212) return null;
-  const opacity=stageFade(f,0,205);
-  const dim=ease(l,51,92,1,.42),roll=easeOutSoft(l,45,78),rollS=interpolate(roll,[0,.5,.82,1],[.82,1.06,.98,1]),rollR=interpolate(roll,[0,1],[150,360]),rollO=ease(l,43,62);
-  return <div style={{position:'absolute',inset:0,opacity}}>
-    <div style={{position:'absolute',left:50,top:460,width:980,height:560,borderRadius:24,background:`linear-gradient(145deg,rgba(255,255,255,0.85),${C.stageTint})`,border:`1px solid ${C.line}`,boxShadow:paperShadow(0.1),opacity:rollO}}/>
-    
-    <Paper lift={0.2} borderColor={C.muted} style={{left:60,top:190,width:960,height:230,zIndex:60,padding:'22px 26px',opacity:dim,transform:`translateY(${26*(1-pop(l,4))}px) scale(${.94+.06*pop(l,4)})`}}>
-      <div style={{display:'flex',alignItems:'center',gap:8}}>
-        <PillTag text="LOCAL HOST" color={C.muted} bg={C.mutedWash}/>
-        <span style={{fontFamily:'Caveat',fontSize:20,color:C.orange,transform:'rotate(-4deg)'}}>lonely code</span>
-      </div>
-      <JumpInText frame={l} items={[{text:'本地硬盘',color:C.ink,colorActive:C.orange}]} fontSize={TYPE.displayS} start={7} style={{justifyContent:'flex-start',marginTop:6}}/>
-      <div style={{fontSize:TYPE.bodyM,fontWeight:700,marginTop:6,color:C.muted}}>代码只躺在你电脑里</div>
-      <div style={{position:'absolute',left:26,right:26,top:124,bottom:18}}>
-        {[0,1,2,3].map(i=><div key={i} style={{height:10,margin:'10px 0',width:`${74-i*9}%`,background:i===0?C.orange:C.mutedBar,borderRadius:4,opacity:pop(l,12+i*6)}}/>)}
-      </div>
-    </Paper>
-    
-    <div style={{position:'absolute',left:516,top:438,fontSize:56,color:C.orange,zIndex:75,opacity:ease(l,42,60),transform:`translateY(${-10*(1-ease(l,42,60))}px)`}}>↓</div>
-    
-    <div style={{position:'absolute',left:80,top:520,width:1160,height:600,zIndex:72,transform:'scale(0.776)',transformOrigin:'left top',opacity:rollO}}>
-      <svg width={1160} height={600} viewBox="0 0 1160 600" style={{overflow:'visible'}}>
-        <circle cx={580} cy={300} r={140} fill={C.skyTint} stroke={C.blue} strokeWidth={3.5} opacity={0.95}/>
-        <ellipse cx={580} cy={300} rx={56} ry={140} fill="none" stroke={C.blue} strokeWidth={1.8} opacity={.45}/>
-        <ellipse cx={580} cy={300} rx={110} ry={140} fill="none" stroke={C.blue} strokeWidth={1.8} opacity={.3}/>
-        <line x1={440} y1={300} x2={720} y2={300} stroke={C.blue} strokeWidth={1.8} opacity={.45}/>
-        <path d="M520 250 q30 -26 66 -6 q34 -16 52 14 q-10 34 -48 26 q-30 20 -60 -8 q-16 -30 -10 -26" fill={C.green} opacity={.22}/>
-        {NODES.map((n,i)=>{const app=ease(l,72+i*9,98+i*9);const mx=(580+n.x)/2,my=(300+n.y)/2-46;return <g key={i} opacity={app}>
-          <path d={`M580 300 Q${mx} ${my} ${n.x} ${n.y}`} fill="none" stroke={n.c} strokeWidth={2.8} strokeDasharray="8 8" strokeDashoffset={-l*3.2}/>
-          <g transform={`scale(${.6+.4*pop(l,65+i*9)})`} style={{transformBox:'fill-box',transformOrigin:'center'} as any}>
-            <rect x={n.x-42} y={n.y-32} width={84} height={64} rx={12} fill={C.paper} stroke={n.c} strokeWidth={2.4} style={{boxShadow:paperShadow(0.2)} as any}/>
-            <rect x={n.x-42} y={n.y-32} width={84} height={14} rx={12} fill={n.c} opacity={.9}/>
-          </g>
-        </g>;})}
-      </svg>
-      {NODES.map((n,i)=><div key={i} style={{position:'absolute',left:n.x-42,top:n.y-6,width:84,textAlign:'center',fontFamily:'Space,Kai',fontWeight:700,fontSize:TYPE.bodyM,color:n.c,opacity:ease(l,84+i*9,104+i*9)}}>{n.label}</div>)}
-      <div style={{position:'absolute',left:512,top:286,color:C.blue,fontSize:TYPE.microL,fontWeight:700}}>GitHub</div>
-    </div>
-    
-    <div style={{position:'absolute',left:860,top:1000,zIndex:96,opacity:ease(l,95,117),transform:`translateY(${18*(1-ease(l,95,117))}px)`}}><Mascot size={110} f={l} wave/></div>
-    
-    <Paper lift={0.3} borderColor={C.green} style={{left:50,top:1130,width:980,height:88,zIndex:85,display:'flex',alignItems:'center',justifyContent:'center',gap:12,opacity:ease(l,124,143),transform:`translateY(${18*(1-pop(l,124))}px)`}}>
-      <PillTag text="OPEN SOURCE" color={C.green} bg={C.greenLight}/>
-      <div style={{fontSize:TYPE.titleL,fontWeight:700}}>全世界的开发者，<span style={{color:C.green}}>一起造软件</span></div>
-    </Paper>
-  </div>;
-};
-
-const SceneContributeP=()=>{
-  const f=q(useCurrentFrame()),l=f-213;
-  if(f<210||f>414) return null;
-  const intro=ease(f,213,228);
-  const outro=ease(f,396,412,1,0);
-  const exitSlide=ease(f,396,412,0,36);
-  const opacity=intro*outro;
-  const t=ease(l,43,113);const merge=ease(l,105,134);const cardX=80+520*Math.min(1,t/0.72);
-  const steps=['读懂项目规则','建立最小改动','提交你的 PR','通过 CI 与评审'];
-  return <div style={{position:'absolute',inset:0,opacity,transform:`translateX(${-exitSlide}px)`}}>
-    <StepRailP active={0} l={l} start={6}/>
-    <svg width={1080} height={1440} style={{position:'absolute',inset:0,zIndex:55}}>
-      <path d="M80 640 H760" fill="none" stroke={C.blueLine} strokeWidth={7} strokeLinecap="round"/>
-      <path d="M80 760 H590 Q660 760 700 700 L732 652" fill="none" stroke={C.orange} strokeWidth={6} strokeDasharray="14 10" strokeDashoffset={-l*4} opacity={.95}/>
-      <text x="80" y="612" fill={C.blue} fontFamily="Space,Kai" fontWeight="600" fontSize="28">main 主干</text>
-      <text x="80" y="802" fill={C.orange} fontFamily="Space,Kai" fontWeight="600" fontSize="28">你的分支</text>
-      <circle cx={732} cy={648} r={14} fill={merge>.4?C.green:C.dotIdle} opacity={ease(l,99,120)} style={{filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.15))'}}/>
-    </svg>
-    
-    <Paper lift={Math.sin(Math.PI*t)*.4+0.1} borderColor={C.orange} style={{left:cardX,top:700,width:210,height:96,zIndex:96,padding:'16px 18px',opacity:ease(l,39,56)*ease(l,130,142,1,0),transform:`translateY(${-90*Math.sin(Math.PI*t)*(cardX<400?1:.4)}px)`}}>
-      <div style={{fontFamily:'Kai',fontWeight:700,fontSize:TYPE.titleS,color:C.orange}}>你的修改</div>
-      <div style={{fontSize:TYPE.labelL,fontWeight:700,marginTop:6,color:C.muted}}>commit</div>
-    </Paper>
-    
-    <Paper lift={.4} borderColor={C.green} style={{left:540,top:520,width:260,height:112,zIndex:94,padding:'16px 20px',opacity:merge,transform:`scale(${.7+.3*pop(l,109)})`}}>
-      <div style={{display:'flex',alignItems:'center',gap:12}}>
-        <span style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.titleM,color:C.green}}>Pull Request</span>
-      </div>
-      <div style={{fontSize:TYPE.labelL,fontWeight:700,marginTop:8,color:C.muted}}>把改动交给项目</div>
-      <div style={{position:'absolute',right:16,top:16,transform:`scale(${pop(l,130)})`}}><CheckBadge size={30}/></div>
-    </Paper>
-    
-    <Paper lift={0.25} borderColor={C.blue} style={{left:60,top:840,width:960,height:430,zIndex:76,padding:'26px 30px',transform:`translateX(${36*(1-pop(l,9))}px)`,opacity:pop(l,9)}}>
-      <div style={{display:'flex',alignItems:'center',gap:8}}>
-        <PillTag text="EP 1 · CONTRIBUTE" color={C.blue} bg={C.blueLight}/>
-        <span style={{fontFamily:'Caveat',fontSize:20,color:C.blue,transform:'rotate(-2deg)'}}>start small</span>
-      </div>
-      <JumpInText frame={l} items={[{text:'第一步：参与开源',color:C.blue,colorActive:C.orange}]} fontSize={TYPE.displayS} start={11} style={{justifyContent:'flex-start',marginTop:6}}/>
-      <div style={{position:'absolute',left:30,right:30,top:110,bottom:100}}>
-        {steps.map((s,i)=>{const p=pop(l,39+i*20);
-          return <div key={s} style={{display:'flex',alignItems:'center',gap:16,height:48,marginBottom:8,opacity:p,transform:`translateX(${24*(1-p)}px)`}}>
-            <span style={{width:38,height:38,borderRadius:99,background:[C.orange,C.blue,C.green,C.gold][i],color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:19}}>{i+1}</span>
-            <span style={{fontSize:TYPE.titleXS,fontWeight:700}}>{s}</span>
-          </div>;
-        })}
-      </div>
-      <div style={{position:'absolute',left:30,right:30,bottom:28,height:44,background:C.greenLight,border:`1.5px solid ${C.green}`,borderRadius:12,display:'grid',placeItems:'center',fontFamily:'Space',fontWeight:600,fontSize:TYPE.bodyL,color:C.green,letterSpacing:1,opacity:ease(l,120,140)}}>
-        github-oss-contribute
-      </div>
-    </Paper>
-  </div>;
-};
-
-const SceneShipP=()=>{
-  const f=q(useCurrentFrame()),l=f-416;
-  if(f<415||f>680) return null;
-  const intro=ease(f,416,432);
-  const outro=ease(f,660,676,1,0);
-  const exitSlide=ease(f,660,676,0,36);
-  const opacity=intro*outro;
-  const ver=ease(l,177,219);const rocket=ease(l,177,236);
-  const g1=ease(l,135,177),g2=ease(l,152,194),g3=ease(l,169,211);
-  return <div style={{position:'absolute',inset:0,opacity,transform:`translateX(${-exitSlide}px)`}}>
-    <Paper lift={0.2} borderColor={C.orange} style={{left:60,top:190,width:960,height:340,zIndex:70,padding:'24px 28px',transform:`translateY(${26*(1-pop(l,5))}px) scale(${.95+.05*pop(l,5)})`,opacity:pop(l,5)}}>
-      <div style={{display:'flex',alignItems:'center',gap:8}}>
-        <PillTag text="EP 2 · PREP" color={C.orange} bg={C.orangeLight}/>
-        <span style={{fontFamily:'Caveat',fontSize:20,color:C.orange,transform:'rotate(3deg)'}}>packaging</span>
-      </div>
-      <JumpInText frame={l} items={[{text:'第二步：发布',color:C.orange,colorActive:C.blue}]} fontSize={TYPE.displayS} start={7} style={{justifyContent:'flex-start',marginTop:4,whiteSpace:'nowrap'}}/>
-      <div style={{fontSize:TYPE.titleXS,fontWeight:700,marginTop:4,color:C.muted}}>整理成专业开源仓库</div>
-      <div style={{position:'absolute',left:40,right:40,top:138,height:148,background:'rgba(255,255,255,0.75)',border:`1.5px solid ${C.orange}`,borderRadius:'14px',boxShadow:paperShadow(0.12),overflow:'hidden'}}>
-        <div style={{height:26,background:C.orange,display:'flex',alignItems:'center',paddingLeft:14}}><span style={{fontFamily:'Space',color:C.white,fontWeight:700,fontSize:12}}>STANDARDIZED TEMPLATE</span></div>
-        <div style={{padding:'6px 14px',display:'flex',flexDirection:'column',gap:4}}>
-          {[
-            {name:'README.md',desc:'说明文档',color:C.blue,start:24},
-            {name:'LICENSE',desc:'开源协议',color:C.green,start:48},
-            {name:'CI / Actions',desc:'质量门禁',color:C.gold,start:72},
-          ].map((item)=>{
-            const p=pop(l,item.start);
-            return <div key={item.name} style={{height:32,background:C.paper,border:`1.2px solid ${item.color}`,borderRadius:8,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px',opacity:p,transform:`translateX(${16*(1-p)}px)`}}>
-              <span style={{fontFamily:'Space',fontWeight:700,fontSize:TYPE.bodyM,color:C.ink}}>{item.name}</span>
-              <span style={{fontFamily:'Space',fontSize:11,fontWeight:700,color:item.color}}>READY</span>
-            </div>;
-          })}
-        </div>
-      </div>
-      <div style={{position:'absolute',left:34,right:34,bottom:20,height:40,background:C.orangeLight,border:`1.5px solid ${C.orange}`,borderRadius:12,display:'grid',placeItems:'center',fontFamily:'Space',fontWeight:600,fontSize:TYPE.bodyM,color:C.orange,opacity:ease(l,95,130)}}>github-oss-prep</div>
-    </Paper>
-    
-    <Paper lift={0.25} borderColor={C.navy} style={{left:60,top:550,width:960,height:610,zIndex:72,padding:'24px 28px',transform:`translateY(${26*(1-pop(l,71))}px) scale(${.95+.05*pop(l,71)})`,opacity:pop(l,71)}}>
-      <div style={{display:'flex',alignItems:'center',gap:8}}>
-        <PillTag text="EP 3 · OPS" color={C.blue} bg={C.blueLight}/>
-        <span style={{fontFamily:'Caveat',fontSize:20,color:C.blue,transform:'rotate(-2deg)'}}>ongoing triage</span>
-      </div>
-      <JumpInText frame={l} items={[{text:'第三步：运营',color:C.navy,colorActive:C.green}]} fontSize={TYPE.displayS} start={91} style={{justifyContent:'flex-start',marginTop:6}}/>
-      <div style={{fontSize:TYPE.titleXS,fontWeight:700,marginTop:6,color:C.muted}}>分流 · 审查 · 按时发版</div>
-      <div style={{position:'absolute',left:28,top:180,right:28,height:120}}><Gauge label="Issue 分流" color={C.orange} v={g1} x={40}/><Gauge label="PR 审查" color={C.blue} v={g2} x={398}/><Gauge label="Release" color={C.green} v={g3} x={756}/></div>
-      <div style={{position:'absolute',left:28,top:360,display:'flex',alignItems:'center',gap:16,opacity:ease(l,177,208)}}>
-        <div style={{display:'flex',alignItems:'center',gap:4,padding:'6px 16px',background:C.paper,border:`1.5px solid ${C.line}`,borderRadius:12,boxShadow:paperShadow(0.2)}}>
-          <span style={{fontFamily:'Space',fontWeight:600,fontSize:TYPE.titleL,color:C.ink}}>v1.</span>
-          <RollDigit fromChar="0" toChar="1" start={182} duration={13} frame={l} fontSize={TYPE.displayS} fontFamily="Space" fontWeight={700} colorFrom={C.muted} colorTo={C.green}/>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:6,color:C.green,fontFamily:'Space,Kai',fontWeight:700,fontSize:TYPE.bodyM,opacity:ease(l,194,212),transform:`translateX(${10*(1-ease(l,194,212))}px)`}}>
-          <CheckBadge size={26}/> 准备发版
-        </div>
-      </div>
-      <svg width={120} height={160} style={{position:'absolute',right:40,bottom:90,transform:`translateY(${-150*rocket}px)`,opacity:ease(l,175,197)}} viewBox="0 0 120 160"><path d="M60 6 C86 40 86 88 60 120 C34 88 34 40 60 6 Z" fill={C.paper} stroke={C.red} strokeWidth={3.5}/><circle cx={60} cy={54} r={13} fill={C.skyTint} stroke={C.blue} strokeWidth={2.8}/><path d="M40 96 L24 128 L44 116 Z" fill={C.orange} stroke={C.red} strokeWidth={2.8} strokeLinejoin="round"/><path d="M80 96 L96 128 L76 116 Z" fill={C.orange} stroke={C.red} strokeWidth={2.8} strokeLinejoin="round"/><path d="M50 120 q10 24 20 0" fill={C.gold} opacity={.9}/></svg>
-      <div style={{position:'absolute',left:34,right:34,bottom:24,height:44,background:C.blueLight,border:`1.5px solid ${C.navy}`,borderRadius:12,display:'grid',placeItems:'center',fontFamily:'Space',fontWeight:600,fontSize:TYPE.bodyM,color:C.navy,opacity:ease(l,188,217)}}>github-oss-ops</div>
-    </Paper>
-  </div>;
-};
-
-const SceneSkillsP=()=>{
-  const f=q(useCurrentFrame()),l=f-682,opacity=ease(f,662,692);
-  const cta=ease(l,282,350);
-  return <div style={{position:'absolute',inset:0,opacity}}>
-    <div style={{position:'absolute',left:470,top:205,zIndex:75,textAlign:'center',opacity:pop(l,-27),transform:`scale(${.7+.3*pop(l,-27)})`}}>
-      <Mascot size={110} f={l} wave/>
-      <div style={{fontFamily:'Space',fontWeight:700,fontSize:TYPE.titleM,color:C.navy,marginTop:2}}>AI AGENT</div>
-    </div>
-    {SKILLS.map((s,i)=>{
-      const p=pop(l,10+i*16);const y=340+i*265;
-      return <Paper key={s[0]} lift={.3} borderColor={s[3]} style={{left:60,top:y,width:960,height:250,zIndex:94,padding:'24px 28px',opacity:p,transform:`translateY(${34*(1-p)}px) scale(${.92+.08*p})`}}>
-        <div style={{position:'absolute',right:24,top:22}}>
-          <PillTag text={s[2]} color={s[3]} bg={`${s[3]}18`} fontSize={TYPE.labelS}/>
-        </div>
-        <div style={{position:'absolute',left:24,top:26,width:56,height:56,borderRadius:16,background:s[3],display:'grid',placeItems:'center',color:C.white,boxShadow:`0 4px 14px ${s[3]}40`}}><LineIcon kind={['play','project','report'][i] as IconKind} size={32} color={C.white} strokeWidth={2.4}/></div>
-        <div style={{position:'absolute',left:104,top:34,fontFamily:'Space',fontWeight:600,fontSize:TYPE.titleM,color:s[3]}}>{s[0]}</div>
-        <div style={{position:'absolute',left:104,top:82,fontSize:TYPE.titleXS,fontWeight:700}}>{s[1]}</div>
-        <div style={{position:'absolute',left:28,bottom:22,display:'flex',alignItems:'center',gap:10,color:C.muted,fontSize:TYPE.labelL,fontWeight:700}}><CheckBadge size={26}/>智能体陪你走完</div>
-      </Paper>;
-    })}
-    <Paper lift={0.4} borderColor={C.orange} style={{left:50,top:1170,width:980,height:96,zIndex:96,display:'grid',placeItems:'center',opacity:cta,transform:`translateY(${22*(1-cta)}px) scale(${.96+.04*pop(l,286)})`}}><div style={{display:'flex',alignItems:'center',gap:16}}><JumpInText frame={l} items={[{text:'主页搜',color:C.muted,fontSize:TYPE.titleM}]} fontSize={TYPE.titleM} start={287}/><WaveText frame={l} text="github.com/hyt315" fontSize={TYPE.displayS} colorFrom={C.orangeSoft} colorTo={C.orange} start={291} fontFamily="Space" fontWeight={700}/></div></Paper>
-  </div>;
-};
-
-// ---- CameraRig：全局镜头层（语意协同微运镜，告别 PPT 僵硬感，严格杜绝出界）。
-// 镜头铁律（Camera Micro-Framing Invariant）：
-// 1. 16:9 画布下 X 轴位移必须严格约束在 [945, 975] 范围（漂移 <= ±15px），严禁任何卡片被移出视口；
-// 2. 缩放 S 严格约束在 [1.00, 1.018] 呼吸范围，Y 轴位移约束在 [538, 542]；
-// 3. 运镜方向必须与当前讲解内容同向：讲左卡时微向左聚（X≈948），讲右侧实测/数据时微向右浮（X≈974），换章平滑归位（X=960）。
-const CAM_KEYS_L=[
-  {f:0,s:1,x:960,y:540},
-  {f:48,s:1,x:960,y:540},
-  {f:143,s:1.015,x:972,y:542}, // 右侧全球开源视界
-  {f:197,s:1.018,x:974,y:542},
-  {f:248,s:1.012,x:948,y:538}, // 左侧 PR 步骤卡
-  {f:328,s:1.016,x:950,y:538},
-  {f:390,s:1.012,x:960,y:540},
-  {f:449,s:1,x:960,y:540},
-  {f:613,s:1.014,x:948,y:538}, // 运营步骤卡
-  {f:669,s:1.016,x:965,y:540},
-  {f:740,s:1,x:960,y:540},
-  {f:840,s:1.016,x:974,y:542}, // 右侧发版与成果
-  {f:950,s:1.014,x:966,y:540},
-  {f:1056,s:1.012,x:960,y:540},
-  {f:1126,s:1,x:960,y:540},
-];
-// 3:4 竖屏专属镜头（画布 1080×1440，中心 540×720）：叙事焦点按竖屏布局标定
-const CAM_KEYS_P=[
-  {f:0,s:1,x:540,y:720},
-  {f:48,s:1,x:540,y:720},
-  {f:143,s:1.12,x:530,y:760},
-  {f:197,s:1.14,x:530,y:765},
-  {f:248,s:1.02,x:410,y:690},
-  {f:328,s:1.06,x:470,y:720},
-  {f:390,s:1.03,x:520,y:700},
-  {f:449,s:1,x:540,y:720},
-  {f:613,s:1.03,x:540,y:640},
-  {f:669,s:1.02,x:540,y:680},
-  {f:740,s:1,x:540,y:720},
-  {f:840,s:1.06,x:540,y:560},
-  {f:950,s:1.12,x:540,y:1180},
-  {f:1056,s:1.05,x:540,y:980},
-  {f:1126,s:1,x:540,y:720},
-];
-const camEase=Easing.bezier(.33,.12,.22,1);
-const camAt=(f:number,isPortrait:boolean)=>{const K=isPortrait?CAM_KEYS_P:CAM_KEYS_L;let i=0;while(i<K.length-2&&f>K[i+1].f)i++;const a=K[i],b=K[i+1];const t=interpolate(f,[a.f,b.f],[0,1],{...clamp,easing:camEase});return {s:a.s+(b.s-a.s)*t,x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};};
-const CameraRig:React.FC<{children:React.ReactNode}>=({children})=>{
-  const {isPortrait}=useCanvas();
-  const f=useCurrentFrame(),cw=isPortrait?1080:1920,ch=isPortrait?1440:1080;
-  // Tibo 式解析滞后（跟焦感）：焦点对目标轨迹做指数加权采样，镜头慢半拍追上
-  const cam=camAt(f,isPortrait);
-  let wx=0,wy=0,ws=0;const N=14,SPAN=7;
-  for(let k=0;k<N;k++){const age=k/(N-1)*SPAN;const w=Math.exp(-age/3.1);const c=camAt(f-age,isPortrait);wx+=c.x*w;wy+=c.y*w;ws+=w;}
-  const x=wx/ws,y=wy/ws,s=cam.s,cx=cw/2,cy=ch/2;
-  return <div style={{position:'absolute',left:0,top:0,width:cw,height:ch,transformOrigin:'0 0',transform:`translate(${cx-x*s}px,${cy-y*s}px) scale(${s})`}}>{children}</div>;
-};
-
+const HANDOFF=10; // 镜头边界的交接帧数：下一镜开始时把上一镜末帧叠上来淡出，避免出现空帧
 const FinalDemo=()=>{
-  const {isPortrait}=useCanvas();
+  // 只挂载活动镜头（性能契约）：由分镜表决定当前是哪一镜。
   const f=q(useCurrentFrame());
-  if(isPortrait)return <>{f<213&&<SceneWorldP/>}{f>=213&&f<416&&<SceneContributeP/>}{f>=416&&f<682&&<SceneShipP/>}{f>=682&&<SceneSkillsP/>}</>;
-  return <>{f<213&&<SceneWorld/>}{f>=213&&f<416&&<SceneContribute/>}{f>=416&&f<682&&<SceneShip/>}{f>=682&&<SceneSkills/>}</>;
+  let idx=0;
+  for(let i=0;i<SHOT_IDS.length;i++){ if(f>=SHOTS[SHOT_IDS[i]].from) idx=i; }
+  const id=SHOT_IDS[idx];
+  const s=SHOTS[id];
+  const prevId=idx>0?SHOT_IDS[idx-1]:null;
+  const Scene=SCENES[id];
+  const PrevScene=prevId?SCENES[prevId]:null;
+  const handoffP=prevId?Math.max(0,1-(f-s.from)/HANDOFF):0;
+  return <>
+    {PrevScene&&prevId&&handoffP>0.01&&(
+      <div data-gate-allow="handoff" style={{position:'absolute',inset:0,zIndex:130,opacity:handoffP}}><PrevScene f={SHOTS[prevId].duration-1}/></div>
+    )}
+    {f<s.to&&<Scene f={f-s.from}/>}
+  </>;
 };
 
-// Sound：声音也是声明式的——BGM 垫底 + 精准音效（换章 rustle、传输 whoosh、要点 tap、完成 chime、点击 click、翻牌 toggle、吸附 drop）
+
+// 音效钉帧（硬规则）：一律相对所属镜头起点推导，改台词重跑解析后自动跟着走。
+const SFX=SHOT_IDS.flatMap((id)=>{
+  const s=SHOTS[id];
+  const isChapter=(CHAPTER_STARTS as readonly number[]).includes(s.from);
+  const list:{src:string;at:number;vol:number}[]=[
+    {src:isChapter?'sfx/paper-rustle.wav':'sfx/paper-tap.wav',at:s.from+(isChapter?4:2),vol:isChapter?0.12:0.13},
+    {src:'sfx/data-whoosh.wav',at:s.from+Math.round(s.duration*0.42),vol:0.11},
+  ];
+  const lastBeat=s.beats.length?s.beats[s.beats.length-1]:0;
+  if(lastBeat>24) list.push({src:'sfx/chime.wav',at:s.from+Math.max(0,lastBeat-20),vol:0.15});
+  if(s.cameraIntent!=='still') list.push({src:'sfx/click.ogg',at:s.from+(s.keys[2]?.f??30),vol:0.16});
+  return list;
+});
 const Sound=()=>{
   const f=useCurrentFrame();
   const bgmVol=interpolate(f,[0,30,DURATION-45,DURATION],[0,0.08,0.08,0],{...clamp,easing:Easing.linear});
   return <>
     <Audio src={staticFile('narration.mp3')} volume={1}/>
     <Audio src={staticFile('sfx/bgm.mp3')} volume={bgmVol} loop/>
-    {[4,218,420,686].map(sf=><Sequence key={`r${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/paper-rustle.wav')} volume={.12}/></Sequence>)}
-    {[53,317,593].map(sf=><Sequence key={`w${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/data-whoosh.wav')} volume={.11}/></Sequence>)}
-    {[18,90,242,317,455,477,499,718,738,758].map(sf=><Sequence key={`t${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/paper-tap.wav')} volume={.14}/></Sequence>)}
-    {[143,343,611,988].map(sf=><Sequence key={`c${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/chime.wav')} volume={.16}/></Sequence>)}
-    {[256,470,724,975].map(sf=><Sequence key={`ck${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/click.ogg')} volume={.18}/></Sequence>)}
-    {[598].map(sf=><Sequence key={`tg${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/toggle.ogg')} volume={.20}/></Sequence>)}
-    {[45,225,430,700].map(sf=><Sequence key={`dp${sf}`} from={deliveryFrame(sf)} layout="none"><Audio src={staticFile('sfx/drop.ogg')} volume={.14}/></Sequence>)}
+    {SFX.map((x,i)=><Sequence key={`${x.src}-${i}`} from={deliveryFrame(x.at)} layout="none"><Audio src={staticFile(x.src)} volume={x.vol}/></Sequence>)}
   </>;
 };
+
 
 const FilmLayout:React.FC<{canvas:CanvasMode}>=({canvas})=>{
   const mode=MODES[canvas]||MODES['16:9'];
@@ -1150,8 +649,8 @@ const FilmLayout:React.FC<{canvas:CanvasMode}>=({canvas})=>{
   return <CanvasContext.Provider value={{canvas,isPortrait,mode}}>
     <AbsoluteFill style={{overflow:'hidden',background:C.paperBase}}>
       <div style={{position:'absolute',left:0,top:0,width:mode.designW,height:mode.designH,transform:`scale(${mode.scale})`,transformOrigin:'0 0',fontFamily:'Kai,sans-serif',color:C.ink,overflow:'hidden'}}>
-        <Fonts/><AssetGate/><CaptionFitGate/><CardFitGate/><Sound/><Background/>
-        {canvas==='4:3'?<div style={{position:'absolute',left:0,top:(mode.designH-810)/2,width:1920,height:1080,transform:'scale(0.75)',transformOrigin:'top left'}}><Chrome/><CameraRig><FinalDemo/></CameraRig></div>:<><Chrome/><CameraRig><FinalDemo/></CameraRig></>}
+        <Fonts/><AssetGate/><CaptionFitGate/><CardFitGate/><OverlapGate/><Sound/><Background/>
+        {<><Chrome/><FinalDemo/></>}
         <Grade/>
         <Subtitle/>
       </div>
@@ -1164,9 +663,12 @@ const Film4x3=()=> <FilmLayout canvas="4:3"/>;
 const Film3x4=()=> <FilmLayout canvas="3:4"/>;
 
 const Root=()=> <>
+  {/* 官方模板示例片（8 镜 / 4 骨架）。本版场景按 1920×1080 设计空间编写：
+      4:3 与 3:4 需要各自的版面重排，不再用 scale(0.75) 信箱化冒充适配
+      （见 references/canvas-modes.md 与 portrait-illustration-system.md）。 */}
   <Composition id="NotebookVideoFilm" component={Film16x9} durationInFrames={DURATION} fps={FPS} width={2560} height={1440}/>
-  <Composition id="NotebookVideoFilm-16x9" component={Film16x9} durationInFrames={DURATION} fps={FPS} width={2560} height={1440}/>
-  <Composition id="NotebookVideoFilm-4x3" component={Film4x3} durationInFrames={DURATION} fps={FPS} width={1920} height={1440}/>
-  <Composition id="NotebookVideoFilm-3x4" component={Film3x4} durationInFrames={DURATION} fps={FPS} width={1440} height={1920}/>
+  {/* 组件接触表：6 页 × 1 秒，1fps 抽帧即得 6 张图，供 AI 看图选型 */}
+  <Composition id="NotebookVideoShowcase" component={Showcase} durationInFrames={SHOWCASE_PAGES*30} fps={FPS} width={1920} height={1080}/>
 </>;
+
 registerRoot(Root);

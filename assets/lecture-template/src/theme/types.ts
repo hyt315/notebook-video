@@ -39,6 +39,14 @@ export interface ThemeAesthetic {
   gridOpacity: number;
   gradeWarmth: number;
   gradeVignette: number;
+  /**
+   * 字幕实测参数（v2.10 新增）：CaptionFitGate 必须按主题真实渲染的字重/字距/内边距来量，
+   * 否则门禁会漏判。subtitlePadX = 主题字幕框左右内边距之和（含装饰点），
+   * 有效文字宽 = mode.safe - subtitlePadX。
+   */
+  subtitleWeight?: number;
+  subtitleLetterSpacing?: number;
+  subtitlePadX?: number;
 }
 
 export interface Theme {
@@ -57,4 +65,12 @@ export interface Theme {
   SubtitleChrome: React.FC<{mode: ModeSpec; children?: React.ReactNode}>;
   /** 主题专属锁定构件（如赛璐璐爆炸贴、贴纸胶带），场景层只传内容参数。 */
   extras?: Record<string, React.FC<any>>;
+  /**
+   * 背景装饰区（可选）：背景位图里「画幅级、高对比」的锁定装饰所占的矩形
+   * （1920×1080 设计坐标）。这些区域会吃掉压在上面的文字，因此：
+   *   1. 内容压到装饰区时，必须坐在 CoverPanel（tone='paper'）上；
+   *   2. 需要成片级兜底时用 BackgroundMute 铺一层羽化暖底。
+   * 背景图本身不改——它很好看；只解决可读性。
+   */
+  backgroundDecorZones?: {x: number; y: number; w: number; h: number}[];
 }

@@ -1,7 +1,7 @@
 {
   "style_version": "warm-ivory-remotion-2k30-v9-visual-director",
   "composition": "NotebookVideoFilm",
-  "duration_frames": 1126,
+  "duration_frames": 1150,
   "visual_asset_ids": [
     "bg-cel-169",
     "bg-cel-43",
@@ -15,9 +15,9 @@
   ],
   "scenes": [
     {
-      "id": "collaborative-world",
+      "id": "S1",
       "start_frame": 0,
-      "end_frame": 205,
+      "end_frame": 213,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
@@ -31,12 +31,20 @@
         "bg-flat-34"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
-      "exit_contract": "complete-exit"
+      "exit_contract": "complete-exit",
+      "skeleton": "Stage",
+      "media": [
+        "console",
+        "graphic"
+      ],
+      "camera_intent": "establish",
+      "transition": "cut",
+      "chapter": "代码不再孤独"
     },
     {
-      "id": "step-one-contribute",
-      "start_frame": 205,
-      "end_frame": 377,
+      "id": "S2",
+      "start_frame": 213,
+      "end_frame": 286,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
@@ -50,12 +58,20 @@
         "bg-flat-34"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
-      "exit_contract": "complete-exit"
+      "exit_contract": "complete-exit",
+      "skeleton": "Corridor",
+      "media": [
+        "graphic",
+        "chart"
+      ],
+      "camera_intent": "pan-follow",
+      "transition": "handoff",
+      "chapter": "入场三步"
     },
     {
-      "id": "ship-and-operate",
-      "start_frame": 377,
-      "end_frame": 571,
+      "id": "S3",
+      "start_frame": 286,
+      "end_frame": 416,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
@@ -69,13 +85,21 @@
         "bg-flat-34"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
-      "exit_contract": "complete-exit"
+      "exit_contract": "complete-exit",
+      "skeleton": "Zoom",
+      "media": [
+        "code",
+        "console"
+      ],
+      "camera_intent": "reveal",
+      "transition": "reveal",
+      "chapter": "入场三步"
     },
     {
-      "id": "three-skills-cta",
-      "start_frame": 571,
-      "end_frame": 1126,
-      "visual_mode": "pure-text",
+      "id": "S4",
+      "start_frame": 416,
+      "end_frame": 532,
+      "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
         "bg-cel-43",
@@ -88,7 +112,123 @@
         "bg-flat-34"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
-      "exit_contract": "final-hold"
+      "exit_contract": "complete-exit",
+      "skeleton": "Split",
+      "media": [
+        "text",
+        "code"
+      ],
+      "camera_intent": "push-in",
+      "transition": "handoff",
+      "chapter": "第二步 · 发布"
+    },
+    {
+      "id": "S5",
+      "start_frame": 532,
+      "end_frame": 682,
+      "visual_mode": "pure-graphic",
+      "visual_asset_ids": [
+        "bg-cel-169",
+        "bg-cel-43",
+        "bg-cel-34",
+        "bg-sticker-169",
+        "bg-sticker-43",
+        "bg-sticker-34",
+        "bg-flat-169",
+        "bg-flat-43",
+        "bg-flat-34"
+      ],
+      "mount_contract": "start-inclusive-end-exclusive",
+      "exit_contract": "complete-exit",
+      "skeleton": "Stage",
+      "media": [
+        "chart",
+        "metric"
+      ],
+      "camera_intent": "push-in",
+      "transition": "cut",
+      "chapter": "第三步 · 运营与三技能"
+    },
+    {
+      "id": "S6",
+      "start_frame": 682,
+      "end_frame": 803,
+      "visual_mode": "pure-graphic",
+      "visual_asset_ids": [
+        "bg-cel-169",
+        "bg-cel-43",
+        "bg-cel-34",
+        "bg-sticker-169",
+        "bg-sticker-43",
+        "bg-sticker-34",
+        "bg-flat-169",
+        "bg-flat-43",
+        "bg-flat-34"
+      ],
+      "mount_contract": "start-inclusive-end-exclusive",
+      "exit_contract": "complete-exit",
+      "skeleton": "Corridor",
+      "media": [
+        "graphic",
+        "text"
+      ],
+      "camera_intent": "pan-follow",
+      "transition": "handoff",
+      "chapter": "第三步 · 运营与三技能"
+    },
+    {
+      "id": "S7",
+      "start_frame": 803,
+      "end_frame": 919,
+      "visual_mode": "pure-graphic",
+      "visual_asset_ids": [
+        "bg-cel-169",
+        "bg-cel-43",
+        "bg-cel-34",
+        "bg-sticker-169",
+        "bg-sticker-43",
+        "bg-sticker-34",
+        "bg-flat-169",
+        "bg-flat-43",
+        "bg-flat-34"
+      ],
+      "mount_contract": "start-inclusive-end-exclusive",
+      "exit_contract": "complete-exit",
+      "skeleton": "Zoom",
+      "media": [
+        "console",
+        "text"
+      ],
+      "camera_intent": "reveal",
+      "transition": "reveal",
+      "chapter": "第三步 · 运营与三技能"
+    },
+    {
+      "id": "S8",
+      "start_frame": 919,
+      "end_frame": 1150,
+      "visual_mode": "pure-graphic",
+      "visual_asset_ids": [
+        "bg-cel-169",
+        "bg-cel-43",
+        "bg-cel-34",
+        "bg-sticker-169",
+        "bg-sticker-43",
+        "bg-sticker-34",
+        "bg-flat-169",
+        "bg-flat-43",
+        "bg-flat-34"
+      ],
+      "mount_contract": "start-inclusive-end-exclusive",
+      "exit_contract": "complete-exit",
+      "skeleton": "Stage",
+      "media": [
+        "metric",
+        "text"
+      ],
+      "camera_intent": "pull-back",
+      "transition": "handoff",
+      "chapter": "第三步 · 运营与三技能"
     }
   ],
   "parts": [
@@ -102,6 +242,16 @@
       "motion": []
     },
     {
+      "id": "cover-plate",
+      "scene": "all",
+      "z": -1,
+      "layer_role": "background",
+      "occlusion_contract": "normal",
+      "exit_contract": "persistent",
+      "motion": [],
+      "narrative_reason": "内容底托：羽化渐变，负 z 确保不覆盖场景内容"
+    },
+    {
       "id": "chapter-chrome",
       "scene": "all",
       "z": 150,
@@ -113,249 +263,190 @@
       ]
     },
     {
+      "id": "chapter-header",
+      "scene": "all",
+      "z": 140,
+      "layer_role": "foreground",
+      "occlusion_contract": "always-visible",
+      "exit_contract": "persistent",
+      "motion": []
+    },
+    {
       "id": "subtitle",
       "scene": "all",
       "z": 200,
       "layer_role": "subtitle",
       "occlusion_contract": "highest",
       "exit_contract": "persistent",
-      "motion": [
-        "word-reveal"
-      ]
+      "motion": []
     },
     {
-      "id": "local-disk",
-      "scene": 1,
-      "z": 60,
-      "layer_role": "base",
-      "occlusion_contract": "normal",
-      "exit_contract": "fully-outside-or-zero",
-      "motion": [
-        "spring-entry"
-      ]
-    },
-    {
-      "id": "world-globe",
-      "scene": 1,
+      "id": "s1-consolewindow",
+      "scene": "S1",
       "z": 70,
       "layer_role": "base",
       "occlusion_contract": "normal",
-      "exit_contract": "fully-outside-or-zero",
+      "exit_contract": "scene-cut",
       "motion": [
-        "spring-entry"
-      ]
+        "state-change"
+      ],
+      "narrative_reason": "ConsoleWindow 演示本条旁白所述的机制状态变化"
     },
     {
-      "id": "repo-nodes",
-      "scene": 1,
-      "z": 72,
-      "layer_role": "base",
-      "occlusion_contract": "normal",
-      "exit_contract": "fully-outside-or-zero",
-      "motion": [
-        "staggered-entry",
-        "directed-dash"
-      ]
-    },
-    {
-      "id": "world-headline",
-      "scene": 1,
-      "z": 85,
-      "layer_role": "base",
-      "occlusion_contract": "normal",
-      "exit_contract": "fully-outside-or-zero",
-      "motion": [
-        "spring-entry"
-      ]
-    },
-    {
-      "id": "node-labels",
-      "scene": 1,
-      "z": 82,
+      "id": "s1-stampbanner",
+      "scene": "S1",
+      "z": 71,
       "layer_role": "annotation",
-      "occlusion_contract": "always-visible",
-      "exit_contract": "fully-outside-or-zero",
-      "motion": [
-        "phrase-timed-highlight"
-      ]
-    },
-    {
-      "id": "mascot-hero",
-      "scene": 1,
-      "z": 96,
-      "layer_role": "floating",
-      "occlusion_contract": "always-visible",
-      "exit_contract": "fully-outside-or-zero",
-      "motion": [
-        "spring-entry"
-      ]
-    },
-    {
-      "id": "step-rail-2",
-      "scene": 2,
-      "z": 78,
-      "layer_role": "base",
       "occlusion_contract": "normal",
-      "exit_contract": "fully-outside-or-zero",
+      "exit_contract": "scene-cut",
       "motion": [
-        "state-feedback"
-      ]
+        "state-change"
+      ],
+      "narrative_reason": "StampBanner 演示本条旁白所述的机制状态变化"
     },
     {
-      "id": "steps-list-2",
-      "scene": 2,
-      "z": 76,
-      "layer_role": "base",
-      "occlusion_contract": "normal",
-      "exit_contract": "fully-outside-or-zero",
-      "motion": [
-        "staggered-entry"
-      ]
-    },
-    {
-      "id": "branch-track",
-      "scene": 2,
-      "z": 55,
-      "layer_role": "wire",
-      "occlusion_contract": "normal",
-      "exit_contract": "fully-outside-or-zero",
-      "motion": [
-        "directed-dash"
-      ]
-    },
-    {
-      "id": "skill-tag-contribute",
-      "scene": 2,
-      "z": 82,
-      "layer_role": "annotation",
-      "occlusion_contract": "always-visible",
-      "exit_contract": "fully-outside-or-zero",
-      "motion": [
-        "phrase-timed-highlight"
-      ]
-    },
-    {
-      "id": "task-card",
-      "scene": 2,
-      "z": 96,
-      "layer_role": "floating",
-      "occlusion_contract": "always-visible",
-      "exit_contract": "fully-outside-or-zero",
-      "motion": [
-        "shared-track-transfer",
-        "dynamic-shadow"
-      ]
-    },
-    {
-      "id": "pr-card",
-      "scene": 2,
-      "z": 94,
-      "layer_role": "floating",
-      "occlusion_contract": "always-visible",
-      "exit_contract": "fully-outside-or-zero",
-      "motion": [
-        "converge-to-slot"
-      ]
-    },
-    {
-      "id": "repo-building",
-      "scene": 3,
+      "id": "s2-stampseal",
+      "scene": "S2",
       "z": 70,
       "layer_role": "base",
       "occlusion_contract": "normal",
-      "exit_contract": "fully-outside-or-zero",
+      "exit_contract": "scene-cut",
       "motion": [
-        "spring-entry"
-      ]
+        "state-change"
+      ],
+      "narrative_reason": "StampSeal 演示本条旁白所述的机制状态变化"
     },
     {
-      "id": "ops-dashboard",
-      "scene": 3,
-      "z": 72,
+      "id": "s3-diffview",
+      "scene": "S3",
+      "z": 70,
       "layer_role": "base",
       "occlusion_contract": "normal",
-      "exit_contract": "fully-outside-or-zero",
+      "exit_contract": "scene-cut",
       "motion": [
-        "progressive-checks"
-      ]
+        "state-change"
+      ],
+      "narrative_reason": "DiffView 演示本条旁白所述的机制状态变化"
     },
     {
-      "id": "skill-tags-ship",
-      "scene": 3,
-      "z": 82,
+      "id": "s3-typewriter",
+      "scene": "S3",
+      "z": 71,
       "layer_role": "annotation",
-      "occlusion_contract": "always-visible",
-      "exit_contract": "fully-outside-or-zero",
+      "occlusion_contract": "normal",
+      "exit_contract": "scene-cut",
       "motion": [
-        "phrase-timed-highlight"
-      ]
+        "state-change"
+      ],
+      "narrative_reason": "Typewriter 演示本条旁白所述的机制状态变化"
     },
     {
-      "id": "repo-modules",
-      "scene": 3,
-      "z": 94,
-      "layer_role": "floating",
-      "occlusion_contract": "always-visible",
-      "exit_contract": "fully-outside-or-zero",
-      "motion": [
-        "converge-to-slot"
-      ]
-    },
-    {
-      "id": "release-rocket",
-      "scene": 3,
-      "z": 96,
-      "layer_role": "floating",
-      "occlusion_contract": "always-visible",
-      "exit_contract": "fully-outside-or-zero",
-      "motion": [
-        "spring-entry"
-      ]
-    },
-    {
-      "id": "agent-core",
-      "scene": 4,
-      "z": 75,
+      "id": "s4-fitcard",
+      "scene": "S4",
+      "z": 70,
       "layer_role": "base",
       "occlusion_contract": "normal",
-      "exit_contract": "final-hold",
+      "exit_contract": "scene-cut",
       "motion": [
-        "spring-entry"
-      ]
+        "state-change"
+      ],
+      "narrative_reason": "FitCard 演示本条旁白所述的机制状态变化"
     },
     {
-      "id": "ep-tags",
-      "scene": 4,
-      "z": 82,
+      "id": "s4-staggerlist",
+      "scene": "S4",
+      "z": 71,
       "layer_role": "annotation",
-      "occlusion_contract": "always-visible",
-      "exit_contract": "final-hold",
+      "occlusion_contract": "normal",
+      "exit_contract": "scene-cut",
       "motion": [
-        "phrase-timed-highlight"
-      ]
+        "state-change"
+      ],
+      "narrative_reason": "StaggerList 演示本条旁白所述的机制状态变化"
     },
     {
-      "id": "skill-cards",
-      "scene": 4,
-      "z": 94,
-      "layer_role": "floating",
-      "occlusion_contract": "always-visible",
-      "exit_contract": "final-hold",
+      "id": "s5-funnel",
+      "scene": "S5",
+      "z": 70,
+      "layer_role": "base",
+      "occlusion_contract": "normal",
+      "exit_contract": "scene-cut",
       "motion": [
-        "staggered-entry",
-        "dynamic-shadow"
-      ]
+        "state-change"
+      ],
+      "narrative_reason": "Funnel 演示本条旁白所述的机制状态变化"
     },
     {
-      "id": "cta-bar",
-      "scene": 4,
-      "z": 96,
-      "layer_role": "floating",
-      "occlusion_contract": "always-visible",
-      "exit_contract": "final-hold",
+      "id": "s5-progressring",
+      "scene": "S5",
+      "z": 71,
+      "layer_role": "annotation",
+      "occlusion_contract": "normal",
+      "exit_contract": "scene-cut",
       "motion": [
-        "spring-entry"
-      ]
+        "state-change"
+      ],
+      "narrative_reason": "ProgressRing 演示本条旁白所述的机制状态变化"
+    },
+    {
+      "id": "s6-stampseal",
+      "scene": "S6",
+      "z": 70,
+      "layer_role": "base",
+      "occlusion_contract": "normal",
+      "exit_contract": "scene-cut",
+      "motion": [
+        "state-change"
+      ],
+      "narrative_reason": "StampSeal 演示本条旁白所述的机制状态变化"
+    },
+    {
+      "id": "s7-chatthread",
+      "scene": "S7",
+      "z": 70,
+      "layer_role": "base",
+      "occlusion_contract": "normal",
+      "exit_contract": "scene-cut",
+      "motion": [
+        "state-change"
+      ],
+      "narrative_reason": "ChatThread 演示本条旁白所述的机制状态变化"
+    },
+    {
+      "id": "s7-skeletoncard",
+      "scene": "S7",
+      "z": 71,
+      "layer_role": "annotation",
+      "occlusion_contract": "normal",
+      "exit_contract": "scene-cut",
+      "motion": [
+        "state-change"
+      ],
+      "narrative_reason": "SkeletonCard 演示本条旁白所述的机制状态变化"
+    },
+    {
+      "id": "s8-metricgrid",
+      "scene": "S8",
+      "z": 70,
+      "layer_role": "base",
+      "occlusion_contract": "normal",
+      "exit_contract": "scene-cut",
+      "motion": [
+        "state-change"
+      ],
+      "narrative_reason": "MetricGrid 演示本条旁白所述的机制状态变化"
+    },
+    {
+      "id": "s8-stampbanner",
+      "scene": "S8",
+      "z": 71,
+      "layer_role": "annotation",
+      "occlusion_contract": "normal",
+      "exit_contract": "scene-cut",
+      "motion": [
+        "state-change"
+      ],
+      "narrative_reason": "StampBanner 演示本条旁白所述的机制状态变化"
     }
   ]
 }
