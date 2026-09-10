@@ -153,6 +153,7 @@ scripts/audition.py                 TTS 试听条 + 多音字扫描
 scripts/coords-lint.py              覆盖层坐标越界体检
 scripts/package-project.py         交付源码打包（排除 node_modules / renders / 密钥）
 scripts/selftest.py                 端到端回归自测
+scripts/negative-gate-check.py     负向抽查：给三道构建期门禁喂"该拦的夹具"，验证它们真的会拦
 scripts/check-deps.sh | .cmd        环境依赖体检
 scripts/prepare-browser.sh | .cmd   Remotion 无头浏览器准备
 scripts/new-project.sh | .cmd       建工程
@@ -170,3 +171,12 @@ python "<SKILL_DIR>/scripts/selftest.py"
 
 Good fixtures must pass and each broken fixture (protected phrase split across cues, mismatched caption
 sync, non-video input) must be rejected by the matching gate.
+
+For the build-time gates, run the negative spot-check — it feeds five deliberately broken shot tables
+(anchor outside the frame, pan beyond the zoom budget, adjacent scenes sharing a skeleton, a shot with
+no live component, a timeline gap) plus one clean control, and asserts each gate blocks or passes as
+expected. **A gate that exists in name only is the most dangerous defect.**
+
+```text
+python "<SKILL_DIR>/scripts/negative-gate-check.py"
+```
