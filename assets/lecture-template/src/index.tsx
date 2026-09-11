@@ -82,30 +82,71 @@ const AssetGate=()=>{const [handle]=useState(()=>delayRender('waiting for fonts'
 const CardFitGate=()=>{
   const f=q(useCurrentFrame());
   const bucket=Math.floor(f/15);
+  // v2.11 修复三处静默失效（实测量出来的，不是推测）：
+  //   a. 旧版开头 `if(document.fonts.status!=='loaded') return;` —— 实测某帧 fonts=loading，
+  //      整桶直接跳过，且从不等待字体就绪（字幕门是 await document.fonts.ready 的）；
+  //      被压到 40px 的卡片明明算出溢出，也走不到报警那一步。现改为等字体就绪后补测。
+  //   b. 旧版用 offsetParent 链做累加再 `if(m!==card) return;` —— 实测 87 个文字块里 18 个
+  //      在链上断裂（逐字动画的 span、Takeaway 文本等），这些文字**从未被校验过**。
+  //      现改用 getBoundingClientRect 与卡片的 padding 盒比较（与 OverlapGate 同一口径，
+  //      天然包含 transform，不依赖 offsetParent）。
+  //   c. 旧版零输出既可能是"全部合格"也可能是"根本没跑"。现每 5 秒打一次覆盖率。
   useEffect(()=>{
-    const id=requestAnimationFrame(()=>{
+    let cancelled=false;
+    const measure=()=>{
       try{
-        if(document.fonts.status!=='loaded') return;
         const bad:string[]=[];
-        const opaque=(el:Element)=>{const s=getComputedStyle(el as HTMLElement);const bg=s.backgroundColor;const m=/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/.exec(bg);const alpha=m?(m[4]===undefined?1:parseFloat(m[4])):0;return alpha>0.9&&parseFloat(s.borderTopWidth)>0;};
-        document.querySelectorAll<HTMLElement>('div,span').forEach((el)=>{
-          if(!el.textContent||!el.textContent.trim()||el.children.length>0) return;
-          if(el.closest('[data-fit-skip]')) return;
-          let card:HTMLElement|null=null,n:HTMLElement|null=el.parentElement;
-          while(n&&n!==document.body){if(opaque(n)){card=n;break;}n=n.parentElement;}
-          if(!card) return;
-          const z=parseInt(getComputedStyle(card).zIndex||'0',10);
-          if(z>=140) return;
-          let x=0,y=0,m:HTMLElement|null=el;
-          while(m&&m!==card){x+=m.offsetLeft;y+=m.offsetTop;m=m.offsetParent as HTMLElement|null;}
-          if(m!==card) return;
-          const overB=y+el.offsetHeight-card.clientHeight,overR=x+el.offsetWidth-card.clientWidth;
-          if(overB>2||overR>2) bad.push(`@${f} “${(el.textContent||'').trim().slice(0,10)}”出${Math.max(0,Math.ceil(overB))}px`);
+        // "卡片"= 有不透明/渐变底 **且** 有边框的元素（纯渐变无边框的整幅底托不算卡片）
+        const solid=(el:Element)=>{const s=getComputedStyle(el as HTMLElement);
+          const m=/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/.exec(s.backgroundColor||'');
+          const alpha=m?(m[4]===undefined?1:parseFloat(m[4])):0;
+          const grad=s.backgroundImage&&s.backgroundImage!=='none'?1:0;
+          return ((alpha>0.9||grad>0)&&parseFloat(s.borderTopWidth)>0);};
+        let cards=0;
+        // 判据是"卡片内容是否超出卡片"（overflow 的定义）：
+        // 逐叶元素比较 rect 会被内联元素的行盒外延误报（实测单字“费”出 3px，其实没溢出）。
+        // scrollHeight 会把溢出的内容也算进去，和 overflow 属性无关，是最稳的口径。
+        document.querySelectorAll<HTMLElement>('div,span').forEach((card)=>{
+          if(!solid(card)) return;
+          if(card.closest('[data-fit-skip]')) return;
+          if(!card.textContent||!card.textContent.trim()) return;
+          if(card.getBoundingClientRect().width<8) return;
+          // 只判会被裁剪的容器：overflow:visible 的容器用 scrollHeight 会把绝对定位子元素
+          // 也算进去（实测 MetricGrid 虚增 180–213px，其实没有任何文字被裁）
+          if(getComputedStyle(card).overflow==='visible') return;
+          const cz=parseInt(getComputedStyle(card).zIndex||'0',10);
+          if(cz>=145) return;                       // 章节卡 150 / 字幕 200 是锁定覆盖层，各自由门
+          cards++;
+          // 容差 6px：内联元素的行盒取整会产生 3–4px 的“假溢出”，真裁切一般 ≥10px
+          const oB=card.scrollHeight-card.clientHeight,oR=card.scrollWidth-card.clientWidth;
+          // vertical overflow clips whole lines -> report on its own (6px tolerance).
+          // horizontal overflow is usually a decoration (leader line, focus dot, hard shadow) crossing the
+          // content box; only flag it when *text* really crosses the edge (8px tolerance).
+          let textOver = 0, textSample = '';
+          if (oR > 8) {
+            const cr3 = card.getBoundingClientRect();
+            const lim3 = cr3.right - (parseFloat(getComputedStyle(card).borderRightWidth) || 0);
+            card.querySelectorAll<HTMLElement>('div,span,p').forEach((tel) => {
+              if (!tel.textContent || !tel.textContent.trim() || tel.children.length > 0) return;
+              const r3 = tel.getBoundingClientRect();
+              if (r3.width * r3.height < 4) return;
+              const o = r3.right - lim3;
+              if (o > textOver) { textOver = o; textSample = (tel.textContent || '').trim().slice(0, 10); }
+            });
+          }
+          // 竖向容差 10px：不足一行高（≥30px）的差异读作降部/行盒舍入，不是“丢了一行”；
+          // 真裁切实测都在 25px 以上（S2 卡片 25px、控制台 27px）。
+          if (oB > 10 || textOver > 8) bad.push(`@${f} \u5361\u7247\u201c${(card.textContent||'').trim().slice(0,10)}\u201d\u6ea2\u51fa ${Math.round(Math.max(oB, textOver))}px${textSample ? '\uff08\u6587\u5b57\uff1a' + textSample + '\uff09' : ''}`);
         });
         if(bad.length) cancelRender(new Error(`Card overflow: ${bad.slice(0,4).join(' | ')}`));
+        else if(cards&&f%150===0&&typeof console!=='undefined') console.warn(`[CardFitGate] @${f} \u5df2\u6d4b ${cards} \u5f20\u5361\u7247\uff0c\u65e0\u6ea2\u51fa`);
       }catch(e){if(typeof console!=='undefined') console.warn('[CardFitGate]',e);}
+    };
+    const id=requestAnimationFrame(()=>{
+      if(document.fonts.status==='loaded'){measure();return;}
+      document.fonts.ready.then(()=>{if(!cancelled) measure();}).catch(()=>{});
     });
-    return ()=>cancelAnimationFrame(id);
+    return ()=>{cancelled=true;cancelAnimationFrame(id);};
   },[bucket]);
   return null;
 };
@@ -309,10 +350,10 @@ const ProgressBar:React.FC<{v:number;color?:string;height?:number;label?:string;
   return <div style={{...style}}>
     {(label||showPct)&&<div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
       {label&&<span style={{fontSize:TYPE.labelL,fontWeight:700,color:C.ink}}>{label}</span>}
-      {showPct&&<span style={{fontFamily:'Space',fontWeight:700,fontSize:TYPE.labelL,color}}>{pct}%</span>}
+      {showPct&&<span style={{fontFamily:'Space',fontWeight:700,fontSize:TYPE.labelL,color,fontVariantNumeric:'tabular-nums'}}>{pct}%</span>}
     </div>}
     <div style={{height,background:C.gaugeTrack,borderRadius:99,overflow:'hidden'}}>
-      <div style={{height:'100%',width:`${pct}%`,background:color,borderRadius:99}}/>
+      <div style={{height:'100%',width:'100%',background:color,borderRadius:99,transformOrigin:'left center',transform:`scaleX(${Math.max(0,Math.min(1,v))})`}}/>
     </div>
   </div>;
 };
@@ -643,13 +684,16 @@ const Sound=()=>{
 };
 
 
+// 门禁事件帧（v2.11）：本技能最密集的重叠都发生在短窗口里——镜头交接 10 帧、页眉滑变 7–16 帧、数值滑动 14 帧。
+// 只按 15 帧网格抽样必然漏掉它们，所以把镜头边界、节拍、相机关键帧都交给 OverlapGate 强制抽样。
+const WATCH=(()=>{const out:number[]=[];SHOT_IDS.forEach((id:string)=>{const s:any=(SHOTS as any)[id];out.push(s.from-1,s.from,s.from+1,s.to-1,s.to);(s.beats||[]).forEach((b:number)=>out.push(s.from+b));(s.keys||[]).forEach((k:any)=>out.push(s.from+k.f));});return out;})();
 const FilmLayout:React.FC<{canvas:CanvasMode}>=({canvas})=>{
   const mode=MODES[canvas]||MODES['16:9'];
   const isPortrait=canvas==='3:4';
   return <CanvasContext.Provider value={{canvas,isPortrait,mode}}>
     <AbsoluteFill style={{overflow:'hidden',background:C.paperBase}}>
       <div style={{position:'absolute',left:0,top:0,width:mode.designW,height:mode.designH,transform:`scale(${mode.scale})`,transformOrigin:'0 0',fontFamily:'Kai,sans-serif',color:C.ink,overflow:'hidden'}}>
-        <Fonts/><AssetGate/><CaptionFitGate/><CardFitGate/><OverlapGate/><Sound/><Background/>
+        <Fonts/><AssetGate/><CaptionFitGate/><CardFitGate/><OverlapGate mode="block" watch={WATCH}/><Sound/><Background/>
         {<><Chrome/><FinalDemo/></>}
         <Grade/>
         <Subtitle/>

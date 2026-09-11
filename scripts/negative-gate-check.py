@@ -87,6 +87,54 @@ td, rc0, out0 = mkproj(lambda d: (d['shots'][1].__setitem__('cues', [6, 6]), d)[
 case('D 时间轴断档', [('must_block', 'resolve-shots', (rc0, out0))])
 cleanup(td)
 
+NL = chr(10)
+
+# ── F：假 live / 假 media 名 → validate-composition 必须拦（v2.11 新增）──
+# 旧版只查"live 非空、media 去重 ≥3"，编造的名字照样过；现在 live 必须在场景文件里真实出现。
+def mut_fake(d):
+    d['shots'][0]['live'] = ['NO_SUCH_COMPONENT_9876']
+    d['shots'][1]['media'] = ['FAKE_MEDIUM_A', 'FAKE_MEDIUM_B', 'FAKE_MEDIUM_C']
+    return d
+td, rc0, out0 = mkproj(mut_fake)
+# 需要一个带真实组件名的场景文件，否则"可解析"这一条无从判定
+io.open(os.path.join(td, 'src/scenes.tsx'), 'w', encoding='utf-8', newline='').write(
+    "import {ConsoleWindow} from './media';" + NL + "export const S=()=> <ConsoleWindow/>;" + NL)
+case('F 造假 live / media 名', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+# ── G：冻结的假运镜（声明 intent 但关键帧不动）→ validate-shot-motion 必须拦（v2.11 新增）──
+td, rc0, out0 = mkproj(lambda d: (d['shots'][1].__setitem__('cameraIntent', 'pan-follow'), d)[1])
+if rc0 == 0:
+    import json as _json
+    rp = os.path.join(td, 'manifests/shots.resolved.json')
+    rr = _json.loads(io.open(rp, encoding='utf-8').read())
+    for s in rr['shots']:
+        if s['id'] == 'S2':
+            for k in s['keys']:
+                k['s'] = 1.0; k['x'] = 960.0; k['y'] = 540.0
+    io.open(rp, 'w', encoding='utf-8', newline='').write(_json.dumps(rr, ensure_ascii=False))
+case('G 冻结的假运镜', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
+])
+cleanup(td)
+
+# ── H：帧参数写错（fxkit 组件传 f={f}）→ validate-frame-props 必须拦（v2.11 新增）──
+td, rc0, out0 = mkproj()
+# 必须把真实引擎文件放进 src/，否则门禁无从比对组件签名
+shutil.copy(os.path.join(TPL, 'src/fxkit.tsx'), os.path.join(td, 'src/fxkit.tsx'))
+io.open(os.path.join(td, 'src/scenes.tsx'), 'w', encoding='utf-8', newline='').write(
+    "import {Typewriter} from './fxkit';" + NL
+    + "export const S=({f}:{f:number}) => <Typewriter f={f} text='x'/>;" + NL)
+case('H 帧参数写错（fxkit 传 f）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block', 'validate-frame-props', run([PY, os.path.join(SKILL, 'scripts/validate-frame-props.py'), td])),
+])
+cleanup(td)
+
 # ── E：阴性对照：原样分镜表三道门必须全过（证明门不是"见谁拦谁"） ──
 td, rc0, out0 = mkproj()
 case('E 阴性对照（原样应全过）', [

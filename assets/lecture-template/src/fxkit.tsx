@@ -49,7 +49,7 @@ export const fitH = (rows:{h:number;gapAfter?:number}[],padTop:number,padBottom:
 /** 离场样式：exitStart 之后 15 帧整体下移淡出（完整离场契约）。 */
 const exitStyle = (f:number,exitStart:number|undefined):React.CSSProperties=>{
   if(exitStart===undefined) return {};
-  const p = ease(f,exitStart,exitStart+15);
+  const p = easeInQuad(f,exitStart,exitStart+9);
   return {opacity:1-p, transform:`translateY(${40*p}px)`};
 };
 
@@ -60,7 +60,8 @@ export const FitCard:React.FC<{
 }> = ({x,y,w,h,pad=24,borderColor=C.line,lift=0.25,z=70,frame,start=0,exitStart,children,style})=>{
   const f = useF(frame);
   const p = popS(f,start,'soft');
-  return <div style={{position:'absolute',left:x,top:y,width:w,height:h,zIndex:z,background:C.paper||'#ffffff',border:`2.5px solid ${borderColor}`,borderRadius:10,boxShadow:`3px 3px 0 ${C.ink}`,padding:pad,overflow:'hidden',opacity:p,transform:`translateY(${26*(1-p)}px)`,...exitStyle(f,exitStart),...style}}>{children}</div>;
+  const opP = easeOutSoft(f,start,start+16);
+  return <div style={{position:'absolute',left:x,top:y,width:w,height:h,zIndex:z,background:C.paper||'#ffffff',border:`2.5px solid ${borderColor}`,borderRadius:10,boxShadow:`3px 3px 0 ${C.ink}`,padding:pad,overflow:'hidden',opacity:opP,transform:`translateY(${26*(1-p)}px)`,...exitStyle(f,exitStart),...style}}>{children}</div>;
 };
 
 // ---- 2. Typewriter：打字机。cps=字符/帧，标点后自动停顿，块光标闪烁 ----
@@ -128,13 +129,13 @@ export const Funnel:React.FC<{
     {rows.map((r,i)=>{
       const s = start+i*stagger, p = popS(f,s,'soft');
       const wp = easeOutSoft(f,s+8,s+34);
-      return <div key={r.label} style={{position:'relative',opacity:p,transform:`translateX(${-30*(1-p)}px)`,marginBottom:i<rows.length-1?14:0}}>
+      return <div key={r.label} style={{position:'relative',opacity:p,transform:`translateX(${-30*(1-p)}px)`,marginBottom:i<rows.length-1?10:0}}>
         <div style={{display:'flex',alignItems:'baseline',gap:10,marginBottom:6}}>
           <span style={{fontSize:FX_T.titleXS,fontWeight:700,color:C.ink}}>{r.label}</span>
           <span style={{fontSize:FX_T.labelL,fontWeight:700,color:r.color}}>{r.sub}</span>
           <span style={{marginLeft:'auto',fontFamily:'Space',fontWeight:700,fontSize:FX_T.titleM,color:r.color}}>{r.count}</span>
         </div>
-        <div style={{height:26,background:'#efe9dc',borderRadius:99,border:`2px solid ${C.ink}`,overflow:'hidden'}}>
+        <div style={{height:22,background:'#efe9dc',borderRadius:99,border:`2px solid ${C.ink}`,overflow:'hidden'}}>
           <div style={{height:'100%',width:'100%',background:r.color,borderRadius:99,transformOrigin:'left center',transform:`scaleX(${Math.max(0.04,r.ratio*wp)})`}}/>
         </div>
         {[0,1,2].map(d=>{
@@ -237,7 +238,7 @@ export const CompareBars:React.FC<{
   return <div style={{position:'absolute',left:x,top:y,width:w,...exitStyle(f,exitStart)}}>
     {rows.map((r,i)=>{
       const s = start+i*stagger, wp = easeOutSoft(f,s+6,s+36);
-      return <div key={r.label} style={{marginBottom:i<rows.length-1?12:0,opacity:popS(f,s,'soft')}}>
+      return <div key={r.label} style={{marginBottom:i<rows.length-1?12:0,opacity:easeOutSoft(f,s,s+14),transform:`translateX(${14*(1-popS(f,s,'soft'))}px)`}}>
         <div style={{display:'flex',alignItems:'baseline',marginBottom:5}}>
           <span style={{fontSize:FX_T.labelL,fontWeight:700,color:C.ink}}>{r.label}</span>
           <span style={{marginLeft:'auto',fontFamily:'Space',fontWeight:700,fontSize:FX_T.titleXS,color:r.color}}>{r.value}</span>
@@ -296,12 +297,12 @@ export const BurstCallout:React.FC<{x:number;y:number;size?:number;text:string;c
 // ---- 13. StaggerList：通用 stagger 列表（ Linear 式"秩序感"级联，防 bullets 堆砌） ----
 export const StaggerList:React.FC<{
   x:number;y:number;w:number;items:{icon?:string;text:string;sub?:string;color:string}[];start?:number;stagger?:number;frame?:number;exitStart?:number;
-}> = ({x,y,w,items,start=0,stagger=14,frame,exitStart})=>{
+}> = ({x,y,w,items,start=0,stagger=6,frame,exitStart})=>{
   const f = useF(frame);
   return <div style={{position:'absolute',left:x,top:y,width:w,...exitStyle(f,exitStart)}}>
     {items.map((it,i)=>{
-      const s = start+i*stagger, p = popS(f,s,'soft');
-      return <div key={it.text} style={{display:'flex',alignItems:'center',gap:12,marginBottom:i<items.length-1?10:0,opacity:p,transform:`translateX(${30*(1-p)}px) rotate(${(1-p)*1.2}deg)`}}>
+      const s = start+i*stagger, p = popS(f,s,'soft'), opP = easeOutSoft(f,s,s+14);
+      return <div key={it.text} style={{display:'flex',alignItems:'center',gap:12,marginBottom:i<items.length-1?10:0,opacity:opP,transform:`translateX(${30*(1-p)}px) rotate(${(1-p)*1.2}deg)`}}>
         <span style={{width:34,height:34,borderRadius:99,background:it.color,color:'#fff',display:'grid',placeItems:'center',fontFamily:'Space',fontWeight:700,fontSize:16,flex:'0 0 auto',border:`2px solid ${C.ink}`}}>{it.icon??i+1}</span>
         <span style={{fontSize:FX_T.titleXS,fontWeight:700,color:C.ink}}>{it.text}</span>
         {it.sub&&<span style={{fontSize:FX_T.labelM,fontWeight:700,color:it.color}}>{it.sub}</span>}
@@ -395,7 +396,7 @@ export const SkeletonCard:React.FC<{
   const f = useF(frame);
   const shown = f>=revealAt, p = shown?popS(f,revealAt,'soft'):0;
   // 等待中的骨架：呼吸幅度 ±5%、周期约 60 帧。原来的 0.55±0.25 读作「闪灯」而不是「在等」。
-  const pulse = 0.9+0.05*Math.sin(f*0.105);
+  const pulse = 0.9+0.05*Math.sin(f*0.048);
   return <div style={{position:'absolute',left:x,top:y,width:w,height:h,background:'#ffffff',border:`2.5px solid ${C.ink}`,borderRadius:10,boxShadow:`3px 3px 0 ${C.ink}`,padding:20,overflow:'hidden',opacity:popS(f,start,'soft')}}>
     {!shown&&<div style={{display:'flex',flexDirection:'column',gap:12,opacity:pulse}}>{Array.from({length:rows}).map((_,i)=><div key={i} style={{height:22,borderRadius:6,background:'#e8e2d6',width:`${92-hash01(i)*30}%`}}/>)}</div>}
     {shown&&<div style={{opacity:p,transform:`translateY(${16*(1-p)}px)`}}>{children}</div>}

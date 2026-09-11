@@ -15,6 +15,22 @@ import {FitCard, Typewriter, PayPop, StampSeal, Funnel, ChatThread, MailScan, Ti
 > 于是动画整体错位，甚至抛 `Frame NaN`。**fxkit 传 `frame={f}`，新模块传 `f={f}`。**
 >
 > 另外每个组件的 `frame` 语义是**本镜本地帧**（0 起），不是全局帧；在 `ShotCamera` 内组合时必须传本地帧。
+>
+> **这条以前只是文档，现在有门禁**：`python scripts/validate-frame-props.py PROJECT_DIR` 逐个标签核对
+> 参数名，写错即 P0。实测两支自带样板片各有 5–6 处违反，印章 / Funnel / 打字机的进场动画因此长期失效
+> （组件回落到全局帧后，`start={局部节拍}` 早已过去，元素直接以完成态出现）。**改完场景文件先跑它。**
+
+**参数名对照（写场景时照这张表，别凭记忆）**
+
+| 取值 | 模块 / 组件 |
+|---|---|
+| `frame={f}` | `fxkit` 全部 18 个：`FitCard` `Typewriter` `PayPop` `StampSeal` `Funnel` `ChatThread` `MailScan` `TimeRail` `CompareBars` `ProgressRing` `ShakeX` `BurstCallout` `StaggerList` `KenBurnsImg` `EvidenceZoom` `DiffView` `ConfettiPop` `SkeletonCard` |
+| `f={f}` | `media`（`ConsoleWindow` `MetricGrid` `StampBanner`）、`stagekit`（`StageFrame` `Attach`）、`skeletons`（`Corridor` `SplitStage` `ZoomStage`）、`insert`（`InsertShot` `WhipStreak` `HandoffCarrier` `PaperTurn` `RevealMask`）、`shotkit`（`DepthLayers`） |
+| 不收帧参数 | `kit` 的 `PillTag/LineIcon/CheckBadge`、`CoverPanel`、`BackgroundMute`、`PhaseRail`（从 `ctx` 取）、`ShotCamera`（内部自取） |
+
+> **写列表错峰（v2.11 校准）**：`StaggerList` 默认 `stagger=6`。实测 18–30 帧的错峰在中文旁白下会读成
+> "一个个淡出来"，观众看不到"成串落下"，还会让后几张卡在旁白已经讲下一句时才出现（用户会报"四项只看到三项"）。
+> **同句内错峰 ≤8 帧**；真正需要长间隔的是叙事节拍，那应该由 `beats` 决定，不是由 `stagger` 决定。
 
 ## 本轮动效升级（v3，多时钟）
 
@@ -68,3 +84,25 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 2. **坐标看祖先**：`x/y` 永远相对于最近的 positioned 祖先。放在
    `Paper` 卡片内部时是"卡片相对坐标"；只有直接放在场景根 div 下
    才是场景坐标。S4 印章曾因写成场景坐标而飞出屏（渲染不报错）。
+
+## 实拍素材框：ShotPlate（`src/plates.tsx`）
+
+有真实素材（产品界面截图、官方图表、推文截图）时，**用它比用代码画近似图强得多**——
+真实界面本身就是证据。`ShotPlate` 把截图装进锁定皮肤的墨线框（2.5px 描边 + 硬偏移阴影 + 纯平填充），
+配角标（说明这是什么图）、右上角标（如"官方图表"）与来源署名，并用 `transform` 做**确定性推近**
+（`zoom` + `focus`，不重排、无随机）。
+
+```tsx
+import {ShotPlate} from './plates';
+<ShotPlate x={210} y={168} w={1010} h={600} f={f} src="materials/devin-cli.png"
+  at={at(0)}                  // 出现节拍，必绑（不要写死帧号）
+  zoom={1.32} focus={{fx: 0.5, fy: 0.72}} dur={96}
+  caption="Devin CLI 实拍" badge="v3000.10.21" source="输入 /model 即可切换" />
+```
+
+**素材必须登记**（两道清单要一致，`validate-visual-plan` 会核对）：
+1. `manifests/visual-assets.json` 增一条：`id / path / source_type / provider / prompt_summary / use_context / crop_policy / rights / baked_text / sha256`；截图类 `baked_text` 记 `true`。
+2. `manifests/asset-manifest.json` 的 `visual_asset_ids` 与对应 `scenes[].visual_asset_ids` 里加上同一个 `id`（该镜 `visual_mode` 用 `image-text`）。
+文件放 `public/materials/`，代码里写 `src="materials/xxx.png"`。
+
+**取舍**：能说清的用画的（更可控、跟节拍更紧），需要"这确实是官方/真实"的用实拍。每镜最多一块实拍图，别把片子做成截图集。

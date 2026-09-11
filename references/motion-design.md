@@ -35,7 +35,7 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 - Complete exit: move the entire component outside the canvas or remove it after it is fully out; never leave a clipped corner.
 - Character reaction: move separate arms, face or body parts; do not wobble one flattened character image.
 
-## Motion polish: multi-clock motion (v2.9.0)
+## Motion polish: multi-clock motion (v3.0.0)
 
 **根因诊断**：模板里每个组件原本都是「一个元素的、一个属性、一条曲线、动完永久静止」。
 所有看起来丝滑的开源库都在动**同一元素的多个属性、用不同的时钟**，并且画面里永远有

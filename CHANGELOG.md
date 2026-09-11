@@ -2,6 +2,109 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [3.0.0] - 2026-09-11
+
+> 版本说明：本版是**用两个真实成片打磨出来的修复版**——DeepSeek（129 秒）与 SWE-2（237 秒）。
+> 下面每一条都来自成片里实测到的缺陷、或实测到"门禁其实没在工作"，不是推测。
+> 早期 v2.9 / v3.0 两条试验线的优点已吸收，两分支与旧 tag 均已删除，只保留 `main`。
+
+### Added
+
+- **`scripts/validate-frame-props.py`（新增第 8 道门禁）**：逐个 JSX 标签核对帧参数名——`fxkit` 的 18 个组件用 `frame`，`media / stagekit / skeletons / insert / shotkit / charts` 用 `f`。**写错不报错、只会静默回落到全局帧**（`start={局部节拍}` 早已过去，元素直接以完成态出现），是这套代码里最高频的真实事故。实测两支自带样板片共 **11 处 P0**：4 个 `StampSeal`、`Funnel`、`Typewriter` 等进场动画长期失效。
+- **`ShotPlate`（`assets/lecture-template/src/plates.tsx`）**：**实拍素材框**。把用户提供的真实截图与官方图表装进锁定皮肤的墨线框（2.5px 描边 + 硬偏移阴影），配角标、右上角标与来源署名，用 `transform` 做确定性推近（不重排）。素材仍须按 `manifests/visual-assets.json` 登记（`source_type` / `rights` / `baked_text` / `sha256`），并在 `asset-manifest.json` 里同步素材 id。
+- `SKILL.md` 新增**「开工前 20 行授权契约」**，放在参考文件表之前——这是唯一保证会进上下文的文本，每条都对应一个真实事故。
+- `references/fxkit.md` 新增**参数名对照表**与错峰校准说明；`references/scene-authoring.md` 坑表 6 → **10 条**（新增"flex 子项只含绝对定位元素导致宽度塌陷、多卡精确叠压"与"卡片高度必须用 `fitH` 算"）。
+
+### Fixed（SWE-2 成片轮 · 又抓出两处门禁自身的缺陷）
+
+- **`OverlapGate` 的遮挡判断漏看祖先 z**：只检查元素**自身**的 `z-index`，而字幕的文字 `span` 自身是 `auto`（它的祖先才是 z=200），于是**字幕被当成"遮挡物"**，全片刷出大量"被遮挡"误报。已改为祖先链一并检查，误报减半（144 → 72 行）。
+- **`validate-frame-props.py` 扫不到拆分后的场景文件**：它只匹配 `scenes.tsx`；把场景拆成 `scenes-a/b/c/d.tsx` 之后，它**一个文件都没查却报 P0=0**（与上面 `SlotGuard` 同类的"门禁静默失效"）。已改为匹配所有 `scene*.tsx`（实测从 1 个文件变 6 个）。
+- **可读性垫底改为半透明**：`cel` 皮肤的 `Paper` 从**完全不透明**（`#ffffff`，它才是"整块盖住背景"的元凶）→ 88%；场景外壳的羽化垫底中心 96% → 76%、中段 84% → 59%；左上角章节卡的底也从纯白改半透明。背景图不再被盖死，文字依然压得住。
+- **字幕/章节卡不再被误判为遮挡物**（配合上一条）：锁定覆盖层（z ≥ 145）自身**及其子树**都不算遮挡物——否则每片都会在片头被自己的章节卡拦下。
+
+### Fixed（v2.11 引擎补丁 · 全部有实测证据）
+
+
+**三道渲染期门禁此前是静默失效的（都做了可复现实验）**
+
+- **`CardFitGate` 从未真正校验过**：实测把卡片高度压到 40px、内容必然溢出，渲染仍 exit 0 且零输出。
+  三个叠加原因：① 开头 `if(document.fonts.status!=='loaded') return;` —— 实测某帧 `fonts=loading`，整桶跳过，
+  且从不等待字体就绪（字幕门是 `await document.fonts.ready` 的）；② `offsetParent` 链做累加再 `if(m!==card) return;`
+  —— 实测 87 个文字块里 18 个在链上断裂（逐字动画 span、Takeaway 文本），这些文字从未被校验；
+  ③ 零输出既可能是"全部合格"也可能是"根本没跑"。现改为：等字体就绪后补测、判据换成
+  `scrollHeight > clientHeight`（overflow 的定义，含 6px 容差吸收内联行盒取整）、剔除 `overflow:visible`
+  容器（避免绝对定位子元素虚增，实测 MetricGrid 虚增 180–213px）、每 5 秒打一次覆盖率。
+  **修好后立刻拦下 S2 卡片真裁切 25px 与 S3 控制台水平溢出 8px。**
+- **`OverlapGate` 四处看不见**：① 每 15 帧网格漏掉短命重叠（镜头交接 10 帧、页眉滑变 7–16 帧、数值滑动 14 帧）
+  → 现在基础网格 + **事件帧强制抽样**（镜头边界 / 节拍 / 相机关键帧 ±2 帧，由 `index.tsx` 传入）；
+  ② `looksSolid` 只看 `backgroundColor`，渐变面板被当成透明 → `backgroundImage !== 'none'` 也算实心；
+  ③ `SKIP_Z=140` 把页眉层连内容带祖先一起跳过 → 阈值提到 145（只跳过章节卡 150 / 字幕 200）；
+  ④ 多文本节点按整块矩形量 → 一律用 `Range` 取并集。另加覆盖率日志；两支自带成片已切 `mode="block"`。
+- **`SlotGuard` 在生产渲染中永不执行**：条件写的是 `process.env.NODE_ENV !== 'production'`，而 Remotion 打包恒为
+  production（本仓也没有 dev 渲染入口）。文档已据实修正为 dev-only，真正的槽宽校验由 `CardFitGate` + 重叠门承担。
+
+**最高频真实事故：帧参数名（文档写对了，两支样板片自己违反了 11 处）**
+
+- 新增 `scripts/validate-frame-props.py`：解析每个导出组件的帧参数名（fxkit 18 个用 `frame`，
+  media/stagekit/skeletons/insert/shotkit 用 `f`），逐个标签核对。**实测抓出 11 处 P0**——
+  4 个 `StampSeal`、`Funnel`、`Typewriter` 等被传 `f={f}`，组件静默回落到全局帧，
+  于是 `start={局部节拍}` 早已过去，这些进场动画长期以"完成态"直接出现。
+- `PhaseRail` 的三个调用处把 `StageFrame` 传入的**真实 ctx** 换成硬写 `local: 0` 的假 ctx，
+  导致"本拍接管"脉冲 / 连接线绘制 / 当前行入场全部冻结；已改为直接使用回调给的 ctx。
+
+**构建期门禁硬化（堵住"填假名字也能过"）**
+
+- 枚举闭合：`intent` / `transition` / `entry` / `media` / `skeleton` 写错名字即 P0
+  （实测把 media 写成 `FAKE_MEDIUM_A…`、live 写成 `NO_SUCH_COMPONENT` 曾能 P0=0 通过）。
+- `live` 里的每个名字必须能在场景文件里找到（真实 import 并渲染过）。
+- `explanation:false` 不再能整体绕过 `zones` / `bottomFill`（旧版一个 false 就能跳过整块密度校验），
+  且全片最多 1 镜。
+- 声明了运镜就**必须真的动**（`Δs ≥ 0.02` 或 `Δ平移 ≥ 20px`）：把 `still` 改名成 `push-in` 不再能同时骗过
+  意图多样性统计与每章运镜配额。
+- 新增 P1：单镜时长（>10s）、镜长分布（最长/最短倍数、同一时长档占比、是否有 ≤4s 短镜）、
+  骨架指纹重复（`(骨架,意图,转场,入场)` 组合）、主角尺寸（`hero.size` 必须是主体短边设计像素）。
+- P1 去噪：原来"每镜刷 1 条最长静止"改为**汇总一条并带帧区间归因**（`S8(105帧 f=2408-2513)` 这种），
+  让 P1 真正可执行。
+- 负向抽查 4 → **8 条**：新增"假 live/media 名""冻结的假运镜""帧参数写错"三条必须被拦的夹具，
+  外加干净对照必须全过。
+
+**成片缺陷（由修好的门禁抓出并修复）**
+
+- S12 四张事实卡**精确叠在同一位置**（用户报的 2:07）：flex 子项只含绝对定位子元素 → 宽度塌成 0，
+  四张 248px 宽的卡被 `gap:20` 排到 x=0/20/40/60。已显式给宽高。
+- S2 名片高度比内容矮 25px，`overflow:hidden` 把第三行裁掉（旧成片带着这个伤）。
+- S3 控制台高度公式少算自身内边距与真实行高 → 最后一行被裁 27px；改为 `height:auto`；
+  随后门禁又抓出该面板**水平**溢出 8px（内容 1000 > 内宽 996），修内边距。
+- `MetricGrid` 数字滚动的小数位改为取 `before`/`after` 的较大精度（避免中途出现第三档精度）。
+- `Funnel` 纵向压缩 24px（S11 里比容器高 19px）。
+
+**动效（把六律真正落到组件上）**
+
+- 出场统一"快而急"：`exitStyle` 改 `easeInQuad` 9 帧——**一处修好 9 个组件的"出场 = 入场"**。
+- `FitCard` / `StaggerList` 透明度改用独立时钟（此前位移与透明度共用一个 spring，读作"整块刚体出现"）。
+- 错峰校准：列表 18–30 帧 → **6 帧**（实测 18–30 帧在中文旁白下读成"一个个淡出来"，
+  且后几张卡要等旁白讲下一句才出现，用户报过"四项只看到三项"）。
+- 呼吸周期去毛躁：Corridor 承载物 12.6 帧 → 140 帧、`SkeletonCard` 60 帧 → 131 帧。
+- `CompareBars` 行补 14px 位移（此前只有透明度）；`SplitStage` 分割线补 opacity；
+  `ProgressBar` 由 `width` 改 `scaleX`（圆角胶囊中途不再被拉变形）；百分比补 `tabular-nums`。
+- 删除死掉的 `CameraRig` / `CAM_KEYS` / `camAt`（48 行）：它会教出"全片一条相机轨道"的错做法，
+  而那正是 v2.8 被锁死相机的根因。
+
+**文档**
+
+- `SKILL.md` 新增**「开工前 20 行授权契约」**（放在参考文件表之前：这是唯一保证会进上下文的文本），
+  并更新门禁表为 8 道、补上"覆盖率日志缺失 = 门禁没跑，按失败处理"的判据。
+- `fxkit.md` 新增**参数名对照表**与错峰校准说明；`scene-authoring.md` 坑表 6 → 10 条
+  （新增"flex 宽度塌陷导致多卡叠压"与"卡片高度必须 `fitH` 算"）。
+- `validate-composition.py` 的 P1 现在带帧区间归因。
+
+
+### Changed
+
+- 负向抽查 4 → **8 条**：新增"假 `live` / `media` 名""冻结的假运镜""帧参数写错"三条必须被拦的夹具，外加干净对照必须全过。
+- `validate-composition.py` 的 P1 从"每镜刷一条最长静止"改为**汇总 + 帧区间归因**（如 `S8(105帧 f=2408-2513)`），让 P1 真正可执行。
+- **交付响度改为两遍规范化**：先测再用 `measured_*` + `linear=true` 精准应用；并把 `validate-video` 的真峰阈值收紧到文档写明的 **−1.5 dBTP**（原来 `> -1` 会放过 −1.3 dBTP 的违标片）。
+
 ## [2.9.0] - 2026-09-10
 
 > 版本说明：v2.9 / v3.0 两条线（受限配方、内容路由、限量文本架构）的优点已被本版吸收，

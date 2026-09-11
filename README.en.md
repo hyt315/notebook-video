@@ -25,7 +25,7 @@ Explainer videos, animated educational lectures, product showcases, or technical
 
 **The default path is pure code-drawn composition**: all SVG diagrams, mascots, checklists and annotations are drawn in code and frame-accurately synchronised with TTS word timings — **no image-generation model required**. Outputs crisp H.264/AAC 2K MP4 plus a fully editable Remotion source package.
 
-This release (v2.9.0) fixes the two failure modes AI-made videos hit most often:
+This release (v3.0.0) fixes the two failure modes AI-made videos hit most often:
 
 - **It looked like a slide deck.** Every scene used to be the same "card + text" layout. Now there are **four structurally different scene skeletons**, a **content → medium routing table**, and a **per-shot restricted camera** — all enforced by gates.
 - **Text collided and got covered.** The old checks only caught text overflowing its own card. There is now a **runtime overlap/occlusion gate** that tells you exactly which frame, which two texts, and how many pixels.

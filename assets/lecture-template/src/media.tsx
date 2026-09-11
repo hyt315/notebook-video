@@ -79,7 +79,13 @@ export const ConsoleWindow: React.FC<{
   const opIn = easeOut(f, 0, 14);
   const mvIn = easeOut(f, 0, 18);
   const out = exitStart === undefined ? 0 : easeIO(f, exitStart, exitStart + 15);
-  const bodyH = h ?? 24 + rows.length * rowGap; // 高度自适应，不留死黑
+  // 高度自适应，不留死黑：必须算上自己的上下内边距(28)与真实行高(~36)，
+  // 且行间距用的是 max(6,rowGap-22)（与下面 body 的 gap 保持一致）。
+  // 旧式 `24 + rows*rowGap` 在 rowGap=64/5 行时比内容矮 27px，最后一行被裁掉。
+  // body height: prefer the caller's explicit h; otherwise let the browser size it to content.
+  // Any hand-rolled row-height estimate drifts with font/weight (measured: 27px short with the old
+  // `24 + rows*rowGap`, still 12px short with an estimate), and the last row gets clipped by hidden overflow.
+  const bodyH = h;
   const tone = (t?: string) => (t === 'ok' ? C.green : t === 'warn' ? C.gold : t === 'cmd' ? C.blue : t === 'out' ? '#e8e8e8' : '#bdb6ac');
   const statusTone = status?.tone === 'ok' ? C.green : status?.tone === 'warn' ? C.gold : C.blue;
   const rowAt = (r: ConsoleRow, i: number) => r.at ?? start + i * ROW_INTERVAL;
@@ -102,7 +108,7 @@ export const ConsoleWindow: React.FC<{
               <span style={{marginLeft: 'auto', marginRight: 12, fontFamily: 'Space,monospace', fontSize: 11, fontWeight: 700, background: `${statusTone}22`, color: statusTone, border: `1px solid ${statusTone}66`, borderRadius: 999, padding: '2px 10px', whiteSpace: 'nowrap', transform: `scale(${1 + 0.06 * pulse(f, lastAt, 10)})`}}>{status.text}</span>
             )}
           </div>
-          <div style={{height: bodyH, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: Math.max(6, rowGap - 22), position: 'relative'}}>
+          <div style={{height: bodyH ?? 'auto', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: Math.max(6, rowGap - 22), position: 'relative'}}>
             {rows.map((r, i) => {
               const at = rowAt(r, i);
               if (f < at) return null;
@@ -175,8 +181,9 @@ export const MetricGrid: React.FC<{
           const outP = easeIn(f, swapStart, swapStart + 6);      // 旧值更快向上退场（与新的错开，避免中途叠字）
           const barP = easeOut(f, at + 32, at + 54);
           const badgeP = easeOut(f, at + 28, at + 40);
-          const num1 = parseNum(m.after);
-          const shown = num1 ? `${num1.prefix}${(num1.value * swapP).toFixed(num1.decimals)}${num1.suffix}` : m.after;
+          const num0 = parseNum(m.before), num1 = parseNum(m.after);
+          const dec = num1 ? Math.max(num1.decimals, num0 ? num0.decimals : 0) : 0;
+          const shown = num1 ? `${num1.prefix}${(num1.value * swapP).toFixed(dec)}${num1.suffix}` : m.after;
           return (
             <div key={m.label} style={{width: cellW, height: cellH, position: 'relative', background: C.paper, border: `2.5px solid ${accent}`, borderRadius: 12, boxShadow: `3px 3px 0 ${C.ink}`, padding: '16px 18px', opacity: cellOp, transform: `translateY(${24 * (1 - cellMv)}px) scale(${0.96 + 0.04 * cellMv})`}}>
               <div style={{display: 'flex', alignItems: 'center', gap: 8}}>

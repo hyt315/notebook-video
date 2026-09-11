@@ -1,7 +1,7 @@
 ---
 name: notebook-video
-version: 2.9.0
-description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion. The default visual route is pure code-drawn composition (SVG diagrams, mascots, progressive checklists, annotation stickers) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes a per-shot restricted camera with an out-of-bounds proof, four scene skeletons with a content-to-medium routing table, a cue-indexed shot table, native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering and six automated quality gates. Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
+version: 3.0.0
+description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion. The default visual route is pure code-drawn composition (SVG diagrams, mascots, progressive checklists, annotation stickers) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes a per-shot restricted camera with an out-of-bounds proof, four scene skeletons with a content-to-medium routing table, a cue-indexed shot table, native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering and eight automated quality gates (including a frame-prop-name gate that catches the highest-frequency silent failure in this codebase). Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
 ---
 
 # Create notebook explainer videos
@@ -41,6 +41,31 @@ Read only what the current production needs. **写任何场景之前，先读前
 **何时读**（确定画幅时）：[references/canvas-modes.md](references/canvas-modes.md)（3:4 另读 [references/portrait-illustration-system.md](references/portrait-illustration-system.md)）。
 **何时读**：仅当用户接受了可选的生图附加路线时，读 [references/visual-director.md](references/visual-director.md)。
 **何时读**（组装工程 / 抓 HTML / 跨平台排错时）：[references/official-skills-exemplar.md](references/official-skills-exemplar.md)、[references/html-capture.md](references/html-capture.md)、[references/cross-platform-compatibility.md](references/cross-platform-compatibility.md)、[references/windows-compatibility.md](references/windows-compatibility.md)。
+
+## 开工前 20 行授权契约
+
+> **只记这 20 行；它与后面任何参考冲突时，以这段为准。** 每一条都对应一个真实事故。
+>
+> 1. 先跑 `new-project` 复制模板，绝不从记忆重建引擎。
+> 2. 分镜表只写语义：`cues` 里**绝不写帧号**，帧号由 `resolve-shots.py` 推。
+> 3. 骨架按内容的**第一性**选，不按标题关键词：有机制在跑 → Stage/Corridor；两个对等对象 → Split；要放大看局部 → Zoom。平局时**用能演示机制的那个**。
+> 4. 相邻两镜骨架必须不同，全片 ≥3 种；"卡片 + 文字列表"不算讲解。
+> 5. 每个讲解场景 ≥1 个**真的随旁白变状态**的构件；`live` 里必须是你场景文件里真实 import 并渲染过的组件名——**写假名字等于没写**（门禁会查）。
+> 6. `media` 只允许 6 个值：`chart | console | code | graphic | text | metric`。
+> 7. 每镜必须有 `camera.intent`（7 选 1）与 `anchor`；含文字的镜头放大 `s ≤ 1.35`。
+> 8. 声明了运镜就**必须真的动**：`max(s) − min(s) ≥ 0.02` 或 `|Δx| + |Δy| ≥ 20`（把 `still` 改名成 `push-in` 不算运镜）。
+> 9. 元素出现帧绑到"讲到它的那一句"（`SHOTS.Sx.beats`），**禁止镜头开头一次铺完**。
+> 10. 入场统一 `enterAt()`：22 帧 + 22px 上浮 + 0.975→1；同句内错峰 **≤8 帧**（18–30 帧会读成"一个个淡出来"，不是"成串落下"）。
+> 11. 帧参数名：`fxkit` 全部传 `frame={f}`；`media / kit / stagekit / skeletons / insert / shotkit` 传 `f={f}`。**传错不报错，只会整体错位**——这是本技能最高频的真实事故（`validate-frame-props.py` 会抓）。
+> 12. 卡片高度必须用 `fitH()` 算，禁止手写"看着差不多"的固定高度（渲染期 `CardFitGate` 会拦下真裁切）。
+> 13. 给槽内组件传宽度前先算 `mainW = w − pad×2 − railW − 18`。
+> 14. 绝对定位构件的 `x/y` 相对**最近的定位祖先**，与文档流标题共用容器原点会精确重叠；**flex 子项若只含绝对定位子元素，必须显式给宽高**，否则宽度塌成 0、多张卡会叠在同一点。
+> 15. 整幅底托必须 `z={-1}` 且径向羽化；正 z 会把整镜内容压成半透明。
+> 16. 下 1/4 必须填满（底边接近 y=876）；面板下半空洞就是 PPT。
+> 17. 页眉 / 章节卡 / 字幕放在 `ShotCamera` **之外**。
+> 18. 写场景文件后按顺序跑 `resolve-shots.py` → 构建期门禁，**P0 必须 = 0** 才允许渲染。
+> 19. 门禁失败只允许改内容（换骨架 / 换介质 / 补元素 / 改高度），**不许改阈值、不许改判据**；连续两次不过就停下来报告。
+> 20. 首次渲染后读控制台：`OverlapGate` / `CardFitGate` 的覆盖率与告警必须清零或显式 `data-gate-allow`；拿不准就先出接触表看图。
 
 ## Create a project
 
@@ -98,20 +123,25 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" render ./notebook-video-project ./
 node "<SKILL_DIR>/scripts/notebook-video.mjs" review-frames ./notebook-video-project ./notebook-video-project/renders/scene-review.mp4 START_FRAME END_FRAME
 ```
 
-## The six gates
+## The gates
 
 | Gate | When | Catches | Blocking? |
 |---|---|---|---|
 | `resolve-shots.py` | build | timeline gaps/overlaps, coverage ≠ duration, cue index out of range | yes |
-| `validate-shot-motion.py` | build | anchor leaves the frame at any keyframe, zoom over budget, pan beyond the zoom-derived budget, camera-move quotas | yes (P0) |
-| `validate-composition.py` | build | adjacent scenes sharing a skeleton, <3 skeletons, no live component in an explanation scene, <3 media, zones out of 3–5, lower quarter not filled, transition/entry variety, beat gaps | yes (P0) |
+| `validate-shot-motion.py` | build | anchor leaves the frame at any keyframe, zoom over budget, pan beyond the zoom-derived budget, camera-move quotas, **unknown intent names**, **a declared camera move that does not actually move** | yes (P0) |
+| `validate-composition.py` | build | adjacent scenes sharing a skeleton, <3 skeletons, no live component in an explanation scene, **a `live` name that does not exist in the scene file**, <3 media, **unknown transition/entry/media names**, zones out of 3–5, lower quarter not filled, **`explanation:false` used to bypass density**, hero size, shot-length spread, repeated骨架 fingerprints, beat gaps (aggregated with frame ranges) | yes (P0) |
+| `validate-frame-props.py` | build | **`f={f}` passed to an fxkit component (or `frame={f}` to the other modules)** — silently falls back to the global frame and kills the entrance animation | yes (P0) |
 | `CaptionFitGate` | render | caption wider than the safe width, measured with the **current canvas and skin's real weight/spacing** | yes |
-| `CardFitGate` | render | text overflowing its card | yes |
-| `OverlapGate` | render (sampled every 15 frames) | text-vs-text overlap and paint-order occlusion, using real glyph rects | warn by default, `mode="block"` to block |
-| `SlotGuard` | render (dev) | content wider than `StageFrame`'s main slot (`mainW = w − pad×2 − railW − 18`) | warn |
+| `CardFitGate` | render | content taller/wider than its card (`scrollHeight > clientHeight`, 6px tolerance; clips only), waits for fonts, logs coverage every 5s | yes |
+| `OverlapGate` | render (15-frame grid **+ every shot boundary, beat and camera keyframe**) | text-vs-text overlap and paint-order occlusion using real glyph rects; gradient backgrounds count as opaque; header layer (z=140) included | `mode="block"` in the bundled films |
+| `SlotGuard` | render (dev only) | content wider than `StageFrame`'s main slot (`mainW = w − pad×2 − railW − 18`) | warn |
 
 Intentional overlaps (shot handoff, header swap, metric value replacement) must be declared with
 `data-gate-allow`; the allow-list may never hide two different pieces of information colliding.
+
+**A gate that prints nothing must be distinguishable from a gate that never ran.** `CardFitGate` and
+`OverlapGate` log a coverage line every 5 seconds (`已测 N 个字…`); if you see no coverage line at all,
+the gate did not execute — treat that as a failure, not as a pass.
 
 Validation after rendering:
 
@@ -139,7 +169,8 @@ dependencies）。不要在本技能里写入实验性改动，直到用户看�
 scripts/notebook-video.mjs          跨平台统一启动器（new-project / resolve-shots / render / review-frames / showcase / package …）
 scripts/resolve-shots.py            分镜表 → 帧号与相机关键帧（唯一定源）
 scripts/validate-shot-motion.py     构建期：镜头出界证明 + 运镜配额
-scripts/validate-composition.py     构建期：骨架 / 活性组件 / 介质 / 密度
+scripts/validate-composition.py     构建期：骨架 / 活性组件 / 介质 / 密度 / 枚举闭合 / live 可解析 / 主角尺寸 / 镜长分布
+scripts/validate-frame-props.py     构建期：fxkit 传 frame、其他模块传 f —— 写错即 P0（会静默回落到全局帧）
 scripts/validate-caption-sync.py    字幕与 TTS 词边界一致
 scripts/validate-semantic-breaks.py 保护短语不被切断
 scripts/validate-visual-plan.py     视觉计划与清单一致

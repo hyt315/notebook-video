@@ -103,9 +103,9 @@ const S1Lonely: React.FC<{f: number}> = ({f}) => {
             <span style={{fontFamily: 'Space,Kai', fontWeight: 700, fontSize: TYPE.titleS, color: C.ink}}>你写的代码，还躺在硬盘里吗？</span>
           </div>
         )}
-        rail={({index}) => (
+        rail={(ctx) => (
           <div style={{position: 'relative', height: '100%'}}>
-            <PhaseRail phases={phases} ctx={{index, phase: phases[index], prev: phases[index], local: 0, t: 0, span: 1, nextAt: 1e9, entering: 1}} />
+            <PhaseRail phases={phases} ctx={ctx} />
             <div style={{position: 'absolute', left: 0, right: 0, bottom: 0, padding: '14px 16px', borderRadius: 12, background: C.paperBase, border: `1.5px solid ${C.line}`, ...enterAt(f, at(1))}}>
               <div style={{fontSize: 20, fontWeight: 700, color: C.muted, marginBottom: 10}}>本地 → 远程</div>
               <div style={{fontSize: 20, fontWeight: 700, color: C.ink, lineHeight: 1.6}}>只有你能看到<br />→ 全世界都能参与</div>
@@ -148,7 +148,7 @@ const S2ThreeSteps: React.FC<{f: number}> = ({f}) => {
       <div style={{position: 'absolute', left: 300, top: 690, width: 1320, textAlign: 'center', ...enterAt(f, t0 + 30)}}>
         <div style={{fontSize: TYPE.titleM, fontWeight: 700, color: C.muted}}>想入场，其实只要三步</div>
       </div>
-      <div style={{position: 'absolute', left: 1360, top: 640, ...enterAt(f, t0 + 48)}}><StampSeal text="三步" x={0} y={0} size={130} f={f} start={t0 + 48} color={C.orange} /></div>
+      <div style={{position: 'absolute', left: 1360, top: 640, ...enterAt(f, t0 + 48)}}><StampSeal text="三步" x={0} y={0} size={130} frame={f} start={t0 + 48} color={C.orange} /></div>
     </Shot>
   );
 };
@@ -187,7 +187,7 @@ const S3FirstPr: React.FC<{f: number}> = ({f}) => {
         </div>
       </FitCard>
       <div style={{position: 'absolute', left: 1250, top: 648, width: 510, ...enterAt(f, at(1, 60))}}>
-        <Typewriter f={f} start={at(1, 60)} cps={0.45} text="小改动，也是有效贡献" fontSize={TYPE.titleXS} color={C.orange} cursor={false} />
+        <Typewriter frame={f} start={at(1, 60)} cps={0.45} text="小改动，也是有效贡献" fontSize={TYPE.titleXS} color={C.orange} cursor={false} />
       </div>
     </Shot>
   );
@@ -215,7 +215,7 @@ const S4ProRepo: React.FC<{f: number}> = ({f}) => {
         </div>
       </FitCard>
       <div style={{position: 'absolute', left: 1180, top: 690, width: 520}}>
-        <StaggerList x={0} y={0} w={520} frame={f} start={at(1, 60)} stagger={18} items={[
+        <StaggerList x={0} y={0} w={520} frame={f} start={at(1, 60)} stagger={6} items={[
           {text: '让人一眼看懂', sub: 'README', color: C.blue},
           {text: '让人放心使用', sub: 'LICENSE', color: C.green},
         ]} />
@@ -238,14 +238,14 @@ const S5Ops: React.FC<{f: number}> = ({f}) => {
       <StageFrame
         x={230} y={176} w={1460} h={710} f={f} phases={phases} railW={350}
         header={() => <span style={{fontFamily: 'Space,Kai', fontWeight: 700, fontSize: TYPE.titleS}}>第三步 · 学会运营</span>}
-        rail={({index}) => <PhaseRail phases={phases} ctx={{index, phase: phases[index], prev: phases[index], local: 0, t: 0, span: 1, nextAt: 1e9, entering: 1}} />}
+        rail={(ctx) => <PhaseRail phases={phases} ctx={ctx} />}
         stamp={() => <StampBanner x={0} y={0} w={1060} f={f} at={at(1, 70)} text="按时发版，仓库才有人气" color={C.green} />}
       >
         {({index}) => (
           <div style={{position: 'relative', height: '100%'}}>
             <div style={{fontSize: TYPE.titleXS, fontWeight: 700, color: C.muted, ...enterAt(f, at(0))}}>一个活跃仓库的日常</div>
             <div style={{position: 'absolute', left: 0, top: 52}}>
-              <Funnel x={0} y={0} w={1040} f={f} start={at(0, 16)} stagger={26} rows={[
+              <Funnel x={0} y={0} w={1040} frame={f} start={at(0, 16)} stagger={6} rows={[
                 {label: '新 Issue', sub: '需要分流', count: '24', color: C.blue, ratio: 1},
                 {label: '可复现 / 待办', sub: '进入里程碑', count: '9', color: C.orange, ratio: 0.38},
                 {label: '本周已合并', sub: '并发布 v1.1', count: '6', color: C.green, ratio: 0.25},
@@ -281,7 +281,7 @@ const S6Skills: React.FC<{f: number}> = ({f}) => {
       <div style={{position: 'absolute', left: 300, top: 676, width: 1320, textAlign: 'center', ...enterAt(f, t0 + 30)}}>
         <div style={{fontSize: TYPE.titleM, fontWeight: 700, color: C.muted}}>这三步，我做成了三个 AI 技能</div>
       </div>
-      <div style={{position: 'absolute', left: 1380, top: 620, ...enterAt(f, t0 + 52)}}><StampSeal text="三个技能" x={0} y={0} size={130} f={f} start={t0 + 52} color={C.blue} /></div>
+      <div style={{position: 'absolute', left: 1380, top: 620, ...enterAt(f, t0 + 52)}}><StampSeal text="三个技能" x={0} y={0} size={130} frame={f} start={t0 + 52} color={C.blue} /></div>
     </Shot>
   );
 };
@@ -307,7 +307,7 @@ const S7Agent: React.FC<{f: number}> = ({f}) => {
         </div>
       </ZoomStage>
       <div style={{position: 'absolute', left: 1250, top: 320, width: 510}}>
-        <SkeletonCard x={0} y={0} w={510} h={200} f={f} start={at(0, 20)} revealAt={at(0, 80)} rows={2}>
+        <SkeletonCard x={0} y={0} w={510} h={200} frame={f} start={at(0, 20)} revealAt={at(0, 80)} rows={2}>
           <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
             <CheckBadge size={28} />
             <div>
@@ -339,7 +339,7 @@ const S8Series: React.FC<{f: number}> = ({f}) => {
       >
         {() => (
           <div style={{position: 'relative', height: '100%'}}>
-            <MetricGrid x={0} y={0} w={1348} f={f} cols={3} cellH={200} start={at(0, 10)} stagger={at(1) - at(0)} title="三期视频，一期一步"
+            <MetricGrid x={0} y={0} w={1348} f={f} cols={3} cellH={200} start={at(0, 10)} stagger={6} title="三期视频，一期一步"
               items={[
                 {label: 'EP 1 · 参与', before: '不会', after: '会提 PR', win: true, color: C.orange},
                 {label: 'EP 2 · 发布', before: '本地项目', after: '专业仓库', win: true, color: C.blue},

@@ -243,7 +243,18 @@ const render = async ([projectArg, outputArg, composition = 'NotebookVideoFilm']
   const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
   console.log(`Rendering at concurrency ${concurrency}. Override with REMOTION_CONCURRENCY after running benchmark-render.`);
   await remotionRender({project, composition, output: raw, concurrency});
-  await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', raw, '-map', '0:v:0', '-map', '0:a:0', '-c:v', 'copy', '-af', 'loudnorm=I=-16:LRA=11:TP=-1.5', '-ar', '48000', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', output]);
+  // 两遍响度规范化：先测（linear 模式需要 measured_* 才能同时打准 LUFS 与真峰）
+  const probe = await run('ffmpeg', ['-hide_banner', '-i', raw, '-af', 'loudnorm=I=-16:LRA=11:TP=-1.5:print_format=json', '-f', 'null', '-'], {capture: true, allowFailure: true});
+  let loudFilter = 'loudnorm=I=-16:LRA=11:TP=-1.5';
+  const probeJson = `${probe.stdout || ''}
+${probe.stderr || ''}`.match(/\{[\s\S]*\}/);
+  if (probeJson) {
+    try {
+      const m = JSON.parse(probeJson[0]);
+      loudFilter = `loudnorm=I=-16:LRA=11:TP=-1.5:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true`;
+    } catch { console.warn('loudnorm 测量解析失败，退回单遍模式'); }
+  }
+  await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', raw, '-map', '0:v:0', '-map', '0:a:0', '-c:v', 'copy', '-af', loudFilter, '-ar', '48000', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', output]);
   fs.rmSync(raw, {force: true});
   console.log(`Rendered and normalized: ${output}`);
 };
@@ -339,7 +350,7 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   const peak = Number(loudLog.match(/Input True Peak:\s*([-0-9.]+) dBTP/)?.[1]);
   if (!Number.isFinite(integrated) || !Number.isFinite(peak)) fail('Unable to parse loudness analysis from FFmpeg output.');
   if (integrated < -18 || integrated > -14) fail(`Integrated loudness outside target range: ${integrated} LUFS`);
-  if (peak > -1) fail(`True peak too high: ${peak} dBTP`);
+  if (peak > -1.5) fail(`True peak above the documented -1.5 dBTP ceiling: ${peak} dBTP`);
   console.log(`audio valid: ${integrated.toFixed(1)} LUFS, ${peak.toFixed(1)} dBTP`);
 
   await makeContactSheet(video, contact, expected);

@@ -97,7 +97,7 @@ export const Corridor: React.FC<{
   const accent = current?.color ?? C.blue;
   // 只在停驻（到站后 DWELL 内）呼吸；行驶中不呼吸。
   const dwellLocal = current ? f - current.at : 0;
-  const breathing = dwellLocal >= 0 && dwellLocal <= DWELL ? 1 + 0.02 * Math.sin(dwellLocal * 0.5) : 1;
+  const breathing = dwellLocal >= 0 && dwellLocal <= DWELL ? 1 + 0.02 * Math.sin(dwellLocal * 0.045) : 1;
   // 最后一段加衰减残影（只加一段，不要每段都拖尾——那是第二个持续运动）
   const trailing = arrived >= n && f - stations[n - 1].at < 20;
 
@@ -256,7 +256,7 @@ export const SplitStage: React.FC<{
     <div style={{position: 'absolute', left: x, top: y, width: w, height: h, zIndex: z}}>
       {panel('left', left, 0)}
       {panel('right', right, colW + 40)}
-      <div style={{position: 'absolute', left: colW + 19, top: 20, width: 3, height: h - 40, background: C.line, borderRadius: 2, transformOrigin: 'top center', transform: `scaleY(${lineP})`}} />
+      <div style={{position: 'absolute', left: colW + 19, top: 20, width: 3, height: h - 40, background: C.line, borderRadius: 2, transformOrigin: 'top center', opacity: lineP, transform: `scaleY(${lineP})`}} />
       {badgeP > 0.02 && (
         <div style={{position: 'absolute', left: colW - 4, top: h / 2 - 26, width: 56, height: 56, borderRadius: 99, background: C.paperBase, border: `2px solid ${C.line}`, display: 'grid', placeItems: 'center', fontFamily: 'Space', fontWeight: 700, fontSize: 22, color: C.muted, opacity: badgeP, boxShadow: badgeRing > 0.02 ? `0 0 0 ${badgeRing * 8}px ${C.line}` : 'none', transform: `scale(${0.9 + 0.25 * Math.sin(Math.PI * Math.min(1, badgeP))})`}}>VS</div>
       )}

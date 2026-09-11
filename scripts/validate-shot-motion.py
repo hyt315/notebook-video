@@ -159,6 +159,12 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
             moving = sum(1 for a, b in zip(keys, keys[1:]) if abs(a["s"] - b["s"]) > 1e-6 or abs(a["x"] - b["x"]) > 1e-6 or abs(a["y"] - b["y"]) > 1e-6)
             if moving > 1:
                 p1.append({"id": sid, "issue": f"本镜有 {moving} 段位移，约定每镜 ≤1 次运镜"})
+            # P0：声明了运镜就必须真的动。否则"把 still 改名成 push-in"就能同时骗过
+            # 意图多样性统计和每章运镜配额，而画面完全静止（v2.8 的老毛病换了件衣服）。
+            scale_span = max(k["s"] for k in keys) - min(k["s"] for k in keys)
+            pan_span = (max(k["x"] for k in keys) - min(k["x"] for k in keys)) + (max(k["y"] for k in keys) - min(k["y"] for k in keys))
+            if scale_span < 0.02 - 1e-9 and pan_span < 20 - 1e-9:
+                p0.append({"id": sid, "issue": f"声明 intent={intent} 但关键帧几乎不动（Δs={scale_span:.3f}, Δ平移={pan_span:.1f}px）；把 still 改名成运镜不算运镜"})
 
     # ---- 每章运镜配额 ----
     chapters: dict[str, list[dict]] = {}
