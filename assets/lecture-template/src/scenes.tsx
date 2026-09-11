@@ -3,7 +3,7 @@ import {Easing, interpolate} from 'remotion';
 import {THEME} from './theme/active';
 import {CheckBadge, LineIcon, PillTag, TYPE} from './kit';
 import {ChatThread, DiffView, FitCard, Funnel, ProgressRing, SkeletonCard, StaggerList, StampSeal, Typewriter} from './fxkit';
-import {ShotCamera, CoverPanel} from './shotkit';
+import {ShotCamera, CoverPanel, ambientBreath} from './shotkit';
 import {StageFrame, PhaseRail} from './stagekit';
 import {ConsoleWindow, MetricGrid, StampBanner} from './media';
 import {Corridor, SplitStage, ZoomStage} from './skeletons';
@@ -56,7 +56,8 @@ const Shot: React.FC<{id: keyof typeof SHOTS; f: number; entry: Entry; reveal?: 
     <div style={{position: 'absolute', inset: 0, opacity: e.opacity, transform: e.transform}}>
       <CoverPanel
         x={70} y={92} w={1780} h={846} tone="wash" z={-1} pad={0}
-        style={{boxShadow: 'none', borderRadius: 0, background: `radial-gradient(125% 118% at 50% 50%, ${C.paperBase}F5 58%, ${C.paperBase}D6 82%, ${C.paperBase}00 100%)`}}
+        style={{boxShadow: 'none', borderRadius: 0, transform: `scale(${ambientBreath(f)})`, transformOrigin: '50% 50%',
+                background: `radial-gradient(125% 118% at 50% 50%, ${C.paperBase}F5 58%, ${C.paperBase}D6 82%, ${C.paperBase}00 100%)`}}
       />
       {children}
     </div>

@@ -122,7 +122,7 @@ export const StampSeal:React.FC<{
 export const Funnel:React.FC<{
   x:number;y:number;w:number;rows:{label:string;sub:string;count:string;color:string;ratio:number}[];
   start?:number;stagger?:number;frame?:number;exitStart?:number;
-}> = ({x,y,w,rows,start=0,stagger=22,frame,exitStart})=>{
+}> = ({x,y,w,rows,start=0,stagger=14,frame,exitStart})=>{
   const f = useF(frame);
   return <div style={{position:'absolute',left:x,top:y,width:w,...exitStyle(f,exitStart)}}>
     {rows.map((r,i)=>{
@@ -138,7 +138,8 @@ export const Funnel:React.FC<{
           <div style={{height:'100%',width:'100%',background:r.color,borderRadius:99,transformOrigin:'left center',transform:`scaleX(${Math.max(0.04,r.ratio*wp)})`}}/>
         </div>
         {[0,1,2].map(d=>{
-          const cyc = (f-s-10+d*9+hash01(i*3+d)*9)%36;
+          // 每颗水滴再错开 3 帧 → 三条流而不是三个同步的点
+          const cyc = (f-s-10-d*3+hash01(i*3+d)*9)%36;
           const dy = cyc<0?0:(cyc/36)*40;
           return <span key={d} style={{position:'absolute',left:`calc(${r.ratio*100}% - 4px)`,marginLeft:d*14-14,top:34+dy,width:8,height:8,borderRadius:99,background:r.color,opacity:cyc<0?0:Math.max(0,0.9-dy/50)}}/>;
         })}
@@ -393,7 +394,8 @@ export const SkeletonCard:React.FC<{
 }> = ({x,y,w,h,rows=3,start=0,revealAt=60,frame,children})=>{
   const f = useF(frame);
   const shown = f>=revealAt, p = shown?popS(f,revealAt,'soft'):0;
-  const pulse = 0.55+0.25*Math.sin(f*0.3);
+  // 等待中的骨架：呼吸幅度 ±5%、周期约 60 帧。原来的 0.55±0.25 读作「闪灯」而不是「在等」。
+  const pulse = 0.9+0.05*Math.sin(f*0.105);
   return <div style={{position:'absolute',left:x,top:y,width:w,height:h,background:'#ffffff',border:`2.5px solid ${C.ink}`,borderRadius:10,boxShadow:`3px 3px 0 ${C.ink}`,padding:20,overflow:'hidden',opacity:popS(f,start,'soft')}}>
     {!shown&&<div style={{display:'flex',flexDirection:'column',gap:12,opacity:pulse}}>{Array.from({length:rows}).map((_,i)=><div key={i} style={{height:22,borderRadius:6,background:'#e8e2d6',width:`${92-hash01(i)*30}%`}}/>)}</div>}
     {shown&&<div style={{opacity:p,transform:`translateY(${16*(1-p)}px)`}}>{children}</div>}

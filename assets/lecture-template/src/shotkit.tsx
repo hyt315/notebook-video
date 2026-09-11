@@ -376,4 +376,17 @@ export const CoverPanel: React.FC<{
   );
 };
 
-export const SHOTKIT_VERSION = 'shotkit-v1 · 6 intents · anchored safety · pan budget by zoom · depth 0.35/0.7/1';
+/**
+ * ambientBreath：每镜**唯一**的缓慢环境运动（Rule 5）。
+ * 为什么需要：所有元素都"动完就永久静止"时，画面会像被暂停；一个几乎察觉不到的
+ * 背景呼吸给前景提供参照，观感立刻"活"起来。
+ * 预算（写死在函数里，防止被滥用）：幅度 ≤4%、周期 120–180 帧、正弦缓动、
+ * **只能放在背景/次级元素上**，绝不放内容层（内容动会分散注意力，且违反"内容只在语义节点变化"）。
+ */
+export const ambientBreath = (f: number, period = 150, amp = 0.03) => {
+  const a = Math.min(0.04, Math.max(0, amp));
+  const p = Math.min(180, Math.max(120, period));
+  return 1 + a * (0.5 - 0.5 * Math.cos((f / p) * Math.PI * 2));
+};
+
+export const SHOTKIT_VERSION = 'shotkit-v1.1 · 6 intents · anchored safety · pan budget by zoom · depth 0.35/0.7/1 · ambientBreath';
