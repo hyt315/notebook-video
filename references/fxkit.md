@@ -25,8 +25,8 @@ import {FitCard, Typewriter, PayPop, StampSeal, Funnel, ChatThread, MailScan, Ti
 | 取值 | 模块 / 组件 |
 |---|---|
 | `frame={f}` | `fxkit` 全部 18 个：`FitCard` `Typewriter` `PayPop` `StampSeal` `Funnel` `ChatThread` `MailScan` `TimeRail` `CompareBars` `ProgressRing` `ShakeX` `BurstCallout` `StaggerList` `KenBurnsImg` `EvidenceZoom` `DiffView` `ConfettiPop` `SkeletonCard` |
-| `f={f}` | `media`（`ConsoleWindow` `MetricGrid` `StampBanner`）、`stagekit`（`StageFrame` `Attach`）、`skeletons`（`Corridor` `SplitStage` `ZoomStage`）、`insert`（`InsertShot` `WhipStreak` `HandoffCarrier` `PaperTurn` `RevealMask`）、`shotkit`（`DepthLayers`） |
-| 不收帧参数 | `kit` 的 `PillTag/LineIcon/CheckBadge`、`CoverPanel`、`BackgroundMute`、`PhaseRail`（从 `ctx` 取）、`ShotCamera`（内部自取） |
+| `f={f}` | `media`（`ConsoleWindow` `MetricGrid` `StampBanner`）、`stagekit`（`StageFrame` `Attach`）、`skeletons`（`Corridor` `SplitStage` `ZoomStage`）、`insert`（`InsertShot` `HandoffCarrier` `RevealMask`）、`shotkit`（`DepthLayers`） |
+| 不收帧参数 | `kit` 的 `PillTag/LineIcon/CheckBadge`、`CoverPanel`、`PhaseRail`（从 `ctx` 取）、`ShotCamera`（内部自取） |
 
 > **写列表错峰（v2.11 校准）**：`StaggerList` 默认 `stagger=6`。实测 18–30 帧的错峰在中文旁白下会读成
 > "一个个淡出来"，观众看不到"成串落下"，还会让后几张卡在旁白已经讲下一句时才出现（用户会报"四项只看到三项"）。
@@ -44,7 +44,7 @@ import {FitCard, Typewriter, PayPop, StampSeal, Funnel, ChatThread, MailScan, Ti
 
 ## 先看见，再选用
 
-`NotebookVideoShowcase` Composition 把本库 16 个构件渲染成 6 页接触表（1fps 抽帧即一页一图）：
+`NotebookVideoShowcase` Composition 把库组件渲染成 **9 页**接触表（1fps 抽帧即一页一图）：
 
 ```text
 node scripts/notebook-video.mjs showcase PROJECT_DIR
@@ -75,6 +75,34 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 | `SkeletonCard` | 骨架→内容：等待 beats 先占位 | `x,y,w,h,rows,revealAt` |
 | `BurstCallout` | 爆炸贴纸安全 wrapper：超 3 字截断，无 Burst 的主题直接隐藏 | `x,y,size,text` |
 | `StaggerList` | 级联列表：逐行滑入 + 微旋转，防 bullets 堆砌 | `x,y,w,items,start,stagger` |
+
+## 修辞工具件（`src/toolkit.tsx`，11 件）
+
+这 11 件自成一个模块（v3.0.1 从 `index.tsx` 迁出——此前**没有 `export`，场景文件物理上 import 不到**）。
+**帧参数名与 fxkit 一致：`frame`；只有 `Mascot` 用 `f`。**
+选型别按外观挑，走 `media-routing.md` 的**「修辞动作 → 组件」表**：先想"我此刻要做的修辞动作是什么"。
+下表只列**关键 props**（够选型用），不是完整签名——每个组件都另有 `style`，字符类组件另有 `fontFamily` / `fontWeight` / `letterSpacing` 等；要精确签名直接读 `src/toolkit.tsx`。
+
+| 组件 | 修辞动作 | 关键 props |
+|---|---|---|
+| `Callout` | 圈住一处 + 旁边手写标注 | `x,y,w,h,text,textDy,textDx,color,rotate,start,frame` |
+| `Connector` | 表现两者关系/因果（贝塞尔 + 箭头 + 可选流向） | `from,to,bend,color,flow,arrow,label,width,frame` |
+| `Checklist` | 列一份清单；`done` 给完成数，序号变对勾 | `items,start,stagger,colors,done,rowH,fontSize,frame` |
+| `CountUp` | 报一个大数字（滚动计数） | `to,from,start,duration,fontSize,color,prefix,suffix,frame` |
+| `RollDigit` | 数字/字符 3D 滚轮翻牌 | `fromChar,toChar,start,duration,fontSize,colorFrom,colorTo,frame` |
+| `ProgressBar` | 进度条，`v` 由场景驱动（0~1） | `v,color,height,label,showPct,style` |
+| `JumpInText` | 逐字跳入（钩子与收尾，全片 1–2 处） | `items[{text,color,colorActive}],fontSize,start,stagger,frame` |
+| `WaveText` | 逐字波浪打字（同上） | `text,fontSize,colorFrom,colorTo,start,stagger,frame` |
+| `CodeBlock` | 终端风代码窗（三灯 + 逐行滑入） | `title,lines[{text,color,prefix,start}],start,stagger,cursor,frame` |
+| `BrowserChrome` | 页面形态（三灯 + 锁 + URL 胶囊），内容放 children | `url,lift,style` |
+| `Mascot` | 系列吉祥物（代码绘制的 git 猫，会眨眼/挥手） | `size,f,wave` |
+
+`Callout` / `Connector` **不带** `data-gate-allow`：画圈的椭圆是 `fill="none"` 的 SVG，`OverlapGate` 的 `looksSolid`
+本来就不会把它当遮挡物；而标注文字是"另一条信息"，必须继续参与重叠判定（白名单只留给镜头交接与同位置换信息）。
+反过来，**缩放容器**（`ZoomStage` 取景框、`EvidenceZoom`）只给**容器自己**标 `data-fit-skip`——
+被放大的子层必然溢出取景框（实测 `scrollWidth` 1093 vs `clientWidth` 996），`CardFitGate` 会把"推近"误判成"文字被裁"，
+在渲染期直接拦下成片。注意 `CardFitGate` 判逃生口用的是 `hasAttribute`（只跳标记者自身）而不是 `closest`：
+后者会把取景框内所有卡片的真实裁切一起放过（交叉复核用 A/B 对照实渲证明：248px 的真实裁切因此被漏检）。
 
 ## 两条铁律（本片真实 bug 换来的）
 

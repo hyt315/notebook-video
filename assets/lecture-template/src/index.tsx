@@ -109,14 +109,24 @@ const CardFitGate=()=>{
         // scrollHeight 会把溢出的内容也算进去，和 overflow 属性无关，是最稳的口径。
         document.querySelectorAll<HTMLElement>('div,span').forEach((card)=>{
           if(!solid(card)) return;
-          if(card.closest('[data-fit-skip]')) return;
+          // 只跳"标记者自己"（hasAttribute），**不用 closest**：closest 会连后代一起放过，
+          // 于是缩放取景框里所有卡片的真实裁切都会漏检（交叉复核用 A/B 实渲证明过 248px 的裁切被漏）。
+          if(card.hasAttribute('data-fit-skip')) return;
           if(!card.textContent||!card.textContent.trim()) return;
           if(card.getBoundingClientRect().width<8) return;
           // 只判会被裁剪的容器：overflow:visible 的容器用 scrollHeight 会把绝对定位子元素
           // 也算进去（实测 MetricGrid 虚增 180–213px，其实没有任何文字被裁）
           if(getComputedStyle(card).overflow==='visible') return;
           const cz=parseInt(getComputedStyle(card).zIndex||'0',10);
-          if(cz>=145) return;                       // 章节卡 150 / 字幕 200 是锁定覆盖层，各自由门
+          // 字幕 200 仍跳过（它由 CaptionFitGate 量）；章节卡 150 改为**量测并 warn**：
+          // v3.0.2 之前它被静默跳过，于是"章节标题太长被裁"从来没有任何门禁报警（实测踩过）。
+          if(cz>=200) return;
+          if(cz>=145){
+            const oBmc=card.scrollHeight-card.clientHeight, oRmc=card.scrollWidth-card.clientWidth;
+            if((oBmc>2||oRmc>2)&&typeof console!=='undefined')
+              console.warn(`[CardFitGate] @${f} 章节卡内容溢出 ${Math.max(oBmc,oRmc)}px（标题过长？）：“${(card.textContent||'').trim().slice(0,14)}”`);
+            return;
+          }
           cards++;
           // 容差 6px：内联元素的行盒取整会产生 3–4px 的“假溢出”，真裁切一般 ≥10px
           const oB=card.scrollHeight-card.clientHeight,oR=card.scrollWidth-card.clientWidth;
@@ -441,16 +451,28 @@ const Chrome=()=>{
   const {isPortrait}=useCanvas();
   const f=q(useCurrentFrame()),stage=Math.max(0,CHAPTER_STARTS.filter((x)=>f>=x).length-1),local=f-CHAPTER_STARTS[stage],p=pop(local,-8),titles=COPY.chapterTitles;
   return <>
-    <Paper lift={0.3} style={{left:isPortrait?40:92,top:isPortrait?80:74,width:isPortrait?330:392,height:isPortrait?76:82,zIndex:150,display:'flex',alignItems:'center',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${.96+.04*p})`,overflow:'hidden',padding:0}}>
+    <Paper lift={0.3} style={{left:isPortrait?40:92,top:isPortrait?80:74,width:isPortrait?330:392,height:isPortrait?84:90,zIndex:150,display:'flex',alignItems:'center',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${.96+.04*p})`,overflow:'hidden',padding:0}}>
       <div style={{width:isPortrait?60:72,height:'100%',background:`linear-gradient(135deg,${C.orange},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:isPortrait?28:31,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
-      <div style={{padding:isPortrait?'8px 14px':'10px 18px',flex:1}}>
+      <div style={{padding:isPortrait?'6px 12px':'8px 16px',flex:1,minWidth:0}}>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           <PillTag text={COPY.chromeKicker} color={C.blue} bg={C.blueLight} fontSize={TYPE.microS}/>
         </div>
-        <JumpInText key={stage} items={[{text:titles[stage]}]} fontSize={TYPE.titleS} start={CHAPTER_STARTS[stage]+8} stagger={1.1} style={{marginTop:3,justifyContent:'flex-start'}}/>
+        {(() => {
+          // v3.0.2：固定卡片里放可变长标题，必须"按可用宽自适应字号 + 禁止换行"。
+          // 实测可用内宽 286px（392 − 2 描边 − 72 编号块 − 32 内边距），而 TYPE.titleS=27px 时
+          // 「第三步 · 运营与三技能」实算 282.96px —— 只差不到 1px 就会折行，折行后即被 82 高的框裁掉。
+          // 这里按字数算字号：CJK 按 1 字宽、ASCII/空格/间隔号按 0.55 折算，并夹到 [19, TYPE.titleS]。
+          const title = String(titles[stage] ?? '');
+          const units = [...title].reduce((n, ch) => n + (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(ch) ? 1 : 0.55), 0) || 1;
+          const availW = isPortrait ? 214 : 286;
+          const fitSize = Math.max(19, Math.min(TYPE.titleS, Math.floor(availW / units)));
+          return <JumpInText key={stage} items={[{text:title}]} fontSize={fitSize}
+            start={CHAPTER_STARTS[stage]+8} stagger={1.1}
+            style={{marginTop:3,justifyContent:'flex-start',flexWrap:'nowrap',whiteSpace:'nowrap',overflow:'hidden',maxWidth:availW}}/>;
+        })()}
       </div>
     </Paper>
-    <div style={{position:'absolute',right:isPortrait?40:88,top:isPortrait?76:70,zIndex:140,textAlign:'right'}}>
+    <div style={{position:'absolute',right:isPortrait?40:88,top:isPortrait?76:70,zIndex:140,textAlign:'right',maxWidth:isPortrait?560:1180,overflow:'hidden'}}>
       <div style={{fontSize:TYPE.labelM,fontWeight:700,letterSpacing:4,color:C.headerAccent,fontFamily:'Clash,Space'}}>{COPY.header}</div>
       <div style={{fontSize:TYPE.microL,marginTop:6,color:C.headerSub,fontFamily:'Space,Kai'}}>{COPY.headerSub}</div>
     </div>

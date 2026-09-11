@@ -26,6 +26,7 @@ import re
 import sys
 
 ENGINE_FILES = [
+    "toolkit.tsx", "plates.tsx", "charts.tsx",
     "fxkit.tsx", "media.tsx", "kit.tsx", "stagekit.tsx", "skeletons.tsx",
     "insert.tsx", "shotkit.tsx", "scene-kit.tsx", "films.tsx",
 ]
@@ -217,6 +218,10 @@ def main():
                 if gave_f or gave_frame:
                     p1.append(f"{where} 传了帧参数但该组件不使用（多余属性，通常是从别的组件抄来的）")
 
+    # 防呆：组件表为空说明引擎源码没被读到，此时"PASS"是假阳性（实测过这种静默漏判）
+    if len(comps) < 20:
+        print(f"帧参数名门禁 · 只解析到 {len(comps)} 个组件，引擎源码可能没读到（ENGINE_FILES={ENGINE_FILES}）；不给出 PASS")
+        return 2
     print(f"帧参数名门禁 · {len(scenes)} 个场景文件 · 引擎组件 {len(comps)} 个")
     for x in p0:
         print(f"  P0 {x}")

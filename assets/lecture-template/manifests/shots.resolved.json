@@ -12,7 +12,8 @@
       ],
       "live": [
         "ConsoleWindow",
-        "StampBanner"
+        "StampBanner",
+        "Callout"
       ],
       "from": 0,
       "to": 213,
@@ -171,7 +172,8 @@
       ],
       "live": [
         "DiffView",
-        "Typewriter"
+        "Typewriter",
+        "Checklist"
       ],
       "from": 286,
       "to": 416,

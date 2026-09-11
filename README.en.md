@@ -275,7 +275,7 @@ plates.tsx          ShotPlate — real screenshots and official charts inside th
 kit.tsx             Theme-agnostic atoms: PillTag / LineIcon / CheckBadge / TYPE
 insert.tsx          B-roll inserts + the five transitions
 overlap-gate.tsx    Runtime overlap / occlusion gate
-showcase.tsx        Component contact sheet (6 pages, for AI to pick by sight)
+showcase.tsx        Component contact sheet (9 pages, for AI to pick by sight)
 scenes.tsx          Scene layer (8-shot example film; rewrite this layer per topic)
 ```
 

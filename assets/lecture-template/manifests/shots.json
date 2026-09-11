@@ -18,7 +18,8 @@
       ],
       "live": [
         "ConsoleWindow",
-        "StampBanner"
+        "StampBanner",
+        "Callout"
       ],
       "camera": {
         "intent": "establish",
@@ -147,7 +148,8 @@
       ],
       "live": [
         "DiffView",
-        "Typewriter"
+        "Typewriter",
+        "Checklist"
       ],
       "camera": {
         "intent": "reveal",

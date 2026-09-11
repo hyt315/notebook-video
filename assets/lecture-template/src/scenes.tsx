@@ -8,6 +8,7 @@ import {StageFrame, PhaseRail} from './stagekit';
 import {ConsoleWindow, MetricGrid, StampBanner} from './media';
 import {Corridor, SplitStage, ZoomStage} from './skeletons';
 import {RevealMask} from './insert';
+import {Callout, Checklist} from './toolkit';
 import {SHOTS} from './shots';
 
 // ============================================================================
@@ -117,6 +118,9 @@ const S1Lonely: React.FC<{f: number}> = ({f}) => {
         {() => (
           <div style={{position: 'relative', height: '100%'}}>
             <ConsoleWindow x={0} y={0} w={1000} h={280} f={f} title="terminal" rows={rows} rowGap={62} />
+            {/* 圈住症结那一行 + 手写标注：先说"没有远程"，再点破"就是躺在硬盘里"。
+                Callout 自带 data-gate-allow，不会被 OverlapGate 判成遮挡物。 */}
+            <Callout x={14} y={124} w={296} h={40} frame={f} start={at(0, 44)} text="还躺在硬盘里" textDx={330} textDy={0} color={C.orange} />
             <div style={{position: 'absolute', left: 0, top: 352, display: 'flex', gap: 14}}>
               {chips.map((x) => (
                 <div key={x.k} style={{width: 324, height: 148, borderRadius: 12, background: C.paper, border: `2.5px solid ${x.c}`, boxShadow: `3px 3px 0 ${C.ink}`, padding: '16px 18px', ...enterAt(f, x.at)}}>
@@ -178,13 +182,8 @@ const S3FirstPr: React.FC<{f: number}> = ({f}) => {
       </ZoomStage>
       <FitCard x={1250} y={240} w={510} h={300} f={f} pad={24} frame={f} borderColor={C.orange} style={enterAt(f, at(1, 10))}>
         <div style={{fontSize: TYPE.labelL, fontWeight: 700, color: C.muted}}>第一次参与的路径</div>
-        <div style={{marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12}}>
-          {['读懂项目规则', '找一个最小改动', '提交并等评审'].map((t, i) => (
-            <div key={t} style={{display: 'flex', alignItems: 'center', gap: 10, fontSize: TYPE.bodyM, fontWeight: 700, ...enterAt(f, at(1, 20 + i * 12))}}>
-              <CheckBadge size={24} />{t}
-            </div>
-          ))}
-        </div>
+        {/* 三步路径＝一份清单，交给 Checklist（带序号圆牌），不再手写行 */}
+        <Checklist items={['读懂项目规则', '找一个最小改动', '提交并等评审']} start={at(1, 20)} stagger={12} rowH={42} fontSize={TYPE.bodyM} frame={f} style={{marginTop: 12}} />
       </FitCard>
       <div style={{position: 'absolute', left: 1250, top: 648, width: 510, ...enterAt(f, at(1, 60))}}>
         <Typewriter frame={f} start={at(1, 60)} cps={0.45} text="小改动，也是有效贡献" fontSize={TYPE.titleXS} color={C.orange} cursor={false} />

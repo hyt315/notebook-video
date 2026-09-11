@@ -10,6 +10,10 @@ import {
   BurstCallout, ChatThread, CompareBars, ConfettiPop, DiffView, FitCard, Funnel, MailScan,
   PayPop, ProgressRing, SkeletonCard, StaggerList, StampSeal, TimeRail, Typewriter,
 } from './fxkit';
+import {
+  BrowserChrome, Callout, Checklist, CodeBlock, Connector, CountUp, JumpInText, Mascot,
+  ProgressBar, RollDigit, TOOLKIT_VERSION, WaveText,
+} from './toolkit';
 
 // ============================================================================
 // showcase · 组件接触表（Composition: NotebookVideoShowcase）
@@ -129,6 +133,74 @@ export const Showcase: React.FC = () => {
     {name: 'PhaseRail + Attach · 状态轨/附着信息', node: <div style={{position: 'relative', width: 840, height: 400}}><div style={{position: 'absolute', left: 10, top: 20}}><PhaseRail phases={PHASES} ctx={railCtx} /></div><Attach x={420} y={110} w={400} f={F} at={0} color={C.orange}><div style={{fontSize: 24, fontWeight: 700}}>附着信息：不新开卡片</div></Attach></div>},
   ];
 
+  // ⑦⑧⑨ 修辞工具件（v3.0.1 从 index.tsx 迁出到 toolkit.tsx；此前接触表**一页都没有**，
+  // 于是 11 个组件虽然能 import 了，却谁也没被渲染过——接触表是"看见才会用"的唯一入口。
+  const p7 = [
+    {name: 'Callout · 画圈标注', node: <div style={{position: 'relative', width: 840, height: 400}}>
+      <div style={{position: 'absolute', left: 80, top: 150, width: 420, height: 80, borderRadius: 10, background: C.paper, border: `2px solid ${C.line}`, display: 'grid', placeItems: 'center', fontFamily: 'Space,Kai', fontSize: 26, fontWeight: 700, color: C.muted}}>(没有远程仓库，只有本地)</div>
+      <Callout x={62} y={136} w={456} h={108} frame={F} start={0} text="圈住症结，旁边写字" />
+    </div>},
+    {name: 'Connector · 关系连线', node: <div style={{position: 'relative', width: 840, height: 400}}>
+      <div style={{position: 'absolute', left: 90, top: 70, width: 190, height: 66, borderRadius: 12, background: C.paper, border: `2px solid ${C.ink}`, display: 'grid', placeItems: 'center', fontSize: 25, fontWeight: 700}}>本地仓库</div>
+      <div style={{position: 'absolute', left: 500, top: 250, width: 240, height: 66, borderRadius: 12, background: C.paper, border: `2px solid ${C.ink}`, display: 'grid', placeItems: 'center', fontSize: 25, fontWeight: 700}}>全世界都能参与</div>
+      <Connector from={{x: 284, y: 104}} to={{x: 496, y: 282}} bend={44} frame={F} label="push" flow />
+    </div>},
+    {name: 'Checklist · 带完成态的清单', node: <div style={{position: 'relative', width: 840, height: 400}}>
+      <div style={{position: 'absolute', left: 60, top: 40, fontSize: 25, fontWeight: 700, color: C.muted}}>第一次参与的路径</div>
+      <div style={{position: 'absolute', left: 60, top: 104}}>
+        <Checklist items={['读懂项目规则', '找一个最小改动', '提交并等评审']} start={0} frame={F} stagger={8} done={2} rowH={64} fontSize={30} />
+      </div>
+    </div>},
+  ];
+  const p8 = [
+    {name: 'CountUp · 数字滚动计数', node: <div style={{position: 'relative', width: 840, height: 400}}>
+      <div style={{position: 'absolute', left: 60, top: 70, display: 'flex', alignItems: 'baseline', gap: 18}}>
+        <CountUp to={69} prefix="-" suffix="%" start={0} frame={F} fontSize={104} color={C.green} />
+        <span style={{fontSize: 26, fontWeight: 700, color: C.muted}}>账单降幅</span>
+      </div>
+      <div style={{position: 'absolute', left: 60, top: 240, display: 'flex', alignItems: 'baseline', gap: 18}}>
+        <CountUp to={11} duration={40} start={0} frame={F} fontSize={76} color={C.blue} />
+        <span style={{fontSize: 26, fontWeight: 700, color: C.muted}}>个修辞工具件</span>
+      </div>
+    </div>},
+    {name: 'ProgressBar · 进度条', node: <div style={{position: 'relative', width: 840, height: 400}}>
+      <div style={{position: 'absolute', left: 60, top: 80, width: 660}}>
+        <ProgressBar v={0.86} label="发版进度" showPct color={C.green} />
+        <div style={{height: 34}} />
+        <ProgressBar v={0.42} label="Issue 分流" showPct color={C.blue} height={20} />
+        <div style={{height: 34}} />
+        <ProgressBar v={0.12} label="待复现" showPct color={C.orange} height={26} />
+      </div>
+    </div>},
+    {name: 'RollDigit / BrowserChrome · 滚牌与页面载体', node: <div style={{position: 'relative', width: 840, height: 400}}>
+      <div style={{position: 'absolute', left: 60, top: 24, display: 'flex', gap: 8}}>
+        {['v', '4', '.', '1'].map((ch, i) => <RollDigit key={i} fromChar="0" toChar={ch} start={i * 5} frame={F} fontSize={92} colorFrom={C.muted} colorTo={C.ink} />)}
+      </div>
+      <div style={{position: 'absolute', left: 60, top: 190, width: 720}}>
+        <BrowserChrome url="github.com/hyt315/notebook-video" lift={0.2} style={{position: 'relative', left: 0, top: 0, width: 700}}>
+          <div style={{padding: '22px 26px'}}>
+            <div style={{fontSize: 30, fontWeight: 700}}>notebook-video</div>
+            <div style={{fontSize: 21, color: C.muted, marginTop: 10}}>把讲稿渲成 2K 讲解视频的技能</div>
+          </div>
+        </BrowserChrome>
+      </div>
+    </div>},
+  ];
+  const p9 = [
+    {name: 'JumpInText · 逐字跳入', node: <div style={{width: 820, textAlign: 'center'}}>
+      <JumpInText items={[{text: '代码不该', color: C.ink}, {text: '只躺在硬盘里', color: C.ink}]} fontSize={66} start={0} stagger={1.3} frame={F} />
+    </div>},
+    {name: 'WaveText · 波浪打字', node: <div style={{width: 820, textAlign: 'center'}}>
+      <WaveText text="OPEN SOURCE" fontSize={72} colorFrom={C.muted} colorTo={C.blue} start={0} stagger={1.6} frame={F} />
+    </div>},
+    {name: 'Mascot · 系列吉祥物', node: <Mascot size={280} f={F} wave />},
+    {name: 'CodeBlock · 终端代码窗', node: <CodeBlock title="快速开始" frame={F} stagger={6} style={{width: 780}} lines={[
+      {text: 'npm i -g notebook-video', color: C.green},
+      {text: 'notebook-video new my-film'},
+      {text: '# 改讲稿 → 出 2K 讲解视频', color: C.muted},
+    ]} />},
+  ];
+
   return (
     <AbsoluteFill>
       <Series>
@@ -175,10 +247,19 @@ export const Showcase: React.FC = () => {
             </div>
           </Page>
         </Series.Sequence>
+        <Series.Sequence durationInFrames={PAGE}>
+          <Page title="⑦ 修辞工具件 · 圈 / 连 / 单" note={TOOLKIT_VERSION}><Grid4 items={p7} /></Page>
+        </Series.Sequence>
+        <Series.Sequence durationInFrames={PAGE}>
+          <Page title="⑧ 修辞工具件 · 数字 / 进度 / 载体" note="CountUp / ProgressBar / RollDigit / BrowserChrome"><Grid4 items={p8} /></Page>
+        </Series.Sequence>
+        <Series.Sequence durationInFrames={PAGE}>
+          <Page title="⑨ 修辞工具件 · 字效 / 吉祥物" note="JumpInText / WaveText / Mascot / CodeBlock"><Grid4 items={p9} /></Page>
+        </Series.Sequence>
       </Series>
     </AbsoluteFill>
   );
 };
 
-export const SHOWCASE_PAGES = 6;
-export const SHOWCASE_VERSION = 'showcase-v1 · 6 pages · 16 components + 6 intents + 4 skeletons';
+export const SHOWCASE_PAGES = 9;
+export const SHOWCASE_VERSION = 'showcase-v2 · 9 pages · 30 components + 6 intents + 4 skeletons';

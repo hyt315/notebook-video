@@ -66,7 +66,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 
 但**内容压到装饰上时，文字会被吃掉**。所以契约是：
 
-> **内容压在装饰区之上时，必须坐在 `CoverPanel` 上；需要成片级兜底时用 `BackgroundMute`。**
+> **内容压在装饰区之上时，必须坐在 `CoverPanel` 上**（v3.0.1 起 `BackgroundMute` 已删除：它在 paper/sticker 皮肤下必然返回 null，是条死路）。
 
 ### 4.2 机制
 
@@ -80,10 +80,10 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 </CoverPanel>
 
 // 成片级兜底：在装饰区之上、内容之下铺羽化暖底（保留装饰形状可辨）
-<BackgroundMute zones={[0, 1]} opacity={0.74} />
+<CoverPanel x={70} y={92} w={1780} h={846} tone="wash" z={-1} />
 ```
 
-**z 序铁律（实测踩过，务必照做）**：`BackgroundMute` / `CoverPanel` 必须落在**背景之上、内容之下**。
+**z 序铁律（实测踩过，务必照做）**：底托（`CoverPanel`）必须落在**背景之上、内容之下**（`z={-1}`）。
 
 - 整幅垫底的 `tone='wash'` 必须用**负 z**（`z={-1}`）。
   ⚠️ **不要用正 z**：CSS 里正 `z-index` 稳定压过所有 `z-index: auto` 的元素，
@@ -144,9 +144,10 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 | `src/media.tsx` | `ConsoleWindow` `MetricGrid` `StampBanner` | **帧参数名是 `f`** |
 | `src/stagekit.tsx` | `StageFrame` `PhaseRail` `Attach` `useStageMachine` | `f` |
 | `src/skeletons.tsx` | `Corridor` `SplitStage` `ZoomStage` | `f` |
-| `src/insert.tsx` | `InsertShot` `RevealMask` `PaperTurn` `WhipStreak` `HandoffCarrier` `useHandoff` | `f` |
-| `src/shotkit.tsx` | `ShotCamera` `DepthLayers` `CoverPanel` `BackgroundMute` `safeCheck` | `f` |
-| `src/index.tsx` | `Paper` `Subtitle` `Chrome` `JumpInText` `WaveText` `RollDigit` `CodeBlock` `BrowserChrome` `Connector` `Checklist` `CountUp` `ProgressBar` `Callout` `TransitionIn` + 6 个反 PPT 交互组件 | 引擎层 |
+| `src/insert.tsx` | `InsertShot` `RevealMask` `HandoffCarrier` `useHandoff` | `f` |
+| `src/shotkit.tsx` | `ShotCamera` `DepthLayers` `CoverPanel` `safeCheck` | `f` |
+| `src/index.tsx` | `Paper` `Subtitle` `Chrome` + 6 个反 PPT 交互组件 | 引擎层 |
+| `src/toolkit.tsx` | 可直接 import 的修辞工具件：`Callout` `Connector` `JumpInText` `WaveText` `RollDigit` `CountUp` `Checklist` `CodeBlock` `BrowserChrome` `Mascot` `ProgressBar` | 工具层 |
 
 > **⚠️ 布局陷阱（实测踩过）**：同一容器里**不要混用"文档流内的标题"和"绝对定位组件"**。
 > 绝对定位组件的 `x/y` 是相对容器原点的，而文档流内的标题也占着容器顶部——
@@ -161,7 +162,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 ## 6. 让组件"看得见"：接触表
 
 `src/showcase.tsx` 注册了一个 `NotebookVideoShowcase` Composition：
-6 页 × 1 秒，1920×1080 原生，把 16 个构件 + 6 种镜头意图 + 4 种骨架全部渲染一遍。
+9 页 × 1 秒，1920×1080 原生，把 30 个组件（含 ⑦⑧⑨ 页的 11 件修辞工具件）+ 6 种镜头意图 + 4 种骨架全部渲染一遍。
 
 ```text
 node scripts/notebook-video.mjs showcase PROJECT_DIR          # 渲染接触表 mp4

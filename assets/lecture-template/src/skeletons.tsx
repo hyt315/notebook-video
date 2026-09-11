@@ -304,7 +304,9 @@ export const ZoomStage: React.FC<{
   const fyp = focus.fy * h;
   return (
     <div style={{position: 'absolute', left: x, top: y, width: w, height: h, zIndex: z}}>
-      <div style={{position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: 14, background: C.paper, border: `2.5px solid ${C.line}`}}>
+      {/* data-fit-skip：这一层是**缩放取景框**，被放大的子层必然溢出（实测 scrollWidth 1093 vs 996），
+          那是"推近"本身的效果，不是文字被裁。里面的卡片仍会各自被 CardFitGate 独立量测。 */}
+      <div data-fit-skip="zoom-viewport" style={{position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: 14, background: C.paper, border: `2.5px solid ${C.line}`}}>
         {/* 三段式：先平移到框心，再缩放，再把焦点平移回原点 —— 这样焦点一定落在框心 */}
         <div style={{position: 'absolute', inset: 0, transformOrigin: '0 0', transform: `translate(${w / 2}px, ${h / 2}px) scale(${k}) translate(${-fxp}px, ${-fyp}px)`, filter: dim > 0 ? `brightness(${1 + dim * 0.04})` : undefined}}>{children}</div>
         {/* 框内暗角：让聚焦读成「打光」而不是单纯放大 */}

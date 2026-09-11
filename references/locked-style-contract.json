@@ -257,9 +257,7 @@
     "transition_kinds": [
       "cut",
       "handoff",
-      "whip",
-      "reveal",
-      "paper-turn"
+      "reveal"
     ],
     "entry_kinds": [
       "rise",

@@ -53,7 +53,7 @@ and red rounded square at the lower left — the same size class as the product 
 a second mascot. The image is locked; the readability rule is the same as `cel`:
 
 - content overlapping a declared zone sits on a `CoverPanel` (wash `z` below content, never above);
-- `BackgroundMute` is the film-level fallback.
+- Film-level fallback: `CoverPanel` with `tone="wash"` and `z={-1}` (the old `BackgroundMute` was removed in v3.0.1).
 
 Declared zones (1920×1080 design space): `(1240,380,680,700)`, `(0,700,780,380)`.
 See [media-routing.md](media-routing.md) §4.

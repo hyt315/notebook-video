@@ -2,6 +2,29 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [3.0.2] - 2026-09-11
+
+> 补丁：给 3.0.1 收尾——把"迁出来但没人用"的修辞工具件真正用上、让它们进接触表，并修掉过程中（实渲 + **四组独立代理交叉复核**）抓到的缺陷。
+> 这批改动里有一条是"改错方向"被复核拦下的，已回退重做，见下面 `hasAttribute` 那条。
+
+### Added
+
+- **`Callout` / `Checklist` 用进官方模板**（3.0.1 的目标到此才算闭环：组件能 import ≠ 被用上）。S1 的 `Callout` 圈住控制台里 `(没有远程仓库，只有本地)` 那一行，配标注"还躺在硬盘里"——圈住症结、旁边写字，正是这件组件擅长的修辞动作；S3 的 `FitCard` 里三步路径改用 `Checklist`（带序号圆牌），换掉原先手写的三行 `CheckBadge`（**加组件 = 换掉一个元素**，不是往里堆）。`manifests/shots.json` 的 `live` 同步声明 `Callout` / `Checklist`。
+- **接触表补 3 页（⑦⑧⑨）**：`toolkit.tsx` 的 11 件在模板里**此前一页都没有**，等于"能 import 却从未被渲染过"。现在 `Callout / Connector / Checklist`、`CountUp / ProgressBar / RollDigit / BrowserChrome`、`JumpInText / WaveText / Mascot / CodeBlock` 全部进接触表，`SHOWCASE_PAGES` 6 → 9（26 个演示格 / 展开 30 件组件）。补页当场抓出下面 `WaveText` 那条真缺陷。
+- `scripts/notebook-video.mjs` 补登记 `validate-frame-props` 与 `validate-audio-levels`：这两道构建期门禁此前只能直接 `python scripts/…` 调用，CLI 里点不到。
+
+### Fixed
+
+- **`CardFitGate` 的逃生口写法用错了，差点把一整类真实裁切放过**（交叉复核拦下的 P0）。修 `ZoomStage` 假阳性时，第一版写的是 `card.closest('[data-fit-skip]')`——`closest` 会向上遍历，**挂在取景框上的标记因此把她框内所有后代卡片一起跳过**。复核代理用 A/B 对照实渲证明：故意在取景框里塞一张竖向裁切的卡片，带 `closest` 时渲染通过（248px 的真实裁切漏检），换成 `hasAttribute`（只跳标记者自身）后立刻被抓。**最终写法 `card.hasAttribute('data-fit-skip')`：取景框自身的缩放溢出不再误报，框内卡片的真裁切照抓。**
+- **`CardFitGate` 在缩放容器上假阳性，导致模板 S3/S7 渲不出来**。`ZoomStage` 的取景框是 `overflow:hidden` 且内部有 `scale()` 子层，`scrollWidth/scrollHeight` 必然大于自身（实测 `scrollWidth` 1093 vs `clientWidth` 996），那是"推近"本身的效果，不是文字被裁。修法：`ZoomStage` 取景框与 `EvidenceZoom` 框标 `data-fit-skip`。
+- **S3 的 `Checklist` 漏传 `frame={f}`（自己写的回归，被门禁抓到）**：回落到全局帧后，`start={at(1,20)}` 这个**镜内局部节拍**在全局帧上早已过去，三行清单从该镜第 0 帧就以 `opacity=1` 齐刷出现，错峰入场 100% 丢失。补上 `frame={f}`；`validate-frame-props` 对模板的输出从 `P1=1` 回到 `P1=0`。
+- **`WaveText` 吃掉空格**（接触表实渲发现）：逐字 span 里的半角空格被 HTML 折叠，"OPEN SOURCE" 渲成 "OPENSOURCE"。改为 `ch===' '?'\u00a0':ch`，与 `JumpInText` 的处理一致。
+- **`validate-composition.py` 在 Python 3.10 / 3.11 上直接 `SyntaxError`**：3.0.1 写的一行 f-string 在表达式里复用了同种引号（PEP 701 只在 3.12+ 合法），而脚本与 SKILL.md 都声明"Python 3.10+"。已改为 `%` 格式化；并加了 3.10 语法自检（`ast.parse(..., feature_version=(3,10))` 全仓 19 个脚本 0 处不兼容）。
+- **`validate-composition` 的 `reveal` 核对不再误伤"只有分镜表"的工程**：3.0.1 加的这条 P0 在**场景源码缺失**时无从比对实现，却照样报"声明没兑现"，于是负向抽查的阴性对照（原样必须全过）被它自己拦下——**这是 3.0.1 发布时带着的缺陷**。改为与 `live` 名字同一口径（有源码才查），对真实工程的核对能力不变（复核代理用"表写 reveal、代码删掉 reveal"反例确认仍报 P0；抽查 C 也仍以正确的"相邻同骨架"理由拦下）。
+- **`has_reveal` 正则放宽**：原 `\breveal(?=[s/>])` 会漏判 `reveal >`（`>` 前带空格）/ 属性换行等合法写法（会变成假 P0），改为 `\breveal(?![A-Za-z0-9_$])`（仍排除 `revealAt` / `revealSpeed`）。
+- **回退"给 `Callout`/`Connector` 加 `data-gate-allow`"**（复核指出是**过度豁免**）：`closest` 语义会让整棵子树退出重叠判定，连组件的**标注文字**一起豁免，违反仓库自己的白名单纪律（只允许"同位置换信息"与镜头交接）。而画圈的两道椭圆是 `fill="none"` 的 SVG，`looksSolid` 本来就不会把它当遮挡物——这个豁免**根本不必要**，已删除。同时给 `Callout` 标注补 `Caveat,Kai` 字体回退（`Caveat` 只有拉丁字形，中文此前由浏览器挑默认字体）。
+- **文档与实现对齐**：`fxkit.md` 接触表页数（16 构件 / 6 页 → 9 页）、构件计数口径（27 → 实测 30）、`SKILL.md` 的 `live` 断言（原文写成"可检查"，实际门禁只查"名字出现在场景源码里"，已注明区别）、`SKILL.md` 门禁表补上第 9 道 `validate-audio-levels`、`README.md` 目录树里的"当前 v3.0.0" → v3.0.2。
+
 ## [3.0.1] - 2026-09-11
 
 > 小版本：在 3.0.0 上做"可选词汇真正可用 + 声明必须兑现 + 音效听得见"三件事。

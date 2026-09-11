@@ -339,7 +339,8 @@ export const EvidenceZoom:React.FC<{
   const s = 1+(zoom-1)*p;
   const tx = (0.5-fx)*W*s, ty = (0.5-fy)*H*s;
   const chip = f>=at+100?popS(f,at+100,'bouncy'):0;
-  return <div style={{position:'relative',overflow:'hidden',...style}}>
+  // data-fit-skip：图片按 s 倍放大后再平移取景，溢出是"推近"本身的效果（同 ZoomStage）。
+  return <div data-fit-skip="evidence-zoom" style={{position:'relative',overflow:'hidden',...style}}>
     <img src={staticFile(src)} style={{width:'100%',display:'block',transform:`translate(${tx}px,${ty}px) scale(${s})`,transformOrigin:'0 0'}}/>
     {label&&chip>0&&<span style={{position:'absolute',left:12,bottom:12,fontSize:FX_T.labelL,fontWeight:700,color:'#fff',background:C.green,border:`2px solid ${C.ink}`,borderRadius:999,padding:'4px 16px',opacity:chip,transform:`translateY(${10*(1-chip)}px)`,whiteSpace:'nowrap'}}>{label}</span>}
   </div>;

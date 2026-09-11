@@ -61,8 +61,7 @@ or repainted** — but text placed on top of them gets eaten.
   content, `tone="wash"` for a quiet backing plate). Keep the plate's `z` **above the background and
   below the content** — a wash at `z=40` will cover absolutely positioned elements inside the scene
   (measured the hard way).
-- `BackgroundMute zones={[...]}` is the film-level fallback: a feathered warm wash over the declared
-  zones, so the decoration stays visible but legible text can sit on it.
+- Film-level fallback: use `CoverPanel` with `tone="wash"` and `z={-1}` (the old `BackgroundMute` was removed in v3.0.1 — it returned null on paper/sticker skins).
 - Declared zones (1920×1080 design space): `(0,620,820,460)`, `(1230,560,690,520)`,
   `(1640,370,210,210)`, `(60,400,120,120)`.
 

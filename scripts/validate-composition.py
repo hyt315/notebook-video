@@ -103,25 +103,33 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     # 背景：两条成片都出现过"分镜表声明 handoff、代码里从未实现"，以及 SWE-2 的 S1
     # "表写 cut、代码写 reveal"。声明不兑现 = 分镜表在说谎，必须拦下。
     def shot_block(sid: str) -> str:
-        m = re.search(r"<Shot\b[^>]*\bid=\"%s\"[\s\S]{0,400}" % re.escape(sid), scene_text)
+        # 收到本镜 </Shot> 为止：旧版窗口 400 字符，实测窗口长 413，会越过边界吞掉下一镜
+        m = re.search(r"<Shot\b[^>]*\bid=\"%s\"[\s\S]*?</Shot>" % re.escape(sid), scene_text)
         return m.group(0) if m else ""
+
+    # 只认布尔属性 reveal：允许 `reveal`、`reveal>`、`reveal >`、`reveal />`、换行后接 `>`；
+    # 排除 revealAt / revealSpeed 这类同前缀属性（负向断言 `(?![A-Za-z0-9_$])`）。
+    def has_reveal(blk: str) -> bool:
+        return re.search(r'\breveal(?![A-Za-z0-9_$])', blk) is not None
     for i, s in enumerate(shots):
         tr = s.get("transition", "cut")
-        blk = shot_block(s["id"]) if scene_text else ""
-        if tr == "reveal" and "reveal" not in blk:
-            p0.append({"id": s["id"], "issue": "声明 transition=reveal，但场景里该镜的 <Shot> 没有 reveal（声明没兑现）"})
-        if tr == "cut" and "reveal" in blk:
-            p0.append({"id": s["id"], "issue": "声明 transition=cut，但场景里写了 reveal（表与实现不一致）"})
+        # 场景源码缺失时（负向抽查的最小夹具只有分镜表）无从比对实现——跳过，只查分镜表内部自洽。
+        # 与上面 live 名字的 `if scene_text` 同一口径：没源码不等于声明没兑现。
+        blk = shot_block(s.get("id", "?")) if scene_text else ""
+        if scene_text and tr == "reveal" and not has_reveal(blk):
+            p0.append({"id": s.get("id", "?"), "issue": "声明 transition=reveal，但场景里该镜的 <Shot> 没有 reveal（声明没兑现）"})
+        if scene_text and tr == "cut" and has_reveal(blk):
+            p0.append({"id": s.get("id", "?"), "issue": "声明 transition=cut，但场景里写了 reveal（表与实现不一致）"})
         if tr == "handoff":
             carrier = (s.get("carrier") or "").strip()
             nxt = shots[i + 1] if i + 1 < len(shots) else None
             if not carrier:
-                p0.append({"id": s["id"], "issue": "声明 transition=handoff 但没有 carrier；引擎的镜间叠帧是全局生效的，没有 carrier 的 handoff 与 cut 没有区别 → 要么补 carrier，要么改成 cut"})
+                p0.append({"id": s.get("id", "?"), "issue": "声明 transition=handoff 但没有 carrier；引擎的镜间叠帧是全局生效的，没有 carrier 的 handoff 与 cut 没有区别 → 要么补 carrier，要么改成 cut"})
             elif not nxt or (nxt.get("carrier") or "").strip() != carrier:
-                p0.append({"id": s["id"], "issue": f"carrier=\"{carrier}\" 但下一镜没有声明同一个 carrier（交接对象跨镜不连续）"})
+                p0.append({"id": s.get("id", "?"), "issue": f"carrier=\"{carrier}\" 但下一镜没有声明同一个 carrier（交接对象跨镜不连续）"})
 
     # ---- P0-1 骨架重复度 ----
-    seq = [(s["id"], s.get("skeleton", "?")) for s in shots]
+    seq = [(s.get("id", "?"), s.get("skeleton", "?")) for s in shots]
     for (a_id, a), (b_id, b) in zip(seq, seq[1:]):
         if a == b:
             p0.append({"id": b_id, "issue": f"与上一镜同骨架（{a}）；相邻场景必须不同骨架"})
@@ -135,12 +143,12 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     # ---- P0-2 活性组件覆盖率（含"名字可解析"）+ P0-4 密度 ----
     # explanation:false 只能豁免"活性组件"这一条，且全片最多 1 镜；
     # zones / bottomFill 与 explanation 无关，永远校验（旧版一个 false 就能把整块跳过）。
-    non_expl = [s["id"] for s in shots if s.get("explanation", True) is False]
+    non_expl = [s.get("id", "?") for s in shots if s.get("explanation", True) is False]
     if len(non_expl) > MAX_EXPLANATION_FALSE:
         p0.append({"id": "-", "issue": f"{len(non_expl)} 镜标了 explanation:false（{non_expl}），最多允许 {MAX_EXPLANATION_FALSE} 镜"})
     live_names: set[str] = set()
     for s in shots:
-        sid = s["id"]
+        sid = s.get("id", "?")
         if s.get("explanation", True) is not False:
             live = [x for x in (s.get("live") or []) if x]
             if not live:
@@ -172,20 +180,22 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
 
     # ---- P1 单镜过长（工艺项，不阻断；结构由作者决定）----
     for s in shots:
-        if int(s.get("duration", 0)) > MAX_SHOT_FRAMES:
-            p1.append({"id": s["id"], "issue": f"单镜 {s['duration']} 帧（{s['duration'] / 30:.1f}s）超过 {MAX_SHOT_FRAMES} 帧参考上限；基准是单镜 4–6s、最长 ≤9s"})
+        dur = int(s.get("duration") or 0)
+        if dur > MAX_SHOT_FRAMES:
+            # 注意：f-string 里不要复用同种引号（PEP 701 只在 Python 3.12+ 合法，本脚本声明支持 3.10+）
+            p1.append({"id": s.get("id", "?"), "issue": "单镜 %d 帧（%.1fs）超过 %d 帧参考上限；基准是单镜 4–6s、最长 ≤9s" % (dur, dur / 30, MAX_SHOT_FRAMES)})
 
     # ---- P1-8 骨架指纹重复 ----
     fp: dict[tuple, list[str]] = {}
     for s in shots:
         key = (s.get("skeleton"), s.get("cameraIntent"), s.get("transition"), s.get("entry"))
-        fp.setdefault(key, []).append(s["id"])
+        fp.setdefault(key, []).append(s.get("id", "?"))
     for key, ids in fp.items():
         if len(ids) > 1:
             p1.append({"id": "-", "issue": f"骨架指纹 {key} 出现 {len(ids)} 次（{ids}）；隔镜重复会让观众觉得“这段我看过”"})
 
     # ---- P1-9 镜长分布 ----
-    durs = [int(s.get("duration", 0)) for s in shots]
+    durs = [int(s.get("duration") or 0) for s in shots]
     if len(durs) >= 3:
         lo, hi = min(durs), max(durs)
         ratio = hi / max(1, lo)
@@ -209,11 +219,11 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
         size = hero.get("size")
         kind = hero.get("kind", "text")
         if size is None:
-            p1.append({"id": s["id"], "issue": "未声明 hero（主角）"})
+            p1.append({"id": s.get("id", "?"), "issue": "未声明 hero（主角）"})
             continue
         floor = HERO_MIN_GRAPHIC if kind == "graphic" else HERO_MIN_TEXT
         if int(size) < floor:
-            p1.append({"id": s["id"], "issue": f"hero.size={size}（{kind}）低于 {floor}；这个字段必须是**主体短边设计像素**，不是随便填的数"})
+            p1.append({"id": s.get("id", "?"), "issue": f"hero.size={size}（{kind}）低于 {floor}；这个字段必须是**主体短边设计像素**，不是随便填的数"})
 
     # ---- P1-11 转场 / 入场多样性 ----
     transitions = [s.get("transition", "cut") for s in shots]
@@ -228,7 +238,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     for s in shots:
         frames = sorted(int(b) for b in (s.get("beatsAbs") or []))
         if not frames:
-            p1.append({"id": s["id"], "issue": "未声明 beats（状态变化帧），无法判断节奏"})
+            p1.append({"id": s.get("id", "?"), "issue": "未声明 beats（状态变化帧），无法判断节奏"})
             continue
         marks = [int(s["from"])] + frames + [int(s["to"])]
         gaps = [(b - a, a, b) for a, b in zip(marks, marks[1:])]
@@ -236,7 +246,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
             continue
         worst, a, b = max(gaps)
         if worst > SLOW_GAP:
-            runs.append((worst, s["id"], a, b))
+            runs.append((worst, s.get("id", "?"), a, b))
     over = [r for r in runs if r[0] > MAX_BEAT_GAP]
     near = [r for r in runs if SLOW_GAP < r[0] <= MAX_BEAT_GAP]
     if over:
@@ -255,7 +265,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     for s in shots:
         for name in (s.get("live") or []):
             if name and name not in STRUCTURAL:
-                used.setdefault(name, set()).add(s["id"])
+                used.setdefault(name, set()).add(s.get("id", "?"))
     n_used = len(used)
     need = 10 if len(shots) >= 16 else (7 if len(shots) >= 8 else 5)
     if n_used < need:
@@ -271,9 +281,9 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
         p1.append({"id": "-", "issue": f"{len(lonely)} 件可选组件只出现在 1 个镜头里（{lonely}）——像是为凑多样性塞的，请人工确认它们是否真的承接了某个修辞动作"})
     # ---- P1 节拍密度：长镜但节拍稀疏 → 台词还在念，画面已经冻住 ----
     for s in shots:
-        dur = int(s.get("duration", 0)); nb = len(s.get("beatsAbs") or [])
+        dur = int(s.get("duration") or 0); nb = len(s.get("beatsAbs") or [])
         if dur > 240 and nb < 3:
-            p1.append({"id": s["id"], "issue": f"本镜 {dur} 帧（{dur / 30:.1f}s）只有 {nb} 个节拍；画面会在台词中途静止，建议补节拍或锯开"})
+            p1.append({"id": s.get("id", "?"), "issue": f"本镜 {dur} 帧（{dur / 30:.1f}s）只有 {nb} 个节拍；画面会在台词中途静止，建议补节拍或锯开"})
 
     # 覆盖率自述：让"没报"和"没跑"可区分
     notes.append(f"已校验：枚举 5 类 / live {len(live_names)} 个名字 / hero {len(shots)} 镜 / 时长 {len(durs)} 镜")

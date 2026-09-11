@@ -22,14 +22,18 @@ const C = THEME.palette;
 const Paper = THEME.Paper;
 const BASE_FPS = 30;
 const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
+// 与 index.tsx 的 q() 同义：工程里 MOTION_FPS == BASE_FPS == 30，步长为 1，量化即恒等。
+// （方向说明：是 index 的量化在 step=1 时退化为恒等，并非本模块另起一套。）
 const q = (f: number) => f;
 const easeOutSoft = (f: number, a: number, b: number, from = 0, to = 1) =>
   interpolate(f, [a, b], [from, to], {...clamp, easing: Easing.bezier(.16, 1, .3, 1)});
 const smoothStep = (v: number) => { const t = Math.max(0, Math.min(1, v)); return t * t * (3 - 2 * t); };
+// 与 index.tsx 的三档**逐参数一致**：v3.0.1 迁移时这两个值被写成 20/190 与 12/170，
+// 与工程其它地方（fxkit.tsx / index.tsx）不一致，会让搬到本模块的组件动感偏移。
 const SPRINGS = {
   soft: {damping: 17, stiffness: 132, mass: .86},
-  snappy: {damping: 20, stiffness: 190, mass: .8},
-  bouncy: {damping: 12, stiffness: 170, mass: .9},
+  snappy: {damping: 16, stiffness: 200, mass: .8},
+  bouncy: {damping: 11, stiffness: 160, mass: .9},
 } as const;
 const popS = (f: number, start: number, preset: keyof typeof SPRINGS = 'soft') =>
   spring({frame: f - start, fps: BASE_FPS, config: SPRINGS[preset]});
@@ -103,7 +107,7 @@ export const JumpInText:React.FC<{
 export const WaveText:React.FC<{text:string;fontSize:number;colorFrom:string;colorTo:string;start:number;stagger?:number;frame?:number;fontFamily?:string;fontWeight?:number;letterSpacing?:number;style?:React.CSSProperties}>=({text,fontSize,colorFrom,colorTo,start,stagger=1.2,frame,fontFamily,fontWeight=600,letterSpacing=0,style})=>{
   const f=frame??q(useCurrentFrame());
   return <div style={{display:'flex',justifyContent:'center',alignItems:'baseline',...style}}>
-    {text.split('').map((ch,i)=>{const age=f-(start+i*stagger);const wave=smoothStep(age/10),col=interpolateColors(smoothStep(age/8),[0,1],[colorFrom,colorTo]);const wx=interpolate(wave,[.0,.28,.64,1],[10,-3,1,0]);const wy=interpolate(wave,[.0,.28,.64,1],[16,-16,4,0]);return <span key={i} style={{display:'inline-block',fontSize,fontFamily,fontWeight,letterSpacing,color:col,opacity:smoothStep((age+0.4)/1.5),transform:`translate(${wx}px,${wy}px)`}}>{ch}</span>})}
+    {text.split('').map((ch,i)=>{const age=f-(start+i*stagger);const wave=smoothStep(age/10),col=interpolateColors(smoothStep(age/8),[0,1],[colorFrom,colorTo]);const wx=interpolate(wave,[.0,.28,.64,1],[10,-3,1,0]);const wy=interpolate(wave,[.0,.28,.64,1],[16,-16,4,0]);return <span key={i} style={{display:'inline-block',fontSize,fontFamily,fontWeight,letterSpacing,color:col,opacity:smoothStep((age+0.4)/1.5),transform:`translate(${wx}px,${wy}px)`}}>{ch===' '?'\u00a0':ch}</span>})}
   </div>;
 };
 export const CodeBlock:React.FC<{title?:string;lines:{text:string;color?:string;prefix?:string;start?:number}[];start?:number;frame?:number;stagger?:number;cursor?:boolean;style?:React.CSSProperties}>=({title='terminal',lines,start=0,frame,stagger=8,cursor=false,style})=>{
@@ -186,12 +190,15 @@ export const ProgressBar:React.FC<{v:number;color?:string;height?:number;label?:
 export const Callout:React.FC<{x:number;y:number;w:number;h:number;text:string;textDy?:number;textDx?:number;color?:string;rotate?:number;start:number;frame?:number;fontSize?:number;style?:React.CSSProperties}>=({x,y,w,h,text,textDy=-46,textDx=0,color=C.orange,rotate=-2,start,frame,fontSize=22,style})=>{
   const f=frame??q(useCurrentFrame());
   const p=popS(f,start,'bouncy');
+  // 画圈的两道椭圆是 `fill="none"` 的 SVG，不是实心层——OverlapGate 的 looksSolid 本来就不会把它判成遮挡物，
+  // 所以这里**不加** data-gate-allow：标注文字是"另一条信息"，必须继续参与重叠判定（白名单只留给"同位置换信息"和镜头交接）。
   return <div style={{position:'absolute',left:x,top:y,width:w,height:h,zIndex:96,opacity:p,transform:`scale(${.7+.3*p}) rotate(${rotate}deg)`,transformOrigin:'50% 50%',...style}}>
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{overflow:'visible'}}>
       <ellipse cx={w/2} cy={h/2} rx={w/2-3} ry={h/2-3} fill="none" stroke={color} strokeWidth={2.6} strokeLinecap="round" transform={`rotate(-1.5 ${w/2} ${h/2})`}/>
       <ellipse cx={w/2} cy={h/2} rx={w/2-7} ry={h/2-6} fill="none" stroke={color} strokeWidth={1.6} opacity={.55} strokeDasharray="5 7" transform={`rotate(2 ${w/2} ${h/2})`}/>
     </svg>
-    <div style={{position:'absolute',left:'50%',top:textDy,transform:`translateX(calc(-50% + ${textDx}px))`,fontFamily:'Caveat',fontSize,color,fontWeight:600,whiteSpace:'nowrap'}}>{text}</div>
+    {/* Caveat 只有拉丁字形：中文标注会回落到 Kai（模板自己的中文字体），必须显式写出来，别让浏览器挑默认字体 */}
+    <div style={{position:'absolute',left:'50%',top:textDy,transform:`translateX(calc(-50% + ${textDx}px))`,fontFamily:'Caveat,Kai',fontSize,color,fontWeight:600,whiteSpace:'nowrap'}}>{text}</div>
   </div>;
 };
 
