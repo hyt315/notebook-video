@@ -1,5 +1,5 @@
 repository: hyt315/notebook-video
-description: Agent Skill for 2K Chinese explainer videos: code-drawn scenes, a per-shot camera with an out-of-bounds proof, four scene skeletons and six automated quality gates.
+description: Agent Skill for 2K Chinese explainer videos: code-drawn scenes or real screenshots, 4 scene skeletons, 8 automated gates.
 topics:
   - agent-skills
   - ai-video
