@@ -148,6 +148,8 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
             "hero": s.get("hero"),
             "cover": s.get("cover"),
             "transition": s.get("transition", "cut"),
+            # v3.0.1：由分镜表推导，场景层不再手写这个布尔（消除"表说 cut、代码写 reveal"的不一致）
+            "reveal": s.get("transition", "cut") == "reveal",
             "entry": s.get("entry", "rise"),
             "explanation": bool(s.get("explanation", True)),
             "zones": s.get("zones"),

@@ -69,7 +69,7 @@ export interface Theme {
    * 背景装饰区（可选）：背景位图里「画幅级、高对比」的锁定装饰所占的矩形
    * （1920×1080 设计坐标）。这些区域会吃掉压在上面的文字，因此：
    *   1. 内容压到装饰区时，必须坐在 CoverPanel（tone='paper'）上；
-   *   2. 需要成片级兜底时用 BackgroundMute 铺一层羽化暖底。
+   *   2. 需要成片级兜底时用 CoverPanel 铺一层羽化暖底。
    * 背景图本身不改——它很好看；只解决可读性。
    */
   backgroundDecorZones?: {x: number; y: number; w: number; h: number}[];

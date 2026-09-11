@@ -120,7 +120,7 @@
       "zones": 3,
       "bottomFill": true,
       "cover": "paper",
-      "transition": "handoff",
+      "transition": "cut",
       "entry": "rise",
       "beats": [
         {
@@ -240,7 +240,7 @@
       "zones": 4,
       "bottomFill": true,
       "cover": "paper",
-      "transition": "handoff",
+      "transition": "cut",
       "entry": "slide",
       "beats": [
         {
@@ -365,7 +365,7 @@
       "zones": 3,
       "bottomFill": true,
       "cover": "paper",
-      "transition": "handoff",
+      "transition": "cut",
       "entry": "rise",
       "beats": [
         {
@@ -489,7 +489,7 @@
       "zones": 3,
       "bottomFill": true,
       "cover": "paper",
-      "transition": "handoff",
+      "transition": "cut",
       "entry": "fade",
       "beats": [
         {

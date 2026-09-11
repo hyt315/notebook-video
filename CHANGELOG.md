@@ -2,6 +2,29 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [3.0.1] - 2026-09-11
+
+> 小版本：在 3.0.0 上做"可选词汇真正可用 + 声明必须兑现 + 音效听得见"三件事。
+> 全部改动都有实测依据（两条成片 + 探针实渲），**净删 236 行**，不新增功能面。
+
+### Added
+
+- **`scripts/validate-audio-levels.py`（第 9 道门禁）**：音效素材峰值 < **−12 dBFS** 即 P0。实测旧素材 `paper-tap` 峰值只有 **−31 dB**、`chime` **−38.5 dB**，乘上 0.11–0.16 的混音音量后有效峰值 **−39 ~ −55 dB**（BGM 一直在 −22 dB）——四个音效全被压住，成片听起来"几乎没有音效"。这才是"音效少"的真因（双重衰减），不是数量问题。
+- **`src/toolkit.tsx`**：把 11 个"修辞工具"组件从 `index.tsx` 迁出并 **export**——它们原先没有 `export`，场景文件**物理上无法 import**，这是"54 件组件 27 件零使用"的结构性真因。含 `Callout`（画圈+引线+手写标注）、`Connector`（关系箭头）、`WaveText`/`JumpInText`、`CountUp`/`RollDigit`、`Checklist`、`CodeBlock`、`BrowserChrome`、`Mascot`、`ProgressBar`。模块自包含（刻意不 import `index.tsx`，避免循环依赖）。
+- `references/media-routing.md` 新增**「修辞动作 → 组件」表**（15 行，含"何时别用"列）。技能原先只路由"内容类型 → 介质"，缺"我此刻要做的修辞动作该用哪一件"这一层——这是弱模型选不准组件的直接原因。
+- `SKILL.md` 把 fxkit 那条改为**必读**、指向选型表，并加了可检查的断言：**`live` 里每个名字都要能在表上指到**。
+
+### Fixed
+
+- **音效钉帧从"按镜头比例"改为"绑定节拍"**。旧规则把 whoosh 固定在"镜头时长的 42% 处"——那一帧画面上什么都没有，正是 `tts-audio.md` 自己明令禁止的"把音效放在看不见的动作上"。现在按 `beats`（"讲到这一句"的时刻）钉帧，沿用同一套自动重定时；中间节拍轮换 `drop`/`toggle`/`click`（`drop.ogg`、`toggle.ogg` 此前**从未被引用**），并把音量重设为 0.26–0.42。
+- **声明即承诺**：`reveal` 改由 `resolve-shots.py` 从分镜表生成进 `shots.ts`（场景不再手写这个布尔）；`validate-composition.py` 新增检查：`reveal` 声明 ↔ 场景里该镜的 `reveal` 必须一致（正反向都查）、`handoff` 声明**必须有 `carrier` 且下一镜同一个**（否则它与 `cut` 没有区别）。实测两条成片共 **15 处 `handoff` 声明从未兑现**、SWE-2 的 S1 还"表写 cut、代码写 reveal"，全部已修正。
+- **删死代码（净删 ~150 行，零行为变化）**：`PaperTurn`（淡出条件恒假）、`BackgroundMute`（paper/sticker 皮肤下必返回 `null`）、`TransitionIn`（与 `RevealMask` 重复）、`WhipStreak`（8 帧甩镜在 30fps 下读不到）；`TRANSITIONS` 收缩为 **`cut | handoff | reveal`**。
+- `theme/types.ts` 里指向已删组件的注释改指 `CoverPanel`。
+
+### Changed
+
+- **新增三条 P1 门禁**（阈值用两条成片实测校准）：**组件多样性**（≥16 镜 → 可选组件 ≥10 件；8–15 → ≥7；≤7 → ≥5；单件占比 ≤35%，结构件豁免）、**反堆砌**（≥12 镜的成片里"新增件只出现在 1 镜"达 5 件即提示——堆砌的真实指纹）、**节拍密度**（单镜 >240 帧且 beats <3 → 画面会在台词中途冻住）。
+
 ## [3.0.0] - 2026-09-11
 
 > 版本说明：本版是**用两个真实成片打磨出来的修复版**——DeepSeek（129 秒）与 SWE-2（237 秒）。

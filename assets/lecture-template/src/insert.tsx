@@ -78,35 +78,6 @@ export const InsertShot: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// WhipStreak：手绘速度线。替代 @remotion/motion-blur 的零依赖方案——
-// 甩镜读起来像真镜头，靠的是方向一致的速度线 + 极短时长，而不是采样模糊。
-// ---------------------------------------------------------------------------
-export const WhipStreak: React.FC<{f: number; at: number; dur?: number; dir?: 'left' | 'right'; color?: string}> = ({f, at, dur = 8, dir = 'right', color}) => {
-  const C = THEME.palette;
-  const c = color ?? C.ink;
-  if (f < at || f > at + dur) return null;
-  const p = easeOut(f, at, at + dur);
-  const fade = 1 - Math.abs(p - 0.5) * 2;
-  const k = dir === 'right' ? 1 : -1;
-  const lines = [0, 1, 2, 3, 4, 5, 6, 7];
-  return (
-    <div style={{position: 'absolute', inset: 0, zIndex: 130, pointerEvents: 'none', opacity: fade * 0.85}}>
-      <svg width="1920" height="1080" viewBox="0 0 1920 1080" style={{position: 'absolute', inset: 0}}>
-        {lines.map((i) => {
-          const y = 120 + i * 118;
-          const len = 300 + ((i * 137) % 520);
-          const x0 = k > 0 ? -len + p * (1920 + len) : 1920 - p * (1920 + len);
-          return <line key={i} x1={x0} y1={y} x2={x0 + k * len} y2={y} stroke={c} strokeWidth={i % 3 === 0 ? 5 : 2.5} strokeLinecap="round" opacity={0.18 + (i % 4) * 0.14} />;
-        })}
-      </svg>
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// HandoffCarrier：跨镜延续的载体对象。把它放进两镜各自的 ShotCamera 内，
-// 用 useHandoff 给出的姿态驱动，即可实现「同一对象跨镜延续」。
-// ---------------------------------------------------------------------------
 export const HandoffCarrier: React.FC<{
   pose: Pose;
   f: number;
@@ -130,23 +101,6 @@ export const HandoffCarrier: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// PaperTurn：纸翻转场（只用于章节切换）。
-// ---------------------------------------------------------------------------
-export const PaperTurn: React.FC<{f: number; at: number; dur?: number; children?: React.ReactNode}> = ({f, at, dur = 16, children}) => {
-  if (f < at) return null;
-  const p = easeOut(f, at, at + dur);
-  if (p <= 0) return null;
-  return (
-    <div style={{position: 'absolute', inset: 0, perspective: 1600, zIndex: 120}}>
-      <div style={{position: 'absolute', inset: 0, transform: `rotateY(${-70 * (1 - p)}deg)`, transformOrigin: '0 50%', opacity: Math.min(1, p * 2.2)}}>{children}</div>
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// RevealMask：揭示转场。与 shotkit 的 'reveal' intent 共用时间线，
-// 遮罩推进与相机推进同向同速，让「转场」本身成为视觉表达而不是硬切前的淡出。
-// ---------------------------------------------------------------------------
 export const RevealMask: React.FC<{f: number; at: number; dur?: number; dir?: 'ltr' | 'rtl' | 'ttb'; children?: React.ReactNode}> = ({f, at, dur = 20, dir = 'ltr', children}) => {
   const p = easeIO(f, at, at + dur);
   const inset = dir === 'rtl' ? `0 0 0 ${p * 100}%` : dir === 'ttb' ? `0 0 ${(1 - p) * 100}% 0` : `0 ${(1 - p) * 100}% 0 0`;
@@ -160,7 +114,9 @@ export const RevealMask: React.FC<{f: number; at: number; dur?: number; dir?: 'l
 };
 
 /** 转场清单：全片只用这 5 式。校验脚本据此检查多样性。 */
-export const TRANSITIONS = ['cut', 'handoff', 'whip', 'reveal', 'paper-turn'] as const;
+export const TRANSITIONS = ['cut', 'handoff', 'reveal'] as const;
+// v3.0.1：whip / paper-turn 已删除——它们在两条成片里零引用，且 whip 要真生效必须改交接引擎。
+// cut 的真实实现是引擎的 10 帧叠帧（index.tsx），handoff 需要 carrier 声明，reveal 由 RevealMask 实现。
 export type TransitionKind = (typeof TRANSITIONS)[number];
 
-export const INSERT_VERSION = 'insert-v1 · B-roll insert 24-60f · 5 transitions';
+export const INSERT_VERSION = 'insert-v2 · RevealMask + InsertShot + HandoffCarrier · 转场三式（cut/handoff/reveal）';

@@ -283,55 +283,6 @@ export const DepthLayers: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// BackgroundMute：把主题锁定的背景装饰「垫底」，让压在上面的文字可读。
-//
-// 设计意图：背景图很好看，不该换掉；但当内容压到装饰上时，文字会被吃掉。
-// 这里在装饰区之上、内容之下铺一层带羽化的暖底（不是硬边框），既盖住装饰、
-// 又保留它的形状可辨。需要完整盖住时用 CoverPanel（真卡片底）。
-// ---------------------------------------------------------------------------
-export const BackgroundMute: React.FC<{zones?: number[]; opacity?: number; z?: number}> = ({zones, opacity = 0.74, z = 45}) => {
-  const {mode} = useCanvas();
-  const decor = (THEME as {backgroundDecorZones?: {x: number; y: number; w: number; h: number}[]}).backgroundDecorZones;
-  if (!decor || decor.length === 0) return null;
-  const pick = zones ?? decor.map((_, i) => i);
-  const C = THEME.palette;
-  return (
-    <>
-      {pick.map((i) => {
-        const d = decor[i];
-        if (!d) return null;
-        // 比例适配：装饰坐标以 16:9 设计空间标定，其他画幅按宽度比例收缩
-        const k = mode.designW / 1920;
-        const x = d.x * k;
-        const w = d.w * k;
-        const h = d.h;
-        const y = Math.min(d.y, mode.designH - h);
-        return (
-          <div
-            key={i}
-            style={{
-              position: 'absolute',
-              left: x,
-              top: y,
-              width: w,
-              height: h,
-              zIndex: z,
-              pointerEvents: 'none',
-              background: `radial-gradient(120% 100% at 50% 50%, ${C.paperBase}F2 46%, ${C.paperBase}B8 74%, transparent 100%)`,
-              opacity,
-            }}
-          />
-        );
-      })}
-    </>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// CoverPanel：内容的「底托」。压到背景装饰上时用它保证对比度。
-// tone='paper' 走主题卡片皮肤（有边框/阴影，用于主体内容）；
-// tone='wash'  只铺一层柔和底色并圆角羽化（用于文字簇、贴标带），不成卡片感。
-// ---------------------------------------------------------------------------
 export const CoverPanel: React.FC<{
   x: number;
   y: number;
@@ -389,4 +340,4 @@ export const ambientBreath = (f: number, period = 150, amp = 0.03) => {
   return 1 + a * (0.5 - 0.5 * Math.cos((f / p) * Math.PI * 2));
 };
 
-export const SHOTKIT_VERSION = 'shotkit-v1.1 · 6 intents · anchored safety · pan budget by zoom · depth 0.35/0.7/1 · ambientBreath';
+export const SHOTKIT_VERSION = 'shotkit-v2 · 6 intents · anchored safety · pan budget · depth 0.35/0.7/1 · ambientBreath';

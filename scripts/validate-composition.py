@@ -37,7 +37,7 @@ from pathlib import Path
 # 实测把 media 写成 ["FAKE_MEDIUM_A",...]、live 写成 ["NO_SUCH_COMPONENT"] 也能 P0=0 通过）
 SKELETONS = {"Stage", "Corridor", "Split", "Zoom"}
 INTENTS = {"establish", "push-in", "pull-back", "pan-follow", "reveal", "micro-orbit", "still"}
-TRANSITIONS = {"cut", "handoff", "whip", "reveal", "paper-turn"}
+TRANSITIONS = {"cut", "handoff", "reveal"}   # v3.0.1 收缩：whip / paper-turn 已删除
 ENTRIES = {"rise", "slide", "fade", "zoom"}
 MEDIA_KINDS = {"chart", "console", "code", "graphic", "text", "metric"}
 
@@ -98,6 +98,27 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     bad_media = {m for s in shots for m in (s.get("media") or [])} - MEDIA_KINDS
     if bad_media:
         p0.append({"id": "-", "issue": f"未知介质 {sorted(bad_media)}；只能是 {sorted(MEDIA_KINDS)}"})
+
+    # ---- P0 声明即承诺：声明的转场必须真的被实现 ----
+    # 背景：两条成片都出现过"分镜表声明 handoff、代码里从未实现"，以及 SWE-2 的 S1
+    # "表写 cut、代码写 reveal"。声明不兑现 = 分镜表在说谎，必须拦下。
+    def shot_block(sid: str) -> str:
+        m = re.search(r"<Shot\b[^>]*\bid=\"%s\"[\s\S]{0,400}" % re.escape(sid), scene_text)
+        return m.group(0) if m else ""
+    for i, s in enumerate(shots):
+        tr = s.get("transition", "cut")
+        blk = shot_block(s["id"]) if scene_text else ""
+        if tr == "reveal" and "reveal" not in blk:
+            p0.append({"id": s["id"], "issue": "声明 transition=reveal，但场景里该镜的 <Shot> 没有 reveal（声明没兑现）"})
+        if tr == "cut" and "reveal" in blk:
+            p0.append({"id": s["id"], "issue": "声明 transition=cut，但场景里写了 reveal（表与实现不一致）"})
+        if tr == "handoff":
+            carrier = (s.get("carrier") or "").strip()
+            nxt = shots[i + 1] if i + 1 < len(shots) else None
+            if not carrier:
+                p0.append({"id": s["id"], "issue": "声明 transition=handoff 但没有 carrier；引擎的镜间叠帧是全局生效的，没有 carrier 的 handoff 与 cut 没有区别 → 要么补 carrier，要么改成 cut"})
+            elif not nxt or (nxt.get("carrier") or "").strip() != carrier:
+                p0.append({"id": s["id"], "issue": f"carrier=\"{carrier}\" 但下一镜没有声明同一个 carrier（交接对象跨镜不连续）"})
 
     # ---- P0-1 骨架重复度 ----
     seq = [(s["id"], s.get("skeleton", "?")) for s in shots]
@@ -224,6 +245,35 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     if near:
         detail = "；".join(f"{i}({w}帧 f={a}-{b})" for w, i, a, b in sorted(near, reverse=True)[:4])
         p1.append({"id": "-", "issue": f"{len(near)} 处变化间隔在 3–4s（慢章节正常范围，但连成片会让节奏偏平）；若这些区段画面完全静止，按 motion-design 补一次呼吸：{detail}"})
+
+    # ---- P1 组件词汇多样性（阈值用 DeepSeek 与 SWE-2 两条成片实测校准）----
+    # 结构件豁免：骨架/外壳/相机/底托/小标签本来就该反复出现，要求它们多样化是荒谬的。
+    STRUCTURAL = {"StageFrame", "Corridor", "SplitStage", "ZoomStage", "PhaseRail", "Attach",
+                  "ShotCamera", "CoverPanel", "ShotPlate", "LineIcon", "CheckBadge", "PillTag",
+                  "StampBanner", "FitCard", "CardHead", "Shot"}
+    used: dict[str, set] = {}
+    for s in shots:
+        for name in (s.get("live") or []):
+            if name and name not in STRUCTURAL:
+                used.setdefault(name, set()).add(s["id"])
+    n_used = len(used)
+    need = 10 if len(shots) >= 16 else (7 if len(shots) >= 8 else 5)
+    if n_used < need:
+        p1.append({"id": "-", "issue": f"可选组件只用了 {n_used} 件（{sorted(used)}），{len(shots)} 镜建议 ≥{need} 件；修辞动作 → 组件 见 media-routing.md"})
+    for name, ids in used.items():
+        share = len(ids) / max(1, len(shots))
+        if share > 0.35:
+            p1.append({"id": "-", "issue": f"“{name}” 出现在 {len(ids)}/{len(shots)} 镜（{share:.0%}）超过 35%；同一件高频复用要换表达"})
+    # ---- P1 反堆砌：只出现 1 镜的可选件 = 堆砌指纹 ----
+    lonely = sorted(n for n, ids in used.items() if len(ids) == 1)
+    # 只在成片（≥12 镜）上判：短样板片里"一件只出现 1 镜"是正常演示，不算堆砌
+    if len(shots) >= 12 and len(lonely) >= 5:
+        p1.append({"id": "-", "issue": f"{len(lonely)} 件可选组件只出现在 1 个镜头里（{lonely}）——像是为凑多样性塞的，请人工确认它们是否真的承接了某个修辞动作"})
+    # ---- P1 节拍密度：长镜但节拍稀疏 → 台词还在念，画面已经冻住 ----
+    for s in shots:
+        dur = int(s.get("duration", 0)); nb = len(s.get("beatsAbs") or [])
+        if dur > 240 and nb < 3:
+            p1.append({"id": s["id"], "issue": f"本镜 {dur} 帧（{dur / 30:.1f}s）只有 {nb} 个节拍；画面会在台词中途静止，建议补节拍或锯开"})
 
     # 覆盖率自述：让"没报"和"没跑"可区分
     notes.append(f"已校验：枚举 5 类 / live {len(live_names)} 个名字 / hero {len(shots)} 镜 / 时长 {len(durs)} 镜")

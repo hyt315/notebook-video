@@ -178,3 +178,31 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR    # 再抽 1fps 接�
 - [ ] 压到背景装饰区的内容都坐在 `CoverPanel` 上；
 - [ ] 用到的构件都在接触表里出现过（新构件要加进接触表）；
 - [ ] 没有把 wash 底板的 z 设到内容之上。
+
+---
+
+## 修辞动作 → 组件（v3.0.1）
+
+上面那张表路由的是**内容类型**（数据 / 流程 / 对比…）。这一张路由的是**你此刻要做的修辞动作**——
+"我要强调这一点""我要念一句口号""我要表现两者的关系"。写场景前先在这里查一遍：
+**`live` 里写的每个名字，都应该能在这张表（或 `fxkit.md` 的组件表）里指到。**
+
+| 修辞动作 | 首选 | 备选 | **何时别用** |
+|---|---|---|---|
+| 圈住/指出一处 | `Callout`（画圈+引线+手写标注，`toolkit.tsx`） | `ZoomStage`（要放大才能用） | 画面已有高亮时别叠（重复编码）；`ZoomStage` 会缩放，静止元素别用 |
+| 表现两者关系/因果 | `Connector`（贝塞尔+箭头，`toolkit.tsx`） | `Corridor`（隐含顺序） | 已有导轨/时间轴时别叠 |
+| 强调一瞬（警告感） | `ShakeX`（抖动，`fxkit`） | — | **它只能抖包裹的整层**，别用来强调单个词（会读成渲染抖动） |
+| 砸一句结论 | `StampBanner` | — | 一镜别砸两条（两条会互压底线） |
+| 认证/盖章 | `StampSeal` | — | 字数 >4 会溢出圆 |
+| 念一句口号 | `WaveText` / `JumpInText`（逐字波浪/跳入，`toolkit.tsx`） | `StampBanner` | 全片最多 1–2 处（钩子与收尾）；讲解中段用会显浮夸 |
+| 报一个大数字 | `CountUp` / `RollDigit`（`toolkit.tsx`） | `MetricGrid`（有前后值时） | 数字已在 `MetricGrid` 里滚动时别重复 |
+| 对比两方（对等） | `SplitStage` | `CompareBars`（不等权时） | 两方不是同一维度时别用 Split |
+| 列一份清单 | `Checklist`（带完成态，`toolkit.tsx`） | `StaggerList` | 项 >6 会溢出；`StaggerList` 错峰必须 ≤8 帧 |
+| 演示一段流程 | `Corridor` | `TimeRail` | 站点 <3 个时改用 `StaggerList` |
+| 一个主体持续演化 | `StageFrame`（≥5 拍） | `Corridor` | 只有 2–3 拍时别用（状态机撑不起来） |
+| 证明"这是官方/真实" | `ShotPlate` | `EvidenceZoom` | 每镜最多一块；能用代码画清的别用实拍 |
+| 表现"正在跑/正在写" | `ConsoleWindow` / `CodeBlock` | `Typewriter` | `ConsoleWindow` 一定给 `h`，否则高度由内容撑 |
+| 页面形态 | `BrowserChrome`（`toolkit.tsx`） | `ShotPlate`（有真截图时） | 没有真截图时，`BrowserChrome` 拼出来的假浏览器不如直接用 `ConsoleWindow` |
+
+**两条纪律**：① 加组件 = **换掉**画面里的一个元素，不是往里加元素；② 一个组件只有落在"它擅长的那个修辞动作"上才算数——
+找不到对应动作就别加（为凑多样性堆组件，是这张表要防的事）。
