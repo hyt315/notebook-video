@@ -4,19 +4,19 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 ## [3.0.3] - 2026-09-18
 
-> 小版本发布：沉淀多轮真实商业讲解片（AI 活人感重写实战）实战踩坑成果。彻底解决**原生缺少拟真 AI 对话框**、**打字机动效生硬/缺乏呼吸感**、**元素满屏瞬出缺乏台词同步节拍**以及**左上角顶栏章节卡隐形空间碰撞**等痛点。
+> 小版本发布：新增拟真 AI 对话交互框、打字机标点分级停顿与流式切片引擎、顶栏章节卡安全区防遮挡门禁，以及台词驱动的错峰涌现规范。
 
 ### Added
 
-- **`AIChatBox` 官方拟真 AI 对话交互框（收录至 `fxkit.tsx` 第 19 件）**：针对 2024~2026 年大模型讲解最核心的「用户提问 ➔ 模型思考 ➔ AI 流式作答 ➔ 追问/重写/纠错」修辞，原生提供端到端高阶组件。内建 macOS 三色灯标题栏、模型药丸徽章（`DeepSeek/Claude/GPT`）、在线脉冲灯、用户与 AI 头像、思考状态动画、打字机流式输出、完成态徽章、动态划除线（`data-gate-allow="strikethrough"` 豁免门禁）以及底部提示词输入条。
-- **`getStreamingSlice` 流式文本计算核心工具函数（`fxkit.tsx`）**：将字符计算、标点长短停顿律（句号/问号深停顿、逗号/分号短顿挫）抽象为统一纯函数，供 `Typewriter`、`AIChatBox` 及所有自定义场景组件复用，杜绝各写一套导致的节奏不一。
+- **`AIChatBox` 拟真 AI 对话交互框（收录至 `fxkit.tsx` 第 19 件组件）**：提供端到端 AI 对话交互高阶组件。内建 macOS 三色灯标题栏、模型药丸徽章（`DeepSeek/Claude/GPT` 等）、在线脉冲指示灯、用户与 AI 头像、思考状态动画、打字机流式输出、完成态徽章、动态划除线（`data-gate-allow="strikethrough"` 门禁白名单合规）以及底部提示词输入条。
+- **`getStreamingSlice` 流式文本计算核心工具函数（`fxkit.tsx`）**：将字符计算、标点长短停顿律（句号/问号深停顿、逗号/分号短顿挫）抽象为统一纯函数，供 `Typewriter`、`AIChatBox` 及所有自定义场景组件复用，保证节奏统一。
 - **接触表收录 `AIChatBox`（`showcase.tsx`）**：接触表 Page 4 同步扩充 `AIChatBox` 独立演示格，组件展示数由 30 件提升至 31 件（`SHOWCASE_VERSION` 升级至 `showcase-v3`），确保可被直观阅览选用。
 
 ### Improved
 
-- **`Typewriter` 标点长短停顿分级与多行排版**：重构字符预算消耗算法，中英文标点引入层级权重，句子结尾自然呼吸停顿，避免机械线性吐字；新增 `multiline` 多行排版支持（`pre-wrap`）与 `cursorSticky` 保持光标配置，彻底告别打字完成后的生硬跳变。
-- **`coords-lint.py` 顶栏章节卡保留区（Top Chrome Reserved Zone）防碰撞门禁**：增加对 `x < 500` 且 `0 < y < 170` 的坐标检测，当场景根级元素或主要卡片试图放置在顶栏章节卡（`x: 92..484, y: 74..164`）区域时给出 `VERIFY-TOP-CHROME` 明确告警，彻底根除 33s 级别隐蔽遮挡事故。
-- **规范强化：台词节拍驱动的阶梯涌现（Cue-Beat Staggered Reveal）**：在 `scene-authoring.md` 中立项铁律 Pit #11 & #12，严禁场景内多组要点、对比条或对话在 `f=0` 瞬间全量铺开，强制与分镜表 `beats` 强绑定逐步展开，消灭 PPT 翻页感。
+- **`Typewriter` 标点长短停顿分级与多行排版**：重构字符预算消耗算法，中英文标点引入层级权重，句子结尾自然呼吸停顿，避免机械线性吐字；新增 `multiline` 多行排版支持（`pre-wrap`）与 `cursorSticky` 保持光标配置，避免打字完成后的生硬跳变。
+- **`coords-lint.py` 顶栏章节卡保留区（Top Chrome Reserved Zone）防碰撞门禁**：增加对 `x < 500` 且 `0 < y < 170` 的坐标检测，当场景根级元素或主要卡片试图放置在顶栏章节卡（`x: 92..484, y: 74..164`）区域时给出 `VERIFY-TOP-CHROME` 明确告警，彻底杜绝左上角隐蔽遮挡。
+- **规范强化：台词节拍驱动的阶梯涌现（Cue-Beat Staggered Reveal）**：在 `scene-authoring.md` 中补充 Pit #11 & #12，避免场景内多组要点、对比条或对话在 `f=0` 瞬间全量铺开，推荐与分镜表 `beats`（`at(i)`）绑定错峰展开。
 - **介质路由表升级（`media-routing.md`）**：在内容介质路由表与修辞动作表中分别登记 `AIChatBox` 的选型时机与容量规范（推荐 2~3 轮对话，防窗口溢出）。
 
 ## [3.0.2] - 2026-09-11
