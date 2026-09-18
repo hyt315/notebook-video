@@ -35,7 +35,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 | 强调信息 | 大字 / 逐字涌现 | `JumpInText` `WaveText`（engine）、`Typewriter` `StampSeal` `BurstCallout`（fxkit） |
 | 证据 / 细节 | 纯代码局部放大 | `ZoomStage`（skeletons）、`EvidenceZoom` `EvidenceBridge`（fxkit / v2.9 回收） |
 | 指标结论 | 指标网格 + 吸底条 | `MetricGrid` `StampBanner`（media） |
-| 对话 / 通知 | 气泡 / 通知卡 | `ChatThread` `MailScan` `PayPop`（fxkit） |
+| 对话 / 交互 / 提示词 | 拟真对话窗 / 气泡 / 通知卡 | `AIChatBox` `ChatThread` `MailScan` `PayPop`（fxkit） |
 | 收束 / 漏斗 | 漏斗 / 进度 | `Funnel` `ProgressRing`（fxkit） |
 | 场景衔接 | 运镜 + 转场 | `shotkit` + `insert`（5 式转场） |
 
@@ -203,6 +203,7 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR    # 再抽 1fps 接�
 | 一个主体持续演化 | `StageFrame`（≥5 拍） | `Corridor` | 只有 2–3 拍时别用（状态机撑不起来） |
 | 证明"这是官方/真实" | `ShotPlate` | `EvidenceZoom` | 每镜最多一块；能用代码画清的别用实拍 |
 | 表现"正在跑/正在写" | `ConsoleWindow` / `CodeBlock` | `Typewriter` | `ConsoleWindow` 一定给 `h`，否则高度由内容撑 |
+| 模拟 AI 对话 / Prompt 交互 | `AIChatBox`（拟真对话框，`fxkit`） | `ChatThread`（仅简易短信时） | 对话条数建议 2–3 条（1 问 + 1~2 答/对比），避免溢出窗口高度 |
 | 页面形态 | `BrowserChrome`（`toolkit.tsx`） | `ShotPlate`（有真截图时） | 没有真截图时，`BrowserChrome` 拼出来的假浏览器不如直接用 `ConsoleWindow` |
 
 **两条纪律**：① 加组件 = **换掉**画面里的一个元素，不是往里加元素；② 一个组件只有落在"它擅长的那个修辞动作"上才算数——

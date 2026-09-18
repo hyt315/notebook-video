@@ -1,12 +1,12 @@
 # fxkit：固定动效组件库（反 PPT 专用）
 
-`assets/lecture-template/src/fxkit.tsx`，v2 共 18 个组件，零新依赖
+`assets/lecture-template/src/fxkit.tsx`，v3 共 19 个组件，零新依赖
 （只用 remotion 原生 `spring`/`interpolate`），只做 transform/opacity 位移，
 cel 皮肤锁定（2.5px 墨线 + 硬偏移阴影 + 纯平填充，无渐变无模糊阴影），
 30fps 确定性（无随机数）。用法：
 
 ```tsx
-import {FitCard, Typewriter, PayPop, StampSeal, Funnel, ChatThread, MailScan, TimeRail, CompareBars, ProgressRing, ShakeX, BurstCallout, StaggerList, fitH} from './fxkit';
+import {FitCard, Typewriter, PayPop, StampSeal, Funnel, ChatThread, AIChatBox, MailScan, TimeRail, CompareBars, ProgressRing, ShakeX, BurstCallout, StaggerList, fitH} from './fxkit';
 ```
 
 > **⚠️ 帧参数名（实测踩过，必读）**：fxkit 的帧参数叫 **`frame`**，而 v2.10 新增模块
@@ -24,7 +24,7 @@ import {FitCard, Typewriter, PayPop, StampSeal, Funnel, ChatThread, MailScan, Ti
 
 | 取值 | 模块 / 组件 |
 |---|---|
-| `frame={f}` | `fxkit` 全部 18 个：`FitCard` `Typewriter` `PayPop` `StampSeal` `Funnel` `ChatThread` `MailScan` `TimeRail` `CompareBars` `ProgressRing` `ShakeX` `BurstCallout` `StaggerList` `KenBurnsImg` `EvidenceZoom` `DiffView` `ConfettiPop` `SkeletonCard` |
+| `frame={f}` | `fxkit` 全部 19 个：`FitCard` `Typewriter` `PayPop` `StampSeal` `Funnel` `ChatThread` `AIChatBox` `MailScan` `TimeRail` `CompareBars` `ProgressRing` `ShakeX` `BurstCallout` `StaggerList` `KenBurnsImg` `EvidenceZoom` `DiffView` `ConfettiPop` `SkeletonCard` |
 | `f={f}` | `media`（`ConsoleWindow` `MetricGrid` `StampBanner`）、`stagekit`（`StageFrame` `Attach`）、`skeletons`（`Corridor` `SplitStage` `ZoomStage`）、`insert`（`InsertShot` `HandoffCarrier` `RevealMask`）、`shotkit`（`DepthLayers`） |
 | 不收帧参数 | `kit` 的 `PillTag/LineIcon/CheckBadge`、`CoverPanel`、`PhaseRail`（从 `ctx` 取）、`ShotCamera`（内部自取） |
 
@@ -58,11 +58,12 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 | 组件 | 用途 | 关键 props |
 |---|---|---|
 | `FitCard` + `fitH()` | 防出格卡片：高度必须经 `fitH()` 显式算出 | `x,y,w,h,pad,borderColor,start,exitStart` |
-| `Typewriter` | 打字机，标点自动停顿，块光标闪烁 | `text,fontSize,cps,start` |
+| `Typewriter` | 打字机：标点分级停顿（句长逗短）、多行排版、块光标闪烁 | `text,fontSize,cps,start,multiline` |
 | `PayPop` | 到账通知弹窗：下滑入 + 金额 + 可选盖章 | `x,y,w,app,amount,time,stampAt` |
 | `StampSeal` | 印章砸下：2.6x→1 回弹，-8° 旋转 | `text,color,size,x,y,start` |
 | `Funnel` | 尝试漏斗：宽进窄出 + 计数 + 滴落点 | `x,y,w,rows[{label,sub,count,color,ratio}]` |
 | `ChatThread` | 对话气泡：typing 三点 → 气泡 pop，左右交替 | `x,y,w,msgs[{side,text,at}]` |
+| `AIChatBox` | 拟真 AI 对话框：Mac 标题栏 + 模型徽章 + 思考动画 + 逐字打字机 + 划除线 + 输入条 | `x,y,w,h,msgs[{side,text,at}],title,model,frame` |
 | `MailScan` | 邮件确认：激光扫过 → 高亮 → 密钥打码，定高不溢出 | `x,y,w,rows,secret` |
 | `TimeRail` | 时间轨道：圆点行进，到 tick 弹事件卡 | `x,y,w,ticks[{t,label,color,at}]` |
 | `CompareBars` | 对比条：宽度动画 + 差值 chip | `x,y,w,rows,delta` |

@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 OVERLAYS = ("StampSeal", "BurstCallout", "Burst", "Callout", "ChipContract", "PayPop",
-            "Funnel", "ChatThread", "MailScan", "TimeRail", "CompareBars")
+            "Funnel", "ChatThread", "MailScan", "TimeRail", "CompareBars", "AIChatBox")
 COORD = re.compile(r"\b([xy])=\{(\d+)\}")
 
 
@@ -46,6 +46,8 @@ def main() -> int:
                     errors.append(f"OFF-CANVAS {where}")
                 elif comp != "?" and (value > 1000 if axis == "x" else value > 700):
                     warns.append(f"VERIFY-FRAME {where}（场景坐标还是卡片相对坐标？）")
+                elif comp in ("AIChatBox", "ChatThread") and axis == "y" and 0 < value < 170:
+                    warns.append(f"VERIFY-TOP-CHROME {where}（y={value} < 170 且靠近左上角时，警惕遮挡全局顶栏章节卡 x:92..484 y:74..164）")
     for w in warns:
         print(f"WARN: {w}")
     if errors:

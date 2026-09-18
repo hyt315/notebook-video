@@ -7,7 +7,7 @@ import {INSERT_VERSION, TRANSITIONS} from './insert';
 import {ConsoleWindow, MEDIA_VERSION, MetricGrid} from './media';
 import {Corridor, SKELETON_VERSION, SKELETONS, SplitStage, ZoomStage} from './skeletons';
 import {
-  BurstCallout, ChatThread, CompareBars, ConfettiPop, DiffView, FitCard, Funnel, MailScan,
+  AIChatBox, BurstCallout, ChatThread, CompareBars, ConfettiPop, DiffView, FitCard, Funnel, MailScan,
   PayPop, ProgressRing, SkeletonCard, StaggerList, StampSeal, TimeRail, Typewriter,
 } from './fxkit';
 import {
@@ -127,8 +127,8 @@ export const Showcase: React.FC = () => {
     {name: 'StampSeal / BurstCallout / ConfettiPop', node: <div style={{position: 'relative', width: 840, height: 400}}><StampSeal text="已完成" x={20} y={20} frame={F} start={0} color={C.green} /><StampSeal text="按 Flash 计费" x={20} y={190} size={130} frame={F} start={0} color={C.red} /><div style={{position: 'absolute', left: 250, top: 20}}><BurstCallout x={220} y={80} size={140} text="省钱" frame={F} start={0} /></div><div style={{position: 'absolute', left: 220, top: 220}}><ConfettiPop x={90} y={70} n={24} frame={F} start={0} dur={55} /></div></div>},
   ];
   const p4 = [
-    {name: 'ChatThread · 对话介质', node: <ChatThread x={0} y={30} w={800} frame={F} msgs={[{side: 'l', text: '还在用 v4-pro？', at: 0}, {side: 'r', text: '是的，没改代码', at: 30}, {side: 'l', text: '已经是 Flash 在跑了', at: 60}]} />},
-    {name: 'MailScan · 邮件介质', node: <MailScan x={0} y={20} w={820} frame={F} start={0} rows={[{from: 'DeepSeek 开放平台', subject: '关于模型用量调整的通知', at: 0}, {from: 'billing@deepseek.com', subject: '账单已按 V4.1 Flash 计费', at: 26}]} />},
+    {name: 'AIChatBox · 拟真 AI 对话框', node: <div style={{position: 'relative', width: 840, height: 380, display: 'flex', alignItems: 'center', justifyContent: 'center'}}><AIChatBox x={0} y={0} w={820} h={360} frame={F} msgs={[{side: 'user', text: '把这段技术说明重写成活人感', at: 0}, {side: 'ai', text: '在这个数字化飞速发展的时代...', at: 15, strikethrough: true, tag: '已划除八股'}, {side: 'ai', text: '直接说人话：代码现在就能跑！', at: 45, tag: '人话重写'}]} /></div>},
+    {name: 'ChatThread / MailScan · 气泡与邮件', node: <div style={{position: 'relative', width: 840, height: 380}}><div style={{position: 'absolute', left: 0, top: 0, width: 380}}><ChatThread x={0} y={10} w={380} frame={F} msgs={[{side: 'l', text: '还在用旧版？', at: 0}, {side: 'r', text: '已升级 v3.0.3', at: 20}]} /></div><div style={{position: 'absolute', left: 410, top: 0, width: 430}}><MailScan x={0} y={10} w={430} frame={F} start={0} rows={[{from: 'System', subject: '升级 v3.0.3 成功', at: 0}, {from: 'OpenAI/Claude', subject: '支持流式打字与对话框', at: 20}]} /></div></div>},
     {name: 'PayPop · 到账介质', node: <PayPop x={40} y={40} w={700} frame={F} start={0} app="账单" title="本月节省" amount="-69%" stampAt={30} stampText="已生效" />},
     {name: 'PhaseRail + Attach · 状态轨/附着信息', node: <div style={{position: 'relative', width: 840, height: 400}}><div style={{position: 'absolute', left: 10, top: 20}}><PhaseRail phases={PHASES} ctx={railCtx} /></div><Attach x={420} y={110} w={400} f={F} at={0} color={C.orange}><div style={{fontSize: 24, fontWeight: 700}}>附着信息：不新开卡片</div></Attach></div>},
   ];
@@ -262,4 +262,4 @@ export const Showcase: React.FC = () => {
 };
 
 export const SHOWCASE_PAGES = 9;
-export const SHOWCASE_VERSION = 'showcase-v2 · 9 pages · 30 components + 6 intents + 4 skeletons';
+export const SHOWCASE_VERSION = 'showcase-v3 · 9 pages · 31 components + 6 intents + 4 skeletons';

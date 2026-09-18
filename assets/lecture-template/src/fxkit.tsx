@@ -64,18 +64,51 @@ export const FitCard:React.FC<{
   return <div style={{position:'absolute',left:x,top:y,width:w,height:h,zIndex:z,background:C.paper||'#ffffff',border:`2.5px solid ${borderColor}`,borderRadius:10,boxShadow:`3px 3px 0 ${C.ink}`,padding:pad,overflow:'hidden',opacity:opP,transform:`translateY(${26*(1-p)}px)`,...exitStyle(f,exitStart),...style}}>{children}</div>;
 };
 
-// ---- 2. Typewriter：打字机。cps=字符/帧，标点后自动停顿，块光标闪烁 ----
+/**
+ * getStreamingSlice · 计算流式吐字切片（带标点长短停顿律与呼吸节奏）
+ * 句末标点（。！？!?\n）深停顿，子句逗号（，、；;:,）短停顿，模拟真人与 LLM Token 吐字感
+ */
+export const getStreamingSlice = (
+  text: string,
+  f: number,
+  start = 0,
+  cps = 0.45
+): {shown: number; isDone: boolean; currentText: string} => {
+  const chars = String(text).split('');
+  let budget = Math.max(0, (f - start) * cps);
+  let shown = 0;
+  for (const ch of chars) {
+    if (budget < 1) break;
+    shown++;
+    budget -= 1;
+    if (/[。！？!?\n]/.test(ch)) {
+      budget -= 5.5 * cps + 1.2; // 句末/换行长停顿
+    } else if (/[，、；;:,]/.test(ch)) {
+      budget -= 2.5 * cps + 0.6; // 子句短顿挫
+    }
+  }
+  return {
+    shown,
+    isDone: shown >= chars.length,
+    currentText: chars.slice(0, Math.max(0, shown)).join(''),
+  };
+};
+
+// ---- 2. Typewriter：打字机。cps=字符/帧，标点分级停顿，多行排版与块光标呼吸闪烁 ----
 export const Typewriter:React.FC<{
   text:string;fontSize?:number;color?:string;fontFamily?:string;fontWeight?:number|string;
-  start?:number;cps?:number;frame?:number;cursor?:boolean;style?:React.CSSProperties;
-}> = ({text,fontSize=30,color=C.ink,fontFamily='Kai',fontWeight=700,start=0,cps=0.4,frame,cursor=true,style})=>{
+  start?:number;cps?:number;frame?:number;cursor?:boolean;cursorSticky?:boolean;
+  multiline?:boolean;style?:React.CSSProperties;
+}> = ({text,fontSize=30,color=C.ink,fontFamily='Kai',fontWeight=700,start=0,cps=0.45,frame,cursor=true,cursorSticky=false,multiline=false,style})=>{
   const f = useF(frame);
-  const chars = String(text).split('');
-  let budget = (f-start)*cps, shown = 0;
-  for(const ch of chars){ if(budget<1) break; shown++; budget-=1; if(/[，。！？；：、,.!?;:]/.test(ch)) budget-=5*cps+2; }
+  const {shown, isDone, currentText} = getStreamingSlice(text, f, start, cps);
   // 光标：16 帧周期（约 0.53s，接近真实终端）+ 连续值软阶梯。9 帧方波在 30fps 下读作频闪。
   const blinkPhase = 0.5+0.5*Math.cos((f/16)*Math.PI*2);
-  return <span style={{fontSize,fontFamily,fontWeight,color,...style}}>{chars.slice(0,Math.max(0,shown)).join('')}{cursor&&shown<chars.length&&<span style={{display:'inline-block',width:fontSize*0.5,height:fontSize*1.05,marginLeft:6,background:color,verticalAlign:'-2px',opacity:0.18+0.78*blinkPhase}}/>}</span>;
+  const showCursor = cursor && (!isDone || cursorSticky);
+  return <span style={{fontSize,fontFamily,fontWeight,color,whiteSpace:multiline?'pre-wrap':'normal',display:'inline-block',...style}}>
+    {currentText}
+    {showCursor&&<span style={{display:'inline-block',width:fontSize*0.48,height:fontSize*1.02,marginLeft:4,background:color,verticalAlign:'-2px',opacity:0.18+0.78*blinkPhase}}/>}
+  </span>;
 };
 
 // ---- 3. PayPop：到账通知弹窗。从上滑入 + 金额滚动 + 可选 StampSeal 盖章 ----
@@ -402,4 +435,331 @@ export const SkeletonCard:React.FC<{
     {!shown&&<div style={{display:'flex',flexDirection:'column',gap:12,opacity:pulse}}>{Array.from({length:rows}).map((_,i)=><div key={i} style={{height:22,borderRadius:6,background:'#e8e2d6',width:`${92-hash01(i)*30}%`}}/>)}</div>}
     {shown&&<div style={{opacity:p,transform:`translateY(${16*(1-p)}px)`}}>{children}</div>}
   </div>;
+};
+
+// ---- 19. AIChatBox：拟真 AI 对话交互框。Mac 标题栏 + 模型药丸 + 思考态动画 + 流式打字 + 划掉八股/盖章 + 输入栏 ----
+export interface AIChatMessage {
+  side: 'user' | 'ai';
+  text: string;
+  at: number;
+  cps?: number;
+  thinkingDur?: number;
+  strikethrough?: boolean;
+  strikethroughAt?: number;
+  tag?: string;
+}
+
+export const AIChatBox: React.FC<{
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  frame?: number;
+  start?: number;
+  exitStart?: number;
+  title?: string;
+  model?: string;
+  online?: boolean;
+  msgs: AIChatMessage[];
+  inputPrompt?: string;
+  style?: React.CSSProperties;
+}> = ({
+  x = 0,
+  y = 0,
+  w = 900,
+  h = 460,
+  frame,
+  start = 0,
+  exitStart,
+  title = 'AI DIALOGUE CONSOLE · 拟真交互',
+  model = 'DeepSeek-V3 · 活人模式',
+  online = true,
+  msgs = [],
+  inputPrompt = '输入提示词 / 调整语气 / 请求重写...',
+  style,
+}) => {
+  const f = useF(frame);
+  const enterP = popS(f, start, 'soft');
+  const enterOp = easeOutSoft(f, start, start + 14);
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: x,
+        top: y,
+        width: w,
+        height: h,
+        background: '#ffffff',
+        border: `2.5px solid ${C.ink}`,
+        borderRadius: 14,
+        boxShadow: `4px 4px 0 ${C.ink}`,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        zIndex: 75,
+        opacity: enterOp,
+        transform: `translateY(${20 * (1 - enterP)}px)`,
+        ...exitStyle(f, exitStart),
+        ...style,
+      }}
+    >
+      {/* 顶部标题栏 */}
+      <div
+        style={{
+          height: 44,
+          background: '#f8f6f0',
+          borderBottom: `2px solid ${C.ink}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 16px',
+          flexShrink: 0,
+        }}
+      >
+        <div style={{display: 'flex', alignItems: 'center', gap: 10}}>
+          <div style={{display: 'flex', gap: 6}}>
+            <span style={{width: 11, height: 11, borderRadius: 99, background: '#ff5f56', border: `1.2px solid ${C.ink}`}} />
+            <span style={{width: 11, height: 11, borderRadius: 99, background: '#ffbd2e', border: `1.2px solid ${C.ink}`}} />
+            <span style={{width: 11, height: 11, borderRadius: 99, background: '#27c93f', border: `1.2px solid ${C.ink}`}} />
+          </div>
+          <span style={{fontFamily: 'Space,Kai', fontSize: 15, fontWeight: 700, color: C.ink, marginLeft: 6}}>
+            {title}
+          </span>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: 10}}>
+          <span style={{fontFamily: 'Space', fontSize: 13, fontWeight: 700, color: C.blue, background: `${C.blue}18`, padding: '2px 8px', borderRadius: 6}}>
+            {model}
+          </span>
+          {online && (
+            <span style={{display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: C.green}}>
+              <span style={{width: 8, height: 8, borderRadius: 99, background: C.green, boxShadow: `0 0 5px ${C.green}`}} />
+              ONLINE
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* 消息对话区域 */}
+      <div
+        style={{
+          flex: 1,
+          padding: '14px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+          overflow: 'hidden',
+          background: '#faf9f5',
+        }}
+      >
+        {msgs.map((m, idx) => {
+          if (f < m.at) return null;
+          const isUser = m.side === 'user';
+          const bubbleP = easeOutSoft(f, m.at, m.at + 10);
+          const thinkingDur = m.thinkingDur ?? (isUser ? 2 : 6);
+          const isThinking = f >= m.at && f < m.at + thinkingDur;
+          const typingStart = m.at + thinkingDur;
+          const cps = m.cps ?? (isUser ? 0.9 : 0.65);
+          const {shown, isDone, currentText} = getStreamingSlice(m.text, f, typingStart, cps);
+          const blinkPhase = 0.5 + 0.5 * Math.cos((f / 12) * Math.PI * 2);
+
+          // 划线动效
+          const typingEstFrames = Math.ceil(m.text.length / (cps * 0.82));
+          const strikeStart = m.strikethroughAt ?? (typingStart + typingEstFrames + 4);
+          const strikeP = m.strikethrough && f >= strikeStart ? ease(f, strikeStart, strikeStart + 12) : 0;
+          const hasStruck = strikeP > 0.8;
+
+          // 徽章展示
+          const tagStart = isUser ? m.at + 4 : Math.min(typingStart + typingEstFrames, m.at + 24);
+          const tagP = m.tag && f >= tagStart ? easeOutSoft(f, tagStart, tagStart + 8) : 0;
+
+          return (
+            <div
+              key={idx}
+              style={{
+                display: 'flex',
+                flexDirection: isUser ? 'row-reverse' : 'row',
+                alignItems: 'flex-start',
+                gap: 10,
+                opacity: bubbleP,
+                transform: `translateY(${(1 - bubbleP) * 10}px)`,
+              }}
+            >
+              {/* 头像 */}
+              <div
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 8,
+                  background: isUser ? C.blue : (hasStruck ? '#8c827a' : C.orange),
+                  border: `2px solid ${C.ink}`,
+                  boxShadow: `2px 2px 0 ${C.ink}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: '#fff',
+                  flexShrink: 0,
+                }}
+              >
+                {isUser ? '👤' : '🤖'}
+              </div>
+
+              {/* 气泡 */}
+              <div
+                style={{
+                  maxWidth: '82%',
+                  background: isUser ? '#ffffff' : (hasStruck ? '#fff5f5' : '#ffffff'),
+                  border: `2px solid ${isUser ? C.blue : (hasStruck ? C.red : C.ink)}`,
+                  borderRadius: 12,
+                  boxShadow: `2.5px 2.5px 0 ${C.ink}`,
+                  padding: '8px 14px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                {isThinking ? (
+                  <div style={{display: 'flex', alignItems: 'center', gap: 6, padding: '4px 2px'}}>
+                    {[0, 1, 2].map((d) => (
+                      <span
+                        key={d}
+                        style={{
+                          width: 7,
+                          height: 7,
+                          borderRadius: 99,
+                          background: C.ink,
+                          opacity: 0.3 + 0.6 * Math.abs(Math.sin((f * 0.45) + d * 1.0)),
+                        }}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div>
+                    <span
+                      style={{
+                        fontFamily: isUser ? 'Kai,sans-serif' : 'Kai,sans-serif',
+                        fontSize: 19,
+                        lineHeight: 1.5,
+                        color: hasStruck ? '#888888' : C.ink,
+                        fontWeight: 600,
+                        whiteSpace: 'pre-wrap',
+                      }}
+                    >
+                      {currentText}
+                    </span>
+                    {!isDone && (
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: 8,
+                          height: 18,
+                          marginLeft: 3,
+                          background: isUser ? C.blue : C.orange,
+                          verticalAlign: '-2px',
+                          opacity: 0.2 + 0.8 * blinkPhase,
+                        }}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* 动态删除线 */}
+                {strikeP > 0 && (
+                  <div
+                    data-gate-allow="strikethrough"
+                    style={{
+                      position: 'absolute',
+                      left: 10,
+                      right: 10,
+                      top: '50%',
+                      height: 3,
+                      background: C.red,
+                      transformOrigin: 'left center',
+                      transform: `scaleX(${strikeP})`,
+                      boxShadow: '0 0 3px rgba(255,59,48,0.4)',
+                    }}
+                  />
+                )}
+
+                {/* 标签 */}
+                {tagP > 0 && (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      marginTop: 6,
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      background: hasStruck ? `${C.red}18` : `${C.green}18`,
+                      border: `1.2px solid ${hasStruck ? C.red : C.green}`,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: hasStruck ? C.red : C.green,
+                      opacity: tagP,
+                    }}
+                  >
+                    <span>{hasStruck ? '✗' : '✓'}</span>
+                    <span>{m.tag}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 底部模拟 Prompt 输入条 */}
+      <div
+        style={{
+          height: 46,
+          background: '#ffffff',
+          borderTop: `2px solid ${C.ink}`,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 12px',
+          gap: 10,
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            height: 32,
+            background: '#f4f1ea',
+            borderRadius: 8,
+            border: `1.5px solid ${C.line}`,
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 12px',
+            fontSize: 14,
+            color: C.muted,
+            fontFamily: 'Kai,sans-serif',
+          }}
+        >
+          {inputPrompt}
+        </div>
+        <div
+          style={{
+            height: 30,
+            padding: '0 14px',
+            background: C.blue,
+            borderRadius: 6,
+            border: `1.5px solid ${C.ink}`,
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 13,
+            fontWeight: 700,
+            fontFamily: 'Space,Kai',
+            boxShadow: `1.5px 1.5px 0 ${C.ink}`,
+          }}
+        >
+          SEND ↵
+        </div>
+      </div>
+    </div>
+  );
 };
