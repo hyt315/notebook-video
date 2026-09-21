@@ -54,6 +54,10 @@ export type {TreeNode, TreeVariant, SankeyNodeIn, SankeyLinkIn} from './data';
 export {SketchFx, sketchCircleArea, sketchUnderline, sketchBox} from './sketch';
 export type {SketchPrim, SketchStyle} from './sketch';
 
+// ---- 注意力三件（把"其余压暗"变成动作：dim / spot / loupe / marker）----
+export {FocusFx, FOCUS_MODES} from './focus';
+export type {FocusMode, FocusRect} from './focus';
+
 // ---- 零依赖「炫效果」----
 export {GlowFrame, ShimmerText, ClipReveal, NoiseJitter, VerdictBar} from './effects';
 

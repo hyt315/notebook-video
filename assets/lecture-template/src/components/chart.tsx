@@ -39,6 +39,8 @@ export const CHART_BOX = {padL: 96, padR: 48, padT: 40, padB: 78, titleH: 44} as
 
 export type ChartDatum = {label: string; value: number};
 export type ChartSeries = {name: string; values: number[]; tone?: string};
+export const CHART_VARIANTS = ['line', 'area', 'stack', 'stackExpand', 'stream', 'radar', 'pie'] as const;
+
 export type ChartVariant = 'line' | 'area' | 'stack' | 'stackExpand' | 'stream' | 'radar' | 'pie';
 
 const TONE = [C.blue, C.orange, C.green, C.gold, C.red];
@@ -156,6 +158,15 @@ export const Chart: React.FC<{
   let stackSvg: React.ReactNode = null;
   let maxStack = 1;
 
+  // ⚠️ 变体名写错时**必须响亮地失败**，不许静默渲出一张空图。
+  // 实测（overview-film 第 1 章 S2，f=420）：`variant="bar"` 不在闭合集里 →
+  // `body` 落到 null → 画面上只剩标题、没有柱子，而十道门禁没有一道能拦（构图门禁只查 live 名字存在）。
+  // 这种"没报错但坏了"正是本技能最怕的一类失败，所以在这里直接抛。
+  if (!(CHART_VARIANTS as readonly string[]).includes(variant)) {
+    throw new Error(
+      `Chart: 未知 variant "${String(variant)}"。合法值：${CHART_VARIANTS.join(' / ')}` +
+      `（"柱状"要用默认的 line 变体并靠 series 驱动，或改用 StatRow / MetricGrid）`);
+  }
   if (multi && (variant === 'stack' || variant === 'stackExpand' || variant === 'stream')) {
     const offset = variant === 'stackExpand' ? stackOffsetExpand : variant === 'stream' ? stackOffsetWiggle : stackOffsetNone;
     // ⚠️ d3stack 的入参是「数据点数组」，每个点按 key 取值：points[i][si]。
@@ -218,6 +229,19 @@ export const Chart: React.FC<{
 
   // ---- 雷达图：lineRadial + scaleLinear ----
   let radarSvg: React.ReactNode = null;
+  // ⚠️ 第二层静默失败（同一帧渲出来的）：**多序列 + line/area 没有绘制路径**——
+  // `body = multi ? (radar ? radarSvg : pie ? pieSvg : stackSvg) : singleSvg`，
+  // 而 stackSvg 只在 stack/stackExpand/stream 下才被定义 → 这里会落到 undefined，
+  // 画面上只剩标题、没有图。多序列想画"两条线"，要么用 stack 系列变体，
+  // 要么拆成两张单序列 Chart（本片第 1 章 S2 就是拆开画的）。
+  // 实测口径：`series`（**任意条数**，1 条也算）走的是 multi 路径，而 multi 路径只实现了
+  // stack / stackExpand / stream / radar / pie —— 配 line/area 会落到 undefined，渲出空图。
+  // 想画折线要用**单序列的 `data`/`csv`**（ChartDatum = {label, value}）。
+  if (multi && !(['stack', 'stackExpand', 'stream', 'radar', 'pie'] as readonly string[]).includes(variant)) {
+    throw new Error(
+      `Chart: 用了 series（${series?.length ?? 0} 条）就必须配 stack / stackExpand / stream / radar / pie，` +
+      `当前 variant="${String(variant)}" 会渲出空图。单条折线请改用 data={[{label, value}, …]} 或 csv。`);
+  }
   if (multi && variant === 'radar') {
     // 雷达的外接圆受**较短边**限制，所以留白只按轴标签需要的一圈算（56）——
     // 之前用 74 时半径只剩 135px，四个维度挤在中间，远看像个墨点。
