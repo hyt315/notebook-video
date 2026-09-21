@@ -523,6 +523,71 @@ No black frames detected.
 | 手写缓动 | **不需要** | `fxkit.tsx` 的 `ease` / `easeOutSoft` / `popS` / `easeInQuad` **本来就是** Remotion 的 `Easing.bezier` / `Easing.inOut` / `spring` 的薄封装，没有自己实现的曲线 |
 | 手写图像处理 / 颜色转换 / 日期 / CSV / 二维码 / 数学渲染 | **不需要** | 逐项确认都已在用库或平台能力：`measureText`（layout-utils）、`d3-*`、`roughjs`、`katex`、`qrcode`、`react-icons`、`react-syntax-highlighter`（PrismLight）、Radix、`budoux` |
 
+**第七轮：按"依赖要通用、能用新的就不用旧的"重处置两件**
+
+用户补的选包原则：**依赖最好通用一点，而且能用新的就不用旧的——旧的时间久了可能不兼容**。
+据此把第六轮的两个决定重做了一遍。
+
+**① 断行：不是"退回手写近似"，而是换到那个包的现代实现**
+
+第六轮我先用了 foliojs 的 `linebreak@1.1.0`（真 UAX #14），代价是它**钉死 `base64-js@0.0.8`（2014 年）**——
+这正是用户点名的"旧依赖不兼容"风险，所以这个方案不保留。按 (a) 先找现代等价物：
+
+| | `linebreak`（foliojs） | **`@cto.af/linebreak`** |
+|---|---|---|
+| 版本 / 最后发版 | 1.1.0 / **2022-06**（之后停更） | **4.0.3 / 2026-03**（2023 起 1→2→3→4 持续发版） |
+| 解包体积 | 219 KB | **60 KB** |
+| Unicode 数据 | 旧表 | **UAX #14 / Unicode 17.0.0** |
+| 依赖树 | `base64-js@0.0.8`（2014，钉死）+ `unicode-trie@2` | `@cto.af/unicode-trie-runtime@3.2.9`（13.8 KB）→ `fflate@0.8.3`（2026-07） |
+| 确定性 | 纯函数、无 timer/random ✓ | 纯函数、无 timer/random ✓（dist grep 过） |
+| 断点结果 | — | **11/11 用例与 foliojs 版逐一相同** |
+| 维护者自述 | — | "originally started as a refresh of the [linebreak] package … rewritten to a fully rules-based approach implementing UAX #14 from Unicode 17.0.0" |
+
+**处置：换成 `@cto.af/linebreak@^4.0.3`**，foliojs 版从模板与验证工程一并移除，模板 lock 重新生成
+（`base64-js@0.0.8` 这个嵌套老包**已消失**；`npm ci --dry-run` 通过，464 个包可解析）。
+**换包是零行为变化**：接触表 ⑩ 页（FitTextBox 主力页）在"改造前 / foliojs 版 / 新版"三种状态下
+重渲**逐字节相同**（md5 `f7b66451…`）。
+
+**② 混排非法断点的前后数字**（10 条真实文本，Node 级比对，不依赖渲染）
+
+| 文本 | 手写表可断 | UAX #14 可断 | 其中**非法** |
+|---|---|---|---|
+| `在GitHub，全世界的开发者，` | 13 | 8 | **5 → 0** |
+| `主页搜hyt315，现在出发。` | 12 | 7 | **5 → 0** |
+| `这三步，我做成了三个AI技能。` | 12 | 11 | **1 → 0**（三个A\|I技） |
+| `交出第一个PR。` | 6 | 5 | **1 → 0**（一个P\|R） |
+| `占比92%，温度0.2` | 7 | 5 | **2 → 0**（占比9\|2%、度0.\|2） |
+| `S1：代码不再孤独` | 7 | 6 | **1 → 0**（S\|1：） |
+| `notebook-video` | 13 | 1 | **12 → 0**（只允许连字符后） |
+| `中文English混排test` | 14 | 5 | **9 → 0** |
+| `第一步，参与别人的项目，`（纯中文） | 9 | 9 | 0 → 0 |
+| `三步走`（纯中文） | 2 | 2 | 0 → 0 |
+| **合计** | | | **36 → 0** |
+
+**③ `culori`（OKLab 感知插值）：明确列为"已知的可选增强，当前不加"**
+
+我们**没有手写过颜色插值**（`components/` 里没有颜色数学，渐变由 CSS 渲染、我们只给停靠色），
+所以它不是"替掉更差的轮子"，而是**新增能力**；且**当前没有任何一条渐变被观察到发灰发浊**。
+按 §8"加依赖必须解锁能力或替轮子"，这里缺一个可复现的缺陷证据 → **不加**，理由已写进
+`dependency-policy.md`，免得下一轮再纠结一遍。
+
+**④ 顺带自查：其余直接依赖的"过时程度"**（按最后发版日排序，只列 2023 年以前的）
+
+| 包 | 版本 | 最后发版 | 判断 |
+|---|---|---|---|
+| `d3-sankey` | 0.12.3 | **2022-06** | d3 家族是**特性完备**型模块（纯 ES 模块、无原生依赖、无外部传递依赖），停更≠风险；但要意识到"上游不再变" |
+| `d3-force` | 3.0.0 | 2022-06 | 同上（关系网用） |
+| `d3-dsv` | 3.0.1 | 2022-06 | 同上（CSV 入口用） |
+| `d3-hierarchy` | 3.1.2 | 2022-06 | 同上（treemap/pack/sunburst 用） |
+| `d3-shape` / `d3-scale` | 3.2.0 / 4.0.2 | 2023-04 | 同上 |
+| `roughjs` | 4.6.6 | **2023-11** | 手绘风的唯一依赖；已实测过它的 `dots` 填充器在源码里调 `Math.random`（已从枚举里移除）。**列入观察**：若上游长期不动，将来可以考虑把六种填充里我们实际用的两种自己实现 |
+| `react-syntax-highlighter` | **15.6.6**（模板锁 15.6.1） | 2026-02（**latest 是 16.1.1**） | **我们落后一个大版本**。它是重传递依赖（highlight.js / lowlight / prismjs / refractor）。**列入观察**：升 16 需要重跑 PrismLight 注册那一段 |
+| `qrcode` | 1.5.4 | 2025-11 | 正常 |
+| `katex` / `budoux` / `react-icons` / `react` / Radix / Remotion | — | 2026 | 新且活跃 ✓ |
+
+结论：**没有一处"明显过时且在维护上退化"到需要立刻更换**；`roughjs` 与 `react-syntax-highlighter`
+两条列入观察（都写进 Known gaps）。
+
 **Verified**
 
 - **四道门禁全部复跑，P0 = 0**：`validate-frame-props`（P0=0 P1=0 PASS）· `validate-composition`（P0=0 P1=5 PASS，P1 与改动前逐条一致，无新增）· `validate-skill-consistency`（passed）· `negative-gate-check`（8 项全 PASS，含 A–H 阴性对照）。
@@ -535,6 +600,13 @@ No black frames detected.
   版本与许可与调研报告一致（MIT / ISC）。
 
 **Known gaps（本轮未做，勿当作已解决）**
+
+- **`roughjs`（2023-11 后未发版）与 `react-syntax-highlighter`（我们停在 15.x，latest 16.x）列入观察**：
+  两者都能用、也都有实测记录，但都处于"上游可能不再变 / 我们落后一个大版本"的状态。要动的话：
+  roughjs 可以把实际用到的那两种填充自己实现（去掉最后一个老包）；react-syntax-highlighter 升 16
+  需要重跑 `PRISM_LANGUAGES` 注册那一段并复验高亮。**本轮不 churn。**
+- **`culori` / OKLab 感知插值是"已知的可选增强"**：当前没有观察到渐变发灰发浊，故不加
+  （理由写在 dependency-policy.md）。将来若真看到渐变中段发浊，那就是这个候选。
 
 > 上一轮列的 6 条已在「第三轮收尾」里全部处理：转场 20 种全登记 ✅ · `PrismLight` ✅ · 四皮肤实渲 ✅ ·
 > 目录树两处观感缺陷 ✅ · 探针口径 ✅ · 两份 lock 一致性 ✅ · 整片与接触表整支渲染 ✅。

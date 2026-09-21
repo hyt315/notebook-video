@@ -1,7 +1,7 @@
 import React from 'react';
 import {measureText} from '@remotion/layout-utils';
 import {loadDefaultSimplifiedChineseParser} from 'budoux';
-import LineBreaker from 'linebreak';
+import {Rules} from '@cto.af/linebreak';
 import {continueRender, delayRender, staticFile} from 'remotion';
 import {THEME} from '../theme/active';
 import {TYPE} from '../kit';
@@ -65,7 +65,7 @@ const wordBreaks = (chars: string[]): Set<number> => {
   }
 };
 
-// ---- 断行机会：改用 **UAX #14 真实算法**（`linebreak`，MIT，纯离线表）----
+// ---- 断行机会：改用 **UAX #14 真实算法**（`@cto.af/linebreak`，MIT，纯离线表）----
 //
 // 2026-09-21 换掉手写的两张字符表：那两张表是 UAX #14 的粗糙近似，实测在**中英混排**上会切错——
 // 对 '在GitHub，全世界的开发者，' 我们的表允许 5 个非法断点（在G|itH、Git|Hub…），
@@ -74,16 +74,21 @@ const wordBreaks = (chars: string[]): Set<number> => {
 // （实测 '第一步，参与别人的项目，' 与 '给容器宽度和行数上限，反推该用多大字号' 断点逐一相同），
 // 所以这次换掉的正是"我们写得更差"的那部分。
 // 确定性：算法 + 随包发布的 Unicode 表，纯函数，无 timer / 无 Math.random，版本由 lock 锁死。
+// 选包口径（2026-09-21 复核）：先用过 foliojs 的 `linebreak@1.1.0`，它**钉死 base64-js@0.0.8（2014 年）**，
+// 正是"旧依赖可能不兼容"的那类风险 → 换成 `@cto.af/linebreak@4.0.3`（同一算法的现代实现，
+// 自我描述为 foliojs 那包的 refresh，UAX #14 / Unicode 17，2026-03 发版，依赖是现代的
+// @cto.af/unicode-trie-runtime → fflate）。实测两包在同一批真实文本上**断点逐一相同**。
 const legalBreakCache = new Map<string, Set<number>>();
+/** UAX #14 规则机（无状态，建一次即可复用；`{string:true}` 让每个断点带上左侧片段）。 */
+let lbRules: Rules | null = null;
 /** 该文本所有**合法**断行位置（断在 i 之前 = 第 i 个字符可以另起一行）。 */
 const legalBreaks = (text: string): Set<number> => {
   const hit = legalBreakCache.get(text);
   if (hit) return hit;
   const out = new Set<number>();
   try {
-    const lb = new LineBreaker(text);
-    let bk: {position: number} | null;
-    while ((bk = lb.nextBreak())) out.add(bk.position);
+    if (!lbRules) lbRules = new Rules({string: true});
+    for (const brk of lbRules.breaks(text)) out.add(brk.position);
   } catch {
     /* 表缺失时退回"处处可断"（等同于旧行为），不让文字排版把渲染搞崩 */
     [...text].forEach((_, i) => i > 0 && out.add(i));
