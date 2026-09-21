@@ -316,6 +316,10 @@ def check_readability(project: Path) -> tuple[list, list]:
     #   · 次要文字  muted on {paper, paperWarm, paperBase}             → 大字档 3:1
     #   · 彩字      <强调色> on {paper, paperWarm, paperBase}          → P1 聚合
     ACCENT_FILLS = ("blue", "orange", "orangeDeep", "green", "gold", "red", "navy")
+    # 文字安全色（2026-09-21 加）：主题里为每种强调色提供的 *Ink 变体，**专门用于当文字**。
+    # 它们必须过 4.5:1（正文档），否则"压暗到能当文字用"这个约定就是空话 ——
+    # 这一条同时是**新增机制的自检**：没有它，加了 Ink 也不会有人验。
+    ACCENT_INKS = ("blueInk", "orangeInk", "greenInk", "goldInk", "redInk")
     used_as_text: dict[str, set[str]] = {}
     for f in files:
         body = f.read_text(encoding="utf-8")
@@ -349,6 +353,15 @@ def check_readability(project: Path) -> tuple[list, list]:
             if c < CONTRAST_TEXT:
                 p0.append({"id": f"theme:{name}", "issue": f"反白文字 white on ink = {c:.2f}:1 < {CONTRAST_TEXT}"})
         # 彩色反白 + 彩字：**按主题各聚合成一条**，否则一套皮肤就是几十条噪声
+        ink_bad = []
+        for a in ACCENT_INKS:
+            if a not in hexed:
+                continue
+            w = min((contrast(hexed[a], hexed[bg]), bg) for bg in surfaces if bg in hexed)
+            if w[0] < CONTRAST_TEXT:
+                ink_bad.append(f"{a} {w[0]:.2f}:1(on {w[1]})")
+        if ink_bad:
+            p0.append({"id": f"theme:{name}", "issue": "文字安全色没过 4.5:1（它们是**专门**用来当文字色的）：" + " · ".join(ink_bad)})
         white_bad = [f"{a} {contrast(hexed['white'], hexed[a]):.2f}:1" for a in ACCENT_FILLS if a in hexed and "white" in hexed and contrast(hexed["white"], hexed[a]) < CONTRAST_LARGE]
         if white_bad:
             p1.append({"id": f"theme:{name}", "issue": f"彩色填充上的白字对比不足（需 3.0）：{' · '.join(white_bad)}"})
@@ -372,6 +385,60 @@ def check_readability(project: Path) -> tuple[list, list]:
     return p0, p1
 
 
+# ------------------------------------------------- G-14/G-15/G-16 讲法字段完整性
+# 编号说明（2026-09-21 修撞号）：这一组原来标成 "G-6"，而 **G-6 是调研报告里"对比层结构闭合"**
+# 的编号（见 references/presentation-gate.md 的"还没做的"）。本组的编号以
+# references/narrative-moves.md §4 为准：G-14 `move` 闭合 / G-15 `evidence` 真的会动 /
+# G-16 误解与留白（G-17 known→new 闭合尚未实现）。
+#
+# 为什么加这一条（2026-09-21）：`narrative-moves.md` 把 move / evidence / hold /
+# misconception 四个槽位写成**必填**，但**十道门禁没有一道读过它们**，而且：
+#   · `resolve-shots.py` 在把 shots.json 解析成 shots.resolved.json 时**把这四个字段整组丢掉**
+#     （那份解析结果里只有 skeleton/live/keys/beats… 没有 move/evidence/hold/misconception）
+#     → 下游所有读 resolved 的门禁**根本看不到它们**，想查也没得查；
+#   · 实测：把 S19 的 move 删掉，改前全部门禁照旧 PASS。
+# 这一条读**作者手写的 shots.json**（字段的唯一定源），并把 resolve 的透传一并修好（同一轮）。
+MOVES = {"引入", "定位", "推进", "传递", "对比", "拆分/合并", "累积", "收束", "反证", "回看"}
+HOLD_MIN = 40        # 留白预算下限：narrative-moves.md 里**标定**出来的线（不是拍的）
+MOVE_MIN_KINDS = 5   # 全片至少用到几种叙事动作（10 种里挑）：只写 1–2 种等于没有编排
+
+
+def check_narrative(project: Path) -> tuple[list, list]:
+    p0, p1 = [], []
+    doc = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8"))
+    shots = doc["shots"] if isinstance(doc, dict) and "shots" in doc else doc
+    kinds: dict[str, int] = {}
+    for s in shots:
+        sid = s.get("id", "?")
+        mv = str(s.get("move") or "").strip()
+        ev = str(s.get("evidence") or "").strip()
+        hold = s.get("hold")
+        if not mv:
+            p0.append({"id": sid, "issue": "缺 move（叙事动作）：讲法规范要求每镜声明它在这一章里干哪件事"})
+        elif mv not in MOVES:
+            p0.append({"id": sid, "issue": f"move=«{mv}» 不在叙事动作表里（只能是 {'/'.join(sorted(MOVES))}）"})
+        else:
+            kinds[mv] = kinds.get(mv, 0) + 1
+        if not ev:
+            p0.append({"id": sid, "issue": "缺 evidence（该镜内真的会变的那件组件）：没有它就没法验证「讲到哪亮到哪」"})
+        if hold is None:
+            p0.append({"id": sid, "issue": "缺 hold（留白预算，单位帧）"})
+        elif not isinstance(hold, int) or hold < HOLD_MIN:
+            p0.append({"id": sid, "issue": f"hold={hold!r} 低于标定线 {HOLD_MIN} 帧"})
+        mis = str(s.get("misconception") or "").strip()
+        nomis = bool(s.get("noMisconception"))
+        why = str(s.get("why") or "").strip()
+        if mis and nomis:
+            p0.append({"id": sid, "issue": "同时写了 misconception 与 noMisconception：只能二选一"})
+        elif not mis and not nomis:
+            p0.append({"id": sid, "issue": "必须二选一：misconception（本镜要拆掉的误解）或 noMisconception(+why)"})
+        elif nomis and not why:
+            p0.append({"id": sid, "issue": "标了 noMisconception 却没写 why（为什么不设误解）"})
+    if kinds and len(kinds) < MOVE_MIN_KINDS:
+        p1.append({"id": "-", "issue": f"全片只用到 {len(kinds)} 种叙事动作（{sorted(kinds)}），建议 ≥{MOVE_MIN_KINDS} 种"})
+    return p0, p1
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("project")
@@ -391,6 +458,9 @@ def main() -> int:
         print(f"缺少必需文件：{e}", file=sys.stderr)
         return 2
     a, b = check_readability(project)
+    p0 += a
+    p1 += b
+    a, b = check_narrative(project)
     p0 += a
     p1 += b
 

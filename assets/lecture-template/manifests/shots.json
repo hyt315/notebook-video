@@ -74,7 +74,11 @@
           "cue": 4,
           "offset": 0
         }
-      ]
+      ],
+      "move": "引入",
+      "evidence": "ConsoleWindow",
+      "hold": 45,
+      "misconception": "以为开源就是\"把代码丢上去\""
     },
     {
       "id": "S2",
@@ -133,7 +137,12 @@
           "cue": 5,
           "offset": 0
         }
-      ]
+      ],
+      "move": "推进",
+      "evidence": "StampSeal",
+      "hold": 40,
+      "noMisconception": true,
+      "why": "本镜是流程推进，不设误解（避免每镜都套同一个模子）"
     },
     {
       "id": "S3",
@@ -196,7 +205,11 @@
           "cue": 7,
           "offset": 0
         }
-      ]
+      ],
+      "move": "传递",
+      "evidence": "Checklist",
+      "hold": 40,
+      "misconception": "以为提交一次就等于参与了"
     },
     {
       "id": "S4",
@@ -258,7 +271,11 @@
           "cue": 9,
           "offset": 0
         }
-      ]
+      ],
+      "move": "对比",
+      "evidence": "StaggerList",
+      "hold": 45,
+      "misconception": "以为发布是\"点一下按钮\""
     },
     {
       "id": "S5",
@@ -320,7 +337,12 @@
           "cue": 11,
           "offset": 0
         }
-      ]
+      ],
+      "move": "定位",
+      "evidence": "ProgressRing",
+      "hold": 40,
+      "noMisconception": true,
+      "why": "本镜是能力定位，不需要先立误解"
     },
     {
       "id": "S6",
@@ -383,7 +405,12 @@
           "cue": 13,
           "offset": 0
         }
-      ]
+      ],
+      "move": "累积",
+      "evidence": "StampSeal",
+      "hold": 40,
+      "noMisconception": true,
+      "why": "本镜是上一镜的累积收束，直接延续"
     },
     {
       "id": "S7",
@@ -445,7 +472,11 @@
           "cue": 14,
           "offset": 0
         }
-      ]
+      ],
+      "move": "反证",
+      "evidence": "ChatThread",
+      "hold": 45,
+      "misconception": "以为把文档写完就有人来用"
     },
     {
       "id": "S8",
@@ -512,7 +543,11 @@
           "cue": 15,
           "offset": 96
         }
-      ]
+      ],
+      "move": "收束",
+      "evidence": "VerdictBar",
+      "hold": 50,
+      "misconception": "以为开源只产出代码"
     }
   ]
 }

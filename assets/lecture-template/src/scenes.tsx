@@ -9,7 +9,7 @@ import {ConsoleWindow, MetricGrid, StampBanner} from './media';
 import {Corridor, SplitStage, ZoomStage} from './skeletons';
 import {RevealMask} from './insert';
 import {Callout, Checklist} from './toolkit';
-import {Chart, StatRow, VerdictBar} from './components';
+import {StatRow, VerdictBar} from './components';
 import {SHOTS} from './shots';
 
 // ============================================================================
@@ -36,8 +36,8 @@ const enterAt = (f: number, at: number): React.CSSProperties => {
   const p = easeOut(f, at, at + IN);
   return {opacity: p, transform: `translateY(${(1 - p) * 22}px) scale(${0.975 + 0.025 * p})`};
 };
-const exitAt = (f: number, duration: number): number => 1 - easeIO(f, duration - 18, duration);
-
+// 原来这里还有一个 exitAt()，本文件从未调用（tsc TS6133）：各镜的离场要么交给
+// RevealMask/ShotCamera，要么写成行内表达式，没有一处用得上它。
 type Entry = 'rise' | 'slide' | 'fade' | 'zoom';
 const useEntry = (f: number, entry: Entry) => {
   const p = easeOut(f, 0, IN);
@@ -138,9 +138,9 @@ const S2ThreeSteps: React.FC<{f: number}> = ({f}) => {
   const b = SHOTS.S2.beats;
   const t0 = b[0] ?? 0;
   const steps = [
-    {label: '参与', detail: '做别人的项目', color: C.orange},
-    {label: '发布', detail: '整理自己的仓库', color: C.blue},
-    {label: '运营', detail: '分流 · 审查 · 发版', color: C.green},
+    {label: '参与', detail: '做别人的项目', color: C.orangeInk},
+    {label: '发布', detail: '整理自己的仓库', color: C.blueInk},
+    {label: '运营', detail: '分流 · 审查 · 发版', color: C.greenInk},
   ];
   const stations = steps.map((s, i) => ({...s, at: t0 + i * 24, state: `第 ${i + 1} 步`}));
   return (
@@ -177,7 +177,9 @@ const S3FirstPr: React.FC<{f: number}> = ({f}) => {
           </div>
         </div>
       </ZoomStage>
-      <FitCard x={1250} y={240} w={510} h={300} f={f} pad={24} frame={f} borderColor={C.orange} style={enterAt(f, at(1, 10))}>
+      {/* 这里原来多传了一个 `f={f}`：FitCard 不认这个 prop（它要的是 frame/start），
+          React 会把未知 prop 静默丢掉 —— tsc TS2322 才把它翻出来。 */}
+      <FitCard x={1250} y={240} w={510} h={300} pad={24} frame={f} borderColor={C.orange} style={enterAt(f, at(1, 10))}>
         <div style={{fontSize: TYPE.labelL, fontWeight: 700, color: C.muted}}>第一次参与的路径</div>
         {/* 三步路径＝一份清单，交给 Checklist（带序号圆牌），不再手写行 */}
         <Checklist items={['读懂项目规则', '找一个最小改动', '提交并等评审']} start={at(1, 20)} stagger={12} rowH={42} fontSize={TYPE.bodyM} frame={f} style={{marginTop: 12}} />
@@ -198,9 +200,9 @@ const S4ProRepo: React.FC<{f: number}> = ({f}) => {
       <SplitStage
         x={240} y={196} w={1440} h={416} f={f} winner="right" winnerAt={at(1)}
         left={{title: '随手放上去', sub: '别人不知道这是什么', rows: ['没有说明文档', '没有许可证', '没有自动化检查'], color: C.muted}}
-        right={{title: '专业的开源仓库', sub: '别人愿意用、敢用', rows: ['README 讲清楚', 'LICENSE 讲授权', 'CI 守住质量'], color: C.green}}
+        right={{title: '专业的开源仓库', sub: '别人愿意用、敢用', rows: ['README 讲清楚', 'LICENSE 讲授权', 'CI 守住质量'], color: C.greenInk}}
       />
-      <FitCard x={240} y={654} w={880} h={196} f={f} pad={24} frame={f} borderColor={C.blue} style={enterAt(f, at(1, 20))}>
+      <FitCard x={240} y={654} w={880} h={196} pad={24} frame={f} borderColor={C.blue} style={enterAt(f, at(1, 20))}>
         <div style={{fontSize: TYPE.labelL, fontWeight: 700, color: C.muted}}>标准三件套</div>
         <div style={{marginTop: 14, display: 'flex', gap: 26}}>
           {['README.md', 'LICENSE', 'CI / Actions'].map((t, i) => (
@@ -212,8 +214,8 @@ const S4ProRepo: React.FC<{f: number}> = ({f}) => {
       </FitCard>
       <div style={{position: 'absolute', left: 1180, top: 690, width: 520}}>
         <StaggerList x={0} y={0} w={520} frame={f} start={at(1, 60)} stagger={6} items={[
-          {text: '让人一眼看懂', sub: 'README', color: C.blue},
-          {text: '让人放心使用', sub: 'LICENSE', color: C.green},
+          {text: '让人一眼看懂', sub: 'README', color: C.blueInk},
+          {text: '让人放心使用', sub: 'LICENSE', color: C.greenInk},
         ]} />
       </div>
     </Shot>
@@ -242,15 +244,15 @@ const S5Ops: React.FC<{f: number}> = ({f}) => {
             <div style={{fontSize: TYPE.titleXS, fontWeight: 700, color: C.muted, ...enterAt(f, at(0))}}>一个活跃仓库的日常</div>
             <div style={{position: 'absolute', left: 0, top: 52}}>
               <Funnel x={0} y={0} w={1040} frame={f} start={at(0, 16)} stagger={6} rows={[
-                {label: '新 Issue', sub: '需要分流', count: '24', color: C.blue, ratio: 1},
-                {label: '可复现 / 待办', sub: '进入里程碑', count: '9', color: C.orange, ratio: 0.38},
-                {label: '本周已合并', sub: '并发布 v1.1', count: '6', color: C.green, ratio: 0.25},
+                {label: '新 Issue', sub: '需要分流', count: '24', color: C.blueInk, ratio: 1},
+                {label: '可复现 / 待办', sub: '进入里程碑', count: '9', color: C.orangeInk, ratio: 0.38},
+                {label: '本周已合并', sub: '并发布 v1.1', count: '6', color: C.greenInk, ratio: 0.25},
               ]} />
             </div>
             <div style={{position: 'absolute', left: 0, top: 372, display: 'flex', alignItems: 'center', gap: 28, ...enterAt(f, at(1, 40))}}>
               <ProgressRing pct={0.86} label="发版进度" color={C.green} start={at(1, 40)} frame={f} size={128} />
               <div style={{fontSize: TYPE.bodyL, fontWeight: 700, color: C.ink, lineHeight: 1.6}}>
-                v1.0 → v1.1<br /><span style={{color: C.green}}>按时发布，才有节奏</span>
+                v1.0 → v1.1<br /><span style={{color: C.greenInk}}>按时发布，才有节奏</span>
               </div>
             </div>
           </div>
@@ -265,9 +267,9 @@ const S6Skills: React.FC<{f: number}> = ({f}) => {
   const b = SHOTS.S6.beats;
   const t0 = b[0] ?? 0;
   const skills = [
-    {label: 'github-oss-contribute', detail: '参与别人的项目', color: C.orange},
-    {label: 'github-oss-prep', detail: '发布自己的作品', color: C.blue},
-    {label: 'github-oss-ops', detail: '运营与持续发版', color: C.green},
+    {label: 'github-oss-contribute', detail: '参与别人的项目', color: C.orangeInk},
+    {label: 'github-oss-prep', detail: '发布自己的作品', color: C.blueInk},
+    {label: 'github-oss-ops', detail: '运营与持续发版', color: C.greenInk},
   ];
   const stations = skills.map((s, i) => ({...s, at: t0 + i * 26}));
   return (
@@ -336,9 +338,9 @@ const S8Series: React.FC<{f: number}> = ({f}) => {
           <div style={{position: 'relative', height: '100%'}}>
             <MetricGrid x={0} y={0} w={1348} f={f} cols={3} cellH={200} start={at(0, 10)} stagger={6} title="三期视频，一期一步"
               items={[
-                {label: 'EP 1 · 参与', before: '不会', after: '会提 PR', win: true, color: C.orange},
-                {label: 'EP 2 · 发布', before: '本地项目', after: '专业仓库', win: true, color: C.blue},
-                {label: 'EP 3 · 运营', before: '无人问津', after: '持续发版', win: true, color: C.green},
+                {label: 'EP 1 · 参与', before: '不会', after: '会提 PR', win: true, color: C.orangeInk},
+                {label: 'EP 2 · 发布', before: '本地项目', after: '专业仓库', win: true, color: C.blueInk},
+                {label: 'EP 3 · 运营', before: '无人问津', after: '持续发版', win: true, color: C.greenInk},
               ]}
             />
             {/* 收尾改用全宽结论条，比一行内联文字更有收束感 */}

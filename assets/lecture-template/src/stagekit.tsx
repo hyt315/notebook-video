@@ -1,7 +1,6 @@
 import React, {useEffect, useRef} from 'react';
-import {Easing, continueRender, delayRender, interpolate, spring} from 'remotion';
+import {Easing, continueRender, delayRender, interpolate} from 'remotion';
 import {THEME} from './theme/active';
-import {CoverPanel} from './shotkit';
 
 // ============================================================================
 // stagekit · 大主体骨架 v1（N 个独立边框 → 1 个主体 + 附着信息）
@@ -23,10 +22,9 @@ import {CoverPanel} from './shotkit';
 // ============================================================================
 
 const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
-const BASE_FPS = 30;
+// popS / BASE_FPS 已删（tsc TS6133）：本文件的入场都写成了行内 ease()，popS 无调用方。
 const ease = (f: number, a: number, b: number, from = 0, to = 1) =>
   interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.inOut(Easing.cubic)});
-const popS = (f: number, start: number, stiffness = 132) => spring({frame: f - start, fps: BASE_FPS, config: {damping: 17, stiffness, mass: 0.86}});
 
 /** 一个状态拍：at=该拍起始帧（本镜本地帧），state=给渲染用的语义状态。 */
 export type Phase = {at: number; state: string; label?: string; caption?: string};

@@ -5,7 +5,7 @@ import {SHOTKIT_VERSION, camAt, shotCam} from './shotkit';
 import {PhaseRail, STAGEKIT_VERSION, useStageMachine} from './stagekit';
 import {INSERT_VERSION, TRANSITIONS} from './insert';
 import {ConsoleWindow, MEDIA_VERSION, MetricGrid} from './media';
-import {Corridor, SKELETON_VERSION, SKELETONS, SplitStage, ZoomStage} from './skeletons';
+import {Corridor, SKELETONS, SplitStage, ZoomStage} from './skeletons';
 import {
   ChatThread, DiffView, FitCard, Funnel, ProgressRing, SkeletonCard, StaggerList, StampSeal, Typewriter,
 } from './fxkit';
@@ -82,7 +82,7 @@ const IntentPlate: React.FC<{intent: Parameters<typeof shotCam>[0]; kind: 'text'
           </div>
         </AbsoluteFill>
       </div>
-      <div style={{position: 'absolute', left: 10, top: 8, fontFamily: 'Space,monospace', fontSize: 17, fontWeight: 700, color: C.blue, background: `${C.paperWarm}DD`, padding: '2px 8px', borderRadius: 6}}>
+      <div style={{position: 'absolute', left: 10, top: 8, fontFamily: 'Space,monospace', fontSize: 17, fontWeight: 700, color: C.blueInk, background: `${C.paperWarm}DD`, padding: '2px 8px', borderRadius: 6}}>
         {intent} · s={c.s.toFixed(3)} x={c.x.toFixed(0)}
       </div>
     </div>
@@ -102,7 +102,7 @@ export const Showcase: React.FC = () => {
 
   const p1 = [
     {name: 'ProgressRing · 进度环', node: <div style={{display: 'flex', gap: 44}}><ProgressRing pct={0.92} label="Flash" color={C.green} start={0} frame={F} /><ProgressRing pct={0.62} label="Pro" color={C.blue} start={0} frame={F} /></div>},
-    {name: 'StaggerList · 级联清单', node: <StaggerList x={0} y={50} w={760} frame={F} start={0} items={[{text: '性能更强', sub: '超过 Pro', color: C.green}, {text: '费用更低', sub: '账单更省', color: C.green}, {text: '速度更快', sub: '等待更短', color: C.green}]} />},
+    {name: 'StaggerList · 级联清单', node: <StaggerList x={0} y={50} w={760} frame={F} start={0} items={[{text: '性能更强', sub: '超过 Pro', color: C.greenInk}, {text: '费用更低', sub: '账单更省', color: C.greenInk}, {text: '速度更快', sub: '等待更短', color: C.greenInk}]} />},
     {name: 'Chart · d3 图表（封装层）', node: <div style={{transform: 'scale(0.62)'}}><Chart f={F} startAt={0} width={1180} height={600} title="刻度由 d3 算，画还是我们画" data={[{label: 'A', value: 12}, {label: 'B', value: 34}, {label: 'C', value: 21}, {label: 'D', value: 48}]} /></div>},
   ];
   const p2 = [
@@ -113,7 +113,7 @@ export const Showcase: React.FC = () => {
   ];
   const p3 = [
     {name: 'FitCard · 防出格卡片', node: <FitCard x={40} y={40} w={700} h={220} frame={F} pad={26}><div style={{fontSize: 30, fontWeight: 700}}>卡片高度由 fitH() 算出</div><div style={{fontSize: 23, color: C.muted, marginTop: 12}}>CardFitGate 渲染期抓出任何溢出</div></FitCard>},
-    {name: 'Funnel · 漏斗介质', node: <Funnel x={0} y={20} w={800} frame={F} start={0} rows={[{label: '调用 v4-pro', sub: '请求', count: '10,000', color: C.blue, ratio: 1}, {label: '自动路由', sub: '网关', count: '10,000', color: C.orange, ratio: 1}, {label: '按 Flash 计费', sub: '账单', count: '-69%', color: C.green, ratio: 0.31}]} />},
+    {name: 'Funnel · 漏斗介质', node: <Funnel x={0} y={20} w={800} frame={F} start={0} rows={[{label: '调用 v4-pro', sub: '请求', count: '10,000', color: C.blueInk, ratio: 1}, {label: '自动路由', sub: '网关', count: '10,000', color: C.orangeInk, ratio: 1}, {label: '按 Flash 计费', sub: '账单', count: '-69%', color: C.greenInk, ratio: 0.31}]} />},
     {name: 'SkeletonCard · 占位→内容', node: <SkeletonCard x={40} y={30} w={680} h={240} frame={F} start={0} revealAt={30}><div style={{fontSize: 28, fontWeight: 700}}>等待路由结果</div><div style={{fontSize: 22, color: C.muted, marginTop: 10}}>先占位，落定再 pop 出真内容</div></SkeletonCard>},
     {name: 'StampSeal · 印章', node: <div style={{position: 'relative', width: 840, height: 400}}><StampSeal text="已完成" x={20} y={20} frame={F} start={0} color={C.green} /><StampSeal text="按 Flash 计费" x={20} y={190} size={130} frame={F} start={0} color={C.red} /></div>},
     {name: 'FitTextBox · 中文反推字号（封装层）', node: <div style={{background: C.paper, border: `2.5px solid ${C.ink}`, borderRadius: 10, padding: 24, width: 800}}><FitTextBox text="给容器宽度和行数上限，反推该用多大字号，并返回断好的行——卡片文字被裁这件事从源头消失。" maxLines={3} boxWidth={748} maxFontSize={40} showMeasure /></div>},
@@ -178,7 +178,7 @@ export const Showcase: React.FC = () => {
             </div>
             <div style={{position: 'absolute', left: 40, top: 410, width: 900, height: 620}}>
               <div style={{position: 'absolute', left: 0, top: -28, fontFamily: 'Space,monospace', fontSize: 18, fontWeight: 700, color: C.muted}}>Split · 双栏对比</div>
-              <SplitStage x={0} y={20} w={880} h={540} f={F} winner="right" winnerAt={0} left={{title: 'V4 Pro', sub: '旧旗舰', rows: ['价格高', '速度慢', '算力消耗大'], color: C.muted}} right={{title: 'V4.1 Flash', sub: '轻量快刀', rows: ['价格低', '速度更快', '算力更省'], color: C.green}} />
+              <SplitStage x={0} y={20} w={880} h={540} f={F} winner="right" winnerAt={0} left={{title: 'V4 Pro', sub: '旧旗舰', rows: ['价格高', '速度慢', '算力消耗大'], color: C.muted}} right={{title: 'V4.1 Flash', sub: '轻量快刀', rows: ['价格低', '速度更快', '算力更省'], color: C.greenInk}} />
             </div>
             <div style={{position: 'absolute', left: 980, top: 410, width: 900, height: 620}}>
               <div style={{position: 'absolute', left: 0, top: -28, fontFamily: 'Space,monospace', fontSize: 18, fontWeight: 700, color: C.muted}}>Zoom · 整体→聚焦→标注→回整体</div>
@@ -497,14 +497,14 @@ export const Showcase: React.FC = () => {
               <Tile name="budoux · 中文词组边界（辅助，非保证）">
                 <div style={{display: 'flex', gap: 26, alignItems: 'flex-start'}}>
                   <div style={{background: C.paper, border: `2.5px solid ${C.ink}`, borderRadius: 10, padding: 22, width: 400}}>
-                    <div style={{fontFamily: 'Space,monospace', fontSize: 15, color: C.green, marginBottom: 8}}>断行优先落 budoux 边界</div>
+                    <div style={{fontFamily: 'Space,monospace', fontSize: 15, color: C.greenInk, marginBottom: 8}}>断行优先落 budoux 边界</div>
                     <FitTextBox text="给容器宽度和行数上限反推该用多大字号并返回断好的行" maxLines={3} boxWidth={356} maxFontSize={30} />
                   </div>
                   <div style={{fontFamily: 'Kai,sans-serif', fontSize: 19, color: C.ink, lineHeight: 1.7, maxWidth: 320}}>
                     断行现在优先落在 budoux 给的
-                    <span style={{color: C.blue}}>词组边界</span>
+                    <span style={{color: C.blueInk}}>词组边界</span>
                     上。<br />
-                    <span style={{color: C.orange, fontWeight: 700}}>但它是辅助不是保证</span>
+                    <span style={{color: C.orangeInk, fontWeight: 700}}>但它是辅助不是保证</span>
                     ——实测它对"反推"「并返回」也会切错，模型本身不够准。所以：标题可以依赖，正文别指望。
                   </div>
                 </div>

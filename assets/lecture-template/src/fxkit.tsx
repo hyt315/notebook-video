@@ -1,5 +1,5 @@
 import React from 'react';
-import {Easing, interpolate, spring, staticFile, useCurrentFrame} from 'remotion';
+import {Easing, interpolate, spring, useCurrentFrame} from 'remotion';
 import {THEME} from './theme/active';
 
 // ============================================================================
@@ -19,15 +19,15 @@ import {THEME} from './theme/active';
 const C = THEME.palette;
 // extras 是可选契约：paper/flat 没有 extras，sticker 只有 Tape。必须用可选链，
 // 否则默认 paper 主题在 import 本文件的瞬间就会崩（v2.10 引入 fxkit 后才暴露）。
-const Burst = (THEME.extras as any)?.Burst as React.FC<{x:number;y:number;size:number;text:string;color?:string}> | undefined;
+// （这里原有一个读 `THEME.extras?.Burst` 的 const Burst，本文件从未用过 —— tsc TS6133。）
 
 // 与主模板一致的字阶镜像（只取本库用到的档位）
 export const FX_T = {displayL:50, displayS:36, titleM:28, titleS:27, titleXS:26, bodyM:24, labelL:22, labelM:21, labelS:20, microL:18} as const;
 
 const clamp = {extrapolateLeft:'clamp' as const, extrapolateRight:'clamp' as const};
 const BASE_FPS = 30;
-const q = (f:number)=>f; // 调用方已做 q()；本库直接使用传入帧
-const ease = (f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b],[from,to],{...clamp,easing:Easing.inOut(Easing.cubic)});
+// 原来这里还有 `q`（恒等量化）与 `ease`（easeInOutCubic）两个局部 helper，
+// 本文件从头到尾没用过 —— tsc TS6133。删掉，需要它们时从 index/其它模块取。
 const easeOutSoft = (f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b],[from,to],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
 const SPRINGS = {snappy:{damping:16,stiffness:200,mass:.8},soft:{damping:17,stiffness:132,mass:.86},bouncy:{damping:11,stiffness:160,mass:.9}} as const;
 const popS = (f:number,start:number,preset:keyof typeof SPRINGS='soft')=>spring({frame:f-start,fps:BASE_FPS,config:SPRINGS[preset]});
@@ -57,7 +57,10 @@ const exitStyle = (f:number,exitStart:number|undefined):React.CSSProperties=>{
 export const FitCard:React.FC<{
   x:number;y:number;w:number;h:number;pad?:number;borderColor?:string;lift?:number;z?:number;
   frame?:number;start?:number;exitStart?:number;children?:React.ReactNode;style?:React.CSSProperties;
-}> = ({x,y,w,h,pad=24,borderColor=C.line,lift=0.25,z=70,frame,start=0,exitStart,children,style})=>{
+  // `lift` 是入参但**从未用过**（tsc TS6133）：本件的阴影是硬偏移 `3px 3px 0 C.ink`
+  // （贴纸风），不是 paperShadow(lift) 那种柔影，所以 lift 无从生效。
+  // 类型里保留（调用方还在传），实现里不再声明，免得留一个看起来能调的假旋钮。
+}> = ({x,y,w,h,pad=24,borderColor=C.line,z=70,frame,start=0,exitStart,children,style})=>{
   const f = useF(frame);
   const p = popS(f,start,'soft');
   const opP = easeOutSoft(f,start,start+16);
@@ -101,7 +104,7 @@ export const Typewriter:React.FC<{
   multiline?:boolean;style?:React.CSSProperties;
 }> = ({text,fontSize=30,color=C.ink,fontFamily='Kai',fontWeight=700,start=0,cps=0.45,frame,cursor=true,cursorSticky=false,multiline=false,style})=>{
   const f = useF(frame);
-  const {shown, isDone, currentText} = getStreamingSlice(text, f, start, cps);
+  const {isDone, currentText} = getStreamingSlice(text, f, start, cps);
   // 光标：16 帧周期（约 0.53s，接近真实终端）+ 连续值软阶梯。9 帧方波在 30fps 下读作频闪。
   const blinkPhase = 0.5+0.5*Math.cos((f/16)*Math.PI*2);
   const showCursor = cursor && (!isDone || cursorSticky);

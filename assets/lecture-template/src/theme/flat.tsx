@@ -14,13 +14,28 @@ const palette: Theme['palette'] = {
   ink: '#191919',
   muted: '#6f6a63',
   blue: '#3b4ed8',
+  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
+  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
+  blueInk: '#3b4ed8',
   blueLight: 'rgba(59,78,216,0.17)',
   orange: '#f05f42',
+  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
+  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
+  orangeInk: '#bb4a33',
   orangeLight: 'rgba(240,95,66,0.17)',
   green: '#41d27b',
+  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
+  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
+  greenInk: '#277d49',
   greenLight: 'rgba(65,210,123,0.19)',
   gold: '#f0c63c',
+  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
+  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
+  goldInk: '#836c21',
   red: '#e8382a',
+  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
+  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
+  redInk: '#ce3225',
   navy: '#191919',
   paper: '#ffffff',
   paperWarm: '#f2f4f7',

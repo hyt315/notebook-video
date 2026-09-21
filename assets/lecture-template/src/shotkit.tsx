@@ -1,7 +1,6 @@
 import React from 'react';
 import {Easing, interpolate} from 'remotion';
 import {THEME} from './theme/active';
-import {useCanvas} from './theme/canvas';
 
 // ============================================================================
 // shotkit · 镜头层 v1（每个 shot 一段受限相机）
@@ -24,7 +23,10 @@ import {useCanvas} from './theme/canvas';
 //   - 无 3D 关键帧时走纯 translate+scale 路径，渲染结果与旧版逐像素一致。
 // ============================================================================
 
-export type ShotIntent = 'establish' | 'push-in' | 'pull-back' | 'pan-follow' | 'reveal' | 'micro-orbit';
+// `still` 补进来（tsc TS2367）：`stillCam` 的注释明写「still 是合法选择，但全片配额受限」，
+// 可类型里一直没有它 —— 于是 index.tsx 的 `s.cameraIntent !== 'still'` 被 tsc 判成
+// 「两个类型没有交集、这个比较永真」。补进来之后那句话才有意义（本片 8 镜都不是 still）。
+export type ShotIntent = 'still' | 'establish' | 'push-in' | 'pull-back' | 'pan-follow' | 'reveal' | 'micro-orbit';
 
 /** 相机关键帧：f=该 shot 的本地帧；x/y=注视点（设计坐标）；s=缩放。 */
 export type CamKey = {f: number; x: number; y: number; s: number; rotY?: number};
@@ -99,8 +101,11 @@ export const shotCam = (intent: ShotIntent, o: IntentOpts): CamKey[] => {
   const dur = o.dur ?? CAM_DUR.std;
   const end = o.duration;
   const holdEnd = Math.max(at + dur, end);
-  const head: CamKey[] = {f: 0, x: o.fromX ?? x, y: o.fromY ?? y, s: o.from ?? 1};
-  const tail: CamKey[] = {f: end, x, y, s: o.to ?? o.from ?? 1};
+  // ⚠️ tsc TS2739：这两个原本声明成 `CamKey[]` 却赋了一个关键帧对象 ——
+  // 于是 shotCam 返回的是 `[CamKey[], CamKey, CamKey[]]` 这种**嵌套数组**，
+  // 不是合法关键帧序列，camAt 读到的是垃圾（渲染不报错，只是运镜不对）。
+  const head: CamKey = {f: 0, x: o.fromX ?? x, y: o.fromY ?? y, s: o.from ?? 1};
+  const tail: CamKey = {f: end, x, y, s: o.to ?? o.from ?? 1};
   switch (intent) {
     // 章节开场建立空间：先稳定 0.5s 再微推，收在 1.03
     case 'establish':
@@ -132,7 +137,7 @@ export const stillCam = (duration: number, x = STAGE.cx, y = STAGE.cy, s = 1): C
 ];
 
 /** 插值求某帧的相机状态。 */
-export const camAt = (keys: CamKey[], f: number): {x: number; y: number; s: number; rotY: number} => {
+export const camAt = (keys: readonly CamKey[], f: number): {x: number; y: number; s: number; rotY: number} => {
   if (keys.length === 0) return {x: STAGE.cx, y: STAGE.cy, s: 1, rotY: 0};
   if (keys.length === 1 || f <= keys[0].f) {
     const k = keys[0];
@@ -172,7 +177,7 @@ export type SafeViolation = {f: number; axis: 'x' | 'y'; need: number; got: numb
  * 出界数学证明：逐关键帧检查 anchor 是否完整落在可见窗内。
  * 纯算术、零渲染。脚本 scripts/validate-shot-motion.py 用同一套数学复核 shots.json。
  */
-export const safeCheck = (keys: CamKey[], anchor: Anchor, zoomMax: number): SafeViolation[] => {
+export const safeCheck = (keys: readonly CamKey[], anchor: Anchor, zoomMax: number): SafeViolation[] => {
   const bad: SafeViolation[] = [];
   const span = Math.max(...keys.map((k) => k.f), 1);
   const step = Math.max(1, Math.round(span / Math.max(2, Math.ceil(span / 8))));
@@ -195,7 +200,9 @@ export const safeCheck = (keys: CamKey[], anchor: Anchor, zoomMax: number): Safe
 // 只做 transform/opacity；Chrome 与字幕不在其内，因此永不被运镜带动。
 // ---------------------------------------------------------------------------
 export const ShotCamera: React.FC<{
-  keys: CamKey[];
+  // `readonly`：调用方传的是 shots.ts（`as const`）里解析出来的关键帧字面量，
+  // 那是只读元组，赋给 `CamKey[]` 会 TS2322。本件只读不写，放开只读正好对上。
+  keys: readonly CamKey[];
   /** 本镜本地帧 */
   f: number;
   /** anchor 与 zoom 上限：开发期断言用，生产期为 0 开销 */

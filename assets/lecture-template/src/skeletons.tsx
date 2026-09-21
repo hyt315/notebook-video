@@ -1,5 +1,5 @@
 import React from 'react';
-import {Easing, interpolate, spring} from 'remotion';
+import {Easing, interpolate} from 'remotion';
 import {THEME} from './theme/active';
 
 // ============================================================================
@@ -23,11 +23,11 @@ import {THEME} from './theme/active';
 // ============================================================================
 
 const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
-const BASE_FPS = 30;
 const easeIO = (f: number, a: number, b: number, from = 0, to = 1) => interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.inOut(Easing.cubic)});
 const easeOut = (f: number, a: number, b: number, from = 0, to = 1) => interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.bezier(0.16, 1, 0.3, 1)});
 const easeIn = (f: number, a: number, b: number, from = 0, to = 1) => interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.in(Easing.quad)});
-const popS = (f: number, start: number, stiffness = 150) => spring({frame: f - start, fps: BASE_FPS, config: {damping: 17, stiffness, mass: 0.86}});
+// popS / BASE_FPS 已删（tsc TS6133）：本文件的入场一律走上面三条显式曲线，
+// popS 没有任何调用方，而 BASE_FPS 只服务于它 —— 连带 spring 也不再需要。
 /** 单向脉冲：0→1→0（拿来做「点一下」的强调，而不是永久呼吸）。 */
 const pulse = (f: number, at: number, dur = 14) => Math.sin(Math.PI * Math.max(0, Math.min(1, (f - at) / dur)));
 
@@ -72,7 +72,9 @@ export const Corridor: React.FC<{
   startBanner?: {at: number; text: string};
   /** 站点标签字号（默认 28）。标签是长 ASCII（如包名）时传 22，避免换行破坏对称。 */
   labelSize?: number;
-}> = ({x, y, w, f, stations, from, to, laneY = 96, z = 72, startBanner, labelSize = 28}) => {
+// `from`/`to` 也是入参但从未使用（tsc TS6133）：本件的行进完全由 stations[].at 驱动，
+// 这两个旋钮没有接线。类型保留、实现不声明。
+}> = ({x, y, w, f, stations, laneY = 96, z = 72, startBanner, labelSize = 28}) => {
   const C = THEME.palette;
   const n = stations.length;
   const pts = stations.map((_, i) => x + (w / Math.max(1, n - 1)) * i);
@@ -140,7 +142,7 @@ export const Corridor: React.FC<{
         const detP = easeOut(f, s.at + 8, s.at + 22);
         return (
           <div key={s.label} style={{position: 'absolute', left: pts[i] - 150, top: 40 + laneY + STATION_DY, width: 300, textAlign: 'center'}}>
-            <div style={{fontFamily: 'Space', fontSize: 17, color: C.blue, marginBottom: 4, opacity: numP, letterSpacing: 6 * (1 - numP)}}>0{i + 1}</div>
+            <div style={{fontFamily: 'Space', fontSize: 17, color: C.blueInk, marginBottom: 4, opacity: numP, letterSpacing: 6 * (1 - numP)}}>0{i + 1}</div>
             <div style={{fontSize: labelSize, fontWeight: 700, color: on ? color : C.muted, opacity: on ? labP : 0.4, transform: `translateY(${(1 - labP) * 14}px)`, whiteSpace: labelSize <= 24 ? 'nowrap' : undefined}}>{s.label}</div>
             {s.detail && <div style={{fontSize: 21, fontWeight: 600, color: C.muted, marginTop: 6, opacity: detP, transform: `translateY(${(1 - detP) * 10}px)`}}>{s.detail}</div>}
           </div>

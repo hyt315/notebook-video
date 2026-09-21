@@ -134,7 +134,8 @@ items.map((x, i) => <项 style={enterAt(f, at(2) + i * 8)} />)  // 同句内最�
 | `skeleton` / `media` / `live` | 骨架、视觉介质、活性组件 | `validate-composition` |
 | `camera` / `anchor` | 镜头配方与必须可见矩形 | `validate-shot-motion` |
 | `chapter` | 章节归属（运镜配额按章统计） | `validate-shot-motion` |
-| `zones` / `bottomFill` | 功能分区数（3–5）、下 1/4 是否填满 | `validate-composition` |
+| `zones` | 功能分区数（3–5） | `validate-composition` |
+| `bottomFill` | 下 1/4 密度的**声明位**：`validate-composition` 只查这个字段**在不在**（缺字段=配置错误）；**"到底填满了没有"由渲染期 `FillGate` 实测**（量信息元素的最低边 vs y=876，量的是画面而不是声明）。⚠️ 2026-09-21 降级：这个字段的值由生成分镜表的脚本自己写死 `true`，所以"值 == true"这条判据结构上不可能失败（成片实测 17/21 镜下 1/4 是空的，它一次都没响） | `FillGate`（渲染期） |
 | `contentBand` / `cover` | 内容带与背景装饰区的关系 | `validate-shot-motion` |
 | `transition` / `entry` | 转场与入场方式（多样性） | `validate-composition` |
 | `beats` | 状态变化帧（节奏判据） | `validate-composition` |

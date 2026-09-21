@@ -1,6 +1,6 @@
 ---
 name: notebook-video
-version: 3.1.0
+version: 3.2.0
 description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion. The default visual route is pure code-drawn composition (SVG diagrams, mascots, progressive checklists, annotation stickers) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes a per-shot restricted camera with an out-of-bounds proof, four scene skeletons with a content-to-medium routing table, a cue-indexed shot table, native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering and ten automated quality gates (including a frame-prop-name gate that catches the highest-frequency silent failure in this codebase). Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
 ---
 
@@ -70,11 +70,11 @@ Read only what the current production needs. **写任何场景之前，先读前
 > 13. 给槽内组件传宽度前先算 `mainW = w − pad×2 − railW − 18`。
 > 14. 绝对定位构件的 `x/y` 相对**最近的定位祖先**，与文档流标题共用容器原点会精确重叠；**flex 子项若只含绝对定位子元素，必须显式给宽高**，否则宽度塌成 0、多张卡会叠在同一点。
 > 15. 整幅底托必须 `z={-1}` 且径向羽化；正 z 会把整镜内容压成半透明。
-> 16. 下 1/4 必须填满（底边接近 y=876）；面板下半空洞就是 PPT。
+> 16. 下 1/4 必须填满（底边接近 y=876）；面板下半空洞就是 PPT。**判据在渲染期 `FillGate`**（实测信息元素的最低边，不是读 `shots.json` 里那个声明字段——见 `references/composition-gate.md` 的 P0-4 降级说明）。
 > 17. 页眉 / 章节卡 / 字幕放在 `ShotCamera` **之外**。
 > 18. 写场景文件后按顺序跑 `resolve-shots.py` → 构建期门禁，**P0 必须 = 0** 才允许渲染。
 > 19. 门禁失败只允许改内容（换骨架 / 换介质 / 补元素 / 改高度），**不许改阈值、不许改判据**；连续两次不过就停下来报告。
-> 20. 首次渲染后读控制台：`OverlapGate` / `CardFitGate` 的覆盖率与告警必须清零或显式 `data-gate-allow`；拿不准就先出接触表看图。
+> 20. 首次渲染后读控制台：`OverlapGate` / `ClippingGate` / `CardFitGate` / `FillGate` 的覆盖率与告警必须清零或显式 `data-gate-allow`；拿不准就先出接触表看图。T3 的 `validate-motion-gaps` 也要跑（画面真的没动这类缺陷只有它能抓）。
 
 ## Create a project
 
@@ -92,6 +92,12 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-p
 - Four skins, chosen once at kickoff: `paper` (default), `cel`, `sticker`, `flat`. Themes swap palette,
   card skin, background decoration and subtitle chrome only — every coordinate, type scale, motion
   contract and gate is shared.
+- **Text-safety colours (`*Ink`).** Every accent ships as a pair: the original (`blue`, `orange`,
+  `green`, `gold`, `red`) and a WCAG-derived ink variant (`blueInk`, `orangeInk`, …) for the same hue.
+  Fills and strokes keep the original; **text (`color:`) always uses the ink variant** — the original
+  reads 2–3:1 on paper, well under the 4.5:1 that body text needs. `validate-presentation.py` enforces
+  both halves (inks must pass, and any palette key used as `color:` is measured), and `headerAccent` /
+  `headerSub` count as text positions too. Details: [references/theme-system.md](references/theme-system.md).
 - Three locked canvases at native 30 fps: 2560×1440 (16:9), 1920×1440 (4:3), 1440×1920 (3:4). The
   bundled example film is authored in the **16:9 design space**; 4:3 / 3:4 need their own layout pass —
   letterbox scaling is not adaptation.
@@ -107,7 +113,8 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-p
   ④ author scenes     four skeletons + media routing; each shot wrapped in ShotCamera(keys, anchor)
   ⑤ build-time gates  both must report P0 = 0
   ⑥ render            render + loudness normalisation (−16 LUFS / −1.5 dBTP)
-  ⑦ runtime gates     CaptionFitGate / CardFitGate / OverlapGate / SlotGuard — read the console
+  ⑦ runtime gates     CaptionFitGate / CardFitGate / OverlapGate / ClippingGate / FillGate / SlotGuard — read the console
+                      (then validate-motion-gaps on the finished MP4: "画面真的没动" is only visible there)
   ⑧ package           MP4 + contact sheet + editable source ZIP
 ```
 
@@ -138,20 +145,24 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" review-frames ./notebook-video-pro
 |---|---|---|---|
 | `resolve-shots.py` | build | timeline gaps/overlaps, coverage ≠ duration, cue index out of range | yes |
 | `validate-shot-motion.py` | build | anchor leaves the frame at any keyframe, zoom over budget, pan beyond the zoom-derived budget, camera-move quotas, **unknown intent names**, **a declared camera move that does not actually move** | yes (P0) |
-| `validate-composition.py` | build | adjacent scenes sharing a skeleton, <3 skeletons, no live component in an explanation scene, **a `live` name that does not exist in the scene file**, <3 media, **unknown transition/entry/media names**, zones out of 3–5, lower quarter not filled, **`explanation:false` used to bypass density**, hero size, shot-length spread, repeated骨架 fingerprints, beat gaps (aggregated with frame ranges) | yes (P0) |
+| `validate-composition.py` | build | adjacent scenes sharing a skeleton, <3 skeletons, no live component in an explanation scene, **a `live` name that does not exist in the scene file**, <3 media, **unknown transition/entry/media names**, zones out of 3–5, lower quarter not filled, **`explanation:false` used to bypass density**, hero size, shot-length spread, repeated骨架 fingerprints, beat gaps (aggregated with frame ranges), **a beat index past the end (`b[k]` / `SHOTS.Sx.beats[k]` — both spellings; the value is `undefined`, so it either throws per frame or the element never appears)** | yes (P0) |
 | `validate-audio-levels.py` | build | **a sound-effect asset peaking below −12 dBFS** — it gets attenuated again at mix time and ends up inaudible | yes (P0) |
 | `validate-presentation.py` | build | **讲与画对不对得上、读不读得过来**：beat 必须落在它声明的那句/那一镜内且不提前剧透、每条 cue 至少有一拍；字幕 ≤9 加权字/秒、单行 ≤16、≤2 行；字号绝不低于 13px、正文色对比度 ≥4.5:1（WCAG 2.2 SC 1.4.3）。详见 [references/presentation-gate.md](references/presentation-gate.md) | yes (P0) |
 | `validate-frame-props.py` | build | **`f={f}` passed to an fxkit component (or `frame={f}` to the other modules)** — silently falls back to the global frame and kills the entrance animation | yes (P0) |
 | `CaptionFitGate` | render | caption wider than the safe width, measured with the **current canvas and skin's real weight/spacing** | yes |
 | `CardFitGate` | render | content taller/wider than its card (`scrollHeight > clientHeight`, 6px tolerance; clips only), waits for fonts, logs coverage every 5s | yes |
 | `OverlapGate` | render (15-frame grid **+ every shot boundary, beat and camera keyframe**) | text-vs-text overlap and paint-order occlusion using real glyph rects; gradient backgrounds count as opaque; header layer (z=140) included | `mode="block"` in the bundled films |
+| `ClippingGate` | render (same sampling as `OverlapGate`) | **图形被裁**：SVG/图形元素的真实 rect 越出最近的"会裁切"祖先（HTML 的 `overflow≠visible` 祖先，或所属 `<svg>` 视口；显式 `overflow:visible` 的 svg 按计算样式判、不算越界）——`CardFitGate` 只管 div/span 里的文字、`OverlapGate` 只管文字互相压，两者都看不见"缺了半边的球"（实测 S19 走廊圆心算在 x=0，左半边被 svg 视口裁掉，零报错） | `mode="block"` in the bundled films |
+| `FillGate` | render (same sampling) | **下 1/4 实测密度**：信息元素（有文字/有边框/有描边）rect 并集的最低边 vs y=876（±24 容差），z≥140 的子树跳过。这是 P0-4 的**真实判据**——构建期只查 `bottomFill` 字段在不在（那个字段是生成器自己写死的 `true`，值判据结构上不可能失败） | warn（观感线；"画错了"那三类才硬拦） |
 | `SlotGuard` | render (output path, inside `StageFrame`) | **fill of the main slot**: union height of the innermost content elements ÷ slot height; speaks up below 35% and prints the slot's `mainW×mainH` — catches "slot was big enough, content left it empty" (measured: a 428px slot used 11%) | warn |
+| `validate-motion-gaps.py` | **post-render (T3, needs the MP4)** | **画面真的没动**：ffmpeg `freezedetect` 逐帧比对，连续"几乎完全相同"超过阈值（默认按镜长比例）即 P0。⚠️ 必须先裁掉字幕带，否则逐字上屏的字幕会把每一段静止都遮掉 | yes (P0) |
 
 Intentional overlaps (shot handoff, header swap, metric value replacement) must be declared with
 `data-gate-allow`; the allow-list may never hide two different pieces of information colliding.
 
-**A gate that prints nothing must be distinguishable from a gate that never ran.** `CardFitGate` and
-`OverlapGate` log a coverage line every 5 seconds (`已测 N 个字…`); if you see no coverage line at all,
+**A gate that prints nothing must be distinguishable from a gate that never ran.** `CardFitGate`,
+`OverlapGate`, `ClippingGate` and `FillGate` log a coverage line every 5 seconds (`已测 N 个字…` /
+`扫过 N 个，无被裁` / `下 1/4 已填`); if you see no coverage line at all,
 the gate did not execute — treat that as a failure, not as a pass.
 
 Validation after rendering:

@@ -93,7 +93,8 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
         │
   ⑥ Render ── Remotion render + loudness normalisation (-16 LUFS / -1.5 dBTP)
         │
-  ⑦ Runtime gates + delivery ── CaptionFitGate / CardFitGate / OverlapGate / SlotGuard
+  ⑦ Runtime gates + delivery ── CaptionFitGate / CardFitGate / OverlapGate / ClippingGate / FillGate / SlotGuard
+                                (then validate-motion-gaps on the MP4: "nothing actually moved" is only visible there)
                                 → 2K MP4 + contact sheet + editable source ZIP
 ```
 
@@ -292,7 +293,7 @@ scenes.tsx          Scene layer (8-shot example film; rewrite this layer per top
   A: Four layers, all backed by gates — ① four structurally different skeletons with **no adjacent repeats**; ② **at least three visual media per film** and at least one live component per explanation scene; ③ at least three camera moves per chapter (budgeted by film length), so the framing really changes; ④ a gate blocks the render when P0 is non-zero.
 
 - **Q: How do you guarantee text never collides or gets covered?**\
-  A: A runtime **`OverlapGate`** samples every 15 frames and detects both text-vs-text overlap and paint-order occlusion (measuring real glyph rects with `Range.getClientRects()`), plus **`SlotGuard`** for content wider than its slot. Intentional overlaps (shot handoff, header swap, metric value replacement) must be declared with `data-gate-allow` — the allow-list may never hide two different pieces of information colliding.
+  A: At runtime **`OverlapGate`** samples every 15 frames and detects both text-vs-text overlap and paint-order occlusion (measuring real glyph rects with `Range.getClientRects()`), **`ClippingGate`** catches graphics clipped by an `overflow` ancestor or an `<svg>` viewport (the text gates cannot see a half-missing shape), **`FillGate`** measures whether the lower quarter is really filled (lowest edge of real information elements vs y=876 — the build-time check only reads whether the declared field exists), and **`SlotGuard`** reports how much of `StageFrame`'s main slot is actually used. Intentional overlaps (shot handoff, header swap, metric value replacement) must be declared with `data-gate-allow` — the allow-list may never hide two different pieces of information colliding. After the render, run **`validate-motion-gaps`** — a stretch where nothing moves is only visible there.
 
 - **Q: Do I need to re-time everything after editing the script?**\
   A: No. The shot table only references cues; frame numbers, camera keyframes and SFX pinning are all derived from the TTS word timestamps by `resolve-shots.py`.

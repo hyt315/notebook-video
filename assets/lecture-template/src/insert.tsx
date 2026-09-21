@@ -22,9 +22,7 @@ import {THEME} from './theme/active';
 // ============================================================================
 
 const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
-const BASE_FPS = 30;
-const easeOut = (f: number, a: number, b: number, from = 0, to = 1) =>
-  interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.bezier(0.16, 1, 0.3, 1)});
+// 原来还有 BASE_FPS 与 easeOut 两个局部 helper，本文件从头到尾没用过（tsc TS6133）。
 const easeIO = (f: number, a: number, b: number, from = 0, to = 1) =>
   interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.inOut(Easing.cubic)});
 

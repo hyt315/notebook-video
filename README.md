@@ -86,7 +86,8 @@
         │
   ⑥ 渲染 ────── Remotion 渲染 + 响度归一（-16 LUFS / -1.5 dBTP）
         │
-  ⑦ 渲染期门禁 + 交付 ─ CaptionFitGate / CardFitGate / OverlapGate / SlotGuard
+  ⑦ 渲染期门禁 + 交付 ─ CaptionFitGate / CardFitGate / OverlapGate / ClippingGate / FillGate / SlotGuard
+                        （成片之后还要跑 validate-motion-gaps：画面"真的没动"只有它抓得到）
                         → 2K MP4 + 24 帧接触表 + 可编辑源码 ZIP
 ```
 
@@ -233,7 +234,7 @@ notebook-video/
 ├── SKILL.md                          # 核心技能定义与制作工作流
 ├── manifest.json                     # 技能元数据（版本号在此）
 ├── README.md / README.en.md          # 中英文说明
-├── CHANGELOG.md                      # 版本发布记录（当前 v3.1.0）
+├── CHANGELOG.md                      # 版本发布记录（当前 v3.2.0）
 ├── assets/
 │   ├── demo/                         # 成片与动图预览
 │   ├── lecture-template/             # 官方模板（纯代码路线，含 8 镜示例片）
@@ -293,7 +294,7 @@ scenes.tsx         场景层（示例片 8 镜；换题材重写这一层）
   A：靠四层，而且都有门禁兜底：① 四种构图不同的骨架，**相邻场景不得同款**；② **每支片 ≥3 种视觉介质**、每个讲解场景至少一个会随旁白变状态的组件；③ 每章至少 3 次运镜（全片按片长配额），景别真的会变；④ 门禁 P0 不为 0 就**拒绝渲染**。
 
 - **Q：怎么保证文字不会互相压、不会被盖住？**\
-  A：渲染期有 `OverlapGate`（每 15 帧抽样，检测文字两两重叠与绘制顺序遮挡，用 `Range` 量真实字形矩形）与 `SlotGuard`（量 `StageFrame` 的 main 槽**占用了百分之几**——槽给足了高度、内容却只留一行字，会报出「只用了 11%」）——它们会指出"哪一帧、哪两处、压了多少 px"。**有意的重叠**（镜头交接、标题滑变、数值替换）必须显式标 `data-gate-allow`，不允许用白名单掩盖两个不同信息互相压字。
+  A：渲染期有 `OverlapGate`（每 15 帧抽样，检测文字两两重叠与绘制顺序遮挡，用 `Range` 量真实字形矩形）、`ClippingGate`（图形被 `overflow` 祖先或 `<svg>` 视口裁掉一块——文字门禁看不见这类"缺了半边的球"）、`FillGate`（下 1/4 到底填没填：量信息元素的最低边 vs y=876，构建期那条只查声明字段在不在）与 `SlotGuard`（量 `StageFrame` 的 main 槽**占用了百分之几**——槽给足了高度、内容却只留一行字，会报出「只用了 11%」）——它们会指出"哪一帧、哪两处、压了多少 px"。**有意的重叠**（镜头交接、标题滑变、数值替换）必须显式标 `data-gate-allow`，不允许用白名单掩盖两个不同信息互相压字。成片之后再跑 `validate-motion-gaps`：连续静止超过阈值（"画面上真的没动"）只有它能抓到。
 
 - **Q：字幕为什么不会溢出或被裁？**\
   A：`CaptionFitGate` 在真实渲染浏览器里用**当前画布与当前主题**的真实字号/字重/字距测量每一条字幕；超过安全宽直接拒绝渲染。

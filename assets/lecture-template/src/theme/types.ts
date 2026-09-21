@@ -8,10 +8,14 @@ import type {ModeSpec} from './canvas';
 
 export interface ThemePalette {
   ink: string; muted: string;
-  blue: string; blueLight: string;
-  orange: string; orangeLight: string;
-  green: string; greenLight: string;
-  gold: string; red: string; navy: string;
+  blue: string;
+  blueInk: string; blueLight: string;
+  orange: string;
+  orangeInk: string; orangeLight: string;
+  green: string;
+  greenInk: string; greenLight: string;
+  gold: string;
+  goldInk: string; red: string; redInk: string; navy: string;
   paper: string; paperWarm: string; paperBase: string;
   line: string; lineOrange: string; lineBlue: string; lineGreen: string;
   white: string;

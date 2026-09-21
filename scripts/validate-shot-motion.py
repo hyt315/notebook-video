@@ -187,8 +187,8 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
     # ---- 背景装饰区可读性：内容压到装饰区必须声明 cover ----
     decor = DECOR_ZONES.get(theme, [])
     for s in shots:
-        if s.get("bottomFill") is False:
-            continue
+        # 2026-09-21：这里原来只在 `bottomFill is False` 时报（生成器永远写 True → 死门）。
+        # 与 validate-composition 同步降级：声明位只查存在性，实测交给渲染期 FillGate。
         band = s.get("contentBand")
         if not band or not decor:
             continue
@@ -197,7 +197,48 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
                 if not s.get("cover"):
                     p1.append({"id": s["id"], "issue": f"内容带与 {theme} 背景装饰区重叠，但未声明 cover（文字可能被装饰吃掉）"})
                 break
+    p1 += check_beat_gaps(shots)
     return p0, p1
+
+
+# ---------------------------------------------------------------------------
+# 节拍空档（P1，**代理指标**，不是判据）
+#
+# 2026-09-21 加。起因：用户在成片 2:58 报「那个组件它没有动」——S19 里走廊停稳、
+# 下一件还没入场，画面 2.5 秒没动，而当时**十道门禁全部 PASS**。
+#
+# ⚠️ **先离线标定，再定阈值**（实测数据，别拍脑袋）：
+#     本片 21 镜的「相邻节拍最大间隔 / 镜长」：中位 31.6%、最大 56.9%。
+#     · 按调研建议的 **40%** 判：S8(56.9%) / S4(45.9%) / S13(45.3%) / S14(44.8%) /
+#       S15(43.5%) / S17(43.5%) / S11(41.3%) —— **七张已被用户接受的镜会被判死**；
+#     · 而真正出事的那一镜 **S19 只有 30.4%** —— **按 40% 判它照样 PASS**。
+#   根因：beats 是**旁白节拍**，不是**画面事件**。元素绑在某一拍上，但它的入场动画
+#   可能在 30 帧内就演完了，离下一拍还有几十帧什么都不动（S19 正是如此）。
+#   所以这条**只当"这一镜是不是整段没词"的粗筛**，定在 60%（抓明显异常，放过已被接受的片）；
+#   真正的判据是 `validate-motion-gaps.py`（量成片里画面到底动没动，T3 后验）。
+BEAT_GAP_MAX_RATIO = 0.60
+
+
+def check_beat_gaps(shots: list[dict]) -> list[dict]:
+    out: list[dict] = []
+    for s in shots:
+        beats = sorted(int(b) for b in (s.get("beats") or []))
+        dur = int(s.get("duration") or 0)
+        if dur <= 0 or not beats:
+            continue
+        marks = [0] + beats + [dur]
+        gaps = [marks[i + 1] - marks[i] for i in range(len(marks) - 1)]
+        worst = max(gaps)
+        ratio = worst / dur
+        if ratio > BEAT_GAP_MAX_RATIO:
+            out.append(
+                {
+                    "id": s["id"],
+                    "issue": f"相邻节拍最大间隔 {worst} 帧 = 镜长的 {ratio * 100:.0f}%（上限 {BEAT_GAP_MAX_RATIO:.0%}）："
+                    f"这一段没有任何新事件绑定，旁白在讲、画面容易被读作停住",
+                }
+            )
+    return out
 
 
 DECOR_ZONES: dict[str, list[dict]] = {

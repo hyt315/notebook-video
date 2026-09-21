@@ -1,5 +1,5 @@
 import React from 'react';
-import {Easing, interpolate, interpolateColors, spring, useCurrentFrame} from 'remotion';
+import {interpolate, interpolateColors, spring, useCurrentFrame} from 'remotion';
 import {THEME} from './theme/active';
 import {TYPE, LineIcon} from './kit';
 
@@ -19,14 +19,12 @@ import {TYPE, LineIcon} from './kit';
 // ============================================================================
 
 const C = THEME.palette;
-const Paper = THEME.Paper;
+// `Paper` / `clamp` / `easeOutSoft` 三个局部 helper 本文件从未用上（tsc TS6133）；
+// easeOutSoft 是 clamp 与 Easing 的唯一使用者，三个一起删，连带去掉 Easing 的 import。
 const BASE_FPS = 30;
-const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
 // 与 index.tsx 的 q() 同义：工程里 MOTION_FPS == BASE_FPS == 30，步长为 1，量化即恒等。
 // （方向说明：是 index 的量化在 step=1 时退化为恒等，并非本模块另起一套。）
 const q = (f: number) => f;
-const easeOutSoft = (f: number, a: number, b: number, from = 0, to = 1) =>
-  interpolate(f, [a, b], [from, to], {...clamp, easing: Easing.bezier(.16, 1, .3, 1)});
 const smoothStep = (v: number) => { const t = Math.max(0, Math.min(1, v)); return t * t * (3 - 2 * t); };
 // 与 index.tsx 的三档**逐参数一致**：v3.0.1 迁移时这两个值被写成 20/190 与 12/170，
 // 与工程其它地方（fxkit.tsx / index.tsx）不一致，会让搬到本模块的组件动感偏移。

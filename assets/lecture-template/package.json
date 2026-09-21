@@ -8,7 +8,8 @@
   "scripts": {
     "sync": "node sync-render-inputs.cjs",
     "render": "npm run sync && remotion render NotebookVideoFilm renders/notebook-video-visual-director.mp4 --entry-point=src/index.tsx --codec=h264 --crf=16 --concurrency=4",
-    "still": "npm run sync && remotion still NotebookVideoFilm renders/preview.png --entry-point=src/index.tsx --frame=260"
+    "still": "npm run sync && remotion still NotebookVideoFilm renders/preview.png --entry-point=src/index.tsx --frame=260",
+    "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@cto.af/linebreak": "^4.0.3",
@@ -57,6 +58,8 @@
     "@types/d3-sankey": "^0.12.5",
     "@types/d3-scale": "^4.0.9",
     "@types/d3-shape": "^3.1.7",
-    "@types/react-syntax-highlighter": "^15.5.13"
+    "@types/qrcode": "^1.5.6",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "typescript": "^5.9.3"
   }
 }

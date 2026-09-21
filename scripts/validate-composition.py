@@ -259,6 +259,21 @@ def import_integrity(project: Path) -> tuple[list[dict], str]:
     return problems, note
 
 
+def _shot_body(scene_text: str, sid: str) -> str:
+    """切出某一镜的组件函数体（`const S19History: React.FC<...> = ...` 到下一条 `const S1x...`），
+    并去掉注释 —— 注释里写到的 `b[3]` 不算"用过一次"。"""
+    marks = [(m.group(1), m.start()) for m in re.finditer(r"const (S\d+)[A-Za-z0-9_]*: React\.FC<", scene_text)]
+    for i, (name, start) in enumerate(marks):
+        if name != sid:
+            continue
+        end = marks[i + 1][1] if i + 1 < len(marks) else len(scene_text)
+        body = scene_text[start:end]
+        body = re.sub(r"/\*.*?\*/", "", body, flags=re.S)
+        body = re.sub(r"//[^\n]*", "", body)
+        return body
+    return ""
+
+
 def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], list[str]]:
     p0: list[dict] = []
     p1: list[dict] = []
@@ -345,8 +360,61 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
             p0.append({"id": sid, "issue": "缺少 zones（本镜功能分区数）"})
         elif not isinstance(zones, int) or not (ZONE_RANGE[0] <= zones <= ZONE_RANGE[1]):
             p0.append({"id": sid, "issue": f"功能分区 {zones!r}，契约要求 {ZONE_RANGE[0]}–{ZONE_RANGE[1]} 个整数"})
-        if s.get("bottomFill") is not True:
-            p0.append({"id": sid, "issue": "下 1/4 未填满（底边须接近 y=876）；画面下半空洞是 PPT 感的主要来源"})
+        # 逐镜取函数体，再去注释后扫描（两件都是实测踩出来的）：
+        #   · 整份文件一起扫会把"某镜用了 b[9]"算到每一镜头上（夹具只改 S19 却报了 21 条）；
+        #   · 不去注释会把解释性注释里写到的 `b[3]` 当成真代码（实测第一次跑误报两镜）。
+        code_only = "" if not scene_text else _shot_body(scene_text, sid)
+        if code_only:
+            # ---- beats 下标越界（2026-09-21 加。**这条本来能救两次事故**）----
+            # 场景里写 `SHOTS.Sx.beats[k]` 取节拍，而 beats 的长度由分镜的 cue 区间决定。
+            # 一旦镜里只有 3 拍而场景写了 `b[3]`：
+            #   · 传给 `interpolate`/`ClipReveal` 的 `from` 就是 undefined → 抛
+            #     "inputRange must contain only numbers" → **整帧渲染失败**（S17 实测）；
+            #   · 传给某个比较（`f >= at`）就**永远为假** → 那件东西**从头到尾不出现**，
+            #     不报错、不警告（S15 的第三条聊天消息实测从未出现）。
+            # 两种都不该靠人眼发现：这里用静态扫描把每个 `b[k]` 的 k 与真实拍数比一遍。
+            #
+            # ⚠️ 2026-09-21 收窄盲区：**同一个错误有两种写法，只认一种等于没拦**。
+            # 原来只扫本地别名 `b[k]`（`const b = SHOTS.Sx.beats` 之后再取下标）——
+            # 写成全路径 `SHOTS.S19.beats[9]` 就整条漏掉。现在两种都认：
+            #   ① 别名：`b[k]`  → 与本镜拍数比；
+            #   ② 全路径：`SHOTS.<id>.beats[k]` → 与被引用的那一镜的拍数比（镜号不一定是本镜）；
+            #      引用了不存在的镜号也一并报（那是另一种真错，同样只会静默拿到 undefined）。
+            shots_list = data.get("shots") if isinstance(data.get("shots"), list) else data
+            by_id = {x.get("id"): x for x in shots_list if isinstance(x, dict)}
+            rec = by_id.get(sid)
+            beats_len = len((rec or {}).get("beats") or [])
+            too_far: dict[str, str] = {}   # 去重键 → 报告文本，同一处只报一次
+
+            def mark(expr: str, k: int, n: int, subject: str) -> None:
+                if n and k >= n and expr not in too_far:
+                    too_far[expr] = (f"场景里用了 {expr}，但{subject}只有 {n} 拍（下标 0–{n - 1}）："
+                                     f"取到 undefined —— 要么抛错、要么那件东西永远不出现")
+
+            if beats_len:
+                for mm in re.finditer(r"\bb\[(\d+)\]", code_only):
+                    mark(f"b[{mm.group(1)}]", int(mm.group(1)), beats_len, "本镜")
+            for mm in re.finditer(r"\bSHOTS\.(\w+)\.beats\[(\d+)\]", code_only):
+                ref = mm.group(1)
+                if ref not in by_id:
+                    p0.append({
+                        "id": sid,
+                        "issue": f"场景里引用了 SHOTS.{ref}.beats，但分镜表里没有 {ref} 这一镜："
+                                 f"取到 undefined —— 要么抛错、要么那件东西永远不出现",
+                    })
+                    continue
+                ref_idx = len((by_id.get(ref) or {}).get("beats") or [])
+                mark(f"SHOTS.{ref}.beats[{mm.group(2)}]", int(mm.group(2)), ref_idx, f"{ref} 这一镜")
+            for _expr in sorted(too_far):
+                p0.append({"id": sid, "issue": too_far[_expr]})
+        # 2026-09-21 降级（**这道门原来永远不会失败**）：它校验 `bottomFill == True`，
+        # 而这个字段是生成分镜表的脚本**自己写死的常量**（make-shots.py 每一镜都写 True），
+        # resolve-shots 再原样透传 —— 生成器写 True、门禁要求 True，结构上不可能报错。
+        # 实测成片里 17/21 镜的下 1/4 是空的，它一次都没响。
+        # 现在只查"字段在不在"（缺字段是真配置错误），真正的判据交给渲染期的 FillGate
+        # （实测信息元素的最低边 vs y=876，量的是画面而不是声明）。
+        if "bottomFill" not in s:
+            p0.append({"id": sid, "issue": "缺 bottomFill 字段（下 1/4 密度的声明位；实测判据见渲染期 FillGate）"})
 
     # ---- P0-3 镜头意图多样性 ----
     intents = {s.get("cameraIntent", "still") for s in shots}

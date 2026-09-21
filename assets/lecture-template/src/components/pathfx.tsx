@@ -12,7 +12,6 @@ import {
   makeStar,
   makeTriangle,
   Pie,
-  type ShapeInfo,
 } from '@remotion/shapes';
 import {TransitionSeries, linearTiming} from '@remotion/transitions';
 import {fade} from '@remotion/transitions/fade';
@@ -50,6 +49,11 @@ import {prog} from './ui';
 // ============================================================================
 
 const C = THEME.palette;
+
+// `ShapeInfo` 是 `@remotion/shapes` 内部 utils/shape-info 的类型，**没有从包根导出**
+// （tsc TS2305，此前一直靠 `any` 混过去）。用 ReturnType 就地取：与库里那个类型
+// 逐字段相同，且不依赖深路径导入。
+type ShapeInfo = ReturnType<typeof makeRect>;
 
 /**
  * PathDraw — 描线生长。
@@ -164,12 +168,17 @@ export const SHAPES = {
   circle: (r = 250) => makeCircle({radius: r}),
   spark: (w = 440, h = 440) => makeSpark({width: w, height: h}),
   /** 气泡/标注框：左下方带一个尖角，正好接引线 */
-  callout: (w = 460, h = 260, tipW = 90) => makeCallout({width: w, height: h, tipWidth: tipW}),
+  // ⚠️ tsc 的 TS2353/TS2345 在这里抓出四处**静默失效**（这四件一直没被用过，所以从没暴露）：
+  //   · makeCallout 的尖角参数叫 `pointerBaseWidth`，不是 `tipWidth` → 尖角宽度一直取默认
+  //   · makeHeart / makeEllipse 没有 `width`（分别是 height+aspectRatio / rx+ry）
+  //   · makeTriangle 的 `direction` 是**必填**
+  // 都是「传了参数、库当没看见」。
+  callout: (w = 460, h = 260, tipW = 90) => makeCallout({width: w, height: h, pointerBaseWidth: tipW}),
   arrow: (len = 420) => makeArrow({length: len, headWidth: 150, headLength: 130, shaftWidth: 56}),
-  heart: (size = 300) => makeHeart({width: size, height: size}),
-  ellipse: (w = 460, h = 300) => makeEllipse({width: w, height: h}),
+  heart: (size = 300) => makeHeart({height: size, aspectRatio: 1}),
+  ellipse: (w = 460, h = 300) => makeEllipse({rx: w / 2, ry: h / 2}),
   rect: (w = 440, h = 300) => makeRect({width: w, height: h, cornerRadius: 16}),
-  triangleShape: (len = 300) => makeTriangle({length: len}),
+  triangleShape: (len = 300) => makeTriangle({length: len, direction: 'right'}),
 } as const;
 
 /**
@@ -251,7 +260,8 @@ export const PRESENTATIONS = {
   iris: ({width, height}: PresentationCtx) => iris({width, height}),
   flip: ({direction}: PresentationCtx) => flip({direction}),
   bookFlip: ({direction}: PresentationCtx) => bookFlip({direction}),
-  pushCut: ({direction}: PresentationCtx) => pushCut({direction}),
+  // PushCutProps 里没有 `direction`（是 cutProgress/outgoingScale/…）：传了也没用。
+  pushCut: () => pushCut({}),
   none: () => none(),
   // ---- 着色器式（走 WebGL；本机实测见 diag-upgrade 页⑥）----
   // 注意：这几个的 `props` 在类型上是**必填**（只是属性都可选），所以传 `{}` 而不是不传。
@@ -293,7 +303,12 @@ export const SceneTransitions: React.FC<{
   height: number;
   direction?: 'from-left' | 'from-right' | 'from-top' | 'from-bottom';
 }> = ({children, durations, transition, transitionDuration = 16, width, height, direction = 'from-left'}) => {
-  const presentation = PRESENTATIONS[transition]({direction, width, height});
+  // TS2322：`PRESENTATIONS[transition]` 是 19 个工厂的联合，返回 19 种
+  // TransitionPresentation<不同 Props>；TransitionSeries.Transition 只接受其中一种。
+  // 运行时行为是对的（选中的那一个一定与 children 匹配），只是三个联合类型无法在
+  // 编译期收敛 —— 收据化到组件自己的 prop 类型再交给它，比给每个工厂写重载更实在。
+  const presentation = PRESENTATIONS[transition]({direction, width, height}) as unknown as
+    React.ComponentProps<typeof TransitionSeries.Transition>['presentation'];
   return (
     <TransitionSeries>
       {children.map((child, i) => (

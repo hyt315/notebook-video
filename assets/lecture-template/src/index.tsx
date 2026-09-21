@@ -1,5 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {AbsoluteFill,Composition,Easing,Sequence,cancelRender,continueRender,delayRender,interpolate,interpolateColors,registerRoot,spring,staticFile,useCurrentFrame as useRawCurrentFrame} from 'remotion';
+import {AbsoluteFill,Composition,Easing,Sequence,cancelRender,continueRender,delayRender,interpolate,registerRoot,spring,staticFile,useCurrentFrame as useRawCurrentFrame} from 'remotion';
 import {Audio} from '@remotion/media';
 import cueData from './caption-cues.json';
 
@@ -27,18 +27,21 @@ import cueData from './caption-cues.json';
 // Keep authored scene time separate from delivery frames.
 import {MODES, CanvasMode, CanvasContext, useCanvas} from './theme/canvas';
 import {THEME} from './theme/active';
-import {JumpInText, Checklist, Callout} from './toolkit';
-import type {IconKind} from './kit';
-import {PillTag, LineIcon, CheckBadge, TYPE} from './kit';
+import {JumpInText} from './toolkit';
+import {PillTag, TYPE} from './kit';
 // v2.10 视觉体系四层：镜头 / 骨架 / 介质 / 门禁。用法见 references/shot-language.md、
 // scene-skeletons.md、media-routing.md、composition-gate.md。
-import {CoverPanel, ShotCamera, camAt, shotCam, stillCam} from './shotkit';
-import {PhaseRail, StageFrame, useStageMachine} from './stagekit';
-import {RevealMask, TRANSITIONS, useHandoff} from './insert';
-import {ConsoleWindow, MetricGrid, StampBanner} from './media';
-import {Corridor, SplitStage, ZoomStage} from './skeletons';
+// 四层组件按需 import —— tsconfig 开了 noUnusedLocals，导了不用会被 tsc 判错，
+// 所以这里只留本文件真用到的，其余列名备查：
+//   shotkit    CoverPanel / ShotCamera / camAt / shotCam / stillCam
+//   stagekit   PhaseRail / StageFrame / useStageMachine
+//   insert     RevealMask / TRANSITIONS / useHandoff
+//   media      ConsoleWindow / MetricGrid / StampBanner
+//   skeletons  Corridor / SplitStage / ZoomStage
 import {Showcase, SHOWCASE_PAGES} from './showcase';
 import {OverlapGate} from './overlap-gate';
+import {ClippingGate} from './clipping-gate';
+import {FillGate} from './fill-gate';
 import {SHOTS, SHOT_IDS, SHOT_TOTAL} from './shots';
 import {SCENES} from './scenes';
 const BASE_FPS=30,FPS=30,MOTION_FPS=30,TIMELINE_SCALE=1,DURATION=SHOT_TOTAL,DESIGN_SCALE=4/3;
@@ -49,7 +52,6 @@ const deliveryFrame=(designFrame:number)=>Math.round(designFrame*FPS*TIMELINE_SC
 // 调色板 / 美学参数 / 卡片皮肤 / 背景 / 调色层全部来自 THEME，本层不做任何风格判断。
 const C=THEME.palette;
 const AESTHETIC=THEME.aesthetic;
-const paperShadow=THEME.paperShadow;
 const Background=THEME.Background;
 const Grade=THEME.Grade;
 
@@ -69,8 +71,6 @@ const clamp={extrapolateLeft:'clamp' as const,extrapolateRight:'clamp' as const}
 const msFrame=(ms:number)=>Math.round(ms*FPS/1000);
 const captions=((cueData as any).cues as any[]).map(c=>({...c,startFrame:msFrame(c.start_ms),endFrame:msFrame(c.speech_end_ms),words:c.words.map((w:any)=>({...w,startFrame:msFrame(w.start),endFrame:msFrame(w.end)}))}));
 const q=(f:number)=>{const step=BASE_FPS/MOTION_FPS;return Math.floor(f/step)*step};
-const ease=(f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b],[from,to],{...clamp,easing:Easing.inOut(Easing.cubic)});
-const easeOutSoft=(f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b],[from,to],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
 const pop=(f:number,start:number,stiffness=132)=>spring({frame:f-start,fps:BASE_FPS,config:{damping:17,stiffness,mass:.86}});
 
 const AssetGate=()=>{const [handle]=useState(()=>delayRender('waiting for fonts',{timeoutInMilliseconds:120000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash'),document.fonts.load('500 40px Space'),document.fonts.load('400 40px Caveat'),document.fonts.ready]).then(()=>{if(live)continueRender(handle)}).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);return null};
@@ -101,6 +101,11 @@ const CardFitGate=()=>{
   //   c. 旧版零输出既可能是"全部合格"也可能是"根本没跑"。现每 5 秒打一次覆盖率。
   useEffect(()=>{
     let cancelled=false;
+    // 2026-09-21 独立核验：本门禁**目前是拦得住的**，因为 cancelRender 之后的
+    // `continueRender(fitHandle)` 还在 try 块内，抛异常就跳过了。但这纯属结构巧合：
+    // 谁把 continueRender 挪到 try 之外，它就会静默退化成「报而不拦」（另三道门禁踩过）。
+    // 故补上与其余门禁同一处置：判定作出后 blocked 置位（handle 永不释放），异常原样抛出。
+    let blocked=false;
     const measure=()=>{
       try{
         const bad:string[]=[];
@@ -156,11 +161,11 @@ const CardFitGate=()=>{
           // 真裁切实测都在 25px 以上（S2 卡片 25px、控制台 27px）。
           if (oB > 10 || textOver > 8) bad.push(`@${f} \u5361\u7247\u201c${(card.textContent||'').trim().slice(0,10)}\u201d\u6ea2\u51fa ${Math.round(Math.max(oB, textOver))}px${textSample ? '\uff08\u6587\u5b57\uff1a' + textSample + '\uff09' : ''}`);
         });
-        if(bad.length) cancelRender(new Error(`Card overflow: ${bad.slice(0,4).join(' | ')}`));
+        if(bad.length){blocked=true;cancelRender(new Error(`Card overflow: ${bad.slice(0,4).join(' | ')}`));}
         else if(cards&&f%150===0&&typeof console!=='undefined') console.warn(`[CardFitGate] @${f} \u5df2\u6d4b ${cards} \u5f20\u5361\u7247\uff0c\u65e0\u6ea2\u51fa`);
         // 首次测量完成 → 放开截帧（失败路径会 cancelRender，本来就不会出图）
         if(!firstDone.current){firstDone.current=true;continueRender(fitHandle);}
-      }catch(e){if(typeof console!=='undefined') console.warn('[CardFitGate]',e);}
+      }catch(e){if(blocked) throw e; if(typeof console!=='undefined') console.warn('[CardFitGate]',e);}
     };
     const id=requestAnimationFrame(()=>{
       if(document.fonts.status==='loaded'){measure();return;}
@@ -176,7 +181,7 @@ const CardFitGate=()=>{
 // 旧版硬编码 16:9 的 44px/400/1334，导致 4:3 与 3:4 的字幕超宽静默通过、渲染后被裁切；
 // 同时没有计入主题字幕框的内边距（cel 64px / sticker 72px / flat 108px）。
 // 判定：> mode.safe 记 fail（真的会被裁切）；> mode.safe - subtitlePadX 只 warn（会顶到内边）。
-const CaptionFitGate=()=>{const {mode}=useCanvas();const safe=mode.safe,innerSafe=safe-(AESTHETIC.subtitlePadX??0),weight=AESTHETIC.subtitleWeight??400,ls=AESTHETIC.subtitleLetterSpacing??1.6;const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load(`${weight} ${mode.subFont}px Kai`),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){cancelRender(new Error('Subtitle measurement node is unavailable'));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const widths=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''}));const overflow=widths.filter(row=>row.width>safe+.5);const tight=widths.filter(row=>row.width>innerSafe+.5&&row.width<=safe+.5);if(tight.length&&typeof console!=='undefined')console.warn(`[CaptionFitGate] ${tight.length} 条字幕超过内边距安全宽 ${innerSafe}px（未裁切但会顶到字幕框内边）：${tight.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px`).join(' | ')}`);if(overflow.length){cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px>${safe}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle,mode.subFont,safe,innerSafe,weight,ls]);if(done)return null;return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:'Kai,sans-serif',fontSize:mode.subFont,fontWeight:weight,whiteSpace:'nowrap',letterSpacing:ls}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</div>};
+const CaptionFitGate=()=>{const {mode}=useCanvas();const safe=mode.safe,innerSafe=safe-(AESTHETIC.subtitlePadX??0),weight=AESTHETIC.subtitleWeight??400,ls=AESTHETIC.subtitleLetterSpacing??1.6;const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;let blocked=false;Promise.all([document.fonts.load(`${weight} ${mode.subFont}px Kai`),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){blocked=true;cancelRender(new Error('Subtitle measurement node is unavailable'));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const widths=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''}));const overflow=widths.filter(row=>row.width>safe+.5);const tight=widths.filter(row=>row.width>innerSafe+.5&&row.width<=safe+.5);if(tight.length&&typeof console!=='undefined')console.warn(`[CaptionFitGate] ${tight.length} 条字幕超过内边距安全宽 ${innerSafe}px（未裁切但会顶到字幕框内边）：${tight.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px`).join(' | ')}`);if(overflow.length){blocked=true;cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px>${safe}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live&&!blocked){blocked=true;cancelRender(error)}});return()=>{live=false}},[handle,mode.subFont,safe,innerSafe,weight,ls]);if(done)return null;return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:'Kai,sans-serif',fontSize:mode.subFont,fontWeight:weight,whiteSpace:'nowrap',letterSpacing:ls}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</div>};
 
 const Fonts=()=> <style>{`
 @font-face{font-family:Kai;src:url(${staticFile('LXGWWenKaiLite-Regular.ttf')}) format('truetype');font-weight:400}
@@ -198,21 +203,12 @@ const Fonts=()=> <style>{`
 const Paper=THEME.Paper;
 
 // LineIcon / PillTag / CheckBadge 已抽到 src/kit.tsx（主题无关原子，工程侧同样可引用）。
-
-
-
-const smoothStep=(v:number)=>{const t=Math.max(0,Math.min(1,v));return t*t*(3-2*t)};
+// smoothStep / SPRINGS+popS / easeOutSoft 在 toolkit.tsx / fxkit.tsx 里各有自己的一份
+// （两个模块为免循环依赖刻意各自持有，不是遗漏）；本文件没人调用就不再留副本 ——
+// tsconfig 开了 noUnusedLocals，未被读取的局部声明会直接判错。
 
 // JumpInText：完全移植 Tibo 源码的“4段双轴弹性波浪回弹 + 字色激活”动效（经视效平衡调谐）
 
-
-// ---- 通用组件扩展（v2.5 新增）------------------------------------------
-// SPRINGS：弹性预设三档。soft 与历史 pop() 默认参数完全一致，旧场景行为不变。
-const SPRINGS={snappy:{damping:16,stiffness:200,mass:.8},soft:{damping:17,stiffness:132,mass:.86},bouncy:{damping:11,stiffness:160,mass:.9}} as const;
-const popS=(f:number,start:number,preset:keyof typeof SPRINGS='soft')=>spring({frame:f-start,fps:BASE_FPS,config:SPRINGS[preset]});
-
-// useSteppedFrame：停帧点缀（默认 15fps，每个姿势占两输出帧，契约见 motion-design.md）。
-const useSteppedFrame=(stepFps=15)=>{const f=useCurrentFrame();return Math.floor(f*stepFps/BASE_FPS)*BASE_FPS/stepFps};
 
 
 
@@ -280,8 +276,6 @@ const Chrome=()=>{
   </>;
 };
 
-const stageFade=(f:number,start:number,end:number)=>ease(f,start,start+15)*ease(f,end-15,end,1,0);
-
 const HANDOFF=10; // 镜头边界的交接帧数：下一镜开始时把上一镜末帧叠上来淡出，避免出现空帧
 const FinalDemo=()=>{
   // 只挂载活动镜头（性能契约）：由分镜表决定当前是哪一镜。
@@ -306,6 +300,8 @@ const FinalDemo=()=>{
 // 音效钉帧（硬规则）：一律相对所属镜头起点推导，改台词重跑解析后自动跟着走。
 // 中间节拍轮换用的三种"落位/切换"音（必须在 SFX 之前声明：flatMap 立即执行）
 const SECOND=['sfx/drop.ogg','sfx/toggle.ogg','sfx/click.ogg'];
+// 会运镜的意图名单（`still` 刻意不在内）：给「静止镜不出咔哒声」这条规则一个真判据。
+const CAM_MOTION=['establish','push-in','pull-back','pan-follow','reveal','micro-orbit'] as const;
 const SFX=SHOT_IDS.flatMap((id)=>{
   const s=SHOTS[id];
   const isChapter=(CHAPTER_STARTS as readonly number[]).includes(s.from);
@@ -321,7 +317,11 @@ const SFX=SHOT_IDS.flatMap((id)=>{
     else if(i===s.beats.length-1) list.push({src:'sfx/chime.wav',at,vol:0.40});   // 末拍：完成音
     else list.push({src:SECOND[i%SECOND.length],at,vol:0.30});                    // 中间拍：轮换落位/切换/轻击
   });
-  if(s.cameraIntent!=='still') list.push({src:'sfx/click.ogg',at:s.from+(s.keys[2]?.f??30),vol:0.26});
+  // tsc TS2367 抓出来的死比较：`s.cameraIntent` 的推断类型里根本没有 'still'
+  // （shots.ts 生成时只写 establish/push-in/pull-back/pan-follow/reveal），所以 `!== 'still'` 恒真。
+  // 这句的意图是「静止镜不加咔哒声」，实际一个都没排除。改成**正向名单**：
+  // 名单里没有的值（含将来的 'still'）不加音 —— 语义与作者本意一致，类型也干净。
+  if((CAM_MOTION as readonly string[]).includes(s.cameraIntent)) list.push({src:'sfx/click.ogg',at:s.from+(s.keys[2]?.f??30),vol:0.26});
   return list;
 });
 const Sound=()=>{
@@ -337,14 +337,22 @@ const Sound=()=>{
 
 // 门禁事件帧（v2.11）：本技能最密集的重叠都发生在短窗口里——镜头交接 10 帧、页眉滑变 7–16 帧、数值滑动 14 帧。
 // 只按 15 帧网格抽样必然漏掉它们，所以把镜头边界、节拍、相机关键帧都交给 OverlapGate 强制抽样。
-const WATCH=(()=>{const out:number[]=[];SHOT_IDS.forEach((id:string)=>{const s:any=(SHOTS as any)[id];out.push(s.from-1,s.from,s.from+1,s.to-1,s.to);(s.beats||[]).forEach((b:number)=>out.push(s.from+b));(s.keys||[]).forEach((k:any)=>out.push(s.from+k.f));});return out;})();
+// ⚠️ 2026-09-21 独立核验补：本项目约定「落定帧 = 镜尾 − 12」（抽帧留档看的就是它），
+// 而 `to−12` 一般不是 15 的倍数、也不在下面那些事件帧里 —— 实测上一版 21 张落定帧里
+// **只有 1 张**落在抽样集合上，于是「对每一镜跑一遍门禁」等于什么都没量。
+// 处置：把每镜的落定帧显式加进 WATCH —— **你要看的那一帧，门禁必须先看过**。
+const WATCH=(()=>{const out:number[]=[];SHOT_IDS.forEach((id:string)=>{const s:any=(SHOTS as any)[id];out.push(s.from-1,s.from,s.from+1,s.to-1,s.to);out.push(s.to-12);(s.beats||[]).forEach((b:number)=>out.push(s.from+b));(s.keys||[]).forEach((k:any)=>out.push(s.from+k.f));});return out;})();
 const FilmLayout:React.FC<{canvas:CanvasMode}>=({canvas})=>{
   const mode=MODES[canvas]||MODES['16:9'];
   const isPortrait=canvas==='3:4';
   return <CanvasContext.Provider value={{canvas,isPortrait,mode}}>
     <AbsoluteFill style={{overflow:'hidden',background:C.paperBase}}>
-      <div style={{position:'absolute',left:0,top:0,width:mode.designW,height:mode.designH,transform:`scale(${mode.scale})`,transformOrigin:'0 0',fontFamily:'Kai,sans-serif',color:C.ink,overflow:'hidden'}}>
-        <Fonts/><AssetGate/><CaptionFitGate/><CardFitGate/><OverlapGate mode="block" watch={WATCH}/><Sound/><Background/>
+      {/* data-design-root：FillGate 靠它把「输出像素」折回「设计像素」（ratio 实测，不假设 --scale）。
+    缺了它 FillGate 会静默 return —— 门禁装了等于没装，所以这个属性是门禁契约的一部分。 */}
+      <div data-design-root style={{position:'absolute',left:0,top:0,width:mode.designW,height:mode.designH,transform:`scale(${mode.scale})`,transformOrigin:'0 0',fontFamily:'Kai,sans-serif',color:C.ink,overflow:'hidden'}}>
+        <Fonts/><AssetGate/><CaptionFitGate/><CardFitGate/><OverlapGate mode="block" watch={WATCH}/><ClippingGate mode="block" watch={WATCH}/>
+        {/* FillGate 默认 warn：P0-4 是"观感线"，为它打断整片渲染不划算；出水进日志、可复查 */}
+        <FillGate mode="warn" watch={WATCH}/><Sound/><Background/>
         {<><Chrome/><FinalDemo/></>}
         <Grade/>
         <Subtitle/>
@@ -354,8 +362,11 @@ const FilmLayout:React.FC<{canvas:CanvasMode}>=({canvas})=>{
 };
 
 const Film16x9=()=> <FilmLayout canvas="16:9"/>;
-const Film4x3=()=> <FilmLayout canvas="4:3"/>;
-const Film3x4=()=> <FilmLayout canvas="3:4"/>;
+// 4:3 / 3:4 两个交付画布**定义但默认不注册**（契约见 references/canvas-modes.md）：
+// 切换时自己改 canvas 参数并重排版面，不许用 scale(0.75) 信箱化冒充适配。
+// 导出是为了过 noUnusedLocals —— 它们的使用方式是「作者在下面 Root 里挂上去」，不是被 import。
+export const Film4x3=()=> <FilmLayout canvas="4:3"/>;
+export const Film3x4=()=> <FilmLayout canvas="3:4"/>;
 
 const Root=()=> <>
   {/* 官方模板示例片（8 镜 / 4 骨架）。本版场景按 1920×1080 设计空间编写：

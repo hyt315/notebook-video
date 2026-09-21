@@ -85,7 +85,13 @@
         82,
         166,
         213
-      ]
+      ],
+      "move": "引入",
+      "evidence": "ConsoleWindow",
+      "hold": 45,
+      "misconception": "以为开源就是\"把代码丢上去\"",
+      "noMisconception": null,
+      "why": null
     },
     {
       "id": "S2",
@@ -161,7 +167,13 @@
       "beatsAbs": [
         213,
         286
-      ]
+      ],
+      "move": "推进",
+      "evidence": "StampSeal",
+      "hold": 40,
+      "misconception": null,
+      "noMisconception": true,
+      "why": "本镜是流程推进，不设误解（避免每镜都套同一个模子）"
     },
     {
       "id": "S3",
@@ -241,7 +253,13 @@
         286,
         358,
         416
-      ]
+      ],
+      "move": "传递",
+      "evidence": "Checklist",
+      "hold": 40,
+      "misconception": "以为提交一次就等于参与了",
+      "noMisconception": null,
+      "why": null
     },
     {
       "id": "S4",
@@ -320,7 +338,13 @@
         416,
         475,
         532
-      ]
+      ],
+      "move": "对比",
+      "evidence": "StaggerList",
+      "hold": 45,
+      "misconception": "以为发布是\"点一下按钮\"",
+      "noMisconception": null,
+      "why": null
     },
     {
       "id": "S5",
@@ -399,7 +423,13 @@
         532,
         606,
         682
-      ]
+      ],
+      "move": "定位",
+      "evidence": "ProgressRing",
+      "hold": 40,
+      "misconception": null,
+      "noMisconception": true,
+      "why": "本镜是能力定位，不需要先立误解"
     },
     {
       "id": "S6",
@@ -477,7 +507,13 @@
         682,
         741,
         803
-      ]
+      ],
+      "move": "累积",
+      "evidence": "StampSeal",
+      "hold": 40,
+      "misconception": null,
+      "noMisconception": true,
+      "why": "本镜是上一镜的累积收束，直接延续"
     },
     {
       "id": "S7",
@@ -556,7 +592,13 @@
         803,
         903,
         919
-      ]
+      ],
+      "move": "反证",
+      "evidence": "ChatThread",
+      "hold": 45,
+      "misconception": "以为把文档写完就有人来用",
+      "noMisconception": null,
+      "why": null
     },
     {
       "id": "S8",
@@ -638,7 +680,13 @@
         1019,
         1030,
         1126
-      ]
+      ],
+      "move": "收束",
+      "evidence": "VerdictBar",
+      "hold": 50,
+      "misconception": "以为开源只产出代码",
+      "noMisconception": null,
+      "why": null
     }
   ]
 }

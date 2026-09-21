@@ -14,13 +14,28 @@ const palette: Theme['palette'] = {
   ink: '#4a3b2f',
   muted: '#9a8a76',
   blue: '#5ca9e0',
+  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
+  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
+  blueInk: '#40759c',
   blueLight: 'rgba(92,169,224,0.30)',
   orange: '#ff8fa3',
+  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
+  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
+  orangeInk: '#a25b68',
   orangeLight: 'rgba(255,143,163,0.28)',
   green: '#61d188',
+  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
+  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
+  greenInk: '#3a7d52',
   greenLight: 'rgba(97,209,136,0.30)',
   gold: '#ffd166',
+  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
+  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
+  goldInk: '#856d35',
   red: '#e85d5d',
+  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
+  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
+  redInk: '#bc4b4b',
   navy: '#4a3b2f',
   paper: '#ffffff',
   paperWarm: '#f4f9f4',
@@ -42,8 +57,13 @@ const palette: Theme['palette'] = {
   gaugeTrack: 'rgba(74,59,47,0.22)',
   greenGlow: 'rgba(97,209,136,0.32)',
   stageTint: 'rgba(244,249,244,0.5)',
-  headerAccent: '#5ca9e0',
-  headerSub: '#9a8a76',
+  // 头部两色**当文字用**（index.tsx 的章节技术头部就压在这两个色上），
+  // 所以它们和 5 个 *Ink 一样必须过 4.5:1 —— 原来 headerAccent 直接等于 blue、
+  // headerSub 等于 muted，实测 2.40 / 3.14（on paperBase），门禁判 P1。
+  // 处置同 *Ink：**同色相按 WCAG 反解压暗**（headerAccent = blue→blueInk 的同一个值，
+  // headerSub = muted 压暗一档），原值不再当文字色用。
+  headerAccent: '#40759c',
+  headerSub: '#7b6f5f',
 };
 
 const aesthetic: Theme['aesthetic'] = {

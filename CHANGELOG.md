@@ -2,6 +2,182 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [3.2.0] - 2026-09-21
+
+> **这是一次"把门禁修成真的 + 把静默失败翻出来"的发布。** 起因是用户在成片 2:58 亲口说
+> 「那个组件它没有动」——而当时十道门禁**全部 PASS**。顺着这条线查下去，发现的问题不是
+> "门禁太松"，而是**好几道门禁从装上那天起就一次都没拦过**：测量排在 `requestAnimationFrame`
+> 里却没有 `delayRender` 兜住截帧（截帧不等 rAF，测量永远晚于出图）；判定包在 `try/catch` 里，
+> 而 `cancelRender()` 的实现就是 `throw`，于是硬拦异常被自家 catch 吞掉、handle 照常释放，
+> 「报了硬拦却照样出图 rc=0」。本版先把**五道渲染期门禁**逐条修成真拦（判据：负向夹具
+> `rc≠0` **且**不产出图片），再补上两道看不见的洞（图形被裁、下 1/4 空着），
+> 并把模板的 TypeScript 从"能打包就行"收到 **`tsc` 0 错**（`npm run typecheck`）。
+>
+> 本条目**只收录能在 `git diff` 里指到改动的条目**（旧报告里列过、但源码里找不到对应改动的，
+> 一律不写——见文末「口径更正」）。
+
+### Fixed
+
+- **`OverlapGate` 从"从没拦过"修成真拦（四处静默失效 + 一处结构性失明，全部有实测）**：
+  - **没有 `delayRender`**：测量排在 `requestAnimationFrame` 里，而 Remotion 截帧**不等 rAF**
+    —— 门禁从装上那天起就没站上出图路径。改为**逐帧持柄**：每个抽样帧开一个 handle，测完才 `continueRender`。
+  - **字体未就绪直接 `return`**：真实出片路径上 `document.fonts.status` **一直是 `'loading'`**，
+    于是每帧都在这一行返回（重渲后日志里只有 `handle was cleared after 16ms`，**连覆盖率日志都没有**）。
+    改为等 `document.fonts.ready` 再量。
+  - **三个采样点全落在文字框垂直中线**：S14 那处"弹层标题条切掉正文下半截"实测漏判
+    （墨迹在 685..703、压线在 702、中线在 ~699 —— 正好落在压线之上）。补 22% / 78% 两个高度层共 5 点。
+  - **硬拦被自家 catch 吞掉**：`cancelRender()` 的实现是 `throw`，旧代码 `catch (e) { console.warn(e) }`
+    把它吞了，随后走到末尾的 `release()` → handle 归零 → 渲染器取到 "ready" → **硬拦命中却出图 rc=0**。
+    改为 `blocked` 置位后 handle **永不释放**、异常原样抛出。
+  - **`INVISIBLE_CHARS` 少一个 `u` 标志（本轮最隐蔽的一条）**：原写法
+    `…\uf0000-\uffffd]/g` 被正则引擎拆成 `\uf000` + `0` + `-` + `\uffff` + `d`，
+    字符类里凭空多出 **`U+0030`–`U+FFFF`（65488 个码点）** —— 全部汉字、数字与多数可打印 ASCII
+    都被替换成空串。后果不是少判几个字，而是**结构性失明**：`visibleText('重叠甲文字') === ''`，
+    于是**整块是汉字的文字叶元素一个都进不了 `texts`**（成片实测：87 条字幕文本 100% 被整条吞空，
+    覆盖率日志里全片每帧只"已测 2 个文字块"）。修法是补 `u` 标志并把补充平面写成 `\u{…}`，
+    另加一条**启动自检**：`visibleText('重A0') !== '重A0'` 就在控制台大声报警。
+- **`CardFitGate` / `CaptionFitGate` 补上同一处置**：两处的"拦得住"此前纯属结构巧合
+  （`cancelRender` 之后的 `continueRender` 恰好在 `try` 块内），现在与其余门禁一致 —— 判定后 `blocked` 置位、异常不被吞。
+- **`FocusFx` 压暗按"三因"重做（模板与工程同一套）**：
+  - **颜色是纸色**：`background: C.paperBase` 在纸色底上等于没画（亮底 249.2 → 247.4，中灰 128 → **214，反而提亮**）。
+    改用 `muted` + `multiply`：亮底 → 146.8、中灰 → 76.1。
+  - **不是覆盖层**：原实现只有 `position:absolute` 且没有 z-index，"写在内容前面"就被内容盖住。新增 `SCENE_ANCHOR`（`zIndex: 9000`）。
+  - **坐标随宿主漂移**：注释承诺 `rect` 是场景坐标，实现却按最近的定位祖先算 —— 塞进 `left:200,top:300` 的包裹层后，
+    蒙版整体偏出画布左边与上边（左缘 60px 处实测 247.3 = 完全没被盖到）。`SCENE_ANCHOR` 用
+    `position:fixed`（设计根带 `transform`，天然成为 fixed 的包含块）把坐标钉回场景坐标。
+- **`bottomFill` 的死门降级（构建期）**：`validate-composition` 原来校验 `bottomFill == true`，
+  而这个字段是生成分镜表的脚本**自己写死的常量**，`resolve-shots` 再原样透传 —— **生成器写 true、门禁要求 true，结构上不可能失败**。
+  实测成片里 17/21 镜的下 1/4 是空的，它一次都没响。现只查**字段在不在**（缺字段是真配置错误），
+  真实判据交给渲染期 `FillGate`。`validate-shot-motion` 里同源的 `bottomFill is False` 分支同步降级。
+- **`SankeyChart` / `d3-force` / `FitCard` 等一批"传了参数、库当没看见"的静默失效**（由 `tsc` 翻出，见下 `Changed`）。
+- **模板 `index.tsx` 的 TS2367 死比较**：`s.cameraIntent !== 'still'` 恒真（`shots.ts` 只生成 5 种意图，
+  类型里根本没有 `'still'`），"静止镜不加咔哒声"这句话实际一个都没排除。改为**正向名单** `CAM_MOTION`
+  ——名单里没有的值（含将来的 `still`）不加音。**没有简单删掉判断**（删了会让静止镜也加音效）。
+
+### Added
+
+- **模板侧补齐两道渲染期门禁（工程侧已有，本轮回灌模板并接线）**：
+  - `assets/lecture-template/src/clipping-gate.tsx`（245 行）：**图形被裁**。SVG/图形元素的真实 rect
+    越出最近的"会裁切"祖先（HTML 的 `overflow≠visible` 祖先，或所属 `<svg>` 视口；显式 `overflow:visible`
+    的 svg 按**计算样式**判、不算越界）。`CardFitGate` 只管 div/span 里的文字、`OverlapGate` 只管文字互相压，
+    两者都看不见"缺了半边的球"（实测 S19 走廊圆心算在 x=0，左半边被 svg 视口裁掉，零报错）。
+  - `assets/lecture-template/src/fill-gate.tsx`（200 行）：**下 1/4 实测密度** —— 信息元素（有文字/有边框/有描边）
+    rect 并集的最低边 vs y=876（±24 容差），z≥140 的子树跳过。默认 `mode="warn"`：这是观感线，
+    为它打断整片渲染不划算，出水进日志、可复查。
+  - 接线契约：设计根加 `data-design-root`（`FillGate` 靠它把输出像素折回设计像素；**缺了它会静默 return
+    —— 门禁装了等于没装**），并把两门一起挂进 `index.tsx` 的 `WATCH` 抽样。
+- **`WATCH` 补"落定帧"`to−12`**：本项目约定「落定帧 = 镜尾 − 12」（抽帧留档看的就是它），而它一般不是 15 的倍数、
+  也不在事件帧里 —— 实测上一版 21 张落定帧里**只有 1 张**落在抽样集合上，"对每一镜跑一遍门禁"等于什么都没量。
+- **`scripts/validate-motion-gaps.py`（新，T3 后验）**：`ffmpeg freezedetect` 逐帧比对，连续"几乎完全相同"
+  超过阈值即 P0。**必须先裁掉字幕带** —— 字幕逐字上屏会把每一段静止都遮掉（实测同一支片：全画幅只报 73 段，
+  S19 的 2.5 秒完全不在榜上；裁掉字幕带后报 53 段，S19 的冻结段清清楚楚地浮出来）。
+- **构建期门禁新增两条判据**：
+  - `validate-composition` **P0-7 · beats 下标越界**：逐镜扫场景源码里的 `b[k]` 与 `SHOTS.Sx.beats[k]`
+    （**两种写法都扫**，原来只认别名 `b[k]`），`k` 必须小于真实拍数；引用不存在的镜号一并报。
+    越界取到的是 `undefined`：传进 `interpolate` 会**整帧渲染失败**，传进比较则**那件东西永远不出现**（两种都在成片里实测过）。
+    实现上先按 `const Sxx…: React.FC<` 切出**每一镜自己的函数体**再去注释扫描（整份文件一起扫会把"S19 用了 `b[9]`"算到每一镜头上）。
+  - `validate-shot-motion` **节拍空档 P1**（`BEAT_GAP_MAX_RATIO = 0.60`，**先离线标定再定阈值**）：
+    本片 21 镜的「相邻节拍最大间隔 / 镜长」中位 31.6%、最大 56.9%；按调研建议的 40% 判会**判死 7 张已被接受的镜**，
+    而真正出事的 S19 只有 30.4%（照样 PASS）。所以这条只当"这一镜是不是整段没词"的粗筛，真判据是上面的 T3。
+- **`validate-presentation` 新增讲法字段门禁（G-14/G-15/G-16）**：`move` 必须落在 10 个名字的闭集里、
+  `evidence` 必填、`hold` 不低于标定线 40 帧、`misconception` 与 `noMisconception(+why)` 二选一。
+  配套修好 `resolve-shots.py` **把 `move` / `evidence` / `hold` / `misconception` 整组丢掉**的问题
+  （此前下游读 `resolved` 的门禁**根本看不到这四个字段**，想查也没得查），模板 `shots.resolved.json` 与 `src/shots.ts` 随之重生成。
+- **`validate-presentation` 新增 `*Ink` 文字安全色判据（P0）**：五个 `*Ink` 不过 4.5:1 直接报 ——
+  这一条同时是**新增机制的自检**（没有它，加了 Ink 也没人验）。
+- **四套主题各补 5 个文字安全色**：`blueInk` / `orangeInk` / `greenInk` / `goldInk` / `redInk`
+  （同色相按 WCAG 反解压暗），`theme/types.ts` 的 `ThemePalette` 相应扩容。约定写进 `references/theme-system.md`：
+  **原色只用于填充与描边，当文字色一律用对应的 Ink 变体**。
+- **模板补 `tsconfig.json` + `typescript` 依赖 + `npm run typecheck`**：模板此前能打包但没有类型检查，
+  于是"能跑就行"的那类错误（下面 `Changed` 里的一整批）永远不会有人看见。本版起 `npm run typecheck`
+  （= `tsc -p tsconfig.json`，`noEmit` 已开）**0 错**。
+- **负向夹具 23 → 28 例**（`scripts/negative-gate-check.py`）：X（讲法字段缺 `move`）、Y（`*Ink` 文字安全色压白底）、
+  Z1–Z3（拍数越界：本地别名 `b[9]` / 全路径 `SHOTS.S2.beats[9]` / 一条阴性对照）。
+  **判据加了而夹具没加 = 那道门仍然只是名义存在**，所以新增判据与夹具同版落地。
+
+### Changed
+
+- **模板 `tsc` 清到 0 错：19 条未用导入/死变量 + 1 条 TS2367。** 这不是"洁癖"——它翻出来的是一批
+  **静默失效**（全都是"传了参数、库当没看见"或"引用了不存在的名字"，运行时不报错）：
+  | 位置 | tsc 诊断 | 真实后果 |
+  |---|---|---|
+  | `components/pathfx.tsx` | TS2305 | `ShapeInfo` 从 `@remotion/shapes` 深路径导入，**该类型没有从包根导出**（此前靠 `any` 混过）→ 改用 `ReturnType<typeof makeRect>` 就地取 |
+  | `components/pathfx.tsx` | TS2353/TS2345 | `SHAPES` 四处静默失效：`makeCallout` 的尖角参数叫 `pointerBaseWidth`（写成 `tipWidth` → 一直取默认）、`makeHeart` 没有 `width`（是 `height`+`aspectRatio`）、`makeEllipse` 没有 `width`（是 `rx`+`ry`）、`makeTriangle` 的 `direction` 是**必填** |
+  | `components/pathfx.tsx` | TS2322 | `pushCut` 传了它没有的 `direction`（是 `cutProgress`/`outgoingScale`…）：传了也没用 |
+  | `components/ui.tsx` | TS2304 | `fitsWithin` 在 `ControlStack` 里以 dev 自检调用，却**从未 import**；它挂在 `NODE_ENV !== 'production'` 下，出片路径永远走不到 |
+  | `src/shotkit.tsx` | TS2739 | `head`/`tail` 声明成 `CamKey[]` 却赋一个关键帧对象 → `shotCam` 返回的是 `[CamKey[], CamKey, CamKey[]]` 这种**嵌套数组**，`camAt` 读到的是垃圾（渲染不报错，只是运镜不对） |
+  | `src/shotkit.tsx` | TS2367 | `ShotIntent` 类型里没有 `'still'`，而 `stillCam` 的注释明写"still 是合法选择" → 补进联合类型（`index.tsx` 那条恒真比较的根因） |
+  | `src/scenes.tsx` | TS2322 | `FitCard` 被多传了一个它不认的 `f={f}`（要的是 `frame`/`start`）——**React 会把未知 prop 静默丢掉** |
+  | `components/data.tsx` | TS2345 | Sankey 的 `l.source as never as {tone?: string}` 是"手抄一半"的局部类型 → 改用 d3-sankey 自己的 `SankeyNodeIn` |
+  | `components/network.tsx` | — | d3-force 回调写成 `(d: never)` → `(d: unknown)` |
+  | `overlap-gate.tsx` | TS2362 | `looksSolid` 里的 `(布尔) * (数字) > 0.2` 不是合法 TS 算术 → 语义等价改写 |
+  | 各模块 | TS6133/TS6192 | 删掉没人调用的局部 helper 与导入（`fxkit` 的 `q`/`ease`/`Burst`/`staticFile`、`media` 的 `spring`/`BASE_FPS`、`skeletons`/`stagekit` 的 `popS`、`stagekit` 的 `CoverPanel`、`toolkit` 的 `Paper`/`clamp`/`easeOutSoft`、`insert` 的 `BASE_FPS`/`easeOut`、`showcase` 的 `SKELETON_VERSION`、`index.tsx` 的一串未用导入） |
+  另有三处"入参从未使用"的**假旋钮**（`fxkit` 的 `lift`、`skeletons` 的 `from`/`to`）：类型里保留（调用方还在传），实现里不再声明 —— 免得看起来能调。
+`index.tsx` 里没人读到的局部副本（`smoothStep` / `SPRINGS`+`popS` / `easeOutSoft` / `useSteppedFrame` / `ease` / `stageFade` / `paperShadow`）一并清理
+（前四件的正主在 `toolkit.tsx` / `fxkit.tsx`，是那两个模块为免循环依赖刻意各自持有的一份）；
+`Film4x3` / `Film3x4` 按 `references/canvas-modes.md` 的契约（"定义了但默认不注册"）**改为导出**，以免被 `noUnusedLocals` 判成死代码。
+- **文字安全色的残余 P1 清理**：`syntaxSkin` 的 `number`/`boolean` 从 `orangeDeep`（填充色，paper/flat 当文字只有 2.83 / 4.19:1）换成 `orangeInk`；
+  sticker 的 `headerAccent` / `headerSub` 就地按 WCAG 反解压暗（2.40 / 3.14:1）；`scenes.tsx` / `showcase.tsx` / `skeletons.tsx` / `media.tsx` 里当文字用的强调色统一换成 `*Ink`。
+- **门禁编号改号（撞号）**：讲法字段那一组原来标成 `G-6`，而 **G-6 在调研报告里是"对比层结构闭合"**（至今未实现）。
+  按 `narrative-moves.md` §4 改为 **G-14 `move` 闭合 / G-15 `evidence` 真的会动 / G-16 误解与留白**——
+  两边都叫 G-6 会让"哪道门在报"变成猜谜。
+- **`bottomFill` 判据的文档对齐**：`references/composition-gate.md` 的 P0-4 加"降级"说明（声明能查的只有"写没写"，
+  "做没做到"必须实测）、`references/scene-skeletons.md` 的字段表把 `bottomFill` 的判据指向 `FillGate`、
+  `SKILL.md` 第 16 条同步。
+- **`SKILL.md` / `README.md` / `README.en.md` 的门禁清单补 `ClippingGate` / `FillGate` / `validate-motion-gaps`**（管道图、门禁表、FAQ 各一处）。
+- **`references/presentation-gate.md`**：新增 G-14/G-15/G-16 一节与"遇到强调色当文字色该怎么做"的处置说明；
+  负向夹具索引补 X / Y；"已知真实缺陷"一节把 `*Ink` 的落地与**尚未处理的那一半**（彩色填充上的白字，sticker 实测 1.44–2.66:1，属审美取舍）分开写清。
+
+### Verified
+
+本版所有结论都跑过，数字来自实际执行（口径见下）：
+
+- **模板 tsc**：`npx tsc -p tsconfig.json` **0 错**、`npm run typecheck` rc=0。
+  （模板本身不含 `node_modules`；本次用**本机已有**的 `overview-film/node_modules` 以 junction 临时挂载后验证，
+  验完即刻移除 —— `node_modules/` 在技能仓库里是生成物，`validate-skill-consistency.py` 会把它报成"生成目录泄漏进源码"。）
+- **模板构建期门禁全套 P0 全为 0**：`resolve-shots`（8 镜 1150 帧，且**幂等**：重跑前后 md5 不变）、
+  `validate-shot-motion` P0=0/P1=2、`validate-composition` P0=0/P1=5、`validate-presentation` P0=0/P1=8、
+  `validate-frame-props` P0=0、`validate-audio-levels` P0=0、`coords-lint` 0 error/1 warning。
+- **`scripts/validate-skill-consistency.py` 通过**（含 example-project 与 lecture-template 的 layered/visual-plan/caption-sync/semantic-breaks 全套子校验）。
+- **`scripts/negative-gate-check.py`：28/28 PASS，rc=0**（含新增 X / Y / Z1–Z3；每条都打印了 `rc` 与命中子串，
+  避免"因为别的原因失败"被记成通过）。
+- **渲染期门禁的抽样与覆盖面（复核上一次整片渲染的日志，21 镜 / 6169 帧）**：
+  抽样集合 = 15 帧网格 ∪（每个事件帧 ±2 帧），其中事件帧 194 个（镜界 5 帧 + 落定帧 `to−12` + 节拍 + 相机关键帧），
+  **去重后共 1146 帧**；日志里每道逐帧门禁的 `"<Gate> @N" handle was cleared` 也正是 **1146 个不同帧号**
+  （`OverlapGate` / `ClippingGate` / `FillGate` 三者一致，两个方向互相印证）；同一模式在三道门上的**行数**合计
+  **6876 = 3 × 1146 × 2**（每帧两行日志），这条顺带钉死了下一节要纠正的"2292"。`SlotGuard` 只在用到 `StageFrame` 的镜里跑，实测 197 帧。
+- **工程侧 S8 单帧实测（FocusFx 修法与 rect 坐标）**：同一帧 `2360` 的前后对比 —— 洞的边界恰好落在
+  **输出 x=540/753、y=460/620**（= 设计坐标 405/565/345/465，即场景 rect `(405,345,160,120)`），
+  洞内亮度 214.9 → 216.0（**没被压暗**）；原先**漏盖的左带/顶带**上的纸面由 248.2–248.8 降到 **147.9**，
+  右上/左下两角 245.3 → 146.8、左上角（落在章节卡上）118.0 → 71.1、右下角本来就是暗部（143.3 → 144.5 不变）。
+- **工程渲染/校验脚本的摘要名单**：在**真实日志**（2.26 GB）上验证新名单确实捞得到 `ClippingGate` 84 行、
+  `FillGate` 1272 行（旧名单一条都捞不到）；`bash -n` 语法检查通过。**整片重渲被明确禁止，所以没有重渲**——
+  摘要名单的正确性用真实日志验证，不靠重渲。
+
+### 口径更正
+
+两处旧表述都写在 `overview-film` 的提交信息里（`abaaf0b`，本条第 14 / 19 行），本轮一并纠正：
+
+- **"tsc 抓出 7 处真实静默 bug" → 计数不准。** 该句的括号里实际列了 **10 项**
+  （LineIcon name/kind、TopicIcon 非法名、ControlWindow tone 传色值、CheckBadge on、MetricGrid 少 win、
+  Tabs 少 verdict、StaggerList 少 color、SHAPES 四处错参数、`ui.tsx` 的 fitsWithin 未定义、cameraIntent 死比较）；
+  逐项回查这一轮的 diff，**其中 2 项找不到对应改动**（只有说明、没有改码）。
+  所以本条目**只收录能在 diff 里指到改动的那 8 项**，且逐条给出诊断号与实际后果；
+  找不到改动的一律不写。（两条可见的口径示例：`CheckBadge on` → `<CheckBadge />`、
+  `SHAPES` 四处错参数 —— 都在 `abaaf0b` 的 diff 里。）
+- **"新门禁全片实测 2292 帧" → 两个数字串了。** 准确说法：**每道逐帧门禁在全片实测 1146 帧**
+  （抽样集合 = 15 帧网格 ∪ 事件帧 ±2，去重后 1146；日志里每道门的 `handle was cleared` 帧号也正好 1146 个，
+  两个方向互相印证，见 `Verified`）。**2292 不是帧数**：每一帧的持柄记录在日志里出现**两行**
+  （chrome 的原始 CONSOLE 行 + `Tab N, delayRender()` 行）——本次直接从日志复核，
+  `OverlapGate` / `ClippingGate` / `FillGate` 三道的这类行**合计 6876 = 3 × 1146 × 2**，
+  所以"2292"是**单道门的日志行数**，不是它量过的帧数。
+- **`FocusFx` 的覆盖面变化（本版实测，不是缺陷但是行为变化）**：`SCENE_ANCHOR` 的 `zIndex: 9000` 让遮罩
+  落在 **`SubtitleChrome`（z=200）之上**，因此 S8 的字幕也会被 `multiply` 一档（实测字形核心 25.1 → **15.1** = 墨色 × 0.594，
+  周围背景不变）。字幕在压暗后的底上仍然清晰（背景同步压暗，相对对比度保持），但这与 `focus.tsx` 注释里
+  "字幕不会被压暗"的说法**不一致** —— 注释的理由（DOM 顺序）在设了 z-index 之后不成立。**留作已知项**：
+  要真正豁免字幕，得把遮罩 z-index 压到字幕之下（会同时失去"盖住设计根里其它高 z 元素"的能力），
+  或让字幕层提到遮罩之上。
+
 ## [3.1.0] - 2026-09-20
 
 > **这是一次"纠错 + 补齐"的发布。** 起因是一个被长期误读的规矩：技能里原本写着一句

@@ -55,13 +55,13 @@ export const layoutNetwork = (
     .force(
       'link',
       forceLink(pl as never)
-        .id((d: never) => (d as unknown as PNode).id)
+        .id((d: unknown) => (d as PNode).id)
         .distance(Math.min(width, height) * 0.34)
         .strength(0.75)
     )
     .force('charge', forceManyBody().strength(-Math.min(width, height) * 2.6))
     .force('center', forceCenter(width / 2, height / 2).strength(0.16))
-    .force('collide', forceCollide().radius((d: never) => (rOf(d as unknown as PNode) + 14) as never))
+    .force('collide', forceCollide().radius((d: unknown) => rOf(d as PNode) + 14))
     .stop(); // 停掉内部 d3-timer：布局只由下面的固定迭代驱动
   for (let i = 0; i < iterations; i++) sim.tick();
 

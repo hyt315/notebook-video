@@ -4,7 +4,7 @@ import {geoGraticule, geoOrthographic, geoPath} from 'd3-geo';
 import {sankey, sankeyLinkHorizontal} from 'd3-sankey';
 import {arc as d3arc} from 'd3-shape';
 import QRCode from 'qrcode';
-import {continueRender, delayRender, interpolate} from 'remotion';
+import {continueRender, delayRender} from 'remotion';
 import {THEME} from '../theme/active';
 import {TYPE} from '../kit';
 import {prog} from './ui';
@@ -33,7 +33,6 @@ import {fitChineseTextOnNLines} from './fittext';
 // ============================================================================
 
 const C = THEME.palette;
-const RADIUS = THEME.aesthetic.paperRadius;
 const TONE = [C.blue, C.orange, C.green, C.gold, C.red] as const;
 
 // ---------------------------------------------------------------------------
@@ -135,7 +134,6 @@ export const TreeView: React.FC<{
   // 空间不够时（叶子多）等比缩框**和**字，而不是让它们互相压。
   if (variant === 'tree') {
     const gapX = 22; // 兄弟框之间的**最小**水平间距
-    const gapY = 26; // 层与层之间在最小高度之外追加的垂直间距
     const sep = (a: {parent?: unknown}, b: {parent?: unknown}) => (a.parent === b.parent ? 1 : 1.45);
     const laid = d3tree<TreeNode>().nodeSize([1, 1]).separation(sep)(hierarchy(data));
     const nodes = laid.descendants();
@@ -468,7 +466,10 @@ export const SankeyChart: React.FC<{
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{overflow: 'visible'}}>
       {laid.links.map((l, i) => {
         const p = prog(f, startAt + 6 + i * 6, growFrames);
-        const src = l.source as never as {tone?: string};
+        // 与上面 layout 的取法一致：d3-sankey 把 source/target 展开成完整节点对象，
+        // 但它的公开类型里写的是 `SankeyNodeIn`。用 `{tone?: string}` 这种"手抄一半"
+        // 的局部类型当形参传给 toneOf 会 TS2345 —— 直接用它自己的类型。
+        const src = l.source as never as SankeyNodeIn;
         const w = (l as never as {width: number}).width;
         return (
           <path

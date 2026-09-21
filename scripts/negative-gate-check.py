@@ -448,6 +448,94 @@ case('W import_integrity · 模板字符串里的 import 样例不算真 import'
 ])
 cleanup(td)
 
+# ════════════════════════════════════════════════════════════════════════════
+# 2026-09-21 补的三条：本轮新增的判据此前**不在负向库里**。
+# 这个库存在的意义就是"每道门禁都有'喂坏输入必须拦住'的实证"——判据加了而夹具没加，
+# 等于这道门仍然只是名义存在。三条都在下面：X（讲法字段 G-14）/ Y（*Ink 文字安全色）/
+# Z1–Z3（beats 下标越界，含"全路径写法"这个原来漏掉的盲区与一条阴性对照）。
+# ════════════════════════════════════════════════════════════════════════════
+
+def mksrc(replace_scene=None):
+    """带上模板 src 的夹具项目（有些门禁必须读场景源码），可选对 scenes.tsx 做一次替换。"""
+    td, rc0, out0 = mkproj()
+    for base, _dirs, files in os.walk(os.path.join(TPL, 'src')):
+        for name in files:
+            if not name.endswith(('.tsx', '.ts')):
+                continue
+            src_path = os.path.join(base, name)
+            dst = os.path.join(td, 'src', os.path.relpath(src_path, os.path.join(TPL, 'src')))
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copy(src_path, dst)
+    if replace_scene is not None:
+        p = os.path.join(td, 'src/scenes.tsx')
+        text = io.open(p, encoding='utf-8').read()
+        new = replace_scene(text)
+        assert new != text, '夹具没有真正改到 scenes.tsx（锚点变了？）'
+        io.open(p, 'w', encoding='utf-8', newline='').write(new)
+    return td, rc0, out0
+
+
+# ── X · 讲法字段必填（G-14/G-15/G-16）：删掉一镜的 move → validate-presentation 必须拦 ──
+# 为什么值得单独一条：这四个字段**曾经在 resolve 那一步被整组丢掉**，
+# 于是"规范要求必填"下游根本看不见（实测删掉 move，全部门禁照旧 PASS）。
+def mut_move(d):
+    d['shots'][2].pop('move', None)
+    return d
+td, rc0, out0 = mkproj(mut_move)
+case('X 讲法字段 · 缺 move（G-14）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:缺 move', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# ── Y · 文字安全色（*Ink）：把 blueInk 改成近乎白色 → validate-presentation 必须拦（P0）──
+# 这一条同时是"新增机制的自检"：五个 *Ink 是专门用来当文字色的，
+# 它们不过 4.5:1，"把强调色压暗到能当文字"这个约定就是空话。
+td, rc0, out0 = mkproj()
+os.makedirs(os.path.join(td, 'src/theme'), exist_ok=True)
+for name in ('types.ts', 'canvas.ts', 'active.ts', 'paper.tsx', 'cel.tsx', 'sticker.tsx', 'flat.tsx'):
+    src_p = os.path.join(TPL, 'src/theme', name)
+    if os.path.exists(src_p):
+        shutil.copy(src_p, os.path.join(td, 'src/theme', name))
+ink_path = os.path.join(td, 'src/theme/paper.tsx')
+ink_text = io.open(ink_path, encoding='utf-8').read().replace("blueInk: '#2563eb'", "blueInk: '#eeeeee'")
+assert "blueInk: '#eeeeee'" in ink_text, '夹具没改到 paper 的 blueInk（值变了？）'
+io.open(ink_path, 'w', encoding='utf-8', newline='').write(ink_text)
+case('Y 文字安全色 · *Ink 压不过 4.5:1', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:文字安全色', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# ── Z · beats 下标越界（validate-composition）：两种写法 + 一条阴性对照 ──
+# 由来：场景写 `b[3]` 而镜里只有 3 拍时，要么整帧渲染抛错、要么那件东西永远不出现（都实测过）。
+# ⚠️ 原来只扫本地别名 `b[k]`，写成全路径 `SHOTS.Sx.beats[k]` 就整条漏掉 —— Z3 钉住这一侧。
+S1_ANCHOR = "const b = SHOTS.S1.beats;"
+S2_ANCHOR = "const b = SHOTS.S2.beats;"
+
+td, rc0, out0 = mksrc(lambda t: t.replace(
+    S1_ANCHOR, S1_ANCHOR + NL + "  const okIdx = b[1];", 1).replace(
+    S2_ANCHOR, S2_ANCHOR + NL + "  const okFull = SHOTS.S2.beats[1];", 1))
+case('Z1 拍数越界 · 合法下标必须放行（阴性对照）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_pass', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+td, rc0, out0 = mksrc(lambda t: t.replace(S1_ANCHOR, S1_ANCHOR + NL + "  const badIdx = b[9];", 1))
+case('Z2 拍数越界 · 本地别名 b[9]', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:场景里用了 b[9]', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+td, rc0, out0 = mksrc(lambda t: t.replace(S2_ANCHOR, S2_ANCHOR + NL + "  const badFull = SHOTS.S2.beats[9];", 1))
+case('Z3 拍数越界 · 全路径 SHOTS.S2.beats[9]（原来漏掉的写法）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:SHOTS.S2.beats[9]', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
 print()
 print('== 负向抽查明细 ==')
 for name, ok, detail in results:

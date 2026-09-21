@@ -62,7 +62,14 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 | 正文色 `ink` / 反白 `white` on `ink` 对比度 < 4.5:1 | **P0** | WCAG 2.2 SC 1.4.3（大字号 3:1；**不四舍五入**，4.499 不通过） |
 | `muted` on 表面 < 3.0 | **P0** | muted 是装饰性 kicker，按大字档判 |
 | `muted` 3.0–4.5 | P1 | 同上，提示一档 |
-| 强调色当**文字色** / 彩色填充上的白字 < 阈值 | P1（按主题聚合） | 见下"已知真实缺陷" |
+| **`*Ink` 文字安全色**在任一纸面上 < 4.5:1 | **P0** | `blueInk/orangeInk/greenInk/goldInk/redInk` 是**专门**用来当文字色的（约定与来历见 `theme-system.md` 的"文字安全色"一节）：它们不过，就等于"把强调色压暗到能当文字用"这个约定是空话。**这一条同时是新增机制的自检**——没有它，加了 Ink 也没人验 |
+| 被 `color:` 用过的**任意其它调色板键** on 纸面 < 4.5:1 | P1（按主题聚合） | 用原色（或 `orangeDeep` 这类填充 token）当文字色。**修法是换成对应的 Ink 变体，不是调松门禁** |
+| 彩色填充上的白字 < 3.0 | P1（按主题聚合） | 见下"已知真实缺陷" |
+
+> **遇到"强调色当文字色"该怎么做（本轮的处置，照做就行）**：① 这个词位本来就该是文字 → 换成对应的 `*Ink`；
+> ② 这个 token 同时还要当填充（如 `orangeDeep` 是章节序号渐变的深色端）→ **原值保留给填充，文字位改 `orangeInk`**；
+> ③ 这个 token 只当文字用（如 `headerAccent` / `headerSub`）→ 就地把它压到过线（同色相按 WCAG 反解）。
+> 实测这一步在模板上把 `flat/paper: orangeDeep`（4.19 / 2.83:1）与 `sticker: headerAccent / headerSub`（2.40 / 3.14:1）三条 P1 清掉了。
 
 > ⚠️ **这道对比度检查的能力边界（复核实测，别高估它）**：它只读 `theme/*.tsx` 里 `palette` 那个字面量，
 > 且只认**标准键名**。实测两条绕过路径都走得通：
@@ -88,6 +95,17 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 > 结论：**配对必须是声明的契约**——正文 `ink on 表面`、深底反白 `white on ink`、彩色反白 `white on <强调色>`、
 > 次要文字 `muted on 表面`、彩字 `<强调色> on 表面`，就这五类，写在脚本里。
 
+### G-14/G-15/G-16 讲法字段（P0/P1）——**判据见 `narrative-moves.md` §4**
+
+本脚本还有第二组检查：`shots.json` 里的 `move` / `evidence` / `hold` / `misconception(+noMisconception+why)`
+四类**讲法字段**是否写全、`move` 是否落在 10 个名字的闭集里、`hold` 是否 ≥ 标定线、误解二选一是否成立。
+判据、取值与标定过程都在 [narrative-moves.md](narrative-moves.md) §2–§4，这里不重复。
+
+> ⚠️ **编号（2026-09-21 修撞号）**：这一组**不是 G-6**。G-6 在调研报告里是"**对比层结构闭合**"（需要 `compare` 字段），
+> 至今**未实现**（见本文第四节）。本组用 `narrative-moves.md` §4 的编号：G-14 `move` 闭合 / G-15 `evidence` 真的会动 /
+> G-16 误解与留白；G-17（`known → new` 闭合）尚未实现。
+> 判断依据：**编号属于调研报告的清单，新门禁只能往后排**——两边都叫 G-6 会让"哪道门在报"变成猜谜。
+
 ### G-5 节拍拥挤（P1，**代理指标**）
 
 同一镜内 **≥3 个 beat 落在 12 帧窗口** → P1（好几件事挤在一拍上，观众分不清该看哪）。
@@ -95,7 +113,7 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 > ⚠️ 报告原文的 G-5 是"每帧**新开始的入场动画数**直方图"，那需要元素级的 `enters` 声明，**现有数据里没有**。
 > 这里只做数据支持得了的代理形式，差距写在 Known gaps 里。
 
-## 二、这道门禁自带负向夹具（`scripts/negative-gate-check.py` 的 I–M · R · S）
+## 二、这道门禁自带负向夹具（`scripts/negative-gate-check.py` 的 I–M · R · S · X · Y）
 
 **每条判据都有"喂坏输入必须拦住"的证据 + 阴性对照**（技能铁律：名存实亡的门禁是最危险的缺陷——
 本轮刚抓到 `CardFitGate` 从装上那天起就没拦过一次）。
@@ -110,7 +128,12 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 | K | 把 cue1 写成 36 加权字 / 0.9s | `P0 cue1: 阅读速度 40.0 字/秒 > 9.0` |
 | L | 写一个 `fontSize: 9` 的场景文件 | `P0 src: src\tooSmall.tsx:1 fontSize:9 低于绝对地板 13` |
 | M | 把主题的 `ink` 改成近乎白色（压白底） | `P0 theme:paper: 正文色 ink on paper = 1.12:1 < 4.5` |
+| **X** | 删掉 S3 的 `move`（讲法字段 G-14） | `P0 S3: 缺 move（叙事动作）：讲法规范要求每镜声明它在这一章里干哪件事` |
+| **Y** | 把 `paper` 的 `blueInk` 改成 `#eeeeee`（文字安全色） | `P0 theme:paper: 文字安全色没过 4.5:1（它们是**专门**用来当文字色的）：blueInk 1.07:1(on paperWarm)` |
 | E（对照） | **原样分镜** | `validate-presentation` **通过**（证明门不是"见谁拦谁"） |
+
+> ⚠️ X 与 Y 是**本轮新增判据的夹具**（判据加了而夹具没加，这道门仍然只是名义存在）。
+> Y 还兼作"新增机制的自检"：五个 `*Ink` 是专门用来当文字色的，喂一个过不了 4.5:1 的进去必须报 P0。
 
 > ⚠️ 夹具 I 的第一版**根本没测到③**：它给 S2 的 `cue4` 加负 offset，而那个 cue 的帧号恰好等于 S2 镜起点，
 > 任何负 offset 都先撞判据①"落在镜外"→ 永远走不到"提前剧透"。复核读完整输出才发现，现改用 S1 的 cue1。
@@ -123,6 +146,14 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 > orangeDeep 2.49–2.83:1（大字档需 3.0、小字需 4.5）。彩色填充上的白字同样有问题（sticker 的 white on gold = 1.44:1）。
 > 这是**真实的可读性缺陷**（不是判据太严），但它属于**审美决定**：要么把这几支色值调深、要么约定
 > "这些色只用于图形填充、当文字时改用 `ink`"。**没有替用户改四个主题的配色**，只把数字与用到处报出来。
+>
+> ✅ **2026-09-21 的处置（部分落地）**：约定已经落成机制 —— 每支强调色补一个 `*Ink` 文字安全色
+> （同色相按 WCAG 反解压暗，见 `theme-system.md`），五个 Ink 现在都过 4.5:1；
+> 又把**残留的三个"用填充色当文字"的色名**按同一办法清掉：`number/boolean` 的语法高亮从 `orangeDeep`
+> 换成 `orangeInk`（原值继续留给章节序号渐变），sticker 的 `headerAccent` / `headerSub` 就地压暗。
+> 于是 `flat/paper: orangeDeep` 与 `sticker: headerAccent / headerSub` 三条 P1 消失。
+> **仍未处理的是另一半**：彩色填充上的白字（sticker 的 blue/orange/orangeDeep/green/gold 全在 1.44–2.66:1）
+> —— 那要么把填充色压深、要么给白字加描边，是纯审美取舍，**留给用户拍板**。
 
 ## 四、还没做的
 

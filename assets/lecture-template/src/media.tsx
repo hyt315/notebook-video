@@ -1,5 +1,5 @@
 import React from 'react';
-import {Easing, interpolate, spring} from 'remotion';
+import {Easing, interpolate} from 'remotion';
 import {THEME} from './theme/active';
 
 // ============================================================================
@@ -26,7 +26,7 @@ import {THEME} from './theme/active';
 // ============================================================================
 
 const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
-const BASE_FPS = 30;
+// BASE_FPS 已删：本文件没有一处 spring（全走 interpolate 显式曲线），tsc TS6133。
 const easeOut = (f: number, a: number, b: number, from = 0, to = 1) =>
   interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.bezier(0.16, 1, 0.3, 1)});
 const easeIn = (f: number, a: number, b: number, from = 0, to = 1) =>
@@ -120,8 +120,8 @@ export const ConsoleWindow: React.FC<{
               const sweep = isLast ? pulse(f, at + 16, 20) : 0;
               return (
                 <div key={i} style={{position: 'relative', display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'Space,Kai,monospace', fontWeight: 600, fontSize: 22, color: tone(r.tone), borderRadius: 6, padding: '2px 6px', overflow: 'hidden', background: flash > 0.02 ? `${tone(r.tone)}22` : 'transparent'}}>
-                  {r.tone === 'cmd' && <span style={{color: C.green, opacity: glyphP, transform: `scale(${0.7 + 0.3 * glyphP})`}}>❯</span>}
-                  {r.tone === 'ok' && <span style={{color: C.green, opacity: glyphP, transform: `scale(${0.7 + 0.3 * glyphP})`}}>✓</span>}
+                  {r.tone === 'cmd' && <span style={{color: C.greenInk, opacity: glyphP, transform: `scale(${0.7 + 0.3 * glyphP})`}}>❯</span>}
+                  {r.tone === 'ok' && <span style={{color: C.greenInk, opacity: glyphP, transform: `scale(${0.7 + 0.3 * glyphP})`}}>✓</span>}
                   <span style={{whiteSpace: 'nowrap', clipPath: `inset(0 ${(1 - wideP) * 100}% 0 0)`, transform: `translateX(${(1 - textP) * 14}px)`}}>{r.text}</span>
                   {cursor && cursorRow === i && (
                     <span style={{display: 'inline-block', width: 8, height: 19, marginLeft: 2, background: C.green, opacity: blink, transform: `translateX(${(1 - cursorTravel) * -14}px)`}} />

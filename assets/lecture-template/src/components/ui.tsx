@@ -31,6 +31,10 @@ import {interpolate, spring} from 'remotion';
 import {THEME} from '../theme/active';
 import {TYPE, PillTag} from '../kit';
 import {fitH} from '../fxkit';
+// ⚠️ fitsWithin 在 ControlStack 里以 dev 自检调用，却**从未 import** —— tsc 报 TS2304。
+// 与 stagekit 的 SlotGuard 同一种病：引用了不存在的标识符，而它挂在
+// `process.env.NODE_ENV !== 'production'` 下，出片路径永远走不到 → 一路静默。
+import {fitsWithin} from './fittext';
 
 // ============================================================================
 // ui.tsx — 界面结构件（库提供结构，本层提供皮肤 + 帧驱动）
@@ -222,7 +226,8 @@ export const Tabs: React.FC<{
   const idx = Math.max(0, Math.min(tabs.length - 1, Math.floor((f - startAt) / step)));
   const active = tabs[idx];
   const p = prog(f, startAt + idx * step, 18);
-  const accent = toneOf(active.tone);
+  // 这里原有一个 `const accent = toneOf(active.tone)`，全函数没用过 —— 真正的取色
+  // 在 Trigger 与 Content 里各自按 `toneOf(t.tone)` 算（tsc TS6133 抓出来的死变量）。
 
   return (
     <RadixTabs.Root value={active.key} style={{width, height, display: 'flex', flexDirection: 'column'}}>
@@ -653,17 +658,20 @@ const syntaxSkin: Record<string, React.CSSProperties> = {
   comment: {color: C.muted, fontStyle: 'italic'},
   prolog: {color: C.muted},
   punctuation: {color: C.muted},
-  keyword: {color: C.blue, fontWeight: 700},
-  'class-name': {color: C.orange, fontWeight: 700},
-  function: {color: C.orange},
-  string: {color: C.green},
-  number: {color: C.orangeDeep},
-  boolean: {color: C.orangeDeep},
+  keyword: {color: C.blueInk, fontWeight: 700},
+  'class-name': {color: C.orangeInk, fontWeight: 700},
+  function: {color: C.orangeInk},
+  string: {color: C.greenInk},
+  // number/boolean 原来用 C.orangeDeep —— 那是**填充色**（章节序号渐变深色端），
+  // 当文字时 paper/flat 只有 2.83 / 4.19:1（门禁 P1）。同一张表里其它槽位早就用 Ink 了，
+  // 这两行是漏改：按约定换成 orangeInk（文字安全色），orangeDeep 继续只做填充。
+  number: {color: C.orangeInk},
+  boolean: {color: C.orangeInk},
   operator: {color: C.muted},
-  builtin: {color: C.blue},
-  'attr-name': {color: C.gold},
-  tag: {color: C.blue},
-  selector: {color: C.green},
+  builtin: {color: C.blueInk},
+  'attr-name': {color: C.goldInk},
+  tag: {color: C.blueInk},
+  selector: {color: C.greenInk},
 };
 
 export const HighlightCode: React.FC<{

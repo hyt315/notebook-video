@@ -10,7 +10,7 @@ import {prog} from './ui';
 // **把不是重点的部分压下去**（focusing / 视觉钝化）。缺的从来不是"更亮的边框"，是"暗下去的背景"。
 //
 // 四种模式（闭合集，一镜只用一种）：
-//   dim     四块半透明纸色盖住目标之外的一切 —— 最稳、最不容易做坏，缩略图/网格/表格首选
+//   dim     四块压暗遮罩盖住目标之外的一切（暗色 + multiply，是真的往下压）—— 缩略图/网格/表格首选
 //   spot    目标上留一个亮斑，外围暗 —— 灯打在证据上
 //   loupe   圆形放大镜：把 children 的某块区域放大显示（数字/小字/细节）
 //   marker  目标外一圈手绘感描边，随时间画出（不依赖 roughjs，纯帧驱动的圆角矩形笔画）
@@ -31,17 +31,51 @@ const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
  *  实测依据：线性入场在 t=50% 时比 ease-out 落后 180px（探针 Probe-prog-ease 渲出来的数字）。 */
 const easeOut3 = (v: number) => 1 - Math.pow(1 - clamp01(v), 3);
 
-/** 遮罩浓度：dim/spot 用纸色半透明，四套皮肤都成立（不写死颜色）。 */
+/**
+ * 遮罩浓度。
+ *
+ * 2026-09-21 修（三个原因叠加，全部有单帧实测数字，探针见交付报告）：
+ *   ① **颜色是纸色** —— 原来是 `background: C.paperBase`，而纸色底上的纸色遮罩
+ *      等于没画：亮底 249.2 → 247.4（Δ-1.9），中灰块 128 → **214（反而提亮了 86）**。
+ *      "把其余压暗"这句话一个字都没画出来。改成 `muted` + `multiply`：亮底 → 146.8、
+ *      中灰 128 → 76.1，是真的往下压；`muted` 四套皮肤都有，比写死一个灰更稳。
+ *   ② **不是覆盖层** —— 原来没有 z-index，只有 `position:absolute`，于是"写在内容前面"
+ *      就被内容盖住（DOM 顺序从来不是契约）。见 SCENE_ANCHOR 的 zIndex。
+ *   ③ **坐标随宿主漂移** —— 注释写"rect 是场景坐标"，实现却按最近的定位祖先算：
+ *      放进 `left:200,top:300` 的包裹层，蒙版整体偏出画布左边与上边（左缘 60px 处
+ *      实测 247.3 = 完全没被盖到），"洞"也落在别处。见 SCENE_ANCHOR 的 position。
+ */
 const VEIL = 0.72;
+const VEIL_COLOR_KEY = 'muted' as const;
+const VEIL_BLEND: React.CSSProperties['mixBlendMode'] = 'multiply';
 
 /**
- * 四块（或四边）纸色遮罩：把 rect 之外盖住。用四条而不是"整块 + 挖洞"，
+ * SCENE_ANCHOR —— 本件所有覆盖层（遮罩四条、spot 框、label、marker 描边、loupe 镜片）
+ * 共用的锚点。两个属性各自解决一个真实的坑，别只改一处：
+ *
+ *   · `position: 'fixed'`：设计根（index.tsx 的 `data-design-root`）带
+ *     `transform: scale(...)`，而 transform 会让该元素成为 fixed 后代的**包含块**——
+ *     于是 left/top/width/height 一律按**场景坐标**解释，无论外面套了几层定位容器。
+ *     这正是注释里承诺的"rect 是场景坐标"。前提：必须挂在设计根内部（整片都满足）。
+ *   · `zIndex`：把遮罩钉在场景内容之上。Grade/Subtitle 在 index.tsx 里排在场景**之后**，
+ *     所以字幕不会被压暗（这是要的：字幕是屏幕空间，不属于"其余"）。
+ */
+const SCENE_ANCHOR: React.CSSProperties = {position: 'fixed', zIndex: 9000};
+
+/**
+ * 四块（或四边）遮罩：把 rect 之外盖住。用四条而不是"整块 + 挖洞"，
  * 是因为 clip-path/evenodd 在不同浏览器与 Remotion 的截图路径上表现不一致——实测踩过。
  */
 const Veil: React.FC<{rect: FocusRect; canvas: {w: number; h: number}; p: number; round?: number}> =
 ({rect, canvas, p, round = 0}) => {
   const a = VEIL * p;
-  const style: React.CSSProperties = {position: 'absolute', background: C.paperBase, opacity: a, pointerEvents: 'none'};
+  const style: React.CSSProperties = {
+    ...SCENE_ANCHOR,
+    background: C[VEIL_COLOR_KEY],
+    mixBlendMode: VEIL_BLEND,
+    opacity: a,
+    pointerEvents: 'none',
+  };
   const x0 = Math.max(0, rect.x), y0 = Math.max(0, rect.y);
   const x1 = Math.min(canvas.w, rect.x + rect.w), y1 = Math.min(canvas.h, rect.y + rect.h);
   return (
@@ -96,14 +130,14 @@ export const FocusFx: React.FC<{
         {mode === 'spot' ? (
           <div
             style={{
-              position: 'absolute', left: rect.x, top: rect.y, width: rect.w, height: rect.h,
+              ...SCENE_ANCHOR, left: rect.x, top: rect.y, width: rect.w, height: rect.h,
               border: `3px solid ${accent}`, borderRadius: 12, opacity: p, pointerEvents: 'none',
               boxShadow: `0 0 0 6px ${C.paperBase}00`,
             }}
           />
         ) : null}
         {label ? (
-          <div style={{position: 'absolute', left: rect.x, top: Math.max(0, rect.y - 44), fontSize: 24, color: accent, opacity: p, fontWeight: 700}}>
+          <div style={{...SCENE_ANCHOR, left: rect.x, top: Math.max(0, rect.y - 44), fontSize: 24, color: accent, opacity: p, fontWeight: 700}}>
             {label}
           </div>
         ) : null}
@@ -116,7 +150,7 @@ export const FocusFx: React.FC<{
     const per = 2 * (rect.w + rect.h) + 8 * 18;   // 近似周长（含圆角）
     return (
       <>
-        <svg width={canvas.w} height={canvas.h} style={{position: 'absolute', left: 0, top: 0, pointerEvents: 'none'}}>
+        <svg width={canvas.w} height={canvas.h} style={{...SCENE_ANCHOR, left: 0, top: 0, pointerEvents: 'none'}}>
           <rect
             x={rect.x} y={rect.y} width={rect.w} height={rect.h} rx={16}
             fill="none" stroke={accent} strokeWidth={6} strokeLinecap="round"
@@ -125,7 +159,7 @@ export const FocusFx: React.FC<{
           />
         </svg>
         {label ? (
-          <div style={{position: 'absolute', left: rect.x, top: Math.max(0, rect.y - 44), fontSize: 24, color: accent, opacity: p, fontWeight: 700}}>
+          <div style={{...SCENE_ANCHOR, left: rect.x, top: Math.max(0, rect.y - 44), fontSize: 24, color: accent, opacity: p, fontWeight: 700}}>
             {label}
           </div>
         ) : null}
@@ -142,7 +176,7 @@ export const FocusFx: React.FC<{
       {children}
       <div
         style={{
-          position: 'absolute', left: cx - rp, top: cy - rp, width: rp * 2, height: rp * 2,
+          ...SCENE_ANCHOR, left: cx - rp, top: cy - rp, width: rp * 2, height: rp * 2,
           borderRadius: 999, overflow: 'hidden', border: `5px solid ${accent}`,
           opacity: Math.min(1, p * 1.2), pointerEvents: 'none',
           boxShadow: THEME.paperShadow(0.9),

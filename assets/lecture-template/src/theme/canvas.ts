@@ -10,7 +10,10 @@ export const MODES = {
   '3:4':  {compW: 1440, compH: 1920, designW: 1080, designH: 1440, subMar: 50,  subBottom: 40, subH: 104, safe: 900,  subFont: 40, scale: 4 / 3},
 } as const;
 export type CanvasMode = keyof typeof MODES;
-export type ModeSpec = typeof MODES['16:9'];
+// tsc TS2322：`typeof MODES['16:9']` 只认 16:9 那一种，于是 index.tsx 的
+// `MODES[canvas] || MODES['16:9']`（三种模式的联合）塞不进 Context 的 mode 槽。
+// 三个模式的键名完全一致、只有数值不同，取属性不受影响 —— 改成**三种模式的联合**。
+export type ModeSpec = (typeof MODES)[keyof typeof MODES];
 
 export const CanvasContext = React.createContext<{canvas: CanvasMode; isPortrait: boolean; mode: ModeSpec}>({
   canvas: '16:9',

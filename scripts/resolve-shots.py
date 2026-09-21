@@ -160,6 +160,16 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
             "beats": [(ms_frame(cues[int(bt["cue"])]["start_ms"]) + int(bt.get("offset", 0)) - frm) for bt in (s.get("beats") or [])],
             # beatsAbs：绝对帧（门禁消费）
             "beatsAbs": [(ms_frame(cues[int(bt["cue"])]["start_ms"]) + int(bt.get("offset", 0))) for bt in (s.get("beats") or [])],
+            # ---- 讲法字段（2026-09-21 补：以前这四项**在这一步被整组丢掉**）----
+            # 后果：shots.resolved.json 与 src/shots.ts 里都没有 move/evidence/hold/misconception，
+            # 于是「讲法规范要求必填」这件事**下游根本看不见**，任何门禁都查不到（实测删掉也不报错）。
+            # 现在原样透传：resolved 与 TS 两侧都能被门禁读到。
+            "move": s.get("move"),
+            "evidence": s.get("evidence"),
+            "hold": s.get("hold"),
+            "misconception": s.get("misconception"),
+            "noMisconception": s.get("noMisconception"),
+            "why": s.get("why"),
         }
         out.append(rec)
         cursor = to
