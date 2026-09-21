@@ -700,7 +700,7 @@ No black frames detected.
   **它当场抓到 demo 一条真漏检**：`components-test.tsx` 从 `./components` 导入 `RevealMask`，该件其实在引擎层 `insert.tsx`
   （打包器只告警 → 运行时 undefined）。已改为从 `./insert` 导入。
 - **门禁数量漏了 `SKILL.md`**：description `nine`→`ten`、"三道构建期门禁"→"六道"、
-  "five deliberately broken shot tables + one clean control"→ 19 个夹具 / 39 条断言 / 19 个 needle；
+  "five deliberately broken shot tables + one clean control"→ 23 个夹具 / 49 条断言 / 24 个 needle；
   `presentation-gate.md` 与 `validate-presentation.py` 的"现有 9 道"改成"既有 9 道（本道是第 10 道）"。
 - **文档瑕疵实为 5 处**：`shot-language.md:175` 的三连重复上一轮漏了，已补；并全仓扫 `(.{12,})\1\1`
   确认剩下的都是表格分隔线与注释虚线。
@@ -720,6 +720,20 @@ No black frames detected.
   等布局件（正是上轮误报来源）。两工程输出仍是同一条既有 WARN。
 - **零碎**：模板与 demo 两处 `index.tsx` 的悬空注释 `// camScript：…`（函数已删）删掉；
   CHANGELOG 同节里"8 项全 PASS / A–H"与"16 个 case"自相矛盾 → 统一并指向 ④。
+- **别名再导出不再误报**（第三轮复核抓到的潜在假阳性）：`export {Accordion as MyAccordion} from './ui'`
+  第一版拿**别名**去上游找 → 判"导出不存在"。改成**比对源名、登记别名**，`default` 归"核实不了"（放行不判错）。
+  A/B（同一夹具）：旧 `P0=1 src/scenes.tsx … MyAccordion` vs 新 `rc=0 P0=0`；坏别名（源名在上游不存在）仍拦：
+  `P0 … GhostAlias`。
+- **只扫"值位置"**（第三轮复核第二条边界）：注释与**字符串字面量内部**先抹成空格（长度/行号不动），
+  所以 `const CODE = \`import X from './y';\`` 这种**模板字符串里的代码样例**不再被当成真 import、
+  也不再贡献"幽灵导出"；`fontSize:` 同理。四条字号行为固化成夹具 **case T**（真违规报第 5 行；
+  字符串/块注释/整行注释/JSX 撇号四处**必须不报**，用字符串断言 `must_absent` 钉住——此前这几条只是"当场跑过"，
+  回归护栏是空的，复核指出）。
+- **新增夹具 4 条**（T 字号四条行为 / U 合法别名再导出必须放行 / V 坏别名不许洗白 / W 字符串样例不算 import），
+  并把新断言类型写进脚本 docstring：`must_block:<子串>`、`must_absent:<子串>`、`must_warn:<子串>`、`must_pass`。
+- **确定性口径收窄**（第三轮复核隔离出原因）：**still / PNG 逐字节可复现；长片段 mp4 只保证画面等价**
+  （同树连渲 900 帧 md5 每次都不同：`3f5557ad` / `2ad431d5` / `11a88601`；像素差仅边缘少数点）。
+  README 两份已按此改写，CHANGELOG 这里也不再笼统说"逐字节"。
 - **CI 步骤名与命令不符**：写着 `stays green in strict mode` 却**没传 `--strict`** → 改名
   `Check overlay coordinates (out-of-canvas fails; "frame or card?" is warn-only)` 并写明不加 `--strict` 的理由
   （那条 ChatThread WARN 是待人工确认的真问题）；顺带去掉 `negative-gate-check.py` 后面**被忽略的多余参数**。
@@ -729,20 +743,23 @@ No black frames detected.
 - **30 秒实渲**（在修好入口之后、不是把文件挪走之前）：`NotebookVideoFilm --frames=0-899` → `Encoded 900/900`，
   ffprobe `h264 2560x1440 nb_frames=900` + `aac` 轨、30.06 s、8 MB，`blackdetect` 零黑帧；抽 1 帧看图（f=450）画面正常
   （底部字幕是**逐字显现进行中**，不是被画面裁掉）。
-- **渲染可复现**：同一棵树上连渲两次同 3 帧，两个 mp4 **逐字节相同**（md5 `6229293b…`）。
-  另有抽帧对比，但**要诚实说明它的范围**：那三次 `remotion still`（f0/f450/f899）两次都把 `index.tsx` 钉在同一个版本上，
+- **渲染可复现的范围（第三轮复核隔离出原因后收窄口径）**：同树连渲两次 **3 帧** → 两个 mp4 逐字节相同（md5 `6229293b…`）；
+  同树连渲两次 **900 帧** → md5 **每次都不同**（`3f5557ad` / `2ad431d5` / `11a88601`），像素差只落在边缘少数点
+  （最大 76、平均 0.12、95.2% 字节相同）→ **长片段 x264 编码本来就不逐字节可复现，与内容无关**。
+  所以本仓的确定性口径统一为：**still / PNG 逐字节可复现；长片段 mp4 只保证画面等价**（README 两份都已写明）。
+  抽帧对比的范围也要说清：那三次 `remotion still`（f0/f450/f899）两次都把 `index.tsx` 钉在同一个版本上，
   所以它证明的是"那 4 个数据/测试文件（shots 两拍 offset 等）不动这几个抽样帧"，**不等于**"当前这棵树整段没变"。
   ⚠️ 而且做这个对比时我用 `git checkout HEAD~1 -- …` 把**工作区里未提交的** `demo/src/index.tsx` 覆盖掉了
   （那份含 v3.1 同步：删 6 件插图件、字号抬到 ≥13、清陈旧 import）。已按"模板 + 该工程专有的 3 处"重建并复核：
   与模板 diff 只有那 3 处、`compositions` 列出 3 个合成、四个门禁 P0=0、夹具 `tooSmall` 仍被真门禁拦下
   （`Card overflow … 溢出 397px`）。教训：`git checkout HEAD -- <path>` 会**丢掉未提交的工作区版本**，做 A/B 前先把工作区备份成文件。
 - **门禁全跑**：模板 `validate-frame-props` P0=0/P1=0 · `validate-composition` P0=0/P1=5 · `validate-presentation` P0=0/P1=12 ·
-  `validate-skill-consistency` passed · `negative-gate-check` 19 case / 39 断言全 PASS · `coords-lint` 1 WARN/0 error ·
+  `validate-skill-consistency` passed · `negative-gate-check` 23 case / 49 断言全 PASS（含 T/U/V/W 四条新增）· `coords-lint` 1 WARN/0 error ·
   `selftest.py` 11/11；demo `validate-composition` P0=0/P1=7、`validate-presentation` P0=0/P1=14。两工程 P0 全 0。
 
 **Verified**
 
-- **四道门禁全部复跑，P0 = 0**：`validate-frame-props`（P0=0 P1=0 PASS）· `validate-composition`（P0=0 P1=5 PASS，P1 与改动前逐条一致，无新增）· `validate-skill-consistency`（passed）· `negative-gate-check`（当时 A–P 16 个 case 全 PASS，含阴性对照；复核第二轮后扩到 19 个，见 ④）。
+- **四道门禁全部复跑，P0 = 0**：`validate-frame-props`（P0=0 P1=0 PASS）· `validate-composition`（P0=0 P1=5 PASS，P1 与改动前逐条一致，无新增）· `validate-skill-consistency`（passed）· `negative-gate-check`（当时 A–P 16 个 case 全 PASS，含阴性对照；复核第二/三轮后扩到 23 个，见 ④）。
 - **接触表 14 页 → 17 页**（新增 ⑮ 图表变体 / ⑯ 层级与关系 / ⑰ 弹层与形状；⑫ 页的 `TiltCard` 格子换成 `ControlStack`），
   `SHOWCASE_PAGES = 17`、`SHOWCASE_VERSION = showcase-v8`。新增与改动的每一页都**实渲了一帧并看图确认**（不是只看"没报错"）。
 - **确定性复验（成品件，不只是诊断件）**：接触表第 ⑯ 页（treemap / pack / sunburst / NetworkGraph）与第 ⑰ 页

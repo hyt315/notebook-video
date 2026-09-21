@@ -219,54 +219,64 @@ def check_readability(project: Path) -> tuple[list, list]:
     band: dict[str, list[tuple[int, int]]] = {}   # 13–15 档：按文件聚合，避免一条一处刷屏
     files = sorted(list(src.rglob("*.tsx")))
 
-    def strip_comments(text: str) -> str:
-        """扫字号前先剥注释，但**行号与字符串字面量都要保住**：
-        ① 注释里写历史反例（"fontSize: 9 是禁止的写法"）不该被判 P0（复核实测过这条假阳性）；
-        ② 块注释要**按它跨的行数补回等量换行**——否则整体行号上移（复核实测：showcase.tsx 报 464，真实 467）；
+    def code_only(text: str) -> str:
+        """把"不是代码"的位置（注释内部 + **字符串字面量内部**）换成空格，**长度与行号一字不动**。
+
+        为什么是"抹掉"而不是"按行过滤"：抹掉之后正则照旧能跑，行号与列位置都还是原始的，
+        所以报出来的行号永远等于编辑器里那一行（第二轮复核抓到过 464 vs 真实 467 的漂移）。
+
+        四条必须同时成立，每条都是实测踩出来的：
+        ① 注释里写历史反例（"fontSize: 9 是禁止的写法"）不该判 P0；
+        ② 块注释**按跨行数补回等量换行**，否则整体行号上移；
         ③ `//` 只有在**字符串外**才是注释——否则 `background:"url(https://…)"` 之后写的 fontSize
-           会被整行吃掉，成了新的漏检面（复核指出）；
-        ④ 反引号可跨行（模板字符串），单/双引号不跨行：遇到行尾仍未闭合就按收尾处理——
-           这样 JSX 文本里的撇号（`don't`）不会毒化整个文件、把后面的注释全当成代码。
+           会被整行吃掉，成了漏检面；
+        ④ 引号只在**值位置**才开字符串（前一个代码位置的非空白字符属于 `=([{,:;?|&!+*-<>~^` 或行首）：
+           JSX 文本里的撇号（`don't`）不该毒化整行；而 `'…'` / `"…"` 不跨行，行尾未闭合就收尾。
+        ⑤（第三轮复核指出）**字符串里放代码样例**是本仓库的常规写法——接触表/测试页里
+           `const CODE = `import {...} from './x';`` 就是。字符串里的 import / `fontSize: 8`
+           不是真的代码，扫进去就是假 P0；反过来，它也不该给 import_integrity 贡献"幽灵导出"。
         """
-        out: list[str] = []
-        i, n, quote = 0, len(text), ""
-        # 引号只有在**值位置**才开字符串：前一个非空白字符属于 `=([{,:;?|&!+*-<>~^` 或行首。
-        # 为什么必须这条：JSX 文本里的撇号（`<div>don't</div>`）如果被当成开引号，
-        # 同一行后面的 `// 注释` 就会被当字符串内容留着 → 注释里的 `fontSize: 9` 变成假 P0
-        # （实测就是这么暴露的）。而真正的字符串几乎都长在值位置：`k: '…'`、`f('…')`、`{a: '…'}`。
+        out = [ch if ch not in "\n" else "\n" for ch in text]
         VALUE_POS = "=([{,:;?|&!+*-<>~^"
+        i, n, quote, prev = 0, len(text), "", ""
+        def blank(lo: int, hi: int) -> None:
+            for k in range(lo, hi):
+                if out[k] != "\n":
+                    out[k] = " "
         while i < n:
             ch = text[i]
             if quote:
-                out.append(ch)
+                blank(i, i + 1)
                 if ch == "\\" and i + 1 < n:      # 转义：连下一个字符一起吃掉
-                    out.append(text[i + 1]); i += 2; continue
+                    blank(i + 1, i + 2)
+                    i += 2
+                    continue
                 if ch == quote:
                     quote = ""
                 elif ch == "\n" and quote != "`":
                     quote = ""                     # '…' / "…" 不跨行：行尾未闭合就收尾
                 i += 1
                 continue
-            if ch in "'\"`":
-                prev = next((c for c in reversed(out) if not c.isspace()), "")
-                if prev == "" or prev in VALUE_POS:
-                    quote = ch
-                out.append(ch); i += 1; continue
-            if text.startswith("//", i):
+            if ch in "'\"`" and (prev == "" or prev in VALUE_POS):
+                quote = ch
+                blank(i, i + 1)
+            elif text.startswith("//", i):
                 j = text.find("\n", i)
-                i = n if j < 0 else j              # 吃到行尾；换行留给下一轮（行号不变）
+                blank(i, n if j < 0 else j)        # 吃到行尾；换行留着（行号不变）
+                i = n if j < 0 else j
                 continue
-            if text.startswith("/*", i):
+            elif text.startswith("/*", i):
                 j = text.find("*/", i + 2)
-                seg = text[i:] if j < 0 else text[i : j + 2]
-                out.append("\n" * seg.count("\n")) # 补回等量换行，行号不漂
+                blank(i, n if j < 0 else j + 2)    # 块注释内部全抹，换行不抹
                 i = n if j < 0 else j + 2
                 continue
-            out.append(ch); i += 1
+            elif not ch.isspace():
+                prev = ch
+            i += 1
         return "".join(out)
 
     for f in files:
-        for n, line in enumerate(strip_comments(f.read_text(encoding="utf-8")).splitlines(), 1):
+        for n, line in enumerate(code_only(f.read_text(encoding="utf-8")).splitlines(), 1):
             rel = f"{f.relative_to(project)}:{n}"
             for m in FONT_RE.finditer(line):
                 size = int(m.group(1))

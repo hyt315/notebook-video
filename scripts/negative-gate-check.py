@@ -2,7 +2,14 @@
 """负向抽查：给**每道构建期门禁**喂"该 FAIL 的夹具"，验证它们真的会拦（不渲染任何东西）。
 门在名义上存在、实际静默放行 = 最危险的病。
 
-每步各自声明期望：('must_block' | 'must_pass', label, (rc, out))。"""
+每步各自声明期望：`(kind, label, (rc, out))`，kind 四种：
+  · `must_block:<子串>`  rc != 0 **且**输出含该子串（不带子串则只要求 rc != 0）
+  · `must_absent:<子串>` rc != 0 **且**输出**不含**该子串——用来钉"不该报的那一侧"
+                         （例如注释/字符串里的反例不许被当成违规报出来）
+  · `must_warn:<子串>`   rc == 0 **且**含该子串——P1 级判据"放行但要点名"的夹具
+  · `must_pass`          rc == 0（阴性对照：合法输入必须全过）
+
+为什么子串断言是必须的：只看 rc 会把"因为别的原因失败"记成通过（第一版 P 用例就是这样假通过的）。"""
 import io, json, os, shutil, subprocess, sys, tempfile
 
 SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -46,10 +53,11 @@ def case(name, steps):
         # `must_block:<子串>` = 必须失败**且**输出里出现该子串 —— 否则"因为别的原因失败"
         # 会被当成本夹具通过（第一版 P 用例就是这样假通过的：拷贝时跳过了 assets/demo 的大文件，
         # 于是它因为"链接断了"而失败，根本没测到"文档写了不存在的组件名"）。
-        needle = kind.split(':', 1)[1] if ':' in kind else None
-        good = (rc != 0) if kind.startswith('must_block') else (rc == 0)
-        if needle:
-            good = good and needle in out
+        # `must_absent:<子串>` = 必须失败**且**输出里**没有**该子串，用来钉"不许误报"的那一侧。
+        kind_base, _sep, arg = kind.partition(':')
+        good = (rc == 0) if kind_base in ('must_pass', 'must_warn') else (rc != 0)
+        if arg:
+            good = good and (arg not in out if kind_base == 'must_absent' else arg in out)
         ok = ok and good
         lines = [l.strip() for l in out.split('\n') if l.strip()][:2]
         detail.append(f"    {'PASS' if good else 'FAIL'}  [{kind}] {label}: rc={rc} · {' / '.join(lines)[:230]}")
@@ -345,6 +353,98 @@ case('Q import_integrity · 桶文件 + 组件层内部 + 坏再导出', [
     ('must_block:GhostFromBarrel', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
     ('must_block:GhostSibling', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
     ('must_block:GhostWashedByBarrel', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+# ── T · 字号扫描只认"值位置"：注释 / 字符串 / JSX 撇号都不许误报，真违规仍必须报 ──
+# 第三轮复核指出：我声称的"四条夹具"是当场跑的、**没固化**（脚本里只有 L 一条），回归护栏是空的。
+# 这个夹具把四条行为钉死在同一份文件上——行号写死，故意让 needle 唯一：
+#   第 1 行 模板字符串里的代码样例（`fontSize: 8` 那种，本仓库确实这么写文档）
+#   第 2 行 块注释里的反例 · 第 3 行 整行注释 · 第 4 行 JSX 撇号 don't 后面的行尾注释
+#   第 5 行 真违规 → 必须报"第 5 行"
+td, rc0, out0 = mkproj()
+with io.open(os.path.join(td, 'src/audit-fonts.tsx'), 'w', encoding='utf-8', newline='') as fh:
+    fh.write(NL.join([
+        "const SAMPLE = `import {GhostInSnippet} from './toolkit';`;",
+        "/* 注释里的反例：fontSize: 8 是禁止写法 */",
+        "// 整行注释 fontSize: 8 也不许报",
+        "export const A = () => <div>don't</div>; // fontSize: 8",
+        "export const B = () => <div style={{fontSize: 9}}/>;",
+    ]) + NL)
+case('T 字号扫描只认代码（注释/字符串/撇号不误报，真违规仍拦）', [
+    ('must_block:audit-fonts.tsx:5 fontSize:9', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_absent:audit-fonts.tsx:1 fontSize', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_absent:audit-fonts.tsx:2 fontSize', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_absent:audit-fonts.tsx:4 fontSize', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# ── U · 合法的"别名再导出"必须放行（第三轮复核抓到的潜在假阳性，第一版真报 P0）──
+# 三种形态一次覆盖：`export {A as B}`、`export *` 链上的别名、`export {default as X}`。
+# 第一版拿**别名**去上游找导出（上游有的是**源名**）→ 合法写法被判"导出不存在"。
+td, rc0, out0 = mkproj()
+for base, _dirs, files in os.walk(os.path.join(TPL, 'src')):
+    for name in files:
+        if not name.endswith(('.tsx', '.ts')):
+            continue
+        src_path = os.path.join(base, name)
+        rel = os.path.relpath(src_path, os.path.join(TPL, 'src'))
+        dst = os.path.join(td, 'src', rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy(src_path, dst)
+with io.open(os.path.join(td, 'src/components/chain.ts'), 'w', encoding='utf-8', newline='') as fh:
+    fh.write("export {Accordion as ChainedAccordion} from './ui';" + NL)
+with io.open(os.path.join(td, 'src/components/raw.tsx'), 'w', encoding='utf-8', newline='') as fh:
+    fh.write("const Raw:React.FC<{f:number}>=()=>null;" + NL + "export default Raw;" + NL)
+with io.open(os.path.join(td, 'src/components/index.ts'), 'a', encoding='utf-8', newline='') as fh:
+    fh.write("export {Accordion as MyAccordion} from './ui';" + NL)
+    fh.write("export * from './chain';" + NL)
+    fh.write("export {default as Widget} from './raw';" + NL)
+with io.open(os.path.join(td, 'src/scenes.tsx'), 'a', encoding='utf-8', newline='') as fh:
+    fh.write("import {MyAccordion, ChainedAccordion, Widget} from './components';" + NL)
+case('U import_integrity · 别名再导出（合法）必须放行', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_pass', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+# ── V · 别名再导出的**反向**：源名在上游根本不存在 → 仍然必须拦（别名放行不等于放走坏名字）──
+td, rc0, out0 = mkproj()
+for base, _dirs, files in os.walk(os.path.join(TPL, 'src')):
+    for name in files:
+        if not name.endswith(('.tsx', '.ts')):
+            continue
+        src_path = os.path.join(base, name)
+        rel = os.path.relpath(src_path, os.path.join(TPL, 'src'))
+        dst = os.path.join(td, 'src', rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy(src_path, dst)
+with io.open(os.path.join(td, 'src/components/index.ts'), 'a', encoding='utf-8', newline='') as fh:
+    fh.write("export {NoSuchUpstream as GhostAlias} from './ui';" + NL)
+with io.open(os.path.join(td, 'src/scenes.tsx'), 'a', encoding='utf-8', newline='') as fh:
+    fh.write("import {GhostAlias} from './components';" + NL)
+case('V import_integrity · 坏别名再导出不许洗白', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:GhostAlias', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+# ── W · 字符串里的代码样例不许被当成真 import（第三轮复核的例子；本仓库确实这么放文档样例）──
+td, rc0, out0 = mkproj()
+for base, _dirs, files in os.walk(os.path.join(TPL, 'src')):
+    for name in files:
+        if not name.endswith(('.tsx', '.ts')):
+            continue
+        src_path = os.path.join(base, name)
+        rel = os.path.relpath(src_path, os.path.join(TPL, 'src'))
+        dst = os.path.join(td, 'src', rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy(src_path, dst)
+with io.open(os.path.join(td, 'src/scenes.tsx'), 'a', encoding='utf-8', newline='') as fh:
+    fh.write("export const CODE = `import {GhostInSnippet} from './toolkit';`;" + NL)
+case('W import_integrity · 模板字符串里的 import 样例不算真 import', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_pass', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
 ])
 cleanup(td)
 

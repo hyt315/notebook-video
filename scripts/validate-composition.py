@@ -89,6 +89,12 @@ def import_integrity(project: Path) -> tuple[list[dict], str]:
       · 认得 `./x` / `../x` / 目录桶文件 `./components`（= `components/index.ts`）；
       · 跟随 `export * from './y'`；桶文件上的 `export {A} from './y'` 只在该名字
         真在 y 里时才认（否则坏名字会被桶文件"洗白"）；
+      · **别名再导出**（第三轮复核指出后修）：`export {Accordion as MyAccordion} from './ui'` 里
+        对外名是 `MyAccordion`、上游名是 `Accordion`——**比对用源名、登记用别名**；
+        `export {default as Widget}` 的 `default` 追不到名字，归"核实不了"（放行），**不许判"不存在"**；
+      · **只扫代码位置**：注释与**字符串字面量内部**先被抹成空格（长度/行号不变），
+        所以模板字符串里的代码样例（`const CODE = \`import X from './y';\``）既不会被当成真 import，
+        也不会给本检查贡献"幽灵导出"；
       · **穷举不了的（指向 npm 包、有环、超过 3 层）一律不报**，只记账——
         "会哭狼的检查等于没有检查"。
     """
@@ -103,13 +109,57 @@ def import_integrity(project: Path) -> tuple[list[dict], str]:
     path_of = {key_of(p): p for p in files}
     raw_body = {k: p.read_text(encoding="utf-8", errors="replace") for k, p in path_of.items()}
 
-    # ⚠️ 必须先剥掉注释再扫：用法示例常常写成
+    # ⚠️ 必须先剥掉"不是代码"的部分再扫：用法示例常常写成
     # `// 用法：import {FitCard, Typewriter, ...} from './fxkit';`
     # 第一版没剥，于是 `...` 被当成一个名字报成 P0 —— 会哭狼的检查等于没有检查。
-    def strip_comments(text: str) -> str:
-        text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
-        # 没有 re.S 时 `.` 不匹配换行 → 这一条正好剥掉行注释
-        return re.sub(r"//.*", "", text)
+    def code_only(text: str) -> str:
+        """把注释内部与**字符串字面量内部**换成空格，长度与行号一字不动。
+
+        字符串也要抹，是因为**字符串里放代码样例**是本仓库的常规写法
+        （接触表/测试页里的 `const CODE = `import {...} from './x';``）。第三轮复核指出：
+        那种样例既会被当成真 import 扫（假 P0），也会给本检查贡献"幽灵导出"。
+        引号只在**值位置**才算开字符串（前一个代码位置的非空白字符属于 `=([{,:;?|&!+*-<>~^` 或行首），
+        免得 JSX 文本里的撇号（`don't`）毒化整行；`'…'`/`"…"` 不跨行，行尾未闭合即收尾。
+        （与 `validate-presentation.py` 的同名函数是同一份实现，两个脚本各自独立、无共享模块。）
+        """
+        out = list(text)
+        VALUE_POS = "=([{,:;?|&!+*-<>~^"
+        i, n, quote, prev = 0, len(text), "", ""
+        def blank(lo: int, hi: int) -> None:
+            for k in range(lo, hi):
+                if out[k] != "\n":
+                    out[k] = " "
+        while i < n:
+            ch = text[i]
+            if quote:
+                blank(i, i + 1)
+                if ch == "\\" and i + 1 < n:
+                    blank(i + 1, i + 2)
+                    i += 2
+                    continue
+                if ch == quote:
+                    quote = ""
+                elif ch == "\n" and quote != "`":
+                    quote = ""
+                i += 1
+                continue
+            if ch in "'\"`" and (prev == "" or prev in VALUE_POS):
+                quote = ch
+                blank(i, i + 1)
+            elif text.startswith("//", i):
+                j = text.find("\n", i)
+                blank(i, n if j < 0 else j)
+                i = n if j < 0 else j
+                continue
+            elif text.startswith("/*", i):
+                j = text.find("*/", i + 2)
+                blank(i, n if j < 0 else j + 2)
+                i = n if j < 0 else j + 2
+                continue
+            elif not ch.isspace():
+                prev = ch
+            i += 1
+        return "".join(out)
 
     def resolve_spec(spec: str, importer: Path) -> str | None:
         """相对路径 → 模块键；`./components` 落到 `components/index`。包名一律 None。"""
@@ -133,25 +183,41 @@ def import_integrity(project: Path) -> tuple[list[dict], str]:
         """
         if depth > 3 or key in seen:
             return set(), set(), True
-        body = strip_comments(raw_body[key])
+        body = code_only(raw_body[key])
         names = set(re.findall(r"export\s+(?:declare\s+)?(?:const|function|class|type|interface|let|var|enum)\s+(\w+)", body))
         uncertain: set[str] = set()
         # `export {A, B as C}`，也可能带 from（多行花括号：`[^}]*` 本来就跨行）
+        # ⚠️ 认领的必须是**对外名**（别名），比对上游用的是**源名**：
+        # `export {Accordion as MyAccordion} from './ui'` 里，上游有的是 `Accordion`，
+        # 本模块对外给的是 `MyAccordion`。第一版拿别名去上游找 → 合法写法被判"导出不存在"
+        # （第三轮复核抓到的潜在假阳性；技能文档正教人"新组件登记进 components/index.ts"，
+        #  改名再导出是自然的下一步，所以必须现在改）。
         for m in re.finditer(r"export\s+(?:type\s+)?\{([^}]*)\}\s*(?:from\s*'([^']*)')?", body):
-            tokens = [p.strip().split(" as ")[-1].strip() for p in m.group(1).split(",")]
-            tokens = [t for t in tokens if t]
+            pairs: list[tuple[str, str]] = []
+            for part in m.group(1).split(","):
+                part = part.strip()
+                if not part:
+                    continue
+                bits = part.split(" as ")
+                pairs.append((bits[0].strip(), (bits[-1] if len(bits) > 1 else bits[0]).strip()))
             if not m.group(2):
-                names |= set(tokens)
+                names |= {alias for _src, alias in pairs if alias}
                 continue
             sub = resolve_spec(m.group(2), path_of[key])
             if sub is None:
-                uncertain |= set(tokens)   # 从 npm 包再导出：名字是真的，只是我们看不见
+                uncertain |= {alias for _src, alias in pairs if alias}   # 从 npm 包再导出：名字是真的，只是我们看不见
                 continue
             sub_names, sub_uncertain, sub_open = exports_of(sub, depth + 1, seen | {key})
-            for t in tokens:
-                if t in sub_names or t in sub_uncertain or sub_open:
-                    names.add(t)
-                # 上游没有这个名字 = 坏再导出：这里**不认领**它，让真正的导入点去报
+            for src_name, alias in pairs:
+                if not alias:
+                    continue
+                if src_name == "default":
+                    # `export {default as Widget} from './bar'`：default 追不到名字 → 归"核实不了"，
+                    # 不能判"不存在"（判了就是假 P0）。
+                    uncertain.add(alias)
+                elif src_name in sub_names or src_name in sub_uncertain or sub_open:
+                    names.add(alias)
+                # 源名在上游不存在 = 坏再导出：这里**不认领**它，让真正的导入点去报
         open_flag = False
         for m in re.finditer(r"export\s+\*\s+from\s*'([^']*)'", body):
             sub = resolve_spec(m.group(1), path_of[key])
@@ -167,7 +233,7 @@ def import_integrity(project: Path) -> tuple[list[dict], str]:
     checked = skipped = 0
     for key in sorted(keys):
         f = path_of[key]
-        body = strip_comments(raw_body[key])
+        body = code_only(raw_body[key])
         for m in re.finditer(r"import\s*\{([^}]*)\}\s*from\s*'([^']*)'", body, re.S):
             spec = m.group(2)
             target = resolve_spec(spec, f)

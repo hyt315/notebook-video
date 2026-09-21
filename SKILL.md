@@ -225,14 +225,14 @@ python "<SKILL_DIR>/scripts/selftest.py"
 Good fixtures must pass and each broken fixture (protected phrase split across cues, mismatched caption
 sync, non-video input) must be rejected by the matching gate.
 
-For the build-time gates, run the negative spot-check — it feeds nineteen fixtures to the six build-time
+For the build-time gates, run the negative spot-check — it feeds twenty-three fixtures to the six build-time
 gates (a shot table whose anchor leaves the frame, a pan beyond the zoom budget, adjacent scenes sharing a
 skeleton, a shot with no live component, a timeline gap, a faked `live`/media name, a camera move that never
 moves, a frame-prop typo in the fxkit layer and in the components layer, a beat that spoils its line, a beat
 pointing at another shot's cue, a beat landing too late for its line, a beat legal but flush against that
 tolerance, a caption read too fast, a font below the floor, body text the same colour as the paper, imports of
 names that no longer exist, and a doc naming a component that does not exist) plus negative controls, and
-asserts each gate blocks, warns or passes as expected — 39 assertions, 19 of which pin the expected message
+asserts each gate blocks, warns or passes as expected — 49 assertions, 24 of which pin or forbid the expected message
 substring, so "failed for some other reason" cannot pass as a blocked fixture.
 **A gate that exists in name only is the most dangerous defect.**
 

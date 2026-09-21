@@ -193,7 +193,7 @@ node scripts/notebook-video.mjs review-frames ./my-video r.mp4 0 570
 
 - **Read-only inspection first**: dependency and pre-flight checks only measure; they never change system environment variables or system configuration.
 - **Zero-token local run**: rendering and all gates run on your machine with no online API quota; narration goes to your own TTS endpoint and the key is read from the environment only, never written to disk.
-- **Deterministic and reproducible**: everything is code-driven; every animation is a pure function of the frame number (no `Math.random`, no CSS animations or timers).
+- **Deterministic and reproducible**: everything is code-driven; every animation is a pure function of the frame number (no `Math.random`, no CSS animations or timers). Scope matters: **stills / PNGs are byte-reproducible** (the same frame rendered twice hashes identically — that is how the contact sheet is verified), while **long MP4 segments are not**: x264's threading/look-ahead decisions make two consecutive 900-frame renders differ in md5, with pixel differences confined to a few edge pixels (max 76, mean 0.12, 95.2% of bytes identical) — encoder-level noise, not a content change.
 - **Gates before prose**: whatever can be proved arithmetically at build time is checked there; only measurements that need real fonts and layout run in the browser.
 - **Complete source delivery**: the MP4 ships together with the full, clean Remotion React source tree.
 
