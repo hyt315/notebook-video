@@ -217,8 +217,6 @@ const useSteppedFrame=(stepFps=15)=>{const f=useCurrentFrame();return Math.floor
 
 
 
-// camScript：镜头脚本构建器——链式声明 hold/to，自动补齐首尾帧，免手刻关键帧表。
-
 // 严谨消除句末标点符号（保留句中逗号，句末逗号句号等一概消除）
 const cleanTail=(s:string)=>s.replace(/[，。！？；：、,.!?;:\s]+$/g,'');
 const Subtitle=()=>{

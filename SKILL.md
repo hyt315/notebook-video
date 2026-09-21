@@ -1,7 +1,7 @@
 ---
 name: notebook-video
 version: 3.1.0
-description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion. The default visual route is pure code-drawn composition (SVG diagrams, mascots, progressive checklists, annotation stickers) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes a per-shot restricted camera with an out-of-bounds proof, four scene skeletons with a content-to-medium routing table, a cue-indexed shot table, native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering and nine automated quality gates (including a frame-prop-name gate that catches the highest-frequency silent failure in this codebase). Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
+description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion. The default visual route is pure code-drawn composition (SVG diagrams, mascots, progressive checklists, annotation stickers) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes a per-shot restricted camera with an out-of-bounds proof, four scene skeletons with a content-to-medium routing table, a cue-indexed shot table, native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering and ten automated quality gates (including a frame-prop-name gate that catches the highest-frequency silent failure in this codebase). Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
 ---
 
 # Create notebook explainer videos
@@ -206,7 +206,7 @@ scripts/audition.py                 TTS 试听条 + 多音字扫描
 scripts/coords-lint.py              覆盖层坐标越界体检
 scripts/package-project.py         交付源码打包（排除 node_modules / renders / 密钥）
 scripts/selftest.py                 端到端回归自测
-scripts/negative-gate-check.py     负向抽查：给三道构建期门禁喂"该拦的夹具"，验证它们真的会拦
+scripts/negative-gate-check.py     负向抽查：给六道构建期门禁喂"该拦的夹具"，验证它们真的会拦
 scripts/check-deps.sh | .cmd        环境依赖体检
 scripts/prepare-browser.sh | .cmd   Remotion 无头浏览器准备
 scripts/new-project.sh | .cmd       建工程
@@ -225,10 +225,16 @@ python "<SKILL_DIR>/scripts/selftest.py"
 Good fixtures must pass and each broken fixture (protected phrase split across cues, mismatched caption
 sync, non-video input) must be rejected by the matching gate.
 
-For the build-time gates, run the negative spot-check — it feeds five deliberately broken shot tables
-(anchor outside the frame, pan beyond the zoom budget, adjacent scenes sharing a skeleton, a shot with
-no live component, a timeline gap) plus one clean control, and asserts each gate blocks or passes as
-expected. **A gate that exists in name only is the most dangerous defect.**
+For the build-time gates, run the negative spot-check — it feeds nineteen fixtures to the six build-time
+gates (a shot table whose anchor leaves the frame, a pan beyond the zoom budget, adjacent scenes sharing a
+skeleton, a shot with no live component, a timeline gap, a faked `live`/media name, a camera move that never
+moves, a frame-prop typo in the fxkit layer and in the components layer, a beat that spoils its line, a beat
+pointing at another shot's cue, a beat landing too late for its line, a beat legal but flush against that
+tolerance, a caption read too fast, a font below the floor, body text the same colour as the paper, imports of
+names that no longer exist, and a doc naming a component that does not exist) plus negative controls, and
+asserts each gate blocks, warns or passes as expected — 39 assertions, 19 of which pin the expected message
+substring, so "failed for some other reason" cannot pass as a blocked fixture.
+**A gate that exists in name only is the most dangerous defect.**
 
 ```text
 python "<SKILL_DIR>/scripts/negative-gate-check.py"

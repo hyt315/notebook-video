@@ -670,7 +670,6 @@ No black frames detected.
   image-text 路线、图标政策、`editable_surface` 补组件层、三画布自述、VERSION 与门禁数。
 
 **③ 复核（对 15be541·c10f542·146f07c）后的收尾修复**
-
 - **假通过**：case H/I 已按上面修好；`must_block:<子串>` 铺开到全部 14 条。
 - **漏判**：G-1 补上界（"晚于本句结束"也是脱节）。
 - **假阳性**：G-2 逐行量；`fontSize` 剥注释；`coords-lint` 收窄推导范围（标准模板回到旧版的 1 WARN）。
@@ -681,9 +680,58 @@ No black frames detected.
 - **CI**：`.github/workflows/validate.yml` 新增"模板上的 6 道构建期门禁"与 `negative-gate-check.py`、`coords-lint.py`
   三步——此前 CI **一条门禁都不跑**，"负向抽查"只是本地仪式。
 
+**④ 第二轮复核（3 条"表面修好" + 1 个渲染硬伤 + 7 条其它）**
+
+- 🔴 **验证工程当时根本渲不出来**（复核抓到，我上一条报告里没提）：`demo-video/src/index.ts` 是个 stray 文件
+  （内容 = `components/index.ts` 的副本），Remotion 于是把入口解析成 `index.ts` →
+  `Error: You passed …src\index.ts as your entry point, but this file does not contain "registerRoot"`
+  （**显式传 `--entry-point=src/index.tsx` 也一样**）。所以上一条报告里的"900/900 零黑帧"**在这棵树上复现不了**。
+  已删该文件，并在修好的树上重渲 30 秒：`Encoded 900/900` · 2560×1440 h264 + aac · 30.06 s · 零黑帧 · md5 `6a0c46c1…`。
+- **`import_integrity` 上一条是"写了但没做"**（复核：`git log -- scripts/validate-composition.py` 最后改动是 c10f542，
+  代码仍是 `src.glob("*.tsx")` + `'\./(\w+)'`，而 CHANGELOG 已经写"递归扫 src/**" = 不实记录）。**现在真做了**：
+  递归扫 `src/**`（.ts/.tsx）、认 `./x` `../x` 与目录桶 `./components` → `components/index`、跟随 `export *`，
+  并把"从 npm 包再导出"与"名字不存在"**分开**（前者必须**不报**，否则整条链全是假 P0 —— 我第一版就错在这儿）。
+  实测：模板 30 文件 / 78 条相对 import → P0=0；同一夹具上新旧门禁 A/B = 旧 `P0=0 PASS` vs 新 `P0=3 FAIL`
+  （`GhostSibling` / `GhostFromBarrel` / `GhostWashedByBarrel`，新增夹具 case Q 固化）。
+  **它当场抓到 demo 一条真漏检**：`components-test.tsx` 从 `./components` 导入 `RevealMask`，该件其实在引擎层 `insert.tsx`
+  （打包器只告警 → 运行时 undefined）。已改为从 `./insert` 导入。
+- **门禁数量漏了 `SKILL.md`**：description `nine`→`ten`、"三道构建期门禁"→"六道"、
+  "five deliberately broken shot tables + one clean control"→ 19 个夹具 / 39 条断言 / 19 个 needle；
+  `presentation-gate.md` 与 `validate-presentation.py` 的"现有 9 道"改成"既有 9 道（本道是第 10 道）"。
+- **文档瑕疵实为 5 处**：`shot-language.md:175` 的三连重复上一轮漏了，已补；并全仓扫 `(.{12,})\1\1`
+  确认剩下的都是表格分隔线与注释虚线。
+- **G-1 的 8 帧容差是"承重墙"不是安全边际**（复核：demo 最紧只剩 2 帧）。实测模板最紧的合法拍就是
+  `offset = 该句帧数`（"句末那拍"是设计约定），把容差**整个吃掉**、余量恰好 8 帧。三条一起做：
+  ① 新增 **P1 贴边预警**（`BEAT_TIGHT_FRAMES=4`，rc 仍 0，只是点名）；② **修数据而不是放宽容差** ——
+  demo 的 S7/cue13 `offset 100→97`、S8/cue14 `offset 100→94`（TTS 重跑前的陈旧值），复测两工程最紧余量均回 8 帧、贴边 0 条；
+  ③ 文档写清"上界贴着数据、换配音必须重跑本门禁、不许装作有安全边际"。
+- **判据文档缺 ③b**：`presentation-gate.md` 补"不拖后"与"贴边预警"两行 + 脆弱性说明；脚本 docstring 同步
+  （此前全文 0 次提到"晚于"）。
+- **对比度数字**：复核把 `contrast('#dcdcdc','#faf7f2')` 记成 1.07:1，我**照抄**进了文档。用本仓 `contrast()` 复算 = **1.283**，已改。
+- **字号检查健壮性**：`strip_comments` 重写成"保行号 + 保字符串"的扫描器——块注释按跨行数补回等量换行
+  （此前报 464、真实 467）；`//` 只在字符串外才算注释（此前 `'url(https://…)'` 之后的 `fontSize: 9` 漏检）；
+  引号只在**值位置**才开字符串（否则 JSX 文本里的撇号 `don't` 会让同行的注释复活成假 P0 —— 改完当场测出来的）。
+- **`Tape` 回到 coords-lint 名单**：不是硬塞回写死列表，而是把推导范围扩到 `src/components/** + src/theme/**`
+  （皮肤 extras 的贴纸件）。实测 components→{OverlayFrame}、theme→{Burst, Tape}，而整棵树会捞进 `ZoomStage`/`StageFrame`
+  等布局件（正是上轮误报来源）。两工程输出仍是同一条既有 WARN。
+- **零碎**：模板与 demo 两处 `index.tsx` 的悬空注释 `// camScript：…`（函数已删）删掉；
+  CHANGELOG 同节里"8 项全 PASS / A–H"与"16 个 case"自相矛盾 → 统一并指向 ④。
+- **CI 步骤名与命令不符**：写着 `stays green in strict mode` 却**没传 `--strict`** → 改名
+  `Check overlay coordinates (out-of-canvas fails; "frame or card?" is warn-only)` 并写明不加 `--strict` 的理由
+  （那条 ChatThread WARN 是待人工确认的真问题）；顺带去掉 `negative-gate-check.py` 后面**被忽略的多余参数**。
+
+**Verified（第二轮复核后）**
+
+- **30 秒实渲**（在修好入口之后、不是把文件挪走之前）：`NotebookVideoFilm --frames=0-899` → `Encoded 900/900`，
+  ffprobe `h264 2560x1440 nb_frames=900` + `aac` 轨、30.06 s、8 MB，`blackdetect` 零黑帧；抽 1 帧看图（f=450）画面正常
+  （底部字幕是**逐字显现进行中**，不是被画面裁掉）。
+- **门禁全跑**：模板 `validate-frame-props` P0=0/P1=0 · `validate-composition` P0=0/P1=5 · `validate-presentation` P0=0/P1=12 ·
+  `validate-skill-consistency` passed · `negative-gate-check` 19 case / 39 断言全 PASS · `coords-lint` 1 WARN/0 error ·
+  `selftest.py` 11/11；demo `validate-composition` P0=0/P1=7、`validate-presentation` P0=0/P1=14。两工程 P0 全 0。
+
 **Verified**
 
-- **四道门禁全部复跑，P0 = 0**：`validate-frame-props`（P0=0 P1=0 PASS）· `validate-composition`（P0=0 P1=5 PASS，P1 与改动前逐条一致，无新增）· `validate-skill-consistency`（passed）· `negative-gate-check`（8 项全 PASS，含 A–H 阴性对照）。
+- **四道门禁全部复跑，P0 = 0**：`validate-frame-props`（P0=0 P1=0 PASS）· `validate-composition`（P0=0 P1=5 PASS，P1 与改动前逐条一致，无新增）· `validate-skill-consistency`（passed）· `negative-gate-check`（当时 16 个 case 全 PASS，含阴性对照；复核第二轮后扩到 18 个，见 ④）。
 - **接触表 14 页 → 17 页**（新增 ⑮ 图表变体 / ⑯ 层级与关系 / ⑰ 弹层与形状；⑫ 页的 `TiltCard` 格子换成 `ControlStack`），
   `SHOWCASE_PAGES = 17`、`SHOWCASE_VERSION = showcase-v8`。新增与改动的每一页都**实渲了一帧并看图确认**（不是只看"没报错"）。
 - **确定性复验（成品件，不只是诊断件）**：接触表第 ⑯ 页（treemap / pack / sunburst / NetworkGraph）与第 ⑰ 页

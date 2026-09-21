@@ -172,7 +172,7 @@ const bad = safeCheck(keys, {x: 320, y: 190, w: 1280, h: 640}, 1.35); // [] 表�
 ## 7. 自检
 
 - [ ] 每一镜都有 `anchor`，且 `validate-shot-motion.py` P0 = 0；
-- [ ] 每章 ≥3 次运镜（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致）（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致）（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致），全片 ≥3 种 intent；
+- [ ] 每章 ≥3 次运镜（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致），全片 ≥3 种 intent；
 - [ ] 含文字的镜头 `s ≤ 1.35`；
 - [ ] 运镜期间解说对象始终完整可见（门禁已证明）；
 - [ ] chrome / 字幕放在 `ShotCamera` 之外；

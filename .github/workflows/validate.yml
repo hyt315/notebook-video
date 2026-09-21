@@ -49,8 +49,13 @@ jobs:
           node scripts/notebook-video.mjs validate-semantic-breaks assets/lecture-template/manifests/caption-cues.json assets/lecture-template/manifests/protected-caption-phrases.txt
       - name: Run the negative fixtures (every gate must really block)
         # 「名存实亡的门禁是最危险的缺陷」——这一条保障每道门禁都有"喂坏输入必须拦住"的实证。
-        run: python3 scripts/negative-gate-check.py assets/lecture-template
-      - name: Check the coordinate reporter stays green in strict mode
+        # 脚本自己找模板（`SKILL/assets/lecture-template`），不吃参数——别再传一个没用的路径进来。
+        run: python3 scripts/negative-gate-check.py
+      - name: Check overlay coordinates (out-of-canvas fails; "frame or card?" is warn-only)
+        # ⚠️ 名字必须与命令一致（复核抓到上一版写着 strict mode 却没传 --strict）。
+        # 现状：`OFF-CANVAS` 本身 rc=1；而 `VERIFY-FRAME` 类 WARN 在标准模板上还剩 1 条
+        # （showcase 的 ChatThread y=10 顶栏 N 格）——它**是待人工确认的真问题**，
+        # 不是可以顺手消掉的噪声，所以这一步刻意不加 --strict（要加就得先处置那条 WARN）。
         run: python3 scripts/coords-lint.py assets/lecture-template
       - name: Audit locked dependencies
         working-directory: assets/example-project
