@@ -114,6 +114,15 @@ export const NetworkGraph: React.FC<{
 }> = ({f, nodes, links, startAt, width, height, iterations = 300, nodeR = 52, showLabels = true, settleFrames = 0}) => {
   const {nodes: laid, links: laidLinks} = layoutNetwork(nodes, links, {width, height, iterations, nodeR});
   const pos = new Map(laid.map((p) => [p.n.id, p]));
+  // ---- 入场错峰**按总窗口封顶**（与 TreeView 同一套公式）----
+  // 原来是 `i * 5`：节点/连线一多，入场就线性拖长（20 个节点要 95 帧、100 个要 495 帧，
+  // 3 秒以内的镜头里等于"还没画完就切走了"）。现在每个元素的间隔 =
+  // min(5, 窗口 / (数量 − 1))：**≤6 个元素时与旧公式完全相同**（间隔仍是 5 帧），
+  // 再多就在固定窗口内压缩，一批无论多少元素都在窗口内错开完。
+  const LINK_WINDOW = 25;
+  const NODE_WINDOW = 25;
+  const linkGap = Math.min(5, LINK_WINDOW / Math.max(1, laidLinks.length - 1));
+  const nodeGap = Math.min(5, NODE_WINDOW / Math.max(1, laid.length - 1));
   const settle = settleFrames > 0 ? prog(f, startAt, settleFrames) : 1;
 
   return (
@@ -122,7 +131,7 @@ export const NetworkGraph: React.FC<{
         const s = pos.get(l.source.id);
         const t = pos.get(l.target.id);
         if (!s || !t) return null;
-        const p = prog(f, startAt + 4 + i * 5, 26);
+        const p = prog(f, startAt + 4 + i * linkGap, 26);
         // 生长：从起点"长"到终点（终点坐标按进度插值，纯函数）
         const ex = s.x + (t.x - s.x) * p;
         const ey = s.y + (t.y - s.y) * p;
@@ -134,7 +143,7 @@ export const NetworkGraph: React.FC<{
         );
       })}
       {laid.map((p, i) => {
-        const q = prog(f, startAt + 10 + i * 5, 24);
+        const q = prog(f, startAt + 10 + i * nodeGap, 24);
         const tone = p.n.tone ?? [C.blue, C.orange, C.green, C.gold, C.red][i % 5];
         // 标签先反推字号；字号掉到 MIN_LABEL_FONT 以下就只留圆点（图例里也有名字）。
         // ⚠️ 实测（接触表 frame 465）：**必须 maxLines=1**。默认的 2 行会把「服务端」
