@@ -17,7 +17,9 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: assets/example-project/package-lock.json
+          cache-dependency-path: |
+            assets/example-project/package-lock.json
+            assets/lecture-template/package-lock.json
       - name: Install media tools
         run: |
           sudo apt-get update
@@ -60,6 +62,16 @@ jobs:
       - name: Audit locked dependencies
         working-directory: assets/example-project
         run: npm audit --package-lock-only --ignore-scripts --audit-level=high
+      - name: Type-check the default template
+        # ⚠️ 两步都必要，别合并：模板此前**能打包但没有类型检查**，于是"幽灵引用"能一直长着不被发现
+        # （实测抓到过 `fitsWithin` 从未 import、`SlotGuard` 从未定义、SHAPES 传了库不认的参数）。
+        # ⚠️ 这一步**必须排在「Validate skill and official example」之后**：那一步断言仓库树里没有
+        # node_modules / .cache / renders（防生成目录泄漏进源码），而 typecheck 需要先装依赖。
+        # 本地等价命令：cd assets/lecture-template && npm ci && npm run typecheck
+        working-directory: assets/lecture-template
+        run: |
+          npm ci --prefer-offline --no-audit --no-fund
+          npm run typecheck
       - name: Smoke-test project creation
         run: |
           mkdir "$RUNNER_TEMP/notebook-video-smoke"
