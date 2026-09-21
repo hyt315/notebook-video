@@ -729,11 +729,13 @@ No black frames detected.
 - **30 秒实渲**（在修好入口之后、不是把文件挪走之前）：`NotebookVideoFilm --frames=0-899` → `Encoded 900/900`，
   ffprobe `h264 2560x1440 nb_frames=900` + `aac` 轨、30.06 s、8 MB，`blackdetect` 零黑帧；抽 1 帧看图（f=450）画面正常
   （底部字幕是**逐字显现进行中**，不是被画面裁掉）。
-- **抽查三个抽样帧，改前 / 改后逐字节相同**（f0 · f450 · f899，`remotion still` 的 PNG md5 各自相等）：
-  证明这一轮的改后编辑（删注释、修测试页 import、两拍 offset）不动 0–899 的画面。
-  另外验了**渲染可复现**：同一棵树上连渲两次同 3 帧，两个 mp4 **逐字节相同**（md5 `6229293b…`）。
-  ⚠️ 但 15:26 那次与 15:44 这最后一次的 30 秒 mp4 字节不同（7973993 vs 7978007）——音轨 md5 两者一致、
-  抽样帧也一致，差异只在视频流编码；我没有隔离出原因（15:26 那份被覆盖了），所以**不声称两次渲染逐字节相同**。
+- **渲染可复现**：同一棵树上连渲两次同 3 帧，两个 mp4 **逐字节相同**（md5 `6229293b…`）。
+  另有抽帧对比，但**要诚实说明它的范围**：那三次 `remotion still`（f0/f450/f899）两次都把 `index.tsx` 钉在同一个版本上，
+  所以它证明的是"那 4 个数据/测试文件（shots 两拍 offset 等）不动这几个抽样帧"，**不等于**"当前这棵树整段没变"。
+  ⚠️ 而且做这个对比时我用 `git checkout HEAD~1 -- …` 把**工作区里未提交的** `demo/src/index.tsx` 覆盖掉了
+  （那份含 v3.1 同步：删 6 件插图件、字号抬到 ≥13、清陈旧 import）。已按"模板 + 该工程专有的 3 处"重建并复核：
+  与模板 diff 只有那 3 处、`compositions` 列出 3 个合成、四个门禁 P0=0、夹具 `tooSmall` 仍被真门禁拦下
+  （`Card overflow … 溢出 397px`）。教训：`git checkout HEAD -- <path>` 会**丢掉未提交的工作区版本**，做 A/B 前先把工作区备份成文件。
 - **门禁全跑**：模板 `validate-frame-props` P0=0/P1=0 · `validate-composition` P0=0/P1=5 · `validate-presentation` P0=0/P1=12 ·
   `validate-skill-consistency` passed · `negative-gate-check` 19 case / 39 断言全 PASS · `coords-lint` 1 WARN/0 error ·
   `selftest.py` 11/11；demo `validate-composition` P0=0/P1=7、`validate-presentation` P0=0/P1=14。两工程 P0 全 0。
