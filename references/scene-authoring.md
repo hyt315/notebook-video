@@ -118,8 +118,12 @@ mainW = w − pad×2 − (rail ? railW + 18 : 0)
 mainH = h − pad×2 − headH − stampH − (stamp ? 14 : 0) − (header ? 14 : 0)
 ```
 
-`StageFrame` 会把这两个值算好，并在**开发模式**下用 `SlotGuard` 检查 main 槽是否溢出（超宽/超高会在控制台打警告）。
-所以：给 `ConsoleWindow` / `SkeletonCard` / `MetricGrid` 传 `w` 之前，**先算 `mainW`**，不要凭感觉写整数。
+`StageFrame` 会把这两个值算好，并用 `SlotGuard` 在**出图路径**上实测 main 槽的**占用率**（槽里有内容的
+最内层元素的高度并集 ÷ 槽高），占用 <35% 会在控制台打警告并连槽的 `mainW×mainH` 一起报出来。
+所以两件事都要做：① 给 `ConsoleWindow` / `SkeletonCard` / `MetricGrid` 传 `w` 之前，**先算 `mainW`**，
+不要凭感觉写整数；② 槽里的内容要**撑满 `mainH`**（外层 `height:'100%'`，内部再按 `mainH` 分栏/分拍），
+不要只放一行字——实测过一镜：槽给足 428px（画布 1080 的 39.6%），内容只有一行 47px，占用 11%。
+判据与做法见 [scene-skeletons.md](scene-skeletons.md) §3 第 4 条。
 
 ### 三个必须遵守的写法
 

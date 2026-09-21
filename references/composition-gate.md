@@ -99,7 +99,7 @@ python scripts/validate-shot-motion.py PROJECT_DIR
 |---|---|---|
 | `validate-shot-motion.py` / `validate-composition.py` | **构建期**（不渲染） | 构图 / 骨架 / 介质 / 镜头配方与出界 |
 | `CardFitGate` | **渲染期**（浏览器内） | 文字溢出卡片（v2.8 实测抓到 4 处真实出格） |
-| `SlotGuard` | **渲染期**（开发模式，`StageFrame` 内） | 槽内组件超出可用宽/高（`mainW = w − pad×2 − railW − 18`）——这一类"溢出到邻居列"此前没有任何门禁能发现 |
+| `SlotGuard` | **渲染期**（出图路径，`StageFrame` 内） | `StageFrame` main 槽的**占用率**（槽内有内容的最内层元素并集高度 ÷ 槽高，<35% 出声）——抓的是"槽给足了、内容没填满"（实测一镜 428px 的槽只用了 11%）；槽宽仍按 `mainW = w − pad×2 − railW − 18` 自己先算 |
 | `OverlapGate` | **渲染期**（浏览器内，每 15 帧抽样） | **文字两两重叠 + 文字被遮挡**（本版实测抓出 3 类真实缺陷；有意覆盖用 `data-gate-allow` 白名单） |
 | `CaptionFitGate` | **渲染期**（浏览器内） | 字幕超宽（按当前画幅与主题真实字重/字距测量） |
 | `validate-caption-sync.py` / `validate-semantic-breaks.py` | 构建期 | 字幕与 TTS 词边界一致、保护短语不被切开 |

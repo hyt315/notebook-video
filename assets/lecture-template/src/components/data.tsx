@@ -25,6 +25,11 @@ import {fitChineseTextOnNLines} from './fittext';
 //   这三个布局都是**有状态地写回节点**的（x0/x1/y0/y1 或 x/y/r）。
 //   共用同一个 hierarchy() 根时，后跑的布局会覆盖先跑的结果——
 //   第一次渲出来 treemap 全是 20px 细条就是这个原因。**每个布局各拿一个根。**
+//
+// ⚠️ 实测踩到的坑（sankey 标签，2026-09-21）：
+//   `x1 - x0` 恒等于 `nodeWidth`（node 脚本直调 d3-sankey 打印验证），
+//   但**末列的 x1 就是 extent 的右边 = width-2**。标签一律按 `x1+10` 摆时，
+//   末列标签的起点已经落在 `width+8`，再加字宽必然飘出画布。见 SankeyChart 里的分支。
 // ============================================================================
 
 const C = THEME.palette;
@@ -456,6 +461,8 @@ export const SankeyChart: React.FC<{
   } as never);
   const linkGen = sankeyLinkHorizontal();
   const toneOf = (n: SankeyNodeIn | undefined, i: number) => n?.tone ?? TONE[i % TONE.length];
+  // 末列判定：d3-sankey 的 layer 0 是最左列，末列节点的 x1 就是 extent 的右边（= width-2）。
+  const lastLayer = Math.max(...laid.nodes.map((n) => (n as never as {layer: number}).layer ?? 0));
 
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{overflow: 'visible'}}>
@@ -481,12 +488,19 @@ export const SankeyChart: React.FC<{
         const x0 = (n as never as {x0: number}).x0;
         const x1 = (n as never as {x1: number}).x1;
         const tone = toneOf(n as SankeyNodeIn, i);
+        // 标签锚点（2026-09-21 修）：矩形与标签只用布局给的 x0/x1/y0/y1，不再自己拿 nodeW 另算一套。
+        // 实测（node 脚本直调 d3-sankey，760×460/nodeW=20）：x1-x0 恒等于 nodeWidth；但**末列**
+        // x1 == width-2，此时标签按 x1+10 摆就等于起点落在 width+8 —— 再叠字宽就出了画布
+        // （4 字中文 @18px ≈ 72px）。所以：末列标签锚到节点**左侧**（textAnchor=end），
+        // 其余列锚到右侧；两条分支都在画布内，且末列标签不会再飘进页边空白。
+        const atEnd = ((n as never as {layer: number}).layer ?? 0) >= lastLayer;
         return (
           <g key={`n${i}`} opacity={p}>
-            <rect x={x0} y={y0} width={nodeW} height={Math.max(6, (y1 - y0) * p)} fill={tone} stroke={C.ink} strokeWidth={2.2} />
+            <rect x={x0} y={y0} width={Math.max(1, x1 - x0)} height={Math.max(6, (y1 - y0) * p)} fill={tone} stroke={C.ink} strokeWidth={2.2} />
             <text
-              x={x1 + 10}
+              x={atEnd ? x0 - 10 : x1 + 10}
               y={(y0 + y1) / 2 + 6}
+              textAnchor={atEnd ? 'end' : 'start'}
               fontFamily="Kai,sans-serif"
               fontSize={TYPE.microL}
               fontWeight={700}

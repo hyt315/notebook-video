@@ -145,7 +145,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" review-frames ./notebook-video-pro
 | `CaptionFitGate` | render | caption wider than the safe width, measured with the **current canvas and skin's real weight/spacing** | yes |
 | `CardFitGate` | render | content taller/wider than its card (`scrollHeight > clientHeight`, 6px tolerance; clips only), waits for fonts, logs coverage every 5s | yes |
 | `OverlapGate` | render (15-frame grid **+ every shot boundary, beat and camera keyframe**) | text-vs-text overlap and paint-order occlusion using real glyph rects; gradient backgrounds count as opaque; header layer (z=140) included | `mode="block"` in the bundled films |
-| `SlotGuard` | render (dev only) | content wider than `StageFrame`'s main slot (`mainW = w − pad×2 − railW − 18`) | warn |
+| `SlotGuard` | render (output path, inside `StageFrame`) | **fill of the main slot**: union height of the innermost content elements ÷ slot height; speaks up below 35% and prints the slot's `mainW×mainH` — catches "slot was big enough, content left it empty" (measured: a 428px slot used 11%) | warn |
 
 Intentional overlaps (shot handoff, header swap, metric value replacement) must be declared with
 `data-gate-allow`; the allow-list may never hide two different pieces of information colliding.

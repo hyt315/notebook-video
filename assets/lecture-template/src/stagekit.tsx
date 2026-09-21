@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from 'react';
-import {Easing, interpolate, spring} from 'remotion';
+import {Easing, continueRender, delayRender, interpolate, spring} from 'remotion';
 import {THEME} from './theme/active';
 import {CoverPanel} from './shotkit';
 
@@ -68,6 +68,89 @@ export const useStageMachine = (phases: Phase[], f: number): StageCtx => {
 };
 
 // ---------------------------------------------------------------------------
+// SlotGuard：main 槽「到底占住了没有」的实测护栏。
+//
+// 2026-09-21 补：本文件此前**引用了 `SlotGuard`，却从来没有定义过它**（只有版本串里写着名字）。
+// 全仓库搜不到定义，`tsc` 报 TS2304；因为在 dev 分支上才挂它，出片那条路径永远走不到，
+// 于是「引用了不存在的标识符」一路静默 —— 只要进一次 Studio / dev 就是 ReferenceError。
+// 实现逐字取自 overview-film 的 v5 版本（同仓库下游工程，已在成片里跑过）。
+//
+// 它守的是什么：scene-skeletons.md 那条**观感标准**「活体主体要占主体」——
+// 成片实测过一镜：StageFrame 给足了 428px 高的 main 槽（画布 1080 的 39.6%），
+// 调用方却只在槽里放了一行字（47px），占用 11%，整块读成「一张空纸 + 一行标题」。
+// 组件的槽是给够的，占不占得住由**槽里的内容**决定 —— 这条护栏就是把"没占住"变成出声的数字。
+//
+// 为什么只出声不拦：它守的是观感标准，不是画错。为观感标准打断整片渲染，代价远大于收益；
+// 真正该硬拦的是「文字被裁」「元素互相压」，那两件已经有 CardFitGate 与 OverlapGate。
+// 为什么不出声在 dev 门里：本仓库出片走 production 包，dev-only 的门看不到 ——
+// 出声必须发生在出图路径上。（测量排在 rAF 里，所以同样持一个 delayRender，
+// 不然又会变成「装了但没量过」。）
+// ---------------------------------------------------------------------------
+export const SlotGuard: React.FC<{f: number; mainW: number; mainH: number; tag: string}> = ({f, mainW, mainH, tag}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const slotW = mainW;
+  const slotH = mainH;
+  useEffect(() => {
+    const host = ref.current?.parentElement;
+    if (!host) return;
+    const handle = delayRender(`SlotGuard @${Math.round(f)}`);
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      continueRender(handle);
+    };
+    const id = requestAnimationFrame(() => {
+      try {
+        const hr = host.getBoundingClientRect();
+        if (hr.width < 4 || hr.height < 4) {
+          release();
+          return;
+        }
+        // 覆盖率 = 槽内所有"有内容的**最内层**元素"的并集高度占槽高的比例。
+        // 用并集而不是逐个相加：槽里常有多层包裹的同一块内容，相加会虚高。
+        // 只看最内层（没有元素子节点）：实测踩到过——把内容包一层 `height:'100%'` 的
+        // 容器后，那个空壳的 rect 就是整个槽高，覆盖率会被虚报成 100%，
+        // 于是「槽里只有一行字」这件事反而被这层壳藏起来了。看最内层就不会被骗。
+        let top = Infinity;
+        let bottom = -Infinity;
+        let leaves = 0;
+        host.querySelectorAll<HTMLElement>('div,span,svg,p,text,tspan').forEach((el) => {
+          if (!(el.textContent || '').trim() && el.tagName.toLowerCase() !== 'svg') return;
+          if (el.getAttribute('data-slot-guard')) return;
+          if (el.children.length > 0 && el.tagName.toLowerCase() !== 'svg') return;
+          const r = el.getBoundingClientRect();
+          if (r.width * r.height < 16) return;
+          leaves++;
+          top = Math.min(top, r.top);
+          bottom = Math.max(bottom, r.bottom);
+        });
+        const used = leaves ? Math.max(0, Math.min(hr.height, bottom - top)) : 0;
+        const cover = used / hr.height;
+        if (cover < 0.35 && typeof console !== 'undefined') {
+          console.warn(
+            `[SlotGuard] @${Math.round(f)} StageFrame「${tag}」main 槽只用了 ${Math.round(cover * 100)}% 的高度` +
+              `（${leaves} 个内容块 / 槽 ${Math.round(slotW)}×${Math.round(slotH)} 设计像素）。` +
+              `scene-skeletons.md 要求活体主体"占主体：≥1024×620 或占画幅宽 ≥60%"，` +
+              `槽里的内容要给 height:'100%' 并用状态机填满（见 scene-authoring.md §2）。`
+          );
+        } else if (typeof console !== 'undefined') {
+          console.warn(`[SlotGuard] @${Math.round(f)} 「${tag}」main 槽占用 ${Math.round(cover * 100)}%（${leaves} 块）`);
+        }
+      } catch (e) {
+        if (typeof console !== 'undefined') console.warn('[SlotGuard]', e);
+      }
+      release();
+    });
+    return () => {
+      cancelAnimationFrame(id);
+      release();
+    };
+  }, [f, slotW, slotH, tag]);
+  return <div ref={ref} data-slot-guard style={{position: 'absolute', width: 0, height: 0, pointerEvents: 'none'}} />;
+};
+
+// ---------------------------------------------------------------------------
 // StageFrame：活体主体框。
 //   header  顶部标题条（常驻，随 phase 换文案）
 //   main    主体区（默认 68% 高）——由调用方按 ctx.phase.state 渲染不同状态
@@ -126,7 +209,7 @@ export const StageFrame: React.FC<{
           </div>
         )}
         <div style={{display: 'flex', gap: 18, height: h - pad * 2 - headH - stampH - (stamp ? 14 : 0), marginTop: header ? 14 : 0}}>
-          <div style={{position: 'relative', flex: 1, minWidth: 0}}>{children(ctx)}{process.env.NODE_ENV !== 'production' && <SlotGuard f={f} mainW={mainW} mainH={mainH} tag={(phases[0] && (phases[0].label || phases[0].state)) || 'stage'} />}</div>
+          <div style={{position: 'relative', flex: 1, minWidth: 0}}>{children(ctx)}<SlotGuard f={f} mainW={mainW} mainH={mainH} tag={(phases[0] && (phases[0].label || phases[0].state)) || 'stage'} /></div>
           {rail && <div style={{position: 'relative', width: railPx, flex: `0 0 ${railPx}px`}}>{rail(ctx)}</div>}
         </div>
         {stamp && <div style={{position: 'relative', height: stampH, marginTop: 14, borderTop: `1.5px dashed ${C.line}`, display: 'flex', alignItems: 'center'}}>{stamp(ctx)}</div>}
@@ -181,4 +264,4 @@ export const PhaseRail: React.FC<{phases: Phase[]; ctx: StageCtx; w?: number; co
   );
 };
 
-export const STAGEKIT_VERSION = 'stagekit-v4 · StageFrame + state machine + PhaseRail + SlotGuard + header swap';
+export const STAGEKIT_VERSION = 'stagekit-v5 · StageFrame + state machine + PhaseRail + SlotGuard（v4 只把 SlotGuard 写进版本串、代码里从未定义过，tsc 报 TS2304；v5 补上实现，实测 main 槽占用并出声） + header swap';
