@@ -8,7 +8,7 @@ Anime cel-shading storyboard: thick ink outlines, flat saturated fills, hard off
 
 ## Locked tokens (do not invent alternatives)
 
-- Canvas: identical to the shared canvas contract (16:9 / 4:3 / 3:4). Layout coordinates are unchanged from the default; only skin and decoration change.
+- Canvas: 16:9 (2560×1440) 是模板默认注册的画布；4:3 / 3:4 需要自己改 canvas 参数并重排版面（见 canvas-modes.md）。 Layout coordinates are unchanged from the default; only skin and decoration change.
 
 - Base surface: pure bright white `#fdfdfb` paper; cards pure white `#ffffff`. Never tinted cream — the ink contrast carries the style, not a warm base.
 

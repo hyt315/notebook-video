@@ -5,7 +5,7 @@ This package contains one official aesthetic track and one canonical example pro
 
 ## Locked production grammar
 
-The v9 system preserves the fixed camera, subtitle geometry, native 30fps paper motion, declarative audio tree, asset gate and final draw order while allowing the scene grammar to follow meaning. Before storyboarding, select `pure-graphic`/`pure-text`（`image-text` 仅在生图附加路线下）, `pure-text` or `pure-graphic` for each scene. Read `visual-director.md`.
+The v9 system preserves the fixed camera, subtitle geometry, native 30fps paper motion, declarative audio tree, asset gate and final draw order while allowing the scene grammar to follow meaning. Before storyboarding, select one primary **media kind** for each scene (`chart` / `console` / `code` / `graphic` / `text` / `metric` — 默认路线的路由维度，见 media-routing.md); `image-text` only applies on the optional visual-director route. Read `visual-director.md`.
 
 Generated imagery is an optional input layer. When an authorized image-generation tool is available, use it for concrete subjects and promotional hero shots where it improves comprehension. Keep exact text, arrows, diagrams and timing in Remotion. A project must remain buildable with user-supplied, licensed or native SVG assets when image generation is unavailable.
 
@@ -55,7 +55,7 @@ Stable semantic IDs must remain separate from display labels. Changing visible c
 - Keep the grade static and restrained.
 - Use the official line icons (`LineIcon`) as the primary icon language, instead of system glyphs or emoji.
   Topic-specific marks (brand logos, technology identities) may use the pinned `react-icons` sets
-  (`fa` + `fi` only) — see [dependency-policy.md](dependency-policy.md) §7.
+  (`fa` solid = brands; `fi`/`lu` = line icons; `si` = 品牌 logo 兜底 —— v3.1 起放开 `lu`，因为 `react-icons/lu` 与 `fi` **同源同款**、字节级相同；混排时按 `LineIcon` 的视觉重量压一档 `strokeWidth`。见 dependency-policy.md §7.5）
 - Preserve the same persistent task-card, shared-track and physical-slot logic.
 
 ## Future updates

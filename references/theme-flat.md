@@ -8,7 +8,7 @@ Modern flat geometric with playful character: gray-hairline white cards with col
 
 ## Locked tokens (do not invent alternatives)
 
-- Canvas: identical to the shared canvas contract (16:9 / 4:3 / 3:4). Layout coordinates are unchanged from the default; only skin and decoration change.
+- Canvas: 16:9 (2560×1440) 是模板默认注册的画布；4:3 / 3:4 需要自己改 canvas 参数并重排版面（见 canvas-modes.md）。 Layout coordinates are unchanged from the default; only skin and decoration change.
 
 - Base surface: cool light gray-blue `#f2f4f7`; cards pure white. The cool tone is the point: it must never drift back toward a warm paper white.
 

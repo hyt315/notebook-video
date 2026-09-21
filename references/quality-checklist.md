@@ -29,7 +29,7 @@
 ## Visuals
 
 - Background, chapter, header and subtitle match the canonical example.
-- Every scene declares one primary mode: `image-text`, `pure-text` or `pure-graphic`.
+- Every scene declares one primary **media kind** (`chart` / `console` / `code` / `graphic` / `text` / `metric`) — 这是默认路线的路由维度。`image-text` 只在用户接受可选的生图附加路线时才出现（见 visual-director.md）。
 - Concrete subjects use original, supplied or licensed imagery when seeing the subject materially improves comprehension.
 - Generated imagery contains no baked labels, charts, logos or UI text; exact information remains in Remotion.
 - Every raster is registered in `visual-assets.json` with source, prompt/description, crop policy and rights.
