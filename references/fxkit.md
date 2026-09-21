@@ -1,6 +1,6 @@
 # fxkit：固定动效组件库（反 PPT 专用）
 
-`assets/lecture-template/src/fxkit.tsx`，v3 共 19 个组件，只做 transform/opacity 位移
+`assets/lecture-template/src/fxkit.tsx`，v3.1 共 9 件，只做 transform/opacity 位移
 （内部只用 remotion 原生 `spring`/`interpolate`——这是实现选择，不是"不许引库"的意思），
 cel 皮肤锁定（2.5px 墨线 + 硬偏移阴影 + 纯平填充，无渐变无模糊阴影），
 30fps 确定性（无随机数）。依赖边界见 [dependency-policy.md](dependency-policy.md)。用法：
@@ -44,7 +44,7 @@ import {FitCard, Typewriter, StampSeal, Funnel, ChatThread, ProgressRing, Stagge
 
 ## 先看见，再选用
 
-`NotebookVideoShowcase` Composition 把库组件渲染成 **9 页**接触表（1fps 抽帧即一页一图）：
+`NotebookVideoShowcase` Composition 把库组件渲染成 **17 页**接触表（1fps 抽帧即一页一图）：
 
 ```text
 node scripts/notebook-video.mjs showcase PROJECT_DIR
@@ -67,7 +67,7 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 | `SkeletonCard` | 骨架→内容：等待 beats 先占位 | `x,y,w,h,rows,revealAt` |
 | `StaggerList` | 级联列表：逐行滑入 + 微旋转，防 bullets 堆砌 | `x,y,w,items,start,stagger` |
 
-## 封装组件层（`src/components/`，22 件）
+## 封装组件层（`src/components/`，29 件）
 
 见 [dependency-policy.md](dependency-policy.md)。**场景从这里 import，不要直接 import 原始库。**
 帧参数名统一 `f`；颜色只读 `THEME`；登记在 [media-routing.md](media-routing.md) 两张路由表里。
@@ -76,7 +76,7 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 |---|---|---|
 | `Accordion` | 手风琴（Radix）：展开项随帧累积 | `f,items[{title,body,tone}],startAt,step,width,rowH,bodyRows` |
 | `Tabs` | 标签页（Radix）：激活项由帧号决定 | `f,tabs[{key,label,title,body,points,verdict,tone}],startAt,step,width,height` |
-| `HighlightCode` | 语法高亮 + 行号 + 逐行聚焦（**与 toolkit 的 `CodeBlock` 不同物**） | `f,code,language,startAt,lineStep,width,height,title` |
+| `HighlightCode` | 语法高亮 + 行号 + 逐行聚焦（v3.1 起 toolkit 里已无同名件；与历史件同名不同物，导入时以 `src/components/` 的 `HighlightCode` 为准） | `f,code,language,startAt,lineStep,width,height,title` |
 | `TopicIcon` / `IconWall` | 题材性图标（react-icons：`fa` 品牌 + `fi`/`lu` 线条，笔画重量已对齐 LineIcon） | `name,size,color,strokeWidth` / `f,names,startAt,step,columns,tile` |
 | `Chart` | d3 图表：刻度与路径由 d3 算，画由 THEME 定；7 个 `variant`（line/area/stack/stackExpand/stream/radar/pie） | `f,data,csv,series,labels,variant,startAt,width,height,title,showBars,tone,innerRadius` |
 | `StatRow` | 指标卡一行，数字随帧滚动 | `f,startAt,items,width,height` |
@@ -99,7 +99,7 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 
 ## 修辞工具件（`src/toolkit.tsx`，3 件）
 
-这 11 件自成一个模块（v3.0.1 从 `index.tsx` 迁出——此前**没有 `export`，场景文件物理上 import 不到**）。
+这 3 件自成一个模块（v3.0.1 从 `index.tsx` 迁出——此前**没有 `export`，场景文件物理上 import 不到**）。
 **帧参数名与 fxkit 一致：`frame`。**
 选型别按外观挑，走 `media-routing.md` 的**「修辞动作 → 组件」表**：先想"我此刻要做的修辞动作是什么"。
 下表只列**关键 props**（够选型用），不是完整签名——每个组件都另有 `style`，字符类组件另有 `fontFamily` / `fontWeight` / `letterSpacing` 等；要精确签名直接读 `src/toolkit.tsx`。

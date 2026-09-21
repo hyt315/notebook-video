@@ -18,6 +18,25 @@ from pathlib import Path
 
 OVERLAYS = ("StampSeal", "Burst", "Callout", "ChipContract", "Funnel", "ChatThread")
 COORD = re.compile(r"\b([xy])=\{(\d+)\}")
+PROP_BLOCK = re.compile(r"export\s+const\s+([A-Z]\w*)\s*:\s*React\.FC<\{(.*?)\}>", re.S)
+
+
+def overlays_of(root: Path) -> tuple[str, ...]:
+    """名单 = 写死的历史 6 件 ∪ **从源码推导**的"带 x/y 的组件"。
+
+    为什么必须推导：v3.1 之前的名单是写死的 6 个名字，新封装层里所有带 x/y 的件
+    （`OverlayFrame` `StampBanner` `ControlStack` `SketchFx` `QrCode` `MathBlock` `Chart` …）
+    都不在名单里 → 脚本扫到了坐标却判不出归属，只能落到最宽松的阈值。
+    "按组件名写死的名单"必然随新件失效 —— 这正是本技能反复踩的那一类。
+    """
+    found = set()
+    for tsx in sorted((root / "src").rglob("*.tsx")):
+        text = tsx.read_text(encoding="utf-8", errors="ignore")
+        for m in PROP_BLOCK.finditer(text):
+            props = m.group(2)
+            if re.search(r"\bx\s*[?:]", props) and re.search(r"\by\s*[?:]", props):
+                found.add(m.group(1))
+    return tuple(sorted(found | set(OVERLAYS)))
 
 
 def main() -> int:
@@ -25,6 +44,7 @@ def main() -> int:
     strict = "--strict" in sys.argv
     errors: list[str] = []
     warns: list[str] = []
+    overlays = overlays_of(root)   # 名单 = 历史 6 件 ∪ 源码推导
     for src in (root / "src",):
         if not src.is_dir():
             print(f"no src/ under {root}")
@@ -36,7 +56,7 @@ def main() -> int:
                 axis, value = match.group(1), int(match.group(2))
                 window = text[max(0, match.start() - 400):match.start()]
                 comp = "?"
-                for name in OVERLAYS:
+                for name in overlays:
                     if name in window:
                         comp = name
                 line = text.count("\n", 0, match.start()) + 1

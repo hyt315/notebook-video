@@ -55,7 +55,7 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 
 ▶️ [Watch full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · Hero Asset: [hero.png](assets/demo/hero.png)
 
-▶️ [Component library showcase (v2.5, 54s)](assets/demo/notebook-video-components-demo.mp4) — 26 locked icons, seven components (CodeBlock / Checklist / Callout …), three transitions, type motion, physical parts and all four theme skins, rendered in the cel theme.
+▶️ [Component library showcase (v2.5, 54s)](assets/demo/notebook-video-components-demo.mp4) — 26 locked icons, seven components (HighlightCode / Checklist / Callout …), three transitions, type motion, physical parts and all four theme skins, rendered in the cel theme.
 
 > ⚠️ **These samples were rendered from an older template and have not been re-rendered.** The four files under `assets/demo/` (`notebook-video-demo.mp4/.webp`, `notebook-video-components-demo.mp4`, `hero.png`) predate the current template, so they do **not** match what it produces today. Since they were made, the skill gained component cleanup and new components, four-skin verification, the directory-tree layout fix, a `CardFitGate` fix, and the narration/timeline workflow — **none of it re-rendered into these samples**. Treat them as a style and form reference, not as a frame-accurate reproduction of the current version.
 > To check the current version: `npm install` inside `assets/lecture-template`, then `npm run still` (single frame) or `npm run render` (full film).
@@ -269,10 +269,10 @@ Source layers inside the template (`assets/lecture-template/src/`):
 ```
 index.tsx           Engine: canvas / captions / chapter card / asset gate / runtime gates + shot handoff
 shotkit.tsx         Shot layer: ShotCamera / 6 intents / anchor proof / depth layers / backing plate
-stagekit.tsx        Skeleton "Stage": StageFrame + state machine + PhaseRail + Attach + SlotGuard
+stagekit.tsx        Skeleton "Stage": StageFrame + state machine + PhaseRail + SlotGuard（Attach 已删）
 skeletons.tsx       Skeletons "Corridor" / "Split" / "Zoom"
 media.tsx           Media: ConsoleWindow / MetricGrid / StampBanner
-fxkit.tsx
+fxkit.tsx          motion components (FitCard / Typewriter / StampSeal / Funnel / ChatThread / ProgressRing / StaggerList / DiffView / SkeletonCard) — frame-driven
 toolkit.tsx         rhetorical tools (Callout / Checklist / JumpInText)
 │   └── components/       wrapped component layer (Accordion / Tabs / HighlightCode / Chart / StatRow / GlowFrame / PathDraw / FitTextBox …)
 kit.tsx             Theme-agnostic atoms: PillTag / LineIcon / CheckBadge / TYPE

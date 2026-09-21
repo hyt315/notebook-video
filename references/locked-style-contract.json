@@ -13,7 +13,7 @@
     "design_timeline_fps": 30,
     "physical_motion_fps": 30,
     "frame_quantizer": "designStep = designTimelineFps / physicalMotionFps; Math.floor(designFrame / designStep) * designStep",
-    "camera": "fixed",
+    "camera": "per-shot (restricted recipes; there is no film-wide camera track)",
     "global_motion": false,
     "mode_selection": "asked once at kickoff; 16:9 is the default",
     "modes": {
@@ -57,7 +57,8 @@
         "subtitle_safe_width": 900,
         "subtitle_font_px": 40
       }
-    }
+    },
+    "_note_global_motion": "False = 没有全片级相机/运动轨道；镜头级的运镜由每镜的 camera 字段声明（motion_system.camera_is_per_shot）"
   },
   "engine": {
     "language": "TypeScript",
@@ -108,7 +109,7 @@
     "display": "LXGWWenKaiLite-Regular.ttf",
     "body": "SourceHanSansCN-Regular.otf",
     "bold": "SourceHanSansCN-Bold.otf",
-    "subtitle_px": 40,
+    "subtitle_px": 44,
     "readability_floor_px": 17,
     "preload_required": true
   },
@@ -341,7 +342,8 @@
       "generated or supplied image assets",
       "image provenance manifest",
       "scene timings",
-      "topic-specific scene objects"
+      "topic-specific scene objects",
+      "wrapped component layer (src/components/, 29 件) — 明确允许编辑"
     ],
     "system_glyph_icons": false,
     "single_line_icon_language": true,
@@ -356,8 +358,8 @@
     "entrance_frames": 22,
     "entrance_easing": "bezier(0.16,1,0.3,1)",
     "intra_beat_stagger_frames": [
-      8,
-      16
+      2,
+      8
     ],
     "scene_exit_frames": 18,
     "forbid_bulk_reveal_at_shot_start": true

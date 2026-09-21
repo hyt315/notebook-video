@@ -37,7 +37,7 @@ Read only what the current production needs. **写任何场景之前，先读前
 **照抄** [references/scene-authoring.md](references/scene-authoring.md) — 场景代码的标准形状与八个坑；不要重新发明。
 **照抄** [references/scene-skeletons.md](references/scene-skeletons.md) — 四种骨架与分镜表结构（写分镜表前必读）。
 **先读** [references/media-routing.md](references/media-routing.md) — 内容→介质路由、A/B 场景、背景可读性契约。
-**先读** [references/shot-language.md](references/shot-language.md) — 六个镜头意图、缩放预算、anchor 出界证明、平移预算。
+**先读** [references/shot-language.md](references/shot-language.md) — 六个运镜意图（+ `still` = 合法取值 7 个）、缩放预算、anchor 出界证明、平移预算。
 **必读** [references/lecture-composition.md](references/lecture-composition.md) 与 [references/motion-design.md](references/motion-design.md) — 构图规范与多时钟动效六律。
 **何时读**（选定皮肤后只读那一份）： [references/visual-system.md](references/visual-system.md) (paper, default) **or** [references/theme-cel.md](references/theme-cel.md) **or** [references/theme-sticker.md](references/theme-sticker.md) **or** [references/theme-flat.md](references/theme-flat.md); the boundary is in [references/theme-system.md](references/theme-system.md).
 **必读** [references/official-aesthetic-system.md](references/official-aesthetic-system.md) — 不许改的锁定元素清单。
@@ -124,7 +124,7 @@ python "<SKILL_DIR>/scripts/resolve-shots.py" ./notebook-video-project
 python "<SKILL_DIR>/scripts/validate-shot-motion.py" ./notebook-video-project
 python "<SKILL_DIR>/scripts/validate-composition.py" ./notebook-video-project
 
-# see components before choosing them (6-page contact sheet, 1 fps → one image per page)
+# see components before choosing them (17-page contact sheet (`SHOWCASE_PAGES`), 1 fps → one image per page)
 node "<SKILL_DIR>/scripts/notebook-video.mjs" showcase ./notebook-video-project
 
 # ⑥ render, then iterate cheaply on ranges
@@ -140,6 +140,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" review-frames ./notebook-video-pro
 | `validate-shot-motion.py` | build | anchor leaves the frame at any keyframe, zoom over budget, pan beyond the zoom-derived budget, camera-move quotas, **unknown intent names**, **a declared camera move that does not actually move** | yes (P0) |
 | `validate-composition.py` | build | adjacent scenes sharing a skeleton, <3 skeletons, no live component in an explanation scene, **a `live` name that does not exist in the scene file**, <3 media, **unknown transition/entry/media names**, zones out of 3–5, lower quarter not filled, **`explanation:false` used to bypass density**, hero size, shot-length spread, repeated骨架 fingerprints, beat gaps (aggregated with frame ranges) | yes (P0) |
 | `validate-audio-levels.py` | build | **a sound-effect asset peaking below −12 dBFS** — it gets attenuated again at mix time and ends up inaudible | yes (P0) |
+| `validate-presentation.py` | build | **讲与画对不对得上、读不读得过来**：beat 必须落在它声明的那句/那一镜内且不提前剧透、每条 cue 至少有一拍；字幕 ≤9 加权字/秒、单行 ≤16、≤2 行；字号绝不低于 13px、正文色对比度 ≥4.5:1（WCAG 2.2 SC 1.4.3）。详见 [references/presentation-gate.md](references/presentation-gate.md) | yes (P0) |
 | `validate-frame-props.py` | build | **`f={f}` passed to an fxkit component (or `frame={f}` to the other modules)** — silently falls back to the global frame and kills the entrance animation | yes (P0) |
 | `CaptionFitGate` | render | caption wider than the safe width, measured with the **current canvas and skin's real weight/spacing** | yes |
 | `CardFitGate` | render | content taller/wider than its card (`scrollHeight > clientHeight`, 6px tolerance; clips only), waits for fonts, logs coverage every 5s | yes |
@@ -191,6 +192,7 @@ scripts/validate-shot-motion.py     构建期：镜头出界证明 + 运镜配�
 scripts/validate-composition.py     构建期：骨架 / 活性组件 / 介质 / 密度 / 枚举闭合 / live 可解析 / 主角尺寸 / 镜长分布
 scripts/validate-frame-props.py     构建期：fxkit 传 frame、其他模块传 f —— 写错即 P0（会静默回落到全局帧）
 scripts/validate-audio-levels.py    构建期：音效素材峰值 < -12 dBFS 即 P0（录太轻 = 混音后等于没有音效）
+scripts/validate-presentation.py    构建期：呈现效果（beat↔cue 对齐 / 字幕阅读预算 / 字号与对比度）——现有门禁都没问过的那一层
 scripts/validate-caption-sync.py    字幕与 TTS 词边界一致
 scripts/validate-semantic-breaks.py 保护短语不被切断
 scripts/validate-visual-plan.py     视觉计划与清单一致

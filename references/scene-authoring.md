@@ -108,7 +108,7 @@ const S1: React.FC<{f: number}> = ({f}) => {
 ```
 
 四个骨架的组件（`StageFrame` / `Corridor` / `SplitStage` / `ZoomStage`）与介质组件
-（`ConsoleWindow` / `MetricGrid` / `StampBanner` / fxkit 的 18 件）都已提供。
+（`ConsoleWindow` / `MetricGrid` / `StampBanner` / fxkit 的 9 件）都已提供。
 **先用现成的，缺什么再补；补的要加进接触表。**
 
 ### 槽宽公式（给槽内组件传宽度前先算）

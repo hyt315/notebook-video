@@ -78,4 +78,4 @@ export type {PresentationName} from './pathfx';
 export {FitTextBox, fitChineseTextOnNLines, useFontsReady, assertFits, fitsWithin} from './fittext';
 
 /** 封装层版本：接触表页脚与门禁用它确认"看到的是这一版"。 */
-export const COMPONENTS_VERSION = 'components-v3 · 27 件 · 11 库 + 6 官方扩展 + 2 纯计算包';
+export const COMPONENTS_VERSION = 'components-v3 · 29 件 · 17 库 + 8 官方扩展';

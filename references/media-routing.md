@@ -59,7 +59,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 | 快速运镜 / 冲刺 | 运动模糊 | **`CameraMotionBlur` / `Trail`（components/pathfx，@remotion/motion-blur）** ← 此前为了代替它，手写了"速度线" |
 | 让画面"活一点" | 有机抖动 | **`NoiseJitter`（components，noise2D 同种子同结果）** |
 | 文字排版 | 反推字号 | **`FitTextBox` / `fitChineseTextOnNLines`（components/fittext）** ← 治卡片文字被裁的正解。图元标签（treemap 格子 / 气泡 / 扇区）用 **`fitNodeLabel`**：宽度与高度**都要**过，反推字号低于 13px 就**降级不画字**并进图例 |
-| 逐条揭示 | 遮罩擦除 | **`RevealMask`（components，clip-path 按帧推进）** |
+| 逐条揭示 | 遮罩擦除 | **`ClipReveal`（components，clip-path 按帧推进；旧件 `RevealMask` 在 `insert.tsx`）** |
 
 **硬约束（门禁 P0）**：全片 ≥3 种不同介质；**每个讲解场景 ≥1 个活性组件**（会随旁白变化状态的演示件），
 "一盒子弹"式纯卡片堆禁止。
@@ -162,10 +162,10 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 | 模块 | 内容 | 约定 |
 |---|---|---|
 | `src/kit.tsx` | `PillTag` `LineIcon`(26 字形) `CheckBadge` `TYPE` | 主题无关原子，工程侧同样可引用 |
-| **`src/components/`** | **新封装层（唯一入口 `./components`）：`Accordion` `Tabs` `ControlStack` `OverlayFrame` `NetworkGraph` `CodeBlock` `IconWall` `Chart` `StatRow` `GlowFrame` `ShimmerText` `RevealMask` `NoiseJitter` `PathDraw` `MorphShape` `ShapeDraw` `PieDraw` `SceneTransitions` `TreeView` `FitTextBox` `VerdictBar`** | **帧参数名统一是 `f`**；颜色只读 `THEME`；见 [dependency-policy.md](dependency-policy.md) §7 |
-| `src/fxkit.tsx` | 18 个动效构件（表格 / 漏斗 / 对话 / 印章 / 时间轨 …） | **帧参数名是 `frame`** |
+| **`src/components/`** | **新封装层（唯一入口 `./components`，29 件）：`Accordion` `Tabs` `ControlStack` `OverlayFrame` `NetworkGraph` `HighlightCode` `MathBlock` `TopicIcon` `IconWall` `Chart` `StatRow` `TreeView` `GeoView` `SankeyChart` `QrCode` `SketchFx` `GlowFrame` `ShimmerText` `ClipReveal` `NoiseJitter` `VerdictBar` `PathDraw` `MorphShape` `ShapeDraw` `PieDraw` `SceneTransitions` `CameraMotionBlur` `Trail` `FitTextBox`**（+ `SHAPES` / `PRESENTATIONS` / `fitChineseTextOnNLines` 等工具） | **帧参数名统一是 `f`**；颜色只读 `THEME`；见 [dependency-policy.md](dependency-policy.md) §7 |
+| `src/fxkit.tsx` | 9 件（`FitCard` `Typewriter` `StampSeal` `Funnel` `ChatThread` `ProgressRing` `StaggerList` `DiffView` `SkeletonCard`） | **帧参数名是 `frame`** |
 | `src/media.tsx` | `ConsoleWindow` `MetricGrid` `StampBanner` | **帧参数名是 `f`** |
-| `src/stagekit.tsx` | `StageFrame` `PhaseRail` `Attach` `useStageMachine` | `f` |
+| `src/stagekit.tsx` | `StageFrame` `PhaseRail` `useStageMachine`（Attach 已于 v3.1 删除） | `f` |
 | `src/skeletons.tsx` | `Corridor` `SplitStage` `ZoomStage` | `f` |
 | `src/insert.tsx` | `RevealMask` `useHandoff` `TRANSITIONS` | `f` |
 | `src/shotkit.tsx` | `ShotCamera` `CoverPanel` `safeCheck` | `f` |
@@ -230,7 +230,7 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR    # 再抽 1fps 接�
 | 演示一段流程 | `Corridor` | `PathDraw`（描线生长，`components/`） | 站点 <3 个时改用 `StaggerList` |
 | 一个主体持续演化 | `StageFrame`（≥5 拍） | `Corridor` | 只有 2–3 拍时别用（状态机撑不起来） |
 | 证明"这是官方/真实" | `HighlightCode` 的窗口壳（`components/`） | — | 纯代码路线不做实拍框；能用代码画清的别用实拍（实拍只能走可选生图附加路线） |
-| 表现"正在跑/正在写" | `ConsoleWindow` / `CodeBlock` | `Typewriter` | `ConsoleWindow` 一定给 `h`，否则高度由内容撑 |
+| 表现"正在跑/正在写" | `ConsoleWindow` / `HighlightCode` | `Typewriter` | `ConsoleWindow` 一定给 `h`，否则高度由内容撑 |
 | 模拟 AI 对话 / Prompt 交互 | `ChatThread`（`fxkit`） | `Tabs`（多方案对比时，`components/`） | 对话条数建议 2–3 条（1 问 + 1~2 答），避免溢出窗口高度 |
 | 页面形态 | `HighlightCode` 的窗口壳（`components/`） | `ConsoleWindow`（终端形态） | 终端内容用 `ConsoleWindow`；带行号/高亮的代码用 `HighlightCode` |
 

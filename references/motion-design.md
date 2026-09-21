@@ -1,4 +1,6 @@
 # Motion design contract
+- **Anti-PPT 的构件从真实存在的里面挑**：`ConsoleWindow`（`media.tsx`）、`MetricGrid`（`media.tsx`）、`Funnel` / `ProgressRing` / `ChatThread`（`fxkit.tsx`）、`Chart` / `TreeView` / `NetworkGraph` / `ControlStack`（`src/components/`）。
+  > 历史注：本节曾列出 6 件专门为 Anti-PPT 设计的插图件（脑波仪 / 雷达声呐 / BM25 标尺 / 挂载坞 / 脱敏扫描 / 芯片契约）——它们定义在 `index.tsx` 内部、**零 export、且从未被任何一处 JSX 渲染过**，按本技能自己的「零引用」判据已于 v3.1 删除。**不要再写它们。**
 
 ## Contents
 
@@ -80,7 +82,7 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 2. **每个 shot 必须声明 `anchor`**（本镜必须始终可见的矩形）。`safeCheck()` 与
    `scripts/validate-shot-motion.py` 用同一套纯算术证明 `anchor` 在所有关键帧都落在可见窗内；
    任一越界即 P0，阻断渲染。
-3. **配额**：每章 ≥3 次运镜、每镜 ≤1 次、单次 30–45 帧 easeInOut；全片 ≥3 种 intent。
+3. **配额**：每章 ≥3 次运镜（章节 <20s 时 ≥1 次）（章节 <20s 时 ≥1 次）（章节 <20s 时 ≥1 次）、每镜 ≤1 次、单次 30–45 帧 easeInOut；全片 ≥3 种 intent。
 4. **缩放预算**：含文字的镜头 `s ≤ 1.35`，纯图形镜头 `s ≤ 1.60`；
    需要"更大"时优先**把主角画大**，而不是把相机推近（推近会牺牲文字锐度）。
 5. **页眉 / 章节卡 / 字幕在相机之外**（屏幕空间），结构上不可能被运镜带动。
@@ -92,18 +94,12 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 
 Never stack plain text bullets inside generic rectangular boxes. Every explanation scene must incorporate at least one function-driven interactive component with physical state transitions synchronized to narration:
 
-- `BrainwaveEEG`: Oscilloscope cognitive pulse wave; flatlines to a straight red line upon session exit, memory flush, or failure.
-- `VectorRadarSonar`: Circular radar display with rotating scan line, vector cluster dots, and ANN metrics.
-- `BM25TokenRibbon`: Dynamic inverted index symbol meter with token tags and match scores.
-- `HookMountBay`: Modular connector dock where agent hook plug visibly inserts into target port and lights up green.
-- `RedactionScanner`: Real-time security preview with a red laser scanner sweeping over sensitive tokens and masking them to `[REDACTED_SECRET_KEY_*****]`.
-- `ChipContract`: Floating micro-hardware chip contract with LED indicators and pin headers moving along data pipelines.
 
 ## Locked motion pack
 
 - Spring presets: use `popS(f, start, preset)` with `SPRINGS` — `snappy` for small UI ticks and code lines, `soft` (identical to the legacy `pop`) for cards and lists, `bouncy` for callouts and celebratory beats. Do not hand-tune new damping/stiffness values per scene.
 - Scene transitions: the vocabulary is `cut | handoff | reveal`. `reveal` is implemented by `RevealMask` (`src/insert.tsx`) and is driven by the shot table's `transition` field — **never write the `reveal` prop by hand**, it is generated into `shots.ts` by `resolve-shots.py`. `handoff` requires a `carrier` shared with the next shot. `whip` / `paper-turn` were removed in v3.0.1 (zero uses in two shipped films, and a single-frame whip is unreadable at 30fps). **No scene overlap, ever**: the outgoing scene must reach opacity 0 before the incoming one starts.
-- Camera script: build new keyframe tracks with `camScript(x, y, duration).hold(f).to(f, {x, y, s}).done()` instead of raw keyframe tables; it guarantees first/last frame coverage. The same easing and exponential lag follow-focus apply.
+- Camera script: build new keyframe tracks with ``manifests/shots.json` 的 `camera` 字段（由 `resolve-shots.py` 展开成关键帧）` instead of raw keyframe tables; it guarantees first/last frame coverage. The same easing and exponential lag follow-focus apply.
 - Stop-motion accent: `useSteppedFrame(15)` quantizes a component to 15fps so each pose holds two output frames. Reserve it for sticker-style charm; never apply it to subtitles, transfers or the camera.
 - Component motion stays inside the locked library: `Checklist` rows slide in with staggered `soft` springs, `HighlightCode` lines enter with `snappy` springs, `PathDraw` animates its dash flow only during transfer.
 

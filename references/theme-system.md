@@ -21,7 +21,7 @@ A theme never touches:
 
 - canvas modes, design coordinates and the 4/3 delivery scale;
 - type scale, font stack and the caption measurement gate;
-- motion helpers (`q`, `ease`, `pop`, springs, CameraRig, JumpInText);
+- motion helpers (`q`, `ease`, `pop`, springs, `JumpInText`);（`CameraRig` 已删除，不要再列）
 - scene composition rules, zone budgets, stacking and exit contracts;
 - audio tree, asset gates and QA validators.
 
@@ -31,6 +31,6 @@ The engine (`src/index.tsx`) reads `THEME` from `src/theme/active.ts` and perfor
 
 1. Implement the `Theme` interface from `theme/types.ts` in a new `theme/<id>.tsx`; optional locked decorative components go in `THEME.extras`.
 2. Anchor all decoration by canvas ratio (`useCanvas()`), never absolute pixels, so all three canvases stay consistent.
-3. Add the id to `THEME_IDS` in `scripts/notebook-video.mjs`.
+3. 让新 id 能被选中：`theme/active.ts` 改成 import 新主题，并把它加进 `scripts/notebook-video.mjs` 的 `new-project --style=` 取值（v3.1 的取值是 paper / cel / sticker / flat；**没有 THEME_IDS 这个常量**）。
 4. Write `references/theme-<id>.md` as a contract (locked tokens, extras usage, rejection flags).
 5. Render frames at 100/300/550/900 on 16:9 plus one frame each on 4:3 and 3:4, and register the contract in validate-skill before merging.

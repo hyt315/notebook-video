@@ -66,7 +66,7 @@
 
 | 包 | 解锁什么效果 |
 |---|---|
-| `@remotion/transitions` | 18 种演示型转场：fade / slide / wipe / flip / clockWipe / iris / dissolve / ripple / zoom-blur / film-burn / book-flip / swap / crosswarp … 用 `TransitionSeries` 串联 |
+| `@remotion/transitions` | 20 种演示型转场：fade / slide / wipe / flip / clockWipe / iris / dissolve / ripple / zoom-blur / film-burn / book-flip / swap / crosswarp … 用 `TransitionSeries` 串联 |
 | `@remotion/paths` | `evolvePath`（描线生长）、`getPointAtLength`（沿线运动）、`interpolatePath`（形状连续变形）、`warpPath`、`cutPath`、`getBoundingBox` |
 | `@remotion/shapes` | 参数化几何图形：圆 / 椭圆 / 矩形 / 三角 / 多边形 / 星 / Pie / 心形 / 箭头 / 对话气泡 / 星芒，`make*()` 直接给出 path 字符串 |
 | `@remotion/motion-blur` | `CameraMotionBlur`（相机快门式模糊）、`Trail`（拖尾残影）。快甩、冲刺、切镜用 |
@@ -212,8 +212,8 @@
 
 | 类别 | 件数 | 为什么砍不动 |
 |---|---|---|
-| 引擎 / 结构件（3 骨架 + `ShotCamera` `StageFrame` `PhaseRail` `CoverPanel` `RevealMask` + `LineIcon` `CheckBadge` `PillTag` `FitCard` `StampBanner`） | 12 | `validate-composition.py` 的 `STRUCTURAL` 集合就是这份名单；骨架门禁要求 ≥3 种且相邻不得重复 |
-| 表意件（修辞动作各一件） | 33 | 逐对核对后，真正"同一修辞动作、两套实现"的只有 4–5 对，且每对都各有一点对方没有的能力 |
+| 引擎 / 结构件（`validate-composition.py` 的 `STRUCTURAL` 集合：3 骨架 + `ShotCamera` `StageFrame` `PhaseRail` `CoverPanel` + `LineIcon` `CheckBadge` `PillTag` `StampBanner` `FitCard` `CardHead` `Shot`） | 14 | `validate-composition.py` 的 `STRUCTURAL` 集合就是这份名单；骨架门禁要求 ≥3 种且相邻不得重复 |
+| 表意件（修辞动作各一件） | 41 | 逐对核对后，真正"同一修辞动作、两套实现"的只有 4–5 对，且每对都各有一点对方没有的能力 |
 
 - **故本节的合规判据是「零引用」而不是「总数」**：任何组件只要**从未出现在任何画面里**（参考片或接触表），
   就是待删除项。v3.1 按这条清掉了 23 件。
@@ -223,5 +223,5 @@
 > **历史教训（两条，都很硬）**：
 > ① 本技能曾累积到 49 件组件，其中 **23 件（47%）从未在任何画面里出现过**，而其中 **21 件早已登记在路由表上**——
 >    说明"补决策入口"不是解药，**规矩必须同时给许可**（这就是本文件存在的原因）。
-> ② 反过来，"总数压到 20 件"同样不可达：地板约 40 件，再往下就是删引擎件或在用的表意件。
+> ② 反过来，"总数压到 20 件"同样不可达：v3.1 逐件点算的地板是 **55 件**（`src/components/` 29 + 六个旧模块 26，其中 `STRUCTURAL` 14 件豁免多样性检查），再往下就是删引擎件或在用的表意件。
 >    **别对着一个数字做有损合并。**

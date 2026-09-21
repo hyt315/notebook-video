@@ -55,7 +55,7 @@
 
 ▶️ [观看完整演示视频（MP4）](assets/demo/notebook-video-demo.mp4) · 主视觉参考：[hero.png](assets/demo/hero.png)
 
-▶️ [组件库与动效演示（MP4）](assets/demo/notebook-video-components-demo.mp4) — 锁定图标集、代码窗 / 浏览器壳 / 连件 / 清单 / 计数 / 进度条 / 手绘标注、转场、文字动效、物理件与主题皮肤。
+▶️ [组件库与动效演示（MP4）](assets/demo/notebook-video-components-demo.mp4) — 锁定图标集、代码高亮窗 / 清单 / 手绘标注、转场、文字动效、物理件与主题皮肤。
 
 > ⚠️ **这批样片是改动前渲的（未重渲）**：`assets/demo/` 下的 4 个文件（`notebook-video-demo.mp4/.webp`、`notebook-video-components-demo.mp4`、`hero.png`）由**旧版模板**渲染，**不对应当前模板的输出**。此后技能做了多处改动（组件清理与新增、四皮肤校验、目录树布局、`CardFitGate` 修复、配音与时间轴流程等），**均未重渲这批样片**——请把它们当作"风格与形态的示意"，不要当作"当前版本的逐帧复现"。
 > 想核对当前版本：在 `assets/lecture-template` 里 `npm install` 后跑 `npm run still`（抽帧）或 `npm run render`（整片），或在验证工程里跑接触表。
@@ -218,7 +218,7 @@ node scripts/notebook-video.mjs review-frames ./my-video r.mp4 0 570
 | **动手前** | `locked-style-contract.json` | 绑定令牌、坐标与禁用项（不可改） |
 | **写场景前** | `scene-authoring.md` · `scene-skeletons.md` | 场景代码的标准形状、四种骨架、十个反复踩的坑 |
 | **选组件前** | `media-routing.md` 的「修辞动作 → 组件」表 · `fxkit.md` | 这个动作该用哪一件、**何时别用**、`frame` 与 `f` 的命名陷阱 |
-| **排分镜前** | `media-routing.md` · `shot-language.md` | 内容→介质路由、六个镜头意图、缩放与平移预算 |
+| **排分镜前** | `media-routing.md` · `shot-language.md` | 内容→介质路由、六个运镜意图（+ `still`）、缩放与平移预算 |
 | **写作前** | `narrative-hook.md` · `pacing-rhythm.md` | 前 3 秒怎么抓人、章节能量与呼吸 |
 | **做完对照** | `composition-gate.md` · `quality-checklist.md` | 每道门禁的判据、失败怎么修、交付事实卡 |
 | **配音与字幕** | `tts-audio.md` · `subtitle-timing.md` | 多音字规避、定速、词级时间戳、音效词汇 |
@@ -263,10 +263,10 @@ notebook-video/
 ```
 index.tsx          引擎：画布/字幕/章节卡/资产门/渲染期门禁 + 镜头边界交接
 shotkit.tsx        镜头层：ShotCamera / 6 意图 / anchor 证明 / 景深 / 底托
-stagekit.tsx       骨架 Stage：StageFrame + 状态机 + PhaseRail + Attach + SlotGuard
+stagekit.tsx       骨架 Stage：StageFrame + 状态机 + PhaseRail + SlotGuard（Attach 已删）
 skeletons.tsx      骨架 Corridor / Split / Zoom
 media.tsx          介质：ConsoleWindow / MetricGrid / StampBanner
-fxkit.tsx          18 个动效构件（多时钟动效）
+fxkit.tsx          9 个动效构件（多时钟动效）
 toolkit.tsx       修辞工具件：Callout(画圈标注)/Checklist(清单)/JumpInText(逐字跳入) …… 可直接 import
 │   └── components/      封装组件层：Accordion/Tabs/HighlightCode/Chart/StatRow/GlowFrame/PathDraw/FitTextBox …… 场景从这里 import
 kit.tsx            主题无关原子：PillTag / LineIcon / CheckBadge / TYPE

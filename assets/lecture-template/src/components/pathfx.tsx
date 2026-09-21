@@ -230,7 +230,7 @@ export const PieDraw: React.FC<{f: number; startAt: number; durationInFrames?: n
 };
 
 // ---------------------------------------------------------------------------
-// 转场：19 种官方演示型转场，不用再手写
+// 转场：20 种官方演示型转场，不用再手写（含 blurSlide；`PRESENTATIONS` 的键即全部）
 //
 // 全部登记（2026-09-21 补齐余下 14 种）。每项收一个统一的 ctx，返回官方的
 // presentation 对象——调用方是 `SceneTransitions`，或直接用 PRESENTATIONS[name](ctx)。

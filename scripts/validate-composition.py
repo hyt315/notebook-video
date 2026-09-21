@@ -76,6 +76,54 @@ def scene_source(project: Path) -> str:
     return text
 
 
+def import_integrity(project: Path) -> list[dict]:
+    """**import 的每个名字必须真的存在于目标模块的导出里**（P0）。
+
+    为什么单列一条：本轮清掉 23 件组件之后，`src/index.tsx` 还留着
+    `import {Mascot, RollDigit, WaveText, CodeBlock, BrowserChrome, Connector, CountUp, ProgressBar} from './toolkit'`
+    这样的语句——11 个名字指向已删除的导出。打包器对"缺失的具名导出"通常只告警不报错，
+    于是在运行时变成静默的 `undefined`：**这正是本技能最怕的那类失败**（没报错，但坏了）。
+    """
+    problems: list[dict] = []
+    src = project / "src"
+    if not src.is_dir():
+        return problems
+    mods: dict[str, set[str]] = {}
+    for f in src.glob("*.tsx"):
+        body = f.read_text(encoding="utf-8", errors="replace")
+        names = set(re.findall(r"export\s+(?:const|function|class|type|interface|let)\s+(\w+)", body))
+        for m in re.finditer(r"export\s*\{([^}]*)\}", body):
+            for part in m.group(1).split(","):
+                token = part.strip().split(" as ")[-1].strip()
+                if token:
+                    names.add(token)
+        mods[f.stem] = names
+    # ⚠️ 必须先剥掉注释再扫：用法示例常常写成
+    # `// 用法：import {FitCard, Typewriter, ...} from './fxkit';`
+    # 第一版没剥，于是 `...` 被当成一个名字报成 P0 —— 会哭狼的检查等于没有检查。
+    def strip_comments(text: str) -> str:
+        text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+        # 没有 re.S 时 `.` 不匹配换行 → 这一条正好剥掉行注释
+        return re.sub(r"//.*", "", text)
+
+    for f in sorted(src.glob("*.tsx")):
+        body = strip_comments(f.read_text(encoding="utf-8", errors="replace"))
+        for m in re.finditer(r"import\s*\{([^}]*)\}\s*from\s*'\./(\w+)'", body, re.S):
+            target = m.group(2)
+            if target not in mods:
+                continue
+            for raw in m.group(1).split(","):
+                token = raw.strip()
+                if not token or token.startswith("type "):
+                    continue
+                name = token.split(" as ")[0].strip()
+                if not re.fullmatch(r"[A-Za-z_$][\w$]*", name):
+                    continue   # `...`、空串等不是合法标识符，直接跳过
+                if name not in mods[target]:
+                    problems.append({"id": f"src/{f.name}", "issue": f"import 里引用了已不存在的导出 {name}（来自 ./{target}）——打包器只告警，运行时是 undefined"})
+    return problems
+
+
 def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], list[str]]:
     p0: list[dict] = []
     p1: list[dict] = []
@@ -302,6 +350,7 @@ def main() -> int:
         return 2
     data = load(project)
     p0, p1, notes = check(data, scene_source(project))
+    p0 += import_integrity(project)
     if args.json:
         print(json.dumps({"p0": p0, "p1": p1, "notes": notes, "shots": len(data.get("shots", []))}, ensure_ascii=False, indent=2))
     else:

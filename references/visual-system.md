@@ -4,11 +4,11 @@ Treat this as a low-freedom system. Copy the canonical components from `assets/l
 
 ## Canvas and camera
 
-- 2560×1440, native 30fps. The only global camera is the official `CameraRig` (or the classic route's fixed camera).
+- 2560×1440, native 30fps. **相机是镜头级的**：每镜在自己的 `camera` 字段里声明意图与关键帧（`ShotCamera` + `shotCam`/`stillCam`，见 shot-language.md）。v3.1 起**没有全片级相机轨道**（`CameraRig` 与 `CAM_KEYS_L/CAM_KEYS_P` 已删除）。
 - Preserve a 1920×1080 design coordinate system and scale it by 4/3 inside the native 2K composition.
 - Animate physical paper poses natively at 30fps; do not create duplicate delivery frames.
 - Keep subtitle space clear from y=925 downward.
-- Beyond `CameraRig`, do not add global zoom, shake, breathing, parallax, animated grain or depth-of-field.
+- Beyond the per-shot recipes, do not add global zoom, shake, breathing, parallax, animated grain or depth-of-field.
 
 ## Background
 

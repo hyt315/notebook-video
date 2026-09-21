@@ -6,7 +6,7 @@
 ## 目录
 
 - [1. 为什么改](#1-为什么改)
-- [2. 六个镜头意图](#2-六个镜头意图)
+- [2. 六个运镜意图](#2-六个运镜意图--still合法取值-7-个)
 - [2.5 平移安全预算](#25-平移安全预算想平移多少就先缩放到能覆盖它铁律)
 - [3. anchor：出界证明](#3-anchor出界证明)
 - [4. 配额](#4-配额防止为了动而动也防止全片不动)
@@ -26,7 +26,7 @@ v2.8 的铁律把虚拟相机锁在 `x ∈ [945, 975]`（±15px）、`y ∈ [538
 结论（与历史方案一致）：**不能靠"放开限制"解决（自由曲线会立刻出界），
 只能把自由曲线换成"带内置不变量的受限配方"，并把"不出界"从"靠不动"换成"靠证明"。**
 
-## 2. 六个镜头意图
+## 2. 六个运镜意图 + `still`（合法取值 7 个）
 
 每个镜头（shot）声明**一个** intent，曲线形状由 intent 决定，调用方只填少量参数。
 
@@ -102,7 +102,7 @@ top  = y - 540/s      bottom = y + 540/s
 
 | 规则 | 判据 | 级别 |
 |---|---|---|
-| 每章 ≥3 次运镜 | 按 `chapter` 分组统计非 `still` 的镜头数 | P0 |
+| 每章 ≥3 次运镜（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致）（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致）（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致） | 按 `chapter` 分组统计非 `still` 的镜头数 | P0 |
 | 每镜 ≤1 次运镜 | 关键帧里位移段数 | P1（>2 记 P0 级问题） |
 | 单次运镜 30–45 帧 | `at + dur` | P1 |
 | 全片 ≥3 种 intent（不含 `still`） | 去重计数 | P0 |
@@ -172,7 +172,7 @@ const bad = safeCheck(keys, {x: 320, y: 190, w: 1280, h: 640}, 1.35); // [] 表�
 ## 7. 自检
 
 - [ ] 每一镜都有 `anchor`，且 `validate-shot-motion.py` P0 = 0；
-- [ ] 每章 ≥3 次运镜，全片 ≥3 种 intent；
+- [ ] 每章 ≥3 次运镜（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致）（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致）（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致），全片 ≥3 种 intent；
 - [ ] 含文字的镜头 `s ≤ 1.35`；
 - [ ] 运镜期间解说对象始终完整可见（门禁已证明）；
 - [ ] chrome / 字幕放在 `ShotCamera` 之外；

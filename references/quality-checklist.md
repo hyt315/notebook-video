@@ -58,7 +58,7 @@
 - No clutter from unrelated dots, scraps, steam or continuous movement.
 - No effect stack, miniature card pile or unused half-visible layer remains on screen.
 - No global zoom, shake, animated noise, posterize or full-screen page turn.
-- Shot camera: every shot declares one intent from the closed set (`establish` / `push-in` / `pull-back` / `pan-follow` / `reveal` / `micro-orbit` / `still`) plus an `anchor`; `scripts/validate-shot-motion.py` must prove the anchor stays fully visible at every keyframe (P0 = 0). Zoom ≤ 1.35 on shots carrying text. At least 3 camera moves per chapter and at least 3 distinct intents per film — a film with a frozen frame reads as page-turning.
+- Shot camera: every shot declares one intent from the closed set (`establish` / `push-in` / `pull-back` / `pan-follow` / `reveal` / `micro-orbit` / `still`) plus an `anchor`; `scripts/validate-shot-motion.py` must prove the anchor stays fully visible at every keyframe (P0 = 0). Zoom ≤ 1.35 on shots carrying text. At least 3 camera moves per chapter (>=20s chapters; >=1 for shorter ones) and at least 3 distinct intents per film — a film with a frozen frame reads as page-turning.
 - Scene skeletons: at least 3 of `Stage` / `Corridor` / `Split` / `Zoom`, and no two adjacent scenes share a skeleton (`scripts/validate-composition.py`).
 - Visual media: at least 3 distinct media across the film (chart / console / code / graphic / text / metric), and every explanation scene carries at least one live component that changes state with the narration. A pure card-and-bullets scene is rejected.
 - Density: every scene declares 3–5 functional zones and fills the lower quarter (bottom edge near y=876). An empty lower half is a PPT tell.
@@ -66,7 +66,8 @@
 - Runtime overlap gate: after the first render, the console must show **no `OverlapGate` warnings** (text-vs-text overlap and paint-order occlusion, sampled every 15 frames). Intentional overlaps (shot handoff, header swap, metric value replacement) must be marked `data-gate-allow`; never use the allow-list to hide two different pieces of information colliding.
 - Slot overflow gate (dev mode): **no `SlotGuard` warnings** — every component inside `StageFrame`'s main slot must be no wider than `mainW = w − pad×2 − railW − 18`.
 - Motion: progress-like bars animate `scaleX` (never `width`); numeric readouts use `tabular-nums` with fixed fraction digits; every element's multi-property entrance uses different clocks (see motion-design.md).
-- Anti-PPT Functional Components: Technical concepts (search, memory, context, contracts, embeddings, security) MUST use active animated components (`BrainwaveEEG`, `VectorRadarSonar`, `BM25TokenRibbon`, `HookMountBay`, `RedactionScanner`, `ChipContract`) rather than generic bullet text cards.
+- Anti-PPT Functional Components: 技术概念（检索 / 记忆 / 上下文 / 契约 / 嵌入 / 安全）**不要**用一整排等大的要点卡去讲，要用**真的随旁白变化**的构件。可选件从真实存在的里面挑：`ConsoleWindow`（`media.tsx`）、`MetricGrid`（`media.tsx`）、`Funnel` / `ProgressRing` / `ChatThread`（`fxkit.tsx`）、`Chart` / `TreeView` / `NetworkGraph` / `ControlStack`（`src/components/`）。
+  > 历史注：本条曾经点名 BrainwaveEEG / VectorRadarSonar / BM25TokenRibbon / HookMountBay / RedactionScanner / ChipContract 六件并要求 MUST use —— 那六件定义在 `index.tsx` 内部、**零 export、且没有任何一处 JSX 渲染过**，按本技能自己的「零引用」判据正是待删除项，已于 v3.1 删除。**不要再把不可达的名字写成硬要求。**
 
 ## Subtitle
 

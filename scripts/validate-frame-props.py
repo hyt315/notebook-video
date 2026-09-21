@@ -24,13 +24,15 @@
 import os
 import re
 import sys
+from pathlib import Path
 
-ENGINE_FILES = [
-    "toolkit.tsx", "plates.tsx", "charts.tsx",
-    "fxkit.tsx", "media.tsx", "kit.tsx", "stagekit.tsx", "skeletons.tsx",
-    "insert.tsx", "shotkit.tsx", "scene-kit.tsx", "films.tsx",
-]
-# 场景文件/目录：只检查这些，因为只有它们运行在"镜头内局部帧"上下文
+# 引擎文件 = src/ 下**除场景外的所有 .tsx**，由磁盘**递归**枚举（不再写死名单）。
+# 旧版是一份写死的 12 个文件名，其中 `plates.tsx` `charts.tsx` `scene-kit.tsx` `films.tsx`
+# **根本不存在**，而收集逻辑又只用 os.listdir 扫 `src/` 一层 → `src/components/`
+# （v3.1 全部 29 件）**完全不在检查范围**：给 `Chart` 写成 `frame={f}` 不会被抓，
+# 组件静默回落到全局帧。这与 `coords-lint.py` 在 v3.1 修的是同一类病（"不递归 = 整层漏检"），
+# 那次没同步到这里 —— 本技能的铁律就是"名存实亡的门禁是最危险的缺陷"。
+# 场景文件/目录：只有它们运行在"镜头内局部帧"上下文，所以只检查它们。
 # 场景文件可能被拆成多份（scenes.tsx / scenes-a.tsx / scenes-kit.tsx …）。
 # 旧版只匹配 "scenes.tsx"，一旦拆分就会一个文件都扫不到、静默空过——实测踩到过。
 SCENE_HINT = "scene"
@@ -125,21 +127,25 @@ def prop_names(text, start):
 
 
 def collect_components(root):
-    """{组件名: (收 f?, 收 frame?, 出处文件)}"""
+    """{组件名: (收 f?, 收 frame?, 出处文件)} —— **递归**扫描 src/ 全部 .tsx。
+
+    递归是必须的：v3.1 起组件封装层在 `src/components/`，只扫一层等于整层漏检。
+    """
     comps = {}
     search_dirs = [os.path.join(root, "src"), os.path.join(root, "engine", "src")]
     for base in search_dirs:
         if not os.path.isdir(base):
             continue
-        for name in sorted(os.listdir(base)):
-            if not name.endswith(".tsx"):
-                continue
-            text = read(os.path.join(base, name))
+        for path in sorted(Path(base).rglob("*.tsx")):
+            rel = os.path.relpath(str(path), base).replace("\\", "/")
+            if SCENE_HINT in os.path.basename(rel).lower():
+                continue  # 场景文件不是引擎组件
+            text = read(str(path))
             for m in EXPORT_RE.finditer(text):
                 cname = m.group(1)
                 names = prop_names(text, m.start())
                 af, afr = "f" in names, "frame" in names
-                comps[cname] = (af, afr, name)
+                comps[cname] = (af, afr, rel)
     return comps
 
 
@@ -184,7 +190,7 @@ def main():
     scenes = []
     for base, _dirs, files in os.walk(os.path.join(root, "src")):
         for name in files:
-            if name.endswith(".tsx") and name not in ENGINE_FILES and SCENE_HINT in name.lower():
+            if name.endswith(".tsx") and SCENE_HINT in name.lower():
                 scenes.append(os.path.join(base, name))
     if not scenes:
         print(f"未在 {root}/src 找到场景文件（*{SCENE_HINT}）")
@@ -220,7 +226,7 @@ def main():
 
     # 防呆：组件表为空说明引擎源码没被读到，此时"PASS"是假阳性（实测过这种静默漏判）
     if len(comps) < 20:
-        print(f"帧参数名门禁 · 只解析到 {len(comps)} 个组件，引擎源码可能没读到（ENGINE_FILES={ENGINE_FILES}）；不给出 PASS")
+        print(f"帧参数名门禁 · 只解析到 {len(comps)} 个组件，引擎源码可能没读到（src/ 下应有 30+ 个导出组件）；不给出 PASS")
         return 2
     print(f"帧参数名门禁 · {len(scenes)} 个场景文件 · 引擎组件 {len(comps)} 个")
     for x in p0:

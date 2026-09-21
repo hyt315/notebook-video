@@ -11,7 +11,11 @@ import tempfile
 import zipfile
 from pathlib import Path
 
+# 默认根目录 = 本脚本所在技能的根；`--root DIR` 可指向一份夹具副本
+# （负向抽查要能"喂一份写坏了的技能"，见 scripts/negative-gate-check.py 的 P 用例）。
 SKILL = Path(__file__).resolve().parent.parent
+if '--root' in sys.argv:
+    SKILL = Path(sys.argv[sys.argv.index('--root') + 1]).resolve()
 IGNORED_PARTS = {"node_modules", ".git", ".cache", ".tools", "renders", "__pycache__"}
 TEXT_SUFFIXES = {'.md', '.py', '.sh', '.cmd', '.mjs', '.json', '.yaml', '.yml', '.tsx', '.cjs'}
 
@@ -19,6 +23,121 @@ TEXT_SUFFIXES = {'.md', '.py', '.sh', '.cmd', '.mjs', '.json', '.yaml', '.yml', 
 def reusable_file(path: Path) -> bool:
     rel = path.relative_to(SKILL)
     return path.is_file() and not any(part in IGNORED_PARTS for part in rel.parts)
+
+
+# ---------------------------------------------------------------------------
+# 文档反引号里的 PascalCase 名字必须能在源码里找到定义
+#
+# 为什么加这一条：A1（`Attach`）/ A6（`CameraRig`）/ A7（`camScript`）/ A8（六件不可达组件）/
+# B11（代码注释层的已删件名）这一整类"会误导执行 AI"的缺陷，之前的门禁一条都拦不住 ——
+# 它只查相对链接，不查名字。这一条是同构检查：**文档写了不存在的名字 → 直接报错**。
+#
+# 判据与边界：
+#   · 真值来源 = 模板/示例工程的源码里**定义过的一切标识符**（含未导出的）∪ manifests 里的字符串取值
+#     （骨架名 `Stage`/`Corridor` 这类是数据不是标识符）∪ 白名单（外部库 / 平台 API / 文献人名）。
+#   · `CHANGELOG.md` **不查**：它是历史记录，按历史处理（写已删组件的名字是它的职责）。
+#   · 白名单只装"本来就不属于本仓库的东西"，每类都写了理由；**不要为了消红把自家组件名塞进来**。
+#   · **提到已删除的名字时不要加反引号**：本技能里反引号 = "这是可直接使用的标识符"。
+#     写历史对照（"X 已于 v3.1 删除"）时用纯文本写名字，检查就不会误报，读者也不会以为它还能用。
+# ---------------------------------------------------------------------------
+DOC_IDENT_SKIP_FILES = {'CHANGELOG.md'}
+DOC_IDENT_WHITELIST = {
+    # 平台 / 框架 API（Remotion、React、Web）
+    'Composition', 'Sequence', 'Series', 'AbsoluteFill', 'Audio', 'Video', 'Img', 'Still', 'Player',
+    'DelayRender', 'ContinueRender', 'CancelRender', 'Interpolate', 'Spring', 'Easing', 'Random',
+    'CurrentFrame', 'UseCurrentFrame', 'React', 'ReactDOM', 'JSX', 'TSX', 'HTML', 'CSS', 'SVG', 'DOM',
+    'API', 'URL', 'CLI', 'JSON', 'YAML', 'CSV', 'TSV', 'PNG', 'JPG', 'JPEG', 'WEBP', 'MP4', 'MOV',
+    'OTF', 'TTF', 'WOFF', 'XML', 'PNPM', 'NPM', 'NodeJS', 'Node', 'GPU', 'CPU', 'RAM', 'ID', 'UI',
+    # 依赖与库
+    'Remotion', 'Radix', 'KaTeX', 'RoughJS', 'BudouX', 'PrismLight', 'Prism', 'TypeScript', 'Chrome',
+    'FFmpeg', 'FFprobe', 'TrueType', 'Typekit', 'Tailwind', 'Emotion', 'Panda', 'Mantine', 'Chakra',
+    'HeroUI', 'DaisyUI', 'Storybook', 'Lottie', 'GIF', 'WebP', 'LineBreaker', 'Fflate', 'Lucide',
+    'Feather', 'Tabler', 'Simple', 'Icons', 'OpenSCAD',
+    # 规范 / 标准 / 许可
+    'WCAG', 'OFL', 'MIT', 'ISC', 'Apache', 'MPL', 'UAX', 'CJK', 'SDH', 'TTS', 'ASR', 'LLM', 'AI',
+    'BM25', 'EEG', 'ANN', 'SaaS', 'PDF', 'PDFs', 'PPT', 'VIP', 'IDE', 'LRU',
+    # 文献 / 出处（调研里引用的作者与刊物，不是本仓库的名字）
+    'Mayer', 'Yantis', 'Jonides', 'Gleicher', 'Zikmund', 'Itti', 'Koch', 'Rosenholtz', 'Semizer',
+    'Fyfield', 'Klepsch', 'Schmitz', 'Seufert', 'Heliyon', 'ERIC', 'Netflix', 'Foliojs', 'Manim',
+    'Motion', 'Canvas', 'AWSM', 'CTML',
+    # 本技能自己的非源码标识符（数据字段 / 门禁名 / composition id / 常量）
+    'STRUCTURAL', 'DURATION', 'MODES', 'CanvasMode', 'ThemePalette', 'NotebookVideoFilm',
+    'NotebookVideoShowcase', 'CardFitFixture', 'CardFitGate', 'CaptionFitGate', 'OverlapGate',
+    'SlotGuard', 'AssetGate', 'CameraRig', 'CAM_KEYS_L', 'CAM_KEYS_P',  # 后三者是"已删除"的对照物
+    'Overlays', 'TSV', 'YAML', 'ENV', 'NFC', 'PIL', 'PNG', 'Range', 'RangeError',
+    'HTTPS_PROXY', 'PATH', 'TTS_API_BASE', 'TTS_API_KEY', 'TTS_MODEL', 'TTS_VOICE', 'TTS_STYLE_PROMPT',
+    'REMOTION_CONCURRENCY', 'REMOTION_BROWSER_EXECUTABLE',  # 环境变量，不是源码标识符
+    'Chloe', 'Dean', 'Mia', 'Milo', 'TransitionSeries',      # 供应商音色名 / Remotion API
+    'FiZoomOut', 'LuZoomOut',                                 # react-icons 的两个字形名（政策里做字节级对照）
+    'DeepSeek', 'Opus',                                       # 模型名
+    # —— 以下名字在文档里**只允许以"已删除/历史对照"的身份出现**（写它们的用途是告诉读者"别再用"）——
+    'BackgroundMute', 'CameraRig', 'SceneContribute', 'SceneShip', 'SceneSkills',
+    'ElderPhone', 'FamilyShield', 'Robot', 'Scammer', 'SrcIcon',   # portrait 示例题材的插画命名，从来不是模板组件
+}
+
+
+def doc_defined_names() -> set[str]:
+    """本仓库"真实存在过"的标识符集合：模板 + 示例工程源码 ∪ manifests 字符串取值。"""
+    names: set[str] = set()
+    roots = [SKILL / 'assets' / 'lecture-template' / 'src', SKILL / 'assets' / 'example-project' / 'src']
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for f in list(root.rglob('*.ts')) + list(root.rglob('*.tsx')):
+            t = f.read_text(encoding='utf-8', errors='ignore')
+            names |= set(re.findall(r'(?:export\s+)?(?:const|function|class|type|interface|let|var)\s+([A-Za-z_$][\w$]*)', t))
+            # 多声明 const（`const BASE_FPS=30,FPS=30,TIMELINE_SCALE=1,...`）：只取第一个名字会漏掉后面所有。
+            # 逐行扫，避免在正则里写换行转义。
+            for line in t.splitlines():
+                if 'const ' not in line or '=' not in line:
+                    continue
+                head = line.split('const ', 1)[1]
+                for part in head.split(';', 1)[0].split(','):
+                    m2 = re.match(r'\s*([A-Za-z_$][\w$]*)\s*=', part)
+                    if m2:
+                        names.add(m2.group(1))
+            for m in re.finditer(r'export\s*\{([^}]*)\}', t):
+                for part in m.group(1).split(','):
+                    tok = part.strip().split(' as ')[-1].strip()
+                    if tok:
+                        names.add(tok)
+    for man in (SKILL / 'assets' / 'lecture-template' / 'manifests').glob('*.json'):
+        try:
+            data = json.loads(man.read_text(encoding='utf-8'))
+        except Exception:
+            continue
+        stack = [data]
+        while stack:
+            node = stack.pop()
+            if isinstance(node, dict):
+                stack.extend(node.values())
+            elif isinstance(node, list):
+                stack.extend(node)
+            elif isinstance(node, str) and re.fullmatch(r'[A-Z][A-Za-z0-9]{1,30}', node):
+                names.add(node)
+    return names
+
+
+def check_doc_identifiers() -> list[str]:
+    defined = doc_defined_names()
+    problems: list[str] = []
+    docs = [SKILL / 'SKILL.md', SKILL / 'README.md', SKILL / 'README.en.md']
+    docs += [p for p in (SKILL / 'references').glob('*.md')]
+    docs += [p for p in (SKILL / 'agents').glob('*.yaml')]
+    for doc in docs:
+        if not doc.is_file() or doc.name in DOC_IDENT_SKIP_FILES:
+            continue
+        text = doc.read_text(encoding='utf-8', errors='ignore')
+        bad = sorted({
+            m.group(1) for m in re.finditer(r'`([A-Z][A-Za-z0-9_$]{2,})`', text)
+            if m.group(1) not in defined and m.group(1) not in DOC_IDENT_WHITELIST
+        })
+        if bad:
+            problems.append(
+                f"doc names not found in source: {doc.relative_to(SKILL)} -> {', '.join(bad[:8])}"
+                + (f" (+{len(bad) - 8})" if len(bad) > 8 else "")
+            )
+    return problems
 
 
 def main() -> None:
@@ -126,6 +245,8 @@ def main() -> None:
                 continue
             if not (p.parent / link).resolve().exists():
                 problems.append(f"broken link: {p.relative_to(SKILL)} -> {link}")
+
+    problems.extend(check_doc_identifiers())
 
     if problems:
         for problem in problems:
