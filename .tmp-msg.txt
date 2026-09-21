@@ -1,0 +1,5 @@
+fix(gates): 去掉文档字符串里的无效转义，免得门禁输出打 SyntaxWarning
+
+`validate-composition.py` 的 import_integrity docstring 里我写了 `\``（反引号转义），
+Python 会打 `SyntaxWarning: invalid escape sequence` —— 门禁的输出必须是干净的，
+不能有这种噪声混在 P0/P1 里。

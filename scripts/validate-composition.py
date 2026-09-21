@@ -93,8 +93,8 @@ def import_integrity(project: Path) -> tuple[list[dict], str]:
         对外名是 `MyAccordion`、上游名是 `Accordion`——**比对用源名、登记用别名**；
         `export {default as Widget}` 的 `default` 追不到名字，归"核实不了"（放行），**不许判"不存在"**；
       · **只扫代码位置**：注释与**字符串字面量内部**先被抹成空格（长度/行号不变），
-        所以模板字符串里的代码样例（`const CODE = \`import X from './y';\``）既不会被当成真 import，
-        也不会给本检查贡献"幽灵导出"；
+        所以模板字符串里的代码样例（接触表/测试页里那种 `const CODE = "import X from './y';"`）
+        既不会被当成真 import，也不会给本检查贡献"幽灵导出"；
       · **穷举不了的（指向 npm 包、有环、超过 3 层）一律不报**，只记账——
         "会哭狼的检查等于没有检查"。
     """
