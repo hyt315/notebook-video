@@ -77,8 +77,16 @@ DOC_IDENT_WHITELIST = {
 
 
 def doc_defined_names() -> set[str]:
-    """本仓库"真实存在过"的标识符集合：模板 + 示例工程源码 ∪ manifests 字符串取值。"""
+    """本仓库"真实存在过"的标识符集合：模板 + 示例工程源码 ∪ **脚本里的常量与函数** ∪ manifests 字符串取值。
+
+    ⚠️ 第三项是必须的：文档会**正当**引用脚本常量（`BEAT_LATE_FRAMES`、`BEAT_TIGHT_FRAMES` 这类门禁口径），
+    只扫 TS 源码会把它们当成"文档编出来的名字"报 P0 —— 复核第二轮我自己就踩了这条假阳性。
+    """
     names: set[str] = set()
+    for f in (SKILL / 'scripts').glob('*.py'):
+        t = f.read_text(encoding='utf-8', errors='ignore')
+        names |= set(re.findall(r'^([A-Za-z_][\w]*)\s*=', t, re.M))   # 模块级常量/变量
+        names |= set(re.findall(r'^def\s+([A-Za-z_][\w]*)', t, re.M)) # 函数名
     roots = [SKILL / 'assets' / 'lecture-template' / 'src', SKILL / 'assets' / 'example-project' / 'src']
     for root in roots:
         if not root.is_dir():

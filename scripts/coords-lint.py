@@ -26,16 +26,22 @@ PROP_BLOCK = re.compile(r"export\s+const\s+([A-Z]\w*)\s*:\s*React\.FC<\{(.*?)\}>
 def overlays_of(root: Path) -> tuple[str, ...]:
     """名单 = 写死的历史件 ∪ **从源码推导**的覆盖层类组件。
 
-    推导**只扫 `src/components/**`**（v3.1 封装层，那里的 x/y 是"场景坐标"语义）+ 上面两份明确名单。
+    推导范围 = `src/components/**`（v3.1 封装层）+ `src/theme/**`（皮肤 extras 里的贴纸件）
+    ∪ 上面两份明确名单。两处的 x/y 都是"场景坐标"语义：前者是弹层/贴纸件，后者是 `extras.Tape`
+    这类贴在纸面上的贴纸。
 
     ⚠️ 第一版扫了整棵树，于是在标准模板上多报一条假阳性
     `VERIFY-FRAME scenes.tsx:180 ZoomStage x=1250`（复核实测：旧版只有 1 条 WARN）——
     `ZoomStage` / `StageFrame` / `Corridor` / `CoverPanel` / `ConsoleWindow` 这些是**布局件**，
     它们的 x/y 是版面坐标，写 1250 完全合法，不该进"场景坐标还是卡片相对坐标？"的人工确认档。
+    收紧到这两层后实测：components → {OverlayFrame}、theme → {Burst, Tape}，布局件一个不进。
+    `Tape` 因此回到名单里（第二轮复核指出它掉出去了）：它与 `Burst` 同族，都是贴在画面上的贴纸。
     """
     found = set()
-    layer = root / "src" / "components"
-    if layer.is_dir():
+    for sub in ("components", "theme"):
+        layer = root / "src" / sub
+        if not layer.is_dir():
+            continue
         for tsx in sorted(layer.rglob("*.tsx")):
             text = tsx.read_text(encoding="utf-8", errors="ignore")
             for m in PROP_BLOCK.finditer(text):

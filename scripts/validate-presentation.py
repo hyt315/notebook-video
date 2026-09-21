@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """validate-presentation.py · 呈现效果门禁（T1：纯算术，不渲染）
 
-它回答的是现有 9 道门禁**都没问过**的问题：观众此刻该看哪里、读不读得过来。
+它回答的是现有其它 9 道门禁（本道是第 10 道）**都没问过**的问题：观众此刻该看哪里、读不读得过来。
 现有的门禁查的是"画面里有没有 / 够不够多 / 会不会撞"；这一道查"讲与画对不对得上、读得动吗"。
 每条判据都是纯算术（读 manifests 与源码字面量），零新增数据模型、不需要渲染。
 
@@ -11,12 +11,17 @@
     ① 每个 beat 的绝对帧 ∈ [shot.from, shot.to]（含边界：允许"切在下一句起点"的那一拍）
     ② 每个 beat 声明的 cue ∈ [cueFirst, cueLast] 或 = cueLast+1（同上）
     ③ 每个 beat 的 offset ≥ −12 帧（元素不得早于它那句 0.4s 以上出现 = 防提前剧透）
+    ③b 每个 beat 的 offset ≤ 该句帧数 + 8（**不得晚于那句讲完**：台词讲完了元素才出现 = 脱节）。
+       上界与下界缺一不可——第一版只有③，`{cue:0, offset:200}`（讲完 6.7s 才出现）照样 PASS。
+    ⚠️ 8 帧这条容差是**承重墙**：模板最紧的合法拍就是 `offset = 该句帧数`（"句末那拍"是设计约定），
+       把容差整个吃掉。所以另外报一条 P1（`BEAT_TIGHT_FRAMES=4`）：距上界 ≤4 帧就预警。
+       实测口径见 references/presentation-gate.md §G-1；**每次换配音 / 重算 cue 都要重跑本门禁**。
     ④ 每条 cue 在本镜内至少有一个 beat；确实不需要的必须在 shots.json 里显式声明
        `silentCues: [cueIndex, ...]`（显式声明才放行——这就是"要求写出结论"的做法）
     ⚠️ 与调研报告原文的差异（报告写的是 `|beat − cueStart| ≤ 6`）：**照抄会给正确的数据报错**。
        我们的 beats 本来就允许句内偏移（`{cue:13, offset:100}` 是"同一句的第二拍"，
        S7/S8 各有一处，实测会被逐字判为偏差 96–100 帧）。所以真正的可检查形式是
-       "beat 落在它声明的那句/那一镜的范围内、且不提前"，而不是"必须贴住句首 6 帧"。
+       "beat 落在它声明的那句/那一镜的范围内、且不提前也不拖后"，而不是"必须贴住句首 6 帧"。
 
   G-2 字幕阅读预算（P0）——Netflix 中文（简体）Timed Text Style Guide
     · 阅读速度 ≤ 9 加权字/秒（成人档；加权：CJK 计 1，ASCII/数字计 0.5，**不需要分词**）
@@ -49,6 +54,11 @@ from pathlib import Path
 FPS = 30
 BEAT_SPOILER_FRAMES = 12   # 3-③：不得早于所属 cue 超过 12 帧（0.4s）
 BEAT_LATE_FRAMES = 8       # G-1③b：允许晚于该句结束的容差（帧）
+# G-1③b 贴边预警：这条容差是**承重墙**不是安全边际。实测（模板）最紧的合法拍
+# offset = 该句帧数（"元素在这句讲完时出现"就是设计约定），把 8 帧全部吃掉——
+# 也就是说任何一次配音重跑（句子变短）都会先从这里把合法拍挤成 P0。
+# 所以剩余容差 ≤4 帧时先报 P1：让"脆"这件事在变成 P0 之前就被看见。
+BEAT_TIGHT_FRAMES = 4      # G-1③b-P1：距上界只剩这么多帧 = 贴边
 BEAT_CLUSTER_FRAMES = 12   # G-5：聚簇窗口
 BEAT_CLUSTER_MAX = 3       # G-5：窗口内 ≥3 个 beat 才算拥挤
 CPS_MAX = 9.0              # G-2：Netflix 中文成人档
@@ -123,6 +133,8 @@ def check_timeline(project: Path) -> tuple[list, list]:
             limit = ms_frame(cue_ms) + BEAT_LATE_FRAMES
             if off > limit:
                 p0.append({"id": sid, "issue": f"beat(cue{ci}) offset={off} 晚于该句结束 {off - ms_frame(cue_ms)} 帧（上限 {BEAT_LATE_FRAMES} 帧容差；该句 {ms_frame(cue_ms)} 帧）：元素在旁白讲完后才出现 = 与台词脱节"})
+            elif limit - off <= BEAT_TIGHT_FRAMES:
+                p1.append({"id": sid, "issue": f"beat(cue{ci}) 距容差上界只剩 {limit - off} 帧（该句 {ms_frame(cue_ms)} 帧 / offset={off}）：合法但**贴边**，配音或 cue 表一变就可能落成 P0 —— 请把它挪回句中或句末"})
             if cue_first <= ci <= cue_last:
                 covered.add(ci)
         # ④ 每条 cue 至少有一拍（除非显式声明 silentCues）
@@ -208,10 +220,50 @@ def check_readability(project: Path) -> tuple[list, list]:
     files = sorted(list(src.rglob("*.tsx")))
 
     def strip_comments(text: str) -> str:
-        """扫字号前先剥注释：注释里写历史反例（"fontSize: 9 是禁止的写法"）不该被判 P0。
-        复核实测过这条假阳性（这个仓库的注释确实大量引用反例）。"""
-        text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
-        return re.sub(r"//.*", "", text)
+        """扫字号前先剥注释，但**行号与字符串字面量都要保住**：
+        ① 注释里写历史反例（"fontSize: 9 是禁止的写法"）不该被判 P0（复核实测过这条假阳性）；
+        ② 块注释要**按它跨的行数补回等量换行**——否则整体行号上移（复核实测：showcase.tsx 报 464，真实 467）；
+        ③ `//` 只有在**字符串外**才是注释——否则 `background:"url(https://…)"` 之后写的 fontSize
+           会被整行吃掉，成了新的漏检面（复核指出）；
+        ④ 反引号可跨行（模板字符串），单/双引号不跨行：遇到行尾仍未闭合就按收尾处理——
+           这样 JSX 文本里的撇号（`don't`）不会毒化整个文件、把后面的注释全当成代码。
+        """
+        out: list[str] = []
+        i, n, quote = 0, len(text), ""
+        # 引号只有在**值位置**才开字符串：前一个非空白字符属于 `=([{,:;?|&!+*-<>~^` 或行首。
+        # 为什么必须这条：JSX 文本里的撇号（`<div>don't</div>`）如果被当成开引号，
+        # 同一行后面的 `// 注释` 就会被当字符串内容留着 → 注释里的 `fontSize: 9` 变成假 P0
+        # （实测就是这么暴露的）。而真正的字符串几乎都长在值位置：`k: '…'`、`f('…')`、`{a: '…'}`。
+        VALUE_POS = "=([{,:;?|&!+*-<>~^"
+        while i < n:
+            ch = text[i]
+            if quote:
+                out.append(ch)
+                if ch == "\\" and i + 1 < n:      # 转义：连下一个字符一起吃掉
+                    out.append(text[i + 1]); i += 2; continue
+                if ch == quote:
+                    quote = ""
+                elif ch == "\n" and quote != "`":
+                    quote = ""                     # '…' / "…" 不跨行：行尾未闭合就收尾
+                i += 1
+                continue
+            if ch in "'\"`":
+                prev = next((c for c in reversed(out) if not c.isspace()), "")
+                if prev == "" or prev in VALUE_POS:
+                    quote = ch
+                out.append(ch); i += 1; continue
+            if text.startswith("//", i):
+                j = text.find("\n", i)
+                i = n if j < 0 else j              # 吃到行尾；换行留给下一轮（行号不变）
+                continue
+            if text.startswith("/*", i):
+                j = text.find("*/", i + 2)
+                seg = text[i:] if j < 0 else text[i : j + 2]
+                out.append("\n" * seg.count("\n")) # 补回等量换行，行号不漂
+                i = n if j < 0 else j + 2
+                continue
+            out.append(ch); i += 1
+        return "".join(out)
 
     for f in files:
         for n, line in enumerate(strip_comments(f.read_text(encoding="utf-8")).splitlines(), 1):

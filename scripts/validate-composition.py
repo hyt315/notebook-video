@@ -76,42 +76,108 @@ def scene_source(project: Path) -> str:
     return text
 
 
-def import_integrity(project: Path) -> list[dict]:
+def import_integrity(project: Path) -> tuple[list[dict], str]:
     """**import 的每个名字必须真的存在于目标模块的导出里**（P0）。
 
-    为什么单列一条：本轮清掉 23 件组件之后，`src/index.tsx` 还留着
+    为什么单列一条：清掉 23 件组件之后，`src/index.tsx` 还留着
     `import {Mascot, RollDigit, WaveText, CodeBlock, BrowserChrome, Connector, CountUp, ProgressBar} from './toolkit'`
     这样的语句——11 个名字指向已删除的导出。打包器对"缺失的具名导出"通常只告警不报错，
     于是在运行时变成静默的 `undefined`：**这正是本技能最怕的那类失败**（没报错，但坏了）。
+
+    覆盖范围（第二轮复核实测后补齐——此前只扫 `src/*.tsx` 一层、正则只认 `'./名字'`）：
+      · **递归**扫 `src/**`：组件层内部文件互引同样会静默失败；
+      · 认得 `./x` / `../x` / 目录桶文件 `./components`（= `components/index.ts`）；
+      · 跟随 `export * from './y'`；桶文件上的 `export {A} from './y'` 只在该名字
+        真在 y 里时才认（否则坏名字会被桶文件"洗白"）；
+      · **穷举不了的（指向 npm 包、有环、超过 3 层）一律不报**，只记账——
+        "会哭狼的检查等于没有检查"。
     """
     problems: list[dict] = []
     src = project / "src"
     if not src.is_dir():
-        return problems
-    mods: dict[str, set[str]] = {}
-    for f in src.glob("*.tsx"):
-        body = f.read_text(encoding="utf-8", errors="replace")
-        names = set(re.findall(r"export\s+(?:const|function|class|type|interface|let)\s+(\w+)", body))
-        for m in re.finditer(r"export\s*\{([^}]*)\}", body):
-            for part in m.group(1).split(","):
-                token = part.strip().split(" as ")[-1].strip()
-                if token:
-                    names.add(token)
-        mods[f.stem] = names
+        return problems, ""
+    root = src.resolve()
+    files = sorted(p for p in src.rglob("*") if p.is_file() and p.suffix in (".ts", ".tsx"))
+    key_of = lambda p: p.relative_to(root).with_suffix("").as_posix()
+    keys = {key_of(p) for p in files}
+    path_of = {key_of(p): p for p in files}
+    raw_body = {k: p.read_text(encoding="utf-8", errors="replace") for k, p in path_of.items()}
+
     # ⚠️ 必须先剥掉注释再扫：用法示例常常写成
     # `// 用法：import {FitCard, Typewriter, ...} from './fxkit';`
     # 第一版没剥，于是 `...` 被当成一个名字报成 P0 —— 会哭狼的检查等于没有检查。
     def strip_comments(text: str) -> str:
-        text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+        text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
         # 没有 re.S 时 `.` 不匹配换行 → 这一条正好剥掉行注释
         return re.sub(r"//.*", "", text)
 
-    for f in sorted(src.glob("*.tsx")):
-        body = strip_comments(f.read_text(encoding="utf-8", errors="replace"))
-        for m in re.finditer(r"import\s*\{([^}]*)\}\s*from\s*'\./(\w+)'", body, re.S):
-            target = m.group(2)
-            if target not in mods:
+    def resolve_spec(spec: str, importer: Path) -> str | None:
+        """相对路径 → 模块键；`./components` 落到 `components/index`。包名一律 None。"""
+        if not spec.startswith("."):
+            return None
+        try:
+            rel = (importer.parent / spec).resolve().relative_to(root).as_posix()
+        except ValueError:
+            return None
+        for cand in (rel, rel + "/index"):
+            if cand in keys:
+                return cand
+        return None
+
+    def exports_of(key: str, depth: int = 0, seen: frozenset = frozenset()) -> tuple[set[str], set[str], bool]:
+        """(确定存在的名字, 存在但核实不了的名字, 是否 open)。
+
+        open=True 表示这个模块 `export * from '<包>'` —— 可能有任意名字，导入方一律豁免。
+        "核实不了"与"不存在"必须分开：`export {CameraMotionBlur} from '@remotion/motion-blur'`
+        里的名字**是真的**，把它当成不存在会让整条链上全是假 P0（第一版本版就这么错了）。
+        """
+        if depth > 3 or key in seen:
+            return set(), set(), True
+        body = strip_comments(raw_body[key])
+        names = set(re.findall(r"export\s+(?:declare\s+)?(?:const|function|class|type|interface|let|var|enum)\s+(\w+)", body))
+        uncertain: set[str] = set()
+        # `export {A, B as C}`，也可能带 from（多行花括号：`[^}]*` 本来就跨行）
+        for m in re.finditer(r"export\s+(?:type\s+)?\{([^}]*)\}\s*(?:from\s*'([^']*)')?", body):
+            tokens = [p.strip().split(" as ")[-1].strip() for p in m.group(1).split(",")]
+            tokens = [t for t in tokens if t]
+            if not m.group(2):
+                names |= set(tokens)
                 continue
+            sub = resolve_spec(m.group(2), path_of[key])
+            if sub is None:
+                uncertain |= set(tokens)   # 从 npm 包再导出：名字是真的，只是我们看不见
+                continue
+            sub_names, sub_uncertain, sub_open = exports_of(sub, depth + 1, seen | {key})
+            for t in tokens:
+                if t in sub_names or t in sub_uncertain or sub_open:
+                    names.add(t)
+                # 上游没有这个名字 = 坏再导出：这里**不认领**它，让真正的导入点去报
+        open_flag = False
+        for m in re.finditer(r"export\s+\*\s+from\s*'([^']*)'", body):
+            sub = resolve_spec(m.group(1), path_of[key])
+            if sub is None:
+                open_flag = True           # `export * from 'pkg'`：无法穷举
+                continue
+            sub_names, sub_uncertain, sub_open = exports_of(sub, depth + 1, seen | {key})
+            names |= sub_names
+            uncertain |= sub_uncertain
+            open_flag = open_flag or sub_open
+        return names, uncertain, open_flag
+
+    checked = skipped = 0
+    for key in sorted(keys):
+        f = path_of[key]
+        body = strip_comments(raw_body[key])
+        for m in re.finditer(r"import\s*\{([^}]*)\}\s*from\s*'([^']*)'", body, re.S):
+            spec = m.group(2)
+            target = resolve_spec(spec, f)
+            if target is None:
+                continue              # 包 / 别名 / 路径对不上：不属本检查辖区
+            avail, uncertain, open_flag = exports_of(target)
+            if open_flag:
+                skipped += 1          # 目标有 export * 无法穷举 → 宁可不报
+                continue
+            checked += 1
             for raw in m.group(1).split(","):
                 token = raw.strip()
                 if not token or token.startswith("type "):
@@ -119,9 +185,12 @@ def import_integrity(project: Path) -> list[dict]:
                 name = token.split(" as ")[0].strip()
                 if not re.fullmatch(r"[A-Za-z_$][\w$]*", name):
                     continue   # `...`、空串等不是合法标识符，直接跳过
-                if name not in mods[target]:
-                    problems.append({"id": f"src/{f.name}", "issue": f"import 里引用了已不存在的导出 {name}（来自 ./{target}）——打包器只告警，运行时是 undefined"})
-    return problems
+                if name not in avail and name not in uncertain:
+                    where = f"{target}.tsx" if (root / f"{target}.tsx").exists() else f"{target}.ts"
+                    problems.append({"id": f"src/{key_of(f)}{f.suffix}",
+                                     "issue": f"import 里引用了已不存在的导出 {name}（来自 '{spec}' → src/{where}）——打包器只告警，运行时是 undefined"})
+    note = f"import_integrity：递归扫 {len(files)} 个 src 文件 / 核对 {checked} 条相对 import / {skipped} 条因 export * 无法穷举而豁免"
+    return problems, note
 
 
 def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], list[str]]:
@@ -350,7 +419,10 @@ def main() -> int:
         return 2
     data = load(project)
     p0, p1, notes = check(data, scene_source(project))
-    p0 += import_integrity(project)
+    ii_p0, ii_note = import_integrity(project)
+    p0 += ii_p0
+    if ii_note:
+        notes.append(ii_note)
     if args.json:
         print(json.dumps({"p0": p0, "p1": p1, "notes": notes, "shots": len(data.get("shots", []))}, ensure_ascii=False, indent=2))
     else:

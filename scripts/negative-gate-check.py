@@ -174,6 +174,33 @@ case('J 呈现效果 · beat 引用了别的镜的 cue', [
 ])
 cleanup(td)
 
+# ── S · 呈现效果门禁 G-1③b：beat **晚于**它那句讲完太久 → 必须拦（上界的方向）──
+# 复核抓到的口径漏洞：第一版只防"早"，`{cue:0, offset:200}`（台词讲完 6.7s 才出现）照样 PASS。
+# 这条夹具把 S1 的第一拍推到 offset=200（该句 31 帧、容差 8 帧 → 上界 39）。
+td, rc0, out0 = mkproj(lambda d: (d['shots'][0]['beats'].__setitem__(0, {'cue': 0, 'offset': 200}), d)[1])
+case('S 呈现效果 · beat 晚于该句结束 169 帧', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:晚于该句结束', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# ── R · 呈现效果门禁 G-1③b-P1：合法但**贴边**的拍要被点名（rc 仍为 0，不许当成拦）──
+# 复核实测：模板最紧的合法拍余量恰好 8 帧（offset = 该句帧数 = "句末那拍"），容差是承重墙。
+# 夹具把 S7 的 cue13 第二拍从 offset=100 推到 112（该句 106 帧 → 余量只剩 2 帧，仍在 8 帧容差内）：
+# 判据必须**放行**（rc=0）同时**点名**它 —— 让"脆"在变成 P0 之前就被看见。
+def mut_tight(d):
+    beats = d['shots'][6]['beats']
+    for b in beats:
+        if b['cue'] == 13 and b['offset'] == 100:
+            b['offset'] = 112
+    return d
+td, rc0, out0 = mkproj(mut_tight)
+case('R 呈现效果 · 距容差上界只剩 2 帧（贴边预警）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_warn:贴边', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
 # ── K · 呈现效果门禁 G-2：字幕阅读速度超预算（40 字塞进 1 秒）→ 必须拦 ──
 def mut_dense(td_):
     p = os.path.join(td_, 'manifests/caption-cues.json')
@@ -288,6 +315,36 @@ case('E 阴性对照（原样应全过）', [
     ('must_pass', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
     ('must_pass', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
     ('must_pass', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# ── Q · import_integrity 必须覆盖「桶文件」与「组件层内部」（第二轮复核实测：此前两层都不查）──
+# 夹具三种形态，每种都能单独定位（needle = 那个编出来的名字）：
+#   (a) 顶层文件从桶文件 './components' 导入不存在的名字；
+#   (b) 组件层内部文件从兄弟模块 './ui' 导入不存在的名字；
+#   (c) 桶文件把坏名字再导出一次 —— **坏再导出不许把坏名字洗白**（本次修的洞）。
+td, rc0, out0 = mkproj()
+for base, _dirs, files in os.walk(os.path.join(TPL, 'src')):
+    for name in files:
+        if not name.endswith(('.tsx', '.ts')):
+            continue
+        src_path = os.path.join(base, name)
+        rel = os.path.relpath(src_path, os.path.join(TPL, 'src'))
+        dst = os.path.join(td, 'src', rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy(src_path, dst)
+with io.open(os.path.join(td, 'src/scenes.tsx'), 'a', encoding='utf-8', newline='') as fh:
+    fh.write("import {GhostFromBarrel} from './components';" + NL)
+    fh.write("import {GhostWashedByBarrel} from './components';" + NL)
+with io.open(os.path.join(td, 'src/components/network.tsx'), 'a', encoding='utf-8', newline='') as fh:
+    fh.write("import {GhostSibling} from './ui';" + NL)
+with io.open(os.path.join(td, 'src/components/index.ts'), 'a', encoding='utf-8', newline='') as fh:
+    fh.write("export {GhostWashedByBarrel} from './ui';" + NL)
+case('Q import_integrity · 桶文件 + 组件层内部 + 坏再导出', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:GhostFromBarrel', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+    ('must_block:GhostSibling', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+    ('must_block:GhostWashedByBarrel', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
 ])
 cleanup(td)
 
