@@ -239,50 +239,6 @@ export const ShotCamera: React.FC<{
 // ---------------------------------------------------------------------------
 export const DEPTH = {far: 0.35, mid: 0.7, near: 1} as const;
 
-export const DepthLayers: React.FC<{
-  keys: CamKey[];
-  f: number;
-  far?: React.ReactNode;
-  mid?: React.ReactNode;
-  /** 近层（默认 = 主要内容，全量相机） */
-  children?: React.ReactNode;
-  /** 远层过扫比例：防止视差位移露出边缘（远层是整幅背景时必须给） */
-  overscan?: number;
-}> = ({keys, f, far, mid, children, overscan = 0.14}) => {
-  const c = camAt(keys, f);
-  const layer = (k: number, node?: React.ReactNode, bleed = 0) => {
-    if (node === undefined || node === null) return null;
-    const tx = (STAGE.cx - c.x * c.s) * k;
-    const ty = (STAGE.cy - c.y * c.s) * k;
-    const s = 1 + (c.s - 1) * k;
-    const bw = STAGE.w * bleed;
-    const bh = STAGE.h * bleed;
-    return (
-      <div
-        style={{
-          position: 'absolute',
-          left: -bw,
-          top: -bh,
-          width: STAGE.w + bw * 2,
-          height: STAGE.h + bh * 2,
-          transformOrigin: '0 0',
-          transform: `translate(${tx}px,${ty}px) scale(${s})`,
-        }}
-      >
-        {node}
-      </div>
-    );
-  };
-  return (
-    <>
-      {layer(DEPTH.far, far, overscan)}
-      {layer(DEPTH.mid, mid)}
-      {layer(DEPTH.near, children)}
-    </>
-  );
-};
-
-// ---------------------------------------------------------------------------
 export const CoverPanel: React.FC<{
   x: number;
   y: number;
@@ -340,4 +296,4 @@ export const ambientBreath = (f: number, period = 150, amp = 0.03) => {
   return 1 + a * (0.5 - 0.5 * Math.cos((f / p) * Math.PI * 2));
 };
 
-export const SHOTKIT_VERSION = 'shotkit-v2 · 6 intents · anchored safety · pan budget · depth 0.35/0.7/1 · ambientBreath';
+export const SHOTKIT_VERSION = 'shotkit-v3 · 6 intents · anchored safety · pan budget · ambientBreath';

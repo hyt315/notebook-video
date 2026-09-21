@@ -258,8 +258,8 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
 
     # ---- P1 组件词汇多样性（阈值用 DeepSeek 与 SWE-2 两条成片实测校准）----
     # 结构件豁免：骨架/外壳/相机/底托/小标签本来就该反复出现，要求它们多样化是荒谬的。
-    STRUCTURAL = {"StageFrame", "Corridor", "SplitStage", "ZoomStage", "PhaseRail", "Attach",
-                  "ShotCamera", "CoverPanel", "ShotPlate", "LineIcon", "CheckBadge", "PillTag",
+    STRUCTURAL = {"StageFrame", "Corridor", "SplitStage", "ZoomStage", "PhaseRail",
+                  "ShotCamera", "CoverPanel", "LineIcon", "CheckBadge", "PillTag",
                   "StampBanner", "FitCard", "CardHead", "Shot"}
     used: dict[str, set] = {}
     for s in shots:

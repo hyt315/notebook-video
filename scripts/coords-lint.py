@@ -3,8 +3,7 @@
 
 ASTRA 教训：StampSeal 的 x/y 写成了场景坐标，实际相对卡片，飞出屏外但
 渲染零报错。Remotion 静态扫不到运行时坐标系，本脚本做诚实的事：
-列出所有覆盖层组件 (StampSeal/BurstCallout/Callout/ChipContract/PayPop/
-Funnel/ChatThread/MailScan/TimeRail/CompareBars) 的数字 x/y，超过整画布
+列出所有覆盖层组件 (StampSeal/Burst/Callout/ChipContract/Funnel/ChatThread) 的数字 x/y，超过整画布
 (1920x1080 / 1080x1440) 直接报错；x>1000 或 y>700 的打 WARN，提醒人工
 确认是场景坐标还是卡片相对坐标（见 references/fxkit.md 坐标铁律）。
 
@@ -17,8 +16,7 @@ import re
 import sys
 from pathlib import Path
 
-OVERLAYS = ("StampSeal", "BurstCallout", "Burst", "Callout", "ChipContract", "PayPop",
-            "Funnel", "ChatThread", "MailScan", "TimeRail", "CompareBars", "AIChatBox")
+OVERLAYS = ("StampSeal", "Burst", "Callout", "ChipContract", "Funnel", "ChatThread")
 COORD = re.compile(r"\b([xy])=\{(\d+)\}")
 
 
@@ -31,7 +29,8 @@ def main() -> int:
         if not src.is_dir():
             print(f"no src/ under {root}")
             return 2
-        for tsx in sorted(src.glob("*.tsx")):
+        # 递归扫子目录：v3.1 起组件封装层在 src/components/，不递归会整层漏检
+        for tsx in sorted(src.rglob("*.tsx")):
             text = tsx.read_text(encoding="utf-8", errors="ignore")
             for match in COORD.finditer(text):
                 axis, value = match.group(1), int(match.group(2))
@@ -46,7 +45,7 @@ def main() -> int:
                     errors.append(f"OFF-CANVAS {where}")
                 elif comp != "?" and (value > 1000 if axis == "x" else value > 700):
                     warns.append(f"VERIFY-FRAME {where}（场景坐标还是卡片相对坐标？）")
-                elif comp in ("AIChatBox", "ChatThread") and axis == "y" and 0 < value < 170:
+                elif comp == "ChatThread" and axis == "y" and 0 < value < 170:
                     warns.append(f"VERIFY-TOP-CHROME {where}（y={value} < 170 且靠近左上角时，警惕遮挡全局顶栏章节卡 x:92..484 y:74..164）")
     for w in warns:
         print(f"WARN: {w}")
