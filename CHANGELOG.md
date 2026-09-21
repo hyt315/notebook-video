@@ -682,11 +682,15 @@ No black frames detected.
 
 **④ 第二轮复核（3 条"表面修好" + 1 个渲染硬伤 + 7 条其它）**
 
-- 🔴 **验证工程当时根本渲不出来**（复核抓到，我上一条报告里没提）：`demo-video/src/index.ts` 是个 stray 文件
-  （内容 = `components/index.ts` 的副本），Remotion 于是把入口解析成 `index.ts` →
-  `Error: You passed …src\index.ts as your entry point, but this file does not contain "registerRoot"`
-  （**显式传 `--entry-point=src/index.tsx` 也一样**）。所以上一条报告里的"900/900 零黑帧"**在这棵树上复现不了**。
-  已删该文件，并在修好的树上重渲 30 秒：`Encoded 900/900` · 2560×1440 h264 + aac · 30.06 s · 零黑帧 · md5 `6a0c46c1…`。
+- 🔴 **验证工程当时渲不出来**（复核抓到，我上一条报告里没提）：`demo-video/src/index.ts` 是个 stray 文件
+  （内容 = `components/index.ts` 的副本），却是 Remotion 入口解析的首选名，于是**不带参数**的
+  `remotion compositions` / `render` 一律报
+  `Error: You passed …src\index.ts as your entry point, but this file does not contain "registerRoot"`。
+  ✅ 已删该文件，并在修好的树上重渲 30 秒：`Encoded 900/900` · 2560×1440 h264 + aac · 30.06 s · 零黑帧 · md5 `edad9100…`。
+  ⚠️ 复核的措辞要更正一处：它写"即使显式传 `--entry-point=src/index.tsx` 也不行"——实测这个 **flag 本 CLI 根本不认**
+  （拿一个不存在的路径 `--entry-point=src/NOPE.tsx` 也一样静默回落、不报错），而**位置参数形式是有效的**：
+  stray 还在时 `remotion compositions src/index.tsx` 正常列出、`remotion render src/index.tsx … --frames=0-1`
+  也照样 `Encoded 2/2`。所以真正坏掉的是"不带参数的自然写法"，不是"显式指定入口也救不回来"。
 - **`import_integrity` 上一条是"写了但没做"**（复核：`git log -- scripts/validate-composition.py` 最后改动是 c10f542，
   代码仍是 `src.glob("*.tsx")` + `'\./(\w+)'`，而 CHANGELOG 已经写"递归扫 src/**" = 不实记录）。**现在真做了**：
   递归扫 `src/**`（.ts/.tsx）、认 `./x` `../x` 与目录桶 `./components` → `components/index`、跟随 `export *`，
@@ -725,13 +729,18 @@ No black frames detected.
 - **30 秒实渲**（在修好入口之后、不是把文件挪走之前）：`NotebookVideoFilm --frames=0-899` → `Encoded 900/900`，
   ffprobe `h264 2560x1440 nb_frames=900` + `aac` 轨、30.06 s、8 MB，`blackdetect` 零黑帧；抽 1 帧看图（f=450）画面正常
   （底部字幕是**逐字显现进行中**，不是被画面裁掉）。
+- **抽查三个抽样帧，改前 / 改后逐字节相同**（f0 · f450 · f899，`remotion still` 的 PNG md5 各自相等）：
+  证明这一轮的改后编辑（删注释、修测试页 import、两拍 offset）不动 0–899 的画面。
+  另外验了**渲染可复现**：同一棵树上连渲两次同 3 帧，两个 mp4 **逐字节相同**（md5 `6229293b…`）。
+  ⚠️ 但 15:26 那次与 15:44 这最后一次的 30 秒 mp4 字节不同（7973993 vs 7978007）——音轨 md5 两者一致、
+  抽样帧也一致，差异只在视频流编码；我没有隔离出原因（15:26 那份被覆盖了），所以**不声称两次渲染逐字节相同**。
 - **门禁全跑**：模板 `validate-frame-props` P0=0/P1=0 · `validate-composition` P0=0/P1=5 · `validate-presentation` P0=0/P1=12 ·
   `validate-skill-consistency` passed · `negative-gate-check` 19 case / 39 断言全 PASS · `coords-lint` 1 WARN/0 error ·
   `selftest.py` 11/11；demo `validate-composition` P0=0/P1=7、`validate-presentation` P0=0/P1=14。两工程 P0 全 0。
 
 **Verified**
 
-- **四道门禁全部复跑，P0 = 0**：`validate-frame-props`（P0=0 P1=0 PASS）· `validate-composition`（P0=0 P1=5 PASS，P1 与改动前逐条一致，无新增）· `validate-skill-consistency`（passed）· `negative-gate-check`（当时 16 个 case 全 PASS，含阴性对照；复核第二轮后扩到 18 个，见 ④）。
+- **四道门禁全部复跑，P0 = 0**：`validate-frame-props`（P0=0 P1=0 PASS）· `validate-composition`（P0=0 P1=5 PASS，P1 与改动前逐条一致，无新增）· `validate-skill-consistency`（passed）· `negative-gate-check`（当时 A–P 16 个 case 全 PASS，含阴性对照；复核第二轮后扩到 19 个，见 ④）。
 - **接触表 14 页 → 17 页**（新增 ⑮ 图表变体 / ⑯ 层级与关系 / ⑰ 弹层与形状；⑫ 页的 `TiltCard` 格子换成 `ControlStack`），
   `SHOWCASE_PAGES = 17`、`SHOWCASE_VERSION = showcase-v8`。新增与改动的每一页都**实渲了一帧并看图确认**（不是只看"没报错"）。
 - **确定性复验（成品件，不只是诊断件）**：接触表第 ⑯ 页（treemap / pack / sunburst / NetworkGraph）与第 ⑰ 页
