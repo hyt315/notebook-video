@@ -9,6 +9,7 @@ import {ConsoleWindow, MetricGrid, StampBanner} from './media';
 import {Corridor, SplitStage, ZoomStage} from './skeletons';
 import {RevealMask} from './insert';
 import {Callout, Checklist} from './toolkit';
+import {Chart, StatRow, VerdictBar} from './components';
 import {SHOTS} from './shots';
 
 // ============================================================================
@@ -121,13 +122,9 @@ const S1Lonely: React.FC<{f: number}> = ({f}) => {
             {/* 圈住症结那一行 + 手写标注：先说"没有远程"，再点破"就是躺在硬盘里"。
                 Callout 自带 data-gate-allow，不会被 OverlapGate 判成遮挡物。 */}
             <Callout x={14} y={124} w={296} h={40} frame={f} start={at(0, 44)} text="还躺在硬盘里" textDx={330} textDy={0} color={C.orange} />
-            <div style={{position: 'absolute', left: 0, top: 352, display: 'flex', gap: 14}}>
-              {chips.map((x) => (
-                <div key={x.k} style={{width: 324, height: 148, borderRadius: 12, background: C.paper, border: `2.5px solid ${x.c}`, boxShadow: `3px 3px 0 ${C.ink}`, padding: '16px 18px', ...enterAt(f, x.at)}}>
-                  <div style={{fontSize: 20, fontWeight: 700, color: C.muted}}>{x.k}</div>
-                  <div style={{fontSize: 24, fontWeight: 700, color: x.c, marginTop: 10}}>{x.v}</div>
-                </div>
-              ))}
+            {/* 三张"标签 / 值"卡片 = 指标行的形状，交给封装层 StatRow，不再手写卡片 */}
+            <div style={{position: 'absolute', left: 0, top: 352}}>
+              <StatRow f={f} startAt={chips[0].at} width={1000} height={148} gap={14} items={chips.map((x) => ({value: x.v, label: x.k, tone: x.c}))} />
             </div>
           </div>
         )}
@@ -240,7 +237,7 @@ const S5Ops: React.FC<{f: number}> = ({f}) => {
         rail={(ctx) => <PhaseRail phases={phases} ctx={ctx} />}
         stamp={() => <StampBanner x={0} y={0} w={1060} f={f} at={at(1, 70)} text="按时发版，仓库才有人气" color={C.green} />}
       >
-        {({index}) => (
+        {() => (
           <div style={{position: 'relative', height: '100%'}}>
             <div style={{fontSize: TYPE.titleXS, fontWeight: 700, color: C.muted, ...enterAt(f, at(0))}}>一个活跃仓库的日常</div>
             <div style={{position: 'absolute', left: 0, top: 52}}>
@@ -256,7 +253,6 @@ const S5Ops: React.FC<{f: number}> = ({f}) => {
                 v1.0 → v1.1<br /><span style={{color: C.green}}>按时发布，才有节奏</span>
               </div>
             </div>
-            <div style={{position: 'absolute', left: 0, top: 372, opacity: index >= 2 ? 1 : 0}} />
           </div>
         )}
       </StageFrame>
@@ -345,9 +341,9 @@ const S8Series: React.FC<{f: number}> = ({f}) => {
                 {label: 'EP 3 · 运营', before: '无人问津', after: '持续发版', win: true, color: C.green},
               ]}
             />
-            <div style={{position: 'absolute', left: 0, top: 380, display: 'flex', alignItems: 'center', gap: 14, ...enterAt(f, at(2, 40))}}>
-              <CheckBadge size={28} />
-              <span style={{fontSize: TYPE.titleXS, fontWeight: 700, color: C.ink}}>三个技能已开源，让智能体陪你走完全程</span>
+            {/* 收尾改用全宽结论条，比一行内联文字更有收束感 */}
+            <div style={{position: 'absolute', left: 0, top: 372}}>
+              <VerdictBar f={f} delay={at(2, 40)} tone={C.orange} tag="出发" width={1348} text="三个技能已开源，让智能体陪你走完全程" />
             </div>
           </div>
         )}

@@ -83,6 +83,13 @@ const AssetGate=()=>{const [handle]=useState(()=>delayRender('waiting for fonts'
 const CardFitGate=()=>{
   const f=q(useCurrentFrame());
   const bucket=Math.floor(f/15);
+  // 2026-09-21 实测修掉一处**静默失效**（由 demo 的 `CardFitFixture` 负例逼出来）：
+  // 本门禁的测量排在 requestAnimationFrame 里，却**没有 delayRender 兜住截帧**，
+  // 于是 still 渲染会先截图、门禁永远来不及量——"260px 卡片里塞 560px 图表"这种
+  // 397px 的真溢出照样出图，门禁等于不存在（字幕门一直是 delayRender+continueRender 的，
+  // 本门禁漏了这一步）。现在持有 handle 到首次测量完成，门禁才真的会拦。
+  const [fitHandle]=useState(()=>delayRender('cardfit measure',{timeoutInMilliseconds:60000}));
+  const firstDone=useRef(false);
   // v2.11 修复三处静默失效（实测量出来的，不是推测）：
   //   a. 旧版开头 `if(document.fonts.status!=='loaded') return;` —— 实测某帧 fonts=loading，
   //      整桶直接跳过，且从不等待字体就绪（字幕门是 await document.fonts.ready 的）；
@@ -151,6 +158,8 @@ const CardFitGate=()=>{
         });
         if(bad.length) cancelRender(new Error(`Card overflow: ${bad.slice(0,4).join(' | ')}`));
         else if(cards&&f%150===0&&typeof console!=='undefined') console.warn(`[CardFitGate] @${f} \u5df2\u6d4b ${cards} \u5f20\u5361\u7247\uff0c\u65e0\u6ea2\u51fa`);
+        // 首次测量完成 → 放开截帧（失败路径会 cancelRender，本来就不会出图）
+        if(!firstDone.current){firstDone.current=true;continueRender(fitHandle);}
       }catch(e){if(typeof console!=='undefined') console.warn('[CardFitGate]',e);}
     };
     const id=requestAnimationFrame(()=>{

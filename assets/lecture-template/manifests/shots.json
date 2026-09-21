@@ -19,7 +19,8 @@
       "live": [
         "ConsoleWindow",
         "StampBanner",
-        "Callout"
+        "Callout",
+        "StatRow"
       ],
       "camera": {
         "intent": "establish",
@@ -460,7 +461,8 @@
       ],
       "live": [
         "MetricGrid",
-        "StampBanner"
+        "StampBanner",
+        "VerdictBar"
       ],
       "camera": {
         "intent": "pull-back",

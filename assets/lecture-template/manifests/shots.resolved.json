@@ -13,7 +13,8 @@
       "live": [
         "ConsoleWindow",
         "StampBanner",
-        "Callout"
+        "Callout",
+        "StatRow"
       ],
       "from": 0,
       "to": 213,
@@ -567,7 +568,8 @@
       ],
       "live": [
         "MetricGrid",
-        "StampBanner"
+        "StampBanner",
+        "VerdictBar"
       ],
       "from": 919,
       "to": 1150,
