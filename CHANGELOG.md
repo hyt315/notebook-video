@@ -629,6 +629,58 @@ No black frames detected.
 - `@types/react-syntax-highlighter` 仍是 **15.5.13**（上游没有 16 的 types）——包本身不带类型，
   所以这个 @types 继续保留；它落后于运行时，但只影响编辑器提示、不影响渲染。
 
+**第十轮：新增呈现效果门禁（T1）+ 按一致性审计修 A 档 + 按复核修收尾**
+
+> 这三批此前**没有记进 CHANGELOG**，而门禁的报错文案与 `presentation-gate.md` 里写着"处置见 CHANGELOG"——
+> 指向了空处。补记如下（详细判据见 [references/presentation-gate.md](references/presentation-gate.md)）。
+
+**① 新增 `validate-presentation.py`（呈现效果门禁，T1 纯算术、不渲染）**
+
+为什么：现有门禁问的全是「有没有 / 够不够多 / 会不会撞」，没问过「观众此刻该看哪里、读不读得过来」——
+于是"五个同等大小的标题并排""正文 11px""灰字压灰底"全部合法。缺的不是组件，是**判据**。
+
+- G-1 时间接近（P0）：beat 必须落在它声明的那句/那一镜内、**不早于该句 12 帧、也不晚于该句结束 +8 帧**、
+  每条 cue 至少一拍（不需要的显式声明 `silentCues`）。
+  ⚠️ 调研报告写的 `|beat − cueStart| ≤ 6` **会给正确数据报 P0**（我们的 beats 允许句内偏移），
+  改成"落在范围内且双向不脱节"——**双向**这一点是复核补上的：第一版只防早，
+  `offset=+200`（台词讲完 6.7s 才出现）照样 PASS。
+- G-2 字幕阅读预算（P0）：≤9 加权字/秒、**每行** ≤16、≤2 行（Netflix 中文简体；
+  加权 = CJK 1 / ASCII 0.5，不分词）。⚠️ 第一版把"单行 ≤16"实现成了"整条 ≤16"（先 `\s+` 归一化再去量），
+  **误杀合法的两行字幕**——复核实测：两行各 9 字被判 `单行 19 加权字 > 16`。已改为逐行量。
+- G-3 可读性（P0 地板 + P1 档）：任何 `fontSize <13` 即 P0（13 = 技能自己的 `MIN_LABEL_FONT`）；
+  正文色 `ink`/`white` 对比度 <4.5:1 即 P0（WCAG 2.2 SC 1.4.3）。扫描前**先剥注释**（复核：注释里写反例不该红）。
+  ⚠️ **这道对比度检查只能拦"用标准键写错了色值"**：复核实测硬编码 `color:'#dcdcdc'` 完全不报、
+  把正文色改名成 `fg` 只 P1 —— 已在 `presentation-gate.md` 里如实写明，真拦截属于 T2（`FocusGate`/G-9）。
+- G-5 节拍拥挤（P1，代理指标）：同镜 ≥3 个 beat 挤在 12 帧内。
+
+**负向夹具（复核逐条实跑过）**：`negative-gate-check.py` 新 A–P 共 16 个 case / 31 条断言，
+**14 个 must_block 全部带 `must_block:<子串>` 断言**（"因别的原因失败"不再算通过）。
+其中两条修过：**case H** 原来只拷 `fxkit.tsx` → 撞"引擎没读到"的防呆分支（rc=2）却判 PASS，
+现拷整棵 src、输出 `引擎组件 88 个 / P0 src/scenes.tsx:2 <Typewriter> 该组件只认 frame={...}`；
+**case I** 原来给 S2 的 cue4 加负 offset（该 cue 帧号 = 镜起点）永远先撞判据①，现改用 S1 的 cue1。
+
+**② 一致性审计（HEAD=0edcfbc，18 条 A 档）**
+
+- 会静默出错的代码层：`index.tsx` 的 **11 个不存在 import**（实测 Remotion 打包器**连警告都不打**）；
+  `validate-frame-props.py` 对 `src/components/` **整层失效**（名单含 4 个不存在的文件 + 不递归，解析组件 65→88）；
+  `coords-lint.py` 的 `OVERLAYS` 名单不含新层（改为 `src/components/**` 推导，**范围只取场景坐标语义的件**）。
+- 文档层：`Attach`/`CodeBlock`→`HighlightCode`/`RevealMask`→`ClipReveal`、接触表 `tile=6x3`（17 页）、
+  契约 `camera: fixed` 自相矛盾、`CameraRig`/`camScript` 不可达、6 件 MUST use 的不可达组件、
+  组件总数统一为 **55**（29+26）、每章运镜与代码对齐、`media` 的废弃值 `evidence`、意图 6/7、错峰 8/16、
+  image-text 路线、图标政策、`editable_surface` 补组件层、三画布自述、VERSION 与门禁数。
+
+**③ 复核（对 15be541·c10f542·146f07c）后的收尾修复**
+
+- **假通过**：case H/I 已按上面修好；`must_block:<子串>` 铺开到全部 14 条。
+- **漏判**：G-1 补上界（"晚于本句结束"也是脱节）。
+- **假阳性**：G-2 逐行量；`fontSize` 剥注释；`coords-lint` 收窄推导范围（标准模板回到旧版的 1 WARN）。
+- **文档瑕疵 6 处**（4 处三连重复、1 处反引号写坏、1 处英文句子被切碎、1 处游离 `**`）已修。
+- **残留清理**：`index.tsx` 的 6 段已删组件注释 + `camScript` 死代码（零 export 零引用）；
+  `components/index.ts` 的"12 件/约 40 件"与推不出源的"17 库"；`media-routing.md` 的"11 件修辞工具件"。
+- **健壮性**：`import_integrity` 现在递归扫 `src/**`（含 components 层内部）并支持 `from './components'` 桶文件形式。
+- **CI**：`.github/workflows/validate.yml` 新增"模板上的 6 道构建期门禁"与 `negative-gate-check.py`、`coords-lint.py`
+  三步——此前 CI **一条门禁都不跑**，"负向抽查"只是本地仪式。
+
 **Verified**
 
 - **四道门禁全部复跑，P0 = 0**：`validate-frame-props`（P0=0 P1=0 PASS）· `validate-composition`（P0=0 P1=5 PASS，P1 与改动前逐条一致，无新增）· `validate-skill-consistency`（passed）· `negative-gate-check`（8 项全 PASS，含 A–H 阴性对照）。
