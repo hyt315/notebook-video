@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""负向抽查：给三道构建期门禁喂"该 FAIL 的夹具"，验证它们真的会拦（不渲染任何东西）。
+"""负向抽查：给**每道构建期门禁**喂"该 FAIL 的夹具"，验证它们真的会拦（不渲染任何东西）。
 门在名义上存在、实际静默放行 = 最危险的病。
 
 每步各自声明期望：('must_block' | 'must_pass', label, (rc, out))。"""
@@ -43,7 +43,13 @@ def case(name, steps):
     ok = True
     detail = []
     for kind, label, (rc, out) in steps:
-        good = (rc != 0) if kind == 'must_block' else (rc == 0)
+        # `must_block:<子串>` = 必须失败**且**输出里出现该子串 —— 否则"因为别的原因失败"
+        # 会被当成本夹具通过（第一版 P 用例就是这样假通过的：拷贝时跳过了 assets/demo 的大文件，
+        # 于是它因为"链接断了"而失败，根本没测到"文档写了不存在的组件名"）。
+        needle = kind.split(':', 1)[1] if ':' in kind else None
+        good = (rc != 0) if kind.startswith('must_block') else (rc == 0)
+        if needle:
+            good = good and needle in out
         ok = ok and good
         lines = [l.strip() for l in out.split('\n') if l.strip()][:2]
         detail.append(f"    {'PASS' if good else 'FAIL'}  [{kind}] {label}: rc={rc} · {' / '.join(lines)[:230]}")
@@ -135,12 +141,141 @@ case('H 帧参数写错（fxkit 传 f）', [
 ])
 cleanup(td)
 
+# ── I · 呈现效果门禁 G-1：beat 提前剧透（offset 远早于它那句）→ validate-presentation 必须拦 ──
+# 这里刻意让 resolve-shots 仍然通过（它只算帧号，不管"讲与画对不对得上"），
+# 证明新门禁不是"看着 resolve-shots 过了就放行"。
+def mut_spoiler(d):
+    d['shots'][1]['beats'] = [{'cue': 4, 'offset': -40}, {'cue': 4, 'offset': 20}]
+    return d
+td, rc0, out0 = mkproj(mut_spoiler)
+case('I 呈现效果 · beat 提前剧透 40 帧', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# ── J · 呈现效果门禁 G-1②：beat 声明了不属于本镜的 cue → 必须拦 ──
+td, rc0, out0 = mkproj(lambda d: (d['shots'][1].__setitem__('beats', [{'cue': 13, 'offset': 0}]), d)[1])
+case('J 呈现效果 · beat 引用了别的镜的 cue', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# ── K · 呈现效果门禁 G-2：字幕阅读速度超预算（40 字塞进 1 秒）→ 必须拦 ──
+def mut_dense(td_):
+    p = os.path.join(td_, 'manifests/caption-cues.json')
+    doc = json.loads(io.open(p, encoding='utf-8').read())
+    c = doc['cues'][0]
+    c['text'] = '这是一条故意写得很长的字幕用来把阅读速度顶到上限之上让门禁必须拦住它才行'
+    c['speech_end_ms'] = c['start_ms'] + 900
+    io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(doc, ensure_ascii=False, indent=2))
+td, rc0, out0 = mkproj()
+mut_dense(td)
+case('K 呈现效果 · 字幕 40 字压进 0.9 秒', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# ── L · 呈现效果门禁 G-3：字号低于绝对地板 13 → 必须拦 ──
+td, rc0, out0 = mkproj()
+io.open(os.path.join(td, 'src/tooSmall.tsx'), 'w', encoding='utf-8', newline='').write(
+    "export const S=()=> <div style={{fontSize: 9}}>太小的字</div>;" + NL)
+case('L 呈现效果 · 字号 9px 低于地板', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# ── M · 呈现效果门禁 G-3：主题正文色对比度不足 → 必须拦 ──
+td, rc0, out0 = mkproj()
+os.makedirs(os.path.join(td, 'src/theme'), exist_ok=True)
+io.open(os.path.join(td, 'src/theme/paper.tsx'), 'w', encoding='utf-8', newline='').write(
+    "const palette = {" + NL
+    + "  ink: '#f2f2f2'," + NL          # 近乎白 → 压在白底上读不出来
+    + "  muted: '#eeeeee'," + NL
+    + "  white: '#ffffff'," + NL
+    + "  paper: '#ffffff'," + NL
+    + "  paperWarm: '#faf5ee'," + NL
+    + "  paperBase: '#faf7f2'," + NL
+    + "};" + NL)
+case('M 呈现效果 · 正文色几乎等于底色', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# ── N · 帧参数名门禁必须覆盖 **src/components/ 那一层**（v3.1 的 29 件）──
+# 旧版 `collect_components` 只 os.listdir(src) 一层、且名单里有 4 个不存在的文件名，
+# 于是给 `Chart` 写成 `frame={f}` 完全不会被抓（静默回落到全局帧）。
+# 夹具刻意把组件放在 **src/components/** 里使用，只有"递归扫描"才能判出来。
+def mk_fixture_scene(td_, attr):
+    io.open(os.path.join(td_, 'src/scenes-p.tsx'), 'w', encoding='utf-8', newline='').write(
+        "import {Chart} from './components/chart';" + NL
+        + "export const S=({f}:{f:number}) => <Chart " + attr + " width={400} height={300} startAt={0} data={[]} />;" + NL)
+
+td, rc0, out0 = mkproj()
+os.makedirs(os.path.join(td, 'src/components'), exist_ok=True)
+# 整层拷进去：只拷一个文件会让门禁的"引擎源码没读到"防呆（<20 个组件）先触发，
+# 那样测到的是防呆、不是本夹具要测的"递归覆盖 components/ 层"。
+for f in os.listdir(os.path.join(TPL, 'src/components')):
+    shutil.copy(os.path.join(TPL, 'src/components', f), os.path.join(td, 'src/components', f))
+mk_fixture_scene(td, 'frame={f}')     # 错：Chart 只认 f
+case('N 帧参数名 · components 层写成 frame={f}', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block', 'validate-frame-props', run([PY, os.path.join(SKILL, 'scripts/validate-frame-props.py'), td])),
+])
+cleanup(td)
+
+# ── O · 同一夹具写对（f={f}）→ 必须放行（证明 N 不是"见到就拦"）──
+td, rc0, out0 = mkproj()
+os.makedirs(os.path.join(td, 'src/components'), exist_ok=True)
+# 整层拷进去：只拷一个文件会让门禁的"引擎源码没读到"防呆（<20 个组件）先触发，
+# 那样测到的是防呆、不是本夹具要测的"递归覆盖 components/ 层"。
+for f in os.listdir(os.path.join(TPL, 'src/components')):
+    shutil.copy(os.path.join(TPL, 'src/components', f), os.path.join(td, 'src/components', f))
+mk_fixture_scene(td, 'f={f}')          # 对
+case('O 帧参数名 · 同一夹具写对（阴性对照）', [
+    ('must_pass', 'validate-frame-props', run([PY, os.path.join(SKILL, 'scripts/validate-frame-props.py'), td])),
+])
+cleanup(td)
+
+# ── P · 一致性检查必须拦住"文档写了不存在的组件名"（审计 A1/A6/A7/A8 那一整类）──
+# 夹具：把整份技能拷一份（跳过 assets/demo 的大文件），在 SKILL.md 里塞一个不存在的组件名，
+# 然后让 validate-skill-consistency.py --root 指向这份副本 —— 它必须报出来。
+def mk_skill_copy():
+    td = tempfile.mkdtemp(prefix='nv-skill-')
+    ignore = shutil.ignore_patterns('node_modules', 'renders', '.git', '.cache', '.tools', '__pycache__',
+                                   '*.mp4', '*.webp', '*.png', '*.jpg')
+    shutil.copytree(SKILL, td, dirs_exist_ok=True, ignore=ignore)
+    # 大文件跳过拷贝，但**补占位空文件**：否则链接检查会先报"broken link"，
+    # 夹具就变成"因为别的原因失败"了（第一版的假通过）。
+    for rel in ('assets/demo/notebook-video-demo.mp4', 'assets/demo/notebook-video-demo.webp',
+                'assets/demo/notebook-video-components-demo.mp4', 'assets/demo/hero.png',
+                'assets/demo/social-preview.png'):
+        q = os.path.join(td, rel)
+        if not os.path.exists(q):
+            os.makedirs(os.path.dirname(q), exist_ok=True)
+            open(q, 'wb').close()
+    return td
+
+
+td_skill = mk_skill_copy()
+with io.open(os.path.join(td_skill, 'SKILL.md'), 'a', encoding='utf-8', newline='') as fh:
+    fh.write(NL + '**`NoSuchComponent`** 是故意写坏的名字。' + NL)
+case('P 一致性 · 文档写了不存在的组件名', [
+    ('must_block:NoSuchComponent', 'validate-skill-consistency', run([PY, os.path.join(SKILL, 'scripts/validate-skill-consistency.py'), '--root', td_skill])),
+])
+cleanup(td_skill)
+
 # ── E：阴性对照：原样分镜表三道门必须全过（证明门不是"见谁拦谁"） ──
 td, rc0, out0 = mkproj()
 case('E 阴性对照（原样应全过）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
     ('must_pass', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
     ('must_pass', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+    ('must_pass', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 

@@ -105,7 +105,7 @@ export const ConsoleWindow: React.FC<{
             })}
             <span style={{marginLeft: 8, fontFamily: 'Space,monospace', fontWeight: 600, fontSize: 13, letterSpacing: 1, color: '#fdfdfb', opacity: 0.85}}>{title}</span>
             {status && (
-              <span style={{marginLeft: 'auto', marginRight: 12, fontFamily: 'Space,monospace', fontSize: 11, fontWeight: 700, background: `${statusTone}22`, color: statusTone, border: `1px solid ${statusTone}66`, borderRadius: 999, padding: '2px 10px', whiteSpace: 'nowrap', transform: `scale(${1 + 0.06 * pulse(f, lastAt, 10)})`}}>{status.text}</span>
+              <span style={{marginLeft: 'auto', marginRight: 12, fontFamily: 'Space,monospace', fontSize: 13, fontWeight: 700, background: `${statusTone}22`, color: statusTone, border: `1px solid ${statusTone}66`, borderRadius: 999, padding: '2px 10px', whiteSpace: 'nowrap', transform: `scale(${1 + 0.06 * pulse(f, lastAt, 10)})`}}>{status.text}</span>
             )}
           </div>
           <div style={{height: bodyH ?? 'auto', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: Math.max(6, rowGap - 22), position: 'relative'}}>
@@ -234,7 +234,7 @@ export const StampBanner: React.FC<{x: number; y: number; w: number; f: number; 
 };
 
 /** 介质清单标识：校验脚本据此统计「一支片子里出现了几种介质」。 */
-export const MEDIA_KINDS = ['graphic', 'chart', 'console', 'code', 'text', 'evidence', 'metric'] as const;
+export const MEDIA_KINDS = ['graphic', 'chart', 'console', 'code', 'text', 'metric'] as const;
 export type MediaKind = (typeof MEDIA_KINDS)[number];
 
 export const MEDIA_VERSION = 'media-v2 · ConsoleWindow + MetricGrid + StampBanner · multi-clock motion';

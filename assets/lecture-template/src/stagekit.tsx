@@ -162,7 +162,7 @@ export const PhaseRail: React.FC<{phases: Phase[]; ctx: StageCtx; w?: number; co
                 style={{
                   width: 22, height: 22, borderRadius: 99, flex: '0 0 auto', display: 'grid', placeItems: 'center',
                   background: done ? C.green : active ? on : C.mutedFill,
-                  color: C.white, fontFamily: 'Space', fontWeight: 700, fontSize: 12,
+                  color: C.white, fontFamily: 'Space', fontWeight: 700, fontSize: 13,
                   boxShadow: halo > 0.4 ? `0 0 0 ${halo}px ${on}22` : 'none',
                   transform: `scale(${dotScale})`,
                 }}

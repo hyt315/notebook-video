@@ -9,7 +9,7 @@ import {THEME} from './theme/active';
 // 无渐变无模糊阴影）、30fps 确定性（无随机数，伪方差来自序号哈希）。
 // 防出格铁律：所有文字容器高度必须由 fitH() 显式算出，禁止手写"看着差不多"
 // 的固定高度——本片 S3/S5 的出格 bug 全部因此产生。
-// 用法：import {FitCard, Typewriter, PayPop, StampSeal, ...} from './fxkit';
+// 用法：import {FitCard, Typewriter, StampSeal, StaggerList, ...} from './fxkit';
 // 每个组件都接受 frame（本地帧）+ start，exitStart 出现即完整离场。
 // 坐标铁律：x/y 永远相对于最近的 positioned 祖先。放在 Paper 卡片内部时，
 // 坐标是"卡片相对坐标"（如卡片宽 1040，右下角 x≈850）；只有直接放在场景根
@@ -204,7 +204,7 @@ export const ProgressRing:React.FC<{
       {p>0.02&&p<1&&<circle cx={capX} cy={capY} r={5.5} fill={color}/>}
     </svg>
     <div style={{position:'absolute',inset:0,display:'grid',placeItems:'center',textAlign:'center'}}>
-      <div><div style={{fontFamily:'Space',fontWeight:700,fontSize:22,color,fontVariantNumeric:'tabular-nums'}}>{Math.round(shown*100*tp)}<span style={{fontSize:14,marginLeft:1}}>%</span></div>{label&&<div style={{fontSize:11,fontWeight:700,color:C.ink}}>{label}</div>}</div>
+      <div><div style={{fontFamily:'Space',fontWeight:700,fontSize:22,color,fontVariantNumeric:'tabular-nums'}}>{Math.round(shown*100*tp)}<span style={{fontSize:14,marginLeft:1}}>%</span></div>{label&&<div style={{fontSize: 13,fontWeight:700,color:C.ink}}>{label}</div>}</div>
     </div>
   </div>;
 };
@@ -234,7 +234,7 @@ export const DiffView:React.FC<{
   return <div style={{position:'absolute',left:x,top:y,width:w,background:'#14110f',border:`2.5px solid ${C.ink}`,borderRadius:10,boxShadow:`3px 3px 0 ${C.ink}`,overflow:'hidden',...exitStyle(f,exitStart)}}>
     <div style={{height:30,display:'flex',alignItems:'center',gap:7,paddingLeft:14,borderBottom:'1.5px solid #2d2621'}}>
       {[C.red,C.gold,C.green].map((c,i)=><span key={i} style={{width:9,height:9,borderRadius:99,background:c}}/>)}
-      <span style={{marginLeft:6,fontFamily:'Space',fontWeight:600,fontSize:12,letterSpacing:1,color:'#fdfdfb',opacity:.85}}>{title}</span>
+      <span style={{marginLeft:6,fontFamily:'Space',fontWeight:600,fontSize: 13,letterSpacing:1,color:'#fdfdfb',opacity:.85}}>{title}</span>
     </div>
     <div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:7}}>
       {lines.map((ln,i)=>{

@@ -1,0 +1,319 @@
+#!/usr/bin/env python3
+"""validate-presentation.py · 呈现效果门禁（T1：纯算术，不渲染）
+
+它回答的是现有 9 道门禁**都没问过**的问题：观众此刻该看哪里、读不读得过来。
+现有的门禁查的是"画面里有没有 / 够不够多 / 会不会撞"；这一道查"讲与画对不对得上、读得动吗"。
+每条判据都是纯算术（读 manifests 与源码字面量），零新增数据模型、不需要渲染。
+
+判据（可计算形式见下）：
+
+  G-1 时间接近（P0）——把授权契约第 9 条「元素出现帧绑到讲到它的那一句」变成代码
+    ① 每个 beat 的绝对帧 ∈ [shot.from, shot.to]（含边界：允许"切在下一句起点"的那一拍）
+    ② 每个 beat 声明的 cue ∈ [cueFirst, cueLast] 或 = cueLast+1（同上）
+    ③ 每个 beat 的 offset ≥ −12 帧（元素不得早于它那句 0.4s 以上出现 = 防提前剧透）
+    ④ 每条 cue 在本镜内至少有一个 beat；确实不需要的必须在 shots.json 里显式声明
+       `silentCues: [cueIndex, ...]`（显式声明才放行——这就是"要求写出结论"的做法）
+    ⚠️ 与调研报告原文的差异（报告写的是 `|beat − cueStart| ≤ 6`）：**照抄会给正确的数据报错**。
+       我们的 beats 本来就允许句内偏移（`{cue:13, offset:100}` 是"同一句的第二拍"，
+       S7/S8 各有一处，实测会被逐字判为偏差 96–100 帧）。所以真正的可检查形式是
+       "beat 落在它声明的那句/那一镜的范围内、且不提前"，而不是"必须贴住句首 6 帧"。
+
+  G-2 字幕阅读预算（P0）——Netflix 中文（简体）Timed Text Style Guide
+    · 阅读速度 ≤ 9 加权字/秒（成人档；加权：CJK 计 1，ASCII/数字计 0.5，**不需要分词**）
+    · 单行 ≤ 16 加权字；≤ 2 行
+
+  G-3 可读性底线（P0 地板 + P1 档位）
+    · P0：任何 `fontSize: <13` 的字面量（13 = 技能自己的 `MIN_LABEL_FONT` 口径，不是新魔数）
+    · P1：13–15（低于"标注 ≥16"档）
+    · P0：正文色（ink / white）落在主题各表面上 < 4.5:1（WCAG 2.2 SC 1.4.3，不四舍五入）
+    · P1：`muted` on 表面 < 4.5（它是装饰性 kicker，按大字 3:1 判）
+    · P1：强调色当**文字色**时低于要求（<24px 要 4.5、≥24px 或 ≥18.5px 粗体要 3.0）
+      —— 这一条是**已知的真实缺陷**（四套皮肤里 gold/green 当文字色只有 1.4–3.3:1），
+      怎么处置（调深色值 / 约定这些色只用于图形）是审美决定，留给用户，见 CHANGELOG。
+
+  G-5 节拍拥挤（P1，代理指标）
+    · 同一镜内 ≥3 个 beat 落在 12 帧窗口 → P1（"好几件事挤在一拍上"）
+    · ⚠️ 调研报告原文的 G-5 是"每帧新开始的入场动画数直方图"，那需要元素级的 `enters` 声明
+      （现有数据没有）→ 这里只做数据支持得了的代理形式，并在文档里写明差距。
+
+退出码：0 通过（P0=0）/ 1 有 P0 / 2 用法或文件错误。零第三方依赖，Python 3.10+。
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+
+FPS = 30
+BEAT_SPOILER_FRAMES = 12   # 3-③：不得早于所属 cue 超过 12 帧（0.4s）
+BEAT_CLUSTER_FRAMES = 12   # G-5：聚簇窗口
+BEAT_CLUSTER_MAX = 3       # G-5：窗口内 ≥3 个 beat 才算拥挤
+CPS_MAX = 9.0              # G-2：Netflix 中文成人档
+LINE_MAX = 16              # G-2：单行加权字上限
+FONT_FLOOR = 13            # G-3：绝对地板（= components/data.tsx 的 MIN_LABEL_FONT）
+FONT_LABEL_MIN = 16        # G-3：标注档
+CONTRAST_TEXT = 4.5        # WCAG 2.2 SC 1.4.3 正文
+CONTRAST_LARGE = 3.0       # 大字号（≥24px 或 ≥18.5px 粗体）
+
+norm = lambda s: re.sub(r"\s+", "", s)
+
+
+def ms_frame(ms: float) -> int:
+    return int(round(ms * FPS / 1000))
+
+
+def weighted_len(text: str) -> float:
+    """加权字数：CJK 计 1，ASCII/数字计 0.5，标点计 0.5（不需要分词）。"""
+    out = 0.0
+    for ch in norm(text):
+        out += 1.0 if ord(ch) > 0x2E80 else 0.5
+    return out
+
+
+# ---------------------------------------------------------------- G-1 / G-2 / G-5
+def check_timeline(project: Path) -> tuple[list, list]:
+    p0, p1 = [], []
+    shots_doc = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8"))
+    resolved_doc = json.loads((project / "manifests" / "shots.resolved.json").read_text(encoding="utf-8"))
+    cues = json.loads((project / "manifests" / "caption-cues.json").read_text(encoding="utf-8"))["cues"]
+    resolved = resolved_doc["shots"] if isinstance(resolved_doc, dict) and "shots" in resolved_doc else resolved_doc
+    declared = shots_doc["shots"] if isinstance(shots_doc, dict) and "shots" in shots_doc else shots_doc
+
+    by_id = {s["id"]: s for s in resolved}
+    for dec in declared:
+        sid = dec.get("id", "?")
+        rec = by_id.get(sid)
+        if not rec:
+            continue
+        cue_first, cue_last = int(rec["cueFirst"]), int(rec["cueLast"])
+        silent = {int(x) for x in (dec.get("silentCues") or [])}
+        covered: set[int] = set()
+        for bt in dec.get("beats") or []:
+            ci = int(bt["cue"])
+            off = int(bt.get("offset", 0))
+            frame = ms_frame(cues[ci]["start_ms"]) + off if 0 <= ci < len(cues) else -1
+            # ① 落在本镜区间内（含 to 边界）
+            if frame < rec["from"] or frame > rec["to"]:
+                p0.append({"id": sid, "issue": f"beat(cue{ci}+{off}) 落在 {frame} 帧，超出本镜 [{rec['from']},{rec['to']}]"})
+            # ② 声明的 cue 在本镜的 cue 区间内（允许 cueLast+1 = 切在下一句起点）
+            if not (cue_first <= ci <= cue_last + 1):
+                p0.append({"id": sid, "issue": f"beat 声明 cue{ci}，超出本镜 cue 区间 [{cue_first},{cue_last}]"})
+            # ③ 不提前剧透
+            if off < -BEAT_SPOILER_FRAMES:
+                p0.append({"id": sid, "issue": f"beat(cue{ci}) offset={off} 早于该句 {abs(off)} 帧（上限 {BEAT_SPOILER_FRAMES}）"})
+            if cue_first <= ci <= cue_last:
+                covered.add(ci)
+        # ④ 每条 cue 至少有一拍（除非显式声明 silentCues）
+        for ci in range(cue_first, cue_last + 1):
+            if ci not in covered and ci not in silent:
+                p0.append({"id": sid, "issue": f"cue{ci}「{cues[ci]['text'][:10]}」在本镜内没有任何 beat（若确实不需要，在本镜声明 silentCues:[{ci}]）"})
+        # G-5 代理：同一镜内 ≥3 个 beat 挤在 12 帧窗口
+        abs_beats = sorted(rec.get("beatsAbs") or [])
+        for i in range(len(abs_beats) - BEAT_CLUSTER_MAX + 1):
+            win = abs_beats[i : i + BEAT_CLUSTER_MAX]
+            if win[-1] - win[0] <= BEAT_CLUSTER_FRAMES:
+                p1.append({"id": sid, "issue": f"{BEAT_CLUSTER_MAX} 个 beat 挤在 {win[-1]-win[0]} 帧内（f={win[0]}–{win[-1]}）：多件事挤在一拍，观众分不清该看哪"})
+                break
+
+    # G-2 字幕阅读预算
+    for i, cu in enumerate(cues, 1):
+        text = str(cu.get("text", ""))
+        dur = max(0.001, (int(cu["speech_end_ms"]) - int(cu["start_ms"])) / 1000.0)
+        wl = weighted_len(text)
+        cps = wl / dur
+        if cps > CPS_MAX:
+            p0.append({"id": f"cue{i}", "issue": f"阅读速度 {cps:.1f} 字/秒 > {CPS_MAX}（{wl:.0f} 加权字 / {dur:.1f}s）：{text[:16]}"})
+        if wl > LINE_MAX:
+            p0.append({"id": f"cue{i}", "issue": f"单行 {wl:.0f} 加权字 > {LINE_MAX}：{text[:16]}"})
+        if len([l for l in text.split("\n") if l.strip()]) > 2:
+            p0.append({"id": f"cue{i}", "issue": f"字幕超过 2 行：{text[:16]}"})
+    return p0, p1
+
+
+# ----------------------------------------------------------------------- G-3
+FONT_RE = re.compile(r"fontSize:\s*([0-9]{1,3})")
+TYPE_RE = re.compile(r"fontSize:\s*TYPE\.(\w+)")
+
+
+def parse_type_table(project: Path) -> dict:
+    for p in project.rglob("kit.tsx"):
+        m = re.search(r"export const TYPE\s*=\s*\{([^}]*)\}", p.read_text(encoding="utf-8"))
+        if m:
+            return {k: float(v) for k, v in re.findall(r"(\w+):\s*([0-9.]+)", m.group(1))}
+    return {}
+
+
+def parse_palette(path: Path) -> dict:
+    s = path.read_text(encoding="utf-8")
+    i = s.find("palette")
+    if i < 0:
+        return {}
+    j, k = s.find("{", i), None
+    k = s.find("\n};", j)
+    if k < 0:
+        k = s.find("\n}", j)
+    return {m.group(1): m.group(2) for m in re.finditer(r"(\w+):\s*'([^']+)'", s[j:k])}
+
+
+def _srgb(c: float) -> float:
+    c = c / 255
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def rel_lum(hexs: str) -> float:
+    h = hexs.lstrip("#")
+    if len(h) == 3:
+        h = "".join(ch * 2 for ch in h)
+    r, g, b = (int(h[i : i + 2], 16) for i in (0, 2, 4))
+    return 0.2126 * _srgb(r) + 0.7152 * _srgb(g) + 0.0722 * _srgb(b)
+
+
+def contrast(a: str, b: str) -> float:
+    la, lb = rel_lum(a), rel_lum(b)
+    hi, lo = max(la, lb), min(la, lb)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def check_readability(project: Path) -> tuple[list, list]:
+    p0, p1 = [], []
+    src = project / "src"
+    if not src.is_dir():
+        return p0, p1
+    types = parse_type_table(project)
+    band: dict[str, list[tuple[int, int]]] = {}   # 13–15 档：按文件聚合，避免一条一处刷屏
+    files = sorted(list(src.rglob("*.tsx")))
+    for f in files:
+        for n, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            rel = f"{f.relative_to(project)}:{n}"
+            for m in FONT_RE.finditer(line):
+                size = int(m.group(1))
+                if size < FONT_FLOOR:
+                    p0.append({"id": "src", "issue": f"{rel} fontSize:{size} 低于绝对地板 {FONT_FLOOR}（口径 = MIN_LABEL_FONT）"})
+                elif size < FONT_LABEL_MIN:
+                    band.setdefault(str(f.relative_to(project)), []).append((n, size))
+            for m in TYPE_RE.finditer(line):
+                size = types.get(m.group(1))
+                if size is None:
+                    p1.append({"id": "src", "issue": f"{rel} TYPE.{m.group(1)} 不在字号表里"})
+                elif size < FONT_FLOOR:
+                    p0.append({"id": "src", "issue": f"{rel} TYPE.{m.group(1)}={size} 低于绝对地板 {FONT_FLOOR}"})
+
+    for rel, items in sorted(band.items()):
+        sizes = sorted({s for _, s in items})
+        p1.append({"id": "src", "issue": f"{rel} 有 {len(items)} 处字号在 13–15（{'/'.join(str(x) for x in sizes)}px，低于标注档 {FONT_LABEL_MIN}；行号 {', '.join(str(n) for n, _ in items[:6])}{' 等' if len(items) > 6 else ''}）"})
+
+    # ---- 主题对比度：只判"真的会同时出现"的配对 ----
+    #
+    # ⚠️ 第一版这里犯了个典型的假阳性：把"每个文字色 × 每个表面"全都交叉算了一遍，
+    # 于是 `white on paper = 1.00:1` 被报成 P0——而白字**永远不会**放在白纸上。
+    # 现在改成按代码里真实出现的用法取配对（同一次运行里扫出来的 `color: C.x` / `background: C.x`）：
+    #   · 正文：ink on {paper, paperWarm, paperBase}
+    #   · 深底上的字：white on ink
+    #   · 反白按钮：white on <任何被当 background 用过的强调色>
+    #   · 次要文字：muted on {paper, paperWarm, paperBase}（按大字 3:1 判，低于 4.5 只提示）
+    #   · 强调色当文字色：<被当 color 用过的强调色> on {paper, paperWarm, paperBase}（P1，按主题聚合）
+    # ⚠️ 第二处假阳性（第一版与第二版都踩过）：**不能用"静态交叉"去猜"谁会压在谁上面"**。
+    # 第一版把 white × paper 报成 P0（白字永远不压白纸）；第二版又靠 `background: C.x` 推断，
+    # 结果 `background: C.paper`（卡片底色）把 `white on paper` 又请了回来。
+    # 结论：这里的配对必须是**声明的契约**，不是推断。契约来自本技能自己的用法：
+    #   · 正文      ink   on {paper, paperWarm, paperBase}            → P0（<4.5 阻断）
+    #   · 深底反白  white on {ink}                                     → P0
+    #   · 彩色反白  white on {blue, orange, orangeDeep, green, gold, red, navy}  → P1 聚合
+    #     （PillTag / StampBanner / VerdictBar / 按钮都会用这些色当填充 + 白字）
+    #   · 次要文字  muted on {paper, paperWarm, paperBase}             → 大字档 3:1
+    #   · 彩字      <强调色> on {paper, paperWarm, paperBase}          → P1 聚合
+    ACCENT_FILLS = ("blue", "orange", "orangeDeep", "green", "gold", "red", "navy")
+    used_as_text: dict[str, set[str]] = {}
+    for f in files:
+        body = f.read_text(encoding="utf-8")
+        for m in re.finditer(r"color:\s*(?:C|THEME\.palette)\.(\w+)", body):
+            used_as_text.setdefault(m.group(1), set()).add(f.name)
+
+    for tf in sorted((src / "theme").glob("*.tsx")):
+        pal = parse_palette(tf)
+        if not pal:
+            continue
+        name = tf.stem
+        surfaces = ["paper", "paperWarm", "paperBase"]
+        hexed = {k: v for k, v in pal.items() if isinstance(v, str) and v.startswith("#")}
+
+        def worst(fg: str) -> tuple[float, str] | None:
+            if fg not in hexed:
+                return None
+            items = [(contrast(hexed[fg], hexed[bg]), bg) for bg in surfaces if bg in hexed]
+            return min(items) if items else None
+
+        # 正文色（P0）
+        if "ink" in hexed:
+            for bg in surfaces:
+                if bg in hexed:
+                    c = contrast(hexed["ink"], hexed[bg])
+                    if c < CONTRAST_TEXT:
+                        p0.append({"id": f"theme:{name}", "issue": f"正文色 ink on {bg} = {c:.2f}:1 < {CONTRAST_TEXT}"})
+        # 深底反白（P0）
+        if "white" in hexed and "ink" in hexed:
+            c = contrast(hexed["white"], hexed["ink"])
+            if c < CONTRAST_TEXT:
+                p0.append({"id": f"theme:{name}", "issue": f"反白文字 white on ink = {c:.2f}:1 < {CONTRAST_TEXT}"})
+        # 彩色反白 + 彩字：**按主题各聚合成一条**，否则一套皮肤就是几十条噪声
+        white_bad = [f"{a} {contrast(hexed['white'], hexed[a]):.2f}:1" for a in ACCENT_FILLS if a in hexed and "white" in hexed and contrast(hexed["white"], hexed[a]) < CONTRAST_LARGE]
+        if white_bad:
+            p1.append({"id": f"theme:{name}", "issue": f"彩色填充上的白字对比不足（需 3.0）：{' · '.join(white_bad)}"})
+        tone_bad = []
+        for fg in sorted(used_as_text):
+            if fg in {"ink", "white", "muted", "paper", "paperWarm", "paperBase"}:
+                continue
+            w = worst(fg)
+            if w and w[0] < CONTRAST_TEXT:
+                tone_bad.append(f"{fg} {w[0]:.2f}:1(on {w[1]}){' ✗<3' if w[0] < CONTRAST_LARGE else ''}")
+        if tone_bad:
+            users = sorted({f for fg, fs in used_as_text.items() if fg not in {"ink", "white", "muted"} for f in fs})
+            p1.append({"id": f"theme:{name}", "issue": f"强调色当文字色对比不足（大字需 3.0 / 小字需 4.5）：{' · '.join(tone_bad)}；用在 {', '.join(users[:3])}{' 等' if len(users) > 3 else ''}——真缺陷，处置见 CHANGELOG"})
+        # 次要文字（muted）
+        if "muted" in hexed:
+            w = worst("muted")
+            if w and w[0] < CONTRAST_LARGE:
+                p0.append({"id": f"theme:{name}", "issue": f"muted on {w[1]} = {w[0]:.2f}:1 < {CONTRAST_LARGE}"})
+            elif w and w[0] < CONTRAST_TEXT:
+                p1.append({"id": f"theme:{name}", "issue": f"muted 最差 {w[0]:.2f}:1（on {w[1]}）< {CONTRAST_TEXT}：muted 是装饰性 kicker，按大字 3:1 可接受，提示一档"})
+    return p0, p1
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("project")
+    ap.add_argument("--json", action="store_true")
+    args = ap.parse_args()
+    project = Path(args.project).resolve()
+    if not (project / "manifests").is_dir():
+        print(f"项目目录里没有 manifests/：{project}", file=sys.stderr)
+        return 2
+
+    p0, p1 = [], []
+    try:
+        a, b = check_timeline(project)
+        p0 += a
+        p1 += b
+    except FileNotFoundError as e:
+        print(f"缺少必需文件：{e}", file=sys.stderr)
+        return 2
+    a, b = check_readability(project)
+    p0 += a
+    p1 += b
+
+    if args.json:
+        print(json.dumps({"p0": p0, "p1": p1}, ensure_ascii=False, indent=2))
+    else:
+        print("validate-presentation · 呈现效果门禁（T1 纯算术）")
+        for item in p0:
+            print(f"  P0 {item['id']}: {item['issue']}")
+        for item in p1:
+            print(f"  P1 {item['id']}: {item['issue']}")
+        print(f"结论：P0={len(p0)} P1={len(p1)} → {'PASS' if not p0 else 'FAIL'}")
+    return 1 if p0 else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -8,7 +8,7 @@ import cueData from './caption-cues.json';
 //
 // 本文件分三层，改写时只碰第三层：
 //   第一层 LOCKED：美学核心 + 字幕/背景/章节条/资产门，一律不改。
-//   第二层 组件库：Paper、LineIcon、CheckBadge、Mascot、StepRail 等，
+//   第二层 组件库：Paper、LineIcon、CheckBadge、PillTag、StampBanner 等，
 //            直接复用；需要新图形时仿照它们的写法新增组件。
 //   第三层 场景内容：COPY、SCENE 边界、各 Scene* 组件、Sound 音效表，
 //            换题材时重写这一层。
@@ -27,14 +27,14 @@ import cueData from './caption-cues.json';
 // Keep authored scene time separate from delivery frames.
 import {MODES, CanvasMode, CanvasContext, useCanvas} from './theme/canvas';
 import {THEME} from './theme/active';
-import {Mascot, RollDigit, JumpInText, WaveText, CodeBlock, BrowserChrome, Connector, Checklist, CountUp, ProgressBar, Callout} from './toolkit';
+import {JumpInText, Checklist, Callout} from './toolkit';
 import type {IconKind} from './kit';
 import {PillTag, LineIcon, CheckBadge, TYPE} from './kit';
 // v2.10 视觉体系四层：镜头 / 骨架 / 介质 / 门禁。用法见 references/shot-language.md、
 // scene-skeletons.md、media-routing.md、composition-gate.md。
-import {CoverPanel, DepthLayers, ShotCamera, camAt, shotCam, stillCam} from './shotkit';
-import {Attach, PhaseRail, StageFrame, useStageMachine} from './stagekit';
-import {InsertShot, RevealMask, TRANSITIONS, useHandoff} from './insert';
+import {CoverPanel, ShotCamera, camAt, shotCam, stillCam} from './shotkit';
+import {PhaseRail, StageFrame, useStageMachine} from './stagekit';
+import {RevealMask, TRANSITIONS, useHandoff} from './insert';
 import {ConsoleWindow, MetricGrid, StampBanner} from './media';
 import {Corridor, SplitStage, ZoomStage} from './skeletons';
 import {Showcase, SHOWCASE_PAGES} from './showcase';
@@ -199,7 +199,6 @@ const Paper=THEME.Paper;
 
 // LineIcon / PillTag / CheckBadge 已抽到 src/kit.tsx（主题无关原子，工程侧同样可引用）。
 
-// Mascot：系列吉祥物（代码绘制的 git 猫）。f 传本地帧可眨眼、自然呼吸，wave 挥手。
 
 // RollDigit：Tibo 式字符/数字 3D 滚轮翻牌——带 cos 投影压缩 + 3D 旋转 + 颜色过渡
 
@@ -222,199 +221,6 @@ const useSteppedFrame=(stepFps=15)=>{const f=useCurrentFrame();return Math.floor
 // BrowserChrome：浏览器窗口——三灯 + 锁 + URL 胶囊，内容区放 children。
 
 // Connector：曲线连接件——贝塞尔弧线 + 可选流向虚线 / 箭头 / 标签，替代场景层手写 SVG。
-
-// Checklist：编号步骤清单——圆形序号 + 文案逐个滑入；done 给完成数，序号变对勾。
-
-// CountUp：数字滚动计数——easeOutSoft 进度 + 颜色过渡，支持前后缀。
-
-// ProgressBar：进度条——轨道 + 填充 + 可选标签/百分比，v 由场景驱动（0~1）。
-
-const BrainwaveEEG: React.FC<{ frame: number; deadStart?: number; width?: number | string }> = ({ frame, deadStart = 99999, width = '100%' }) => {
-  const isDead = frame >= deadStart;
-  const pDead = ease(frame, deadStart, deadStart + 16);
-  const W = 680, H = 48;
-  const pts: string[] = [];
-  const freq = 0.14;
-  for (let x = 0; x <= W; x += 6) {
-    const normX = x / W;
-    const wave = Math.sin(frame * freq + normX * 18) * Math.cos(normX * 8);
-    const spike = (x > 220 && x < 260) ? Math.sin((x - 220) / 40 * Math.PI) * 16 : 0;
-    const y = H / 2 - (wave * 8 + spike) * (1 - pDead);
-    pts.push(`${x},${y.toFixed(1)}`);
-  }
-  return (
-    <div style={{ width, background: '#121212', borderRadius: 8, border: `2px solid ${isDead ? C.red : '#2b303c'}`, padding: '8px 14px', position: 'relative', overflow: 'hidden', boxShadow: `2.5px 2.5px 0 ${C.ink}` }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 8, height: 8, borderRadius: 99, background: isDead ? C.red : C.green, boxShadow: `0 0 6px ${isDead ? C.red : C.green}` }} />
-          <span style={{ fontFamily: 'Space,monospace', fontSize: 12, fontWeight: 700, color: isDead ? C.red : '#adb5bd', letterSpacing: 0.8 }}>
-            {isDead ? 'ALERT: CONTEXT FLUSHED (FLATLINE)' : 'LIVE AGENT COGNITIVE PULSE'}
-          </span>
-        </div>
-        <span style={{ fontFamily: 'Space,monospace', fontSize: 11, color: isDead ? C.red : C.green, fontWeight: 700 }}>
-          {isDead ? '0 RECALLED' : 'SYNCED: 100%'}
-        </span>
-      </div>
-      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
-        <line x1="0" y1={H / 2} x2={W} y2={H / 2} stroke="#222" strokeWidth="1" strokeDasharray="4 4" />
-        <polyline points={pts.join(' ')} fill="none" stroke={isDead ? C.red : C.green} strokeWidth={isDead ? 2.5 : 1.8} strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
-  );
-};
-
-// 2. VectorRadarSonar：向量雷达声呐仪（360°旋转波束扫描 + 高维语义聚类点高亮）
-const VectorRadarSonar: React.FC<{ frame: number; color?: string }> = ({ frame, color = C.blue }) => {
-  const rot = (frame * 3.5) % 360;
-  const dots = [
-    { x: 45, y: 35, col: C.blue }, { x: 105, y: 65, col: C.green }, { x: 70, y: 95, col: C.gold },
-    { x: 125, y: 30, col: C.blue }, { x: 35, y: 105, col: C.green }, { x: 90, y: 115, col: C.blue },
-  ];
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', background: '#f5f9ff', border: `2px solid ${color}`, borderRadius: 10, boxShadow: `2.5px 2.5px 0 ${color}` }}>
-      <div style={{ position: 'relative', width: 78, height: 78, flex: '0 0 78px', background: '#0e1726', borderRadius: 999, border: `2px solid ${color}`, overflow: 'hidden' }}>
-        <svg width="78" height="78" viewBox="0 0 140 140">
-          <circle cx="70" cy="70" r="26" fill="none" stroke="rgba(43,109,232,0.35)" strokeWidth="1.2" />
-          <circle cx="70" cy="70" r="52" fill="none" stroke="rgba(43,109,232,0.35)" strokeWidth="1.2" />
-          <line x1="70" y1="0" x2="70" y2="140" stroke="rgba(43,109,232,0.25)" strokeWidth="1" />
-          <line x1="0" y1="70" x2="140" y2="70" stroke="rgba(43,109,232,0.25)" strokeWidth="1" />
-          {dots.map((d, i) => (
-            <circle key={i} cx={d.x} cy={d.y} r="3.5" fill={d.col} style={{ opacity: 0.8 + 0.2 * Math.sin(frame * 0.25 + i) }} />
-          ))}
-          <g transform={`rotate(${rot} 70 70)`}>
-            <line x1="70" y1="70" x2="140" y2="70" stroke={color} strokeWidth="2.2" opacity="0.95" />
-            <polygon points="70,70 140,40 140,70" fill="rgba(43,109,232,0.28)" />
-          </g>
-        </svg>
-      </div>
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 18, fontWeight: 700, color }}>向量雷达检索空间</span>
-          <span style={{ fontSize: 11, background: color, color: '#fff', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>EMBEDDINGS</span>
-        </div>
-        <div style={{ fontSize: 13, color: '#444', marginTop: 3, lineHeight: 1.3, fontWeight: 600 }}>高维语义聚类 · 毫秒级最近邻检索 (ANN)</div>
-        <div style={{ display: 'flex', gap: 6, marginTop: 5 }}>
-          <span style={{ fontSize: 11, fontFamily: 'Space,monospace', background: '#e1ecfe', color, padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>Append-Only</span>
-          <span style={{ fontSize: 11, fontFamily: 'Space,monospace', background: '#e1ecfe', color, padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>Local Zero-Cloud</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// 3. BM25TokenRibbon：BM25 符号倒排标尺（动态词频矩阵与代码变量命中标签）
-const BM25TokenRibbon: React.FC<{ frame: number; tokens?: { name: string; score: string; active: boolean }[] }> = ({ frame, tokens = [
-  { name: 'auth_spec', score: '0.98', active: true },
-  { name: 'rs256_key', score: '0.94', active: true },
-  { name: 'db_pool', score: '0.91', active: false },
-  { name: 'redis_ttl', score: '0.86', active: false },
-] }) => {
-  return (
-    <div style={{ padding: '12px 16px', background: '#fffcf0', border: `2px solid ${C.gold}`, borderRadius: 10, boxShadow: `2.5px 2.5px 0 ${C.gold}` }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 18, fontWeight: 700, color: C.ink }}>BM25 符号倒排矩阵</span>
-          <span style={{ fontSize: 11, background: C.gold, color: C.ink, padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>INVERTED INDEX</span>
-        </div>
-        <span style={{ fontSize: 11, fontFamily: 'Space,monospace', color: '#666', fontWeight: 600 }}>{tokens.filter(t => t.active).length} Tokens Matched</span>
-      </div>
-      <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        {tokens.map((tk, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, background: tk.active ? '#fff' : '#f8f8f8', border: `1.5px solid ${tk.active ? C.gold : '#ccc'}`, borderRadius: 6, padding: '3px 8px', boxShadow: tk.active ? `1.5px 1.5px 0 ${C.ink}` : 'none' }}>
-            <span style={{ fontFamily: 'Space,monospace', fontSize: 12, fontWeight: 700, color: C.ink }}>#{tk.name}</span>
-            <span style={{ fontFamily: 'Space,monospace', fontSize: 11, background: tk.active ? '#fff3cd' : '#eee', color: tk.active ? '#b07200' : '#888', padding: '1px 4px', borderRadius: 3, fontWeight: 700 }}>{tk.score}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// 4. HookMountBay：自动钩子卡扣插槽（物理插头卡入 + 锁紧变绿灯）
-const HookMountBay: React.FC<{ frame: number; dockStart?: number; portLabel?: string; hookName?: string }> = ({ frame, dockStart = 0, portLabel = '~/.claude/settings.json', hookName = 'funes_hook' }) => {
-  const isDocked = frame >= dockStart;
-  const dockP = easeOutSoft(frame, dockStart, dockStart + 20);
-  return (
-    <div style={{ background: '#1c1815', border: `2.2px solid ${C.ink}`, borderRadius: 10, padding: '12px 16px', boxShadow: `3px 3px 0 ${C.ink}` }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 10, height: 10, borderRadius: 99, background: isDocked ? C.green : C.gold, boxShadow: `0 0 8px ${isDocked ? C.green : C.gold}` }} />
-          <span style={{ fontFamily: 'Space,monospace', fontSize: 12, fontWeight: 700, color: isDocked ? C.green : C.gold, letterSpacing: 0.8 }}>
-            {isDocked ? 'AGENT HOOK: MOUNTED & LOCKED' : 'WAITING FOR HOOK INJECTION'}
-          </span>
-        </div>
-        <span style={{ fontSize: 11, fontFamily: 'Space,monospace', color: '#999' }}>PORT: {portLabel}</span>
-      </div>
-      <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, transform: `translateX(${interpolate(dockP, [0, 1], [-18, 0])}px)` }}>
-          <div style={{ background: '#2b6de8', color: '#fff', fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 6, border: '1.2px solid #000' }}>
-            🔌 {hookName}
-          </div>
-          <span style={{ color: isDocked ? C.green : '#666', fontSize: 15 }}>➔</span>
-          <div style={{ background: isDocked ? '#ebfbee' : '#2d2825', border: `1.8px solid ${isDocked ? C.green : '#444'}`, color: isDocked ? C.green : '#888', fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 6 }}>
-            {isDocked ? '✔ Session Hook Registered' : 'Empty Hook Port'}
-          </div>
-        </div>
-        {isDocked && (
-          <span style={{ fontSize: 11, background: '#1e382b', color: C.green, border: `1px solid ${C.green}`, padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
-            AUTO PASSIVE SYNC
-          </span>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// 5. RedactionScanner：敏感信息实时脱敏扫描仪（红外光束扫过实时掩码打码）
-const RedactionScanner: React.FC<{ frame: number; scanStart?: number; rawKey?: string; redactedKey?: string }> = ({ frame, scanStart = 0, rawKey = 'sk-live-99882410941829', redactedKey = '[REDACTED_SECRET_KEY_*****]' }) => {
-  const isScanning = frame >= scanStart;
-  const p = ease(frame, scanStart, scanStart + 35);
-  const scanX = interpolate(p, [0, 1], [0, 100]);
-  return (
-    <div style={{ background: '#14110f', border: `2.2px solid ${C.ink}`, borderRadius: 10, padding: '12px 16px', position: 'relative', overflow: 'hidden', boxShadow: `3px 3px 0 ${C.ink}` }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <LineIcon kind="shield" size={16} color={C.green} />
-          <span style={{ fontFamily: 'Space,monospace', fontSize: 12, fontWeight: 700, color: '#e0e0e0', letterSpacing: 0.8 }}>
-            GATEWAY SCANNER · SENSITIVE REDACTOR
-          </span>
-        </div>
-        <span style={{ fontSize: 10, fontFamily: 'Space,monospace', background: p >= 0.8 ? '#143823' : '#332612', color: p >= 0.8 ? C.green : C.gold, padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>
-          {p >= 0.8 ? 'PROTECTED (SANITIZED)' : 'INSPECTING TOKENS'}
-        </span>
-      </div>
-      <div style={{ position: 'relative', background: '#1f1b18', padding: '8px 12px', borderRadius: 6, fontFamily: 'Space,monospace', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflow: 'hidden' }}>
-        <div>
-          <span style={{ color: '#888' }}>raw_trace: </span>
-          <span style={{ color: p > 0.4 ? C.green : '#ff7b72', fontWeight: 700 }}>
-            {p > 0.4 ? `api_key: "${redactedKey}"` : `api_key: "${rawKey}"`}
-          </span>
-        </div>
-        {p > 0.6 && (
-          <span style={{ background: C.green, color: '#fff', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3 }}>
-            PASSED
-          </span>
-        )}
-        {isScanning && p < 1 && (
-          <div style={{ position: 'absolute', left: `${scanX}%`, top: 0, bottom: 0, width: 2.5, background: '#ff3b30', boxShadow: '0 0 8px #ff3b30' }} />
-        )}
-      </div>
-    </div>
-  );
-};
-
-// 6. ChipContract：微硬件芯片流转卡（LED 灯 + 合约编号 + 沿管道流转）
-const ChipContract: React.FC<{ x: number; y: number; title: string; subtitle?: string; scale?: number; opacity?: number }> = ({ x, y, title, subtitle, scale = 1, opacity = 1 }) => {
-  return (
-    <div style={{ position: 'absolute', left: x, top: y, zIndex: 95, padding: '10px 18px', background: '#0e1726', border: `2.2px solid ${C.blue}`, borderRadius: 10, boxShadow: `3.5px 3.5px 0 ${C.ink}`, opacity, transform: `translate(-50%, -50%) scale(${scale})`, display: 'flex', alignItems: 'center', gap: 12 }}>
-      <div style={{ width: 10, height: 10, borderRadius: 99, background: C.green, boxShadow: `0 0 6px ${C.green}` }} />
-      <div>
-        <div style={{ fontSize: 11, fontFamily: 'Space,monospace', fontWeight: 700, color: C.blue, letterSpacing: 0.8 }}>{title}</div>
-        {subtitle && <div style={{ fontSize: 15, fontWeight: 700, color: '#ffffff', marginTop: 1 }}>{subtitle}</div>}
-      </div>
-    </div>
-  );
-};
 
 // camScript：镜头脚本构建器——链式声明 hold/to，自动补齐首尾帧，免手刻关键帧表。
 // 铁律（Camera Micro-Framing Invariant）：X 轴位移严格约束在 [945, 975] 范围（漂移 <= ±15px），S 约束在 [1.00, 1.018]，绝不可大幅右甩导致左侧被讲解内容出界！
@@ -570,7 +376,7 @@ const Root=()=> <>
       4:3 与 3:4 需要各自的版面重排，不再用 scale(0.75) 信箱化冒充适配
       （见 references/canvas-modes.md 与 portrait-illustration-system.md）。 */}
   <Composition id="NotebookVideoFilm" component={Film16x9} durationInFrames={DURATION} fps={FPS} width={2560} height={1440}/>
-  {/* 组件接触表：6 页 × 1 秒，1fps 抽帧即得 6 张图，供 AI 看图选型 */}
+  {/* 组件接触表：17 页 × 1 秒（`SHOWCASE_PAGES`），1fps 抽帧即得 17 张图，供 AI 看图选型 */}
   <Composition id="NotebookVideoShowcase" component={Showcase} durationInFrames={SHOWCASE_PAGES*30} fps={FPS} width={1920} height={1080}/>
 </>;
 

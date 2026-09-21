@@ -381,6 +381,8 @@ const pythonCommandMap = new Map([
   // v3.0.2 补登记：这两道也是构建期必跑门禁，之前只能直接 `python scripts/…` 调用，CLI 里点不到。
   ['validate-frame-props', ['validate-frame-props.py']],
   ['validate-audio-levels', ['validate-audio-levels.py']],
+  // v3.1 新增：呈现效果门禁（T1 纯算术：时间接近 / 字幕阅读预算 / 可读性底线），见 references/presentation-gate.md
+  ['validate-presentation', ['validate-presentation.py']],
 ]);
 
 // 组件接触表：把 NotebookVideoShowcase 渲染成 mp4，再抽 1fps 接触表 jpg。
@@ -398,7 +400,7 @@ const showcase = async (args, sheetOnly = false) => {
     const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
     await remotionRender({project, composition: 'NotebookVideoShowcase', output: mp4, concurrency});
   }
-  await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', mp4, '-vf', 'fps=1,scale=1280:-1,tile=3x2', '-frames:v', '1', '-q:v', '3', jpg]);
+  await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', mp4, '-vf', 'fps=1,scale=1280:-1,tile=6x3', '-frames:v', '1', '-q:v', '3', jpg]);
   console.log(`Showcase contact sheet written: ${jpg}`);
   console.log('Read it to pick components by sight; see references/media-routing.md §6.');
 };

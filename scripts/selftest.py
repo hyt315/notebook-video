@@ -60,6 +60,8 @@ def main() -> int:
         "scripts/validate-shot-motion.py",
         "scripts/validate-composition.py",
         "scripts/validate-visual-plan.py",
+        "scripts/validate-presentation.py",
+        "references/presentation-gate.md",
         "scripts/coords-lint.py",
         "scripts/retime.py",
         "scripts/audition.py",
