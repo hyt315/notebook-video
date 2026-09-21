@@ -609,6 +609,26 @@ No black frames detected.
 它的 f=36 那一格会显示得更完整，这是夹具应有的变化）。
 因此**这一轮没有渲染**：不变性由算术给出（n≤6 时新旧公式的帧号逐一相同），没有需要靠出图才能确认的东西。
 
+**第九轮：还掉唯一的版本债——`react-syntax-highlighter` 15 → 16**
+
+按"能用新的就不用旧的"的原则，逐项复核后有两条版本债：d3 系列与 roughjs 属**特性完备型停更**
+（无可用性问题，不动），剩下的就是 `react-syntax-highlighter`——我们停在 **15.6.6**，latest 是 **16.1.1**，
+落后一个大版本，而且是重传递依赖。**升。**
+
+- 模板声明 `^16.1.1`，验证工程 `16.1.1`（exact），lock 重生：`react-syntax-highlighter 16.1.1` →
+  `refractor 5.0.0` → `prismjs 1.30.0`（`highlight.js` 10.7.3 / `lowlight` 1.20.0 未变），**无嵌套旧版**；
+  `npm ci --dry-run` 通过（465 包可解析）。
+- **大版本的真实风险点是 token 类名变了、我们那份自定义 `syntaxSkin` 配色映射会静默失效**（变成一片单色），
+  所以按你的要求**抽 1 帧看配色**（不是"没报错就算过"）：接触表 ⑨ 页 frame 255 ——
+  关键字 `import/from/export/const` 蓝、字符串 `'./components'` 绿、JSX 标签与属性名蓝、`{items}/{18}/{58}` 橙、
+  注释灰斜体、行号与逐行聚焦高亮都在 ✓ **配色完好**。
+  更强的一条：这一帧与升级前的同一帧 **md5 完全相同**（`5e21f406…`）——升级在本工程里是**零像素变化**。
+- `PrismLight` 的语言注册（`PRISM_LANGUAGES`）**无需改动**：v16 的 `dist/esm/languages/prism/*` 与
+  `PrismLight` 导出都还在（内部改成了 `refractor@5` 的 `exports` 映射，但薄封装路径没变），
+  tsx/ts/python/bash/json/diff 六个加别名照样注册得上。
+- `@types/react-syntax-highlighter` 仍是 **15.5.13**（上游没有 16 的 types）——包本身不带类型，
+  所以这个 @types 继续保留；它落后于运行时，但只影响编辑器提示、不影响渲染。
+
 **Verified**
 
 - **四道门禁全部复跑，P0 = 0**：`validate-frame-props`（P0=0 P1=0 PASS）· `validate-composition`（P0=0 P1=5 PASS，P1 与改动前逐条一致，无新增）· `validate-skill-consistency`（passed）· `negative-gate-check`（8 项全 PASS，含 A–H 阴性对照）。
@@ -621,6 +641,18 @@ No black frames detected.
   版本与许可与调研报告一致（MIT / ISC）。
 
 **Known gaps（本轮未做，勿当作已解决）**
+
+- **已决定保留、不再每轮复议的几条**（2026-09-21 拍板，记在这里省得下一个 AI 再纠结一遍）：
+  - `fflate`（`@cto.af/linebreak` 的传递依赖，796 KB 解包）：**保留**——2026-07 的新包、依赖树干净；
+    用几百 KB 换掉"乱断英文单词"很便宜。
+  - `roughjs` 4.6.6（2023-11 后未发版）：**保留**——无可用性问题，手绘风的唯一选择；
+    它的 `dots` 填充器内部调 `Math.random` 这件事已经处理过（从 `fillStyle` 枚举里移除）。
+  - d3 系列（2022–2023 停更）：**保留**——特性完备型（纯 ES 模块、零外部传递依赖、无原生代码），
+    停更 ≠ 风险。
+  - 配音逐章补偿的**倍率带宽保持 ±15%**（不用你举例的 ±5%）：用户抱怨的是"太快、不齐"，
+    均匀性优先——±15% 能把逐句极差压到 1.11×，±5% 只能到约 1.35×。
+  - **S1 不拆两镜**：那 3 条是 P1 风格告警（门的规矩是 P0=0 即可渲染），拆镜要**新写一个场景**，
+    收益只是消掉告警 → 留在本节的"新 P1"里，不 churn。
 
 - **`roughjs`（2023-11 后未发版）与 `react-syntax-highlighter`（我们停在 15.x，latest 16.x）列入观察**：
   两者都能用、也都有实测记录，但都处于"上游可能不再变 / 我们落后一个大版本"的状态。要动的话：
