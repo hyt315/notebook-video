@@ -1,6 +1,7 @@
 import React from 'react';
 import {measureText} from '@remotion/layout-utils';
 import {loadDefaultSimplifiedChineseParser} from 'budoux';
+import LineBreaker from 'linebreak';
 import {continueRender, delayRender, staticFile} from 'remotion';
 import {THEME} from '../theme/active';
 import {TYPE} from '../kit';
@@ -64,9 +65,32 @@ const wordBreaks = (chars: string[]): Set<number> => {
   }
 };
 
-// ---- 中文避头尾规则（简版，覆盖常见标点）----
-const NO_LINE_START = '、。，．！？；：）〕］｝〉》」』】”’…—～·%‰℃°!,.:;?)]}';
-const NO_LINE_END = '（〔［｛〈《「『【“‘([{';
+// ---- 断行机会：改用 **UAX #14 真实算法**（`linebreak`，MIT，纯离线表）----
+//
+// 2026-09-21 换掉手写的两张字符表：那两张表是 UAX #14 的粗糙近似，实测在**中英混排**上会切错——
+// 对 '在GitHub，全世界的开发者，' 我们的表允许 5 个非法断点（在G|itH、Git|Hub…），
+// 对 '主页搜hyt315，…' 允许 5 个（hyt|315…），对 'notebook-video' 允许 13 个；
+// 而 UAX #14 在这些位置**一律不许断**（拉丁/数字串内部不断）。纯中文时两者完全一致
+// （实测 '第一步，参与别人的项目，' 与 '给容器宽度和行数上限，反推该用多大字号' 断点逐一相同），
+// 所以这次换掉的正是"我们写得更差"的那部分。
+// 确定性：算法 + 随包发布的 Unicode 表，纯函数，无 timer / 无 Math.random，版本由 lock 锁死。
+const legalBreakCache = new Map<string, Set<number>>();
+/** 该文本所有**合法**断行位置（断在 i 之前 = 第 i 个字符可以另起一行）。 */
+const legalBreaks = (text: string): Set<number> => {
+  const hit = legalBreakCache.get(text);
+  if (hit) return hit;
+  const out = new Set<number>();
+  try {
+    const lb = new LineBreaker(text);
+    let bk: {position: number} | null;
+    while ((bk = lb.nextBreak())) out.add(bk.position);
+  } catch {
+    /* 表缺失时退回"处处可断"（等同于旧行为），不让文字排版把渲染搞崩 */
+    [...text].forEach((_, i) => i > 0 && out.add(i));
+  }
+  legalBreakCache.set(text, out);
+  return out;
+};
 
 const REF_SIZE = 100; // 参考字号：宽度在此尺寸下量一次，再按比例缩放（实测严格线性）
 
@@ -90,11 +114,15 @@ const layout = (text: string, widths: number[], fontSize: number, maxBoxWidth: n
   const scale = fontSize / REF_SIZE;
   const chars = [...text];
   const breaks = wordBreaks(chars);
+  // 合法断点（UAX #14）：**优先**在这些位置断；一个都没有时才允许"应急断行"
+  const legal = legalBreaks(text);
   const lines: string[] = [];
   let cur = '';
   let curW = 0;
   /** 当前行最后一个「可以断」的位置（词组边界）——优先退到这里断 */
   let lastWordEnd = -1;
+  /** 上面对应的**绝对**字符位置（用于问 UAX #14：这里真的允许断吗） */
+  let breakPos = -1;
   let widthAtWordEnd = 0;
 
   for (let i = 0; i < chars.length; i++) {
@@ -110,7 +138,10 @@ const layout = (text: string, widths: number[], fontSize: number, maxBoxWidth: n
       // 避头尾：标点不该行首。但**只有在放得下时才拽到上一行**——
       // 否则行宽会超出容器，浏览器会再折一次，行数直接翻倍（实测过 3 行变 6 行）。
       // 宁可偶尔标点行首，也不能让行宽超容器。
-      if (NO_LINE_START.includes(ch) && curW + w <= maxBoxWidth) {
+      // 这里本来该断，但 UAX #14 说"不许在这个字符前断"（标点避头、拉丁串内部…）：
+      // 只有在放得下时才把它留在本行；放不下就走下面的应急断行——
+      // **宁可偶尔断在非法位置，也绝不让行宽超容器**（超了浏览器会二次折行，行数直接翻倍）。
+      if (!legal.has(i) && curW + w <= maxBoxWidth) {
         cur += ch;
         curW += w;
         continue;
@@ -118,7 +149,7 @@ const layout = (text: string, widths: number[], fontSize: number, maxBoxWidth: n
       // 词组优先：溢出时**退到本行最后一个词组边界**断行，把整个词推到下一行。
       // 这是"不劈词"的正确规则——宁可这一行短一点，也不把词切成两半。
       // 没有可用边界时才按字断（此时仍遵守避头尾）。
-      if (lastWordEnd > 0 && lastWordEnd < cur.length) {
+      if (lastWordEnd > 0 && lastWordEnd < cur.length && legal.has(breakPos)) {
         const keep = cur.slice(lastWordEnd);
         const keepW = curW - widthAtWordEnd;
         lines.push(cur.slice(0, lastWordEnd));
@@ -138,6 +169,7 @@ const layout = (text: string, widths: number[], fontSize: number, maxBoxWidth: n
       curW += w;
       if (breaks.has(i + 1)) {
         lastWordEnd = cur.length;
+        breakPos = i + 1; // 绝对位置（相对 cur 的位置在断行时会变，必须存绝对量）
         widthAtWordEnd = curW;
       }
     }

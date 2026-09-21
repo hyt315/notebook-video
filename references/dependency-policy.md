@@ -57,6 +57,7 @@
 | `qrcode` | 二维码（收尾"扫码看仓库"） | 纯计算、不联网；`QRCode.toString(..., {type:'svg'})` 输出 SVG 字符串 |
 | `katex` | **数学公式**静态渲染 | 需 `import 'katex/dist/katex.min.css'`；无动画，确定性 |
 | `budoux` | **中文按词组断行** | Google 出品；`loadDefaultSimplifiedChineseParser().parse(text)` 返回词组数组。用于**标题**断行（正文中文可任意字断行） |
+| `linebreak` | **UAX #14 断行算法**（避头尾与"拉丁串内部不断"的正解） | Foliojs 出品，MIT，纯离线表、纯函数、无 timer/random，版本可被 lock 锁死。此前 `fittext.tsx` 手写了两张字符表（`NO_LINE_START`/`NO_LINE_END`）做避头尾——实测那只是粗糙近似：对 `在GitHub，全世界的开发者，` 它允许 **5 个非法断点**（在G\|itH、Git\|Hub…）、对 `主页搜hyt315，…` 5 个、对 `notebook-video` 13 个，而 UAX #14 在这些位置一律不许断（纯中文时两者完全一致）。⚠️ **代价**：它钉死 `base64-js@0.0.8`（2014 年的版本）作为传递依赖，lock 里会出现一个嵌套的老包——已知、已锁，但这是一个可以质疑的点；不想背这个包的话，替代方案是给手写表补一条"拉丁/数字串内部不断"的规则（3 行，但仍是近似） |
 
 > **实测**：这 8 个已在 `D:\电脑桌面\001\demo-video` 里逐个渲染验证（目录树 / 地球 / 流量图 / CSV / 手绘 / 二维码 / 公式 / 中文词组断行），全部能在四套皮肤下正确读 `THEME`。
 > **体积**：8 个包 + 传递依赖合计约 **12 MB**（其中 `katex` 4.6 MB 与 `budoux` 3.2 MB 是大头，且几乎全是字体与模型数据）。相比之下 `react-icons` 一个 85 MB、Chrome 无头浏览器 270 MB——**这点体积可以忽略**。

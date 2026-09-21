@@ -493,6 +493,36 @@ No black frames detected.
    **不对应当前模板输出**，此后所有改动**均未重渲**；并给出"如何核对当前版本"的命令。
    **没有重渲这批样片**（按要求）。
 
+**第六轮：回查"哪些是我们自己造的轮子"（并替掉一个）**
+
+用户的指路：能靠依赖解决的就别自己造。逐个过了一遍 `components/` 里手写的几何 / 排版 / 测量 / 缓动 /
+颜色 / 图像处理，结论是**只替掉一个**，其余要么已经在用库、要么是我们自己的设计决策。
+
+**替掉的：中文断行 → UAX #14 真算法（`linebreak`，MIT）**
+
+- 原来 `fittext.tsx` 手写两张字符表（`NO_LINE_START` / `NO_LINE_END`）做避头尾。实测（Node 里两套算法对同一批真实文本比对断点）它只是粗糙近似，**而且错在中英混排上**：
+  `在GitHub，全世界的开发者，` 它允许 **5 个非法断点**（在G\|itH、在Gi\|tHu、Git\|Hub…）；
+  `主页搜hyt315，…` 5 个（hyt\|315…）；`中文English混排test` 9 个；`notebook-video` **13 个**（UAX #14 只允许 1 个：连字符后）。
+  纯中文时两者**逐一相同**（`第一步，参与别人的项目，`、`给容器宽度和行数上限，反推该用多大字号`），所以换掉的正是"我们写得更差"的那部分。
+- 换后实测可断点：`在GitHub…` 15 → **8**、`主页搜hyt315…` 14 → **7**、`notebook-video` 13 → **1**、
+  纯中文 `三步走` 2 → 2（**不变**）。
+- 确定性：算法 + 随包发布的 Unicode 表，纯函数、无 timer、无 `Math.random`，版本被 lock 锁死 ✓。
+- **回归确认（1 帧）**：接触表 ⑩ 页（FitTextBox 主力页）重渲与换算法前**逐字节相同**（`f7b66451…`）——
+  我们自己的中文内容一行都没变，换的是混排时的那批错断点。
+- 代价与替代方案已写进 `dependency-policy.md`：它钉死 `base64-js@0.0.8`（2014 年版本）作为传递依赖，
+  lock 里会多一个嵌套老包；不想背就用"3 行手写规则"兜（仍是近似）。
+
+**没替的（逐个给了不替的理由）**
+
+| 候选 | 结论 | 依据 |
+|---|---|---|
+| `@remotion/layout-utils` 的 `fillTextBox` | **不替** | 读源码确认：它是**调用方逐 token 喂**的累加器（`add({text,fontSize,…})` → 超过 `maxBoxWidth` 就换行），**不是"把这段文字塞进盒子"的函数**。它自带的中文断行就是那个已实测失效的 `fitTextOnNLines` 一脉；而我们的 fitter 是"参考字号量一次 + 线性缩放 + 二分字号"，比它逐 token 调 `measureText` 快得多。同一族的 `measureText` 我们**已经在用**（`fitsWithin` / `assertFits`） |
+| `pangu`（中英混排加空格） | **不替** | 我们那条运行时规则（字幕逐字显示时在"相邻两字异文种"之间插发空间）在真实字幕上逐条核对**全部正确**（在␣GitHub、搜␣hyt315、个␣AI、I␣技、个␣PR；`hyt315` 内部与纯中文内部都不插）。pangu 是**整串文本变换**，用它就得改字幕/台词文本并重新对齐词流；且 v10 的 Node API 只有 `spaceFile`（文件级）。**没有可修的缺陷**，不引 |
+| `culori`（OKLab 感知插值） | **列为待定，不擅自加** | 我们先看代码：`components/` 里**没有任何手写颜色数学**（只有一处把 flash 透明度拼成 8 位 hex alpha，两行算术），渐变是 **CSS 渲染的**（`conic-gradient` 等），我们只负责给停靠色。所以 culori 不是"替掉我们写得更差的轮子"，而是**新增一种能力**（把渐变中段调成感知均匀）；目前**没有观察到任何一条渐变发灰发浊**。按 §8"加依赖必须是替轮子或解锁能力"，这属于后者，且缺一个可复现的缺陷证据 → **交你拍板** |
+| `@remotion/media-utils` 的波形函数 | **无可替** | 全仓 grep 过：我们**从来没有手画过波形/频谱**（没有假声波、没有竖条假装波形），所以没有"轮子"可换。它仍是未声明的传递依赖，已在 §4.3 如实记录 |
+| 手写缓动 | **不需要** | `fxkit.tsx` 的 `ease` / `easeOutSoft` / `popS` / `easeInQuad` **本来就是** Remotion 的 `Easing.bezier` / `Easing.inOut` / `spring` 的薄封装，没有自己实现的曲线 |
+| 手写图像处理 / 颜色转换 / 日期 / CSV / 二维码 / 数学渲染 | **不需要** | 逐项确认都已在用库或平台能力：`measureText`（layout-utils）、`d3-*`、`roughjs`、`katex`、`qrcode`、`react-icons`、`react-syntax-highlighter`（PrismLight）、Radix、`budoux` |
+
 **Verified**
 
 - **四道门禁全部复跑，P0 = 0**：`validate-frame-props`（P0=0 P1=0 PASS）· `validate-composition`（P0=0 P1=5 PASS，P1 与改动前逐条一致，无新增）· `validate-skill-consistency`（passed）· `negative-gate-check`（8 项全 PASS，含 A–H 阴性对照）。
