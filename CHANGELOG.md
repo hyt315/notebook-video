@@ -212,7 +212,7 @@ All notable changes are recorded here. The project follows semantic versioning.
 > **恰好做出了最难复现的结果**，而这条规矩的本意正是"任何环境都能复现"。
 > 本版把边界钉死、把依赖补齐、建起封装组件层，并留下可复现的验证记录。
 
-### Added
+#### Added
 
 - **`references/dependency-policy.md`（新）——依赖边界的唯一定源。** 明确三类纪律：① **禁止**按次付费、结果不可复现的生成式模型（生图/生视频 API）；② **允许且鼓励**开源、可被 lock 锁版本的 React 库（随模板一次 `npm install` 装好，**不需要额外授权**）；③ **需授权**清单之外的新库。附三条判据（要钱吗 / 能复现吗 / 能锁版本吗）、已内置清单、零依赖效果配方、社区组件库为什么不能原样粘贴，以及组件纪律与**「加一件 = 换掉一件」的增长纪律**（合规判据是「零引用」，不是一个拍脑袋的总数——见 §8）。
 - **`assets/lecture-template/src/components/`（新）——封装组件层，场景的唯一入口。** 库提供结构，本层提供皮肤与帧驱动适配；颜色/边框/阴影只读 `THEME`，动画一律 `f(帧号)` 的纯函数。
@@ -225,7 +225,7 @@ All notable changes are recorded here. The project follows semantic versioning.
 - **新增 6 个 `@remotion/*` 官方扩展依赖**：`transitions`（18 种转场）、`paths`（描线/变形/沿线运动）、`shapes`（参数化图形）、`motion-blur`（相机模糊 + 拖尾）、`layout-utils`（实测文字尺寸）、`noise`（同种子同结果的有机抖动）。选这一族是因为它们与渲染引擎同厂、**按帧驱动设计**，不存在"库自带时间动画"的冲突。
 - **`official-aesthetic-system.md` 的「Ordinary editable surface」加第 8 项**：`src/components/` 组件层是**明确允许编辑的界面**——必须"先用现成封装件，再考虑手写 SVG"。此前这 7 项可编辑范围里没有组件层，AI 读到的信号是"组件不归我管"，这是组件吃灰的直接原因之一。
 
-### Fixed
+#### Fixed
 
 - **SKILL.md 的「零依赖」措辞（3 处）**：
   - 开篇补一段边界声明——禁的是**付费生成式模型**，不是开源库；手写每个 UI 元素不是目标，是最慢的劣解。
@@ -234,7 +234,7 @@ All notable changes are recorded here. The project follows semantic versioning.
 - **`references/fxkit.md` / `README.md` / `src/insert.tsx` 里残留的"零依赖"口号**：不再把"没引包"当卖点。`insert.tsx` 的 whip 甩镜注释原本写着"零依赖，不用 motion-blur 包"——**这正是误读的活化石**（把"不用付费模型"执行成了连官方运动模糊包都不敢用，只好手绘速度线去凑），现改为指向已内置的 `@remotion/motion-blur`。
 - **README FAQ 新增一问**："能用开源的 UI 组件库吗？"——能，而且鼓励。
 
-### Changed
+#### Changed
 
 - **组件清理：49 件 → 45 件（删掉 23 件从未出现在任何画面里的，加入 19 件新封装层）。** 依据是一份逐件实测的使用率审计（按真实 JSX 渲染统计，不是只看有没有 import）：
 
@@ -256,7 +256,7 @@ All notable changes are recorded here. The project follows semantic versioning.
 - **接触表（`showcase.tsx`）重排**：11 页 → 10 页，删掉整页都是已删组件的第 ⑧ 页，其余页合并；新增 2 页展示封装层。
 - **文档同步**：`references/fxkit.md` 目录重写（19 + 11 → 9 + 3，并补上封装层一节）、`references/media-routing.md` 路由表剔除已删件、`SKILL.md` 的组件清单指向新封装层。
 
-### Integrated（新组件真正接进画面）
+#### Integrated（新组件真正接进画面）
 
 **新封装层 19 件现已全部有真实渲染记录 —— 零渲染件为 0。** 做法不是"往参考片里加场景"（那会破坏字幕与配音的时间轴契约），而是**原地替换**：在同一镜的同一帧时间轴内，用封装件换掉手写表达。
 
@@ -271,7 +271,7 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 > **一次记录在案的判断失误**：我一度认为 S5"声明了 chart 介质却没有图表"是个缺口，于是加了一个 `Chart`。核对 `StageFrame` 几何后发现主槽只有 **1040×518**，图表放在 `top:360` 高 300 会**超出槽底 142px**（我把"空白"看错了，那里根本没位置）；而且 S5 的 `Funnel` / `ProgressRing` **本就属于 chart 类介质**，声明并不缺失。已撤回该改动，`live` 同步去掉 `Chart`。
 
-### Verified
+#### Verified
 
 在独立工程里渲染了一支 **2K / 30fps / 60 秒**组件演示片（2560×1440，1:1 输出，无放大），六个场景逐一验证：手风琴、标签页、代码高亮、图标墙、d3 图表、组合收尾。`validate-video` 通过（容器合法、时长正确、无黑帧）。
 
@@ -279,7 +279,7 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 **实测踩到的中文地雷（已写入 dependency-policy.md §5.1）**：`@remotion/layout-utils` 的 `fitTextOnNLines` 实现是 `text.split(' ')`——按空格分词。中文没有空格，整段被当成一个不可断的"词"，于是只能塞进一行，字号被压到 `maxBoxWidth ÷ 字数`（44 字 / 738px 容器 → **16.77px / 1 行**，正确答案是 46px / 3 行）。**它不报错，只静默给出一个极小的字号**。故自研 `fitChineseTextOnNLines`（`measureText` + 二分 + CJK 避头尾断行），并要求**每行不得超过容器宽**——否则浏览器二次折行，实测 3 行会被折成 6 行。
 
-### Added（第二批依赖：数据与素材计算）
+#### Added（第二批依赖：数据与素材计算）
 
 **再加 8 个依赖，全部已实测能渲染**（独立验证工程 `demo-video` 的 `deps-smoke` 冒烟屏，8 件一次性验证）：
 
@@ -302,7 +302,7 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 > 另记一个留给下一轮的**包体优化点**（§4.5）：`HighlightCode` 用的是 `react-syntax-highlighter` 的**全语言构建**，把 180+ 种语言的词法定义都打进了包，而实际只用两三种。该包自带 `prism-light` 轻量入口，换成 `PrismLight` + 按需注册语言是**纯赚**。
 
-### Fixed（收尾与自纠）
+#### Fixed（收尾与自纠）
 
 - **版本号对不上**：`SKILL.md` frontmatter 仍是 `3.0.3`、`README.md` 仍写"当前 v3.0.2"，而 CHANGELOG 已到 3.1.0 → 统一为 **3.1.0**。
 - **文档残留已删组件名（8 个文件约 30 处）**，其中**最危险的一类会指使执行 AI 去 import 一个不存在的组件**：
@@ -318,7 +318,7 @@ All notable changes are recorded here. The project follows semantic versioning.
   - `assertFits()` 保留为**编写期自查工具**，文档里不再称其为自动门禁。
 - **路由表的"选择过载"**：多行并列了新旧三四个平级选项（如"数据/对比"同时列 `Chart` + `ProgressRing` + `MetricGrid`），等于没给建议。已改为**每行一个「首选」**，其余标注「何时才用」；并在表头写明教训：*路由表里有名字的组件照样一件不用——实测 23 件从未出现在任何画面里，其中 **21 件早已登记在本表***。
 
-### Added（8 个新依赖全部封装成组件）
+#### Added（8 个新依赖全部封装成组件）
 
 第二批 8 个依赖**全部完成封装、全部有渲染记录、全部登记进路由表**——「零引用」判据无一触发。
 
@@ -337,19 +337,19 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 **关于 budoux 的诚实结论**：它是**辅助不是保证**。实测它对"反推"「并返回」这类词也会切错（切成 `反|推该`、`并返|回断`），模型本身不够准。所以标题可以依赖它的断点，正文别指望；断行仍是"能落词组边界就落，落不了按字断并遵守避头尾"。
 
-### Fixed（本轮抓到的缺陷）
+#### Fixed（本轮抓到的缺陷）
 
 - **`DiffView` 在接触表里一直渲染失败**（**原就存在的 bug**，本轮第一次把 14 页全部抽样才暴露）：示例数据的第一行漏了 `at` 字段，而类型要求 `at: number`，`undefined` 传进 `spring({frame})` 触发 Remotion 的 `Argument passed for "frame" is not a number`。已补 `at: 0`。
 - **`Chart` 的 `d3line(...)` 仍传旧的 `data` 变量**：加 `csv` 入口时批量替换只改了 `data.length` / `data.map`，漏了传给 `d3-shape` 的裸参数，用 `csv` 时 `d3-shape` 收到 `undefined` 抛 `undefined is not iterable`。已改为 `rows`。
 - **`TreeView` 的 `viewBox` 切掉根节点顶沿**（根节点 `y=0`，上沿在 `-nodeH/2`，而 `viewBox` 从 `-10` 起）。已改为从 `-(nodeH/2+8)` 起。
 - **`SketchFx` 每帧重画会叠加笔迹**（roughjs 是往 DOM 里 append，不清空就越画越重）→ 每次绘制前 `svg.innerHTML = ''`。
 
-### Verified（补充）
+#### Verified（补充）
 
 - **四套皮肤全部实渲验证**（此前只验了 cel 与 paper）：`StatRow` 在 **flat** 皮肤、`VerdictBar` 在 **sticker** 皮肤下均正确适配——圆角、描边、投影、配色全部随 `THEME` 变化，证明"新组件只读 THEME"的设计成立。至此 **cel / paper / sticker / flat 四套全覆盖**。
 - **模板整片端到端渲染通过**（此前只渲过单帧）：`audio/narration.mp3` 按设计不随包发布（技能文档明说 intentionally not bundled），验证时用等长静音占位跑通管线。成片 **2560×1440 / 30fps / 1150 帧 / 38.38 秒**，`validate-video` 报容器合法、**无黑帧**（响度项 -21.5 LUFS 是静音占位的必然结果，非缺陷）。这同时证明 S1 的 `StatRow` 与 S8 的 `VerdictBar` 替换在整片 1150 帧里没有引入任何渲染期错误。
 
-### 关于「组件总数」的诚实结论
+#### 关于「组件总数」的诚实结论
 
 **本版未能达到「20 件左右」的目标，且经核算是不可达的。** 45 件的构成：
 
@@ -363,7 +363,7 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 **故本版的处置是：不再做有损合并，改为把"不再膨胀"写成纪律**（[dependency-policy.md](references/dependency-policy.md) §8「加一件 = 换掉一件」），并把选择收敛到路由表的单一首选上——**让库变窄，而不是变小**。
 
-### Known gaps（未完成，勿当作已解决）
+#### Known gaps（未完成，勿当作已解决）
 
 - **组件总数仍是 45 件，未达到「20 件左右」的目标。**（第一步"删死件"已完成、新封装层也已全部接入画面；缺的是第二步"合并替换"。） 本版完成了第一步（**删掉全部 23 件从未出现在任何画面里的组件**），但第二步（**合并功能重叠**）未执行。现状拆解：
 
@@ -376,7 +376,7 @@ All notable changes are recorded here. The project follows semantic versioning.
   **下一步（未执行）**：按「加一件 = 换掉一件」把新封装层与旧件一一对上——`Chart` ⇄ `MetricGrid`/`ProgressRing`、`HighlightCode` ⇄ `ConsoleWindow`、`Accordion`/`Tabs` ⇄ 对应的卡片堆表达、`FitTextBox` ⇄ 手写 `fitH` 估算；每换掉一件就改一处场景、跑一次门禁。**这需要动参考片的 `scenes.tsx`，必须单独一轮、逐个模块做，不能一次性重写。**
 - **`example-project` 未同步依赖与组件层——这是设计如此，不是缺口。** 它是**单文件工程**（`src/index.tsx` + `caption-cues.json`，没有 theme/、没有组件目录），定位是「经典路线的最小可读示例」，用来演示可选的生图附加路线（`Img` + 实拍素材框）。给它塞 12 个依赖和一整套组件层，只会把它变成第二个 `lecture-template`，并重新制造本版刚清掉的膨胀。**后续请勿"顺手补齐"它。**
 
-### Added（第三批：组件库升级 —— 按《组件库调研报告》逐条施工）
+#### Added（第三批：组件库升级 —— 按《组件库调研报告》逐条施工）
 
 调研报告（`组件库调研报告.md`）的第六节分批清单已**全部执行完毕**，并先跑完了第七节
 「必须实测才能定的 8 项」中的 4 项关键实测。本轮新增 **3 件封装件**、**11 个 npm 包**（约 0.85 MB），
