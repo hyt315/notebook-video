@@ -2,7 +2,10 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
-## [3.2.0] - 2026-09-21
+## [3.1.0] - 2026-09-21
+
+> ⚠️ **版本号口径**：本版是 **3.1.0**（3.2.0 从未发布过 —— 本节此前写成 3.2.0，已改回；发布以协调者的 `SKILL.md` / `manifest.json` 为准）。
+> 这一节是**收尾日（09-21）**的条目；同一次发布的前半（09-20 稿：依赖边界与封装组件层）在本节末尾，标为"2026-09-20 稿"。
 
 > **这是一次"把门禁修成真的 + 把静默失败翻出来"的发布。** 起因是用户在成片 2:58 亲口说
 > 「那个组件它没有动」——而当时十道门禁**全部 PASS**。顺着这条线查下去，发现的问题不是
@@ -49,7 +52,26 @@ All notable changes are recorded here. The project follows semantic versioning.
   而这个字段是生成分镜表的脚本**自己写死的常量**，`resolve-shots` 再原样透传 —— **生成器写 true、门禁要求 true，结构上不可能失败**。
   实测成片里 17/21 镜的下 1/4 是空的，它一次都没响。现只查**字段在不在**（缺字段是真配置错误），
   真实判据交给渲染期 `FillGate`。`validate-shot-motion` 里同源的 `bottomFill is False` 分支同步降级。
-- **`SankeyChart` / `d3-force` / `FitCard` 等一批"传了参数、库当没看见"的静默失效**（由 `tsc` 翻出，见下 `Changed`）。
+- **`SankeyChart` / `d3-force` / `FitCard` 等一批"传了参数、库当没看见"的静默失效**（由 `tsc` 翻出，见下 `Changed` 表）。
+- **`FocusFx` 的 `zIndex` 从 9000 降到 160：定位遮罩不再盖住字幕。** 上一版把遮罩做成覆盖层时取了 9000，
+  结果它落在 `SubtitleChrome`（z=200）之上 —— S8 的字幕被 `multiply` 同一档（字形核心 25.1 → **15.1** = 墨色 × 0.594），
+  而这正是 `focus.tsx` 注释里承诺"不会发生"的事（根子就是注释与实现不符：**z-index 压过 DOM 顺序**）。
+  现在按整片的层级梯子取值：场景内容 ≤130 → 页眉 140 / 章节卡 150 → **遮罩 160** → Grade 190 → 字幕 200。
+  实测（同一帧 2360，单帧 still）：字幕字形核心 6 点均值 **27.5 → 26.2**（回到修前水平，Δ−1.3；单看其中 5 点=墨色 25.1）；
+  洞外角点仍被压暗 **146.1–150.7**（不是 224）；洞内均值 **216.0**；洞的边界仍在输出 **540/753/460/620**。
+- **`useSteppedFrame` 的文档/代码漂移（本技能自己的缺陷类「文档里有、代码里没有」）**：
+  `references/motion-design.md` 的 Locked motion pack 教作者用 `useSteppedFrame(15)`，而**全树没有任何实现**。
+  处置：**把 API 放回场景可 import 的那一层**（`toolkit.tsx`），而不是删文档 —— 停帧是贴纸风的正经手法
+  （sticker 的定格质感就靠它），实现只有一行、零依赖，而删文档等于把一种动效连同写法一起丢掉。
+  同时给出两个入口：组件拿到的是**镜内局部帧**时用纯函数 `stepped(f, 15)`（与 `enterAt(f, …)` / `popS(f, …)` 同口径），
+  不接帧参数的组件（chrome / 接触表）才用 `useSteppedFrame(15)` —— 免得又踩一次"局部帧 vs 全局帧"
+  （`validate-frame-props.py` 钉的就是这一类）。
+- **`popS` / `SPRINGS` 从 `fxkit.tsx` 导出**：`motion-design.md` 的纪律（"use `popS(f, start, preset)` with `SPRINGS` …
+  Do not hand-tune new damping/stiffness values per scene"）此前**不可执行** —— 这两个名字只有模块内的私有定义、
+  没有 `export`，场景文件在物理上 import 不到，等于只能靠自觉。导出之后纪律才落地（值不变，1 字改动）。
+- **修正 `fxkit.tsx` 里一条与文件内容不符的注释**：它写"`q` 与 `ease` 两个局部 helper…本文件从头到尾没用过"，
+  而紧邻其下的 `easeOutSoft` / `SPRINGS` / `popS` 正在被本文件用了十几次 —— 一句注释读起来像是在说它们。
+  现在写明是"**那两件**没被调用过"，并显式标注下面三个是**在用的、别一起删**。
 - **模板 `index.tsx` 的 TS2367 死比较**：`s.cameraIntent !== 'still'` 恒真（`shots.ts` 只生成 5 种意图，
   类型里根本没有 `'still'`），"静止镜不加咔哒声"这句话实际一个都没排除。改为**正向名单** `CAM_MOTION`
   ——名单里没有的值（含将来的 `still`）不加音。**没有简单删掉判断**（删了会让静止镜也加音效）。
@@ -114,7 +136,8 @@ All notable changes are recorded here. The project follows semantic versioning.
   | 各模块 | TS6133/TS6192 | 删掉没人调用的局部 helper 与导入（`fxkit` 的 `q`/`ease`/`Burst`/`staticFile`、`media` 的 `spring`/`BASE_FPS`、`skeletons`/`stagekit` 的 `popS`、`stagekit` 的 `CoverPanel`、`toolkit` 的 `Paper`/`clamp`/`easeOutSoft`、`insert` 的 `BASE_FPS`/`easeOut`、`showcase` 的 `SKELETON_VERSION`、`index.tsx` 的一串未用导入） |
   另有三处"入参从未使用"的**假旋钮**（`fxkit` 的 `lift`、`skeletons` 的 `from`/`to`）：类型里保留（调用方还在传），实现里不再声明 —— 免得看起来能调。
 `index.tsx` 里没人读到的局部副本（`smoothStep` / `SPRINGS`+`popS` / `easeOutSoft` / `useSteppedFrame` / `ease` / `stageFade` / `paperShadow`）一并清理
-（前四件的正主在 `toolkit.tsx` / `fxkit.tsx`，是那两个模块为免循环依赖刻意各自持有的一份）；
+（注意：`useSteppedFrame` 是"从 index.tsx 挪走"不是"删掉" —— 见 `Fixed` 一节，它已在 `toolkit.tsx` 里实现并导出；
+`SPRINGS`+`popS` 的正主在 `fxkit.tsx`，本版把它们一并导出）；
 `Film4x3` / `Film3x4` 按 `references/canvas-modes.md` 的契约（"定义了但默认不注册"）**改为导出**，以免被 `noUnusedLocals` 判成死代码。
 - **文字安全色的残余 P1 清理**：`syntaxSkin` 的 `number`/`boolean` 从 `orangeDeep`（填充色，paper/flat 当文字只有 2.83 / 4.19:1）换成 `orangeInk`；
   sticker 的 `headerAccent` / `headerSub` 就地按 WCAG 反解压暗（2.40 / 3.14:1）；`scenes.tsx` / `showcase.tsx` / `skeletons.tsx` / `media.tsx` 里当文字用的强调色统一换成 `*Ink`。
@@ -125,6 +148,10 @@ All notable changes are recorded here. The project follows semantic versioning.
   "做没做到"必须实测）、`references/scene-skeletons.md` 的字段表把 `bottomFill` 的判据指向 `FillGate`、
   `SKILL.md` 第 16 条同步。
 - **`SKILL.md` / `README.md` / `README.en.md` 的门禁清单补 `ClippingGate` / `FillGate` / `validate-motion-gaps`**（管道图、门禁表、FAQ 各一处）。
+- **`SKILL.md` 的 frontmatter description：`ten automated quality gates` → `thirteen`。** 数的是 `SKILL.md` 门禁表的行数
+  （6 个构建期脚本 + `CaptionFitGate` / `CardFitGate` / `OverlapGate` / `ClippingGate` / `FillGate` / `SlotGuard` + `validate-motion-gaps.py`）。
+  旧值 10 也不是拍脑袋的：它对应"引入 `validate-presentation` 时的行数"（该脚本 docstring 仍写着"本道是第 10 道"），
+  本轮新增三道后就不再成立。**改的是计数，不是口径** —— 描述里点名的"frame-prop-name gate"仍是表里那一行。
 - **`references/presentation-gate.md`**：新增 G-14/G-15/G-16 一节与"遇到强调色当文字色该怎么做"的处置说明；
   负向夹具索引补 X / Y；"已知真实缺陷"一节把 `*Ink` 的落地与**尚未处理的那一半**（彩色填充上的白字，sticker 实测 1.44–2.66:1，属审美取舍）分开写清。
 
@@ -171,14 +198,13 @@ All notable changes are recorded here. The project follows semantic versioning.
   （chrome 的原始 CONSOLE 行 + `Tab N, delayRender()` 行）——本次直接从日志复核，
   `OverlapGate` / `ClippingGate` / `FillGate` 三道的这类行**合计 6876 = 3 × 1146 × 2**，
   所以"2292"是**单道门的日志行数**，不是它量过的帧数。
-- **`FocusFx` 的覆盖面变化（本版实测，不是缺陷但是行为变化）**：`SCENE_ANCHOR` 的 `zIndex: 9000` 让遮罩
-  落在 **`SubtitleChrome`（z=200）之上**，因此 S8 的字幕也会被 `multiply` 一档（实测字形核心 25.1 → **15.1** = 墨色 × 0.594，
-  周围背景不变）。字幕在压暗后的底上仍然清晰（背景同步压暗，相对对比度保持），但这与 `focus.tsx` 注释里
-  "字幕不会被压暗"的说法**不一致** —— 注释的理由（DOM 顺序）在设了 z-index 之后不成立。**留作已知项**：
-  要真正豁免字幕，得把遮罩 z-index 压到字幕之下（会同时失去"盖住设计根里其它高 z 元素"的能力），
-  或让字幕层提到遮罩之上。
+- **（上一稿的第三条「已知项」已在本版修掉，不再是已知项。）** 那一稿把 `SCENE_ANCHOR` 的 `zIndex: 9000`
+  盖住字幕记成了"已知行为变化"。**不记录它，改掉它**：遮罩降到 `160`（层级梯子见 `Fixed` 一节），
+  字幕回到修前水平（实测 27.5 → 26.2），而压暗照旧（洞外 146.1–150.7、洞内 216.0）。
+  这一条的教训写进 `focus.tsx` 的注释里了：**注释承诺的行为必须有实现兜住**，
+  上一稿的注释写"字幕不会被压暗"（理由是 DOM 顺序），而实现设了 z-index —— 事故的根子就在这两行之间。
 
-## [3.1.0] - 2026-09-20
+### 2026-09-20 稿（同一次发布的前半：依赖边界与封装组件层）
 
 > **这是一次"纠错 + 补齐"的发布。** 起因是一个被长期误读的规矩：技能里原本写着一句
 > 「零第三方依赖」（本意只是说 `scripts/` 下的 Python 脚本不许有依赖），却被执行 AI 读成了
@@ -255,7 +281,7 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 ### Added（第二批依赖：数据与素材计算）
 
-**再加 8 个依赖，全部已实测能渲染**（`D:\电脑桌面\demo-video` 的 `deps-smoke` 冒烟屏，8 件一次性验证）：
+**再加 8 个依赖，全部已实测能渲染**（独立验证工程 `demo-video` 的 `deps-smoke` 冒烟屏，8 件一次性验证）：
 
 | 包 | 解锁什么 | 版本 |
 |---|---|---|
@@ -352,7 +378,7 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 ### Added（第三批：组件库升级 —— 按《组件库调研报告》逐条施工）
 
-调研报告（`D:\电脑桌面\组件库调研报告.md`）的第六节分批清单已**全部执行完毕**，并先跑完了第七节
+调研报告（`组件库调研报告.md`）的第六节分批清单已**全部执行完毕**，并先跑完了第七节
 「必须实测才能定的 8 项」中的 4 项关键实测。本轮新增 **3 件封装件**、**11 个 npm 包**（约 0.85 MB），
 净组件数 25 → 27（严格按「加一件 = 换掉一件」：`ControlStack` 换掉了 `TiltCard`）。
 

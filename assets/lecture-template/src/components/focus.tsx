@@ -57,10 +57,18 @@ const VEIL_BLEND: React.CSSProperties['mixBlendMode'] = 'multiply';
  *     `transform: scale(...)`，而 transform 会让该元素成为 fixed 后代的**包含块**——
  *     于是 left/top/width/height 一律按**场景坐标**解释，无论外面套了几层定位容器。
  *     这正是注释里承诺的"rect 是场景坐标"。前提：必须挂在设计根内部（整片都满足）。
- *   · `zIndex`：把遮罩钉在场景内容之上。Grade/Subtitle 在 index.tsx 里排在场景**之后**，
- *     所以字幕不会被压暗（这是要的：字幕是屏幕空间，不属于"其余"）。
+ *   · `zIndex: 160` —— 把遮罩钉在**场景内容与全局 chrome 之上、屏幕空间层之下**。
+ *     整片的层级梯子（改这个值前先数一遍它）：场景内容 ≤130（含 130 的镜头交接层）
+ *     → 页眉 140 / 章节卡 150 → **本遮罩 160** → Grade 190（颗粒与暗角）
+ *     → SubtitleChrome 200（四套皮肤一致）。
+ *     ⚠️ 2026-09-21 修：这里原先是 9000，于是遮罩盖过字幕 —— S8 的字幕被 `multiply`
+ *     同一档（实测同一帧的字形核心 25.1 → 15.1 = 墨色 × 0.594，而周围背景不动）。
+ *     **z-index 压过 DOM 顺序**：旧注释写"Grade/Subtitle 排在场景之后，所以字幕不会被压暗"，
+ *     那条理由在设了 z-index 之后**根本不成立**（这次事故的根子就是注释与实现不符）。
+ *     取 160 之后：压暗照旧盖住场景内容与 chrome（"其余"确实暗下去），
+ *     而 Grade / 字幕回到遮罩之上 —— 与"字幕是屏幕空间、不属于'其余'"的本意一致。
  */
-const SCENE_ANCHOR: React.CSSProperties = {position: 'fixed', zIndex: 9000};
+const SCENE_ANCHOR: React.CSSProperties = {position: 'fixed', zIndex: 160};
 
 /**
  * 四块（或四边）遮罩：把 rect 之外盖住。用四条而不是"整块 + 挖洞"，

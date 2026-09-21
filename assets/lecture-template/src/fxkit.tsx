@@ -26,11 +26,17 @@ export const FX_T = {displayL:50, displayS:36, titleM:28, titleS:27, titleXS:26,
 
 const clamp = {extrapolateLeft:'clamp' as const, extrapolateRight:'clamp' as const};
 const BASE_FPS = 30;
-// 原来这里还有 `q`（恒等量化）与 `ease`（easeInOutCubic）两个局部 helper，
-// 本文件从头到尾没用过 —— tsc TS6133。删掉，需要它们时从 index/其它模块取。
+// 原来这里还有 `q`（恒等量化）与 `ease`（easeInOutCubic）两个局部 helper —— 是**那两件**
+// 从头到尾没被调用过（tsc TS6133），已删；需要它们时从 index / 其它模块取。
+// ⚠️ 下面三个（easeOutSoft / SPRINGS / popS）是**本库自己在用的**，别跟着一起删。
 const easeOutSoft = (f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b],[from,to],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
-const SPRINGS = {snappy:{damping:16,stiffness:200,mass:.8},soft:{damping:17,stiffness:132,mass:.86},bouncy:{damping:11,stiffness:160,mass:.9}} as const;
-const popS = (f:number,start:number,preset:keyof typeof SPRINGS='soft')=>spring({frame:f-start,fps:BASE_FPS,config:SPRINGS[preset]});
+// SPRINGS + popS 导出（2026-09-21）：`references/motion-design.md` 的 Locked motion pack 明写
+// "use `popS(f, start, preset)` with `SPRINGS` … Do not hand-tune new damping/stiffness values per scene"，
+// 而这两个名字此前**没有 export** —— 场景文件在物理上 import 不到，那条纪律等于只能靠自觉。
+// 导出之后它才可执行：场景直接取这一份，不许再手写 damping/stiffness。
+// （toolkit.tsx 里还有一份同名私有副本，是那两个模块为免循环依赖刻意各自持有的，不走这里。）
+export const SPRINGS = {snappy:{damping:16,stiffness:200,mass:.8},soft:{damping:17,stiffness:132,mass:.86},bouncy:{damping:11,stiffness:160,mass:.9}} as const;
+export const popS = (f:number,start:number,preset:keyof typeof SPRINGS='soft')=>spring({frame:f-start,fps:BASE_FPS,config:SPRINGS[preset]});
 const useF = (frame?:number)=>frame??useCurrentFrame();
 /** 单向脉冲 0-1-0：一次性强调（砸中/刷新），不是永久呼吸。 */
 const pulse=(f:number,at:number,dur=14)=>Math.sin(Math.PI*Math.max(0,Math.min(1,(f-at)/dur)));

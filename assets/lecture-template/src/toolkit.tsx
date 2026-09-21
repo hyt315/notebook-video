@@ -36,6 +36,24 @@ const SPRINGS = {
 const popS = (f: number, start: number, preset: keyof typeof SPRINGS = 'soft') =>
   spring({frame: f - start, fps: BASE_FPS, config: SPRINGS[preset]});
 
+/**
+ * 停帧点缀（`references/motion-design.md` 的 Stop-motion accent，LOCKED motion pack 里的一条）：
+ * "`useSteppedFrame(15)` quantizes a component to 15fps so each pose holds two output frames.
+ *  Reserve it for sticker-style charm; never apply it to subtitles, transfers or the camera."
+ *
+ * ⚠️ 2026-09-21：这条契约此前**全树没有实现** —— 文档在教作者用一个不存在的名字
+ * （正是本技能自己定义的缺陷类「文档里有、代码里没有」）。现在放回**场景可 import 的这一层**，
+ * 而不是删文档：停帧是贴纸风的正经手法（theme-sticker 的定格质感就靠它），删掉等于丢掉一种动效，
+ * 而实现只有一行、零依赖。
+ * 两个入口，按拿到的是哪一种帧号选：
+ *   · `stepped(f, 15)` —— 组件拿的是**镜内局部帧**（`<Scene f={f-s.from}/>`）时用这个，
+ *     与 `enterAt(f, …)` / `popS(f, …)` 同一口径；这是场景里的常规写法。
+ *   · `useSteppedFrame(15)` —— 组件不接帧参数、只能读**全局帧**时用（chrome / 接触表）。
+ *     场景里误用它 = 又一次"局部帧 vs 全局帧"事故（见 `validate-frame-props.py` 钉的那一类）。
+ */
+export const stepped = (f: number, stepFps = 15) => Math.floor((f * stepFps) / BASE_FPS) * BASE_FPS / stepFps;
+export const useSteppedFrame = (stepFps = 15) => stepped(useCurrentFrame(), stepFps);
+
 export const JumpInText:React.FC<{
   items:{text:string;color?:string;colorActive?:string;fontFamily?:string;fontSize?:number;fontWeight?:number|string;letterSpacing?:number}[];
   fontSize:number;

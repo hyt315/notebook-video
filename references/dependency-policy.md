@@ -59,7 +59,7 @@
 | `budoux` | **中文按词组断行** | Google 出品；`loadDefaultSimplifiedChineseParser().parse(text)` 返回词组数组。用于**标题**断行（正文中文可任意字断行） |
 | `@cto.af/linebreak` | **UAX #14 断行算法**（避头尾 + "拉丁/数字串内部不断"的正解） | `new Rules({string:true}).breaks(text)` → 每个断点带 `position`。MIT、60 KB、**UAX #14 / Unicode 17**、2026-03 发版、依赖树干净（`@cto.af/unicode-trie-runtime` → `fflate`，都是现代在维护的包）、纯函数无 timer/random。此前 `fittext.tsx` 手写两张字符表做避头尾，实测只是粗糙近似且**错在中英混排**：10 条真实文本里它允许 **36 个非法断点**（`在G\|itHub`、`hyt\|315`、`第三个A\|I技能`、`S\|1：`…），换 UAX #14 后 **36 → 0**（纯中文用例两者完全一致）。⚠️ **选包口径**（用户 2026-09-21 定的原则：依赖要通用、能用新的就不用旧的）：先用的是 foliojs 的 `linebreak@1.1.0`，但它**钉死 `base64-js@0.0.8`（2014 年）**、且 2022 年后没再发版 → 换成 `@cto.af/linebreak`（自述是前者那包的 refresh），实测两包在同一批文本上**断点逐一相同**，换包零行为变化（同名页面重渲逐字节一致）。另外：**不要回头试 `Intl.Segmenter({granularity:"line"})`**——`line` 粒度不在 ECMA-402 规范内，Node 24 直接抛 `RangeError` |
 
-> **实测**：这 8 个已在 `D:\电脑桌面\001\demo-video` 里逐个渲染验证（目录树 / 地球 / 流量图 / CSV / 手绘 / 二维码 / 公式 / 中文词组断行），全部能在四套皮肤下正确读 `THEME`。
+> **实测**：这 8 个已在独立验证工程 `demo-video` 里逐个渲染验证（目录树 / 地球 / 流量图 / CSV / 手绘 / 二维码 / 公式 / 中文词组断行），全部能在四套皮肤下正确读 `THEME`。
 > **体积**：8 个包 + 传递依赖合计约 **12 MB**（其中 `katex` 4.6 MB 与 `budoux` 3.2 MB 是大头，且几乎全是字体与模型数据）。相比之下 `react-icons` 一个 85 MB、Chrome 无头浏览器 270 MB——**这点体积可以忽略**。
 
 ### 4.3 Remotion 官方扩展（天生帧驱动安全）
