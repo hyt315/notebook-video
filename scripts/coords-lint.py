@@ -17,26 +17,32 @@ import sys
 from pathlib import Path
 
 OVERLAYS = ("StampSeal", "Burst", "Callout", "ChipContract", "Funnel", "ChatThread")
+# 老模块里的覆盖层类件（不在 src/components/ 下，但同样是"场景坐标"语义）
+LEGACY_OVERLAYS = ("StampBanner",)
 COORD = re.compile(r"\b([xy])=\{(\d+)\}")
 PROP_BLOCK = re.compile(r"export\s+const\s+([A-Z]\w*)\s*:\s*React\.FC<\{(.*?)\}>", re.S)
 
 
 def overlays_of(root: Path) -> tuple[str, ...]:
-    """名单 = 写死的历史 6 件 ∪ **从源码推导**的"带 x/y 的组件"。
+    """名单 = 写死的历史件 ∪ **从源码推导**的覆盖层类组件。
 
-    为什么必须推导：v3.1 之前的名单是写死的 6 个名字，新封装层里所有带 x/y 的件
-    （`OverlayFrame` `StampBanner` `ControlStack` `SketchFx` `QrCode` `MathBlock` `Chart` …）
-    都不在名单里 → 脚本扫到了坐标却判不出归属，只能落到最宽松的阈值。
-    "按组件名写死的名单"必然随新件失效 —— 这正是本技能反复踩的那一类。
+    推导**只扫 `src/components/**`**（v3.1 封装层，那里的 x/y 是"场景坐标"语义）+ 上面两份明确名单。
+
+    ⚠️ 第一版扫了整棵树，于是在标准模板上多报一条假阳性
+    `VERIFY-FRAME scenes.tsx:180 ZoomStage x=1250`（复核实测：旧版只有 1 条 WARN）——
+    `ZoomStage` / `StageFrame` / `Corridor` / `CoverPanel` / `ConsoleWindow` 这些是**布局件**，
+    它们的 x/y 是版面坐标，写 1250 完全合法，不该进"场景坐标还是卡片相对坐标？"的人工确认档。
     """
     found = set()
-    for tsx in sorted((root / "src").rglob("*.tsx")):
-        text = tsx.read_text(encoding="utf-8", errors="ignore")
-        for m in PROP_BLOCK.finditer(text):
-            props = m.group(2)
-            if re.search(r"\bx\s*[?:]", props) and re.search(r"\by\s*[?:]", props):
-                found.add(m.group(1))
-    return tuple(sorted(found | set(OVERLAYS)))
+    layer = root / "src" / "components"
+    if layer.is_dir():
+        for tsx in sorted(layer.rglob("*.tsx")):
+            text = tsx.read_text(encoding="utf-8", errors="ignore")
+            for m in PROP_BLOCK.finditer(text):
+                props = m.group(2)
+                if re.search(r"\bx\s*[?:]", props) and re.search(r"\by\s*[?:]", props):
+                    found.add(m.group(1))
+    return tuple(sorted(found | set(OVERLAYS) | set(LEGACY_OVERLAYS)))
 
 
 def main() -> int:

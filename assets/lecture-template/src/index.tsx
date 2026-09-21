@@ -200,13 +200,11 @@ const Paper=THEME.Paper;
 // LineIcon / PillTag / CheckBadge 已抽到 src/kit.tsx（主题无关原子，工程侧同样可引用）。
 
 
-// RollDigit：Tibo 式字符/数字 3D 滚轮翻牌——带 cos 投影压缩 + 3D 旋转 + 颜色过渡
 
 const smoothStep=(v:number)=>{const t=Math.max(0,Math.min(1,v));return t*t*(3-2*t)};
 
 // JumpInText：完全移植 Tibo 源码的“4段双轴弹性波浪回弹 + 字色激活”动效（经视效平衡调谐）
 
-// WaveText：Tibo 式字母波浪打字——每字母 4 段关键帧波浪 + 颜色渐变
 
 // ---- 通用组件扩展（v2.5 新增）------------------------------------------
 // SPRINGS：弹性预设三档。soft 与历史 pop() 默认参数完全一致，旧场景行为不变。
@@ -216,20 +214,10 @@ const popS=(f:number,start:number,preset:keyof typeof SPRINGS='soft')=>spring({f
 // useSteppedFrame：停帧点缀（默认 15fps，每个姿势占两输出帧，契约见 motion-design.md）。
 const useSteppedFrame=(stepFps=15)=>{const f=useCurrentFrame();return Math.floor(f*stepFps/BASE_FPS)*BASE_FPS/stepFps};
 
-// CodeBlock：终端风代码窗——三灯标题栏 + 语法色行 + 逐行滑入，精致墨边紧凑投影。
 
-// BrowserChrome：浏览器窗口——三灯 + 锁 + URL 胶囊，内容区放 children。
 
-// Connector：曲线连接件——贝塞尔弧线 + 可选流向虚线 / 箭头 / 标签，替代场景层手写 SVG。
 
 // camScript：镜头脚本构建器——链式声明 hold/to，自动补齐首尾帧，免手刻关键帧表。
-// 铁律（Camera Micro-Framing Invariant）：X 轴位移严格约束在 [945, 975] 范围（漂移 <= ±15px），S 约束在 [1.00, 1.018]，绝不可大幅右甩导致左侧被讲解内容出界！
-type CamKey={f:number;s:number;x:number;y:number};
-const camScript=(x:number,y:number,duration:number)=>{
-  const keys:CamKey[]=[{f:0,s:1,x,y}];let cur={x,y,s:1};
-  const api={hold:(f:number)=>{keys.push({f,...cur});return api},to:(f:number,p:Partial<{x:number;y:number;s:number}>)=>{cur={...cur,...p};keys.push({f,...cur});return api},done:()=>{keys.push({f:duration,...cur});return keys}};
-  return api;
-};
 
 // 严谨消除句末标点符号（保留句中逗号，句末逗号句号等一概消除）
 const cleanTail=(s:string)=>s.replace(/[，。！？；：、,.!?;:\s]+$/g,'');

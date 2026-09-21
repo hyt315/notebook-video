@@ -17,7 +17,8 @@
 //   · 加一件 = 换掉一件。新效果优先做成既有组件的**参数或变体**，不要为新效果新开组件。
 //   · 合规判据是**「零引用」而不是「总数」**——任何组件只要从未出现在任何画面里
 //     （参考片或接触表），就是待删除项。**不要对着一个数字做有损合并**：
-//     引擎/结构件 12 件砍不动，表意件逐对核对后真正重复的只有 4–5 对，地板约 40 件。
+//     引擎/结构件（STRUCTURAL）14 件砍不动，表意件逐对核对后真正重复的只有 4–5 对；
+//     逐件点算的地板是 55 件（src/components/ 29 + 六个旧模块 26）。
 //
 // 本版（v3.1）新增/变更：
 //   · 新增 `ControlStack`（Radix 六个纯受控控件）—— 换掉 `TiltCard`
@@ -78,4 +79,4 @@ export type {PresentationName} from './pathfx';
 export {FitTextBox, fitChineseTextOnNLines, useFontsReady, assertFits, fitsWithin} from './fittext';
 
 /** 封装层版本：接触表页脚与门禁用它确认"看到的是这一版"。 */
-export const COMPONENTS_VERSION = 'components-v3 · 29 件 · 17 库 + 8 官方扩展';
+export const COMPONENTS_VERSION = 'components-v3 · 29 件 · 依赖见 package.json';

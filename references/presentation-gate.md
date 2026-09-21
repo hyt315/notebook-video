@@ -54,6 +54,14 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 | `muted` 3.0–4.5 | P1 | 同上，提示一档 |
 | 强调色当**文字色** / 彩色填充上的白字 < 阈值 | P1（按主题聚合） | 见下"已知真实缺陷" |
 
+> ⚠️ **这道对比度检查的能力边界（复核实测，别高估它）**：它只读 `theme/*.tsx` 里 `palette` 那个字面量，
+> 且只认**标准键名**。实测两条绕过路径都走得通：
+> ① **硬编码文字色**（`<div style={{color:'#dcdcdc', background:'#faf7f2'}}>` = 1.07:1）→ **rc=0 完全不报**；
+> ② **把正文色改名**（palette 里加 `fg:'#eeeeee'` 并当文字色用）→ 只报 P1，不阻断。
+> 也就是说：**它能拦"用标准键写错了色值"，拦不住"换个写法压低对比"**。
+> 真要在渲染期量真实 DOM 的 computed color/背景（连硬编码一起抓），属于 T2 的 FocusGate（尚未实现）/G-9 那一批
+> （调研报告 §5.2），**本轮没做**。
+
 > ⚠️ **这里踩过两次假阳性，记下来免得重犯**：判对比度时**不能用静态交叉去猜"谁会压在谁上面"**。
 > 第一版把 `white × paper` 全交叉算了一遍 → `white on paper = 1.00:1` 被报成 P0（白字**永远不会**压在白纸上）；
 > 第二版改用 `background: C.x` 推断，结果 `background: C.paper`（卡片底色）又把 `white on paper` 请了回来。

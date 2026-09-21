@@ -35,6 +35,23 @@ jobs:
           node scripts/notebook-video.mjs validate-official-example
           node scripts/notebook-video.mjs validate-visual-plan assets/example-project
           python3 scripts/selftest.py
+      - name: Run the build-time gates on the default template
+        # ⚠️ 复核发现：CI 之前**一条构建期门禁都不跑**（只有 validate-skill / official-example /
+        # visual-plan 与 selftest），于是「负向抽查」长期只是本地仪式。
+        # 这里把模板上的 6 道构建期门禁全挂上：呈现效果 / 帧参数名 / 构图 / 镜头运动 / 音效电平 / 字幕同步。
+        run: |
+          node scripts/notebook-video.mjs validate-frame-props assets/lecture-template
+          node scripts/notebook-video.mjs validate-composition assets/lecture-template
+          node scripts/notebook-video.mjs validate-shot-motion assets/lecture-template
+          node scripts/notebook-video.mjs validate-presentation assets/lecture-template
+          node scripts/notebook-video.mjs validate-audio-levels assets/lecture-template
+          node scripts/notebook-video.mjs validate-caption-sync assets/lecture-template/audio/narration.mp3.json assets/lecture-template/manifests/caption-cues.json
+          node scripts/notebook-video.mjs validate-semantic-breaks assets/lecture-template/manifests/caption-cues.json assets/lecture-template/manifests/protected-caption-phrases.txt
+      - name: Run the negative fixtures (every gate must really block)
+        # 「名存实亡的门禁是最危险的缺陷」——这一条保障每道门禁都有"喂坏输入必须拦住"的实证。
+        run: python3 scripts/negative-gate-check.py assets/lecture-template
+      - name: Check the coordinate reporter stays green in strict mode
+        run: python3 scripts/coords-lint.py assets/lecture-template
       - name: Audit locked dependencies
         working-directory: assets/example-project
         run: npm audit --package-lock-only --ignore-scripts --audit-level=high

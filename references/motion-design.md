@@ -82,7 +82,7 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 2. **每个 shot 必须声明 `anchor`**（本镜必须始终可见的矩形）。`safeCheck()` 与
    `scripts/validate-shot-motion.py` 用同一套纯算术证明 `anchor` 在所有关键帧都落在可见窗内；
    任一越界即 P0，阻断渲染。
-3. **配额**：每章 ≥3 次运镜（章节 <20s 时 ≥1 次）（章节 <20s 时 ≥1 次）（章节 <20s 时 ≥1 次）、每镜 ≤1 次、单次 30–45 帧 easeInOut；全片 ≥3 种 intent。
+3. **配额**：每章 ≥3 次运镜（**章节 <20s 时 ≥1 次**）、每镜 ≤1 次、单次 30–45 帧 easeInOut；全片 ≥3 种 intent。
 4. **缩放预算**：含文字的镜头 `s ≤ 1.35`，纯图形镜头 `s ≤ 1.60`；
    需要"更大"时优先**把主角画大**，而不是把相机推近（推近会牺牲文字锐度）。
 5. **页眉 / 章节卡 / 字幕在相机之外**（屏幕空间），结构上不可能被运镜带动。
@@ -99,7 +99,7 @@ Never stack plain text bullets inside generic rectangular boxes. Every explanati
 
 - Spring presets: use `popS(f, start, preset)` with `SPRINGS` — `snappy` for small UI ticks and code lines, `soft` (identical to the legacy `pop`) for cards and lists, `bouncy` for callouts and celebratory beats. Do not hand-tune new damping/stiffness values per scene.
 - Scene transitions: the vocabulary is `cut | handoff | reveal`. `reveal` is implemented by `RevealMask` (`src/insert.tsx`) and is driven by the shot table's `transition` field — **never write the `reveal` prop by hand**, it is generated into `shots.ts` by `resolve-shots.py`. `handoff` requires a `carrier` shared with the next shot. `whip` / `paper-turn` were removed in v3.0.1 (zero uses in two shipped films, and a single-frame whip is unreadable at 30fps). **No scene overlap, ever**: the outgoing scene must reach opacity 0 before the incoming one starts.
-- Camera script: build new keyframe tracks with ``manifests/shots.json` 的 `camera` 字段（由 `resolve-shots.py` 展开成关键帧）` instead of raw keyframe tables; it guarantees first/last frame coverage. The same easing and exponential lag follow-focus apply.
+- Camera script: build keyframe tracks in the `camera` field of `manifests/shots.json` (expanded by `resolve-shots.py`) instead of raw keyframe tables; it guarantees first/last frame coverage. The same easing and exponential lag follow-focus apply.
 - Stop-motion accent: `useSteppedFrame(15)` quantizes a component to 15fps so each pose holds two output frames. Reserve it for sticker-style charm; never apply it to subtitles, transfers or the camera.
 - Component motion stays inside the locked library: `Checklist` rows slide in with staggered `soft` springs, `HighlightCode` lines enter with `snappy` springs, `PathDraw` animates its dash flow only during transfer.
 

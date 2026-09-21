@@ -48,6 +48,7 @@ from pathlib import Path
 
 FPS = 30
 BEAT_SPOILER_FRAMES = 12   # 3-③：不得早于所属 cue 超过 12 帧（0.4s）
+BEAT_LATE_FRAMES = 8       # G-1③b：允许晚于该句结束的容差（帧）
 BEAT_CLUSTER_FRAMES = 12   # G-5：聚簇窗口
 BEAT_CLUSTER_MAX = 3       # G-5：窗口内 ≥3 个 beat 才算拥挤
 CPS_MAX = 9.0              # G-2：Netflix 中文成人档
@@ -67,9 +68,20 @@ def ms_frame(ms: float) -> int:
 def weighted_len(text: str) -> float:
     """加权字数：CJK 计 1，ASCII/数字计 0.5，标点计 0.5（不需要分词）。"""
     out = 0.0
-    for ch in norm(text):
+    for ch in re.sub(r"\s+", "", text):
         out += 1.0 if ord(ch) > 0x2E80 else 0.5
     return out
+
+
+def weighted_line_lens(text: str) -> list[float]:
+    """**逐行**加权字数（Netflix 的 16 字/行是**每行**的上限，不是整条）。
+
+    ⚠️ 复核抓到的实现错（第一版）：我把文本先 `re.sub(r"\\s+","")` 再去量整条，
+    于是"两行、每行 9 字（合计 18）"被判成 `单行 19 加权字 > 16` —— **误杀合法的两行字幕**，
+    而报错文案还自称"单行"。现在按字面实现：先按换行切行，再逐行量。
+    """
+    lines = [l for l in text.split("\n")] or [text]
+    return [weighted_len(l) for l in lines if l.strip()] or [0.0]
 
 
 # ---------------------------------------------------------------- G-1 / G-2 / G-5
@@ -103,6 +115,14 @@ def check_timeline(project: Path) -> tuple[list, list]:
             # ③ 不提前剧透
             if off < -BEAT_SPOILER_FRAMES:
                 p0.append({"id": sid, "issue": f"beat(cue{ci}) offset={off} 早于该句 {abs(off)} 帧（上限 {BEAT_SPOILER_FRAMES}）"})
+            # ③b **也不能太晚**：beat 必须落在它声明那句的区间内（+ 容差）。
+            # 复核抓到的口径漏洞：第一版只防"早"，`offset=+200`（台词讲完 6.7s 才出现）
+            # 照样 PASS —— 契约"元素出现帧绑到讲到它的那一句"是**双向**的。
+            # 上界 = 该句时长 + 容差，且不得晚于本镜结束。
+            cue_ms = int(cues[ci]["speech_end_ms"]) - int(cues[ci]["start_ms"]) if 0 <= ci < len(cues) else 0
+            limit = ms_frame(cue_ms) + BEAT_LATE_FRAMES
+            if off > limit:
+                p0.append({"id": sid, "issue": f"beat(cue{ci}) offset={off} 晚于该句结束 {off - ms_frame(cue_ms)} 帧（上限 {BEAT_LATE_FRAMES} 帧容差；该句 {ms_frame(cue_ms)} 帧）：元素在旁白讲完后才出现 = 与台词脱节"})
             if cue_first <= ci <= cue_last:
                 covered.add(ci)
         # ④ 每条 cue 至少有一拍（除非显式声明 silentCues）
@@ -121,12 +141,14 @@ def check_timeline(project: Path) -> tuple[list, list]:
     for i, cu in enumerate(cues, 1):
         text = str(cu.get("text", ""))
         dur = max(0.001, (int(cu["speech_end_ms"]) - int(cu["start_ms"])) / 1000.0)
-        wl = weighted_len(text)
+        line_lens = weighted_line_lens(text)      # 逐行量（Netflix 的 16 字/行是每行的上限）
+        wl = sum(line_lens)
         cps = wl / dur
         if cps > CPS_MAX:
             p0.append({"id": f"cue{i}", "issue": f"阅读速度 {cps:.1f} 字/秒 > {CPS_MAX}（{wl:.0f} 加权字 / {dur:.1f}s）：{text[:16]}"})
-        if wl > LINE_MAX:
-            p0.append({"id": f"cue{i}", "issue": f"单行 {wl:.0f} 加权字 > {LINE_MAX}：{text[:16]}"})
+        worst = max(line_lens)
+        if worst > LINE_MAX:
+            p0.append({"id": f"cue{i}", "issue": f"某一**行** {worst:.0f} 加权字 > {LINE_MAX}（本 cue 共 {len(line_lens)} 行）：{text[:16]}"})
         if len([l for l in text.split("\n") if l.strip()]) > 2:
             p0.append({"id": f"cue{i}", "issue": f"字幕超过 2 行：{text[:16]}"})
     return p0, p1
@@ -184,8 +206,15 @@ def check_readability(project: Path) -> tuple[list, list]:
     types = parse_type_table(project)
     band: dict[str, list[tuple[int, int]]] = {}   # 13–15 档：按文件聚合，避免一条一处刷屏
     files = sorted(list(src.rglob("*.tsx")))
+
+    def strip_comments(text: str) -> str:
+        """扫字号前先剥注释：注释里写历史反例（"fontSize: 9 是禁止的写法"）不该被判 P0。
+        复核实测过这条假阳性（这个仓库的注释确实大量引用反例）。"""
+        text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+        return re.sub(r"//.*", "", text)
+
     for f in files:
-        for n, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for n, line in enumerate(strip_comments(f.read_text(encoding="utf-8")).splitlines(), 1):
             rel = f"{f.relative_to(project)}:{n}"
             for m in FONT_RE.finditer(line):
                 size = int(m.group(1))

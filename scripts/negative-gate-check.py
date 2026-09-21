@@ -60,7 +60,7 @@ def case(name, steps):
 td, rc0, out0 = mkproj(lambda d: (d['shots'][0].__setitem__('anchor', {'x': 1900, 'y': 1500, 'w': 1200, 'h': 600}), d)[1])
 case('A 镜头 anchor 出界', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
+    ('must_block:anchor 出界', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
 ])
 cleanup(td)
 
@@ -72,7 +72,7 @@ def mut_pan(d):
 td, rc0, out0 = mkproj(mut_pan)
 case('B 平移超预算（s=1.0 平移 ±220px）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
+    ('must_block:超出缩放', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
 ])
 cleanup(td)
 
@@ -84,13 +84,13 @@ def mut_skel(d):
 td, rc0, out0 = mkproj(mut_skel)
 case('C 相邻同骨架 + 无活性组件', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+    ('must_block:同骨架', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
 ])
 cleanup(td)
 
 # ── D：时间轴断档（跳过两句话）→ resolve-shots 自身必须拦 ──
 td, rc0, out0 = mkproj(lambda d: (d['shots'][1].__setitem__('cues', [6, 6]), d)[1])
-case('D 时间轴断档', [('must_block', 'resolve-shots', (rc0, out0))])
+case('D 时间轴断档', [('must_block:非正', 'resolve-shots', (rc0, out0))])
 cleanup(td)
 
 NL = chr(10)
@@ -107,7 +107,7 @@ io.open(os.path.join(td, 'src/scenes.tsx'), 'w', encoding='utf-8', newline='').w
     "import {ConsoleWindow} from './media';" + NL + "export const S=()=> <ConsoleWindow/>;" + NL)
 case('F 造假 live / media 名', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+    ('must_block:未知介质', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
 ])
 cleanup(td)
 
@@ -124,20 +124,30 @@ if rc0 == 0:
     io.open(rp, 'w', encoding='utf-8', newline='').write(_json.dumps(rr, ensure_ascii=False))
 case('G 冻结的假运镜', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
+    ('must_block:几乎不动', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
 ])
 cleanup(td)
 
 # ── H：帧参数写错（fxkit 组件传 f={f}）→ validate-frame-props 必须拦（v2.11 新增）──
 td, rc0, out0 = mkproj()
-# 必须把真实引擎文件放进 src/，否则门禁无从比对组件签名
-shutil.copy(os.path.join(TPL, 'src/fxkit.tsx'), os.path.join(td, 'src/fxkit.tsx'))
+# 必须把**整棵 src** 拷进去：只拷 fxkit.tsx 时门禁只解析到 11 个组件，
+# 会先撞"引擎源码没读到"的防呆分支（rc=2）—— 复核实测这条 case 一直是这样**假通过**的，
+# 它声称测的"帧参数写错"根本没走到。拷全之后才会走真正的判据。
+for base, _dirs, files in os.walk(os.path.join(TPL, 'src')):
+    for name in files:
+        if not name.endswith(('.tsx', '.ts')):
+            continue
+        src_path = os.path.join(base, name)
+        rel = os.path.relpath(src_path, os.path.join(TPL, 'src'))
+        dst = os.path.join(td, 'src', rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy(src_path, dst)
 io.open(os.path.join(td, 'src/scenes.tsx'), 'w', encoding='utf-8', newline='').write(
     "import {Typewriter} from './fxkit';" + NL
     + "export const S=({f}:{f:number}) => <Typewriter f={f} text='x'/>;" + NL)
 case('H 帧参数写错（fxkit 传 f）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block', 'validate-frame-props', run([PY, os.path.join(SKILL, 'scripts/validate-frame-props.py'), td])),
+    ('must_block:只认 frame', 'validate-frame-props', run([PY, os.path.join(SKILL, 'scripts/validate-frame-props.py'), td])),
 ])
 cleanup(td)
 
@@ -145,12 +155,14 @@ cleanup(td)
 # 这里刻意让 resolve-shots 仍然通过（它只算帧号，不管"讲与画对不对得上"），
 # 证明新门禁不是"看着 resolve-shots 过了就放行"。
 def mut_spoiler(d):
-    d['shots'][1]['beats'] = [{'cue': 4, 'offset': -40}, {'cue': 4, 'offset': 20}]
+    # 用 S1 的 cue1（它的帧号在 S1 区间内）而不是 S2 的 cue4 —— 后者帧号恰好 = S2 镜起点，
+    # 任何负 offset 都会先撞判据①"落在镜外"，于是这条夹具**永远测不到③**（复核实测）。
+    d['shots'][0]['beats'] = [{'cue': 0, 'offset': 0}, {'cue': 1, 'offset': -13}, {'cue': 2, 'offset': 0}, {'cue': 3, 'offset': 0}]
     return d
 td, rc0, out0 = mkproj(mut_spoiler)
-case('I 呈现效果 · beat 提前剧透 40 帧', [
+case('I 呈现效果 · beat 提前剧透 13 帧', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_block:早于该句', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
@@ -158,7 +170,7 @@ cleanup(td)
 td, rc0, out0 = mkproj(lambda d: (d['shots'][1].__setitem__('beats', [{'cue': 13, 'offset': 0}]), d)[1])
 case('J 呈现效果 · beat 引用了别的镜的 cue', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_block:超出本镜', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
@@ -174,7 +186,7 @@ td, rc0, out0 = mkproj()
 mut_dense(td)
 case('K 呈现效果 · 字幕 40 字压进 0.9 秒', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_block:阅读速度', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
@@ -184,7 +196,7 @@ io.open(os.path.join(td, 'src/tooSmall.tsx'), 'w', encoding='utf-8', newline='')
     "export const S=()=> <div style={{fontSize: 9}}>太小的字</div>;" + NL)
 case('L 呈现效果 · 字号 9px 低于地板', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_block:低于绝对地板', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
@@ -202,7 +214,7 @@ io.open(os.path.join(td, 'src/theme/paper.tsx'), 'w', encoding='utf-8', newline=
     + "};" + NL)
 case('M 呈现效果 · 正文色几乎等于底色', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_block:正文色', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
@@ -224,7 +236,7 @@ for f in os.listdir(os.path.join(TPL, 'src/components')):
 mk_fixture_scene(td, 'frame={f}')     # 错：Chart 只认 f
 case('N 帧参数名 · components 层写成 frame={f}', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block', 'validate-frame-props', run([PY, os.path.join(SKILL, 'scripts/validate-frame-props.py'), td])),
+    ('must_block:只认 f', 'validate-frame-props', run([PY, os.path.join(SKILL, 'scripts/validate-frame-props.py'), td])),
 ])
 cleanup(td)
 

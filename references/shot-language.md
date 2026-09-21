@@ -102,7 +102,7 @@ top  = y - 540/s      bottom = y + 540/s
 
 | 规则 | 判据 | 级别 |
 |---|---|---|
-| 每章 ≥3 次运镜（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致）（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致）（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致） | 按 `chapter` 分组统计非 `still` 的镜头数 | P0 |
+| 每章 ≥3 次运镜（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致） | 按 `chapter` 分组统计非 `still` 的镜头数 | P0 |
 | 每镜 ≤1 次运镜 | 关键帧里位移段数 | P1（>2 记 P0 级问题） |
 | 单次运镜 30–45 帧 | `at + dur` | P1 |
 | 全片 ≥3 种 intent（不含 `still`） | 去重计数 | P0 |
