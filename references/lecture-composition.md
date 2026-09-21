@@ -54,7 +54,7 @@ Every visual object — mascot, diagram, machine, chart, arrow — is SVG
 written by hand inside the Remotion component tree. No bitmap is required.
 Benefits you must exploit: strokes can grow (`strokeDasharray` +
 `strokeDashoffset`), parts can move independently, and colors always match
-the locked palette. Copy `Mascot`, `LineIcon`, `ConceptDiagram`-style
+the locked palette. Copy `LineIcon`, `ShapeDraw`, `PathDraw`-style
 components from the template instead of inventing new drawing styles.
 
 ### 2. Multi-zone layout
@@ -129,7 +129,7 @@ written next to the existing ones, in the same stroke and palette style.
 
 - **LOCKED layer** — aesthetic core, subtitle, background, chrome, gates:
   never edit.
-- **Component library** — `Paper`, `LineIcon`, `CheckBadge`, `Mascot`,
+- **Component library** — `Paper`, `LineIcon`, `CheckBadge`,
   rails, gauges: reuse directly, extend by imitation.
 - **Content layer** — `COPY`, scene boundaries, `Scene*` components,
   `Sound` frame lists: rewrite this layer for a new topic.

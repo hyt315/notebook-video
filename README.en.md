@@ -55,7 +55,10 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 
 ▶️ [Watch full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · Hero Asset: [hero.png](assets/demo/hero.png)
 
-▶️ [Component library showcase (v2.5, 54s)](assets/demo/notebook-video-components-demo.mp4) — 26 locked icons, seven components (CodeBlock / BrowserChrome / Connector / Checklist / CountUp / ProgressBar / Callout), three transitions, type motion, physical parts and all four theme skins, rendered in the cel theme.
+▶️ [Component library showcase (v2.5, 54s)](assets/demo/notebook-video-components-demo.mp4) — 26 locked icons, seven components (CodeBlock / Checklist / Callout …), three transitions, type motion, physical parts and all four theme skins, rendered in the cel theme.
+
+> ⚠️ **These samples were rendered from an older template and have not been re-rendered.** The four files under `assets/demo/` (`notebook-video-demo.mp4/.webp`, `notebook-video-components-demo.mp4`, `hero.png`) predate the current template, so they do **not** match what it produces today. Since they were made, the skill gained component cleanup and new components, four-skin verification, the directory-tree layout fix, a `CardFitGate` fix, and the narration/timeline workflow — **none of it re-rendered into these samples**. Treat them as a style and form reference, not as a frame-accurate reproduction of the current version.
+> To check the current version: `npm install` inside `assets/lecture-template`, then `npm run still` (single frame) or `npm run render` (full film).
 
 **Canvases**: three are locked — 16:9 (2560×1440), 4:3 (1920×1440) and 3:4 portrait (1440×1920), all native 30 fps. The bundled example film is authored in the **16:9 design space**; 4:3 / 3:4 need their own dedicated layout pass (**letterbox scaling is no longer presented as adaptation**).
 
@@ -270,8 +273,8 @@ stagekit.tsx        Skeleton "Stage": StageFrame + state machine + PhaseRail + A
 skeletons.tsx       Skeletons "Corridor" / "Split" / "Zoom"
 media.tsx           Media: ConsoleWindow / MetricGrid / StampBanner
 fxkit.tsx
-toolkit.tsx         rhetorical tools (Callout / Connector / WaveText / JumpInText / CountUp / Checklist / CodeBlock / BrowserChrome)
-plates.tsx          ShotPlate — real screenshots and official charts inside the locked frame           18 motion components (multi-clock motion)
+toolkit.tsx         rhetorical tools (Callout / Checklist / JumpInText)
+│   └── components/       wrapped component layer (Accordion / Tabs / HighlightCode / Chart / StatRow / GlowFrame / PathDraw / FitTextBox …)
 kit.tsx             Theme-agnostic atoms: PillTag / LineIcon / CheckBadge / TYPE
 insert.tsx          B-roll inserts + the five transitions
 overlap-gate.tsx    Runtime overlap / occlusion gate

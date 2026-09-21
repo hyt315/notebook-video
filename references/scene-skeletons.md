@@ -105,7 +105,7 @@ items.map((x, i) => <项 style={enterAt(f, at(2) + i * 8)} />)  // 同句内最�
     "skeleton": "Corridor",
     "cues": [12, 16],
     "media": ["graphic", "console"],
-    "live": ["TimeRail", "StaggerList"],
+    "live": ["StaggerList", "Checklist"],
     "camera": {"intent": "pan-follow", "at": 10, "dur": 45, "fromX": 830, "x": 1090, "y": 540},
     "anchor": {"x": 300, "y": 300, "w": 1340, "h": 520},
     "contentBand": {"x": 120, "y": 240, "w": 1680, "h": 660},

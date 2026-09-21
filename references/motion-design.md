@@ -22,7 +22,6 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 
 - Camera: one intent per shot (`establish` / `push-in` / `pull-back` / `pan-follow` / `reveal` / `micro-orbit`), parameters and zoom budgets per [shot-language.md](shot-language.md). The narrated `anchor` must stay fully inside the frame at every keyframe — proved by `scripts/validate-shot-motion.py`, not by keeping the camera still.
 - JumpInText title: per-glyph 3D flip-in (rotateX ~88deg from the baseline, 12px rise, spring over-bounce, ~1.6-frame stagger). Always for chapter and scene titles.
-- WaveText latin: per-letter wave typing with a color gradient (10-frame wave, 4 keyframe offsets), for CTA latin strings.
 - Figure roll-in: multi-keyframe rotation (150deg to 360deg with a mid-scale bulge) instead of a plain pop for emblem graphics.
 - Subtitle reveal: one word at a time, chars inside a word stagger by 0.9 frames, 6px fade-slide, 180ms lead over the word start; all trailing punctuation strictly eliminated; never a decorative bar.
 - Paper entry: cubic ease-out, one 8–13% overshoot, settle within about 0.8s.
@@ -85,7 +84,6 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 4. **缩放预算**：含文字的镜头 `s ≤ 1.35`，纯图形镜头 `s ≤ 1.60`；
    需要"更大"时优先**把主角画大**，而不是把相机推近（推近会牺牲文字锐度）。
 5. **页眉 / 章节卡 / 字幕在相机之外**（屏幕空间），结构上不可能被运镜带动。
-6. **景深视差**：`DepthLayers` 系数只用 `0.35 / 0.70 / 1.00`，层数 ≤3，远层必须有真实内容。
 7. **不要**重新引入全片级相机轨道。取景是镜头级的。
 
 镜头部分的完整参数表与写法见 [shot-language.md](shot-language.md)（本文件只保留与动效相关的部分）。
@@ -107,7 +105,7 @@ Never stack plain text bullets inside generic rectangular boxes. Every explanati
 - Scene transitions: the vocabulary is `cut | handoff | reveal`. `reveal` is implemented by `RevealMask` (`src/insert.tsx`) and is driven by the shot table's `transition` field — **never write the `reveal` prop by hand**, it is generated into `shots.ts` by `resolve-shots.py`. `handoff` requires a `carrier` shared with the next shot. `whip` / `paper-turn` were removed in v3.0.1 (zero uses in two shipped films, and a single-frame whip is unreadable at 30fps). **No scene overlap, ever**: the outgoing scene must reach opacity 0 before the incoming one starts.
 - Camera script: build new keyframe tracks with `camScript(x, y, duration).hold(f).to(f, {x, y, s}).done()` instead of raw keyframe tables; it guarantees first/last frame coverage. The same easing and exponential lag follow-focus apply.
 - Stop-motion accent: `useSteppedFrame(15)` quantizes a component to 15fps so each pose holds two output frames. Reserve it for sticker-style charm; never apply it to subtitles, transfers or the camera.
-- Component motion stays inside the locked library: `Connector` animates dash flow only during transfer, `Checklist` rows slide in with staggered `soft` springs, `CodeBlock` lines enter with `snappy` springs, `CountUp` eases with the standard soft-out curve.
+- Component motion stays inside the locked library: `Checklist` rows slide in with staggered `soft` springs, `HighlightCode` lines enter with `snappy` springs, `PathDraw` animates its dash flow only during transfer.
 
 ## Scene grammar
 

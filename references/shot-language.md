@@ -145,7 +145,7 @@ import {SHOTS} from './shots';
 ### 5.3 手动构图（少数情况）
 
 ```tsx
-import {shotCam, stillCam, camAt, camTransform, safeCheck, DEPTH, DepthLayers} from './shotkit';
+import {shotCam, stillCam, camAt, camTransform, safeCheck, DEPTH} from './shotkit';
 
 const keys = shotCam('push-in', {duration: 240, x: 980, y: 520, to: 1.12, at: 30});
 const bad = safeCheck(keys, {x: 320, y: 190, w: 1280, h: 640}, 1.35); // [] 表示证明通过
@@ -154,12 +154,6 @@ const bad = safeCheck(keys, {x: 320, y: 190, w: 1280, h: 640}, 1.35); // [] 表�
 ### 5.4 景深视差
 
 ```tsx
-<DepthLayers keys={keys} f={f} overscan={0.14}
-  far={<THEME.Background />}      // 系数 0.35
-  mid={<SomeStructure />}         // 系数 0.70
->
-  <MainContent />                 // 系数 1.00
-</DepthLayers>
 ```
 
 层数 ≤3、系数只用 `0.35 / 0.70 / 1.00`。**远层必须有真实内容**，不能只是同一内容的模糊缩放，

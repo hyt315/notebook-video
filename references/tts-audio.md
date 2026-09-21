@@ -39,9 +39,54 @@ Why it is the recommended shape for long films: it synthesizes each narration pa
 
 Segment audio is cached by a hash of model, voice and paragraph text, so editing one paragraph re-synthesizes only that paragraph.
 
+**Narration paragraphs are file lines.** The adapter makes **one chapter per non-empty line** of `narration.txt`, so a narration written as a single long line yields a single chapter — the whole film then stretches or squeezes as one block and per-line alignment is impossible. Write one line per semantic sentence (the same split as `manifests/semantic-caption-lines.txt`); both files must still be equal after whitespace normalization, so line breaks are free.
+
+### Verified endpoint: Xiaomi MiMo open platform (no key in this file)
+
+查通的接入配方（2026-09-21 实跑验证，配音用 `白桦`）：
+
+| 项 | 值 |
+|---|---|
+| Base URL | `https://api.xiaomimimo.com/v1` |
+| 鉴权 | `Authorization: Bearer $TTS_API_KEY`（`sk-` 开头） |
+| 模型列表 | `GET /v1/models` → `mimo-v2.5` / `mimo-v2.5-asr` / `mimo-v2.5-pro` / **`mimo-v2.5-tts`** / `mimo-v2.5-tts-voiceclone` / `mimo-v2.5-tts-voicedesign` |
+| TTS 模型 | `mimo-v2.5-tts` |
+| 音色表 | `mimo_default` · `冰糖` · `茉莉` · `苏打` · **`白桦`（男声）** · `Mia` · `Chloe` · `Milo` · `Dean`。没有 `/v1/voices` 接口——**故意传一个不存在的音色**，400 报错的 `message` 里会列出全部可选音色 |
+| 请求 | `POST /v1/chat/completions`，body `{"model":"mimo-v2.5-tts","messages":[{"role":"assistant","content":"<要念的文本>"}],"audio":{"format":"wav","voice":"白桦"}}`。可选的 `{"role":"user","content":"<风格指令>"}` 放在 assistant 之前——实测它会改变输出的时长与语气（同一句话 2.24s → 3.52s），不是被忽略的装饰 |
+| 响应 | `choices[0].message.audio.data` = **base64 的 WAV**（24kHz 单声道 16bit）；`content` 为空串 |
+| 计费 | 按调用计费；余额不足时 ASR 等模型会返回 `402 {"type":"insufficient_balance"}`（TTS 仍可用） |
+
+```bash
+# key 只走环境变量；不要写进任何工程文件
+export TTS_API_BASE='https://api.xiaomimimo.com/v1'
+export TTS_API_KEY='sk-<YOUR_KEY>'
+export TTS_MODEL='mimo-v2.5-tts'
+export TTS_VOICE='白桦'
+python scripts/tts-openai-compatible.py ./my-film
+```
+
+**音色是否真的生效，可以不听声音就验**：同一句话分别用两个音色合成，比对返回的
+base64 长度/哈希，再对 WAV 做一次自相关基频估计——男声 `白桦`（整段中位 ≈140 Hz）与女声
+`冰糖`（≈258 Hz）差得足够远，参数被忽略时这个差异会立刻消失。
+
 ## Standard delivery pace
 
 Raw synthesis with a patient teaching prompt lands near 305 characters per minute, which viewers on short-video platforms read as slow. Prompt wording cannot control pace precisely (any "faster" instruction overshoots past 400), so pace is fixed deterministically after synthesis: run the bundled `scripts/speed-post.py PROJECT_DIR 1.10`, which applies `atempo=1.10` (pitch unchanged), re-normalizes loudness, and divides every timestamp in `narration.mp3.json` and `manifests/chapters.json` by the same factor. The result is 336 characters per minute, verified across full productions. Every downstream consumer (captions, scene boundaries, sound tables) stays self-consistent because they all derive from the scaled timing files. Run it once, immediately after synthesis and before building captions; never re-run it on already-scaled output.
+
+### The narration drives the timeline, not the other way round
+
+A voice change means the narration's own length is the truth. Do **not** hold a pre-existing frame table and squeeze the audio into it: per-chapter `atempo` for that purpose reaches 1.5× and viewers hear the rush. The correct order is:
+
+```text
+<adapter>                                  # 自然语速合成（不加 speed-post 也行）
+[可选的逐句微补偿：见下]                     # 只抹平句间快慢，不凑时长
+resolve-shots.py PROJECT_DIR               # 镜头帧/时长从新的 cue 表重新派生（不改分镜表语义）
+validate-video VIDEO <new duration>        # 期望时长用新的总帧数 / fps
+```
+
+- **Optional small per-chapter compensation for evenness.** Some engines articulate one sentence at 250 characters/min and the next at 170 (measured on a real run: per-line c/min spread 1.49×, and the *voiced* rate showed the same 1.49× — so it is real articulation variance, not just pauses). Fix it by targeting the **median** line pace and clamping the per-chapter `atempo` to a modest band, e.g. `[0.85, 1.15]`; a band as tight as `[0.95, 1.05]` cannot close a 1.5× gap (it only reaches ~1.35×). Implement it by writing the target per-chapter durations into `manifests/chapters-timing-lock.json` and running `match-timing.py PROJECT_DIR` — the tool already stretches each chapter to a locked duration, re-joins with the standard gap, re-normalizes loudness and rescales the word timings. A real run went 170–254 → **195–216 characters/min (1.11×)** with multipliers 0.85–1.15 (none of them a rush).
+- **Keep `narration.txt` one line per semantic sentence** so chapters exist at all (see above), and keep `manifests/semantic-caption-lines.txt` split short enough for the subtitle box — `build-semantic-captions` emits **one cue per line**, and the film's `CaptionFitGate` aborts a render whose cue does not fit the safe width. Roughly 12 characters is a safe ceiling for the shipped 2K subtitle style.
+- If a project's `src/index.tsx` builds `DURATION` from a generated `SHOT_TOTAL` (the template does), `retime.py` cannot drive it — the duration is already derived, and only `manifests/asset-manifest.json` (`duration_frames` + per-scene frames) still needs the new numbers.
 
 ## Polyphone handling
 

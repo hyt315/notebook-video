@@ -25,19 +25,41 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 
 ## 2. 路由表
 
+> **每行只给一个「首选」**，其余标注了「何时才用」。一行里并列三个平级选项，等于没给建议——
+> 上一版的实测教训：路由表里有名字的组件照样一件不用（23 件从未出现在任何画面里，其中 **21 件早已登记在本表**）。
+> **加组件 = 换掉一件**；总数上限见 [dependency-policy.md](dependency-policy.md) §8。
+
+
 | 内容类型 | 视觉介质 | 组件（模块） |
 |---|---|---|
-| 数据 / 对比 | 图表 | `CompareBars` `ProgressRing`（fxkit）、`MetricGrid`（media）、`Gauge`（场景层） |
-| 软件流程 / 界面 | 窗口壳 + 内部线框 | `ConsoleWindow`（media）、`BrowserChrome`（engine） |
-| 技术代码 | 终端窗 / 补丁 | `Typewriter` `DiffView` `SkeletonCard`（fxkit）、`CodeBlock`（engine） |
-| 结构关系 | 连线 / 清单 / 轨道 | `Connector` `Checklist` `StepRail`（engine）、`StaggerList` `TimeRail`（fxkit） |
-| 抽象概念 | 概念图 + 主体 | `StageFrame`（stagekit）+ SVG + `Mascot` |
-| 强调信息 | 大字 / 逐字涌现 | `JumpInText` `WaveText`（engine）、`Typewriter` `StampSeal` `BurstCallout`（fxkit） |
-| 证据 / 细节 | 纯代码局部放大 | `ZoomStage`（skeletons）、`EvidenceZoom` `EvidenceBridge`（fxkit / v2.9 回收） |
-| 指标结论 | 指标网格 + 吸底条 | `MetricGrid` `StampBanner`（media） |
-| 对话 / 交互 / 提示词 | 拟真对话窗 / 气泡 / 通知卡 | `AIChatBox` `ChatThread` `MailScan` `PayPop`（fxkit） |
+| 数据 / 对比 | 趋势 / 分布 / 多值对比 → **`Chart`（`components/`，d3 算刻度与路径）**，按语义选 `variant`：折线（默认）/ `area` 面积 / `stackExpand` 百分比堆叠 / `stream` 河流 / `radar` 多维 / `pie` 份额；只有一个百分比 → `ProgressRing`（fxkit）；只有前后两值成对 → `MetricGrid`（media） |
+| 软件流程 / 界面 | 窗口壳 + 内部线框 | `ConsoleWindow`（media）、`HighlightCode` 的窗口壳（components）；**要"弹出来的框"（确认框 / 下拉选择 / 说明气泡 / 提示）→ `OverlayFrame`（components，Radix 弹层）** |
+| 技术代码 | 有语法高亮的源码 → **`HighlightCode`（`components/`）**；讲一个字一个字敲出来 → `Typewriter`；讲改了什么 → `DiffView`（均 fxkit） |
+| 结构关系 | 两者有连线/路径 → **`PathDraw`（`components/`）**；**"谁连着谁"的网（没有层级也没有方向）→ `NetworkGraph`（components，d3-force）**；逐条列清单 → `Checklist`（toolkit）；只是逐行出现 → `StaggerList`（fxkit） |
+| 分步展开 / 折叠面板 | 手风琴 | **`Accordion`（components，Radix）** ← 技能此前**没有**这个形态，遇到只能"再堆一张卡片" |
+| 多方案 / 多标签切换 | 标签页 | **`Tabs`（components，Radix）** ← 同上，此前零覆盖 |
+| 配置 / 选项 / 参数 | **控件状态随旁白变化**（开关拨动、复选打勾、单选改选、滑块拖动、分段切换、进度推进） | **`ControlStack`（components，Radix 六个纯受控 primitive）** ← 此前完全没有"控件被改变"这个形态，只能写一张文字卡片假装「这个选项被打开了」。帧 → 状态是一张显式的表（`steps: [{at, value}]`），纯函数可复算 |
+| 技术栈 / 品牌标识 | 图标墙 | **`IconWall` / `TopicIcon`（components，react-icons：`fa` 品牌 + `fi`/`lu` 线条）** |
+| 抽象概念 | 概念图 + 主体 | `StageFrame`（stagekit）+ SVG |
+| 强调信息 | 让一句话发光 → **`ShimmerText`**；给整块卡加动效边框 → **`GlowFrame`**（均 `components/`）；逐字砸出来 → `JumpInText`（toolkit）；盖章定论 → `StampSeal`（fxkit） |
+| 几何 / 图形强调 | 参数化图形 | **`ShapeDraw` / `PieDraw` / `SHAPES`（components，@remotion/shapes）** ← 五角星/六边形/星芒/饼图/**标注框 callout**/**箭头 arrow**/**心形 heart** 都不用手画 |
+| 指向 / 沿线运动 | 箭头沿路径跑并自动转向 | **`PathDraw` 的 `showArrow`（components，`getTangentAtLength`）** ← 此前要自己差分算切线 |
+| 证据 / 细节 | 纯代码局部放大 | `ZoomStage`（skeletons） |
+| 指标结论 | 一排指标卡（数字随帧滚动）→ **`StatRow`**；全宽收束条 → **`VerdictBar`**（均在 `components/`）；前后值成对 → `MetricGrid`；吸底盖章 → `StampBanner`（media） |
+| 对话 / 交互 / 提示词 | 拟真对话窗 / 气泡 | `ChatThread`（fxkit） |
+| 层级 / 树状结构 | 目录树 / 组织图 → `TreeView`；**占比与层级用"面积＝数值"表达 → `TreeView` 的 `variant`：`treemap` 矩形树图 / `pack` 圆形打包 / `sunburst` 旭日图**（均在 `components/`，d3-hierarchy） |
+| 地理 / 全球视野 | 地球 / 地图 | **`GeoView`（`components/`，d3-geo）**；要国界数据另配 TopoJSON |
+| 流量 / 转化去向 | 流量图 | **`SankeyChart`（`components/`，d3-sankey）** |
+| 真实数据进图 | 图表 | **`Chart` 直接喂 CSV**（`csv="阶段,数量\n…"`，d3-dsv 解析；多序列用 `csvToChartSeries()`；不必再手抄数据数组） |
+| 手绘强调 / 圈画 / 下划线 | 手绘风图形 | **`SketchFx`（`components/`，roughjs）** + `sketchCircleArea` / `sketchUnderline` / `sketchBox`，`fillStyle` 五种**确定性**填充（hachure 斜线是手账风招牌）。seed 固定 → 每次渲染同一笔迹。**`'dots'` 已移除**：它的填充器内部无条件调 `Math.random()`，同一帧渲两次像素不一致（实测） |
+| 数学 / 公式 | 公式块 | **`MathBlock`（`components/`，katex）**。静态渲染、确定性；此前只能手写 HTML 硬排 |
+| 收尾引导 | 二维码 | **`QrCode`（`components/`，qrcode）**。纯计算不联网 |
 | 收束 / 漏斗 | 漏斗 / 进度 | `Funnel` `ProgressRing`（fxkit） |
-| 场景衔接 | 运镜 + 转场 | `shotkit` + `insert`（5 式转场） |
+| 场景衔接 | 运镜 + 转场 | **`SceneTransitions`（components，**全部 20 种官方转场已登记**，不必再手写）**、`shotkit` + `insert`（3 式手写转场）。转场名 = 官方包名去掉连字符：`fade` `slide` `wipe` `flip` `clockWipe` `iris` `dissolve` `ripple` `zoomBlur` `filmBurn` `bookFlip` `swap` `crosswarp` `crossZoom` `zoomInOut` `dreamyZoom` `blurSlide` `linearBlur` `pushCut` `none`（= `PRESENTATIONS` 的键）。**12 种是 WebGL 着色器式**（blurSlide / bookFlip / crossZoom / crosswarp / dissolve / dreamyZoom / filmBurn / linearBlur / ripple / swap / zoomBlur / zoomInOut），本机无头渲染**实测全部可用**（`diag-upgrade` 页⑥ 逐格截在转场中点，25%/50%/75% 三帧各不同）；`flip` 在 50% 处正好侧对镜头（那一格看着是空的属正常），要看效果就截 25% / 75%。`none` 是硬切。**`@remotion/transitions` 里 `Math.random` 0 处**，全部帧驱动 |
+| 快速运镜 / 冲刺 | 运动模糊 | **`CameraMotionBlur` / `Trail`（components/pathfx，@remotion/motion-blur）** ← 此前为了代替它，手写了"速度线" |
+| 让画面"活一点" | 有机抖动 | **`NoiseJitter`（components，noise2D 同种子同结果）** |
+| 文字排版 | 反推字号 | **`FitTextBox` / `fitChineseTextOnNLines`（components/fittext）** ← 治卡片文字被裁的正解。图元标签（treemap 格子 / 气泡 / 扇区）用 **`fitNodeLabel`**：宽度与高度**都要**过，反推字号低于 13px 就**降级不画字**并进图例 |
+| 逐条揭示 | 遮罩擦除 | **`RevealMask`（components，clip-path 按帧推进）** |
 
 **硬约束（门禁 P0）**：全片 ≥3 种不同介质；**每个讲解场景 ≥1 个活性组件**（会随旁白变化状态的演示件），
 "一盒子弹"式纯卡片堆禁止。
@@ -50,7 +72,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
   **不是卡片轮播。**
 - **B 场景 = 辅助取证轨**：换一种**视觉介质**插入 0.8–2 秒（24–60 帧），说完即回。
   **B 不是"另一个场景"，而是 A 的一次注意力转移**；不留残片、不另起场景。
-- 实现：`insert.InsertShot`（区间外返回 `null`，物理上保证无残片）+ `skeletons.ZoomStage`
+- 实现：`skeletons.ZoomStage`（B 段由场景自身在区间外返回 `null`，物理上保证无残片）
   （整体→聚焦→标注→回整体）。
 
 **A↔B 的关系**：B 结束时必须回到 A 的同一状态，观众不丢上下文。
@@ -140,14 +162,15 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 | 模块 | 内容 | 约定 |
 |---|---|---|
 | `src/kit.tsx` | `PillTag` `LineIcon`(26 字形) `CheckBadge` `TYPE` | 主题无关原子，工程侧同样可引用 |
+| **`src/components/`** | **新封装层（唯一入口 `./components`）：`Accordion` `Tabs` `ControlStack` `OverlayFrame` `NetworkGraph` `CodeBlock` `IconWall` `Chart` `StatRow` `GlowFrame` `ShimmerText` `RevealMask` `NoiseJitter` `PathDraw` `MorphShape` `ShapeDraw` `PieDraw` `SceneTransitions` `TreeView` `FitTextBox` `VerdictBar`** | **帧参数名统一是 `f`**；颜色只读 `THEME`；见 [dependency-policy.md](dependency-policy.md) §7 |
 | `src/fxkit.tsx` | 18 个动效构件（表格 / 漏斗 / 对话 / 印章 / 时间轨 …） | **帧参数名是 `frame`** |
 | `src/media.tsx` | `ConsoleWindow` `MetricGrid` `StampBanner` | **帧参数名是 `f`** |
 | `src/stagekit.tsx` | `StageFrame` `PhaseRail` `Attach` `useStageMachine` | `f` |
 | `src/skeletons.tsx` | `Corridor` `SplitStage` `ZoomStage` | `f` |
-| `src/insert.tsx` | `InsertShot` `RevealMask` `HandoffCarrier` `useHandoff` | `f` |
-| `src/shotkit.tsx` | `ShotCamera` `DepthLayers` `CoverPanel` `safeCheck` | `f` |
+| `src/insert.tsx` | `RevealMask` `useHandoff` `TRANSITIONS` | `f` |
+| `src/shotkit.tsx` | `ShotCamera` `CoverPanel` `safeCheck` | `f` |
 | `src/index.tsx` | `Paper` `Subtitle` `Chrome` + 6 个反 PPT 交互组件 | 引擎层 |
-| `src/toolkit.tsx` | 可直接 import 的修辞工具件：`Callout` `Connector` `JumpInText` `WaveText` `RollDigit` `CountUp` `Checklist` `CodeBlock` `BrowserChrome` `Mascot` `ProgressBar` | 工具层 |
+| `src/toolkit.tsx` | 修辞工具件：`Callout` `Checklist` `JumpInText` | 工具层 |
 
 > **⚠️ 布局陷阱（实测踩过）**：同一容器里**不要混用"文档流内的标题"和"绝对定位组件"**。
 > 绝对定位组件的 `x/y` 是相对容器原点的，而文档流内的标题也占着容器顶部——
@@ -162,7 +185,8 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 ## 6. 让组件"看得见"：接触表
 
 `src/showcase.tsx` 注册了一个 `NotebookVideoShowcase` Composition：
-9 页 × 1 秒，1920×1080 原生，把 30 个组件（含 ⑦⑧⑨ 页的 11 件修辞工具件）+ 6 种镜头意图 + 4 种骨架全部渲染一遍。
+**17 页 × 1 秒**，1920×1080 原生，把 26 件旧件（含 ⑦⑧⑨ 页的 11 件修辞工具件）+ 6 种镜头意图
++ 4 种骨架 + 新封装层 9 页 + v3.1 新能力 3 页（图表变体 / 层级与关系 / 弹层与形状）全部渲染一遍。
 
 ```text
 node scripts/notebook-video.mjs showcase PROJECT_DIR          # 渲染接触表 mp4
@@ -191,20 +215,24 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR    # 再抽 1fps 接�
 | 修辞动作 | 首选 | 备选 | **何时别用** |
 |---|---|---|---|
 | 圈住/指出一处 | `Callout`（画圈+引线+手写标注，`toolkit.tsx`） | `ZoomStage`（要放大才能用） | 画面已有高亮时别叠（重复编码）；`ZoomStage` 会缩放，静止元素别用 |
-| 表现两者关系/因果 | `Connector`（贝塞尔+箭头，`toolkit.tsx`） | `Corridor`（隐含顺序） | 已有导轨/时间轴时别叠 |
-| 强调一瞬（警告感） | `ShakeX`（抖动，`fxkit`） | — | **它只能抖包裹的整层**，别用来强调单个词（会读成渲染抖动） |
+| 表现两者关系/因果 | `PathDraw`（描线生长，`components/`） | `Corridor`（隐含顺序） | 已有导轨/时间轴时别叠；**关系是"网"而不是"链"时改用 `NetworkGraph`** |
+| 表现"谁连着谁"（无层级、无方向） | `NetworkGraph`（力导向，`components/`） | `TreeView`（有层级时才用） | 别用树硬画网状关系——树会凭空造出一个不存在的上下级 |
+| 表现"某个设置被改了" | `ControlStack`（控件状态随旁白变化，`components/`） | `Accordion` `Tabs`（是"展开/切换"，不是"被改动"） | 一行一个控件，别把 6 种控件塞进一镜；控件是主角时才用（否则它抢戏） |
+| 表现"弹出来一个框" | `OverlayFrame`（dialog / menu / popover / tooltip，`components/`） | `ConsoleWindow`（整块界面，`media.tsx`） | 弹层别一次冒三个；弹层压在背景装饰区时同样要坐 `CoverPanel` |
+| 表现"箭头沿路线跑过去" | `PathDraw` 的 `showArrow`（`components/`，`getTangentAtLength`） | `MorphShape`（形状变形） | 路径短于 200px 时箭头会盖住整条线 |
+| 强调一瞬（警告感） | `GlowFrame`（流光边框，`components/`） | `ShimmerText`（只强调一句话时） | 二选一，别叠用；要"真的变了个状态"就用 `ControlStack`，不是靠倾斜 |
 | 砸一句结论 | `StampBanner` | — | 一镜别砸两条（两条会互压底线） |
 | 认证/盖章 | `StampSeal` | — | 字数 >4 会溢出圆 |
-| 念一句口号 | `WaveText` / `JumpInText`（逐字波浪/跳入，`toolkit.tsx`） | `StampBanner` | 全片最多 1–2 处（钩子与收尾）；讲解中段用会显浮夸 |
-| 报一个大数字 | `CountUp` / `RollDigit`（`toolkit.tsx`） | `MetricGrid`（有前后值时） | 数字已在 `MetricGrid` 里滚动时别重复 |
-| 对比两方（对等） | `SplitStage` | `CompareBars`（不等权时） | 两方不是同一维度时别用 Split |
+| 念一句口号 | `JumpInText`（逐字跳入） / `ShimmerText`（闪光，`components/`） | `StampBanner` | 全片最多 1–2 处（钩子与收尾）；讲解中段用会显浮夸 |
+| 报一个大数字 | `StatRow`（`components/`，数字随帧滚动） | `MetricGrid`（有前后值时） | 数字已在 `MetricGrid` 里滚动时别重复 |
+| 对比两方（对等） | `SplitStage` | `StatRow`（不等权时，`components/`） | 两方不是同一维度时别用 Split |
 | 列一份清单 | `Checklist`（带完成态，`toolkit.tsx`） | `StaggerList` | 项 >6 会溢出；`StaggerList` 错峰必须 ≤8 帧 |
-| 演示一段流程 | `Corridor` | `TimeRail` | 站点 <3 个时改用 `StaggerList` |
+| 演示一段流程 | `Corridor` | `PathDraw`（描线生长，`components/`） | 站点 <3 个时改用 `StaggerList` |
 | 一个主体持续演化 | `StageFrame`（≥5 拍） | `Corridor` | 只有 2–3 拍时别用（状态机撑不起来） |
-| 证明"这是官方/真实" | `ShotPlate` | `EvidenceZoom` | 每镜最多一块；能用代码画清的别用实拍 |
+| 证明"这是官方/真实" | `HighlightCode` 的窗口壳（`components/`） | — | 纯代码路线不做实拍框；能用代码画清的别用实拍（实拍只能走可选生图附加路线） |
 | 表现"正在跑/正在写" | `ConsoleWindow` / `CodeBlock` | `Typewriter` | `ConsoleWindow` 一定给 `h`，否则高度由内容撑 |
-| 模拟 AI 对话 / Prompt 交互 | `AIChatBox`（拟真对话框，`fxkit`） | `ChatThread`（仅简易短信时） | 对话条数建议 2–3 条（1 问 + 1~2 答/对比），避免溢出窗口高度 |
-| 页面形态 | `BrowserChrome`（`toolkit.tsx`） | `ShotPlate`（有真截图时） | 没有真截图时，`BrowserChrome` 拼出来的假浏览器不如直接用 `ConsoleWindow` |
+| 模拟 AI 对话 / Prompt 交互 | `ChatThread`（`fxkit`） | `Tabs`（多方案对比时，`components/`） | 对话条数建议 2–3 条（1 问 + 1~2 答），避免溢出窗口高度 |
+| 页面形态 | `HighlightCode` 的窗口壳（`components/`） | `ConsoleWindow`（终端形态） | 终端内容用 `ConsoleWindow`；带行号/高亮的代码用 `HighlightCode` |
 
 **两条纪律**：① 加组件 = **换掉**画面里的一个元素，不是往里加元素；② 一个组件只有落在"它擅长的那个修辞动作"上才算数——
 找不到对应动作就别加（为凑多样性堆组件，是这张表要防的事）。

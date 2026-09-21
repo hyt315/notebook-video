@@ -1,15 +1,23 @@
 ---
 name: notebook-video
-version: 3.0.3
+version: 3.1.0
 description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion. The default visual route is pure code-drawn composition (SVG diagrams, mascots, progressive checklists, annotation stickers) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes a per-shot restricted camera with an out-of-bounds proof, four scene skeletons with a content-to-medium routing table, a cue-indexed shot table, native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering and nine automated quality gates (including a frame-prop-name gate that catches the highest-frequency silent failure in this codebase). Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
 ---
 
 # Create notebook explainer videos
 
 Build a finished, validated MP4 **and** an editable Remotion project. This is a low-freedom production
-system, not a visual prompt: Remotion is the only renderer, every scene is drawn in code, and every
-animation is a pure function of the frame number. The established style must be reproducible by any AI
-in any environment — no image model required.
+system, not a visual prompt: Remotion is the only renderer, the **composition and its data** are authored
+in code, and every animation is a pure function of the frame number. The established style must be
+reproducible by any AI in any environment — no image-generation model required.
+
+**What "no model dependency" means — and what it does not mean.** The line above bans **paid generative
+models** (image/video generation APIs) from the default route: they cost money per call and return a
+different picture every time, so the style cannot be reproduced. It does **not** ban open-source
+libraries. Free, lock-file-pinned React packages are expected to be reused directly rather than
+re-implemented — see [dependency-policy.md](references/dependency-policy.md). Hand-writing every UI
+element from scratch is not a goal; it is the slowest way to a worse result. `assets/lecture-template`
+ships a wrapped component layer under `src/components/` — reach for it before writing new SVG.
 
 **The film must not look like a slide deck.** That is enforced structurally and by gates, not by taste:
 four different scene skeletons with no adjacent repeats, at least three visual media per film, at least
@@ -25,6 +33,7 @@ Read only what the current production needs. **写任何场景之前，先读前
 「照抄」= 直接复用其代码形状；「逐条对照」= 完成后一条条核对；「何时读」= 满足该条件时才读；「仅当」= 只有该前提成立才读。
 
 **先读** [references/locked-style-contract.json](references/locked-style-contract.json) — binding tokens、坐标与 rejection flags.
+**先读** [references/dependency-policy.md](references/dependency-policy.md) — 依赖边界（什么能引、什么不能引）、已内置清单、组件纪律与「加一件＝换掉一件」的增长纪律（合规判据是「零引用」，不是一个拍脑袋的总数）。**动任何库或组件之前读这一份。**
 **照抄** [references/scene-authoring.md](references/scene-authoring.md) — 场景代码的标准形状与八个坑；不要重新发明。
 **照抄** [references/scene-skeletons.md](references/scene-skeletons.md) — 四种骨架与分镜表结构（写分镜表前必读）。
 **先读** [references/media-routing.md](references/media-routing.md) — 内容→介质路由、A/B 场景、背景可读性契约。
@@ -37,7 +46,7 @@ Read only what the current production needs. **写任何场景之前，先读前
 **何时读**（切字幕 / 合成配音时）：[references/subtitle-timing.md](references/subtitle-timing.md) 与 [references/tts-audio.md](references/tts-audio.md)。
 **何时读**（策划脚本 / 编排章节时）：[references/narrative-hook.md](references/narrative-hook.md) 与 [references/pacing-rhythm.md](references/pacing-rhythm.md)。
 **先读** [references/independent-parts.md](references/independent-parts.md) — 部件分解、z-order、进出场契约（动任何部件之前读）。
-**必读** [references/fxkit.md](references/fxkit.md) 与 [references/media-routing.md](references/media-routing.md) 的「修辞动作 → 组件」表 — 选组件之前读：**`live` 里每个名字都要能在表上指到**（这是选型纪律；门禁实际查的是"这个名字必须真的出现在场景源码里"，见 `validate-composition.py`）；写 `f={f}` 与 `frame={f}` 的地方见 fxkit 的命名陷阱。修辞工具件（`Callout`/`Connector`/`WaveText`/`JumpInText`/`CountUp`/`RollDigit`/`Checklist`/`CodeBlock`/`BrowserChrome`）在 `src/toolkit.tsx`，可直接 import。
+**必读** [references/fxkit.md](references/fxkit.md) 与 [references/media-routing.md](references/media-routing.md) 的「修辞动作 → 组件」表 — 选组件之前读：**`live` 里每个名字都要能在表上指到**（这是选型纪律；门禁实际查的是"这个名字必须真的出现在场景源码里"，见 `validate-composition.py`）；写 `f={f}` 与 `frame={f}` 的地方见 fxkit 的命名陷阱。修辞工具件（`Callout` / `Checklist` / `JumpInText`）在 `src/toolkit.tsx`；**新封装层在 `src/components/`（Radix 手风琴与标签页、语法高亮、d3 图表、零依赖炫效果、描线/几何、中文反推字号）——选型前先看这一层**。
 **何时读**（确定画幅时）：[references/canvas-modes.md](references/canvas-modes.md)（3:4 另读 [references/portrait-illustration-system.md](references/portrait-illustration-system.md)）。
 **何时读**：仅当用户接受了可选的生图附加路线时，读 [references/visual-director.md](references/visual-director.md)。
 **何时读**（组装工程 / 抓 HTML / 跨平台排错时）：[references/official-skills-exemplar.md](references/official-skills-exemplar.md)、[references/html-capture.md](references/html-capture.md)、[references/cross-platform-compatibility.md](references/cross-platform-compatibility.md)、[references/windows-compatibility.md](references/windows-compatibility.md)。
@@ -159,10 +168,19 @@ stacking, unregistered rasters, or generated text baked into imagery.
 
 ## Execution discipline and safety (Zero-Mutation 原则)
 
-执行纪律与安全约束（Zero-Mutation 原则）：脚本检测与视觉审查恪守纯只读排查原则，绝不擅自变动系统配置；对于完整渲染（render）、依赖安装或大构架重写等治理对策，须用户明确授权后方可执行。
+执行纪律与安全约束（Zero-Mutation 原则）：脚本检测与视觉审查恪守纯只读排查原则，绝不擅自变动系统配置；对于完整渲染（render）或引擎级重构等治理对策，须用户明确授权后方可执行。
+
+**依赖分两种，纪律完全不同（这是本技能最容易被读错的一条）：**
+
+| 情况 | 纪律 |
+|---|---|
+| 模板**已内置**的依赖（`assets/lecture-template/package.json` 已声明的） | **随 `npm install` 一次装好，无需任何额外授权，直接 `import` 使用。** 含 Radix、react-icons、react-syntax-highlighter、d3-scale/d3-shape，以及六个 `@remotion/*` 官方扩展（transitions / paths / shapes / motion-blur / layout-utils / noise） |
+| 清单之外的**新**依赖 | 需用户明确授权后才能加进模板 |
+
+判断边界见 [dependency-policy.md](references/dependency-policy.md)：**禁的是"按次付费、结果不可复现"的生成式模型，不是开源库。**
 
 `scripts/*.py` 严格基于 Python 3.10+ **标准库**实现，**零第三方依赖**（standard library only, zero third-party
-dependencies）。不要在本技能里写入实验性改动，直到用户看过渲染成片并明确批准。
+dependencies）——这条限定**只针对 `scripts/` 下的 Python 脚本**，不是对整个技能的约束。不要在本技能里写入实验性改动，直到用户看过渲染成片并明确批准。
 
 ## Scripts 清单（`.sh` / `.cmd` 都是同一套 Node 实现的平台包装器，行为完全一致）
 

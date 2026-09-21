@@ -32,7 +32,12 @@ Ordinary production models should primarily edit:
 4. scene timing constants when required by narration;
 5. the visual plan and `manifests/visual-assets.json`;
 6. generated or supplied raster assets in `public/illustrations/`;
-7. topic-specific scene objects that preserve the same physical ownership and motion grammar.
+7. topic-specific scene objects that preserve the same physical ownership and motion grammar;
+8. **the wrapped component layer in `src/components/`** — import and use the components that ship with the
+   template, parameterised per scene. This is an explicitly permitted surface: reach for a ready-made
+   wrapped component before hand-writing SVG. The dependency boundary and the component rules live in
+   [dependency-policy.md](dependency-policy.md); the template's `package.json` already declares those
+   libraries, so no separate authorisation is needed to use them.
 
 Stable semantic IDs must remain separate from display labels. Changing visible copy must not break scene branching, icon choice, z-order, transfer paths or slot occlusion.
 
@@ -48,7 +53,9 @@ Stable semantic IDs must remain separate from display labels. Changing visible c
 - Use the official palette and type scale; do not invent per-scene styling.
 - Use lift-linked paper shadows only for moving paper.
 - Keep the grade static and restrained.
-- Use the official line icons instead of system glyphs or emoji.
+- Use the official line icons (`LineIcon`) as the primary icon language, instead of system glyphs or emoji.
+  Topic-specific marks (brand logos, technology identities) may use the pinned `react-icons` sets
+  (`fa` + `fi` only) — see [dependency-policy.md](dependency-policy.md) §7.
 - Preserve the same persistent task-card, shared-track and physical-slot logic.
 
 ## Future updates
@@ -60,7 +67,7 @@ For future aesthetic changes, work in a disposable project copy, render the comp
 Keep these official elements locked until the user approves a future rendered replacement:
 
 - React + TypeScript + Remotion rendering core;
-- locked premium motion contracts shipped in the template: `JumpInText` per-glyph 3D flip titles, `WaveText` letter-wave CTA typing, multi-keyframe figure roll-ins, per-word subtitle reveal, and the v2.9 shot layer (see [shot-language.md](shot-language.md));
+- locked premium motion contracts shipped in the template: `JumpInText` per-glyph 3D flip titles, `ShimmerText` sweep on CTA strings, multi-keyframe figure roll-ins, per-word subtitle reveal, and the v2.9 shot layer (see [shot-language.md](shot-language.md));
 - fixed native 30fps motion, rendered and delivered on one of three locked canvases: 2560×1440 (16:9), 1920×1440 (4:3) or 1440×1920 (3:4 portrait), chosen once at kickoff;
 - no duplicate-frame upconversion; use 60fps only when motion is authored natively at 60fps;
 - mount only the active scene, with at most two scenes during a short handoff;

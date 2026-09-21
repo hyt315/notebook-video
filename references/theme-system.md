@@ -21,7 +21,7 @@ A theme never touches:
 
 - canvas modes, design coordinates and the 4/3 delivery scale;
 - type scale, font stack and the caption measurement gate;
-- motion helpers (`q`, `ease`, `pop`, springs, CameraRig, JumpInText, WaveText, RollDigit);
+- motion helpers (`q`, `ease`, `pop`, springs, CameraRig, JumpInText);
 - scene composition rules, zone budgets, stacking and exit contracts;
 - audio tree, asset gates and QA validators.
 

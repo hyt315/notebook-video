@@ -57,6 +57,9 @@
 
 ▶️ [组件库与动效演示（MP4）](assets/demo/notebook-video-components-demo.mp4) — 锁定图标集、代码窗 / 浏览器壳 / 连件 / 清单 / 计数 / 进度条 / 手绘标注、转场、文字动效、物理件与主题皮肤。
 
+> ⚠️ **这批样片是改动前渲的（未重渲）**：`assets/demo/` 下的 4 个文件（`notebook-video-demo.mp4/.webp`、`notebook-video-components-demo.mp4`、`hero.png`）由**旧版模板**渲染，**不对应当前模板的输出**。此后技能做了多处改动（组件清理与新增、四皮肤校验、目录树布局、`CardFitGate` 修复、配音与时间轴流程等），**均未重渲这批样片**——请把它们当作"风格与形态的示意"，不要当作"当前版本的逐帧复现"。
+> 想核对当前版本：在 `assets/lecture-template` 里 `npm install` 后跑 `npm run still`（抽帧）或 `npm run render`（整片），或在验证工程里跑接触表。
+
 **画布**：锁定三种画布 —— 16:9（2560×1440）、4:3（1920×1440）、3:4 竖屏（1440×1920），均为原生 30fps。官方示例片按 **16:9 设计空间**编写；4:3 / 3:4 需要各自的版面重排（**不再用信箱化缩放冒充适配**），在做竖屏时按 `references/canvas-modes.md` 与 `references/portrait-illustration-system.md` 单独编写场景。
 
 ***
@@ -230,12 +233,12 @@ notebook-video/
 ├── SKILL.md                          # 核心技能定义与制作工作流
 ├── manifest.json                     # 技能元数据（版本号在此）
 ├── README.md / README.en.md          # 中英文说明
-├── CHANGELOG.md                      # 版本发布记录（当前 v3.0.2）
+├── CHANGELOG.md                      # 版本发布记录（当前 v3.1.0）
 ├── assets/
 │   ├── demo/                         # 成片与动图预览
 │   ├── lecture-template/             # 官方模板（纯代码路线，含 8 镜示例片）
 │   └── example-project/              # 经典路线示例（可选生图附加）
-├── scripts/                          # 全部为 Python 标准库 / Node，零第三方依赖
+├── scripts/                          # 全部为 Python 标准库 / Node（本目录不引第三方包）
 │   ├── notebook-video.mjs            # 跨平台统一启动器（含 showcase 等命令）
 │   ├── resolve-shots.py              # 分镜表 → 帧号与相机关键帧
 │   ├── validate-shot-motion.py       # 构建期：镜头出界证明 + 运镜配额
@@ -264,8 +267,8 @@ stagekit.tsx       骨架 Stage：StageFrame + 状态机 + PhaseRail + Attach + 
 skeletons.tsx      骨架 Corridor / Split / Zoom
 media.tsx          介质：ConsoleWindow / MetricGrid / StampBanner
 fxkit.tsx          18 个动效构件（多时钟动效）
-toolkit.tsx       修辞工具件：Callout(画圈标注)/Connector(关系箭头)/WaveText/JumpInText/CountUp/Checklist/CodeBlock/BrowserChrome …… 可直接 import
-plates.tsx         实拍素材框 ShotPlate（真截图/官方图表 + 素材双清单登记）
+toolkit.tsx       修辞工具件：Callout(画圈标注)/Checklist(清单)/JumpInText(逐字跳入) …… 可直接 import
+│   └── components/      封装组件层：Accordion/Tabs/HighlightCode/Chart/StatRow/GlowFrame/PathDraw/FitTextBox …… 场景从这里 import
 kit.tsx            主题无关原子：PillTag / LineIcon / CheckBadge / TYPE
 insert.tsx         B 场景插入镜头 + 5 式转场
 overlap-gate.tsx   渲染期重叠/遮挡门禁
@@ -282,6 +285,9 @@ scenes.tsx         场景层（示例片 8 镜；换题材重写这一层）
 
 - **Q：做视频要花钱调用生图 API 吗？**\
   A：不需要。默认路线 100% 用 React + SVG 代码绘制，零生图成本。
+
+- **Q：那能用开源的 UI 组件库吗？**\
+  A：能，而且鼓励。被禁的只有「按次付费、结果不可复现」的生成式模型；开源库随模板一次 `npm install` 装好就能直接 `import`，不需要额外授权。边界见 [references/dependency-policy.md](references/dependency-policy.md)。
 
 - **Q：怎么保证做出来不像 PPT？**\
   A：靠四层，而且都有门禁兜底：① 四种构图不同的骨架，**相邻场景不得同款**；② **每支片 ≥3 种视觉介质**、每个讲解场景至少一个会随旁白变状态的组件；③ 每章至少 3 次运镜（全片按片长配额），景别真的会变；④ 门禁 P0 不为 0 就**拒绝渲染**。
