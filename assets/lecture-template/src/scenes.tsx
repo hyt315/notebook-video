@@ -9,7 +9,7 @@ import {ConsoleWindow, MetricGrid, StampBanner} from './media';
 import {Corridor, SplitStage, ZoomStage} from './skeletons';
 import {RevealMask} from './insert';
 import {Callout, Checklist} from './toolkit';
-import {StatRow, VerdictBar} from './components';
+import {FitTextBox, StatRow, VerdictBar} from './components';
 import {SHOTS} from './shots';
 
 // ============================================================================
@@ -110,7 +110,11 @@ const S1Lonely: React.FC<{f: number}> = ({f}) => {
             <PhaseRail phases={phases} ctx={ctx} />
             <div style={{position: 'absolute', left: 0, right: 0, bottom: 0, padding: '14px 16px', borderRadius: 12, background: C.paperBase, border: `1.5px solid ${C.line}`, ...enterAt(f, at(1))}}>
               <div style={{fontSize: 20, fontWeight: 700, color: C.muted, marginBottom: 10}}>本地 → 远程</div>
-              <div style={{fontSize: 20, fontWeight: 700, color: C.ink, lineHeight: 1.6}}>只有你能看到<br />→ 全世界都能参与</div>
+              {/* 正文块改用 FitTextBox：这块面板宽度是固定的（rail 380 − 左右各 16 padding = 348），
+                  文案长度不定，原来字号 20 是手写的、换行靠手写 <br />。现在字号由"宽度 + 行数上限"反推
+                  （上限 20px 就是原设计字号，所以本次渲染逐像素不变），文案变长时自动降字号而不是撑出面板。
+                  `\n` 是有意的：这两行是设计上的分行（第二行要以 → 开头），不是给算法断的。 */}
+              <FitTextBox text={'只有你能看到\n→ 全世界都能参与'} maxLines={2} boxWidth={348} maxFontSize={20} fontWeight={700} color={C.ink} lineHeight={1.6} />
             </div>
           </div>
         )}

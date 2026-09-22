@@ -27,14 +27,14 @@ import {
   LuBrain, LuRocket, LuSparkles, LuCircleCheck, LuBot, LuBug, LuRuler, LuGauge, LuGitBranch, LuWorkflow,
   LuMilestone, LuWrench, LuZap, LuFileCode, LuServer, LuShieldCheck, LuChartLine, LuPuzzle, LuLightbulb, LuFlag,
 } from 'react-icons/lu';
-import {interpolate, spring} from 'remotion';
+import {Easing, interpolate, spring} from 'remotion';
 import {THEME} from '../theme/active';
 import {TYPE, PillTag} from '../kit';
 import {fitH} from '../fxkit';
 // ⚠️ fitsWithin 在 ControlStack 里以 dev 自检调用，却**从未 import** —— tsc 报 TS2304。
 // 与 stagekit 的 SlotGuard 同一种病：引用了不存在的标识符，而它挂在
 // `process.env.NODE_ENV !== 'production'` 下，出片路径永远走不到 → 一路静默。
-import {fitsWithin} from './fittext';
+import {fitChineseTextOnNLines, fitsWithin} from './fittext';
 
 // ============================================================================
 // ui.tsx — 界面结构件（库提供结构，本层提供皮肤 + 帧驱动）
@@ -80,14 +80,49 @@ const TONE: Record<string, string> = {
 };
 const toneOf = (t?: string) => TONE[t ?? 'blue'] ?? C.blue;
 
-/** 帧驱动进度，带夹取。所有入场动画都走这个。 */
+/**
+ * 帧驱动进度，带夹取。所有入场动画都走这个。
+ *
+ * 2026-09-21 修（实测）：原来是**匀速直线**（interpolate 不给 easing）。
+ * 新层 36 处入场因此全都是"机械地滑到位"，而旧六模块的入场一律是缓出曲线，
+ * 一屏之内两种运动质感并存，读起来就是"新组件不如老的顺"。
+ * 现在统一用与 scenes 层 enterAt / fxkit easeOutSoft 同一条曲线
+ * `bezier(.16,1,.3,1)`（先快后慢、尾巴长），新旧两层的入场手感就此对齐。
+ * 数值型用法（图层描线进度、可滑动控件的 glide）走同一条曲线也是对的——
+ * 它们要的同样是"落位时收住"，不是"匀着走完"。
+ */
 export const prog = (f: number, from: number, dur = 22) =>
-  interpolate(f - from, [0, dur], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+  interpolate(f - from, [0, dur], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: Easing.bezier(0.16, 1, 0.3, 1),
+  });
+
+/**
+ * presence — 「入场 → 常驻 → 离场」的通用存在感。
+ *
+ * 2026-09-21 修（实测）：新层 36 处入场**只进不出**，`exitStart` 出现 0 次
+ * （旧六模块的组件件件支持离场）。后果是"一镜之内演第二件事"时，上一件事只能
+ * 靠切镜消失——S14 就是这么把弹层叠在手风琴上、造成真实文字遮挡的。
+ * 组件拿到 exitStart 就能主动让位：离场用 18 帧 ease-in 收掉并向上退 14px。
+ *
+ * 返回 {p 入场进度, out 离场进度(0=还在, 1=已走), op 综合不透明度, dx 位移}。
+ */
+export const presence = (f: number, startAt: number, exitStart?: number, durIn = 22) => {
+  const p = prog(f, startAt, durIn);
+  const out = exitStart === undefined ? 0 : prog(f, exitStart, 18);
+  return {
+    p,
+    out,
+    op: p * (1 - out),
+    dx: (1 - p) * 22 - out * 14,
+  };
+};
 
 // ---------------------------------------------------------------------------
 // Accordion — @radix-ui/react-accordion
 // 用法：<Accordion f={f} items={[{title, body, tone}]} startAt={18} step={58} />
-// 展开项由帧号累积决定；展开高度用 fitH() 算出后动画，不测量 DOM。
+// 展开项由帧号累积决定；**展开高度按真实文本折几行算出来**（不再猜行数）；支持 exitStart 让位。
 // ---------------------------------------------------------------------------
 export type AccordionItem = {title: string; body: string; tone?: 'blue' | 'orange' | 'green' | 'gold' | 'red'};
 
@@ -98,12 +133,37 @@ export const Accordion: React.FC<{
   step: number;
   width: number;
   rowH?: number;
+  /** 每项内容**至少**留几行的展开高度（默认 2）。真实文本更长时按真实行数加高，不会裁字。 */
   bodyRows?: number;
-}> = ({f, items, startAt, step, width, rowH = 96, bodyRows = 2}) => {
+  /** 离场起始帧：给了就在之后 18 帧内让位（让同一屏里的下一个元素有地方落） */
+  exitStart?: number;
+}> = ({f, items, startAt, step, width, rowH = 96, bodyRows = 2, exitStart}) => {
   const openedCount = Math.max(0, Math.min(items.length, Math.floor((f - startAt) / step) + 1));
   const value = items.slice(0, openedCount).map((_, i) => String(i));
+  // 2026-09-21 修（实测）：展开高度原来是 `bodyRows` 行 × 行高**猜**出来的。
+  // 正文短于 bodyRows 行时面板偏高（空白），长于 bodyRows 行时正文被 overflow:hidden
+  // **裁掉尾巴**——接触表第 ⑭ 页实测过这件事（"Accordion 塞不进图表，是被裁剩一条"）。
+  // 现在按**真实文本在当前宽度下折几行**算高度：用的是封装层自己的断行器（budoux + UAX#14），
+  // 与渲染同字体同字号，所以"算出来几行"就是"画出来几行"。bodyRows 退化为**下限**（保观感一致）。
+  const innerW = Math.max(120, width - 64); // 触发器左右各 32 padding
+  const linesOf = (t: string) => {
+    try {
+      return fitChineseTextOnNLines({
+        text: t,
+        maxLines: 99,
+        maxBoxWidth: innerW,
+        fontFamily: 'Kai',
+        fontWeight: 400,
+        maxFontSize: TYPE.bodyS,
+        minFontSize: TYPE.bodyS,
+      }).lines.length;
+    } catch {
+      return bodyRows; // 量不出来就退回旧行为，不因为量测失败把画面搞坏
+    }
+  };
+  const rows = Math.max(1, bodyRows, ...items.map((it) => linesOf(it.body)));
   const bodyH = fitH(
-    Array.from({length: bodyRows}, () => ({h: TYPE.bodyS * 1.72, gapAfter: 2})),
+    Array.from({length: rows}, () => ({h: TYPE.bodyS * 1.72, gapAfter: 2})),
     30,
     30
   );
@@ -111,7 +171,7 @@ export const Accordion: React.FC<{
   return (
     <RadixAccordion.Root type="multiple" value={value} style={{display: 'flex', flexDirection: 'column', gap: 22, width}}>
       {items.map((item, i) => {
-        const p = prog(f, startAt + i * step);
+        const {p, op, dx} = presence(f, startAt + i * step, exitStart);
         const isOpen = i < openedCount;
         const accent = toneOf(item.tone);
         return (
@@ -123,6 +183,9 @@ export const Accordion: React.FC<{
               border: `2.5px solid ${isOpen ? accent : C.ink}`,
               borderRadius: RADIUS,
               boxShadow: THEME.paperShadow(isOpen ? 0.8 : 0.25),
+              // 离场：整项（连内容块）一起收掉，不让残留文字压在后来者身上
+              opacity: op,
+              transform: `translateY(${dx}px)`,
             }}
           >
             <RadixAccordion.Header style={{margin: 0}}>
@@ -889,6 +952,16 @@ export const TopicIcon: React.FC<{name: TopicIconName; size?: number; color?: st
   strokeWidth = ICON_WEIGHT_ALIGN,
 }) => {
   const Glyph = TOPIC_ICONS[name];
+  // 2026-09-21 修（实测）：名字不在表里时 `TOPIC_ICONS[name]` 是 undefined，
+  // React 抛的是 minified `#130 Element type is invalid`——一句人话都没有，得拿帧号回查
+  // 才能定位到"是哪个图标名写错了"（S20 用 'chart' / 'map' 两个不存在的名字，整帧渲染直接挂）。
+  // 现在当场把合法名单报出来。
+  if (!Glyph) {
+    throw new Error(
+      `[TopicIcon] 没有名为 "${String(name)}" 的图标。合法名字（${Object.keys(TOPIC_ICONS).length} 个）：` +
+        Object.keys(TOPIC_ICONS).join(', ')
+    );
+  }
   return <Glyph size={size} color={color ?? TOPIC_ICON_TONE[name]} strokeWidth={strokeWidth} />;
 };
 

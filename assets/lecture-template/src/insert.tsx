@@ -10,13 +10,10 @@ import {THEME} from './theme/active';
 //   B 场景 = 辅助取证轨：换一种视觉介质插 0.8–2 秒，说完即回。
 //            B 不是「另一个场景」，而是 A 的一次注意力转移；不留残片、不另起场景。
 //
-// 转场清单（全片只用这 5 式，禁止每镜自创）：
+// 转场清单（全片只用这 3 式，禁止每镜自创）：
 //   cut        硬切（默认，最常用）
 //   handoff    承接位移：同一对象跨镜延续，缩小移位让位
-//   whip       甩镜：1–3 帧快甩 + 速度线。需要真实运动模糊时直接用已内置的
-//              @remotion/motion-blur（<CameraMotionBlur> / <Trail>），不要再手绘去凑
 //   reveal     揭示：遮罩跟随，与 shotkit 的 reveal intent 共用时间线
-//   paper-turn 纸翻：只在章节切换用
 //
 // 帧约定：所有组件接收显式 f（本镜本地帧）。
 // ============================================================================
@@ -61,10 +58,22 @@ export const RevealMask: React.FC<{f: number; at: number; dur?: number; dir?: 'l
   );
 };
 
-/** 转场清单：全片只用这 5 式。校验脚本据此检查多样性。 */
+/**
+ * 转场清单：全片只用这 3 式。
+ * ⚠️ 校验脚本**不读这里** —— `scripts/validate-composition.py` 自带同一份集合（其 `TRANSITIONS`），
+ * 多样性的判据也在那边（按 shot 表的 `transition` 字段统计，与这个数组无关）。这里改了什么，
+ * 门禁不会跟着变；两处必须人肉保持一致。
+ */
 export const TRANSITIONS = ['cut', 'handoff', 'reveal'] as const;
 // v3.0.1：whip / paper-turn 已删除——它们在两条成片里零引用，且 whip 要真生效必须改交接引擎。
 // cut 的真实实现是引擎的 10 帧叠帧（index.tsx），handoff 需要 carrier 声明，reveal 由 RevealMask 实现。
 export type TransitionKind = (typeof TRANSITIONS)[number];
 
-export const INSERT_VERSION = 'insert-v3 · RevealMask · 转场清单（cut/handoff/whip/reveal/paper-turn）';
+/**
+ * 本模块版本串。清单**从 `TRANSITIONS` 派生**（不要让第二份手写副本再出现）：
+ * 上一轮漂过一次 —— 数组已经删到 3 式，这串里还留着已删的 whip / paper-turn
+ * （这串会渲进接触表第 ④ 页的页脚，所以"漂"是会被看见的）。
+ * ⚠️ `scripts/validate-composition.py` 里仍自带一份集合（那份是判据，必须手写一致），
+ * 改动 `TRANSITIONS` 时两处一起改。
+ */
+export const INSERT_VERSION = `insert-v3 · RevealMask · 转场清单（${TRANSITIONS.join('/')}）`;

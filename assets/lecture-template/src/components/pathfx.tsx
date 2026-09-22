@@ -11,7 +11,6 @@ import {
   makeSpark,
   makeStar,
   makeTriangle,
-  Pie,
 } from '@remotion/shapes';
 import {TransitionSeries, linearTiming} from '@remotion/transitions';
 import {fade} from '@remotion/transitions/fade';
@@ -19,8 +18,8 @@ import {slide} from '@remotion/transitions/slide';
 import {wipe} from '@remotion/transitions/wipe';
 import {clockWipe} from '@remotion/transitions/clock-wipe';
 import {iris} from '@remotion/transitions/iris';
-// 2026-09-21：把包里**全部** 19 种官方转场都登记进来（此前只封了 5 种，
-// 其余 14 种"装了但没人知道名字"，等于不存在）。全部在 `diag-upgrade` 页⑥
+// 2026-09-21：把包里**全部** 20 种官方转场都登记进来（此前只封了 5 种，
+// 其余 15 种"装了但没人知道名字"，等于不存在）。全部在 `diag-upgrade` 页⑥
 // 逐个实渲过一帧（含 WebGL 着色器那几种，见该页的结论）。
 import {flip} from '@remotion/transitions/flip';
 import {bookFlip} from '@remotion/transitions/book-flip';
@@ -215,33 +214,10 @@ export const ShapeDraw: React.FC<{
   );
 };
 
-/** PieDraw — 唯一自带 progress 的图形组件，直接绑帧号即可。 */
-export const PieDraw: React.FC<{f: number; startAt: number; durationInFrames?: number; radius?: number; spin?: boolean; tone?: string}> = ({
-  f,
-  startAt,
-  durationInFrames = 70,
-  radius = 95,
-  spin = false,
-  tone,
-}) => {
-  const p = prog(f, startAt, durationInFrames);
-  const a = tone ?? C.blue;
-  return (
-    <Pie
-      radius={radius}
-      progress={p}
-      rotation={spin ? (f * Math.PI * 2) / 300 : 0}
-      fill={`${a}33`}
-      stroke={a}
-      strokeWidth={8}
-    />
-  );
-};
-
 // ---------------------------------------------------------------------------
 // 转场：20 种官方演示型转场，不用再手写（含 blurSlide；`PRESENTATIONS` 的键即全部）
 //
-// 全部登记（2026-09-21 补齐余下 14 种）。每项收一个统一的 ctx，返回官方的
+// 全部登记（2026-09-21 补齐余下 15 种）。每项收一个统一的 ctx，返回官方的
 // presentation 对象——调用方是 `SceneTransitions`，或直接用 PRESENTATIONS[name](ctx)。
 // `none` 是真的"不转场"（硬切），要"什么都不做"时用它而不是随便挑一个。
 // ---------------------------------------------------------------------------
@@ -286,12 +262,12 @@ export type PresentationName = keyof typeof PRESENTATIONS;
  * 注意时长运算：TransitionSeries 的总长 = Σ片段长 − Σ转场长（转场是两镜重叠的部分）。
  *   例：6 段 × 60 帧、5 个 12 帧转场 → 360 − 60 = 300 帧
  *
- * 19 种可选（名称 = 官方包名去掉连字符；`clock-wipe`→`clockWipe`、`cross-warp`→`crosswarp`、
+ * 20 种可选（名称 = 官方包名去掉连字符；`clock-wipe`→`clockWipe`、`cross-warp`→`crosswarp`、
  * `cross-zoom`→`crossZoom`、`zoom-in-out`→`zoomInOut`、`blur-slide`→`blurSlide`、
  * `dreamy-zoom`→`dreamyZoom`、`film-burn`→`filmBurn`、`linear-blur`→`linearBlur`、
  * `push-cut`→`pushCut`、`book-flip`→`bookFlip`、`zoom-blur`→`zoomBlur`）：
  *   fade / slide / wipe / flip / clockWipe / iris / dissolve / ripple /
- *   zoomBlur / filmBurn / bookFlip / swap / crosswarp / crossZoom /
+ *   blurSlide / zoomBlur / filmBurn / bookFlip / swap / crosswarp / crossZoom /
  *   zoomInOut / dreamyZoom / linearBlur / pushCut / none
  */
 export const SceneTransitions: React.FC<{
@@ -303,7 +279,7 @@ export const SceneTransitions: React.FC<{
   height: number;
   direction?: 'from-left' | 'from-right' | 'from-top' | 'from-bottom';
 }> = ({children, durations, transition, transitionDuration = 16, width, height, direction = 'from-left'}) => {
-  // TS2322：`PRESENTATIONS[transition]` 是 19 个工厂的联合，返回 19 种
+  // TS2322：`PRESENTATIONS[transition]` 是 20 个工厂的联合，返回 20 种
   // TransitionPresentation<不同 Props>；TransitionSeries.Transition 只接受其中一种。
   // 运行时行为是对的（选中的那一个一定与 children 匹配），只是三个联合类型无法在
   // 编译期收敛 —— 收据化到组件自己的 prop 类型再交给它，比给每个工厂写重载更实在。
@@ -325,7 +301,3 @@ export const SceneTransitions: React.FC<{
 export const transitionsTotalFrames = (durations: number[], transitionDuration = 16) =>
   durations.reduce((a, b) => a + b, 0) - transitionDuration * Math.max(0, durations.length - 1);
 
-// ---------------------------------------------------------------------------
-// 运动模糊：@remotion/motion-blur
-// ---------------------------------------------------------------------------
-export {CameraMotionBlur, Trail} from '@remotion/motion-blur';

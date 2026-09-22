@@ -10,7 +10,7 @@ import {
   ChatThread, DiffView, FitCard, Funnel, ProgressRing, SkeletonCard, StaggerList, StampSeal, Typewriter,
 } from './fxkit';
 import {Callout, Checklist, JumpInText, TOOLKIT_VERSION} from './toolkit';
-import {Accordion, Chart, ClipReveal, COMPONENTS_VERSION, ControlStack, FitTextBox, GeoView, GlowFrame, HighlightCode, IconWall, MathBlock, MorphShape, NetworkGraph, NoiseJitter, OverlayFrame, PathDraw, PieDraw, QrCode, SankeyChart, SceneTransitions, ShapeDraw, SHAPES, ShimmerText, SketchFx, Tabs, TopicIcon, TreeView} from './components';
+import {Accordion, Chart, ClipReveal, COMPONENTS_VERSION, ControlStack, FitTextBox, GeoView, GlowFrame, HighlightCode, IconWall, MathBlock, MorphShape, NetworkGraph, NoiseJitter, OverlayFrame, PathDraw, QrCode, SankeyChart, SceneTransitions, ShapeDraw, SHAPES, ShimmerText, SketchFx, Tabs, TopicIcon, TreeView} from './components';
 
 // ============================================================================
 // showcase · 组件接触表（Composition: NotebookVideoShowcase）
@@ -25,20 +25,39 @@ import {Accordion, Chart, ClipReveal, COMPONENTS_VERSION, ControlStack, FitTextB
 //
 // 每页 30 帧（1 秒），共 SHOWCASE_PAGES 页；1fps 抽帧恰好一页一张图。
 // 注：KenBurnsImg / EvidenceZoom 依赖位图素材，不进接触表（不给模板塞示例图片）。
+//
+// ⚠️ 本文件是接触表的**渲染实现**，不是组件清单：页标题里的名字也不构成一份"有哪些件"的清单。
+//    **件的权威索引只有一处** —— references/media-routing.md §5.1「组件权威索引」
+//    （53 件逐件：用途 / 何时用 / 何时别用 / 接触表页 / 真实使用记录；含 11 件未上接触表的原因）。
+//    要核对"某件有没有上接触表"看那张表，别从本文件反推。
 // ============================================================================
 
 const C = THEME.palette;
 const F = 150; // 所有组件渲染在「已落定」帧，便于一眼看清形态
 const PAGE = 30;
 
-const Tile: React.FC<{name: string; children?: React.ReactNode}> = ({name, children}) => (
-  <div style={{position: 'relative', overflow: 'hidden', background: C.paperWarm, border: `1px solid ${C.line}`, borderRadius: 10, height: '100%'}}>
-    <div style={{position: 'absolute', left: 12, top: 6, zIndex: 200, fontFamily: 'Space,monospace', fontSize: 16, fontWeight: 700, color: C.muted}}>{name}</div>
-    <div style={{position: 'absolute', left: 0, top: 30, width: 860, height: 430, transform: 'scale(0.98)', transformOrigin: '0 0', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-      {children}
+// ⑬ 页 GeoView 用的经纬度标记（源站 / 边缘节点这类）：经纬度是**手填**的，
+// 本技能不做地理编码、也不含城市/国界数据（见 references/dependency-policy.md §4.2）。
+const GEO_MARKERS = [
+  {lon: 116.4, lat: 39.9, label: '北京', tone: C.orange},
+  {lon: 8.7, lat: 50.1, label: '法兰克福', tone: C.green},
+  {lon: -74.0, lat: 40.7, label: '纽约', tone: C.blue},
+  {lon: 151.2, lat: -33.9, label: '悉尼', tone: C.gold},
+];
+
+// 格子外壳。`stage` 只影响内部舞台的缩放与落位：不传 = 900×470 格子用的那套
+// （舞台 860×430、左上角 (0,30)、scale(0.98)），与旧版逐像素一致，⑨–⑰ 页不走第二个分支。
+const Tile: React.FC<{name: string; children?: React.ReactNode; stage?: {scale: number; left: number; top: number}}> = ({name, children, stage}) => {
+  const st = stage ?? {scale: 0.98, left: 0, top: 30};
+  return (
+    <div style={{position: 'relative', overflow: 'hidden', background: C.paperWarm, border: `1px solid ${C.line}`, borderRadius: 10, height: '100%'}}>
+      <div style={{position: 'absolute', left: 12, top: 6, zIndex: 200, fontFamily: 'Space,monospace', fontSize: 16, fontWeight: 700, color: C.muted}}>{name}</div>
+      <div style={{position: 'absolute', left: st.left, top: st.top, width: 860, height: 430, transform: `scale(${st.scale})`, transformOrigin: '0 0', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+        {children}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Page: React.FC<{title: string; note?: string; children?: React.ReactNode}> = ({title, note, children}) => (
   <AbsoluteFill style={{background: C.paperBase, fontFamily: 'Kai,sans-serif', color: C.ink}}>
@@ -54,6 +73,31 @@ const Grid4: React.FC<{items: {name: string; node: React.ReactNode}[]}> = ({item
     {items.map((it, i) => (
       <div key={it.name} style={{position: 'absolute', left: 20 + (i % 2) * 950, top: 76 + Math.floor(i / 2) * 500, width: 900, height: 470}}>
         <Tile name={it.name}>{it.node}</Tile>
+      </div>
+    ))}
+  </>
+);
+
+/** 5 格（3 列 × 2 行，格子 610×470）：一页 5 件时用。
+ *
+ *  为什么需要它：接触表上每个组件都必须**看得见**，而 `Grid4` 只有 4 格 —— 第 5 件被摆到
+ *  `top = 76 + 2*500 = 1076`，整格落在 1080 高的画布**外面** 466px：渲出来的第 ③ 页只有 4 格，
+ *  第 5 件在接触表上**根本看不见**（CanvasBoundsGate 上线当天就抓到的真缺陷，图已核）。
+ *  所以「一页 5 件」必须有自己的格子表，不能往 4 格里塞第 5 件。
+ *
+ *  横向：3×610 + 2×25 间隙 + 2×20 边距 = 1920，恰好铺满且左右对称（左右边距都是 20）；
+ *  纵向：沿用 `Grid4` 的 76 / 576 两行、格子仍 470 高 —— 页与页之间的节奏不变。
+ *
+ *  舞台等比缩到 0.7：画布宽放不下 3 个 860 宽的舞台（3×860 > 1920），缩放后视觉 602×301，
+ *  居中放进 610 宽的格子（左右各留 4px）。**件本体不会被格子裁掉**：舞台内部把件居中，
+ *  最宽的件（第 5 件的 FitTextBox 封装盒 800+48+5 = 853px）缩放后 597px < 610px，
+ *  其余件都更窄（≤840px）；纵向最高的件（印章外框 400px）缩放后 280px，
+ *  落在 84..364 之间，不会碰到顶部的件名标签。 */
+const Grid5: React.FC<{items: {name: string; node: React.ReactNode}[]}> = ({items}) => (
+  <>
+    {items.map((it, i) => (
+      <div key={it.name} style={{position: 'absolute', left: 20 + (i % 3) * 635, top: 76 + Math.floor(i / 3) * 500, width: 610, height: 470}}>
+        <Tile name={it.name} stage={{scale: 0.7, left: 4, top: 84}}>{it.node}</Tile>
       </div>
     ))}
   </>
@@ -157,7 +201,7 @@ export const Showcase: React.FC = () => {
           <Page title="② 控制台 / 指标 / 代码 介质" note={MEDIA_VERSION}><Grid4 items={p2} /></Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="③ 卡片 / 漏斗 / 标注构件" note={STAGEKIT_VERSION}><Grid4 items={p3} /></Page>
+          <Page title="③ 卡片 / 漏斗 / 标注构件" note={STAGEKIT_VERSION}><Grid5 items={p3} /></Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
           <Page title="④ 对话 / 邮件 / 状态轨" note={INSERT_VERSION}><Grid4 items={p4} /></Page>
@@ -318,7 +362,7 @@ export const Showcase: React.FC = () => {
           </Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="⑪ 封装层 · 路径与几何" note={`${COMPONENTS_VERSION} · 描线生长 / 形状变形 / 饼图 / 转场`}>
+          <Page title="⑪ 封装层 · 路径与几何" note={`${COMPONENTS_VERSION} · 描线生长 / 形状变形 / 标注引线 / 转场`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
               <Tile name="PathDraw · 描线生长 + 沿线运动点">
                 <PathDraw f={F} path="M 0 180 C 160 40, 300 320, 460 180 S 760 30, 900 180" startAt={0} durationInFrames={60} width={820} height={330} viewBox="-40 0 980 360" showDot strokeWidth={11} />
@@ -330,11 +374,25 @@ export const Showcase: React.FC = () => {
               </Tile>
             </div>
             <div style={{position: 'absolute', left: 20, top: 576, width: 900, height: 470}}>
-              <Tile name="PieDraw · 饼图（自带 progress）">
-                <div style={{display: 'flex', gap: 40, alignItems: 'center'}}>
-                  <PieDraw f={F} startAt={110} durationInFrames={200} radius={110} tone={C.blue} />
-                  <PieDraw f={F} startAt={80} durationInFrames={200} radius={110} spin tone={C.orange} />
-                  <PieDraw f={F} startAt={50} durationInFrames={200} radius={110} tone={C.green} />
+              {/* 原格子是 `PieDraw`（v3.1.1 删除：被 Chart variant="pie" 与 ProgressRing 上下夹住，
+                  自己没标签/没图例/没数值）。换成 pathfx 家族自己的**组合用法** —— 标注框 + 引线，
+                  本页主题仍是"路径与几何"。坐标是按实测几何定的：SHAPES.callout(300,190,70) 的
+                  path bbox 是 300×230（尖角在正下方），ShapeDraw 的 viewBox = bbox±26、size=210
+                  → scale 0.5966、纵向居中偏移 20.87，尖角落在 svg 内 (84.1,173.6)；
+                  ShapeDraw 摆在 (10,44) → 引线起点 (94,218)。 */}
+              <Tile name="ShapeDraw 标注框 + PathDraw 引线（几何件的组合用法）">
+                <div style={{position: 'relative', width: 840, height: 300}}>
+                  <div style={{position: 'absolute', left: 10, top: 10, fontFamily: 'Space,Kai,monospace', fontSize: 19, color: C.muted}}>① ShapeDraw · callout 标注框（SHAPES.callout）</div>
+                  <div style={{position: 'absolute', left: 10, top: 44}}>
+                    <ShapeDraw f={F} shape={SHAPES.callout(300, 190, 70)} startAt={0} size={210} tone={C.blue} />
+                  </div>
+                  <div style={{position: 'absolute', left: 0, top: 0}}>
+                    <PathDraw f={F} path="M 94 218 C 200 236, 340 234, 456 205" startAt={0} durationInFrames={60} width={840} height={300} viewBox="0 0 840 300" strokeWidth={9} tone={C.orange} showDot dashedGhost={false} />
+                  </div>
+                  <div style={{position: 'absolute', left: 470, top: 66, fontFamily: 'Space,Kai,monospace', fontSize: 19, color: C.muted}}>② PathDraw · 引线（showDot）</div>
+                  <div style={{position: 'absolute', left: 470, top: 110, width: 360, height: 150, background: C.paper, border: `2.5px solid ${C.ink}`, borderRadius: 10, display: 'grid', placeItems: 'center', fontFamily: 'Kai,sans-serif', fontSize: 30, fontWeight: 700, color: C.ink, boxShadow: THEME.paperShadow(0.4)}}>
+                    被标注的那一处
+                  </div>
                 </div>
               </Tile>
             </div>
@@ -432,9 +490,16 @@ export const Showcase: React.FC = () => {
               </Tile>
             </div>
             <div style={{position: 'absolute', left: 970, top: 76, width: 900, height: 470}}>
-              <Tile name="GeoView · 地球 / 经纬网（d3-geo）">
-                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>
-                  <GeoView f={F} width={400} height={400} spin={0.35} startAt={0} tone={C.blue} />
+              <Tile name="GeoView · 真地图：陆地轮廓 + 经纬度标记（d3-geo + world-atlas 110m）">
+                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 26}}>
+                  <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6}}>
+                    <GeoView f={F} width={400} height={330} spin={0.35} startAt={0} tone={C.blue} markers={GEO_MARKERS} />
+                    <span style={{fontFamily: 'Space,monospace', fontSize: 15, color: C.muted}}>globe · 正交投影 + 自转 · 背面的点不画</span>
+                  </div>
+                  <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6}}>
+                    <GeoView f={F} width={400} height={330} projection="flat" startAt={0} tone={C.blue} markers={GEO_MARKERS} />
+                    <span style={{fontFamily: 'Space,monospace', fontSize: 15, color: C.muted}}>flat · naturalEarth1 · 源站/边缘节点一次看全</span>
+                  </div>
                 </div>
               </Tile>
             </div>
@@ -667,4 +732,11 @@ export const Showcase: React.FC = () => {
 };
 
 export const SHOWCASE_PAGES = 17;
-export const SHOWCASE_VERSION = 'showcase-v8 · 17 pages · 26 件旧件 + 新封装层 9 页 + v3.1 新能力 3 页';
+
+// 「件」的口径 = 逐个数过**本文件里真实出现过的旧模块 JSX 标签**：fxkit 9 + media 2 +
+// stagekit 1（PhaseRail）+ skeletons 3 + toolkit 3 = **18 件**（与 references/media-routing.md §6 同一口径）。
+// ⚠️ 别把旧模块**对外 export** 的 26 件（见 components/index.ts 的「53 件地板」注释）填到这里 ——
+// 那是"能 import 的件数"，不是"接触表渲染出来的件数"，两者差 8 件。
+// ⚠️ 这个串**不在任何画面上渲染**（本文件没有页脚，`Page` 只用 title / note；全仓库没有一处读它）
+//    —— 它是给人读的版本串，改它**不会**改变任何渲染结果，所以也没有"下次渲染自动生效"这回事。
+export const SHOWCASE_VERSION = 'showcase-v8 · 17 pages · 18 件旧件 + 新封装层 9 页 + v3.1 新能力 3 页';

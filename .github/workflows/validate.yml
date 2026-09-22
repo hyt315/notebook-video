@@ -40,7 +40,10 @@ jobs:
       - name: Run the build-time gates on the default template
         # ⚠️ 复核发现：CI 之前**一条构建期门禁都不跑**（只有 validate-skill / official-example /
         # visual-plan 与 selftest），于是「负向抽查」长期只是本地仪式。
-        # 这里把模板上的 6 道构建期门禁全挂上：呈现效果 / 帧参数名 / 构图 / 镜头运动 / 音效电平 / 字幕同步。
+        # 这里把模板上要跑的 **7 条**构建期命令全挂上：呈现效果 / 帧参数名 / 构图 / 镜头运动 /
+        # 音效电平 / 字幕同步 / 语义断句。
+        # ⚠️ 别按「构建期 6 道」去删一条 —— 那个 6 是 `SKILL.md`「The gates」表的**分类口径**
+        # （表里那 6 道不含字幕同步与语义断句这两条文本链检查）；本步骤实际挂的是 7 条，以 `run:` 为准。
         run: |
           node scripts/notebook-video.mjs validate-frame-props assets/lecture-template
           node scripts/notebook-video.mjs validate-composition assets/lecture-template
@@ -72,6 +75,19 @@ jobs:
         run: |
           npm ci --prefer-offline --no-audit --no-fund
           npm run typecheck
+      - name: Re-run the phrase rule with BudouX available
+        # ⚠️ 必须排在这里，不能提前：BudouX 装在模板的 `node_modules` 里，而那要等上面的 `npm ci`；
+        # 而 `npm ci` 又必须排在「Validate skill and official example」之后 —— 那一步断言仓库树
+        # 没有 node_modules。所以在更早那一步里，"语义断句"这条只能以**跳过并告警**的形式跑过。
+        # ⚠️ 这里**必须带 `--require-budoux`**（2026-09-22 加）：不带开关时"找不到 BudouX"只是
+        # SKIPPED + rc=0 —— 看起来通过、其实那条短语规则根本没跑。交付路径上一律要它把跳过变成失败，
+        # 这样"没跑"就不可能冒充"检查过了"。（本地跑夹具目录时不要带这个开关。）
+        run: |
+          python3 scripts/validate-semantic-breaks.py \
+            assets/lecture-template/manifests/caption-cues.json \
+            assets/lecture-template/manifests/protected-caption-phrases.txt \
+            --budoux-dir assets/lecture-template/node_modules \
+            --require-budoux
       - name: Smoke-test project creation
         run: |
           mkdir "$RUNNER_TEMP/notebook-video-smoke"

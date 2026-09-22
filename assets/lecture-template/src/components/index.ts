@@ -18,7 +18,16 @@
 //   · 合规判据是**「零引用」而不是「总数」**——任何组件只要从未出现在任何画面里
 //     （参考片或接触表），就是待删除项。**不要对着一个数字做有损合并**：
 //     引擎/结构件（STRUCTURAL）14 件砍不动，表意件逐对核对后真正重复的只有 4–5 对；
-//     逐件点算的地板是 55 件（src/components/ 29 + 六个旧模块 26）。
+//     逐件点算的地板是 53 件（src/components/ 27 + 其余 8 个模块 26）。
+//     口径 = 各模块对外 export 的大写 React 组件（本层 27 = 本层实现 27，v3.1.1 起无库再导出；
+//     其余模块 26 = kit 3 / fxkit 9 / media 3 / stagekit 2 / skeletons 3 / insert 1 /
+//     shotkit 2 / toolkit 3；渲染期门禁件 SlotGuard 不算件，与 references/fxkit.md 同口径）。
+//
+// 本版（v3.1.1）删除/变更：
+//   · 删 `PieDraw`（饼图）—— 被 `Chart variant="pie"`（有扇区百分比 + 图例）与
+//     `ProgressRing`（有中央数值）上下夹住，自己没标签/没图例/没数值；
+//   · 删 `CameraMotionBlur` / `Trail` 与依赖 `@remotion/motion-blur` —— 全仓库只有
+//     再导出行、从未进过任何画面；"甩镜"这个用途已从 Locked motion pack 删除。
 //
 // 本版（v3.1）新增/变更：
 //   · 新增 `ControlStack`（Radix 六个纯受控控件）—— 换掉 `TiltCard`
@@ -47,8 +56,9 @@ export {Chart, StatRow, csvToChartData, csvToChartSeries, CHART_BOX} from './cha
 export type {ChartDatum, ChartSeries, ChartVariant} from './chart';
 
 // ---- 结构化数据 → 图形（d3-hierarchy / d3-geo / d3-sankey / qrcode）----
+// GeoView 的真地图数据来自 world-atlas（land-110m）+ topojson-client，见 dependency-policy.md §4.2
 export {TreeView, GeoView, SankeyChart, QrCode, fitNodeLabel, fitOneLine, MIN_LABEL_FONT} from './data';
-export type {TreeNode, TreeVariant, SankeyNodeIn, SankeyLinkIn} from './data';
+export type {TreeNode, TreeVariant, SankeyNodeIn, SankeyLinkIn, GeoMarker, GeoProjection} from './data';
 
 // ---- 手绘风（roughjs）----
 export {SketchFx, sketchCircleArea, sketchUnderline, sketchBox} from './sketch';
@@ -61,20 +71,17 @@ export type {FocusMode, FocusRect} from './focus';
 // ---- 零依赖「炫效果」----
 export {GlowFrame, ShimmerText, ClipReveal, NoiseJitter, VerdictBar} from './effects';
 
-// ---- 路径 / 几何 / 转场 / 运动模糊（@remotion 官方扩展）----
+// ---- 路径 / 几何 / 转场（@remotion 官方扩展）----
 export {
   PathDraw,
   MorphShape,
   ShapeDraw,
-  PieDraw,
   SHAPES,
   SceneTransitions,
   PRESENTATIONS,
   transitionsTotalFrames,
   usePathDraw,
   viewBoxOf,
-  CameraMotionBlur,
-  Trail,
 } from './pathfx';
 export type {PresentationName} from './pathfx';
 
@@ -83,4 +90,4 @@ export type {PresentationName} from './pathfx';
 export {FitTextBox, fitChineseTextOnNLines, useFontsReady, assertFits, fitsWithin} from './fittext';
 
 /** 封装层版本：接触表页脚与门禁用它确认"看到的是这一版"。 */
-export const COMPONENTS_VERSION = 'components-v3 · 29 件 · 依赖见 package.json';
+export const COMPONENTS_VERSION = 'components-v3.1.1 · 27 件 · 依赖见 package.json';

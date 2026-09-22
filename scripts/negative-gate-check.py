@@ -64,6 +64,76 @@ def case(name, steps):
     results.append((name, ok, detail))
     print(('PASS  ' if ok else 'FAIL  ') + name)
 
+
+# ════════════════════════════════════════════════════════════════════════════
+# 渲染期门禁的**接线与硬拦纪律**静态检查（画布越界门禁 CanvasBoundsGate）
+#
+# 为什么需要它：这道门禁跑在浏览器里，本脚本（纯标准库、不渲染）没法喂它一帧坏画面 ——
+# 但"装没装、关键判据还在不在"是纯静态可查的，而这一层恰好是最容易在重构里被削掉的：
+#   · 没挂上 → 门禁不存在（接触表 composition 此前**一道门禁都没有**，第 ⑥ 页的越界就是这么漏的）；
+#   · 删掉 `if (blocked) throw e;` → 报"硬拦"却照样出图 rc=0（本仓库踩过两次的坑）；
+#   · 删掉 `[data-design-root]` 折算 → 口径从设计坐标退回输出像素，换 --scale 就失真。
+# 所以这三条各自一条夹具：原样必须过，删掉任一条必须被抓住。
+# （真渲染的负向/正向夹具在演示工程之外：见 references/composition-gate.md §5.2 的七条 composition。）
+# ════════════════════════════════════════════════════════════════════════════
+CANVAS_BOUNDS_NEEDLES = (
+    # (检查项, 子串, 说人话)
+    ('硬拦纪律', 'let blocked = false;', '缺少 blocked 标志位：判定作出后 handle 还能被释放'),
+    ('硬拦纪律', 'if (released || blocked) return;', '缺少"blocked 后 handle 不释放"的处置'),
+    ('硬拦纪律', 'if (blocked) throw e;', 'cancelRender 的异常会被自家 catch 吞掉（报了硬拦却出图 rc=0 的老坑）'),
+    ('逐帧持柄', 'delayRender(', '缺 delayRender：测量晚于截帧，门禁等于不存在'),
+    ('逐帧持柄', 'continueRender(', '缺 continueRender：handle 永远不释放，渲染卡死'),
+    ('逐帧持柄', 'cancelRender(', '缺 cancelRender：硬拦根本无从谈起'),
+    ('等字体', 'document.fonts.ready', '字体未就绪直接 return 会让每帧都跳过（另外两道门禁都踩过）'),
+    # v2 判据的**收窄**就是这道门禁的全部价值所在（也是它不再与 ClippingGate 重复报的原因），
+    # 所以这两条收窄各自一条夹具：削掉任一条，门禁就退回 v1 那个"什么都判"的宽口径。
+    ('只看文字叶元素', 'if (el.children.length) return;', '丢掉了"只看叶元素"的收窄：容器的整块宽会被当成墨迹（居中文字误判）'),
+    ('只看文字叶元素', "textContent || ''", '丢掉了"含文字"的收窄：无字元素（装饰块 / 铺底）会被拉进来判'),
+    ('墨迹口径', 'createRange', '丢了 Range 取墨迹：块级元素整块宽会被误判（居中文字）'),
+    ('白名单', 'data-gate-allow', '没有接 data-gate-allow：有意出血无处声明，只能调阈值'),
+    ('白名单', 'data-gate-skip', '没有接 data-gate-skip'),
+    ('覆盖率', 'REPORT_EVERY', '没有覆盖率日志：分不清"没报"与"没跑"'),
+)
+
+
+def canvas_bounds_wiring(project_dir):
+    """静态检查渲染期画布越界门禁：装没装、片子那条**是 warn**、接触表那条**是 block**、判据还在不在。"""
+    src = os.path.join(project_dir, 'src')
+    gate = os.path.join(src, 'canvas-bounds-gate.tsx')
+    index = os.path.join(src, 'index.tsx')
+    if not os.path.isfile(gate):
+        return ['canvas-bounds-gate.tsx 不存在：渲染期画布越界门禁没有装']
+    if not os.path.isfile(index):
+        return ['src/index.tsx 不存在：无法确认门禁有没有被挂上']
+    g = io.open(gate, encoding='utf-8').read()
+    t = io.open(index, encoding='utf-8').read()
+    problems = []
+    for kind, needle, why in CANVAS_BOUNDS_NEEDLES:
+        if needle not in g:
+            problems.append(f'{kind}：{why}（找不到 `{needle}`）')
+    if "from './canvas-bounds-gate'" not in t:
+        problems.append('接线：index.tsx 没有 import CanvasBoundsGate')
+    mounts = t.count('<CanvasBoundsGate')
+    if mounts < 2:
+        problems.append(f'接线：index.tsx 没有挂载 CanvasBoundsGate（找到 {mounts} 处；片子与接触表各要一处）')
+    # 两条挂载**故意不同档**（2026-09-22）：片子 warn（它的硬拦发生在交付渲染最后一刻，
+    # 判据误报的代价 = 整片不出）、接触表 block（件看不见 = 目录页缺件，必须中断）。
+    # 谁把它们"统一"成同一档，都会被这条夹具抓住 —— 这是刻意的，别来放宽。
+    if '<CanvasBoundsGate mode="warn"' not in t:
+        problems.append('接线：片子那条 CanvasBoundsGate 不是 mode="warn"（理由见 index.tsx 里的注释：'
+                        '在片子上它的价值未经证明，硬拦误报 = 整个交付不出片）')
+    if '<CanvasBoundsGate mode="block"' not in t:
+        problems.append('接线：接触表那条 CanvasBoundsGate 不是 mode="block"（件整件看不见 = 目录页缺件，只出声不够）')
+    return problems
+
+
+# 本脚本自带一个 CLI 分支，好让下面的夹具走和其它门禁同一条 `run()`/`case()` 通道
+if len(sys.argv) >= 3 and sys.argv[1] == '--canvas-bounds-wiring':
+    probs = canvas_bounds_wiring(sys.argv[2])
+    for p in probs:
+        print(p)
+    sys.exit(0 if not probs else 1)
+
 # ── A：anchor 出界 → validate-shot-motion 必须拦 ──
 td, rc0, out0 = mkproj(lambda d: (d['shots'][0].__setitem__('anchor', {'x': 1900, 'y': 1500, 'w': 1200, 'h': 600}), d)[1])
 case('A 镜头 anchor 出界', [
@@ -253,7 +323,7 @@ case('M 呈现效果 · 正文色几乎等于底色', [
 ])
 cleanup(td)
 
-# ── N · 帧参数名门禁必须覆盖 **src/components/ 那一层**（v3.1 的 29 件）──
+# ── N · 帧参数名门禁必须覆盖 **src/components/ 那一层**（v3.1.1 的 27 件）──
 # 旧版 `collect_components` 只 os.listdir(src) 一层、且名单里有 4 个不存在的文件名，
 # 于是给 `Chart` 写成 `frame={f}` 完全不会被抓（静默回落到全局帧）。
 # 夹具刻意把组件放在 **src/components/** 里使用，只有"递归扫描"才能判出来。
@@ -533,6 +603,219 @@ td, rc0, out0 = mksrc(lambda t: t.replace(S2_ANCHOR, S2_ANCHOR + NL + "  const b
 case('Z3 拍数越界 · 全路径 SHOTS.S2.beats[9]（原来漏掉的写法）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
     ('must_block:SHOTS.S2.beats[9]', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+# ════════════════════════════════════════════════════════════════════════════
+# AB · 渲染期「画布越界」门禁（CanvasBoundsGate）的接线、档位与判据收窄
+#
+# 渲染期门禁没法在这个脚本里真渲一帧（那要浏览器 + 30 秒/帧），但**最容易在重构里被削掉的几层**
+# 是纯静态可查的：挂载、档位（片子 warn / 接触表 block）、硬拦纪律、判据的收窄。
+# 真渲染的正/负向夹具与实测数字在 references/composition-gate.md §5.2。
+# ════════════════════════════════════════════════════════════════════════════
+CBW = [PY, os.path.join(SKILL, 'scripts/negative-gate-check.py'), '--canvas-bounds-wiring']
+
+
+def mksrc_edits(edits):
+    """带模板 src 的夹具项目，并按 (相对路径, 原文, 替换) 逐条改。
+    锚点找不到直接断言失败 —— 防"夹具没改到、于是因为别的原因失败"这种假通过。"""
+    td_, rc_, out_ = mkproj()
+    for base, _dirs, files in os.walk(os.path.join(TPL, 'src')):
+        for name in files:
+            if not name.endswith(('.tsx', '.ts')):
+                continue
+            src_path = os.path.join(base, name)
+            dst = os.path.join(td_, 'src', os.path.relpath(src_path, os.path.join(TPL, 'src')))
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copy(src_path, dst)
+    for rel, old, new in edits:
+        p = os.path.join(td_, 'src', rel)
+        text = io.open(p, encoding='utf-8').read()
+        assert old in text, f'夹具锚点没找到：src/{rel} :: {old[:60]}'
+        io.open(p, 'w', encoding='utf-8', newline='').write(text.replace(old, new, 1))
+    return td_, rc_, out_
+
+
+# AB0 = 阳性对照：模板原样必须全过（证明 AB1–AB4 不是"见到就报"）
+td, _rc, _out = mksrc_edits([])
+case('AB0 画布越界门禁 · 接线原样必须过（阳性对照）', [
+    ('must_pass', 'canvas-bounds-wiring', run(CBW + [td])),
+])
+cleanup(td)
+
+# AB1 = 片子那条挂载被删掉（门禁在成片上等于不存在）
+td, _rc, _out = mksrc_edits([('index.tsx', '<CanvasBoundsGate mode="warn"/>', '')])
+case('AB1 画布越界门禁 · 删掉片子里的挂载', [
+    ('must_block:没有挂载 CanvasBoundsGate', 'canvas-bounds-wiring', run(CBW + [td])),
+])
+cleanup(td)
+
+# AB2 = 「异常不被自家 catch 吞」被删掉 —— 本仓库实测过两次的"报了硬拦却出图 rc=0"
+td, _rc, _out = mksrc_edits([('canvas-bounds-gate.tsx', 'if (blocked) throw e;', 'if (false) throw e;')])
+case('AB2 画布越界门禁 · 删掉硬拦纪律（异常被自家 catch 吞）', [
+    ('must_block:硬拦纪律', 'canvas-bounds-wiring', run(CBW + [td])),
+])
+cleanup(td)
+
+# AB3 = 片子那条被改成 block（"统一档位"这个最容易顺手做的动作）→ 必须被抓住
+# 理由：它的硬拦发生在**交付渲染的最后一刻**，而 v2 判据在片子上的价值未经证明；
+# 误报的代价是整片不出，比漏报一处 20px 裁切贵。接触表那条则必须保持 block。
+td, _rc, _out = mksrc_edits([('index.tsx', '<CanvasBoundsGate mode="warn"/>', '<CanvasBoundsGate mode="block"/>')])
+case('AB3 画布越界门禁 · 把片子那条擅自升成 block', [
+    ('must_block:不是 mode="warn"', 'canvas-bounds-wiring', run(CBW + [td])),
+])
+cleanup(td)
+
+# AB4 = 判据的**收窄**被削掉（"只看含文字的叶元素"退回"什么都判"）→ 必须被抓住。
+# 这一条守的是 v2 的全部价值：宽口径正是 v1 与 ClippingGate 重复报、且要养一整套排除规则的根源。
+td, _rc, _out = mksrc_edits([('canvas-bounds-gate.tsx', 'if (el.children.length) return;', 'if (false) return;')])
+case('AB4 画布越界门禁 · 削掉"只看叶元素"的收窄', [
+    ('must_block:只看叶元素', 'canvas-bounds-wiring', run(CBW + [td])),
+])
+cleanup(td)
+
+# ════════════════════════════════════════════════════════════════════════════
+# AC/AD/AE · 讲法字段 G-14②：同一 `move` **不得连续 ≥3 镜**
+#
+# 为什么补这一组：这条规则在 `references/narrative-moves.md` 写了**两处**（§2 动作表的开头、§4 门禁表），
+# 可它此前**从没被任何门禁读过** —— `validate-presentation.py` 的 G-14 只查了"move 是不是 10 个名字
+# 之一"，于是写 3 镜连续 `引入` 的 shots.json 照旧 PASS。**判据加了而夹具没加 = 那道门仍然只是名义存在**，
+# 所以判据与夹具同版落地：
+#   AC = 连续 3 镜必须拦（阈值下界，文档说"不得连续 ≥3 镜"）；
+#   AD = 连续 2 镜必须放行（阴性对照，证明它不是"见到重复就拦"—— 上限是 2 镜）；
+#   AE = 中间夹一镜**缺 move** 时，不许把它两侧接成一条假的"连续 3 镜"（缺 move 自己另报 P0）。
+#        ⚠️ 这条不是凑数：判据的第一版写的是 `continue`（跳过缺 move 的那镜但**不打断计数**），
+#        于是 `引入,引入,缺move,引入` 被报成"S1→S2→S4 连续 3 镜"—— 一句用户照着改不了的假话。
+#        夹具当场抓到，判据才改成"遇到非闭集 move 就断段"。
+# ════════════════════════════════════════════════════════════════════════════
+
+def mut_move_run(d, first, count):
+    """把从 first 起的 count 镜改成同一个 move（模板 S1 本来就是 `引入`）。"""
+    for k in range(first, first + count):
+        d['shots'][k]['move'] = d['shots'][first]['move']
+    return d
+
+
+td, rc0, out0 = mkproj(lambda d: mut_move_run(d, 0, 3))
+case('AC 讲法字段 · 同一 move 连续 3 镜（G-14②）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:同一 move 连续 3 镜', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+td, rc0, out0 = mkproj(lambda d: mut_move_run(d, 0, 2))
+case('AD 讲法字段 · 同一 move 连续 2 镜（阴性对照，必须放行）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_pass', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+
+def mut_move_run_gap(d):
+    """S1/S2/S4 都是 `引入`，S3 删掉 move：不许报"连续 3 镜"（缺 move 已经报了 P0）。"""
+    mut_move_run(d, 0, 2)
+    d['shots'][3]['move'] = d['shots'][0]['move']
+    d['shots'][2].pop('move', None)
+    return d
+
+
+td, rc0, out0 = mkproj(mut_move_run_gap)
+case('AE 讲法字段 · 缺 move 打断连续计数（不许拼出假的连续）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:缺 move', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_absent:同一 move 连续', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# ════════════════════════════════════════════════════════════════════════════
+# AF–AK · 讲法字段 G-15：`evidence` 必须**作为 JSX 用法**出现在场景源码里（v2 简版口径）
+#
+# 为什么补这一组：`references/narrative-moves.md` §2/§4 与 `presentation-gate.md` 把 `evidence`
+# 的判法写成 **P0**，而 `validate-presentation.py` 此前读它的唯一一处是 `if not ev:`（只查字段非空）：
+# 名字写成**不存在的**、或指向一个**不动的**东西，门禁一声不响。
+# 「文档里有、代码里没有」是本仓库最危险的一类缺陷（CardFitGate / OverlapGate / bottomFill 都是这样废掉的）。
+#
+# 2026-09-22 按实测**简化**（原版 465 行：手写 JSX 解析 + 本镜作用域 + 帧驱动白名单 + 降级分支）。
+# 现在只查一件事：名字有没有被当成 JSX 用法（`<名字 …>` / `<名字/>`）用在场景源码里。
+# 夹具跟着换 —— **只留还成立的那几条**，并把它原本想防的东西重新钉一遍：
+#   AF = 名字在源码里根本不存在              → P0（必须拦）
+#   AG = 名字在**别的镜**里（StaggerList 只在 S4）→ 现在**放行**：这就是"不做本镜作用域"的代价本身，
+#        用 must_pass 把它**钉在明处**（谁哪天加回本镜作用域，这条夹具会先失败，提醒他同步改口径与文档）
+#   AJ = 名字只出现在**注释**里（`exitAt` 是模板里被删掉、只在注释中留名的小助手）→ P0
+#        （⚠️ 这一条是实测逼出来的：真实工程 overview-film 的 S2 把 `MetricGrid` 换成手绘行 + `Chart`，
+#         只在注释里留了一句"这里本来用 MetricGrid"——"文件里搜得到名字"的宽松判法会**假通过**）
+#   AK = 原样（带模板 src）→ 全过 —— AF/AJ 的**阴性对照**，也证明模板 8 镜的 evidence 个个合格
+#        （E 用例是"只有分镜表、没有 src"的版本，它走不到这条判据）
+# 删掉的两条夹具与原因（"不再具备的能力"不留夹具，但**在文档里如实写清、不留空承诺**）：
+#   AH/AI = 帧驱动 vs 静态（P1 只点名）—— 这半边判据已删除：帧驱动量只能做**白名单**判定，而它的误报面
+#           已经实测到了（帧经 `ctx` 这类不透明参数传进组件的写法会被判成静态，动作表推荐的 `PhaseRail`
+#           恰是这种写法，判成 P0 就等于"照文档写、门禁拦你"）。
+#   AL = 切不出"本镜"时降级并自报 —— 已经没有"本镜"这一层，无级可降。
+# 两条都写进了 `references/narrative-moves.md` §2 与 `presentation-gate.md` §G-15 的"现在不做"。
+# ════════════════════════════════════════════════════════════════════════════
+
+
+def mksrc_mut(mutate=None, replace_scene=None):
+    """带模板 src 的夹具项目，可**同时**改 shots.json（改在 resolve-shots 之前，与 X/AC 同口径）
+    与 scenes.tsx。锚点找不到直接断言失败 —— 防"夹具没改到、于是因为别的原因通过"。"""
+    td, rc0, out0 = mkproj(mutate)
+    for base, _dirs, files in os.walk(os.path.join(TPL, 'src')):
+        for name in files:
+            if not name.endswith(('.tsx', '.ts')):
+                continue
+            src_path = os.path.join(base, name)
+            dst = os.path.join(td, 'src', os.path.relpath(src_path, os.path.join(TPL, 'src')))
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copy(src_path, dst)
+    if replace_scene is not None:
+        p = os.path.join(td, 'src/scenes.tsx')
+        text = io.open(p, encoding='utf-8').read()
+        new = replace_scene(text)
+        assert new != text, '夹具没有真正改到 scenes.tsx（锚点变了？）'
+        io.open(p, 'w', encoding='utf-8', newline='').write(new)
+    return td, rc0, out0
+
+
+def mut_evidence(idx, name):
+    def f(d):
+        d['shots'][idx]['evidence'] = name
+        return d
+    return f
+
+
+# AF · 名字在源码里根本不存在 → 必须拦（且不能走成"静态"那一侧）
+td, rc0, out0 = mksrc_mut(mut_evidence(0, 'GhostWidget'))
+case('AF 讲法字段 · evidence 指向源码里不存在的名字（G-15）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:找不到这个用法', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_absent:看不出一丝帧驱动', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# AG（改写）· 名字在**别的镜**里（StaggerList 只在 S4 出现）→ **必须放行**：
+# 这一条现在**语义变了** —— 它不再钉"本镜作用域"（那个能力已按实测砍掉），
+# 而是把这个**已知漏检**钉在明处：名字没在本镜用到、只在别的镜用了，判据看不见。
+# 谁哪天把本镜作用域加回来，这条夹具会先失败 —— 那是**有意的信号**：请同时改口径与文档。
+td, rc0, out0 = mksrc_mut(mut_evidence(0, 'StaggerList'))
+case('AG 讲法字段 · evidence 指向别镜的组件（v2 口径下**已知漏检**，如实放行）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_pass', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# AJ · 名字只出现在**注释**里（`exitAt` 是模板里被删掉、只在注释中留名的小助手）→ 必须拦
+td, rc0, out0 = mksrc_mut(mut_evidence(0, 'exitAt'))
+case('AJ 讲法字段 · evidence 只出现在注释里（注释里的名字不算"用到"）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:找不到这个用法', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
+# AK · 阴性对照：带 src 的原样模板必须全过（也证明模板 8 镜的 evidence 个个合格）
+td, rc0, out0 = mksrc_mut()
+case('AK 讲法字段 · 带场景源码的原样模板（阴性对照，必须全过）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_pass', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 

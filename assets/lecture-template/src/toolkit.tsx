@@ -66,7 +66,14 @@ export const JumpInText:React.FC<{
 }>=({items,fontSize,fontWeight=700,start,stagger=1.2,letterSpacing=0,style,frame})=>{
   const f=frame??q(useCurrentFrame());
   let seq=0;
-  return <div style={{display:'inline-flex',flexWrap:'wrap',justifyContent:'center',alignItems:'baseline',perspective:1000,...style}}>
+  // data-gate-allow 的理由（2026-09-21 —— OverlapGate 修好之后**第一次整片渲染就撞上**）：
+  // 本件的动效是**逐字弹性波浪**：每个字独立 translate + rotateX(40°→0)，transformOrigin 在字脚
+  // （50% 100%），波浪期间相邻字的**盒**必然互相咬住。这是设计好的运动，不是版面压字。
+  // 但每个字都是"含文字的叶 span"，于是被 OverlapGate 的成对检查判成
+  //   “讲”压“得”(1161px²) → severe → 整片渲染在第 2 帧就中止。
+  // delayRender 补上之前这条永远不响，所以从来没人给它加白名单；现在必须**显式声明**。
+  // （与 Callout 的分工：标注文字是"另一条信息"，继续参与判定；这里压的是同一句话自己的字。）
+  return <div data-gate-allow="jumpin-wave" style={{display:'inline-flex',flexWrap:'wrap',justifyContent:'center',alignItems:'baseline',perspective:1000,...style}}>
     {items.map((seg,si)=>String(seg.text).split('').map((ch,ci)=>{
       const globalIdx=seq++;
       const letterStart=start+globalIdx*stagger;

@@ -2,6 +2,143 @@
 
 All notable changes are recorded here. The project follows semantic versioning.
 
+## [3.1.1] - 2026-09-22
+
+> **这段是 v3.1.0 的补丁**（不是新特性版本）：下面这一批把 v3.1.0 收尾时没做完的小问题清干净，
+> 并按补丁口径把版本串统一为 **3.1.1**（`SKILL.md` / `manifest.json` / 接触表页脚 / 发行元数据）。
+> 版本号口径仍以协调者的 `SKILL.md` / `manifest.json` 为准。
+
+> **本节纪律与上一节相同**：每条都能在当前工作区的 `git diff` 里指到改动；找不到对应改动的，一律不写。
+> 这一批是上两轮工作的收尾 —— 新增一道渲染期门禁（**门禁总数 13 → 14**）、封装层件数 **29 → 30**、
+> 两条"写在文档里从来没人查"的叙事规则落成判据（`move` 连续段 **G-14②**、`evidence` 真的会动 **G-15**）、
+> 字幕断句从"按字数机械折行"换成 **BudouX 短语边界**，以及渲染链路的两个**静默失败**（Remotion 入口参数、
+> 交付文件的色彩元数据）。
+
+### Added
+
+- **渲染期第 7 道门禁 `CanvasBoundsGate`（画布越界）—— 门禁总数 13 → 14。**
+  判据（v2）是**含文字的叶元素**（HTML 叶 + SVG `text`/`tspan`）的**墨迹矩形**（`Range` 取字）越出 composition 视口：
+  ≥ 6px 出声、**落定态**（有效不透明度 ≥ 0.98）越界 ≥ 20px 硬拦。它补的是此前**四道渲染期门禁都不管**的一类：
+  `ClippingGate` 只认 SVG 图元、`CardFitGate` 只管卡片内溢出、`OverlapGate` 管互相压、`FillGate` 管铺到多低，
+  构建期 `coords-lint.py` 又把 `Corridor`/`ZoomStage`/`StageFrame` 这类**布局件**排除在外。
+  - 新件 `assets/lecture-template/src/canvas-bounds-gate.tsx`。**v2 砍掉的四件复杂度、以及每件砍掉的代价，都写在件头注释里**：
+    不做设计坐标回折（`[data-design-root]` 实测比例 k、`ShotCamera` 逆变换）、不做图形/版面件分支（那半边与
+    `ClippingGate` 会在同一批元素上重复报）、不养"铺底 / 底托 / z≥140 chrome 层"那套排除、不按帧抽样（改成每帧都量）。
+    已知空白（如实写）：**一个越出画布、但一个文字都没有的装饰块，这条门禁抓不到**。
+    判定后 `blocked` 置位、异常**不被自家 catch 吞** —— 本仓库踩过两次的"报了硬拦却照样出图 rc=0"。
+  - 挂载（`assets/lecture-template/src/index.tsx`）：**片子取 `mode="warn"`、接触表取 `mode="block"`，两条故意不同档**
+    （接触表是"看见才会用"的唯一入口，缺件就该中断渲染；片子那条的硬拦发生在交付渲染的**最后一刻**，
+    判据一旦误报 = "整片渲到最后一帧被打断、不出片"，而这一版判据实测来源全是接触表）。
+    **接触表 composition 此前一道门禁都没有**（门禁全挂在 `FilmLayout` 里，接触表那条 composition 不经过它）。
+  - 门禁上线当天就抓到接触表自己的同类真实缺陷：第 ③ 页声明 5 件而 `Grid4` 只有 4 格，第 5 件（`FitTextBox`）
+    被摆到 `top=1076`，整格落在 1080 高的画布**外面** 466px —— 那件组件在接触表上**根本看不见**。
+    修法是新增 5 格表 `Grid5`（3 列 × 2 行、舞台等比 0.7），17 页在 block 下逐页抽帧跑过：每页 rc=0 且有图、无一处误报
+    （`assets/lecture-template/src/showcase.tsx`；演示片 `assets/demo/notebook-video-components-demo.mp4` 随之重渲 ——
+    它是本批**唯一变了二进制的产物**，见 Verified）。
+  - 文档同步：`SKILL.md`（门禁表 + 运行流程）、`README.md` / `README.en.md`（流程与 FAQ 的渲染期门禁枚举）、
+    `.github/repository-metadata.yml`（`10 automated gates` → `14`）、`references/composition-gate.md`（新增 §5.2 判据）。
+  - 负向夹具 **AB0–AB4**（静态查"接线、档位与判据收窄"，5 条）：原样必须过；删片子里的挂载 /
+    删 `if (blocked) throw e;` / **把片子那条擅自升成 `block`** / 削掉"只看含文字叶元素"的收窄，各自必须被抓。
+
+- **负向夹具 28 → 40 例**（`scripts/negative-gate-check.py`）：新增 AB0–AB4（画布越界接线 / 档位 / 判据收窄，5 条）、
+  AC / AD / AE（`move` 连续段，3 条）与 AF / AG / AJ / AK（`evidence`，4 条）。`SKILL.md` 的负向抽查段落同步为
+  **40 例 / 80 条断言，其中 38 条是 needle**（钉住或禁止某条消息子串，"因别的原因失败"不算通过）。
+  上一版的数字（23 → 28 例）保留在 `[3.1.0]` 一节里，不改。
+
+- **`evidence` 从"只查非空"补成真门禁（G-15）**（`scripts/validate-presentation.py`）。
+  此前读 `evidence` 的唯一一处是 `if not ev:`（**只查字段非空**）—— 那时写成根本不存在的组件名、
+  或指向一张从头到尾不动的静态卡片，都照旧 PASS。现在按 v2 判：
+  **`evidence` 的名字必须作为 JSX 用法**（`<名字 …>` / `<名字/>`）出现在该工程的**场景源码**里；
+  只在注释 / 字符串 / import 行里出现**不算"用到"** —— 扫之前先用 `noncode()` 把注释与字符串抹成空格，
+  再按 JSX 用法匹配；命中不了即 P0「找不到这个用法」。
+  **已知边界（如实标，别高估它）**：不做**本镜**作用域 —— 名字在本镜没用到、只在别的镜用了，**会漏**
+  （负向夹具 **AG** 把这个口径钉在明处，它必须放行；谁哪天加回本镜作用域，这条夹具会先失败）；
+  也拦不住"指向本镜里从头到尾不动的静态卡片"。口径与"不做哪半边"写回 `references/narrative-moves.md` §2
+  （G-15 的档次 2026-09-22 从"真的会动（本镜 + 帧驱动链）"退回"名字被当成 JSX 用"，同样记在那一节）。
+  抓到的真缺陷：真实工程 `overview-film` 的 **S2**，`evidence` 写 `MetricGrid`，而本镜代码里早换成
+  `Chart` + 手绘行（`MetricGrid` 只在注释里留名）—— 已改准为 `Chart`，帧号未变。
+  夹具 **AF / AG / AJ / AK**：名字不存在（必拦）/ 指向别镜的组件（**已知漏检，必须放行**）/
+  只出现在注释里（必拦）/ 带场景源码的原样模板（必须全过）。
+
+- **`move` 连续段判据（G-14②）—— 一条写了两处、却从来没有门禁读过的规则。**
+  `references/narrative-moves.md` §2/§4 一直写着"同一个 `move` 不得连续 ≥3 镜"，而 `validate-presentation.py`
+  此前只查"每镜的 `move` 是不是 10 个名字之一"，写 3 镜连续 `引入` 的 `shots.json` 照旧 PASS。
+  现在按**成片镜序**逐镜扫极大连续段，≥3 镜即 P0（`MOVE_RUN_LIMIT = 3`，即最多连续 2 镜；级别 P0 的依据同"相邻同骨架"）；
+  缺 `move` 或非闭集 `move` 的镜**打断计数**，不接出跨越断点的假"连续"。口径与级别已写回 `narrative-moves.md` §2。
+  夹具 **AC**（连续 3 镜必拦）/ **AD**（连续 2 镜必须放行，阴性对照）/ **AE**（夹一镜缺 move 不许拼假的连续）。
+
+### Changed
+
+- **封装层件数 29 → 30**（`assets/lecture-template/src/components/index.ts`）：`COMPONENTS_VERSION` 串同步为
+  `components-v3 · 30 件`；"件"的口径与"逐件点算的地板"（55 → **56 件** = 本层 30 + 其余 8 个模块 26）写进同一处注释。
+  同步 `references/fxkit.md`、`references/media-routing.md`、`references/dependency-policy.md`、
+  `references/locked-style-contract.json`、`scripts/validate-frame-props.py` 注释。
+  - 接触表的件数口径一并收口：`showcase.tsx` 的 `SHOWCASE_VERSION` 串原写"**26 件旧件**"，与实际渲染进接触表的
+    **18 件**不符（26 是旧模块**对外 export** 的件数，不是被渲染的件数）。现统一为 18 件，
+    并在 `references/media-routing.md` §6 写明两个口径的区别，免得下次再被改回 26。
+    ⚠️ 这个串**不在任何画面上渲染**：接触表页头那行 note 用的是各自的模块版本串（封装层那几页是
+    `COMPONENTS_VERSION`），全仓库没有一处读 `SHOWCASE_VERSION`（`showcase.tsx` 里也没有页脚）。
+    它是给人读的版本串 —— 改它不会改变任何渲染结果，也就没有"下次渲染自动生效"这回事。
+
+- **v3.1.1（本轮）：封装层 30 → 27 件、依赖少一个；`FitTextBox` 真的接进两个示例片。**
+  - **删 3 件零引用件**：`PieDraw`（被 `Chart variant="pie"`（扇区百分比 + 图例）与 `ProgressRing`（中央数值）
+    上下夹住，自己没标签 / 没图例 / 没数值）、`CameraMotionBlur` / `Trail` 与 `@remotion/motion-blur` 依赖
+    （全历史零渲染：全仓库只剩两处再导出 + `insert.tsx` 一行注释；而它们唯一想表达的"速度峰值"从来不在
+    七种合法运镜意图里）。接触表第 ⑪ 页原是 PieDraw 独占一格，换成 pathfx 家族的**组合用法**
+    （`SHAPES.callout` 标注框 + `PathDraw` 引线指到目标卡）：坐标按 `makeCallout` 的实测 path bbox 定
+    （300×230、尖角在正下方；`ShapeDraw` 的 viewBox = bbox±26、size=210 → 尖角落在 svg 内 (84.1,173.6)）。
+    `COMPONENTS_VERSION` → `components-v3.1.1 · 27 件`；逐件点算的地板 **56 → 53**（本层 27 + 其余 8 个模块 26）。
+  - **`FitTextBox` 用起来（"加一件＝换掉一件"）**：模板 `scenes.tsx` S1 的 rail 面板正文块（固定内宽 348，
+    原来手写 20px + 手写 `<br />`）与长片 `overview-film` 的 S4 卡片说明行（固定 640 卡片、内宽 590、原来手写 24px）
+    都换成 `FitTextBox`（`maxFontSize` = 原设计字号、`maxLines` = 设计行数）。
+    **两处单帧实渲逐像素一致**（`diff pixels(>2) = 0 / max delta 0`）。长片那处的隐藏坑是 **line-height**：
+    本件默认 1.6，而原样式继承的是 `normal`（实测 = **1.35**），差 0.25×24px = 6px 会让整张卡片往下长 ——
+    必须显式传 `lineHeight`，否则"换文字块"会变成"动版面"。
+  - **文档同步**：`media-routing.md`（§2 三行、§5.1 索引 3 行 + 口径 56→53 + 两处缺口 13→11 / 28→25、§6 口径说明）、
+    `fxkit.md`（口径 30→27、type-only 导出 **20 → 22**）、`dependency-policy.md`（§4.3 删一行、六→五；§4.4 补记；
+    §8 地板 56→53；**新增 §九「模板 → 工程同步清单」**——本轮实测：模板的 `GeoView` 已经有真陆地轮廓，
+    但长片 `package.json` 里 `world-atlas` / `topojson-client` 是 0 处、`data.tsx` 也没有对应 import，
+    所以长片仍是旧版经纬网）、`SKILL.md`（两处 56→53、六个→五个）、`insert.tsx` 的 whip 注释。
+    已删件的名字在文档里**一律不加反引号**（本技能自己的规矩：反引号 = "这是可直接使用的标识符"）。
+
+- **字幕断句：从"按字数机械折行"改成 BudouX 短语边界**（`scripts/build-semantic-captions.py`、`scripts/validate-semantic-breaks.py`）。
+  合法断点 = BudouX 短语边界，或子句标点（`，。！？；：、…—` 及 ASCII 同义符）之后；**ASCII/数字 token 内部不许断**；
+  被迫移动的边界逐条打印。依据是真实事故：按 17 字机械折行把 `服务器` 切成 `传到服` / `务器。`，而中文 TTS 每字一个 word、
+  切点"绑得上"，所以没有任何门禁看得见（`references/subtitle-timing.md`、`references/tts-audio.md` 同步改成"写语义单元、让工具决定显示断点"）。
+  两个工具都按项目 `node_modules` 找 BudouX，**找不到就大声降级**（`WARNING: BudouX …` + `break_rule: mechanical-only (BudouX unavailable)`），
+  不静默跳过 —— **交付路径上再加一道 `--require-budoux`：找不到模型直接 rc≠0**（"跳过"这件事在退出码上看不出来），CI 里那次重跑已带这个开关；`--warn-chars N` 是可选提示、**默认关**（出厂模板合法跑到 19 字，任何阈值都会有假警报）。
+  真实工程 `overview-film` 的 cue 表**已按新规则重切**：原先报的 **6 处全部归零**（87 条 cue，文本流 899 字
+  **逐字未变**，`--require-budoux` 严格跑 rc=0），并且 **21 镜的 `from`/`to` 全部 Δ=0 —— 时间轴一帧未挪**
+  （4 处修复都落在镜**内部**，没有一处落在镜边界上）。两个出厂模板的 `caption-cues.json` 本批**一个字节都没动**（已核）。
+  ⚠️ 已知边界（如实写）：这道门禁覆盖的是「句内断行 + 保护短语」，**跨 cue 的词组搭配没有判据**——
+  例如「…传到」|「服务器。」这种跨条边界，词本身是完整的，但不在保护表里就不会被检查。
+
+- **渲染链路的两个静默失败：入口位置参数与色彩元数据**（`scripts/notebook-video.mjs`、两个模板的 `package.json`）。
+  - Remotion CLI 的入口点是**位置参数**（`remotion render <entry> <composition> <output>`），4.0.x **没有** `--entry-point` 标志；
+    而这个不存在的标志**不报错** —— 实测 `still ProbeColor out.png --entry-point=alt/entry.tsx` 退出码 0，实际渲的是 `src/index.tsx`
+    （`findEntryPoint()` 只看 argv 位置，找不到就回落到"常见路径"）。现在统一按位置参数传 `src/index.tsx`，`npm run render` / `npm run still` 同步。
+  - 交付文件补**色彩契约**：先 `--color-space=bt709`（Remotion 自 `@remotion/renderer` 4.0.83 会真的把像素转成 limited range），
+    再在**复制流**上用 `h264_metadata` 位流过滤器回写四项元数据 —— FFmpeg 在 `-c:v copy` 上会忽略
+    `-colorspace/-color_primaries/-color_trc/-color_range`，Remotion 自己最后一道 stitch 也是 `-c:v copy`，
+    所以单靠 `--color-space` 仍留下 `color_primaries` / `color_transfer` 为 `unknown`。
+    交付结果是自洽的 `yuv420p / tv / bt709 ×3`；`validate-video`（交付门）上**断言**这一组合 —— 删掉任一步都会立刻被发现；回写**只在交付路径**（`render` / `render-range`）上跑，`review-frames` / `benchmark-render` 那类中间产物不再回写，失败时的报错也会说清"视频已完成、只是元数据回写失败，不必重渲"。
+    依据与实测见 `references/windows-compatibility.md`（同节另记 `npx remotion` 挂死一例：低 CPU、零输出、无子进程，改用本地 CLI 直接跑）。
+
+### Verified
+
+- `python scripts/negative-gate-check.py` → **rc=0，40 例全 PASS**（含阴性对照 AD / O / E / Z1 / U 与阳性对照 AB0）。
+- `python scripts/validate-skill-consistency.py` → **rc=0**（双模板 + 文档链接 + 主题包完整性）。
+- `python scripts/selftest.py` → **SELFTEST PASS（11/11）**。
+- **两个工程的门禁与类型检查（本轮改完源码后各跑一遍）**：`validate-frame-props.py` → 模板 PASS（1 个场景文件 /
+  100 个引擎组件）、长片 PASS（96 个）；`validate-composition.py` → 两工程均 **P0=0**（长片 P1=16、模板 P1=5，都是既有的节奏提示）；
+  模板 `tsc -p tsconfig.json`（把 `assets/lecture-template/src` 复制到**仓库外**带 `node_modules` 的目录跑，跑完删）→ rc=0；
+  长片 `npx tsc -p tsconfig.json --noEmit` → rc=0；`npm ci --dry-run`（模板）→ rc=0，lock 与 `package.json` 一致。
+- **单帧对照（B 的两处改动）**：模板 S1 @f=200、长片 S4 @f=1081，改前 / 改后各渲一帧并逐像素比 ——
+  两边都是 **0 个差异像素**（说明"换文字块"没有动版面）。渲染入口：仓库外副本里 `./node_modules/.bin/remotion still`。
+- **本批改动只带来一个渲染产物：接触表 mp4**（`assets/demo/notebook-video-components-demo.mp4`，2 635 284 → 2 609 558 字节
+  —— `git show --stat` 里本批变了的二进制只有它；17 秒 / 510 帧，第 ③ 页 `Grid5` 修法的产物）。
+  片子的整片渲染没做，`git status` 里也没有新增的渲染产物。
+
 ## [3.1.0] - 2026-09-21
 
 > ⚠️ **版本号口径**：本版是 **3.1.0**（3.2.0 从未发布过 —— 本节此前写成 3.2.0，已改回；发布以协调者的 `SKILL.md` / `manifest.json` 为准）。

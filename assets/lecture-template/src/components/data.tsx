@@ -1,7 +1,10 @@
 import React from 'react';
 import {hierarchy, pack as d3pack, partition as d3partition, tree as d3tree, treemap as d3treemap} from 'd3-hierarchy';
-import {geoGraticule, geoOrthographic, geoPath} from 'd3-geo';
+import {geoDistance, geoGraticule, geoNaturalEarth1, geoOrthographic, geoPath} from 'd3-geo';
+import type {GeoSphere} from 'd3-geo';
 import {sankey, sankeyLinkHorizontal} from 'd3-sankey';
+import {feature} from 'topojson-client';
+import landTopology from 'world-atlas/land-110m.json';
 import {arc as d3arc} from 'd3-shape';
 import QRCode from 'qrcode';
 import {continueRender, delayRender} from 'remotion';
@@ -14,7 +17,8 @@ import {fitChineseTextOnNLines} from './fittext';
 // data.tsx — 结构化数据 → 图形（四个库都只做计算，画与皮肤由本层负责）
 //
 //   TreeView    ← d3-hierarchy   目录树 / 组织图 / 矩形树图 / 圆形打包 / 旭日图
-//   GeoView     ← d3-geo         地球 / 地图 / 经纬网
+//   GeoView     ← d3-geo + world-atlas(land-110m) + topojson-client
+//                                真地图：陆地轮廓 / 地球 / 经纬网 / 经纬度标记点
 //   SankeyChart ← d3-sankey      流量图（转化、分流、去向）
 //   QrCode      ← qrcode         二维码（纯计算、不联网）
 //
@@ -397,34 +401,137 @@ const Legend: React.FC<{items: string[]; width: number}> = ({items, width}) => {
 };
 
 // ---------------------------------------------------------------------------
-// GeoView — 地球 / 地图（正交投影 + 经纬网）
+// GeoView — 真地图（陆地轮廓 + 经纬网底纹 + 经纬度标记点）
+//
+// 数据链：`world-atlas` 的 land-110m.json（预简化世界陆地 TopoJSON）
+//         → `topojson-client` 的 feature() 转 GeoJSON
+//         → d3-geo 的 geoPath() 按投影拼 SVG path。
+// **只取 110m 那一档**（55 KB / 130 条弧，2026-09-22 实测）：世界尺度下轮廓够用，
+// 50m（545 KB）与 10m（3 MB）是国界/省界级细节，本件不需要——体积也不该进包。
+//
+// 数据怎么到渲染期（**bundler import，不走 public/ 也不 vendoring**，理由三条）：
+//   1. 零运行期 IO：模块级常量，没有 fetch、没有 async → 不需要 delayRender 持柄，
+//      也就不存在"忘了持柄 / 持错了时机"这类时序缺陷（模板 fill-gate 的教训正是"测量晚于截帧"）。
+//   2. 每条渲染路径都成立：`notebook-video showcase` 不跑 sync-render-inputs，
+//      若数据靠 sync 复制进 public/，接触表这一路会直接读不到文件。
+//   3. 确定性最强 + 仓库不落副本：帧间/进程间同一结果；想换档位只改 import 一行（npm 自带 50m）。
+//
+// 投影（`projection`）：
+//   'globe'（默认，正交投影）：地球隐喻，可绕轴自转。**保持旧形态的默认值**，老场景行为不变。
+//   'flat'（自然地球 / geoNaturalEarth1）：世界地图。为什么不用等距圆柱——它把高纬横向拉伸
+//     （格陵兰看着比非洲大），naturalEarth1 是 d3-geo 自带的折中投影（零附加依赖），
+//     且平面图能把"源站 / 边缘节点"一次全摆出来（球面上总有半个地球背对镜头）。
+//
+// 标记点（`markers`）：给经纬度就落点。球面上**背面的点不画**——
+//   `projection([lon,lat])` 不做裁剪（实测：rotate 到 100°E 时旧金山 108° 之外照样返回坐标，
+//   不判就会把点画到球正面来），所以先用 geoDistance 判可见弧（>88° 隐藏）。
+// 确定性：TopoJSON→GeoJSON 与经纬网都在模块加载时算一次；每帧只做投影与 path 拼接，
+//   全是 f(帧号) 的纯函数。标记点逐个落点用 prog(f, startAt + i*markerStep)。
 // ---------------------------------------------------------------------------
+export type GeoMarker = {
+  /** 经度（度，东经为正） */
+  lon: number;
+  /** 纬度（度，北纬为正） */
+  lat: number;
+  /** 标签：优先摆点右侧，右边不够翻到左侧；字号用 fitOneLine 反推 */
+  label?: string;
+  /** 默认取 TONE 轮转色 */
+  tone?: string;
+};
+export type GeoProjection = 'globe' | 'flat';
+
+/** 陆地：TopoJSON → GeoJSON 只在模块加载时做一次（objects.land 是 GeometryCollection）。 */
+const LAND = feature(landTopology, landTopology.objects.land);
+const GRATICULE = geoGraticule()();
+const SPHERE: GeoSphere = {type: 'Sphere'};
+/** 球面可见弧：留 2° 余量，免得边缘上的点被压成半个圆 */
+const VISIBLE_ARC = (88 * Math.PI) / 180;
+
+/** 标记点标签：纯函数（不读帧号），左右两侧哪边放得下就放哪边。 */
+const markerLabel = (text: string, x: number, width: number) => {
+  const gap = 13;
+  const roomRight = width - (x + gap) - 4;
+  const roomLeft = x - gap - 4;
+  const anchor: 'start' | 'end' = roomRight >= 60 || roomRight >= roomLeft ? 'start' : 'end';
+  const room = anchor === 'start' ? roomRight : roomLeft;
+  // 两侧都没有 34px：宁可不标，也不摆一个注定压出画布的标签（与 fitNodeLabel 同一条降级纪律）
+  if (room < 34) return null;
+  const fit = fitOneLine(text, room, TYPE.microS, 'Kai', 1);
+  return {x: anchor === 'start' ? x + gap : x - gap, anchor, fontSize: fit.fontSize, text: fit.text};
+};
+
 export const GeoView: React.FC<{
   f: number;
   width: number;
   height: number;
-  /** 自转速度（度/帧）；0 = 不转 */
+  /** 自转速度（度/帧）；0 = 不转。**只对 'globe' 生效**（平面图不转） */
   spin?: number;
   startAt?: number;
   /** 经纬网 / 赤道 / 外圈 */
   graticule?: boolean;
   tone?: string;
-}> = ({f, width, height, spin = 0.35, startAt = 0, graticule = true, tone}) => {
+  /** 'globe' = 正交投影球（默认）；'flat' = 自然地球平面世界图 */
+  projection?: GeoProjection;
+  /** 经纬度标记点（源站 / 边缘节点这类）；球面上背面的点自动不画 */
+  markers?: GeoMarker[];
+  /** 标记点逐个落点的间隔帧数 */
+  markerStep?: number;
+}> = ({f, width, height, spin = 0.35, startAt = 0, graticule = true, tone, projection = 'globe', markers, markerStep = 7}) => {
   const a = tone ?? C.blue;
+  const isGlobe = projection === 'globe';
   const r = Math.min(width, height) / 2 - 12;
-  const proj = geoOrthographic()
-    .translate([width / 2, height / 2])
-    .scale(r)
-    .rotate([-100 - spin * Math.max(0, f - startAt), -22]);
+  // 自转后正对镜头的经/纬度：rotate([-λ, -φ]) 的镜头中心就是 [λ, φ]。
+  const centerLon = 100 + spin * Math.max(0, f - startAt);
+  const centerLat = 22;
+  const proj = isGlobe
+    ? geoOrthographic().translate([width / 2, height / 2]).scale(r).rotate([-centerLon, -centerLat])
+    : // 按**球面轮廓**（而不是陆地包围盒）装框：实测按陆地装框时轮廓会左右各溢出 2.3px
+      // 被 SVG 视口切掉（land-fit: sphere bounds [5.66,62.4]-[394.3,264.5] vs 框 [8,8]-[392,322]）。
+      geoNaturalEarth1().fitExtent(
+        [
+          [8, 8],
+          [width - 8, height - 8],
+        ],
+        SPHERE,
+      );
   const path = geoPath(proj);
   const p = prog(f, startAt, 24);
+  const list = markers ?? [];
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-      <circle cx={width / 2} cy={height / 2} r={r} fill={C.skyTint} stroke={C.ink} strokeWidth={3} opacity={p} />
+      {isGlobe ? (
+        <circle cx={width / 2} cy={height / 2} r={r} fill={C.skyTint} stroke={C.ink} strokeWidth={3} opacity={p} />
+      ) : (
+        // 平面图的海域 = 投影自己的球面轮廓（naturalEarth1 是圆角世界框），不是手画的矩形
+        <path d={path(SPHERE) ?? ''} fill={C.skyTint} stroke={a} strokeWidth={3.4} opacity={p} />
+      )}
       {graticule ? (
-        <path d={path(geoGraticule()()) ?? ''} fill="none" stroke={C.blueLine} strokeWidth={1.2} opacity={p} />
+        <path d={path(GRATICULE) ?? ''} fill="none" stroke={C.blueLine} strokeWidth={1.2} opacity={p} />
       ) : null}
-      <circle cx={width / 2} cy={height / 2} r={r} fill="none" stroke={a} strokeWidth={3.4} opacity={p} />
+      <path d={path(LAND) ?? ''} fill={C.paperWarm} stroke={C.muted} strokeWidth={1} opacity={p} />
+      {list.map((m, i) => {
+        // 球面背面：先判可见弧，再投影（正交投影的裁剪只作用于路径，不作用于单点）
+        if (isGlobe && geoDistance([m.lon, m.lat], [centerLon, centerLat]) > VISIBLE_ARC) return null;
+        const xy = proj([m.lon, m.lat]);
+        if (!xy) return null;
+        const s = prog(f, startAt + 8 + i * markerStep, 12);
+        if (s <= 0.01) return null;
+        const [x, y] = xy;
+        const mt = m.tone ?? TONE[i % TONE.length];
+        const label = m.label ? markerLabel(m.label, x, width) : null;
+        return (
+          <g key={`gm${i}`} opacity={s}>
+            <circle cx={x} cy={y} r={11} fill={C.paper} opacity={0.8} />
+            <circle cx={x} cy={y} r={6} fill={mt} stroke={C.ink} strokeWidth={1.4} />
+            {label ? (
+              <text x={label.x} y={y + label.fontSize * 0.36} textAnchor={label.anchor} fontFamily="Kai,sans-serif" fontSize={label.fontSize} fontWeight={700} fill={C.ink}>
+                {label.text}
+              </text>
+            ) : null}
+          </g>
+        );
+      })}
+      {isGlobe ? <circle cx={width / 2} cy={height / 2} r={r} fill="none" stroke={a} strokeWidth={3.4} opacity={p} /> : null}
     </svg>
   );
 };

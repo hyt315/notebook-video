@@ -281,7 +281,7 @@ export const CoverPanel: React.FC<{
         zIndex: z,
         borderRadius: r,
         background: `${C.paperBase}E8`,
-        boxShadow: `0 0 0 1px ${C.line}55, 0 6px 18px ${C.paperBase}00`,
+        boxShadow: `0 0 0 1px ${C.line}, 0 6px 18px ${C.paperBase}00`,
         ...style,
       }}
     >

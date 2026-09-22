@@ -42,6 +42,7 @@ import {Showcase, SHOWCASE_PAGES} from './showcase';
 import {OverlapGate} from './overlap-gate';
 import {ClippingGate} from './clipping-gate';
 import {FillGate} from './fill-gate';
+import {CanvasBoundsGate} from './canvas-bounds-gate';
 import {SHOTS, SHOT_IDS, SHOT_TOTAL} from './shots';
 import {SCENES} from './scenes';
 const BASE_FPS=30,FPS=30,MOTION_FPS=30,TIMELINE_SCALE=1,DURATION=SHOT_TOTAL,DESIGN_SCALE=4/3;
@@ -351,6 +352,15 @@ const FilmLayout:React.FC<{canvas:CanvasMode}>=({canvas})=>{
     缺了它 FillGate 会静默 return —— 门禁装了等于没装，所以这个属性是门禁契约的一部分。 */}
       <div data-design-root style={{position:'absolute',left:0,top:0,width:mode.designW,height:mode.designH,transform:`scale(${mode.scale})`,transformOrigin:'0 0',fontFamily:'Kai,sans-serif',color:C.ink,overflow:'hidden'}}>
         <Fonts/><AssetGate/><CaptionFitGate/><CardFitGate/><OverlapGate mode="block" watch={WATCH}/><ClippingGate mode="block" watch={WATCH}/>
+        {/* CanvasBoundsGate（v2 简版）：只判「**含文字的叶元素**的墨迹 rect 越出画布」。
+            片子这条取 warn 而不是 block（2026-09-22 改，与接触表那条**不再同档**）：
+            v2 的判据实测来源全是接触表，它在**片子**上还没有抓到过真缺陷；
+            而这条门禁的硬拦发生在**交付渲染的最后一刻** —— 判据一旦误报，
+            代价是「整片渲到最后一帧被打断、不出片」，比漏报一处 20px 的裁切贵得多。
+            出水照样进渲染日志（每 150 帧还有一条覆盖率），交付前人工确认；
+            等它在片子上抓到第一处真缺陷，再谈升回 block。
+            口径与实测见 references/composition-gate.md §5.2 / §6。 */}
+        <CanvasBoundsGate mode="warn"/>
         {/* FillGate 默认 warn：P0-4 是"观感线"，为它打断整片渲染不划算；出水进日志、可复查 */}
         <FillGate mode="warn" watch={WATCH}/><Sound/><Background/>
         {<><Chrome/><FinalDemo/></>}
@@ -368,13 +378,41 @@ const Film16x9=()=> <FilmLayout canvas="16:9"/>;
 export const Film4x3=()=> <FilmLayout canvas="4:3"/>;
 export const Film3x4=()=> <FilmLayout canvas="3:4"/>;
 
+// 接触表 composition 的渲染期门禁（v1）：
+// `NotebookVideoShowcase` 此前**一道门禁都没有** —— 第 ⑥ 页第三站的标签块越出画布右缘被裁
+// （文案「按 Flash 结算」渲成「按 Flash 结」）就是这么漏掉的，这是**结构性**原因：
+// 门禁全挂在 FilmLayout 里，接触表那条 composition 不经过它。
+// 挂 CanvasBoundsGate 而不是整套：接触表是**组件目录**，格子里的件被 Tile 的
+// overflow:hidden 裁住是有意设计（那是取景框），闸门只该管「有没有越出画布」这一件。
+//
+// 这条取 **block**（**与片子那条不同档**：片子是 warn，理由见 FilmLayout 里的注释），
+// 经过两轮实测才敢这么取：
+//   · 第一轮：门禁上线当天就抓出接触表自己的一处**真实同类缺陷** —— 第 ③ 页声明 5 件，
+//     而 `Grid4` 只有 4 格，第 5 件（`FitTextBox · 中文反推字号（封装层）`）被摆到 top=1076，
+//     整格落在 1080 高的画布**外面** 466px：渲出来的第 ③ 页只有 4 格，那件组件在接触表上
+//     **根本看不见**（图已核）。那一轮为不阻断 `showcase` / `showcase-sheet`，先取 warn 让它出声。
+//   · 第二轮（本轮）：`showcase.tsx` 第 ③ 页改成 5 格表（`Grid5`，3 列 × 2 行，格子 610×470、
+//     舞台等比 0.7），5 件全部落在画布内；17 页在 block 下逐页抽帧跑过一遍，每页 rc=0 且有图，
+//     无一处误报 —— 于是把 warn 收敛回 block。
+// 判据上的理由：越出画布 = 件**整件看不见**或被切掉一块，属于**画错了**，
+// 与「图形被裁」「文字互相压」同级，不是 FillGate 那种观感线；
+// 而接触表是「看见才会用」的唯一入口（references/media-routing.md §6），件看不见就该中断渲染，
+// 不能默默出一张缺件的目录页。
+// v2 简版换实现后的复验（2026-09-22）：原样 6 页（帧 35/65/95/155/275/395）rc=0 有图零报告；
+// 把 `showcase.tsx` 的两处历史缺陷各改回去一次，这条 block 档仍然**各自抓住**（26px×2 / 27px，rc=1 不出图）。
+// 口径与实测表见 references/composition-gate.md §5.2。
+const ShowcaseComposition=()=> <>
+  <Showcase/>
+  <CanvasBoundsGate mode="block"/>
+</>;
+
 const Root=()=> <>
   {/* 官方模板示例片（8 镜 / 4 骨架）。本版场景按 1920×1080 设计空间编写：
       4:3 与 3:4 需要各自的版面重排，不再用 scale(0.75) 信箱化冒充适配
       （见 references/canvas-modes.md 与 portrait-illustration-system.md）。 */}
   <Composition id="NotebookVideoFilm" component={Film16x9} durationInFrames={DURATION} fps={FPS} width={2560} height={1440}/>
   {/* 组件接触表：17 页 × 1 秒（`SHOWCASE_PAGES`），1fps 抽帧即得 17 张图，供 AI 看图选型 */}
-  <Composition id="NotebookVideoShowcase" component={Showcase} durationInFrames={SHOWCASE_PAGES*30} fps={FPS} width={1920} height={1080}/>
+  <Composition id="NotebookVideoShowcase" component={ShowcaseComposition} durationInFrames={SHOWCASE_PAGES*30} fps={FPS} width={1920} height={1080}/>
 </>;
 
 registerRoot(Root);

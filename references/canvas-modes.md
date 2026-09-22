@@ -15,13 +15,19 @@ Three delivery canvases coexist in this skill. Ask the user once at kickoff whic
 | Film wrapper `width`/`height` | 1920/1080 | 1440/1080 | 1080/1440 |
 | Delivery scale | 4/3 | 4/3 | 4/3 |
 | Subtitle text `left/right` | 188 | 60 | 50 |
-| Subtitle text `bottom` (no bar) | 18 | 18 | 18 |
+| Subtitle text `bottom` (no bar) | 34 | 34 | 40 |
 | `TYPE.subtitle` (WenKai Lite) | 44 | 44 | 40 |
 | `AESTHETIC.subtitleSafeWidth` | 1334 | 1060 | 900 |
 | Usable content width (after paper margins) | ~1700 | ~1250 | ~980 |
 | Column layout | two columns | two narrowed columns | single column, cards stacked |
 
 The multi-zone style is preserved in every mode — never reduce the number of zones to fit a narrower canvas; shrink card widths and paddings (landscape) or stack the zones vertically (portrait) instead.
+
+> **口径：这张表全是「契约值」（2026-09-22 复核）。** 每一行都对应 `assets/lecture-template/src/theme/canvas.ts` 的 `MODES[x]` 字段（`subMar` 188/60/50 · `subBottom` 34/34/40 · `subH` 112/112/104 · `safe` 1334/1060/900 · `subFont` 44/44/40），
+> 与 `scripts/validate-visual-plan.py` 的 `CANVAS_MODES[*]`（`subtitle_margin` / `subtitle_bottom` / `subtitle_safe_width`）**同值**——门禁核对的就是这一列。
+> **不要**把渲染时的值填进这张表：四套皮肤的 `SubtitleChrome` 各自另有渲染时的 `bottom`（`paper` 20 / `cel` 44 / `sticker` 42 / `flat` 40，按**皮肤**分、不按画布模式分），
+> 而自带示例工程 `assets/example-project/src/index.tsx` 的 `Subtitle` 是直接写死 `bottom:18` 的（只有 16:9 一种画布）。
+> 2026-09-02 那一版把这一格写成 `18 | 18 | 18`，用的就是示例工程那个值——口径错了，所以三个画布列全填了同一个数；现按契约值改回 34/34/40（3:4 的 40 与 §3 第 1 条本来一致）。
 
 ## Authoring a 4:3 film
 

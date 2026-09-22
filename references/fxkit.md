@@ -52,8 +52,14 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 ```
 
 选组件前先看接触表，比读 props 文档准确得多。新增组件时必须同时加进接触表。
+**哪 11 件没上接触表（以及为什么）见 [media-routing.md §5.1](media-routing.md#51-组件权威索引53-件--选型只查这一处) 的「两处缺口」**——
+别凭印象以为"接触表里有的就是全部"。
 
 ## 组件一览
+
+> **件的权威索引在 [media-routing.md §5.1 组件权威索引](media-routing.md#51-组件权威索引53-件--选型只查这一处)**
+> —— 全技能 53 件（含 fxkit 这 9 件）逐件给：用途 / 何时用 / **何时别用** / 接触表页号 / 真实使用记录。
+> **别处不要再单独维护"有哪些件"的清单**；本节只补 fxkit 自己的参数与动效细节。
 
 | 组件 | 用途 | 关键 props |
 |---|---|---|
@@ -67,7 +73,13 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 | `SkeletonCard` | 骨架→内容：等待 beats 先占位 | `x,y,w,h,rows,revealAt` |
 | `StaggerList` | 级联列表：逐行滑入 + 微旋转，防 bullets 堆砌 | `x,y,w,items,start,stagger` |
 
-## 封装组件层（`src/components/`，29 件）
+## 封装组件层（`src/components/`，27 件）
+
+> **本节不再是清单来源**：27 件逐件（用途 / 何时用 / 何时别用 / 接触表页 / 使用记录）见
+> [media-routing.md §5.1 组件权威索引](media-routing.md#51-组件权威索引53-件--选型只查这一处)。
+> 下面只留口径说明与参数要点。
+
+> **「件」的口径**（按 `src/components/index.ts` 的对外 `export` 逐项点算）：**大写 React 组件 27** = 本层实现 27（v3.1.1 起**无库再导出**：CameraMotionBlur / Trail 已随 `@remotion/motion-blur` 一起删除，PieDraw 已删）；大写常量 8（`TOPIC_ICONS` `TOPIC_ICON_TONE` `CHART_BOX` `MIN_LABEL_FONT` `FOCUS_MODES` `SHAPES` `PRESENTATIONS` `COMPONENTS_VERSION`）、小写函数/钩子 18、type-only 导出 22（`GeoMarker` / `GeoProjection` 是 v3.1 加的两个）都**不算件**。下表只列常用项 21 个（未列的 6 个：`MathBlock` `GeoView` `SankeyChart` `QrCode` `SketchFx` `FocusFx`），完整清单以 `index.ts` 为准；`index.ts` 里的 `COMPONENTS_VERSION` 串与本节已同步（`components-v3.1.1 · 27 件`）。
 
 见 [dependency-policy.md](dependency-policy.md)。**场景从这里 import，不要直接 import 原始库。**
 帧参数名统一 `f`；颜色只读 `THEME`；登记在 [media-routing.md](media-routing.md) 两张路由表里。
@@ -92,10 +104,8 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 | `PathDraw` | 描线生长 + 沿线运动的点 / **沿线转向的箭头** | `f,path,startAt,durationInFrames,width,height,viewBox,showDot,showArrow` |
 | `MorphShape` | 形状连续变形（方→圆） | `f,fromPath,toPath,startAt,durationInFrames` |
 | `ShapeDraw` / `SHAPES` | 参数化几何：星/六边形/三角/圆/星芒/**标注框 callout**/**箭头 arrow**/**心形 heart**/椭圆/矩形 | `f,shape,startAt,size,tone,label` |
-| `PieDraw` | 饼图（唯一自带 progress 的图形） | `f,startAt,radius,spin,tone` |
 | `SceneTransitions` | **全部 20 种官方转场**已登记（`PRESENTATIONS` 的键即转场名；`transitionsTotalFrames()` 算总长） | `children,durations,transition,transitionDuration,width,height,direction` |
 | `FitTextBox` | **中文反推字号 + 断行**（自带字体就绪门） | `text,maxLines,boxWidth,maxFontSize,showMeasure` |
-| `CameraMotionBlur` / `Trail` | 运动模糊 / 拖尾（官方扩展再导出） | 见 `@remotion/motion-blur` |
 
 ## 修辞工具件（`src/toolkit.tsx`，3 件）
 

@@ -40,7 +40,7 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 | **Four scene skeletons** | `Stage` (one subject evolves) / `Corridor` (an object travels a track) / `Split` (two-column contrast) / `Zoom` (wide → detail → annotation → wide); **no two adjacent scenes may share one, ≥3 per film** | Kills "four PowerPoint pages" structurally |
 | **Content → medium routing** | Console window / chart / code diff / display type / metric grid / concept diagram; **≥3 media per film**, and every explanation scene carries at least one component that **changes state as the narration proceeds** | The frame stops being "card + paragraph" forever |
 | **Restricted camera language** | Six intents per shot + an `anchor` out-of-bounds proof + a pan budget; **a declared move must actually move** | Real camera movement that can never push content off screen |
-| **Thirteen quality gates** | 6 build-time: shot→frame resolution, out-of-bounds proof, composition & density, **frame-prop-name check**, **audio levels**, **presentation (beat↔cue alignment / caption reading budget / font size & contrast)**; 6 runtime: caption width, card overflow, **text-vs-text overlap and occlusion**, **clipped graphics**, **measured lower-quarter density**, **main-slot occupancy**; 1 post-render: **whether the picture actually moves** | A non-zero P0 **blocks the render**; each gate also logs coverage so **"no warning" and "never ran" are distinguishable** |
+| **Fourteen quality gates** | 6 build-time: shot→frame resolution, out-of-bounds proof, composition & density, **frame-prop-name check**, **audio levels**, **presentation (beat↔cue alignment / caption reading budget / font size & contrast)**; 7 runtime: caption width, card overflow, **text-vs-text overlap and occlusion**, **clipped graphics**, **canvas bounds**, **measured lower-quarter density**, **main-slot occupancy**; 1 post-render: **whether the picture actually moves** | A non-zero P0 **blocks the render**; each gate also logs coverage so **"no warning" and "never ran" are distinguishable** |
 | **Material plates** | Real screenshots / official charts sit inside the locked cel frame (2.5px ink outline + hard shadow) with a caption and a source line, and can drift slowly toward the point that matters; assets are registered in **both** `visual-assets.json` and `asset-manifest.json` (source / rights / baked text / checksum) | For claims that need "this really is the official thing"; anything a diagram explains better stays drawn |
 | **Frame-accurate Chinese TTS sync** | Millisecond word timings → semantic sentence breaks → animation beats; trailing punctuation strictly stripped | No drifting captions, no audio-visual mismatch |
 | **Four locked skins** | `paper` (warm ivory notebook, default) / `cel` (anime cel) / `sticker` / `flat` | One script, four moods |
@@ -58,8 +58,9 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 
 ▶️ [Component contact sheet (17 pages, 17s)](assets/demo/notebook-video-components-demo.mp4) — the `NotebookVideoShowcase` contact sheet: one page per second (a 1 fps extraction yields exactly one image per page) covering the data / console / card / dialogue media, the six camera intents, scene skeletons and type motion, plus nine wrapper-layer pages (chart variants, hierarchy and force layouts, overlays and shapes, sketch style and KaTeX).
 
-> The contact-sheet MP4 carries **no audio** (that composition has no audio track); its native canvas is 1920×1080 — the shipped file is rendered with `--scale=4/3` to 2560×1440 to match the locked 16:9 canvas.
-> To check the current version: `npm install` inside `assets/lecture-template`, then `npm run still` (single frame) or `npm run render` (full film); for the contact sheet run `node scripts/notebook-video.mjs showcase <project-dir>`.
+> The contact-sheet MP4 is **2560×1440** (the locked 16:9 delivery canvas): the composition's native canvas is 1920×1080, so the delivery render scales it by 4/3. Its audio track is **silent AAC** — that composition carries no audio of its own, and the delivery chain adds the track.
+> To check the current version: `npm install` inside `assets/lecture-template`, then `npm run still` (single frame) or `npm run render` (full film). **For a delivery file, use `node scripts/notebook-video.mjs render <project> <output>`** — it rewrites the color metadata and normalizes loudness, which `npm run render` does not do (its output fails the `validate-video` color assertion).
+> The contact sheet is the same: `node scripts/notebook-video.mjs showcase <project-dir>` now renders at **delivery spec** (2560×1440 / silent AAC / color tags rewritten, matching the file in `assets/demo/`). `--scale` accepts a decimal literal only — `--scale=4/3` is rejected by the CLI, use `1.3333333333333333`.
 
 **Canvases**: three are locked — 16:9 (2560×1440), 4:3 (1920×1440) and 3:4 portrait (1440×1920), all native 30 fps. The bundled example film is authored in the **16:9 design space**; 4:3 / 3:4 need their own dedicated layout pass (**letterbox scaling is no longer presented as adaptation**).
 
@@ -94,7 +95,7 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
         │
   ⑥ Render ── Remotion render + loudness normalisation (-16 LUFS / -1.5 dBTP)
         │
-  ⑦ Runtime gates + delivery ── CaptionFitGate / CardFitGate / OverlapGate / ClippingGate / FillGate / SlotGuard
+  ⑦ Runtime gates + delivery ── CaptionFitGate / CardFitGate / OverlapGate / ClippingGate / CanvasBoundsGate / FillGate / SlotGuard
                                 (then validate-motion-gaps on the MP4: "nothing actually moved" is only visible there)
                                 → 2K MP4 + contact sheet + editable source ZIP
 ```
@@ -241,7 +242,7 @@ notebook-video/
 ├── SKILL.md                          # Core skill definition and production workflow
 ├── manifest.json                     # Skill metadata (version lives here)
 ├── README.md / README.en.md          # Chinese / English documentation
-├── CHANGELOG.md                      # Version history (currently v3.1.0)
+├── CHANGELOG.md                      # Version history (currently v3.1.1)
 ├── LICENSE                           # Apache License 2.0
 ├── NOTICE                            # Third-party font / asset / dependency notices
 ├── CONTRIBUTING.md · CODE_OF_CONDUCT.md · SECURITY.md · SUPPORT.md
@@ -279,9 +280,10 @@ fxkit.tsx          motion components (FitCard / Typewriter / StampSeal / Funnel 
 toolkit.tsx         rhetorical tools (Callout / Checklist / JumpInText)
 │   └── components/       wrapped component layer (Accordion / Tabs / HighlightCode / Chart / StatRow / GlowFrame / PathDraw / FitTextBox …)
 kit.tsx             Theme-agnostic atoms: PillTag / LineIcon / CheckBadge / TYPE
-insert.tsx          B-roll inserts + the five transitions
+insert.tsx          B-roll inserts + the three transitions (cut / handoff / reveal)
 overlap-gate.tsx    Runtime overlap / occlusion gate
 clipping-gate.tsx   Runtime clipped-graphics gate (SVG primitives crossing a clipping ancestor)
+canvas-bounds-gate.tsx Runtime canvas-bounds gate (text-bearing leaf elements whose ink rect leaves the canvas; blocks on the contact sheet, warns in a film)
 fill-gate.tsx       Runtime measured density of the lower quarter (lowest info-element edge vs y=876)
 showcase.tsx        Component contact sheet (17 pages, for AI to pick by sight)
 scenes.tsx          Scene layer (8-shot example film; rewrite this layer per topic)
@@ -297,7 +299,7 @@ scenes.tsx          Scene layer (8-shot example film; rewrite this layer per top
   A: Four layers, all backed by gates — ① four structurally different skeletons with **no adjacent repeats**; ② **at least three visual media per film** and at least one live component per explanation scene; ③ at least three camera moves per chapter (budgeted by film length), so the framing really changes; ④ a gate blocks the render when P0 is non-zero.
 
 - **Q: How do you guarantee text never collides or gets covered?**\
-  A: At runtime **`OverlapGate`** samples every 15 frames and detects both text-vs-text overlap and paint-order occlusion (measuring real glyph rects with `Range.getClientRects()`), **`ClippingGate`** catches graphics clipped by an `overflow` ancestor or an `<svg>` viewport (the text gates cannot see a half-missing shape), **`FillGate`** measures whether the lower quarter is really filled (lowest edge of real information elements vs y=876 — the build-time check only reads whether the declared field exists), and **`SlotGuard`** reports how much of `StageFrame`'s main slot is actually used. Intentional overlaps (shot handoff, header swap, metric value replacement) must be declared with `data-gate-allow` — the allow-list may never hide two different pieces of information colliding. After the render, run **`validate-motion-gaps`** — a stretch where nothing moves is only visible there.
+  A: At runtime **`OverlapGate`** samples every 15 frames and detects both text-vs-text overlap and paint-order occlusion (measuring real glyph rects with `Range.getClientRects()`), **`ClippingGate`** catches graphics clipped by an `overflow` ancestor or an `<svg>` viewport (the text gates cannot see a half-missing shape), **`CanvasBoundsGate`** catches **text-bearing leaf elements whose ink rect leaves the canvas** (a whole element cut off by the canvas edge; it blocks on the contact sheet and only warns in a film), **`FillGate`** measures whether the lower quarter is really filled (lowest edge of real information elements vs y=876 — the build-time check only reads whether the declared field exists), and **`SlotGuard`** reports how much of `StageFrame`'s main slot is actually used. Intentional overlaps (shot handoff, header swap, metric value replacement) must be declared with `data-gate-allow` — the allow-list may never hide two different pieces of information colliding. After the render, run **`validate-motion-gaps`** — a stretch where nothing moves is only visible there.
 
 - **Q: Do I need to re-time everything after editing the script?**\
   A: No. The shot table only references cues; frame numbers, camera keyframes and SFX pinning are all derived from the TTS word timestamps by `resolve-shots.py`.

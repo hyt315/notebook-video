@@ -40,7 +40,7 @@
 | **四种场景骨架** | `Stage`（一个主体演化）/ `Corridor`（对象沿轨道穿站）/ `Split`（双栏对比）/ `Zoom`（整体→聚焦→标注→回整体）；**相邻场景不得同款、全片 ≥3 种** | 从结构上消灭「四个 PPT 页」 |
 | **内容 → 视觉介质路由** | 控制台窗 / 图表 / 代码补丁 / 大字 / 指标网格 / 概念图；**每支片 ≥3 种介质**，每个讲解场景至少一个**会随旁白变状态**的组件 | 画面不再只有「卡片 + 文字」一种介质 |
 | **受限镜头语言** | 每镜 6 种意图 + `anchor` 出界证明 + 平移预算；**声明了运镜就必须真的动** | 有运镜但不失控：内容永远不会被推出画面 |
-| **十三道质量门禁** | 构建期 6：分镜→帧号解析、镜头出界证明、构图与密度、**帧参数名核对**、**音效电平**、**呈现效果（讲与画对齐 / 字幕阅读预算 / 字号与对比度）**；渲染期 6：字幕宽度、卡片溢出、**文字重叠与遮挡**、**图形被裁**、**下 1/4 实测密度**、**槽占用率**；成片后验 1：**画面到底动没动** | P0 不为 0 **拒绝渲染**；每次还打覆盖率，**「没报警」与「没运行」能区分开** |
+| **十四道质量门禁** | 构建期 6：分镜→帧号解析、镜头出界证明、构图与密度、**帧参数名核对**、**音效电平**、**呈现效果（讲与画对齐 / 字幕阅读预算 / 字号与对比度）**；渲染期 7：字幕宽度、卡片溢出、**文字重叠与遮挡**、**图形被裁**、**画布越界**、**下 1/4 实测密度**、**槽占用率**；成片后验 1：**画面到底动没动** | P0 不为 0 **拒绝渲染**；每次还打覆盖率，**「没报警」与「没运行」能区分开** |
 | **实拍素材框** | 真实截图 / 官方图表装进锁定皮肤的墨线框（2.5px 描边 + 硬阴影），可缓慢推近到关键处；素材按 `visual-assets.json` + `asset-manifest.json` **双清单登记**（来源 / 授权 / 是否含文字 / 校验和） | 需要「这确实是官方 / 真实」的论据时用它；能用代码讲清的仍用画的 |
 | **帧精确中文 TTS 同步** | 毫秒级词时间戳 → 语义断句 → 动画节拍；句末标点严格消除 | 告别字幕对不准、音画脱节 |
 | **四套锁定皮肤** | `paper`（暖白手账，默认）/ `cel`（动漫赛璐璐）/ `sticker`（贴纸）/ `flat`（扁平几何） | 一套内容，四种气质 |
@@ -58,8 +58,9 @@
 
 ▶️ [组件接触表（MP4）](assets/demo/notebook-video-components-demo.mp4) — `NotebookVideoShowcase` 的组件接触表：17 页、每页 1 秒（1fps 抽帧恰好一页一张图），覆盖数据 / 控制台 / 卡片 / 对话 / 镜头意图 / 场景骨架 / 字效，以及 9 页封装层（图表变体、层级与关系、弹层与形状、手绘风与公式）。
 
-> 接触表那支 MP4 **不含音频**（该 composition 本身不挂音轨）；它的原生画布是 1920×1080，交付文件用 `--scale=4/3` 输出 2560×1440 以对齐 16:9 锁定画布。
-> 想核对当前版本：在 `assets/lecture-template` 里 `npm install` 后跑 `npm run still`（抽帧）或 `npm run render`（整片）；接触表用 `node scripts/notebook-video.mjs showcase <工程目录>`。
+> 接触表那支 MP4 是 **2560×1440**（对齐 16:9 锁定画布）：composition 原生画布是 1920×1080，交付渲染时按 4/3 放大；音轨是一条**静音 AAC**（该 composition 本身不挂音频，音轨由交付链路补上）。
+> 想核对当前版本：在 `assets/lecture-template` 里 `npm install` 后跑 `npm run still`（抽帧）；**要出片请走交付链路** `node scripts/notebook-video.mjs render <工程> <输出>` —— 它会做色彩元数据回写与响度归一，而 `npm run render` **不做**这一步，产出的文件过不了 `validate-video` 的色彩断言。
+> 接触表同理：`node scripts/notebook-video.mjs showcase <工程目录>` 现在**直接出交付规格**（2560×1440 / 静音 AAC / 色彩四项回写，与 `assets/demo/` 里那份一致）。`--scale` 只吃十进制字面量 —— `--scale=4/3` 会被 CLI 拒绝，要写 `1.3333333333333333`。
 
 **画布**：锁定三种画布 —— 16:9（2560×1440）、4:3（1920×1440）、3:4 竖屏（1440×1920），均为原生 30fps。官方示例片按 **16:9 设计空间**编写；4:3 / 3:4 需要各自的版面重排（**不再用信箱化缩放冒充适配**），在做竖屏时按 [`references/canvas-modes.md`](references/canvas-modes.md) 与 [`references/portrait-illustration-system.md`](references/portrait-illustration-system.md) 单独编写场景。
 
@@ -87,7 +88,7 @@
         │
   ⑥ 渲染 ────── Remotion 渲染 + 响度归一（-16 LUFS / -1.5 dBTP）
         │
-  ⑦ 渲染期门禁 + 交付 ─ CaptionFitGate / CardFitGate / OverlapGate / ClippingGate / FillGate / SlotGuard
+  ⑦ 渲染期门禁 + 交付 ─ CaptionFitGate / CardFitGate / OverlapGate / ClippingGate / CanvasBoundsGate / FillGate / SlotGuard
                         （成片之后还要跑 validate-motion-gaps：画面"真的没动"只有它抓得到）
                         → 2K MP4 + 17 页接触表 + 可编辑源码 ZIP
 ```
@@ -235,7 +236,7 @@ notebook-video/
 ├── SKILL.md                          # 核心技能定义与制作工作流
 ├── manifest.json                     # 技能元数据（版本号在此）
 ├── README.md / README.en.md          # 中英文说明
-├── CHANGELOG.md                      # 版本发布记录（当前 v3.1.0）
+├── CHANGELOG.md                      # 版本发布记录（当前 v3.1.1）
 ├── assets/
 │   ├── demo/                         # 成片与动图预览
 │   ├── lecture-template/             # 官方模板（纯代码路线，含 8 镜示例片）
@@ -272,9 +273,10 @@ fxkit.tsx          9 个动效构件（多时钟动效）
 toolkit.tsx       修辞工具件：Callout(画圈标注)/Checklist(清单)/JumpInText(逐字跳入) …… 可直接 import
 │   └── components/      封装组件层：Accordion/Tabs/HighlightCode/Chart/StatRow/GlowFrame/PathDraw/FitTextBox …… 场景从这里 import
 kit.tsx            主题无关原子：PillTag / LineIcon / CheckBadge / TYPE
-insert.tsx         B 场景插入镜头 + 5 式转场
+insert.tsx         B 场景插入镜头 + 3 式转场（cut / handoff / reveal）
 overlap-gate.tsx   渲染期重叠/遮挡门禁（事件帧抽样：镜头边界/节拍/相机关键帧）
 clipping-gate.tsx  渲染期图形被裁门禁（SVG 图元越出会裁切的祖先）
+canvas-bounds-gate.tsx 渲染期画布越界门禁（含文字的叶元素，墨迹 rect 越出画布；接触表 block、片子 warn）
 fill-gate.tsx      渲染期下 1/4 实测密度门禁（信息元素最低边 vs y=876）
 showcase.tsx       组件接触表（17 页，供 AI 看图选型）
 scenes.tsx         场景层（示例片 8 镜；换题材重写这一层）
@@ -296,7 +298,7 @@ scenes.tsx         场景层（示例片 8 镜；换题材重写这一层）
   A：靠四层，而且都有门禁兜底：① 四种构图不同的骨架，**相邻场景不得同款**；② **每支片 ≥3 种视觉介质**、每个讲解场景至少一个会随旁白变状态的组件；③ 每章至少 3 次运镜（全片按片长配额），景别真的会变；④ 门禁 P0 不为 0 就**拒绝渲染**。
 
 - **Q：怎么保证文字不会互相压、不会被盖住？**\
-  A：渲染期有 `OverlapGate`（每 15 帧抽样，检测文字两两重叠与绘制顺序遮挡，用 `Range` 量真实字形矩形）、`ClippingGate`（图形被 `overflow` 祖先或 `<svg>` 视口裁掉一块——文字门禁看不见这类"缺了半边的球"）、`FillGate`（下 1/4 到底填没填：量信息元素的最低边 vs y=876，构建期那条只查声明字段在不在）与 `SlotGuard`（量 `StageFrame` 的 main 槽**占用了百分之几**——槽给足了高度、内容却只留一行字，会报出「只用了 11%」）——它们会指出"哪一帧、哪两处、压了多少 px"。**有意的重叠**（镜头交接、标题滑变、数值替换）必须显式标 `data-gate-allow`，不允许用白名单掩盖两个不同信息互相压字。成片之后再跑 `validate-motion-gaps`：连续静止超过阈值（"画面上真的没动"）只有它能抓到。
+  A：渲染期有 `OverlapGate`（每 15 帧抽样，检测文字两两重叠与绘制顺序遮挡，用 `Range` 量真实字形矩形）、`ClippingGate`（图形被 `overflow` 祖先或 `<svg>` 视口裁掉一块——文字门禁看不见这类"缺了半边的球"）、`CanvasBoundsGate`（**含文字的叶元素**的墨迹 rect 越出画布——管的是"整件被画布裁掉或被切掉一块"；接触表上硬拦、片子上只出声）、`FillGate`（下 1/4 到底填没填：量信息元素的最低边 vs y=876，构建期那条只查声明字段在不在）与 `SlotGuard`（量 `StageFrame` 的 main 槽**占用了百分之几**——槽给足了高度、内容却只留一行字，会报出「只用了 11%」）——它们会指出"哪一帧、哪两处、压了多少 px"。**有意的重叠**（镜头交接、标题滑变、数值替换）必须显式标 `data-gate-allow`，不允许用白名单掩盖两个不同信息互相压字。成片之后再跑 `validate-motion-gaps`：连续静止超过阈值（"画面上真的没动"）只有它能抓到。
 
 - **Q：字幕为什么不会溢出或被裁？**\
   A：`CaptionFitGate` 在真实渲染浏览器里用**当前画布与当前主题**的真实字号/字重/字距测量每一条字幕；超过安全宽直接拒绝渲染。

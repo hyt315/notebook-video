@@ -178,7 +178,8 @@ def import_integrity(project: Path) -> tuple[list[dict], str]:
         """(确定存在的名字, 存在但核实不了的名字, 是否 open)。
 
         open=True 表示这个模块 `export * from '<包>'` —— 可能有任意名字，导入方一律豁免。
-        "核实不了"与"不存在"必须分开：`export {CameraMotionBlur} from '@remotion/motion-blur'`
+        "核实不了"与"不存在"必须分开：`export {X} from '<包名>'` 这类**库再导出**（v3.1.1 前的模板里
+        真有过两条：`@remotion/motion-blur` 的 CameraMotionBlur / Trail；后来按「零引用」判据删了）
         里的名字**是真的**，把它当成不存在会让整条链上全是假 P0（第一版本版就这么错了）。
         """
         if depth > 3 or key in seen:

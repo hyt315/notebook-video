@@ -1,7 +1,7 @@
 ---
 name: notebook-video
-version: 3.1.0
-description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion. The default visual route is pure code-drawn composition (SVG diagrams, mascots, progressive checklists, annotation stickers) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes a per-shot restricted camera with an out-of-bounds proof, four scene skeletons with a content-to-medium routing table, a cue-indexed shot table, native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering and thirteen automated quality gates (including a frame-prop-name gate that catches the highest-frequency silent failure in this codebase). Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
+version: 3.1.1
+description: Create complete Chinese 2K warm-ivory engineering-notebook explainer and promotional videos with React, TypeScript and Remotion. The default visual route is pure code-drawn composition (SVG diagrams, mascots, progressive checklists, annotation stickers) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes a per-shot restricted camera with an out-of-bounds proof, four scene skeletons with a content-to-medium routing table, a cue-indexed shot table, native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering and fourteen automated quality gates (including a frame-prop-name gate that catches the highest-frequency silent failure in this codebase). Use when the user asks to 做科普视频, 手账风视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
 ---
 
 # Create notebook explainer videos
@@ -36,7 +36,7 @@ Read only what the current production needs. **写任何场景之前，先读前
 **先读** [references/dependency-policy.md](references/dependency-policy.md) — 依赖边界（什么能引、什么不能引）、已内置清单、组件纪律与「加一件＝换掉一件」的增长纪律（合规判据是「零引用」，不是一个拍脑袋的总数）。**动任何库或组件之前读这一份。**
 **照抄** [references/scene-authoring.md](references/scene-authoring.md) — 场景代码的标准形状与八个坑；不要重新发明。
 **照抄** [references/scene-skeletons.md](references/scene-skeletons.md) — 四种骨架与分镜表结构（写分镜表前必读）。
-**先读** [references/media-routing.md](references/media-routing.md) — 内容→介质路由、A/B 场景、背景可读性契约。
+**先读** [references/media-routing.md](references/media-routing.md) — 内容→介质路由、**§5.1 组件权威索引（53 件逐件，选型只查这一处）**、A/B 场景、背景可读性契约。
 **先读** [references/shot-language.md](references/shot-language.md) — 六个运镜意图（+ `still` = 合法取值 7 个）、缩放预算、anchor 出界证明、平移预算。
 **必读** [references/lecture-composition.md](references/lecture-composition.md) 与 [references/motion-design.md](references/motion-design.md) — 构图规范与多时钟动效六律。
 **何时读**（选定皮肤后只读那一份）： [references/visual-system.md](references/visual-system.md) (paper, default) **or** [references/theme-cel.md](references/theme-cel.md) **or** [references/theme-sticker.md](references/theme-sticker.md) **or** [references/theme-flat.md](references/theme-flat.md); the boundary is in [references/theme-system.md](references/theme-system.md).
@@ -47,6 +47,8 @@ Read only what the current production needs. **写任何场景之前，先读前
 **何时读**（策划脚本 / 编排章节时）：[references/narrative-hook.md](references/narrative-hook.md) 与 [references/pacing-rhythm.md](references/pacing-rhythm.md)。
 **先读** [references/independent-parts.md](references/independent-parts.md) — 部件分解、z-order、进出场契约（动任何部件之前读）。
 **必读** [references/fxkit.md](references/fxkit.md) 与 [references/media-routing.md](references/media-routing.md) 的「修辞动作 → 组件」表 — 选组件之前读：**`live` 里每个名字都要能在表上指到**（这是选型纪律；门禁实际查的是"这个名字必须真的出现在场景源码里"，见 `validate-composition.py`）；写 `f={f}` 与 `frame={f}` 的地方见 fxkit 的命名陷阱。修辞工具件（`Callout` / `Checklist` / `JumpInText`）在 `src/toolkit.tsx`；**新封装层在 `src/components/`（Radix 手风琴与标签页、语法高亮、d3 图表、零依赖炫效果、描线/几何、中文反推字号）——选型前先看这一层**。
+> **"一共有哪些件"只查一处：[media-routing.md §5.1 组件权威索引](references/media-routing.md#51-组件权威索引53-件--选型只查这一处)**（53 件逐件：用途 / 何时用 / **何时别用** / 接触表第几页 / 真实使用记录）。
+> `fxkit.md` 与 `showcase.tsx` 各自只保留实现细节与接触表版面，**不再维护组件清单**——别从接触表反推"有哪些件"，那里有 11 件根本没上。
 **何时读**（确定画幅时）：[references/canvas-modes.md](references/canvas-modes.md)（3:4 另读 [references/portrait-illustration-system.md](references/portrait-illustration-system.md)）。
 **何时读**：仅当用户接受了可选的生图附加路线时，读 [references/visual-director.md](references/visual-director.md)。
 **何时读**（组装工程 / 抓 HTML / 跨平台排错时）：[references/official-skills-exemplar.md](references/official-skills-exemplar.md)、[references/html-capture.md](references/html-capture.md)、[references/cross-platform-compatibility.md](references/cross-platform-compatibility.md)、[references/windows-compatibility.md](references/windows-compatibility.md)。
@@ -111,9 +113,9 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-p
   ② write shot table  <project>/manifests/shots.json — semantic only, no frame numbers
   ③ resolve           python "<SKILL_DIR>/scripts/resolve-shots.py" ./notebook-video-project
   ④ author scenes     four skeletons + media routing; each shot wrapped in ShotCamera(keys, anchor)
-  ⑤ build-time gates  both must report P0 = 0
+  ⑤ build-time gates  P0 must be 0
   ⑥ render            render + loudness normalisation (−16 LUFS / −1.5 dBTP)
-  ⑦ runtime gates     CaptionFitGate / CardFitGate / OverlapGate / ClippingGate / FillGate / SlotGuard — read the console
+  ⑦ runtime gates     CaptionFitGate / CardFitGate / OverlapGate / ClippingGate / CanvasBoundsGate / FillGate / SlotGuard — read the console
                       (then validate-motion-gaps on the finished MP4: "画面真的没动" is only visible there)
   ⑧ package           MP4 + contact sheet + editable source ZIP
 ```
@@ -153,6 +155,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" review-frames ./notebook-video-pro
 | `CardFitGate` | render | content taller/wider than its card (`scrollHeight > clientHeight`, 6px tolerance; clips only), waits for fonts, logs coverage every 5s | yes |
 | `OverlapGate` | render (15-frame grid **+ every shot boundary, beat and camera keyframe**) | text-vs-text overlap and paint-order occlusion using real glyph rects; gradient backgrounds count as opaque; header layer (z=140) included | `mode="block"` in the bundled films |
 | `ClippingGate` | render (same sampling as `OverlapGate`) | **图形被裁**：SVG/图形元素的真实 rect 越出最近的"会裁切"祖先（HTML 的 `overflow≠visible` 祖先，或所属 `<svg>` 视口；显式 `overflow:visible` 的 svg 按计算样式判、不算越界）——`CardFitGate` 只管 div/span 里的文字、`OverlapGate` 只管文字互相压，两者都看不见"缺了半边的球"（实测 S19 走廊圆心算在 x=0，左半边被 svg 视口裁掉，零报错） | `mode="block"` in the bundled films |
+| `CanvasBoundsGate` | render (every frame) | **含文字的叶元素**（HTML 叶 + SVG `text`/`tspan`）的**墨迹矩形**（`Range` 取字）越出 composition 视口：≥6px 出声、落定态（有效不透明度 ≥0.98）≥20px 硬拦。v2 只判这一半——**图形 / 版面件那半边与 `ClippingGate` 会在同一批元素上重复报，已砍**；砍掉的复杂度（设计坐标回折、`z≥140` 排除、按帧抽样）与代价写在件头注释里。**这是此前四道渲染期门禁都不管的一类**：`ClippingGate` 只认 SVG 图元、`CardFitGate` 只管卡片内溢出、`OverlapGate` 管互相压、`FillGate` 管铺到多低，构建期 `coords-lint.py` 又把 `Corridor`/`ZoomStage`/`StageFrame` 这类布局件排除在外 —— 接触表第 ⑥ 页「按 Flash 结算」被画布右缘裁成「按 Flash 结」就是这么漏过去的。判据见 [references/composition-gate.md](references/composition-gate.md) §5.2 | `mode="warn"` in the bundled film / `mode="block"` on the contact sheet (deliberately different gears; reasons in `index.tsx` and the gate's header) |
 | `FillGate` | render (same sampling) | **下 1/4 实测密度**：信息元素（有文字/有边框/有描边）rect 并集的最低边 vs y=876（±24 容差），z≥140 的子树跳过。这是 P0-4 的**真实判据**——构建期只查 `bottomFill` 字段在不在（那个字段是生成器自己写死的 `true`，值判据结构上不可能失败） | warn（观感线；"画错了"那三类才硬拦） |
 | `SlotGuard` | render (output path, inside `StageFrame`) | **fill of the main slot**: union height of the innermost content elements ÷ slot height; speaks up below 35% and prints the slot's `mainW×mainH` — catches "slot was big enough, content left it empty" (measured: a 428px slot used 11%) | warn |
 | `validate-motion-gaps.py` | **post-render (T3, needs the MP4)** | **画面真的没动**：ffmpeg `freezedetect` 逐帧比对，连续"几乎完全相同"超过阈值（默认按镜长比例）即 P0。⚠️ 必须先裁掉字幕带，否则逐字上屏的字幕会把每一段静止都遮掉 | yes (P0) |
@@ -186,7 +189,7 @@ stacking, unregistered rasters, or generated text baked into imagery.
 
 | 情况 | 纪律 |
 |---|---|
-| 模板**已内置**的依赖（`assets/lecture-template/package.json` 已声明的） | **随 `npm install` 一次装好，无需任何额外授权，直接 `import` 使用。** 含 Radix、react-icons、react-syntax-highlighter、d3-scale/d3-shape，以及六个 `@remotion/*` 官方扩展（transitions / paths / shapes / motion-blur / layout-utils / noise） |
+| 模板**已内置**的依赖（`assets/lecture-template/package.json` 已声明的） | **随 `npm install` 一次装好，无需任何额外授权，直接 `import` 使用。** 含 Radix、react-icons、react-syntax-highlighter、d3-scale/d3-shape，以及五个 `@remotion/*` 官方扩展（transitions / paths / shapes / layout-utils / noise） |
 | 清单之外的**新**依赖 | 需用户明确授权后才能加进模板 |
 
 判断边界见 [dependency-policy.md](references/dependency-policy.md)：**禁的是"按次付费、结果不可复现"的生成式模型，不是开源库。**
@@ -236,14 +239,18 @@ python "<SKILL_DIR>/scripts/selftest.py"
 Good fixtures must pass and each broken fixture (protected phrase split across cues, mismatched caption
 sync, non-video input) must be rejected by the matching gate.
 
-For the build-time gates, run the negative spot-check — it feeds twenty-three fixtures to the six build-time
-gates (a shot table whose anchor leaves the frame, a pan beyond the zoom budget, adjacent scenes sharing a
+For the build-time gates, run the negative spot-check — it feeds forty fixtures to the gates (a shot table whose anchor leaves the frame, a pan beyond the zoom budget, adjacent scenes sharing a
 skeleton, a shot with no live component, a timeline gap, a faked `live`/media name, a camera move that never
 moves, a frame-prop typo in the fxkit layer and in the components layer, a beat that spoils its line, a beat
 pointing at another shot's cue, a beat landing too late for its line, a beat legal but flush against that
-tolerance, a caption read too fast, a font below the floor, body text the same colour as the paper, imports of
-names that no longer exist, and a doc naming a component that does not exist) plus negative controls, and
-asserts each gate blocks, warns or passes as expected — 49 assertions, 24 of which pin or forbid the expected message
+tolerance, a caption read too fast, a font below the floor, body text the same colour as the paper, a text
+colour that misses 4.5:1, a beat index past the end in all three spellings, imports of names that no longer
+exist, a doc naming a component that does not exist, a canvas-bounds gate whose wiring was cut, whose gears
+were "unified" or whose judgement was widened back, four `evidence` fixtures — one naming a widget that is not
+in the scene source at all, one naming a widget only another shot uses (a **known miss**: it must pass), one
+that only appears in a comment, and the untouched template with scene sources — and three narrative-`move`
+run fixtures) plus negative controls, and
+asserts each gate blocks, warns or passes as expected — 80 assertions, 38 of which pin or forbid the expected message
 substring, so "failed for some other reason" cannot pass as a blocked fixture.
 **A gate that exists in name only is the most dangerous defect.**
 

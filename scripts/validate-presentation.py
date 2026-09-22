@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """validate-presentation.py · 呈现效果门禁（T1：纯算术，不渲染）
 
-它回答的是现有其它 9 道门禁（本道是第 10 道）**都没问过**的问题：观众此刻该看哪里、读不读得过来。
+它回答的是**其它门禁都没问过**的问题：观众此刻该看哪里、读不读得过来。
 现有的门禁查的是"画面里有没有 / 够不够多 / 会不会撞"；这一道查"讲与画对不对得上、读得动吗"。
+（数量口径 2026-09-22 复核：全技能 14 道门禁 = 构建期 6 + 渲染期 7 + 成片后验 1，
+  表见 SKILL.md 的 The gates；本道是构建期那 6 道之一 —— 数字变了以那张表为准，别在本文件里改。）
 每条判据都是纯算术（读 manifests 与源码字面量），零新增数据模型、不需要渲染。
 
 判据（可计算形式见下）：
@@ -69,6 +71,71 @@ CONTRAST_TEXT = 4.5        # WCAG 2.2 SC 1.4.3 正文
 CONTRAST_LARGE = 3.0       # 大字号（≥24px 或 ≥18.5px 粗体）
 
 norm = lambda s: re.sub(r"\s+", "", s)
+
+VALUE_POS = "=([{,:;?|&!+*-<>~^"   # `noncode` 用：引号只有出现在"值位置"才开字符串
+
+
+def noncode(text: str) -> str:
+    """把"不是代码"的位置（注释内部 + **字符串字面量内部**）换成空格，**长度与行号一字不动**。
+
+    为什么是"抹掉"而不是"按行过滤"：抹掉之后正则照旧能跑，行号与列位置都还是原始的，
+    所以报出来的行号永远等于编辑器里那一行（第二轮复核抓到过 464 vs 真实 467 的漂移）。
+
+    四条必须同时成立，每条都是实测踩出来的：
+    ① 注释里写历史反例（"fontSize: 9 是禁止的写法"）不该判 P0；
+    ② 块注释**按跨行数补回等量换行**，否则整体行号上移；
+    ③ `//` 只有在**字符串外**才是注释——否则 `background:"url(https://…)"` 之后写的 fontSize
+       会被整行吃掉，成了漏检面；
+    ④ 引号只在**值位置**才开字符串（前一个代码位置的非空白字符属于 `=([{,:;?|&!+*-<>~^` 或行首）：
+       JSX 文本里的撇号（`don't`）不该毒化整行；而 `'…'` / `"…"` 不跨行，行尾未闭合就收尾。
+    ⑤（第三轮复核指出）**字符串里放代码样例**是本仓库的常规写法——接触表/测试页里
+       `const CODE = `import {...} from './x';`` 就是。字符串里的 import / `fontSize: 8`
+       不是真的代码，扫进去就是假 P0；反过来，它也不该给 import_integrity 贡献"幽灵导出"。
+
+    ⚠️ 这份实现原先是 `check_readability` 里的闭包（函数体一字未改，只是搬到模块层），
+    因为 G-15（`evidence` 有没有被当成 JSX 用）也要用同一套口径：**注释里写到的组件名不算"用到"** ——
+    这正是 overview-film S2 的实况（`evidence: MetricGrid` 只出现在一行注释里，代码里已换成手绘）。
+    一份实现两个用点，改这里两个判据同时生效。
+    """
+    out = [ch if ch not in "\n" else "\n" for ch in text]
+    i, n, quote, prev = 0, len(text), "", ""
+
+    def blank(lo: int, hi: int) -> None:
+        for k in range(lo, hi):
+            if out[k] != "\n":
+                out[k] = " "
+
+    while i < n:
+        ch = text[i]
+        if quote:
+            blank(i, i + 1)
+            if ch == "\\" and i + 1 < n:      # 转义：连下一个字符一起吃掉
+                blank(i + 1, i + 2)
+                i += 2
+                continue
+            if ch == quote:
+                quote = ""
+            elif ch == "\n" and quote != "`":
+                quote = ""                     # '…' / "…" 不跨行：行尾未闭合就收尾
+            i += 1
+            continue
+        if ch in "'\"`" and (prev == "" or prev in VALUE_POS):
+            quote = ch
+            blank(i, i + 1)
+        elif text.startswith("//", i):
+            j = text.find("\n", i)
+            blank(i, n if j < 0 else j)        # 吃到行尾；换行留着（行号不变）
+            i = n if j < 0 else j
+            continue
+        elif text.startswith("/*", i):
+            j = text.find("*/", i + 2)
+            blank(i, n if j < 0 else j + 2)    # 块注释内部全抹，换行不抹
+            i = n if j < 0 else j + 2
+            continue
+        elif not ch.isspace():
+            prev = ch
+        i += 1
+    return "".join(out)
 
 
 def ms_frame(ms: float) -> int:
@@ -218,65 +285,10 @@ def check_readability(project: Path) -> tuple[list, list]:
     types = parse_type_table(project)
     band: dict[str, list[tuple[int, int]]] = {}   # 13–15 档：按文件聚合，避免一条一处刷屏
     files = sorted(list(src.rglob("*.tsx")))
-
-    def code_only(text: str) -> str:
-        """把"不是代码"的位置（注释内部 + **字符串字面量内部**）换成空格，**长度与行号一字不动**。
-
-        为什么是"抹掉"而不是"按行过滤"：抹掉之后正则照旧能跑，行号与列位置都还是原始的，
-        所以报出来的行号永远等于编辑器里那一行（第二轮复核抓到过 464 vs 真实 467 的漂移）。
-
-        四条必须同时成立，每条都是实测踩出来的：
-        ① 注释里写历史反例（"fontSize: 9 是禁止的写法"）不该判 P0；
-        ② 块注释**按跨行数补回等量换行**，否则整体行号上移；
-        ③ `//` 只有在**字符串外**才是注释——否则 `background:"url(https://…)"` 之后写的 fontSize
-           会被整行吃掉，成了漏检面；
-        ④ 引号只在**值位置**才开字符串（前一个代码位置的非空白字符属于 `=([{,:;?|&!+*-<>~^` 或行首）：
-           JSX 文本里的撇号（`don't`）不该毒化整行；而 `'…'` / `"…"` 不跨行，行尾未闭合就收尾。
-        ⑤（第三轮复核指出）**字符串里放代码样例**是本仓库的常规写法——接触表/测试页里
-           `const CODE = `import {...} from './x';`` 就是。字符串里的 import / `fontSize: 8`
-           不是真的代码，扫进去就是假 P0；反过来，它也不该给 import_integrity 贡献"幽灵导出"。
-        """
-        out = [ch if ch not in "\n" else "\n" for ch in text]
-        VALUE_POS = "=([{,:;?|&!+*-<>~^"
-        i, n, quote, prev = 0, len(text), "", ""
-        def blank(lo: int, hi: int) -> None:
-            for k in range(lo, hi):
-                if out[k] != "\n":
-                    out[k] = " "
-        while i < n:
-            ch = text[i]
-            if quote:
-                blank(i, i + 1)
-                if ch == "\\" and i + 1 < n:      # 转义：连下一个字符一起吃掉
-                    blank(i + 1, i + 2)
-                    i += 2
-                    continue
-                if ch == quote:
-                    quote = ""
-                elif ch == "\n" and quote != "`":
-                    quote = ""                     # '…' / "…" 不跨行：行尾未闭合就收尾
-                i += 1
-                continue
-            if ch in "'\"`" and (prev == "" or prev in VALUE_POS):
-                quote = ch
-                blank(i, i + 1)
-            elif text.startswith("//", i):
-                j = text.find("\n", i)
-                blank(i, n if j < 0 else j)        # 吃到行尾；换行留着（行号不变）
-                i = n if j < 0 else j
-                continue
-            elif text.startswith("/*", i):
-                j = text.find("*/", i + 2)
-                blank(i, n if j < 0 else j + 2)    # 块注释内部全抹，换行不抹
-                i = n if j < 0 else j + 2
-                continue
-            elif not ch.isspace():
-                prev = ch
-            i += 1
-        return "".join(out)
+    # 抹注释/字符串的实现已提到模块层 `noncode()`（G-15 也要用同一套口径，理由见那里的 docstring）
 
     for f in files:
-        for n, line in enumerate(code_only(f.read_text(encoding="utf-8")).splitlines(), 1):
+        for n, line in enumerate(noncode(f.read_text(encoding="utf-8")).splitlines(), 1):
             rel = f"{f.relative_to(project)}:{n}"
             for m in FONT_RE.finditer(line):
                 size = int(m.group(1))
@@ -388,8 +400,10 @@ def check_readability(project: Path) -> tuple[list, list]:
 # ------------------------------------------------- G-14/G-15/G-16 讲法字段完整性
 # 编号说明（2026-09-21 修撞号）：这一组原来标成 "G-6"，而 **G-6 是调研报告里"对比层结构闭合"**
 # 的编号（见 references/presentation-gate.md 的"还没做的"）。本组的编号以
-# references/narrative-moves.md §4 为准：G-14 `move` 闭合 / G-15 `evidence` 真的会动 /
+# references/narrative-moves.md §4 为准：G-14 `move` 闭合 / G-15 `evidence` 被当成 JSX 用 /
 # G-16 误解与留白（G-17 known→new 闭合尚未实现）。
+# ⚠️ G-15 的档次在 2026-09-22 从"真的会动（本镜 + 帧驱动链）"退回"名字被当成 JSX 用"：
+#    口径、代价与"不做哪半边"逐条写在下面 check_evidence 那一节，也写回了 narrative-moves.md §2。
 #
 # 为什么加这一条（2026-09-21）：`narrative-moves.md` 把 move / evidence / hold /
 # misconception 四个槽位写成**必填**，但**十道门禁没有一道读过它们**，而且：
@@ -401,6 +415,7 @@ def check_readability(project: Path) -> tuple[list, list]:
 MOVES = {"引入", "定位", "推进", "传递", "对比", "拆分/合并", "累积", "收束", "反证", "回看"}
 HOLD_MIN = 40        # 留白预算下限：narrative-moves.md 里**标定**出来的线（不是拍的）
 MOVE_MIN_KINDS = 5   # 全片至少用到几种叙事动作（10 种里挑）：只写 1–2 种等于没有编排
+MOVE_RUN_LIMIT = 3   # G-14②：同一 move **连续 ≥3 镜**即违规（文档原文"不得连续 ≥3 镜"，含 3）
 
 
 def check_narrative(project: Path) -> tuple[list, list]:
@@ -434,8 +449,134 @@ def check_narrative(project: Path) -> tuple[list, list]:
             p0.append({"id": sid, "issue": "必须二选一：misconception（本镜要拆掉的误解）或 noMisconception(+why)"})
         elif nomis and not why:
             p0.append({"id": sid, "issue": "标了 noMisconception 却没写 why（为什么不设误解）"})
+
+    # ---- G-14② 同一 move 不得连续 ≥3 镜（2026-09-22 补：这条规则写了两处、**从来没有门禁**）----
+    # 文档原文（narrative-moves.md §2）：「闭合 10 个，**同一个 `move` 不得连续 ≥3 镜**」，§4 把
+    # 它列进 G-14 —— 但本脚本此前只查了"每镜的 move 是不是 10 个名字之一"，**没有任何连续镜检查**。
+    # 也就是说这条规则从落地起就没被执行过：写 3 镜连续 `引入` 的片子照旧 PASS。
+    #
+    # 级别 = P0，依据是这条规则的出处（`呈现效果调研.md` §5.7）：「同一种 `move` 不得连续 ≥3 镜
+    # **（与骨架重复检查同级）**」—— 而相邻同骨架在 `validate-composition.py` 是 **P0（P0-1）**；
+    # narrative-moves.md §2 用的也是"**不得**"（禁令），不是"建议"。
+    # ⚠️ §4 那一行的级别格原先写的是 "P0 / P1"，读起来像"连续这半条算 P1"——两种读法都说得通，
+    #    这里按出处取 P0，并**把口径写回文档**（narrative-moves.md §2/§4 已改成显式 P0），不再靠猜。
+    #
+    # 口径：按 shots.json 的镜序逐镜比较（= 成片顺序：resolve-shots 要求 from 连续，两者必然一致），
+    #      同一 move 的**极大连续段** ≥3 镜即报一条，报出**哪几镜、连续了几个、什么 move**。
+    #      缺 move / 不在闭集的镜**打断计数**：它自己已经另报 P0，既不在这里重复刷屏，
+    #      也不许把它两侧的段接成一条假的"连续"——第一版写成 `continue`（跳过但不打断），
+    #      于是 `引入,引入,缺move,引入` 被报成"S1→S2→S4 连续 3 镜"，那是一句用户照着改不了的假话
+    #      （负向夹具 AE 抓到的）。
+    runs: list[tuple[str, list[str]]] = []
+    run_move: str | None = None
+    run_ids: list[str] = []
+    for s in shots:
+        mv = str(s.get("move") or "").strip()
+        if mv not in MOVES:
+            if run_move is not None:
+                runs.append((run_move, run_ids))
+            run_move, run_ids = None, []
+            continue
+        if mv != run_move:
+            if run_move is not None:
+                runs.append((run_move, run_ids))
+            run_move, run_ids = mv, []
+        run_ids.append(s.get("id", "?"))
+    if run_move is not None:
+        runs.append((run_move, run_ids))
+    for mv, ids in runs:
+        if len(ids) >= MOVE_RUN_LIMIT:
+            p0.append({"id": f"{ids[0]}–{ids[-1]}", "issue": (
+                f"同一 move 连续 {len(ids)} 镜：{'→'.join(ids)} 都是 «{mv}»（上限 {MOVE_RUN_LIMIT - 1} 镜，"
+                f"判据 = 文档的「同一个 move 不得连续 ≥{MOVE_RUN_LIMIT} 镜」）：连续同动作会让观众觉得"
+                f"这几镜在干同一件事，请换一个叙事动作或把其中两镜合并")})
+
     if kinds and len(kinds) < MOVE_MIN_KINDS:
         p1.append({"id": "-", "issue": f"全片只用到 {len(kinds)} 种叙事动作（{sorted(kinds)}），建议 ≥{MOVE_MIN_KINDS} 种"})
+    return p0, p1
+
+
+# ------------------------------------------------- G-15 `evidence` 是不是真用在源码里（v2 简版）
+#
+# ⚠️ 这条判据此前**名存实亡**：文档（`narrative-moves.md` §2 / `presentation-gate.md` §G-15）把它写成
+# 必填且"静态元素不算证据"，而本脚本读 `evidence` 的唯一一处是 `if not ev:`（**只查字段非空**）——
+# 名字写成源码里根本不存在的，门禁一声不响（负向夹具 AF 钉的就是这个）。
+#
+# v2（2026-09-22 按实测简化，替掉上一版 465 行的手写 JSX 结构解析）**只查一件事**：
+#
+#   `evidence` 的名字必须**作为 JSX 用法**（`<名字 …>` / `<名字/>`）出现在该工程的**场景源码**里。
+#
+# 口径（三句话说完，没有隐藏的第四句）：
+#   · 扫描前用 `noncode()` 把注释与字符串抹成空格 → **注释里写到的名字不算"用到"**
+#     （真实工程 overview-film 的 S2 就是这么烂掉的：`MetricGrid` 被换成手绘行 + `Chart`，
+#      只在注释里留了一句"这里本来用 MetricGrid"；"文件里搜得到名字"那种判法会**假通过**）。
+#     同理，import 行与字符串里的代码样例也都不算 —— 只有 JSX 用法算。
+#   · 场景源码 = `src/**` 里名字带 `scene` 的 .tsx（与 validate-frame-props.py 的 SCENE_HINT 同一口径）；
+#     一个都没有时退到 `src/**/*.tsx`；连 .tsx 都没有就报一条 P1 说明**这条判据没生效**
+#     （让"没报"与"没跑"可区分，与其它门禁的覆盖率日志同一用意）。
+#   · 名字后面必须紧跟空白 / `/` / `>`（`(?![A-Za-z0-9_$])`），免得 `Widget2` 被 `Widget` 蒙混过去。
+#
+# **不做**的（口径已同步写回 `narrative-moves.md` §2 与 `presentation-gate.md` §G-15，别高估它）：
+#   · 不做**本镜作用域**：名字只要在该工程的场景源码里被 JSX 用到就算过 ——
+#     **一个名字在本镜没用到、但在别的镜用了，会漏**。这正是"降复杂度"买来的代价，
+#     负向夹具 AG 把这个口径**钉住**（它现在必须 rc=0，谁哪天加回本镜作用域，这条夹具会先失败）。
+#   · 不做**帧驱动判定**（"那个元素到底动不动"）：那要解析 JSX 结构 + 维护一张帧驱动白名单，
+#     而它的误报面已经实测到了 —— 帧经 `ctx` 这类不透明参数传进组件的写法会被判成静态，
+#     而动作表「推进」推荐的 `PhaseRail` 恰好就是这种写法。判成 P0 等于"照文档写、门禁拦你"。
+#   · 不做**降级**：v1 在"切不出本镜"时要降级并自报一条 P1 —— 现在没有"本镜"这一层，无级可降。
+#
+# 代价与取舍（写清楚，免得下一个人以为它比实际更强）：
+#   这条判据现在拦得住「名字写错 / 只出现在注释里 / 只出现在 import 行或字符串里」，
+#   **拦不住**「指向一个在本镜里从头到尾不动的静态卡片」（只要那个名字在别处被 JSX 用到过）。
+#   要把那半边找回来，得把本镜作用域 + 帧驱动白名单一起加回来 —— 就是被砍掉的那 465 行。
+#   本仓库的取舍：**宁可少报，也不要一堆假报告 + 一条没人愿意维护的判据**。
+
+_EVIDENCE_NAME = "(?![A-Za-z0-9_$])"
+
+
+def _evidence_used(code: str, name: str) -> bool:
+    """`name` 有没有**作为 JSX 用法**出现（`<Name …>` / `<Name/>`）。注释与字符串已由 noncode() 抹掉。"""
+    return re.search(r"<" + re.escape(name) + _EVIDENCE_NAME, code) is not None
+
+
+def _scene_files(project: Path) -> list[Path]:
+    """名字里带 `scene` 的 .tsx（与 validate-frame-props.py 的 SCENE_HINT 同一口径）。"""
+    src = project / "src"
+    if not src.is_dir():
+        return []
+    return [p for p in sorted(src.rglob("*.tsx")) if "scene" in p.name.lower()]
+
+
+def check_evidence(project: Path) -> tuple[list, list]:
+    p0, p1 = [], []
+    src = project / "src"
+    if not src.is_dir():
+        return p0, p1                            # 没源码：与 check_readability 同口径，静默跳过
+    doc = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8"))
+    shots = doc["shots"] if isinstance(doc, dict) and "shots" in doc else doc
+
+    files = _scene_files(project) or sorted(src.rglob("*.tsx"))
+    if not files:
+        p1.append({"id": "-", "issue": (
+            f"G-15（`evidence` 真的用在源码里）**没生效**：{project.name}/src 下找不到场景源码"
+            "（名字里带 scene 的 .tsx，退一步看任一 .tsx）——这一条只能查「名字有没有被当成 JSX 用」，"
+            "没有源码就无从判起")})
+        return p0, p1
+    where = "、".join(p.name for p in files)
+    code = "\n".join(noncode(p.read_text(encoding="utf-8")) for p in files)
+
+    for s in shots:
+        sid = s.get("id", "?")
+        ev = str(s.get("evidence") or "").strip()
+        if not ev:
+            continue                             # 缺字段已由 check_narrative 报过，不重复刷屏
+        if _evidence_used(code, ev):
+            continue
+        p0.append({"id": sid, "issue": (
+            f"evidence=«{ev}» 在场景源码（{where}）里**找不到这个用法**：名字要么写错了、"
+            f"要么从来没被当成 JSX 用渲染出来（只写在注释 / 字符串 / import 行里都不算「用到」）。"
+            f"G-15 要求 `evidence` 指向真的会变的那件东西，指向一个不存在的用法 = 这条声明无法被验证"
+            f"（判据与**已知边界**见 narrative-moves.md §2）")})
     return p0, p1
 
 
@@ -461,6 +602,9 @@ def main() -> int:
     p0 += a
     p1 += b
     a, b = check_narrative(project)
+    p0 += a
+    p1 += b
+    a, b = check_evidence(project)      # G-15：`evidence` 被当成 JSX 用出现在场景源码里（v2 简版口径）
     p0 += a
     p1 += b
 

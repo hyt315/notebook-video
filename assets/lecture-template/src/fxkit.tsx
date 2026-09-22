@@ -155,7 +155,7 @@ export const Funnel:React.FC<{
           <span style={{fontSize:FX_T.labelL,fontWeight:700,color:r.color}}>{r.sub}</span>
           <span style={{marginLeft:'auto',fontFamily:'Space',fontWeight:700,fontSize:FX_T.titleM,color:r.color}}>{r.count}</span>
         </div>
-        <div style={{height:22,background:'#efe9dc',borderRadius:99,border:`2px solid ${C.ink}`,overflow:'hidden'}}>
+        <div style={{height:22,background:C.gaugeTrack,borderRadius:99,border:`2px solid ${C.ink}`,overflow:'hidden'}}>
           <div style={{height:'100%',width:'100%',background:r.color,borderRadius:99,transformOrigin:'left center',transform:`scaleX(${Math.max(0.04,r.ratio*wp)})`}}/>
         </div>
         {[0,1,2].map(d=>{
@@ -208,7 +208,7 @@ export const ProgressRing:React.FC<{
   const land = pulse(f,start+dur,12); // 过冲只给容器：数值类动画不能弹（会短暂显示错误的数）
   return <div style={{width:size,height:size,position:'relative',flex:'0 0 auto',transform:`scale(${1+0.03*land})`}}>
     <svg width={size} height={size}>
-      <circle cx={size/2} cy={size/2} r={R} fill="none" stroke="#efe9dc" strokeWidth={11}/>
+      <circle cx={size/2} cy={size/2} r={R} fill="none" stroke={C.gaugeTrack} strokeWidth={11}/>
       <circle cx={size/2} cy={size/2} r={R} fill="none" stroke={color} strokeWidth={11} strokeLinecap="round" strokeDasharray={len} strokeDashoffset={len*(1-shown*p)} transform={`rotate(-90 ${size/2} ${size/2})`}/>
       {p>0.02&&p<1&&<circle cx={capX} cy={capY} r={5.5} fill={color}/>}
     </svg>

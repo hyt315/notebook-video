@@ -109,16 +109,58 @@ export const SketchFx: React.FC<{
 
     draw.forEach((prim, i) => {
       const s = base.seed + i * 7;
+      // ---- 几何护栏（2026-09-21，实测量出来的，不是推测）----
+      // `ellipse` / `circle` 的圆心字段是 **cx / cy**（圆的直径是 `d`）。作者按惯性写 `x / y` 时
+      // 拿到的是 NaN，后果分两种，两种都很坏：
+      //   · 没有 fill：roughjs 照旧产出一条含 NaN 的 path → 浏览器画出**位置乱跑的畸形图形**
+      //     （实测 S16 的"圆"被画成偏左约 400px 的一枚扁透镜，没有任何报错）；
+      //   · 带 fill（`fill:'none'` 也是**真值**，roughjs 会照填）：hachure 填充器在 NaN 边界上
+      //     **死循环** —— 实测 S6 单帧 33s 超时、整帧渲染直接失败。
+      // 处置两件一起做：收 `x/y`（圆的 `w`）作别名替作者兜住；归一后仍算不出有限几何就**抛错**。
+      // 宁可渲染失败也不要"看起来渲成功了"的坏画面。
+      const bad = (need: string): never => {
+        throw new Error(
+          `[SketchFx] 第 ${i} 个图形（${prim.kind}）的几何不是有限数：${need}。` +
+            `圆心字段是 cx/cy、圆的直径是 d（也接受 x/y 与 w 作为别名）。` +
+            `写成 x/y 会得到 NaN：没有 fill 时画出位置乱跑的畸形图形，带 fill 时让 hachure 填充死循环。`
+        );
+      };
+      const fx = (v: unknown, need: string): number =>
+        typeof v === 'number' && Number.isFinite(v) ? v : bad(need);
+      const el = prim as unknown as {
+        x?: number; y?: number; cx?: number; cy?: number; d?: number; w?: number; h?: number;
+      };
       const node =
         prim.kind === 'rect'
-          ? rc.rectangle(prim.x, prim.y, prim.w, prim.h, {...base, seed: s})
+          ? rc.rectangle(fx(prim.x, 'x'), fx(prim.y, 'y'), fx(prim.w, 'w'), fx(prim.h, 'h'), {...base, seed: s})
           : prim.kind === 'ellipse'
-            ? rc.ellipse(prim.cx, prim.cy, prim.w, prim.h, {...base, seed: s})
+            ? rc.ellipse(
+                fx(el.cx ?? el.x, 'cx（圆心 x；也接受 x 别名）'),
+                fx(el.cy ?? el.y, 'cy（圆心 y；也接受 y 别名）'),
+                fx(el.w, 'w'),
+                fx(el.h, 'h'),
+                {...base, seed: s}
+              )
             : prim.kind === 'circle'
-              ? rc.circle(prim.cx, prim.cy, prim.d, {...base, seed: s})
+              ? rc.circle(
+                  fx(el.cx ?? el.x, 'cx（圆心 x；也接受 x 别名）'),
+                  fx(el.cy ?? el.y, 'cy（圆心 y；也接受 y 别名）'),
+                  fx(el.d ?? el.w, 'd（直径；也接受 w 别名）'),
+                  {...base, seed: s}
+                )
               : prim.kind === 'line'
-                ? rc.line(prim.x1, prim.y1, prim.x2, prim.y2, {...base, seed: s, fill: undefined})
-                : rc.polygon(prim.points, {...base, seed: s});
+                ? rc.line(fx(prim.x1, 'x1'), fx(prim.y1, 'y1'), fx(prim.x2, 'x2'), fx(prim.y2, 'y2'), {
+                    ...base,
+                    seed: s,
+                    fill: undefined,
+                  })
+                : rc.polygon(
+                    (prim.points as [number, number][]).map(([px, py]) => [
+                      fx(px, 'polygon 的 x'),
+                      fx(py, 'polygon 的 y'),
+                    ]),
+                    {...base, seed: s}
+                  );
       svg.appendChild(node);
 
       // 帧驱动：让这一组路径按进度"自己画出来"
