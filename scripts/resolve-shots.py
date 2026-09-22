@@ -34,8 +34,24 @@ def ms_frame(ms: float) -> int:
     return int(round(ms * FPS / 1000))
 
 
+# ---- shotCam 的隐式默认（TS 权威 = assets/lecture-template/src/shotkit.tsx，逐条对应行号）----
+# 省略 to 时按 intent 回落（`o.to ?? <值>`），不再一律回落成 from —— 回落成 from = 不动，
+# 既骗过渲染（成片静止）又触发 validate-shot-motion 的"声明运镜却不动"P0（误拦省略参数的镜）。
+# · establish 1.03（shotkit.tsx:113） push-in 1.12（:116） pull-back 1.0（:119） reveal 1.08（:125）
+# · pan-follow / micro-orbit / still 的 to 回落 from（`o.to ?? o.from ?? 1`，:122/:128/:109）
+DEFAULT_TO = {"establish": 1.03, "push-in": 1.12, "reveal": 1.08, "pull-back": 1.0}
+# pull-back 省略 from 时**只抬 k1**（f=at 那一帧，shotkit.tsx:119 的 `o.from ?? 1.12`：先推近再拉远），
+# head（f=0）仍是 `o.from ?? 1`（shotkit.tsx:108）—— head/k1 默认值不同是 TS 原样行为，照抄。
+DEFAULT_FROM_K1 = {"pull-back": 1.12}
+# micro-orbit 省略 rotY 时 TS 默认 6°（shotkit.tsx:128 的 `rotY: o.rotY ?? 6`）；其余 intent 不用 rotY。
+DEFAULT_ROT_Y = {"micro-orbit": 6.0}
+
+
 def expand_cam(cam: dict, duration: int) -> list[dict]:
-    """与 assets/lecture-template/src/shotkit.tsx 的 shotCam() 同形（改一处要同步另一处）。"""
+    """与 assets/lecture-template/src/shotkit.tsx 的 shotCam() 同形（改一处要同步另一处）。
+
+    本函数是渲染键展开的**唯一真源**：resolve 写进 shots.resolved.json / src/shots.ts，
+    validate-shot-motion.py 直接 import 本函数走后备路径——默认值只维护这一份。"""
     if cam.get("keys"):
         return cam["keys"]
     intent = cam.get("intent", "still")
@@ -44,19 +60,23 @@ def expand_cam(cam: dict, duration: int) -> list[dict]:
     x = float(cam.get("x", STAGE_CX))
     y = float(cam.get("y", STAGE_CY))
     frm = float(cam.get("from", 1.0))
-    to = float(cam.get("to", frm))
+    to = float(cam.get("to", DEFAULT_TO.get(intent, frm)))
     fx = float(cam.get("fromX", x))
     fy = float(cam.get("fromY", y))
-    rot = float(cam.get("rotY", 0.0))
+    rot = float(cam.get("rotY", DEFAULT_ROT_Y.get(intent, 0.0)))
     hold = max(at + span, duration)
     head = {"f": 0, "x": fx, "y": fy, "s": frm}
+    k1 = float(cam.get("from", DEFAULT_FROM_K1.get(intent, 1.0)))
     if intent in ("establish", "push-in", "pull-back", "reveal"):
-        return [head, {"f": at, "x": x, "y": y, "s": frm}, {"f": at + span, "x": x, "y": y, "s": to}, {"f": hold, "x": x, "y": y, "s": to}]
+        return [head, {"f": at, "x": x, "y": y, "s": k1}, {"f": at + span, "x": x, "y": y, "s": to}, {"f": hold, "x": x, "y": y, "s": to}]
     if intent == "pan-follow":
         return [head, {"f": at, "x": fx, "y": fy, "s": frm}, {"f": at + span, "x": x, "y": y, "s": to}, {"f": hold, "x": x, "y": y, "s": to}]
     if intent == "micro-orbit":
         return [{**head, "rotY": 0}, {"f": at, "x": x, "y": y, "s": frm, "rotY": 0}, {"f": at + span, "x": x, "y": y, "s": to, "rotY": rot}, {"f": hold, "x": x, "y": y, "s": to, "rotY": rot}]
-    return [head, {"f": duration, "x": x, "y": y, "s": frm}]
+    # still：尾帧缩放对齐 shotkit 的 tail `s: o.to ?? o.from ?? 1`（shotkit.tsx:109/:130）——
+    # 显式写了 to 的 still 以前在这里被**整枚丢掉**（PY 用 frm，TS 用 to），Δ 可达 0.20；
+    # 现在 to 默认回落 frm，两者一致，只有"写了 to 却不动"的镜会按新行为真的推到 to。
+    return [head, {"f": duration, "x": x, "y": y, "s": to}]
 
 
 def js(v) -> str:

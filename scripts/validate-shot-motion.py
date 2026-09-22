@@ -23,6 +23,7 @@ CAM_KEYS_P（轨道已随 v2.9.0 删除）10 个关键帧 s 超旧上限 1.018�
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -61,39 +62,32 @@ def pan_budget(s: float) -> tuple[float, float]:
     return STAGE_CX * k, STAGE_CY * k
 
 
+# 渲染键展开的**唯一真源**在 resolve-shots.py（它同时喂渲染）：本门禁 import 复用，
+# 不再手写第二份同形展开——两份各自演化正是"validate 与渲染不一致"的病灶（2026-09 收口）。
+# importlib 按文件路径加载，同 validate-semantic-breaks.py 载入 build-semantic-captions 的先例；
+# resolve-shots.py 的 CLI/写盘全在 `if __name__ == "__main__"` 守护里，import 无副作用。
+_RESOLVE_SOURCE = Path(__file__).resolve().parent / "resolve-shots.py"
+
+
+def _load_expand_cam():
+    spec = importlib.util.spec_from_file_location("_resolve_shots_expand", _RESOLVE_SOURCE)
+    if spec is None or spec.loader is None:
+        raise SystemExit(f"无法从 {_RESOLVE_SOURCE} 载入 expand_cam：相机展开没有第二真源，载入失败=门禁自身故障")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.expand_cam
+
+
+expand_cam = _load_expand_cam()
+
+
 def cam_keys(shot: dict) -> list[dict]:
-    """把 shots.json 里的 camera 声明显开成显式关键帧表（与 shotkit.shotCam 同形）。"""
-    # 解析后的记录把展开好的关键帧放在顶层 keys（唯一真源）；不要再去"猜"一遍。
+    """解析后的记录把展开好的关键帧放在顶层 keys（唯一真源）；不要再去"猜"一遍。
+    后备路径（陈旧/手改的 resolved 缺 keys）直接调 resolve-shots.expand_cam，
+    隐式默认（intent 的 to / pull-back 的 from / micro-orbit 的 rotY）与渲染端 shotCam 同源。"""
     if shot.get("keys"):
         return shot["keys"]
-    cam = shot.get("camera") or {}
-    if cam.get("keys"):
-        return cam["keys"]
-    intent = cam.get("intent", "still")
-    dur = int(shot["duration"])
-    at = int(cam.get("at", 0))
-    span = int(cam.get("dur", 38))
-    x = float(cam.get("x", STAGE_CX))
-    y = float(cam.get("y", STAGE_CY))
-    frm = float(cam.get("from", 1.0))
-    to = float(cam.get("to", frm))
-    fx = float(cam.get("fromX", x))
-    fy = float(cam.get("fromY", y))
-    rot = float(cam.get("rotY", 0.0))
-    hold = max(at + span, dur)
-    head = {"f": 0, "x": fx, "y": fy, "s": frm}
-    if intent in ("establish", "push-in", "pull-back", "reveal"):
-        return [head, {"f": at, "x": x, "y": y, "s": frm}, {"f": at + span, "x": x, "y": y, "s": to}, {"f": hold, "x": x, "y": y, "s": to}]
-    if intent == "pan-follow":
-        return [head, {"f": at, "x": fx, "y": fy, "s": frm}, {"f": at + span, "x": x, "y": y, "s": to}, {"f": hold, "x": x, "y": y, "s": to}]
-    if intent == "micro-orbit":
-        return [
-            {**head, "rotY": 0.0},
-            {"f": at, "x": x, "y": y, "s": frm, "rotY": 0.0},
-            {"f": at + span, "x": x, "y": y, "s": to, "rotY": rot},
-            {"f": hold, "x": x, "y": y, "s": to, "rotY": rot},
-        ]
-    return [head, {"f": dur, "x": x, "y": y, "s": frm}]
+    return expand_cam(shot.get("camera") or {}, int(shot["duration"]))
 
 
 def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[dict], list[dict]]:

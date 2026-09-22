@@ -1041,6 +1041,71 @@ case(f'BG 呈现门禁 · resolved 被删成 7 镜（缺 {dropped}，疑未重�
 ])
 cleanup(td)
 
+# ════════════════════════════════════════════════════════════════════════════
+# BH–BJ · 相机隐式默认收口（resolve-shots.expand_cam ⇄ shotkit.tsx 的 shotCam）
+#
+# 由来：PY 侧展开把"省略 to"一律回落成 `to := from`（= 不动），而 TS 侧 shotCam 有 intent
+# 默认（establish 1.03 @:113 / push-in 1.12 @:116 / pull-back to=1.0、from(k1)=1.12 @:119 /
+# reveal 1.08 @:125 / micro-orbit rotY ?? 6 @:128 / still 尾帧 `o.to ?? o.from ?? 1` @:109）。
+# 不对齐的后果两头都有：
+#   · 误拦 —— establish/push-in 省 to 的镜展开成零运动，撞"声明运镜却不动"P0；
+#   · 漏放 —— micro-orbit 省 rotY 时 resolved 里是 0°，成片其实真转 6°，门禁看不见。
+# 收口后展开只剩一份真源（validate-shot-motion 直接 import expand_cam），默认对齐落在
+# resolve-shots.py 一处。三条夹具把**新默认**钉在 resolved 输出上，并保住 P0 判据本身：
+#   BH = micro-orbit 省 rotY → resolved rotY 幅度 = 6（正向钉，关闭漏放）；
+#   BI = establish 省 to   → resolved s 尾值 = 1.03（正向钉，关闭误拦）；
+#   BJ = 显式 from==to 的 push-in（**真正**零运动）→ validate-shot-motion 必须仍拦
+#        —— G 那条"冻结假运镜"喂的是改写 resolved 的坏输入；默认对齐后"省参数"不再
+#        等于零运动，这条把 P0"几乎不动"的 must_block 换喂**显式写了 from==to** 的坏输入，
+#        判据一字未动，只是喂准。
+# ════════════════════════════════════════════════════════════════════════════
+
+MOTION = os.path.join(SKILL, 'scripts/validate-shot-motion.py')
+
+
+def mut_cam(idx, cam):
+    """整组替换某镜的 camera 声明（放在 resolve 之前，走真实展开路径）。"""
+    def f(d):
+        d['shots'][idx]['camera'] = dict(cam)
+        return d
+    return f
+
+
+def resolved_keys(td_, sid):
+    rp = os.path.join(td_, 'manifests/shots.resolved.json')
+    rr = json.loads(io.open(rp, encoding='utf-8').read())
+    return next(s for s in rr['shots'] if s['id'] == sid)['keys']
+
+
+# BH · micro-orbit 省略 rotY → resolved 里 rotY 幅度必须是 6°（shotkit.tsx:128 的 `rotY ?? 6`）
+td, rc0, out0 = mkproj(mut_cam(2, {'intent': 'micro-orbit', 'at': 10, 'dur': 38,
+                                   'x': 960, 'y': 540, 'from': 1.05}))
+rot_max = max((abs(k.get('rotY', 0.0)) for k in resolved_keys(td, 'S3')), default=-1.0) if rc0 == 0 else -1.0
+case('BH 相机默认 · micro-orbit 省略 rotY → resolved rotY 幅度 6°（正向钉）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_warn:rotY 幅度 = 6.0', 'resolved 断言（BH）', (0, f'resolved rotY 幅度 = {rot_max}')),
+])
+cleanup(td)
+
+# BI · establish 省略 to → resolved 末关键帧 s 必须是 1.03（shotkit.tsx:113 的 `o.to ?? 1.03`）
+td, rc0, out0 = mkproj(mut_cam(2, {'intent': 'establish', 'at': 10, 'dur': 38,
+                                   'x': 960, 'y': 540, 'from': 1.0}))
+s_tail = resolved_keys(td, 'S3')[-1]['s'] if rc0 == 0 else -1.0
+case('BI 相机默认 · establish 省略 to → resolved s 尾值 1.03（正向钉）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_warn:s 尾值 = 1.03', 'resolved 断言（BI）', (0, f'resolved s 尾值 = {s_tail}')),
+])
+cleanup(td)
+
+# BJ · 真正零运动（显式 from==to 的 push-in）→ "声明运镜却不动"P0 必须仍拦（判据不许因收口失效）
+td, rc0, out0 = mkproj(mut_cam(2, {'intent': 'push-in', 'at': 10, 'dur': 38,
+                                   'x': 960, 'y': 540, 'from': 1.0, 'to': 1.0}))
+case('BJ 相机默认 · 显式 from==to 的零运动 push-in 仍被 P0 拦（喂准的坏输入）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:几乎不动', 'validate-shot-motion', run([PY, MOTION, td])),
+])
+cleanup(td)
+
 print()
 print('== 负向抽查明细 ==')
 _steps = 0
