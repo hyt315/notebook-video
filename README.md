@@ -6,7 +6,10 @@
 
 **Turn one sentence into a 2K Chinese explainer video: code-drawn scenes, frame-accurate TTS sync, camera language enforced by automated gates.**
 
-[Apache License 2.0](LICENSE) · [发布记录 / Releases](https://github.com/hyt315/notebook-video/releases) · [Agent Skill 规范](SKILL.md) · [Star ⭐](https://github.com/hyt315/notebook-video/stargazers)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
+[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
+[![GitHub Stars](https://img.shields.io/github/stars/hyt315/notebook-video?style=social)](https://github.com/hyt315/notebook-video/stargazers)
 
 [English](README.en.md) | 中文
 
@@ -48,12 +51,13 @@
 
 ## 🎨 视觉成片与画幅
 
-▶️ [观看完整演示视频（MP4）](assets/demo/notebook-video-demo.mp4) · 🎞 [同内容的循环动画（WebP，2.3 MB）](assets/demo/notebook-video-demo.webp) · 首图：[hero.png](assets/demo/hero.png)
+![Notebook Video 成片演示](assets/demo/notebook-video-demo.webp)
+
+▶️ [观看完整演示视频（MP4）](assets/demo/notebook-video-demo.mp4) · 主视觉参考：[hero.png](assets/demo/hero.png)
 
 ▶️ [组件接触表（MP4）](assets/demo/notebook-video-components-demo.mp4) — `NotebookVideoShowcase` 的组件接触表：17 页、每页 1 秒（1fps 抽帧恰好一页一张图），覆盖数据 / 控制台 / 卡片 / 对话 / 镜头意图 / 场景骨架 / 字效，以及 9 页封装层（图表变体、层级与关系、弹层与形状、手绘风与公式）。
 
 > 接触表那支 MP4 **不含音频**（该 composition 本身不挂音轨）；它的原生画布是 1920×1080，交付文件用 `--scale=4/3` 输出 2560×1440 以对齐 16:9 锁定画布。
-> 本 README 不内嵌图片（徽章也是文字链接）：仓库内图片与徽章分别经 `raw.githubusercontent.com` / `camo.githubusercontent.com` 分发，部分网络不可达；要看画面请点上面两条**视频链接**。
 > 想核对当前版本：在 `assets/lecture-template` 里 `npm install` 后跑 `npm run still`（抽帧）或 `npm run render`（整片）；接触表用 `node scripts/notebook-video.mjs showcase <工程目录>`。
 
 **画布**：锁定三种画布 —— 16:9（2560×1440）、4:3（1920×1440）、3:4 竖屏（1440×1920），均为原生 30fps。官方示例片按 **16:9 设计空间**编写；4:3 / 3:4 需要各自的版面重排（**不再用信箱化缩放冒充适配**），在做竖屏时按 `references/canvas-modes.md` 与 `references/portrait-illustration-system.md` 单独编写场景。
