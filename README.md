@@ -56,7 +56,7 @@
 
 ▶️ [观看完整演示视频（MP4）](assets/demo/notebook-video-demo.mp4) · 主视觉参考：[hero.png](assets/demo/hero.png)
 
-▶️ [组件接触表（MP4）](assets/demo/notebook-video-components-demo.mp4) — `NotebookVideoShowcase` 的组件接触表：17 页、每页 1 秒（1fps 抽帧恰好一页一张图），覆盖数据 / 控制台 / 卡片 / 对话 / 镜头意图 / 场景骨架 / 字效，以及 9 页封装层（图表变体、层级与关系、弹层与形状、手绘风与公式）。
+▶️ [组件接触表（MP4）](assets/demo/notebook-video-components-demo.mp4) — `NotebookVideoShowcase` 的组件接触表：18 页、每页 1 秒（抽帧用 select 滤镜按帧号取每页第 6/21 帧两张中段图，6×6=36 格一张 JPG），覆盖数据 / 控制台 / 卡片 / 对话 / 镜头意图 / 场景骨架 / 字效，以及 10 页封装层（图表变体、层级与关系、弹层与形状、手绘风与公式、注意力 FocusFx 四态轮转）。
 
 > 接触表那支 MP4 是 **2560×1440**（对齐 16:9 锁定画布）：composition 原生画布是 1920×1080，交付渲染时按 4/3 放大；音轨是一条**静音 AAC**（该 composition 本身不挂音频，音轨由交付链路补上）。
 > 想核对当前版本：在 `assets/lecture-template` 里 `npm install` 后跑 `npm run still`（抽帧）；**要出片请走交付链路** `node scripts/notebook-video.mjs render <工程> <输出>` —— 它会做色彩元数据回写与响度归一，而 `npm run render` **不做**这一步，产出的文件过不了 `validate-video` 的色彩断言。
@@ -90,7 +90,7 @@
         │
   ⑦ 渲染期门禁 + 交付 ─ CaptionFitGate / CardFitGate / OverlapGate / ClippingGate / CanvasBoundsGate / FillGate / SlotGuard
                         （成片之后还要跑 validate-motion-gaps：画面"真的没动"只有它抓得到）
-                        → 2K MP4 + 17 页接触表 + 可编辑源码 ZIP
+                        → 2K MP4 + 18 页接触表 + 可编辑源码 ZIP
 ```
 
 ***
@@ -278,7 +278,7 @@ overlap-gate.tsx   渲染期重叠/遮挡门禁（事件帧抽样：镜头边界
 clipping-gate.tsx  渲染期图形被裁门禁（SVG 图元越出会裁切的祖先）
 canvas-bounds-gate.tsx 渲染期画布越界门禁（含文字的叶元素，墨迹 rect 越出画布；接触表 block、片子 warn）
 fill-gate.tsx      渲染期下 1/4 实测密度门禁（信息元素最低边 vs y=876）
-showcase.tsx       组件接触表（17 页，供 AI 看图选型）
+showcase.tsx       组件接触表（18 页，供 AI 看图选型）
 scenes.tsx         场景层（示例片 8 镜；换题材重写这一层）
 ```
 

@@ -220,7 +220,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 | `SankeyChart`（components） | 流量图（d3-sankey） | 流量在环节之间怎么分流 | 逐级递减的漏斗→`Funnel` | ⑬ | 未使用 |
 | `QrCode`（components） | 二维码（纯计算、不联网） | 收尾引导"扫码看仓库" | 中途别放（观众不会暂停扫码） | ⑬ | 未使用 |
 | `SketchFx`（components） | 手绘风图形（roughjs；seed 固定→每次同一笔迹，6 种**确定性** `fillStyle`） | 手绘强调：圈画 / 下划线 / 方框（手账风招牌） | 要精确几何→`ShapeDraw`；`'dots'` 已移除（内部无条件调 `Math.random()`，同帧两次不一致） | ⑭ | 未使用 |
-| `FocusFx`（components） | 一镜一次的"注意力动作"（dim / spot / loupe / marker） | 要把注意力压到一块矩形区域 | 一镜一次；画面已有高亮或缩放时别叠 | 未展示 | 参考片没用，但真实工程 `overview-film` S8 真的渲了它 |
+| `FocusFx`（components） | 一镜一次的"注意力动作"（dim / spot / loupe / marker） | 要把注意力压到一块矩形区域 | 一镜一次；画面已有高亮或缩放时别叠 | ⑱（整页专属，四态按帧轮转） | 参考片没用，但真实工程 `overview-film` S8 真的渲了它 |
 | `GlowFrame`（components） | 流光边框（conic-gradient 绑帧号） | 强调一瞬（警告感） | 与 `ShimmerText` 二选一别叠；要"真的变了个状态"→`ControlStack` | ⑧⑩ | 未使用 |
 | `ShimmerText`（components） | 文字闪过一道光 | 只强调**一句话** | 与 `GlowFrame` 二选一；讲中段用会显浮夸 | ⑧ | 未使用 |
 | `ClipReveal`（components） | 遮罩擦除（clip-path 按帧推进） | 逐条揭示（不只是淡入） | 镜头级交接→`RevealMask`（`insert`） | ⑫ | 未使用 |
@@ -260,22 +260,22 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 
 **两处缺口（本表如实标出，别当成"覆盖完整"；处置见 [dependency-policy.md](dependency-policy.md) §8）**
 
-- **未上接触表 11 件** = 旧模块 8 件（`PillTag` `LineIcon` `CheckBadge` `StampBanner` `StageFrame` `RevealMask` `ShotCamera` `CoverPanel`）
-  + 封装层 3 件（`FocusFx` `StatRow` `VerdictBar`）。
+- **未上接触表 10 件** = 旧模块 8 件（`PillTag` `LineIcon` `CheckBadge` `StampBanner` `StageFrame` `RevealMask` `ShotCamera` `CoverPanel`）
+  + 封装层 2 件（`StatRow` `VerdictBar`）。
   前者**不该进接触表**（原子 / 引擎外壳 / 已在参考片里天天出现，占格子不如留给没有画面的件）；
-  后者**该进而没进**，原因各不相同：`StatRow` `VerdictBar` 已在参考片里出现（S1 / S8）；`FocusFx` 在**真实工程**
-  `overview-film` 里真的渲染过，而且它**结构上不适合进格子** —— 本件所有覆盖层挂在设计根上（`position: fixed` +
-  场景坐标），放进 900×470 的格子会把**整页**压暗，只能整镜用（这是"没上接触表"的实情，不是漏登记）。
-  （v3.1.1 处置：原先同列的 PieDraw / CameraMotionBlur / Trail 已删 —— 后两个是**真·零渲染**，按本技能自己的
+  后者**该进而没进**：`StatRow` `VerdictBar` 已在参考片里出现（S1 / S8）。
+  （`FocusFx` 曾是这一档里最特殊的一件——它所有覆盖层挂 `SCENE_ANCHOR`（`position: fixed` + 场景坐标 +
+  zIndex 160），塞进 900×470 的 Tile 会被舞台 transform 变成包含块、把"压暗其余整页"演残，
+  所以**进不了格子**。现在它上了第 ⑱ 页：**整页专属**，dim / spot / loupe / marker 每 8 帧轮转一态。
+  旧版同列的 PieDraw / CameraMotionBlur / Trail 已删 —— 后两个是**真·零渲染**，按本技能自己的
   「零引用」判据走；PieDraw 被 `Chart variant="pie"` 与 `ProgressRing` 上下夹住、自己没标签没数值。
   第 ⑪ 页空出的那格换成了 pathfx 家族的组合用法：标注框 + 引线。）
 - **未使用 25 件**（口径 = 参考片 `scenes.tsx` + 引擎 `index.tsx`；说的是"没进参考片"，**不等于"从没渲染过"**）
   = **全部在新封装层**（`Accordion` … `TreeView`）；旧模块 26 件**全部**在参考片里用过。
-  拆开看：**24 件只在接触表出现过**（看得见、没被任何画面用过），**1 件**（`FocusFx`）连接触表都没上过，
-  但它**有真实渲染记录**——真实工程 `overview-film` 的 `src/scenes.tsx`：
-  `import` 在 L8、`<FocusFx f={f} mode="dim" …/>` 在 L274，`shots.ts` 的 S8 `live` / `evidence` 也点了名
-  —— **它不算"零渲染"**。这 25 件是**新旧并存的过渡态**，不算缺陷：新件要替掉旧件必须动参考片的 `scenes.tsx`，
-  得单独一轮做。
+  这 25 件**全部在接触表上看得见**（`FocusFx` 在第 ⑱ 页整页专属轮转四态；它在真实工程里也有渲染记录——
+  `overview-film` 的 `src/scenes.tsx` `import` 在 L8、`<FocusFx f={f} mode="dim" …/>` 在 L274，
+  `shots.ts` 的 S8 `live` / `evidence` 也点了名）。这 25 件是**新旧并存的过渡态**，不算缺陷：
+  新件要替掉旧件必须动参考片的 `scenes.tsx`，得单独一轮做。
 
 ## 6. 让组件"看得见"：接触表
 
@@ -283,17 +283,17 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 > 下面提到的"18 件 / 26 件 / 53 件"是**口径说明**，不是清单——清单在 §5.1。
 
 `src/showcase.tsx` 注册了一个 `NotebookVideoShowcase` Composition：
-**17 页 × 1 秒**，1920×1080 原生，把旧层的 **18 件**组件（口径：逐个数过 `showcase.tsx` 里真实出现过的 JSX 标签 ——
+**18 页 × 1 秒**，1920×1080 原生，把旧层的 **18 件**组件（口径：逐个数过 `showcase.tsx` 里真实出现过的 JSX 标签 ——
 `fxkit` 9 + `media` 2 + `stagekit` 1（`PhaseRail`）+ `skeletons` 3 + `toolkit` 3，含修辞工具件 3 件；
 **另一个口径别混用**：旧模块**对外 export** 是 26 件（`components/index.ts` 的「53 件地板」注释），
 差 8 件是因为接触表没有把它们逐件渲染 —— `showcase.tsx` 的 `SHOWCASE_VERSION` 串与本节都按"实际渲染"这一个口径）
 + 第 ⑤ 页 6 种运镜意图 + 第 ⑥ 页四种骨架（`StageFrame` 只在标题里点名、未渲染）
-+ 新封装层 9 页（第 ⑨–⑰ 页，24 件）+ v3.1 新能力 3 页（图表变体 / 层级与关系 / 弹层与形状）全部渲染一遍。
-**接触表没覆盖的 11 件**逐件列在 §5.1 的「两处缺口」里（哪些不该进接触表、哪些该进没进，那里都写了）。
++ 新封装层 10 页（第 ⑨–⑱ 页，25 件：⑨–⑰ 的 24 件 + ⑱ 的 `FocusFx` 整页专属）+ v3.1 新能力 3 页（图表变体 / 层级与关系 / 弹层与形状）全部渲染一遍。
+**接触表没覆盖的 10 件**逐件列在 §5.1 的「两处缺口」里（哪些不该进接触表、哪些该进没进，那里都写了）。
 
 ```text
 node scripts/notebook-video.mjs showcase PROJECT_DIR          # 渲染接触表 mp4（交付规格：2560×1440 / 静音 AAC / 色彩四项回写）
-node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR    # 再抽 1fps 接触表 jpg
+node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR    # 再抽接触表 jpg（select 按帧号取每页第 6/21 帧：两张中段图，6×6 共 36 格）
 ```
 
 > 交付规格说明：composition 原生画布是 1920×1080，那支 mp4 是**交付物**（`assets/demo/` 里那份），
@@ -303,19 +303,28 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR    # 再抽 1fps 接�
 **为什么需要它**：读 props 文档很难想象构件长什么样；让执行 AI **看图选型**，
 比读文字描述准确得多。这是"能力存在但不可达"的直接解法。
 
-### 已知限制：第 ⑪ 页 `SceneTransitions` 那一格，在抽出来的 JPG 里等于看不见（**只记录，未修**）
+### 已修复：第 ⑪ 页 `SceneTransitions` 那一格，此前在抽出来的 JPG 里等于看不见（两因一起修）
 
-`showcase-sheet` 用 `ffmpeg -vf fps=1,scale=1280:-1,tile=6x3` 抽图，而每页刚好 **30 帧 = 1 秒**，
-于是**每页只抽页首那一帧**（`scripts/notebook-video.mjs` 的 `showcase()`）。第 ⑪ 页那个格子的总长是
-`transitionsTotalFrames([20,20,20,20],10) = 80 − 3×10 = 50` 帧，四段各 20 帧、转场各 10 帧，重叠后的时间轴是
-**第 10–20 / 20–30 / 30–40 帧**（`showcase.tsx` 第 ⑪ 页的 `SceneTransitions durations={[20,20,20,20]} transitionDuration={10}`）。后果两条：
+旧版这一节写的是「只记录，未修」。两个病灶都在，缺一都不能让转场在 JPG 里现身：
 
-- 抽出来的 JPG 里是**第 0 帧** → 只有第一段色块，**一个转场都看不到**（不是"转场太小"，是根本没抽到）；
-- 就算去翻 mp4：页只有 30 帧，**第 3 个转场（30–40 帧）永远看不到**，前两个才看得见。
+- **页内超程**：旧参数 `durations=[20,20,20,20] transitionDuration=10` → 总长 `80 − 3×10 = 50` 帧 > 页 30 帧，
+  第 3 个转场（30–40 帧）**整段在页外**，mp4 里也永远看不到；
+- **抽样只抽页首帧**：旧 `showcase-sheet` 用 `ffmpeg -vf fps=1,scale=1280:-1,tile=6x3`，每页 30 帧 = 1 秒，
+  抽到的恰好是**每页第 0 帧**——在任何转场开始之前，JPG 里只有第一段色块。
 
-想核验这件的转场效果，只能按 §5 的做法在 25% / 50% / 75% 截帧，或逐帧看 mp4 第 ⑪ 页。
-**改抽样方式（例如每页多抽几帧、或给这页单独截帧）是另一个决定，本轮没动** —— 这里只把话说清楚，
-免得下次有人看图以为"这格是空的 = 组件坏了"。
+修法（本轮，两处都要，改一处没用）：
+
+- `showcase.tsx` 第 ⑪ 页改 `durations=[12,12,12,12] transitionDuration={6}` →
+  总长 `4×12 − 3×6 = 30` 帧，三个转场正好落在**第 6–12 / 12–18 / 18–24 帧**，全部页内，mp4 里三段转场齐了；
+- `scripts/notebook-video.mjs` 的 `showcase()` 抽帧改为 select 滤镜按帧号精确取帧：
+  `-vf "select='eq(mod(n,30),6)+eq(mod(n,30),21)',scale=640:-1,tile=6x6"` →
+  每页取**第 6 与第 21 帧**两张中段图（36 帧 = 18 页正好铺满 6×6）。第 ⑪ 页的第 21 帧实测
+  正好是第 3 个转场的 50% 处——wipe 的中态在接触表 JPG 里直接看得见；顺带每页都多了一张中段图，
+  其它"页中段才有动作"的格也受益。（踩过的坑：先用 `-ss 0.2 + fps=2` 做偏移抽样，实测落点
+  偏到第 12/27 帧——seek 与 fps 取整叠加不可靠，才换成按帧号 select，**别再改回去**。）
+
+核验口径：想看 `flip` 这类"50% 处侧对镜头"的转场，仍按 §5.1 `SceneTransitions` 行的提示截 25% / 75%；
+默认串的是 `wipe`，抽帧位（6 / 21）不需要为它特殊照顾。
 
 ## 7. 自检
 

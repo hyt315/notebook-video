@@ -56,7 +56,7 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 
 ▶️ [Watch full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · Hero Asset: [hero.png](assets/demo/hero.png)
 
-▶️ [Component contact sheet (17 pages, 17s)](assets/demo/notebook-video-components-demo.mp4) — the `NotebookVideoShowcase` contact sheet: one page per second (a 1 fps extraction yields exactly one image per page) covering the data / console / card / dialogue media, the six camera intents, scene skeletons and type motion, plus nine wrapper-layer pages (chart variants, hierarchy and force layouts, overlays and shapes, sketch style and KaTeX).
+▶️ [Component contact sheet (18 pages, 18s)](assets/demo/notebook-video-components-demo.mp4) — the `NotebookVideoShowcase` contact sheet: one page per second (a select filter grabs each page's frames 6 and 21 → two mid-page frames per page, tiled 6×6 = 36 cells) covering the data / console / card / dialogue media, the six camera intents, scene skeletons and type motion, plus ten wrapper-layer pages (chart variants, hierarchy and force layouts, overlays and shapes, sketch style and KaTeX, and the FocusFx attention page cycling all four modes).
 
 > The contact-sheet MP4 is **2560×1440** (the locked 16:9 delivery canvas): the composition's native canvas is 1920×1080, so the delivery render scales it by 4/3. Its audio track is **silent AAC** — that composition carries no audio of its own, and the delivery chain adds the track.
 > To check the current version: `npm install` inside `assets/lecture-template`, then `npm run still` (single frame) or `npm run render` (full film). **For a delivery file, use `node scripts/notebook-video.mjs render <project> <output>`** — it rewrites the color metadata and normalizes loudness, which `npm run render` does not do (its output fails the `validate-video` color assertion).
@@ -285,7 +285,7 @@ overlap-gate.tsx    Runtime overlap / occlusion gate
 clipping-gate.tsx   Runtime clipped-graphics gate (SVG primitives crossing a clipping ancestor)
 canvas-bounds-gate.tsx Runtime canvas-bounds gate (text-bearing leaf elements whose ink rect leaves the canvas; blocks on the contact sheet, warns in a film)
 fill-gate.tsx       Runtime measured density of the lower quarter (lowest info-element edge vs y=876)
-showcase.tsx        Component contact sheet (17 pages, for AI to pick by sight)
+showcase.tsx        Component contact sheet (18 pages, for AI to pick by sight)
 scenes.tsx          Scene layer (8-shot example film; rewrite this layer per topic)
 ```
 

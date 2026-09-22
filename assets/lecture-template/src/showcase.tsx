@@ -1,5 +1,5 @@
 import React from 'react';
-import {AbsoluteFill, Series} from 'remotion';
+import {AbsoluteFill, Series, useCurrentFrame} from 'remotion';
 import {THEME} from './theme/active';
 import {SHOTKIT_VERSION, camAt, shotCam} from './shotkit';
 import {PhaseRail, STAGEKIT_VERSION, useStageMachine} from './stagekit';
@@ -10,7 +10,7 @@ import {
   ChatThread, DiffView, FitCard, Funnel, ProgressRing, SkeletonCard, StaggerList, StampSeal, Typewriter,
 } from './fxkit';
 import {Callout, Checklist, JumpInText, TOOLKIT_VERSION} from './toolkit';
-import {Accordion, Chart, ClipReveal, COMPONENTS_VERSION, ControlStack, FitTextBox, GeoView, GlowFrame, HighlightCode, IconWall, MathBlock, MorphShape, NetworkGraph, NoiseJitter, OverlayFrame, PathDraw, QrCode, SankeyChart, SceneTransitions, ShapeDraw, SHAPES, ShimmerText, SketchFx, Tabs, TopicIcon, TreeView} from './components';
+import {Accordion, Chart, ClipReveal, COMPONENTS_VERSION, ControlStack, FitTextBox, FocusFx, GeoView, GlowFrame, HighlightCode, IconWall, MathBlock, MorphShape, NetworkGraph, NoiseJitter, OverlayFrame, PathDraw, QrCode, SankeyChart, SceneTransitions, ShapeDraw, SHAPES, ShimmerText, SketchFx, Tabs, TopicIcon, TreeView} from './components';
 
 // ============================================================================
 // showcase · 组件接触表（Composition: NotebookVideoShowcase）
@@ -21,14 +21,16 @@ import {Accordion, Chart, ClipReveal, COMPONENTS_VERSION, ControlStack, FitTextB
 //
 // 用法：
 //   node scripts/notebook-video.mjs showcase <proj>          # 渲染接触表 mp4
-//   node scripts/notebook-video.mjs showcase-sheet <proj>    # 抽 1fps 接触表 jpg
+//   node scripts/notebook-video.mjs showcase-sheet <proj>    # 抽接触表 jpg（select 精确取每页第 6/21 帧）
 //
-// 每页 30 帧（1 秒），共 SHOWCASE_PAGES 页；1fps 抽帧恰好一页一张图。
+// 每页 30 帧（1 秒），共 SHOWCASE_PAGES 页；抽帧用 select 滤镜按帧号取**每页第 6 与第 21 帧**
+// 两张中段图，6×6=36 格正好装 18 页（旧版 1fps 只抽页首帧，转场这类"动作在页中段的件"
+// 在抽图上根本看不见，第 ⑪ 页就是这么"等于没上"的）。
 // 注：KenBurnsImg / EvidenceZoom 依赖位图素材，不进接触表（不给模板塞示例图片）。
 //
 // ⚠️ 本文件是接触表的**渲染实现**，不是组件清单：页标题里的名字也不构成一份"有哪些件"的清单。
 //    **件的权威索引只有一处** —— references/media-routing.md §5.1「组件权威索引」
-//    （53 件逐件：用途 / 何时用 / 何时别用 / 接触表页 / 真实使用记录；含 11 件未上接触表的原因）。
+//    （53 件逐件：用途 / 何时用 / 何时别用 / 接触表页 / 真实使用记录；含 10 件未上接触表的原因）。
 //    要核对"某件有没有上接触表"看那张表，别从本文件反推。
 // ============================================================================
 
@@ -141,8 +143,48 @@ const PHASES = [
   {at: 160, state: 'verdict', label: '结论'},
 ];
 
+// ⑱ 页的"被注视内容"：一面 3×2 的缩略卡片墙（media-routing 给 dim 的适用场景就是网格/缩略图）。
+// 同一棵树既作页面背景渲染一遍，又作为 loupe 的 children 被镜片放大第二遍。
+// ⚠️ 为什么 ⑱ 页整页专属、不塞进 Tile：FocusFx 的所有覆盖层挂在 SCENE_ANCHOR
+//    （components/focus.tsx 的 `position:'fixed'` + zIndex 160）上，坐标是**场景坐标**；
+//    而 Tile 的舞台 div 带 `transform: scale(...)`，transform 会让它成为 fixed 后代的**包含块**——
+//    塞进 900×470 的格子，"压暗其余整页"会退化成"压暗半屏且坐标整体漂移"。
+// ⚠️ 为什么不"四态各占一角"平铺：dim 与 spot 各自铺**全屏**遮罩（洞在各自目标上），
+//    同屏两面 multiply 遮罩会把对方的目标也压暗，四角一起分不清哪片黑是谁画的，
+//    loupe/marker 的目标格也跟着遭殃。所以按 8 帧一态轮转（全部进度仍是帧号纯函数，无 CSS 动画）。
+const FOCUS_DEMO = [
+  {mode: 'dim', rect: {x: 680, y: 170, w: 560, h: 330}, label: 'dim · 目标之外整页压暗（缩略图/网格首选）'},
+  {mode: 'spot', rect: {x: 680, y: 560, w: 560, h: 330}, label: 'spot · 灯打在证据上'},
+  {mode: 'loupe', rect: {x: 60, y: 170, w: 560, h: 330}, label: 'loupe · 圆形放大镜 2.1×'},
+  {mode: 'marker', rect: {x: 1300, y: 170, w: 560, h: 330}, label: 'marker · 描边随帧画出'},
+] as const;
+const FOCUS_SEGMENT = 8; // 每 8 帧换一态（30 帧页：0/8/16/24 起手，dur=6 入场，页内四态全部走完）
+
+const FocusWall: React.FC = () => (
+  <>
+    {[0, 1, 2, 3, 4, 5].map((i) => {
+      const x = 60 + (i % 3) * 620;
+      const y = 170 + Math.floor(i / 3) * 390;
+      const tone = [C.blue, C.orange, C.green, C.gold, C.red, C.blueInk][i];
+      return (
+        <div key={i} style={{position: 'absolute', left: x, top: y, width: 560, height: 330, background: C.paper, border: `2.5px solid ${C.line}`, borderRadius: 12, padding: '22px 26px', boxShadow: THEME.paperShadow(0.25)}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: 14}}>
+            <div style={{width: 34, height: 34, borderRadius: 8, background: tone}} />
+            <div style={{fontFamily: 'Space,Kai', fontSize: 27, fontWeight: 700}}>卡片 0{i + 1}</div>
+          </div>
+          {[0, 1, 2, 3].map((r) => (
+            <div key={r} style={{marginTop: 20, height: 16, width: 470 - (r % 2) * 90, borderRadius: 8, background: C.mutedFill}} />
+          ))}
+        </div>
+      );
+    })}
+  </>
+);
+
 export const Showcase: React.FC = () => {
   const railCtx = useStageMachine(PHASES, 100);
+  // ⑱ 页要"随帧轮转四态"，用的是**页内局部帧**（每页恰好 PAGE 帧，取模即局部帧号；纯函数，无计时器）。
+  const localFrame = useCurrentFrame() % PAGE;
 
   const p1 = [
     {name: 'ProgressRing · 进度环', node: <div style={{display: 'flex', gap: 44}}><ProgressRing pct={0.92} label="Flash" color={C.green} start={0} frame={F} /><ProgressRing pct={0.62} label="Pro" color={C.blue} start={0} frame={F} /></div>},
@@ -399,7 +441,14 @@ export const Showcase: React.FC = () => {
             <div style={{position: 'absolute', left: 970, top: 576, width: 900, height: 470}}>
               <Tile name="SceneTransitions · 官方转场串联（4 段 / 3 转场）">
                 <div style={{position: 'relative', width: 820, height: 400}}>
-                  <SceneTransitions durations={[20, 20, 20, 20]} transition="wipe" transitionDuration={10} width={820} height={400} direction="from-left">
+                  {/* 总长必须压进这一页的 30 帧里：TransitionSeries 总长 = Σ片段 − Σ转场
+                      = 4×12 − 3×6 = 30 帧，三个转场正好落在第 6–12 / 12–18 / 18–24 帧。
+                      旧值 durations=[20,20,20,20] + td=10 → 总长 50 帧：第 3 个转场（30–40 帧）
+                      整段在页外，永远渲不出来（⑪ 页"转场格看不见"的病灶之一）。
+                      病灶之二（只抽页首帧的 1fps 抽样）已在 scripts/notebook-video.mjs 的
+                      showcase() 改为 select 按帧号取每页第 6 / 21 帧：本页第 21 帧实测
+                      正好是第 3 个转场的 50% 处 —— wipe 的中态在接触表 JPG 里直接看得见。 */}
+                  <SceneTransitions durations={[12, 12, 12, 12]} transition="wipe" transitionDuration={6} width={820} height={400} direction="from-left">
                     {[C.blue, C.orange, C.green, C.gold].map((tone, i) => (
                       <AbsoluteFill key={i} style={{alignItems: 'center', justifyContent: 'center'}}>
                         <div style={{width: 520, height: 300, background: tone, border: `2.5px solid ${C.ink}`, borderRadius: 12, boxShadow: THEME.paperShadow(0.5), display: 'grid', placeItems: 'center', fontFamily: 'Space,monospace', fontSize: 54, fontWeight: 700, color: C.white}}>
@@ -726,12 +775,32 @@ export const Showcase: React.FC = () => {
             </div>
           </Page>
         </Series.Sequence>
+        <Series.Sequence durationInFrames={PAGE}>
+          <Page title="⑱ 封装层 · 注意力：FocusFx 四态轮转（整页专属）" note="dim → spot → loupe → marker，每 8 帧换一态；遮罩是整页级覆盖层（position:fixed + 场景坐标），进不了 Tile 格子——故独占一页">
+            <FocusWall />
+            <FocusFx
+              f={localFrame}
+              mode={FOCUS_DEMO[Math.min(3, Math.floor(localFrame / FOCUS_SEGMENT))].mode}
+              rect={FOCUS_DEMO[Math.min(3, Math.floor(localFrame / FOCUS_SEGMENT))].rect}
+              label={FOCUS_DEMO[Math.min(3, Math.floor(localFrame / FOCUS_SEGMENT))].label}
+              canvas={{w: 1920, h: 1080}}
+              startAt={Math.min(3, Math.floor(localFrame / FOCUS_SEGMENT)) * FOCUS_SEGMENT}
+              dur={6}
+              zoom={2.1}
+            >
+              <FocusWall />
+            </FocusFx>
+            <div style={{position: 'absolute', left: 60, top: 950, fontSize: 24, color: C.muted, opacity: 0.9}}>
+              {['dim', 'spot', 'loupe', 'marker'][Math.min(3, Math.floor(localFrame / FOCUS_SEGMENT))]} · 页内第 {localFrame} 帧（接触表抽第 6 / 21 帧：dim 与 loupe 各一张；spot / marker 看 mp4）
+            </div>
+          </Page>
+        </Series.Sequence>
       </Series>
     </AbsoluteFill>
   );
 };
 
-export const SHOWCASE_PAGES = 17;
+export const SHOWCASE_PAGES = 18;
 
 // 「件」的口径 = 逐个数过**本文件里真实出现过的旧模块 JSX 标签**：fxkit 9 + media 2 +
 // stagekit 1（PhaseRail）+ skeletons 3 + toolkit 3 = **18 件**（与 references/media-routing.md §6 同一口径）。
@@ -739,4 +808,4 @@ export const SHOWCASE_PAGES = 17;
 // 那是"能 import 的件数"，不是"接触表渲染出来的件数"，两者差 8 件。
 // ⚠️ 这个串**不在任何画面上渲染**（本文件没有页脚，`Page` 只用 title / note；全仓库没有一处读它）
 //    —— 它是给人读的版本串，改它**不会**改变任何渲染结果，所以也没有"下次渲染自动生效"这回事。
-export const SHOWCASE_VERSION = 'showcase-v8 · 17 pages · 18 件旧件 + 新封装层 9 页 + v3.1 新能力 3 页';
+export const SHOWCASE_VERSION = 'showcase-v9 · 18 pages · 18 件旧件 + 新封装层 10 页（含 ⑱ FocusFx 整页） + v3.1 新能力 3 页';

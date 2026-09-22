@@ -392,7 +392,7 @@ export const Film3x4=()=> <FilmLayout canvas="3:4"/>;
 //     整格落在 1080 高的画布**外面** 466px：渲出来的第 ③ 页只有 4 格，那件组件在接触表上
 //     **根本看不见**（图已核）。那一轮为不阻断 `showcase` / `showcase-sheet`，先取 warn 让它出声。
 //   · 第二轮（本轮）：`showcase.tsx` 第 ③ 页改成 5 格表（`Grid5`，3 列 × 2 行，格子 610×470、
-//     舞台等比 0.7），5 件全部落在画布内；17 页在 block 下逐页抽帧跑过一遍，每页 rc=0 且有图，
+//     舞台等比 0.7），5 件全部落在画布内；18 页在 block 下逐页抽帧跑过一遍，每页 rc=0 且有图，
 //     无一处误报 —— 于是把 warn 收敛回 block。
 // 判据上的理由：越出画布 = 件**整件看不见**或被切掉一块，属于**画错了**，
 // 与「图形被裁」「文字互相压」同级，不是 FillGate 那种观感线；
@@ -411,7 +411,8 @@ const Root=()=> <>
       4:3 与 3:4 需要各自的版面重排，不再用 scale(0.75) 信箱化冒充适配
       （见 references/canvas-modes.md 与 portrait-illustration-system.md）。 */}
   <Composition id="NotebookVideoFilm" component={Film16x9} durationInFrames={DURATION} fps={FPS} width={2560} height={1440}/>
-  {/* 组件接触表：17 页 × 1 秒（`SHOWCASE_PAGES`），1fps 抽帧即得 17 张图，供 AI 看图选型 */}
+  {/* 组件接触表：18 页 × 1 秒（`SHOWCASE_PAGES`）；抽帧用 select 滤镜按帧号取每页第 6/21 帧两张中段图，
+      6×6=36 格一张 JPG，供 AI 看图选型（时长 = SHOWCASE_PAGES*30，加页自动跟随） */}
   <Composition id="NotebookVideoShowcase" component={ShowcaseComposition} durationInFrames={SHOWCASE_PAGES*30} fps={FPS} width={1920} height={1080}/>
 </>;
 

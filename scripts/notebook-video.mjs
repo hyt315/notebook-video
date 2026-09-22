@@ -554,7 +554,11 @@ const addSilentAudioTrack = async (target) => {
   }
 };
 
-// 组件接触表：把 NotebookVideoShowcase 渲染成 mp4，再抽 1fps 接触表 jpg。
+// 组件接触表：把 NotebookVideoShowcase 渲染成 mp4，再抽接触表 jpg。
+// 抽帧口径：`select` 滤镜按帧号精确取帧 —— 每页（30 帧 = 1 秒）取**第 6 与第 21 帧**
+// 两张中段图，`tile=6x6` 正好 36 格 = 18 页。（实测教训：`-ss 0.2 + fps=2` 的落点会偏 ——
+// seek 与 fps 取整叠加后实际抽到第 12/27 帧，第 ⑪ 页的转场中态又被错过；select 无此问题。）
+// 旧版 `fps=1` 只抽**页首帧**，转场这类"动作在页中段"的件（第 ⑪ 页 SceneTransitions）在抽图上根本看不见。
 // 作用：让执行 AI 看见库组件形态，而不是读文字描述（references/media-routing.md §6）。
 //
 // ⚠️ 这个 mp4 是**交付物**（`assets/demo/notebook-video-components-demo.mp4`，README 直接链它），
@@ -582,7 +586,7 @@ const showcase = async (args, sheetOnly = false) => {
     await applyColorTags(mp4);
     console.log(`Showcase mp4 (delivery spec): ${mp4} — ${SHOWCASE_DELIVERY_SCALE}x scale, silent AAC track, bt709/tv color tags.`);
   }
-  await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', mp4, '-vf', 'fps=1,scale=1280:-1,tile=6x3', '-frames:v', '1', '-q:v', '3', jpg]);
+  await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', mp4, '-vf', "select='eq(mod(n,30),6)+eq(mod(n,30),21)',scale=640:-1,tile=6x6", '-frames:v', '1', '-q:v', '3', jpg]);
   console.log(`Showcase contact sheet written: ${jpg}`);
   console.log('Read it to pick components by sight; see references/media-routing.md §6.');
 };

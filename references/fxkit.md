@@ -44,7 +44,7 @@ import {FitCard, Typewriter, StampSeal, Funnel, ChatThread, ProgressRing, Stagge
 
 ## 先看见，再选用
 
-`NotebookVideoShowcase` Composition 把库组件渲染成 **17 页**接触表（1fps 抽帧即一页一图）：
+`NotebookVideoShowcase` Composition 把库组件渲染成 **18 页**接触表（select 滤镜按帧号抽每页第 6/21 帧两张中段图，6×6=36 格一张 JPG）：
 
 ```text
 node scripts/notebook-video.mjs showcase PROJECT_DIR
@@ -52,7 +52,7 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 ```
 
 选组件前先看接触表，比读 props 文档准确得多。新增组件时必须同时加进接触表。
-**哪 11 件没上接触表（以及为什么）见 [media-routing.md §5.1](media-routing.md#51-组件权威索引53-件--选型只查这一处) 的「两处缺口」**——
+**哪 10 件没上接触表（以及为什么）见 [media-routing.md §5.1](media-routing.md#51-组件权威索引53-件--选型只查这一处) 的「两处缺口」**——
 别凭印象以为"接触表里有的就是全部"。
 
 ## 组件一览
