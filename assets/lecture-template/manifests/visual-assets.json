@@ -20,7 +20,7 @@
       "provider": "Trae GenerateImage",
       "prompt_summary": "Anime cel storyboard background: aged near-white paper, halftone dot fields, bottom-left explosion star with checkerboard, bottom-right red/blue stars and radiating speed lines; decorations confined to corners, center clean.",
       "use_context": "cel theme fixed background, 4:3 canvas, full-bleed Background layer",
-      "crop_policy": "none-pixel-exact",
+      "crop_policy": "none-uniform-scale-7over6",
       "rights": "project-owned",
       "baked_text": false,
       "sha256": "1f1af3779c691adad5bc87b6178efebd6e266acaa1a65685f962fd89b3c4b15a"
@@ -32,7 +32,7 @@
       "provider": "Trae GenerateImage",
       "prompt_summary": "Anime cel storyboard background: aged near-white paper, halftone dot fields, bottom-left explosion star with checkerboard, bottom-right red/blue stars and radiating speed lines; decorations confined to corners, center clean.",
       "use_context": "cel theme fixed background, 3:4 canvas, full-bleed Background layer",
-      "crop_policy": "none-pixel-exact",
+      "crop_policy": "none-uniform-scale-7over6",
       "rights": "project-owned",
       "baked_text": false,
       "sha256": "1024fb087433bd1d53c398eedafe67b93100415626f75a15b9dafccc5844aa31"
@@ -56,7 +56,7 @@
       "provider": "Trae GenerateImage",
       "prompt_summary": "Sticker journal background: pale mint grid paper with uniform tone, corner doodles (heart, cross, wave, spiral, zigzag) and washi tape strips at the edges, center clean; doodles clear of the chapter tag and title header zones.",
       "use_context": "sticker theme fixed background, 4:3 canvas, full-bleed Background layer",
-      "crop_policy": "none-pixel-exact",
+      "crop_policy": "none-uniform-scale-7over6",
       "rights": "project-owned",
       "baked_text": false,
       "sha256": "3afae6c34a2ee03c0044b12b660ba66321356a8094dc79389b861da9ceeeeb93"
@@ -68,7 +68,7 @@
       "provider": "Trae GenerateImage",
       "prompt_summary": "Sticker journal background: pale mint grid paper with uniform tone, corner doodles (heart, cross, wave, spiral, zigzag) and washi tape strips at the edges, center clean; doodles clear of the chapter tag and title header zones.",
       "use_context": "sticker theme fixed background, 3:4 canvas, full-bleed Background layer",
-      "crop_policy": "none-pixel-exact",
+      "crop_policy": "none-uniform-scale-7over6",
       "rights": "project-owned",
       "baked_text": false,
       "sha256": "524ab895fbeb17cfd5ca61e6d106cff05236d00e0dfadebfda695a632d4fc8b7"
@@ -92,7 +92,7 @@
       "provider": "Trae GenerateImage",
       "prompt_summary": "Flat geometric background: pale gray-blue grained paper, indigo blob monster peeking from the bottom edge bottom-right (gold antenna ball, big eyes, blush, smile), tiny mint hill with coral square monster peeking bottom-left, ~85% whitespace.",
       "use_context": "flat theme fixed background, 4:3 canvas, full-bleed Background layer",
-      "crop_policy": "none-pixel-exact",
+      "crop_policy": "none-uniform-scale-7over6",
       "rights": "project-owned",
       "baked_text": false,
       "sha256": "4dc5364dbb54f7d2d4d5be0dc8edae9f38f034b71069cb982b60d4dbcde01e9c"
@@ -104,7 +104,7 @@
       "provider": "Trae GenerateImage",
       "prompt_summary": "Flat geometric background: pale gray-blue grained paper, indigo blob monster peeking from the bottom edge bottom-right (gold antenna ball, big eyes, blush, smile), tiny mint hill with coral square monster peeking bottom-left, ~85% whitespace.",
       "use_context": "flat theme fixed background, 3:4 canvas, full-bleed Background layer",
-      "crop_policy": "none-pixel-exact",
+      "crop_policy": "none-uniform-scale-7over6",
       "rights": "project-owned",
       "baked_text": false,
       "sha256": "e1d24e96671ab831a039feb8b237f47a5a453ab2b39266c636ae5c105cf21a10"

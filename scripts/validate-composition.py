@@ -67,11 +67,18 @@ def load(project: Path) -> dict:
 
 
 def scene_source(project: Path) -> str:
-    """场景文件全文：用来确认 live 里的名字真的被引用过（而不是编出来的）。"""
+    """场景文件全文：用来确认 live 里的名字真的被引用过（而不是编出来的）。
+
+    ⚠️ 必须**递归**扫（与同文件 import_integrity 的 rglob 对齐）：旧版写成
+    `src.glob("*.tsx")` 只扫一层，场景文件放在子目录（src/scenes/ 等）时整段读不到，
+    于是所有"需要场景源码"的 P0 判据因 `if scene_text` 为空而**静默跳过**——
+    门在名义上存在、实际从未生效。场景源码读不到的镜由 check() 里的覆盖率
+    自述补报 P0（"测量没跑成"不许混进"没报"）。
+    """
     src = project / "src"
     text = ""
     if src.is_dir():
-        for p in sorted(src.glob("*.tsx")):
+        for p in sorted(src.rglob("*.tsx")):
             text += p.read_text(encoding="utf-8", errors="replace")
     return text
 
@@ -283,6 +290,21 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     if not shots:
         p0.append({"id": "-", "issue": "shots.json 没有 shots"})
         return p0, p1, notes
+
+    # ---- 覆盖率自述：场景源码存在时，每一镜都必须找得到自己的场景函数体 ----
+    # 病因（2026-09 修复）：scene_source 此前只扫 src 一层，子目录里的场景文件读不到，
+    # 下面所有 `if scene_text` 判据（live 名字可解析 / 转场声明是否兑现 / beats 下标越界）
+    # 就整段静默跳过，rc 照样 0 —— "没报"和"没跑"必须可区分。
+    # 口径：工程里一份 .tsx 都没有时维持原行为（负向抽查的最小夹具只有分镜表，无从比对）；
+    #       只要有场景源码，某镜在源码里切不出函数体就是**测量没跑成**，记 P0 点名。
+    if scene_text:
+        for s in shots:
+            sid = s.get("id", "?")
+            if not _shot_body(scene_text, sid):
+                p0.append({"id": sid, "issue": (
+                    "场景源码不可读，判据无法执行：在 src/**/*.tsx 里找不到本镜的场景函数"
+                    "（`const S…: React.FC<` 形态）——凡是需要场景源码的判据（live 名字是否真被引用、"
+                    "转场声明是否兑现、beats 下标越界）对本镜都没有跑成，不许当成已通过")})
 
     # ---- P0-6 枚举闭合（先做，后面的多样性统计才有意义）----
     unknown_intents = {s.get("cameraIntent", "still") for s in shots} - INTENTS

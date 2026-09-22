@@ -12,8 +12,12 @@
   P1  缺少 bgm
   P1  引用了 SFX 但 index.tsx 里查不到任何 `vol:` 设定（可能整段音效被删）
 
+测量失败（ffmpeg 不可用 / 读不到峰值）= **门禁自身故障**，直接 rc=2 硬失败：
+旧版把它记成 P1 → rc=0 静默通过，等于这道门在没装 ffmpeg 的环境里从未生效。
+"内容没测出缺陷"与"根本没测成"必须可区分；sfx 目录不存在/为空仍是 P1（内容口径）。
+
 用法：python scripts/validate-audio-levels.py PROJECT_DIR [--json]
-退出码：0 通过 / 1 存在 P0 / 2 用法或文件错误
+退出码：0 通过 / 1 存在 P0 / 2 用法或文件错误 / 2 测量失败（门禁自身故障）
 零第三方依赖（只用 ffmpeg + 标准库）。
 """
 from __future__ import annotations
@@ -30,16 +34,25 @@ PEAK_FLOOR = -12.0          # 素材峰值下限（dBFS）
 QUIET_P0 = True             # 太轻记 P0（这是"静默失效"型缺陷）
 
 
-def peak_db(path: Path) -> float | None:
+def peak_db(path: Path) -> tuple[float | None, str]:
+    """测峰值 dBFS。返回 (峰值, 失败原因)：原因为空串 = 测成功；
+    原因非空 = **测量失败（门禁自身故障）**——调用方必须 rc=2，
+    绝不允许记成 P0/P1 内容问题（旧版记 P1 → rc=0，是静默放行路径）。"""
     try:
         r = subprocess.run(
             ["ffmpeg", "-hide_banner", "-i", str(path), "-af", "volumedetect", "-f", "null", "-"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
         )
-    except (OSError, subprocess.SubprocessError):
-        return None
+    except FileNotFoundError:
+        return None, "找不到 ffmpeg（未安装或不在 PATH）——音效可听度门禁无法测量"
+    except OSError as e:
+        return None, f"ffmpeg 无法调用（{e.__class__.__name__}: {e}）——无法测量"
+    except subprocess.SubprocessError as e:
+        return None, f"ffmpeg 运行异常（{e.__class__.__name__}: {e}）——读不到峰值"
     m = re.search(r"max_volume:\s*(-?[\d.]+) dB", (r.stdout or "") + (r.stderr or ""))
-    return float(m.group(1)) if m else None
+    if not m:
+        return None, "ffmpeg 输出里没有 max_volume（volumedetect 未产出测量值）——文件可能损坏或不是音频"
+    return float(m.group(1)), ""
 
 
 def main() -> int:
@@ -56,6 +69,7 @@ def main() -> int:
     p0: list[str] = []
     p1: list[str] = []
     checked: list[dict] = []
+    measure_fail: list[str] = []   # 测量失败清单（门禁自身故障 → rc=2，不是内容问题）
 
     files = sorted([p for p in sfx_dir.glob("*") if p.is_file()]) if sfx_dir.is_dir() else []
     if not files:
@@ -66,9 +80,11 @@ def main() -> int:
             continue
         if f.name.upper().endswith(".TXT") or f.suffix.lower() == ".txt":
             continue
-        pk = peak_db(f)
+        pk, err = peak_db(f)
         if pk is None:
-            p1.append(f"{f.name}：读不到峰值（文件损坏或非音频）")
+            # 旧版这里记 P1 → 整脚本 rc=0：ffmpeg 没装/文件读不出峰值 = 这道门**从未跑成**，
+            # 却被当成"通过"。测量失败不是内容档位问题，直接走门禁自身故障（rc=2）。
+            measure_fail.append(f"{f.name}: {err}")
             continue
         checked.append({"file": f.name, "peak_db": pk})
         if pk < PEAK_FLOOR:
@@ -76,6 +92,14 @@ def main() -> int:
                    f"乘上混音音量后必然被 BGM/人声压住（实测过 paper-tap 有效峰值 −49 dB）。"
                    f"修法：`ffmpeg -i {f.name} -af volume={-3.0 - pk:.1f}dB <out>` 归一到 −3 dBFS")
             (p0 if QUIET_P0 else p1).append(msg)
+
+    # ---- 测量失败 = 门禁自身故障：rc=2 硬失败（先于任何 PASS/FAIL 结论）----
+    if measure_fail:
+        print("validate-audio-levels · 门禁自身故障：以下素材**没能完成测量**"
+              "（这不是内容 P0/P1，是判据没跑成，不许按通过处理）：", file=sys.stderr)
+        for mf in measure_fail:
+            print(f"  ·· 测量失败 {mf}", file=sys.stderr)
+        return 2
 
     if not any((sfx_dir / f"bgm{s}").exists() for s in (".mp3", ".wav", ".ogg")) and sfx_dir.is_dir():
         p1.append("缺少 bgm（背景音乐）文件")

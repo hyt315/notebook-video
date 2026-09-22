@@ -76,8 +76,9 @@ const aesthetic: Theme['aesthetic'] = {
 const paperShadow = (lift: number) =>
   `0 ${4 + 4 * lift}px 0 rgba(74,59,47,${0.12 + 0.05 * lift}),0 ${10 + 12 * lift}px ${22 + 16 * lift}px rgba(74,59,47,${0.17 + 0.07 * lift})`;
 
-// 背景（LOCKED）：固定资产图，每比例一张（2560×1440 / 1920×1440 / 1440×1920），
-// 像素与画布一一对应；含薄荷网格纸、四角涂鸦、和纸胶带。禁止改回代码自绘背景。
+// 背景（LOCKED）：固定资产图，每比例一张——16:9 2560×1440（与画布 1:1 逐像素）；
+// 4:3 2240×1680、3:4 1680×2240（画布的 7/6 超采样，比例同比）；渲染时 cover 等比缩放
+// 不裁切不拉伸。含薄荷网格纸、四角涂鸦、和纸胶带。禁止改回代码自绘背景。
 const BG_BY_MODE = {'16:9': 'bg-sticker-169.jpg', '4:3': 'bg-sticker-43.jpg', '3:4': 'bg-sticker-34.jpg'} as const;
 
 const Background: React.FC = () => {

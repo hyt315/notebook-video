@@ -60,9 +60,9 @@ export const RevealMask: React.FC<{f: number; at: number; dur?: number; dir?: 'l
 
 /**
  * 转场清单：全片只用这 3 式。
- * ⚠️ 校验脚本**不读这里** —— `scripts/validate-composition.py` 自带同一份集合（其 `TRANSITIONS`），
- * 多样性的判据也在那边（按 shot 表的 `transition` 字段统计，与这个数组无关）。这里改了什么，
- * 门禁不会跟着变；两处必须人肉保持一致。
+ * `scripts/validate-composition.py` 自带同一份集合（其 `TRANSITIONS`）作为判据，
+ * 多样性的判据也在那边（按 shot 表的 `transition` 字段统计，与这个数组无关）。
+ * 两处一致性由 `scripts/validate-skill-consistency.py` 交叉校验，漂移会被门禁拦下。
  */
 export const TRANSITIONS = ['cut', 'handoff', 'reveal'] as const;
 // v3.0.1：whip / paper-turn 已删除——它们在两条成片里零引用，且 whip 要真生效必须改交接引擎。
@@ -73,7 +73,7 @@ export type TransitionKind = (typeof TRANSITIONS)[number];
  * 本模块版本串。清单**从 `TRANSITIONS` 派生**（不要让第二份手写副本再出现）：
  * 上一轮漂过一次 —— 数组已经删到 3 式，这串里还留着已删的 whip / paper-turn
  * （这串会渲进接触表第 ④ 页的页脚，所以"漂"是会被看见的）。
- * ⚠️ `scripts/validate-composition.py` 里仍自带一份集合（那份是判据，必须手写一致），
- * 改动 `TRANSITIONS` 时两处一起改。
+ * ⚠️ `scripts/validate-composition.py` 里仍自带一份集合（那份是判据），两处由
+ * `scripts/validate-skill-consistency.py` 交叉校验；改动 `TRANSITIONS` 时若两侧不一致会被拦下。
  */
 export const INSERT_VERSION = `insert-v3 · RevealMask · 转场清单（${TRANSITIONS.join('/')}）`;

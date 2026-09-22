@@ -148,6 +148,28 @@ def check_doc_identifiers() -> list[str]:
     return problems
 
 
+# ---------------------------------------------------------------------------
+# 枚举集合双真源交叉校验：模板源码 vs validate-composition.py 的判据集合。
+# 两侧各自独立存在（脚本读不到工程运行副本，也不该去读），漂移只会红在这一条上。
+# ---------------------------------------------------------------------------
+def check_enum_dual_source() -> list[str]:
+    problems: list[str] = []
+    vc = (SKILL / 'scripts' / 'validate-composition.py').read_text(encoding='utf-8', errors='ignore')
+    for name, ts_rel in (('TRANSITIONS', 'assets/lecture-template/src/insert.tsx'),
+                         ('SKELETONS', 'assets/lecture-template/src/skeletons.tsx')):
+        ts = (SKILL / ts_rel).read_text(encoding='utf-8', errors='ignore')
+        m_ts = re.search(rf'export const {name} = \[([^\]]*)\] as const', ts)
+        m_py = re.search(rf'^{name} = \{{([^}}]*)\}}', vc, re.M)
+        if not (m_ts and m_py):
+            problems.append(f"enum dual-source parse failed: {name} in {ts_rel} or scripts/validate-composition.py")
+            continue
+        ts_set = set(re.findall(r"'([^']+)'", m_ts.group(1)))
+        py_set = set(re.findall(r'"([^"]+)"', m_py.group(1)))
+        if ts_set != py_set:
+            problems.append(f"{name} set drift: {ts_rel} {sorted(ts_set)} vs scripts/validate-composition.py {sorted(py_set)}")
+    return problems
+
+
 def main() -> None:
     problems: list[str] = []
     text_files = [
@@ -255,6 +277,7 @@ def main() -> None:
                 problems.append(f"broken link: {p.relative_to(SKILL)} -> {link}")
 
     problems.extend(check_doc_identifiers())
+    problems.extend(check_enum_dual_source())
 
     if problems:
         for problem in problems:

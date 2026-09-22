@@ -171,10 +171,22 @@ def check_timeline(project: Path) -> tuple[list, list]:
     declared = shots_doc["shots"] if isinstance(shots_doc, dict) and "shots" in shots_doc else shots_doc
 
     by_id = {s["id"]: s for s in resolved}
+    # ---- resolved 与 declared 的一致性 = G-1 判据能否真的跑成 ----
+    # 病因（2026-09 修复）：旧版 `if not rec: continue` —— 改了 shots.json 却没重跑
+    # resolve-shots 时，resolved 陈旧/缺镜，整段 G-1 判据被静默跳过，脚本还能 exit 0。
+    # "测量没跑成"不是内容问题，必须报 P0（疑未重跑 resolve-shots），不再 continue 放行。
+    if len(resolved) != len(declared):
+        p0.append({"id": "-", "issue": (
+            f"G-1 判据无法可信执行：resolved 清单有 {len(resolved)} 镜，"
+            f"shots.json 声明 {len(declared)} 镜，两者不一致（resolved 清单与声明不符，"
+            "疑未重跑 scripts/resolve-shots.py，时间轴判据正在对陈旧数据空转）")})
     for dec in declared:
         sid = dec.get("id", "?")
         rec = by_id.get(sid)
         if not rec:
+            p0.append({"id": sid, "issue": (
+                "shots.resolved.json 里没有本镜记录（resolved 清单与声明不符，"
+                "疑未重跑 scripts/resolve-shots.py）：G-1 判据对本镜没有跑成，不许当成已通过")})
             continue
         cue_first, cue_last = int(rec["cueFirst"]), int(rec["cueLast"])
         silent = {int(x) for x in (dec.get("silentCues") or [])}
