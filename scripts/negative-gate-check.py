@@ -1107,7 +1107,7 @@ case('BJ 相机默认 · 显式 from==to 的零运动 push-in 仍被 P0 拦（�
 cleanup(td)
 
 # ════════════════════════════════════════════════════════════════════════════
-# CA–CF · 本轮三项收口的负向夹具（判据与夹具同版落地）
+# CA–CG · 本轮收口的负向夹具（判据与夹具同版落地）
 #   CA = validate-visual-plan：index.tsx **在**但抽不到 <Composition width> →
 #        必须报"canvas consistency check cannot run"（旧版这里 return [] 静默跳过，
 #        画布一致性整段判据等于不存在）。
@@ -1122,6 +1122,9 @@ cleanup(td)
 #   CF = validate-skill-consistency 新增的画布数值双真源交叉校验：把 canvas.ts 的
 #        designW 单独改掉 → 一致性检查必须红（needle = "canvas mode numeric drift"）。
 #        放行侧 = 本仓全量 `python scripts/validate-skill-consistency.py` rc=0（任务验证项）。
+#   CG = 批6 新增的数值双真源交叉校验（check_numeric_dual_source 配对表）：把 data.tsx 的
+#        MIN_LABEL_FONT 单独改掉（判据侧 FONT_FLOOR 不动）→ 一致性检查必须红
+#        （needle = "numeric dual-source drift"）。放行侧同 CF = 本仓 rc=0。
 # ════════════════════════════════════════════════════════════════════════════
 
 td = mkvisual(GOOD_SCENE, 120)
@@ -1197,6 +1200,22 @@ assert 'designW: 1900' in _ct, 'CF 夹具没改到 canvas.ts'
 io.open(ctp, 'w', encoding='utf-8', newline='').write(_ct)
 case('CF 一致性 · canvas.ts 的 designW 单独漂移（画布数值双真源交叉校验）', [
     ('must_block:canvas mode numeric drift', 'validate-skill-consistency',
+     run([PY, os.path.join(SKILL, 'scripts/validate-skill-consistency.py'), '--root', td_skill])),
+])
+cleanup(td_skill)
+
+# CG · 数值双真源配对表（批6）：整仓临时副本里只改 TS 侧一处数值（MIN_LABEL_FONT 13→12，
+# 判据侧 FONT_FLOOR 不动）→ 一致性检查必须红并点名这一对。锚点找不到直接 raise（不用
+# assert：-O 下 assert 被剥，"夹具没改到"会变成静默假通过 —— 正是 CC 钉过的教训）。
+td_skill = mk_skill_copy()
+dtp = os.path.join(td_skill, 'assets/lecture-template/src/components/data.tsx')
+_dt = io.open(dtp, encoding='utf-8').read()
+if 'export const MIN_LABEL_FONT = 13;' not in _dt:
+    raise SystemExit('CG 夹具锚点没找到：data.tsx 的 MIN_LABEL_FONT 写法变了（这本身就是该配而未配的双真源风险）')
+io.open(dtp, 'w', encoding='utf-8', newline='').write(
+    _dt.replace('export const MIN_LABEL_FONT = 13;', 'export const MIN_LABEL_FONT = 12;', 1))
+case('CG 一致性 · MIN_LABEL_FONT 单独漂移（数值双真源交叉校验）', [
+    ('must_block:numeric dual-source drift: MIN_LABEL_FONT vs FONT_FLOOR', 'validate-skill-consistency',
      run([PY, os.path.join(SKILL, 'scripts/validate-skill-consistency.py'), '--root', td_skill])),
 ])
 cleanup(td_skill)
