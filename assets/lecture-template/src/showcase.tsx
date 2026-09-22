@@ -174,7 +174,11 @@ export const Showcase: React.FC = () => {
         <Series.Sequence durationInFrames={PAGE}>
           <Page title="⑥ 场景骨架：Corridor / Split / Zoom / Stage" note={`骨架 ${SKELETONS.join(' / ')} · 转场 ${TRANSITIONS.join(' / ')}`}>
             <div style={{position: 'absolute', left: 40, top: 84, width: 1840, height: 300}}>
-              <Corridor x={100} y={0} w={1720} f={F} laneY={60} stations={[{label: '发起请求', at: 0, detail: '调用方不用改代码'}, {label: '自动路由', at: 30, detail: '请求送往 Flash'}, {label: '按 Flash 结算', at: 60, detail: '账单只按 Flash 价'}]} startBanner={{at: 0, text: 'Corridor · 走廊骨架'}} />
+              {/* x/w 要留出站点标签块的半宽：组件内标签块是 `left: pts[i]-150, width: 300`，
+                  端点 40+x 与 40+x+w 取画布中心 960 对称，标签块才落在 20..1900 的对称留白里。
+                  旧值 x=100/w=1720 → 端点 140/1860，第三站标签块伸到 2010，
+                  “按 Flash 结算”与说明被右边缘裁掉（实测 ink 到 x=1919 仍是字）。 */}
+              <Corridor x={130} y={0} w={1580} f={F} laneY={60} stations={[{label: '发起请求', at: 0, detail: '调用方不用改代码'}, {label: '自动路由', at: 30, detail: '请求送往 Flash'}, {label: '按 Flash 结算', at: 60, detail: '账单只按 Flash 价'}]} startBanner={{at: 0, text: 'Corridor · 走廊骨架'}} />
             </div>
             <div style={{position: 'absolute', left: 40, top: 410, width: 900, height: 620}}>
               <div style={{position: 'absolute', left: 0, top: -28, fontFamily: 'Space,monospace', fontSize: 18, fontWeight: 700, color: C.muted}}>Split · 双栏对比</div>
