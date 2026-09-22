@@ -281,6 +281,8 @@ toolkit.tsx         rhetorical tools (Callout / Checklist / JumpInText)
 kit.tsx             Theme-agnostic atoms: PillTag / LineIcon / CheckBadge / TYPE
 insert.tsx          B-roll inserts + the five transitions
 overlap-gate.tsx    Runtime overlap / occlusion gate
+clipping-gate.tsx   Runtime clipped-graphics gate (SVG primitives crossing a clipping ancestor)
+fill-gate.tsx       Runtime measured density of the lower quarter (lowest info-element edge vs y=876)
 showcase.tsx        Component contact sheet (17 pages, for AI to pick by sight)
 scenes.tsx          Scene layer (8-shot example film; rewrite this layer per topic)
 ```

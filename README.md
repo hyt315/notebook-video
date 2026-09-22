@@ -274,6 +274,8 @@ toolkit.tsx       修辞工具件：Callout(画圈标注)/Checklist(清单)/Jump
 kit.tsx            主题无关原子：PillTag / LineIcon / CheckBadge / TYPE
 insert.tsx         B 场景插入镜头 + 5 式转场
 overlap-gate.tsx   渲染期重叠/遮挡门禁（事件帧抽样：镜头边界/节拍/相机关键帧）
+clipping-gate.tsx  渲染期图形被裁门禁（SVG 图元越出会裁切的祖先）
+fill-gate.tsx      渲染期下 1/4 实测密度门禁（信息元素最低边 vs y=876）
 showcase.tsx       组件接触表（17 页，供 AI 看图选型）
 scenes.tsx         场景层（示例片 8 镜；换题材重写这一层）
 ```
