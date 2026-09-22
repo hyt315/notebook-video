@@ -236,7 +236,7 @@ notebook-video/
 ├── SKILL.md                          # 核心技能定义与制作工作流
 ├── manifest.json                     # 技能元数据（版本号在此）
 ├── README.md / README.en.md          # 中英文说明
-├── CHANGELOG.md                      # 版本发布记录（当前 v3.1.1）
+├── CHANGELOG.md                      # 版本发布记录（当前 v3.1.2）
 ├── assets/
 │   ├── demo/                         # 成片与动图预览
 │   ├── lecture-template/             # 官方模板（纯代码路线，含 8 镜示例片）

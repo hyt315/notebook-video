@@ -4,6 +4,94 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+## [3.1.2] - 2026-09-22
+
+> 对照基线 `v3.1.1`：**35 个文件，+1 020 行，−145 行**。
+
+### 背景与动机
+
+本版是 v3.1.1 之后的第二批补丁，仍属 v3.1.0 大版本优化的收口。主线是**门禁有效性**：对全部 `validate-*.py` 做了一次整体审计，并把交接文档 15 条待办逐项核到底（含字幕 #2、接触表 #3/#5、双真源 #7、口径 #9）。验收口径只有一条：**改前先复现、改后实证转绿**，并以真渲染回归——"读代码以为修好了"在本版被实测推翻过三次，因此全部结论都带运行证据。
+
+### 新增
+
+- 接触表 17 页 → **18 页**：⑱ 页 `FocusFx` 整页专属（`position:fixed` 锚点不能进格子），dim/spot/loupe/marker 四态按帧轮转；⑪ 页转场 durations 压回页内（4×12−3×6=30，三个转场全在页内）；JPG 抽样从"每页首帧"改为**每页第 6 / 21 帧**（select 滤镜、6×6=36 格），转场中态第一次在接触表上可见。`assets/demo/` 接触表按新母版真渲染重出（18.0 s / 2560×1440 / 540 帧 / 静音 AAC / bt709）。
+- `validate-skill-consistency.py` 三条交叉校验：**转场/骨架集合**（模板 ⇄ 门禁判据）、**画布数值对**（`canvas.ts` ⇄ `validate-visual-plan.py`，designW/H、字幕安全宽、边距、底距）、**数值双真源配对表**（字号地板、舞台中心三写、变焦上限、运镜时长区间与默认、FPS，共 14 对）。任一侧锚点解析不到即报错——防"换个写法就静默放行"；语义不同款的数值**明确拒收**并注释存档。
+- `negative-gate-check.py`：40 例 / 80 断言 → **65 例 / 112 断言**（`python -O` 档同绿）。此前**零对抗夹具**的四道门禁（layering / visual-plan / audio-levels / official-example）各补定向 needle 的 must_block + must_pass 阴性对照；本版全部新硬拦行为都有夹具钉住。
+
+### 修复（静默路径收口）
+
+- `validate-audio-levels.py`：ffmpeg 不可用 / 读不到峰值，从「记 P1 → rc=0」改为 **rc=2 门禁自身故障**——此前该门在无 ffmpeg 的环境里从未真正跑成过。
+- `validate-composition.py`：场景源码改**递归扫描**（场景放子目录时整段判据曾被静默跳过）；新增「场景源码不可读，判据无法执行」逐镜覆盖率 P0；场景函数声明形态放宽至 `React.FC<` / 裸 `FC<` / `function` / `JSX.Element`（收紧形态对合法写法 8/8 镜误报，实测复现后修复并钉夹具）。
+- `validate-presentation.py`：resolved 与 declared **镜数不一致（双向）报 P0** 并注明疑未重跑 `resolve-shots`——陈旧时间轴不再空转 exit 0。
+- `notebook-video.mjs`（CLI）：交付链 `validate-semantic-breaks` **自动探测**工程 `node_modules/budoux` 并恒带 `--require-budoux`——缺依赖从「响亮跳过」变为硬失败；`--no-budoux` 保留为刻意跳过开关。CI 中 `npm ci` 之前的裸跑步骤改直调 `.py`，维持"跳过并告警"语义，避免收口后假红。
+- `validate-caption-sync.py`：新增 caption-cues **双份字节相等锁**（`manifests/` 校验份 ⇄ `src/` 渲染份），堵住"校验一份、渲染另一份"。
+- `match-timing.py`：6 条防护性 `assert` 全改 `raise SystemExit`——`python -O` 会把 assert 连判断一起剥离，防护当场静默失效。
+- `validate-visual-plan.py`：影片 `<Composition>` 抽不到数字宽从「静默当通过」改为报**判据无法执行**；判据锚定 `id="NotebookVideoFilm"`（实测旧版会抓接触表 composition 的 1920 当影片画布宽比对并静默 PASS）。
+- `coords-lint.py`：负整数字面量进入识别（此前对 linter 完全隐形）；负向阈值**刻意暂不设**——全仓扫描证实存在合法负坐标（chart 的 SVG 局部坐标、sticker 出血 Tape、Callout 骑跨上沿），证据与补判据前提写入注释。
+- **相机数学三写合一**：`validate-shot-motion.py` 删手写展开分支（−28 行），importlib 复用 `resolve-shots.py` 的 `expand_cam` 作唯一展开真源；`expand_cam` 与 `shotkit.tsx` 的隐式默认逐条对齐（establish 1.03 / push-in 1.12 / reveal 1.08 / pull-back 先 1.12 后 1.0 / micro-orbit 默认 6° / still 尾帧按 `to`）——关闭 micro-orbit 省 rotY「门禁记 0°、成片真转 6°」的漏放，与「省参数=零运动」的误拦链。模板 8 镜（全显式参数）展开输出**逐字节不变**，兼容性实测。
+
+### 文档（口径修正）
+
+- 背景图尺寸：实测 **16:9 三张确与画布逐像素**；4:3 为 2240×1680、3:4 为 1680×2240（画布 7/6 超采样，渲染均匀降采样、不裁切不拉伸）。三份主题契约、三套皮肤代码注释、`visual-assets.json` 的 `crop_policy` 按实测改口径；`sticker` 补入位图背景皮肤清单（此前漏记，paper 为纯代码绘制）。
+- 相机历史数字：「10 个关键帧越界」改写为双口径——**10 是 s 超旧上限 1.018（16:9 空间口径），真正可见窗出画的是 8 个关键帧、最大 383px**（按 v2.8.0 源码复算，逐帧非零露底约 862–892 帧随亚像素容差），并注明 `CAM_KEYS_P` / `CameraRig` 已随 **v2.9.0** 删除（`visual-system.md` 此前误写"v3.1 起"）。
+- 字幕：澄清「跨 cue 判据其实一直存在」（validator 对整句拼接跑 BudouX），真实缺口是「缺模型时降级放行」——已随交付路径收口；相关命令示例同步实装行为。
+
+### 已知边界（知情接受，非缺陷）
+
+- TS `shotkit.tsx` 的 micro-orbit 末 hold 帧不带 rotY（会回摆 0°），resolved 数据侧保留——差异已注释钉明；改行为会动已渲片输出，待拍板。
+- 「交付必须走 CLI」不做机器强制（裸调 `.py` 的夹具语义与交付语义混在文档，加检查引出的约定比收益重），靠 SKILL.md 命令示例统一兜住。
+- coords-lint 的「两画布并集」阈值属锁定画布口径，不动。
+- 模板 ⇄ 工程两份副本仍按 `dependency-policy.md` §九人工同步，无机器检查（前轮已定"不为此加门禁"）。
+
+### 测试
+
+`negative-gate-check` 65 例 / 112 断言全 PASS（含 `python -O` 档）；`validate-skill-consistency`、`validate-official-example`、`selftest` 11/11 全绿；模板 `tsc --noEmit` 0 错；模板新建工程**真渲染** `render-range` 61 帧 rc=0（2560×1440@30）。
+
+---
+
+## [3.1.2] - 2026-09-22 (English)
+
+> Baseline `v3.1.1`: **35 files, +1,020 / −145 lines**.
+
+### Motivation
+
+The second patch round after v3.1.1, still closing out the v3.1.0 overhaul. The theme is **gate effectiveness**: a full audit of every `validate-*.py` gate plus a line-by-line verification of the 15 open backlog items. One acceptance rule: **reproduce the defect first, prove it green after the fix, regress with a real render** — code-only review was falsified by experiment three times this round, so every claim below carries runtime evidence.
+
+### Added
+
+- Showcase grows to **18 pages**: page ⑱ gives `FocusFx` a dedicated full page (its `position: fixed` anchor cannot live in a tile), cycling dim/spot/loupe/marker by frame; page ⑪ transitions now fit inside the page (4×12−3×6=30, all three mid-transition states on-page); JPG sampling moves from "first frame per page" to **frames 6 and 21 of each page** (select filter, 6×6=36 cells) — transition mid-states are visible on the sheet for the first time. `assets/demo/` showcase re-rendered from the new master (18.0 s / 2560×1440 / 540 frames, silent AAC, bt709).
+- Three cross-checks in `validate-skill-consistency.py`: transition/skeleton **enum pairs** (template ⇄ gate), canvas **numeric pairs** (`canvas.ts` ⇄ `validate-visual-plan.py`: design W/H, subtitle safe width, margins, bottom), and a declarative **numeric dual-source table** (font floor, stage center written thrice, zoom caps, camera-move durations, FPS — 14 pairs). An unparseable anchor on either side is itself an error — "reformat the code and the check silently dies" is not allowed; numerals that merely look equal but mean different things were explicitly rejected, with reasons in comments.
+- `negative-gate-check.py`: 40 cases / 80 assertions → **65 / 112** (also green under `python -O`). The four gates that previously had **zero adversarial fixtures** (layering / visual-plan / audio-levels / official-example) each got a needle-targeted must_block plus a must_pass negative control; every new hard-fail behavior shipped this round is pinned by a fixture.
+
+### Fixed (silent-pass closures)
+
+- `validate-audio-levels.py`: missing ffmpeg / unreadable peak now means **rc=2 gate failure** instead of "P1 note, exit 0" — on machines without ffmpeg this gate had literally never run.
+- `validate-composition.py`: scene sources are scanned **recursively** (scenes in subdirectories used to silently skip a whole block of checks); per-shot coverage P0 when a shot's function body cannot be found; declaration matching widened to `React.FC<`, bare `FC<`, `function` and `JSX.Element` forms (the narrow form falsely blocked legal code 8/8 shots — reproduced, fixed, pinned).
+- `validate-presentation.py`: resolved/declared shot-count mismatch (**either direction**) is now a P0 naming the likely missed `resolve-shots` run; stale timelines can no longer spin silently to exit 0.
+- `notebook-video.mjs` (CLI): the delivery-path `validate-semantic-breaks` **auto-detects** the project's `node_modules/budoux` and always adds `--require-budoux` — a missing dependency is a hard failure, not a loud skip; `--no-budoux` stays as the deliberate opt-out. The CI step before `npm ci` calls the `.py` directly to keep loud-skip semantics and avoid a false red.
+- `validate-caption-sync.py`: byte-equality lock between the **two caption-cues copies** (`manifests/` validated vs `src/` rendered), closing "validate one copy, ship the other".
+- `match-timing.py`: six defensive `assert`s became `raise SystemExit` — `python -O` strips asserts and silently disarms the guards.
+- `validate-visual-plan.py`: failing to parse the film composition's numeric width now reports "check cannot run" instead of returning `[]`; the check anchors `id="NotebookVideoFilm"` (experiment: the old first-match logic grabbed the showcase's 1920 and silently PASSed against the wrong canvas).
+- `coords-lint.py`: negative integer literals are now recognized (they used to be invisible); a negative threshold is **deliberately withheld** — a repo-wide scan found legitimate negative coordinates (chart SVG-local values, sticker-bleed Tape, Callout straddling the top edge); evidence and preconditions recorded in comments.
+- **Camera math consolidated to one source**: `validate-shot-motion.py` deletes its hand-written key expansion (−28 lines) and imports `expand_cam` from `resolve-shots.py`; `expand_cam` now mirrors `shotkit.tsx` implicit defaults one by one (establish 1.03 / push-in 1.12 / reveal 1.08 / pull-back 1.12→1.0 / micro-orbit default 6° / still tail follows `to`) — closing the micro-orbit miss ("gate sees 0°, film rotates 6°") and the false-block chain for omitted parameters. Template output for explicitly-parameterized shots is **byte-identical** (compatibility verified).
+
+### Docs (measurements corrected)
+
+- Background rasters: verified **16:9 files are pixel-exact with the canvas**; 4:3 files are 2240×1680 and 3:4 are 1680×2240 (exported at 7/6 supersampling; uniform downscale, no crop, no stretch). Three theme contracts, three theme code comments and `visual-assets.json` crop policies now match reality; `sticker` added to the fixed-raster skin list (previously omitted; `paper` is code-drawn).
+- Camera history: "10 out-of-bounds keys" rewritten with both rulers — **10 counts `s` beyond the old 1.018 cap (16:9 space), while genuinely visible-window escapes are 8 keys, max 383 px** (recomputed from v2.8.0 sources; ~862–892 frames with tolerance-dependent nonzero bleed), noting `CAM_KEYS_P`/`CameraRig` were removed in **v2.9.0** (`visual-system.md` had said "since v3.1").
+- Subtitles: clarified that a **cross-cue rule always existed** (the validator runs BudouX over the joined stream); the real gap was graceful degradation when the model is missing — now hard-failed on the delivery path; command examples updated accordingly.
+
+### Known boundaries (accepted, not defects)
+
+- TS `shotkit.tsx` micro-orbit's final hold frame omits rotY (swings back to 0°) while resolved data keeps it — difference pinned in comments; changing behavior would alter already-rendered films and awaits a decision.
+- No machine gate forces "delivery via CLI" (fixture vs delivery semantics share the docs; the convention would cost more than it saves); SKILL.md command examples carry it.
+- The coords-lint "union of two canvases" threshold belongs to the locked canvas contract and stays.
+- Template ⇄ project copies remain manually synced per `dependency-policy.md` §九, per the earlier "no gate for this" decision.
+
+### Testing
+
+Full `negative-gate-check` 65/112 green (incl. `python -O`); `validate-skill-consistency`, `validate-official-example`, `selftest` 11/11; template `tsc --noEmit` 0 errors; a fresh project from this template **really rendered** `render-range` 61 frames, rc=0 (2560×1440@30).
+
 ## [3.1.1] - 2026-09-22
 
 > 对照基线 `v3.1.0`：**50 个文件，+2 634 行，−330 行**。

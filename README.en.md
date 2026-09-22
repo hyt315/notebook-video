@@ -242,7 +242,7 @@ notebook-video/
 ├── SKILL.md                          # Core skill definition and production workflow
 ├── manifest.json                     # Skill metadata (version lives here)
 ├── README.md / README.en.md          # Chinese / English documentation
-├── CHANGELOG.md                      # Version history (currently v3.1.1)
+├── CHANGELOG.md                      # Version history (currently v3.1.2)
 ├── LICENSE                           # Apache License 2.0
 ├── NOTICE                            # Third-party font / asset / dependency notices
 ├── CONTRIBUTING.md · CODE_OF_CONDUCT.md · SECURITY.md · SUPPORT.md
