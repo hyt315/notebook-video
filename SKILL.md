@@ -242,7 +242,7 @@ python "<SKILL_DIR>/scripts/selftest.py"
 Good fixtures must pass and each broken fixture (protected phrase split across cues, mismatched caption
 sync, non-video input) must be rejected by the matching gate.
 
-For the build-time gates, run the negative spot-check — it feeds sixty-four fixtures to the gates (a shot table whose anchor leaves the frame, a pan beyond the zoom budget, adjacent scenes sharing a
+For the build-time gates, run the negative spot-check — it feeds its fixture family to the gates (a shot table whose anchor leaves the frame, a pan beyond the zoom budget, adjacent scenes sharing a
 skeleton, a shot with no live component, a timeline gap, a faked `live`/media name, a camera move that never
 moves, a frame-prop typo in the fxkit layer and in the components layer, a beat that spoils its line, a beat
 pointing at another shot's cue, a beat landing too late for its line, a beat legal but flush against that
@@ -253,11 +253,19 @@ were "unified" or whose judgement was widened back, four `evidence` fixtures —
 in the scene source at all, one naming a widget only another shot uses (a **known miss**: it must pass), one
 that only appears in a comment, and the untouched template with scene sources — and three narrative-`move`
 run fixtures), the layering contract violated both ways, a visual plan with an invalid mode or an
-uncovered frame gap, an inaudible sfx mix and a corrupt audio file (a failed measurement must hard-fail
+uncovered frame gap — plus one whose film composition declares no numeric width inline (the check must
+refuse to borrow a width from another composition rather than silently pass), an inaudible sfx mix and a corrupt audio file (a failed measurement must hard-fail
 the gate, not pass), an official-example copy with a tampered canvas, a scene source whose shot functions
-cannot be found, a stale resolved timeline, and a BudouX-less delivery) plus negative controls, and
-asserts each gate blocks, warns or passes as expected — 110 assertions, 53 of which pin or forbid the expected message
-substring, so "failed for some other reason" cannot pass as a blocked fixture.
+cannot be found — paired with one pinning that the bare `FC<` spelling of every shot function must pass —
+a stale resolved timeline, a match-timing mismatch fed under `python -O` (guards must never be plain
+`assert`s), two caption-cues copies that disagree (validate one while rendering the other), and the
+numeric dual-source cross-checks where a theme or component constant drifts away from the validator that
+pairs with it (canvas-mode numbers and the font floor), three camera-default fixtures (omitted `rotY` and
+omitted `to` must resolve to the documented values, while an explicit `from == to` zero-move must still be
+blocked), and a BudouX-less delivery) plus negative controls, and
+asserts each gate blocks, warns or passes as expected — 65 fixtures / 112 assertions (run the script — it
+prints its own tally), and every blocking fixture pins the expected message substring, so "failed for some
+other reason" cannot pass as a blocked fixture.
 **A gate that exists in name only is the most dangerous defect.**
 
 ```text

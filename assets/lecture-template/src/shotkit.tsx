@@ -124,6 +124,10 @@ export const shotCam = (intent: ShotIntent, o: IntentOpts): CamKey[] => {
     case 'reveal':
       return [head, {f: at, x, y, s: o.from ?? 1}, {f: at + dur, x, y, s: o.to ?? 1.08}, {f: holdEnd, x, y, s: o.to ?? 1.08}];
     // 单体 hero 微环绕：rotY ≤ 6°
+    // ⚠️ 已知差异（批7 F6，**只记不改**）：TS 侧末 hold 帧（下面第 4 键）不带 rotY，
+    // camAt 取 `k.rotY ?? 0` → 收尾把环绕角摆回 0°；而 resolved 数据侧（scripts/resolve-shots.py
+    // 的 expand_cam）第 4 键**保留 rotY**（收尾停在摆到位的角度）。两侧行为不一致，
+    // 改哪一侧属行为决策，等用户拍板——拍板前别"顺手对齐"任何一侧。
     case 'micro-orbit':
       return [head, {f: at, x, y, s: o.from ?? 1, rotY: 0}, {f: at + dur, x, y, s: o.to ?? o.from ?? 1, rotY: o.rotY ?? 6}, {f: holdEnd, x, y, s: o.to ?? o.from ?? 1}];
     default:

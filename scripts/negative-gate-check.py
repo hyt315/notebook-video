@@ -830,7 +830,8 @@ cleanup(td)
 #
 # 另三条 HEAD 新硬拦行为各一条 must_block（needle = 报错文案里的独特子串）：
 #   BD3 = validate-audio-levels：素材读不到峰值（损坏/非音频）→ rc=2 门禁自身故障
-#   BF1 = validate-composition：有场景源码但某镜切不出 `const S…: React.FC<` 函数体 → P0
+#   BF1 = validate-composition：有场景源码但某镜切不出场景函数体（`React.FC<`/`FC<`/
+#         `function S1(…)`/`: JSX.Element` 诸形态之一，识别形态见 BF3）→ P0
 #   BG1 = validate-presentation：resolved 与 declared 镜数不一致 → P0"疑未重跑"
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -1018,6 +1019,18 @@ cleanup(td)
 # 必须放行 —— 证明 BF1 不是"见到源码就报"，覆盖率自述只在真切不出时才响。
 td, rc0, out0 = mksrc()
 case('BF2 组合门禁 · 镜函数齐全的原样 src（阴性对照）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_pass', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+# BF3 · 批7 F1：**裸 FC 写法必须放行**。`import {FC} from 'react'` + `const S…: FC<…>`
+# 是与 `React.FC<` 完全等价的合法写法，旧版识别只认 `React\.FC<`，实测同一模板改成裸 FC
+# 后 8/8 镜误报 P0"场景源码不可读"（rc=1）。这条 must_pass 把放宽钉住，防再收紧。
+td, rc0, out0 = mksrc(lambda t: t.replace(
+    "import React from 'react';", "import React, {FC} from 'react';", 1
+).replace(": React.FC<", ": FC<"))
+case('BF3 组合门禁 · 裸 FC 形态（import {FC} + `: FC<`）必须放行', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
     ('must_pass', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
 ])

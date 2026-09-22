@@ -159,7 +159,7 @@ python scripts/resolve-shots.py PROJECT_DIR
 新骨架必须：
 
 1. 构图与现有四种**明显不同**（同构图不算新骨架）；
-2. 在 `skeletons.tsx` 的 `SKELETONS` 里注册，并同步 `validate-composition.py` 的 `SKELETONS`；
+2. 在 `skeletons.tsx` 的 `SKELETONS` 里注册，并同步 `validate-composition.py` 的 `SKELETONS`（漂移现由 `validate-skill-consistency.py` 对这两处 `SKELETONS` 的交叉校验兜底，忘同步会在一致性门禁里红，不再只靠自觉）；
 3. 有「何时用 / 何时不用」的判据，写进本文件的表格；
 4. 在 `NotebookVideoShowcase` 的接触表里出现（让后续 AI 看得见）。
 

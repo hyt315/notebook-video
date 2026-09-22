@@ -19,7 +19,15 @@ from pathlib import Path
 OVERLAYS = ("StampSeal", "Burst", "Callout", "ChipContract", "Funnel", "ChatThread")
 # 老模块里的覆盖层类件（不在 src/components/ 下，但同样是"场景坐标"语义）
 LEGACY_OVERLAYS = ("StampBanner",)
-# 负整数字面量也进识别（`x={-220}` 这类飞出左/上缘的写法此前对 linter 完全隐形）。
+# 负整数字面量**已进识别、暂不设负向阈值（知情边界）**。批5 提交话术曾暗示 `-220`
+# 这类写法从此会被拦——收回：三档阈值（OFF-CANVAS >1920/1440、软档 >1000/700、
+# SMOOSH 0<y<170）全在正向，负值进得了 COORD 却够不着任何一档（实测 `x={-2000}` rc=0）。
+# 不补负向阈值的依据是本轮扫描：**合法负坐标在模板与成片工程里真实存在**——
+#   · lecture-template src/components/chart.tsx:82/354/445（SVG 局部坐标 `x={-18}`/`y={-14}`/`y={-34}` 刻度与徽标）
+#   · lecture-template src/theme/sticker.tsx:113 `Tape x={-50} y={-20}`（Tape 就在推导名单里，出血贴边是设计意图）
+#   · 成片工程 overview-film src/scenes.tsx:791 `Callout x={80} y={-40}`（覆盖层骑跨卡片上沿，正常构图）
+# 任何"负即出画"的阈值都会先把这三处合法写法打假。要补须先按"覆盖层短边整件离开
+# 舞台半幅"（如 x < -960）立据并重扫全部工程，属改判据动作——留给有实证的下批。
 # 边界钉死在 `\{` 与 `\}` 之间：只认**纯整数字面量**，`x={a-1}` / `x={w-40}` 这类
 # 表达式里 `-` 前面还有标识符字符，落不进 `\{(-?\d+)\}`，不会被误配。
 COORD = re.compile(r"\b([xy])=\{(-?\d+)\}")
@@ -79,6 +87,8 @@ def main() -> int:
                 # 已知边界（刻意**不改**）：1920/1440 是两块锁画布 (1920x1080 / 1080x1440) 的
                 # **并集**上限，不是本片画布的上限 —— 横屏片 y=1200 实际早已出界但这里不报。
                 # 收紧成"按工程画布口径"要动 validate-visual-plan 的 canvas 判据链，动它=动契约。
+                # 同为已知边界：OFF-CANVAS 只评**正向**（value > 上限）。负静态坐标已进识别、
+                # 暂不设负向阈值——合法出血/局部坐标用例真实存在，理由与证据链见 COORD 处注释。
                 if value > 1920 or (axis == "y" and value > 1440):
                     errors.append(f"OFF-CANVAS {where}")
                 elif comp != "?" and (value > 1000 if axis == "x" else value > 700):

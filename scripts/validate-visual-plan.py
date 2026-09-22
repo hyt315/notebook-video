@@ -29,14 +29,22 @@ def validate_canvas_mode(project: Path) -> list[str]:
         # 工程可以没有 index.tsx（BC 类最小夹具/纯规划工程），维持原行为：整段跳过。
         return []
     text = src.read_text(encoding="utf-8")
-    comp = re.search(r"<Composition[^>]*width=\{(\d+)\}", text)
+    # 画布口径的真身是**影片 Composition**（模板里实名 `NotebookVideoFilm`，见
+    # assets/lecture-template/src/index.tsx:413）。旧版 `re.search` 取全文件**第一个**
+    # `width={数字}`：实测影片标签用变量宽（`width={compW}`）时，判据抓到后面 showcase
+    # 标签的 1920，整段画布一致性拿着另一块画布的档位比对还静默 PASS。
+    # 现在锚定影片标签本身；标签在但抽不到**纯数字**宽 → 判据无法执行（不回落到别的标签）。
+    film_tag = re.search(r'<Composition[^>]*\bid="NotebookVideoFilm"[^>]*>', text)
+    comp = re.search(r'width=\{(\d+)\}', film_tag.group(0)) if film_tag else None
     if not comp:
-        # 文件在、但抽不到 Composition 宽度：画布一致性判据**无法执行**。
+        # 文件在、但影片 Composition 的宽度抽不到数字：画布一致性判据**无法执行**。
         # 静默 return [] 等于"没跑成"冒充"跑过了"—— 必须报成判据失败（与 validate-composition
         # 的"场景源码不可读，判据无法执行"同一档位：直接进 errors，rc=1）。
         return [
-            "canvas: src/index.tsx exists but no inline <Composition ... width={N}> could be parsed "
-            "— canvas consistency check cannot run (the film composition must declare its output width inline)"
+            "canvas: src/index.tsx exists but no inline <Composition id=\"NotebookVideoFilm\" ... width={N}> "
+            "could be parsed — canvas consistency check cannot run "
+            "(the film composition must declare its output width inline; numeric widths on other compositions, "
+            "e.g. the showcase contact sheet, are deliberately NOT used as fallback)"
         ]
     width = int(comp.group(1))
     mode = CANVAS_MODES.get(width)

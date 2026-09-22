@@ -268,9 +268,26 @@ def import_integrity(project: Path) -> tuple[list[dict], str]:
 
 
 def _shot_body(scene_text: str, sid: str) -> str:
-    """切出某一镜的组件函数体（`const S19History: React.FC<...> = ...` 到下一条 `const S1x...`），
-    并去掉注释 —— 注释里写到的 `b[3]` 不算"用过一次"。"""
-    marks = [(m.group(1), m.start()) for m in re.finditer(r"const (S\d+)[A-Za-z0-9_]*: React\.FC<", scene_text)]
+    """切出某一镜的组件函数体（从本镜声明到下一条镜声明），并去掉注释 ——
+    注释里写到的 `b[3]` 不算"用过一次"。
+
+    识别的声明形态（批7 F1：此前只认 `const S…: React.FC<`，实测工程写
+    `import {FC} from 'react'` + `export const S1: FC<…>` 或 `export function S1(...)`
+    时 8/8 镜全片误报 P0"场景源码不可读"）：
+      · `const S1Xxx: React.FC<…>` / `const S1Xxx: FC<…>`（`export` 前缀均可）
+      · `function S1Xxx(...)` / `export function S1Xxx(...)`
+      · `const S1Xxx = (props…): JSX.Element …`（箭头函数带返回类型标注）
+    完全找不到函数体的语义不变：仍由 BF1 的"判据无法执行"P0 兜底。
+    """
+    marks = []
+    for m in re.finditer(
+        r"const (S\d+)[A-Za-z0-9_]*\s*:\s*(?:React\.)?FC<"
+        r"|(?<![\w.$])function (S\d+)[A-Za-z0-9_]*\s*\("
+        r"|const (S\d+)[A-Za-z0-9_]*\s*=\s*\([^)]*\)\s*:\s*JSX\.Element",
+        scene_text,
+    ):
+        name = next(g for g in m.groups() if g)
+        marks.append((name, m.start()))
     for i, (name, start) in enumerate(marks):
         if name != sid:
             continue
@@ -303,7 +320,8 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
             if not _shot_body(scene_text, sid):
                 p0.append({"id": sid, "issue": (
                     "场景源码不可读，判据无法执行：在 src/**/*.tsx 里找不到本镜的场景函数"
-                    "（`const S…: React.FC<` 形态）——凡是需要场景源码的判据（live 名字是否真被引用、"
+                    "（`const S…: React.FC<` / `: FC<` / `function S1(…)` / "
+                    "`const S1 = (…): JSX.Element` 诸形态之一）——凡是需要场景源码的判据（live 名字是否真被引用、"
                     "转场声明是否兑现、beats 下标越界）对本镜都没有跑成，不许当成已通过")})
 
     # ---- P0-6 枚举闭合（先做，后面的多样性统计才有意义）----

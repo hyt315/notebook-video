@@ -267,6 +267,8 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
   （`FocusFx` 曾是这一档里最特殊的一件——它所有覆盖层挂 `SCENE_ANCHOR`（`position: fixed` + 场景坐标 +
   zIndex 160），塞进 900×470 的 Tile 会被舞台 transform 变成包含块、把"压暗其余整页"演残，
   所以**进不了格子**。现在它上了第 ⑱ 页：**整页专属**，dim / spot / loupe / marker 每 8 帧轮转一态。
+  核验口径要如实：接触表抽帧的两格只取到 **dim / loupe 两态**（四态里覆盖 2/4，抽帧位由页帧号决定，
+  碰不齐四态），**spot / marker 两态得以 showcase 成片 mp4 为准**——别拿 JPG 两格当"四态都见过"。
   旧版同列的 PieDraw / CameraMotionBlur / Trail 已删 —— 后两个是**真·零渲染**，按本技能自己的
   「零引用」判据走；PieDraw 被 `Chart variant="pie"` 与 `ProgressRing` 上下夹住、自己没标签没数值。
   第 ⑪ 页空出的那格换成了 pathfx 家族的组合用法：标注框 + 引线。）
