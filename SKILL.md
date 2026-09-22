@@ -174,6 +174,9 @@ Validation after rendering:
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-video ./notebook-video-project/renders/final.mp4 EXPECTED_SECONDS ./notebook-video-project/renders/contact-sheet.jpg
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-caption-sync ./notebook-video-project/audio/narration.mp3.json ./notebook-video-project/manifests/caption-cues.json
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-semantic-breaks ./notebook-video-project/manifests/caption-cues.json ./notebook-video-project/manifests/protected-caption-phrases.txt
+# The CLI closes the delivery path: it auto-detects <project>/node_modules/budoux (walking up from the
+# caption file) and always adds --require-budoux. A missing BudouX is a hard failure, not a silent skip —
+# installing project dependencies is a precondition, never a skippable item. Pass --no-budoux to opt out.
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-visual-plan ./notebook-video-project
 ```
 
@@ -239,7 +242,7 @@ python "<SKILL_DIR>/scripts/selftest.py"
 Good fixtures must pass and each broken fixture (protected phrase split across cues, mismatched caption
 sync, non-video input) must be rejected by the matching gate.
 
-For the build-time gates, run the negative spot-check — it feeds forty fixtures to the gates (a shot table whose anchor leaves the frame, a pan beyond the zoom budget, adjacent scenes sharing a
+For the build-time gates, run the negative spot-check — it feeds fifty-four fixtures to the gates (a shot table whose anchor leaves the frame, a pan beyond the zoom budget, adjacent scenes sharing a
 skeleton, a shot with no live component, a timeline gap, a faked `live`/media name, a camera move that never
 moves, a frame-prop typo in the fxkit layer and in the components layer, a beat that spoils its line, a beat
 pointing at another shot's cue, a beat landing too late for its line, a beat legal but flush against that
@@ -249,8 +252,11 @@ exist, a doc naming a component that does not exist, a canvas-bounds gate whose 
 were "unified" or whose judgement was widened back, four `evidence` fixtures — one naming a widget that is not
 in the scene source at all, one naming a widget only another shot uses (a **known miss**: it must pass), one
 that only appears in a comment, and the untouched template with scene sources — and three narrative-`move`
-run fixtures) plus negative controls, and
-asserts each gate blocks, warns or passes as expected — 80 assertions, 38 of which pin or forbid the expected message
+run fixtures), the layering contract violated both ways, a visual plan with an invalid mode or an
+uncovered frame gap, an inaudible sfx mix and a corrupt audio file (a failed measurement must hard-fail
+the gate, not pass), an official-example copy with a tampered canvas, a scene source whose shot functions
+cannot be found, a stale resolved timeline, and a BudouX-less delivery) plus negative controls, and
+asserts each gate blocks, warns or passes as expected — 97 assertions, 48 of which pin or forbid the expected message
 substring, so "failed for some other reason" cannot pass as a blocked fixture.
 **A gate that exists in name only is the most dangerous defect.**
 

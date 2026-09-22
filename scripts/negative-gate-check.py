@@ -819,10 +819,235 @@ case('AK 讲法字段 · 带场景源码的原样模板（阴性对照，必须�
 ])
 cleanup(td)
 
+# ════════════════════════════════════════════════════════════════════════════
+# BB–BG · 四道"零对抗夹具"门禁的补钉 + HEAD 里三条新硬拦行为的钉桩
+#
+# 审计结论：validate-layering / validate-visual-plan / validate-audio-levels /
+# validate-official-example 此前**只在 CI 与一致性检查里正向跑**，一条喂坏输入的
+# 实证都没有 —— "门在名义上存在、实际静默放行"正是本脚本存在的意义要防的病。
+# 每一道各补 must_block（定向 needle，不用宽松匹配）+ must_pass 阴性对照
+# （好输入必须过，防判据写反方向把什么都拦）。全部离线自包含：临时目录造、结束清理。
+#
+# 另三条 HEAD 新硬拦行为各一条 must_block（needle = 报错文案里的独特子串）：
+#   BD3 = validate-audio-levels：素材读不到峰值（损坏/非音频）→ rc=2 门禁自身故障
+#   BF1 = validate-composition：有场景源码但某镜切不出 `const S…: React.FC<` 函数体 → P0
+#   BG1 = validate-presentation：resolved 与 declared 镜数不一致 → P0"疑未重跑"
+# ════════════════════════════════════════════════════════════════════════════
+
+# ── BB · validate-layering（对象层/遮挡契约）：直接喂 asset-manifest 路径 ──
+# 判据（源码里逐条核实过的）：
+#   · floating 部件的 occlusion_contract 必须是 always-visible（否则报 "floating parts must use always-visible"）
+#   · floating 的 z 必须**压过**同场景 base/slot/status 的最高 z（否则报 "must be above"）
+# 坏输入只踩一个判据（z 抬高 / 契约改对），保证 needle 定位到被测分支而不是"因为别的原因失败"。
+LAY_BASE = {"id": "base1", "scene": "S1", "z": 10, "layer_role": "base",
+            "occlusion_contract": "normal", "exit_contract": "scene-cut"}
+
+
+def mklayer(badge):
+    td = tempfile.mkdtemp(prefix='nv-layer-')
+    doc = {"parts": [dict(LAY_BASE), badge]}
+    p = os.path.join(td, 'asset-manifest.json')
+    io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(doc, ensure_ascii=False, indent=2))
+    return td, p
+
+
+LAY = os.path.join(SKILL, 'scripts/validate-layering.py')
+td, mp = mklayer({"id": "badge1", "scene": "S1", "z": 200, "layer_role": "floating",
+                  "occlusion_contract": "normal", "exit_contract": "scene-cut"})
+case('BB1 分层契约 · floating 用了 normal 遮挡契约', [
+    ('must_block:floating parts must use always-visible', 'validate-layering', run([PY, LAY, mp])),
+])
+cleanup(td)
+
+td, mp = mklayer({"id": "badge1", "scene": "S1", "z": 5, "layer_role": "floating",
+                  "occlusion_contract": "always-visible", "exit_contract": "scene-cut"})
+case('BB2 分层契约 · floating 的 z 压在底件之下', [
+    ('must_block:must be above', 'validate-layering', run([PY, LAY, mp])),
+])
+cleanup(td)
+
+td, mp = mklayer({"id": "badge1", "scene": "S1", "z": 200, "layer_role": "floating",
+                  "occlusion_contract": "always-visible", "exit_contract": "scene-cut"})
+case('BB3 分层契约 · 两份契约全对（阴性对照，必须放行）', [
+    ('must_pass', 'validate-layering', run([PY, LAY, mp])),
+])
+cleanup(td)
+
+# ── BC · validate-visual-plan（视觉模式/镜时生命周期/介质溯源/画布档一致性）──
+# 判据逐条核实：visual_mode 必须落在 {image-text, pure-text, pure-graphic}；
+# 场景帧区间必须从 0 起**无缝无叠**地铺到 duration_frames。
+# 最小白名单工程：一份 pure-text 场景（无插图资产 → assets 空数组即合法），
+# 两条坏输入各只踩一个判据。
+def mkvisual(scene0, duration):
+    td = tempfile.mkdtemp(prefix='nv-vplan-')
+    os.makedirs(os.path.join(td, 'manifests'), exist_ok=True)
+    am = {"scenes": [scene0], "duration_frames": duration}
+    io.open(os.path.join(td, 'manifests/asset-manifest.json'), 'w', encoding='utf-8', newline='').write(
+        json.dumps(am, ensure_ascii=False, indent=2))
+    io.open(os.path.join(td, 'manifests/visual-assets.json'), 'w', encoding='utf-8', newline='').write(
+        json.dumps({"assets": []}, ensure_ascii=False, indent=2))
+    return td
+
+
+VPLAN = os.path.join(SKILL, 'scripts/validate-visual-plan.py')
+GOOD_SCENE = {"id": "S1", "visual_mode": "pure-text", "start_frame": 0, "end_frame": 120,
+              "visual_asset_ids": [], "mount_contract": "start-inclusive-end-exclusive",
+              "exit_contract": "complete-exit"}
+td = mkvisual(dict(GOOD_SCENE, visual_mode="pure-illustration"), 120)
+case('BC1 视觉规划 · visual_mode 不在闭集', [
+    ('must_block:invalid visual_mode', 'validate-visual-plan', run([PY, VPLAN, td])),
+])
+cleanup(td)
+
+td = mkvisual(dict(GOOD_SCENE, start_frame=10, end_frame=130), 130)
+case('BC2 视觉规划 · 时间轴留了断档（0..10 无人覆盖）', [
+    ('must_block:uncovered frame gap', 'validate-visual-plan', run([PY, VPLAN, td])),
+])
+cleanup(td)
+
+td = mkvisual(GOOD_SCENE, 120)
+case('BC3 视觉规划 · 自洽的最小规划（阴性对照，必须放行）', [
+    ('must_pass', 'validate-visual-plan', run([PY, VPLAN, td])),
+])
+cleanup(td)
+
+# ── BD · validate-audio-levels（音效可听度：峰值地板 -12 dBFS）──
+# 素材用标准库 wave 现合成 16-bit 正弦（离线、零下载）；ffmpeg 实测：
+#   幅度 200 → 峰值 -44.3 dBFS（顶 P0）；幅度 26000 → -2.0 dBFS（该放行）。
+# ⚠️ BD1/BD2 依赖环境里有 ffmpeg：没装时门禁按纪律报 rc=2"测量失败"，
+# 夹具会如实红掉 —— 这正是 HEAD 修掉的"静默放行"反面的镜像，不是夹具的锅。
+def write_tone_wav(path, amp, secs=0.3, rate=22050):
+    import math, struct, wave
+    n = int(secs * rate)
+    with wave.open(path, 'wb') as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(b''.join(struct.pack('<h', int(amp * math.sin(2 * math.pi * 440 * i / rate)))
+                               for i in range(n)))
+
+
+def mksfxproj(files):
+    """files: {名字: 字节生成器}。返回带 public/sfx 的最小工程目录。"""
+    td = tempfile.mkdtemp(prefix='nv-sfx-')
+    d = os.path.join(td, 'public', 'sfx')
+    os.makedirs(d, exist_ok=True)
+    for name, gen in files.items():
+        p = os.path.join(d, name)
+        if gen is None:
+            open(p, 'wb').close()
+        elif isinstance(gen, bytes):
+            io.open(p, 'wb').write(gen)
+        else:
+            gen(p)
+    return td
+
+
+ALEV = os.path.join(SKILL, 'scripts/validate-audio-levels.py')
+td = mksfxproj({'quiet.wav': lambda p: write_tone_wav(p, 200)})
+case('BD1 音效可听度 · 素材峰值 -44 dBFS（太轻）', [
+    ('must_block:低于 -12 dBFS', 'validate-audio-levels', run([PY, ALEV, td])),
+])
+cleanup(td)
+
+td = mksfxproj({'loud.wav': lambda p: write_tone_wav(p, 26000)})
+case('BD2 音效可听度 · 素材峰值 -2 dBFS（阴性对照，必须放行）', [
+    ('must_pass', 'validate-audio-levels', run([PY, ALEV, td])),
+])
+cleanup(td)
+
+# BD3 · HEAD 新行为：素材**读不到峰值**（损坏/非音频）→ rc=2 门禁自身故障，不是 rc=1 内容问题。
+# 判据核实：peak_db() 拿不到 max_volume 就记 measure_fail → main 里先于一切 PASS/FAIL 结论打
+# "门禁自身故障"并 return 2。"测量没跑成"与"内容没测出缺陷"必须可区分（旧版记 P1 → rc=0 静默过）。
+td = mksfxproj({'corrupt.wav': b'THIS IS NOT A WAVE FILE, just some text bytes.'})
+case('BD3 音效可听度 · 损坏素材读不到峰值 → rc=2 门禁自身故障', [
+    ('must_block:门禁自身故障', 'validate-audio-levels', run([PY, ALEV, td])),
+])
+cleanup(td)
+
+# ── BE · validate-official-example（官方示例一致性锁）──
+# 它校验的是**技能自带的 example-project**，没有 project 参数 —— 但 SKILL 路径由
+# 脚本自身位置推导，所以"整技能拷一份（临时目录）、改副本再跑副本里的脚本"就是合法喂点。
+# 副本裁掉 assets/demo 与 *.ttf（P 用例同款理由：快）；assets/fonts 的三个文件补零字节
+# 占位 —— 官方示例对它们只查 is_file()，而 example-project 的 png **必须真拷**
+# （validate-visual-plan 会核它的 sha256，空文件会先撞"missing or empty asset"，
+#  那又是一次"因为别的原因失败"）。
+def mk_skill_full():
+    td = tempfile.mkdtemp(prefix='nv-skill-full-')
+    ignore = shutil.ignore_patterns('node_modules', 'renders', '.git', '.cache', '.tools',
+                                    '__pycache__', 'demo', '*.mp4', '*.webp', '*.jpg', '*.ttf')
+    shutil.copytree(SKILL, td, dirs_exist_ok=True, ignore=ignore)
+    for name in ('LXGWWenKaiLite-Regular.ttf', 'LXGWWenKaiLite-Medium.ttf'):
+        q = os.path.join(td, 'assets', 'fonts', name)
+        if not os.path.exists(q):
+            open(q, 'wb').close()
+    return td
+
+
+td_skill = mk_skill_full()
+OE = os.path.join(td_skill, 'scripts/validate-official-example.py')
+case('BE1 官方示例 · 忠实副本必须全过（阴性对照）', [
+    ('must_pass', 'validate-official-example', run([PY, OE])),
+])
+# 坏输入：把契约的画布宽从 2560 改成 1080（身份锁的第一道判据）→ 必须点名"canvas ... changed"
+cp = os.path.join(td_skill, 'references/locked-style-contract.json')
+_doc = json.loads(io.open(cp, encoding='utf-8').read())
+_doc['canvas']['width'] = 1080
+io.open(cp, 'w', encoding='utf-8', newline='').write(json.dumps(_doc, ensure_ascii=False, indent=2))
+case('BE2 官方示例 · 契约画布宽被改成 1080', [
+    ('must_block:canvas or native motion rate changed', 'validate-official-example', run([PY, OE])),
+])
+cleanup(td_skill)
+
+# ── BF · validate-composition 覆盖率自述（HEAD 新硬拦）──
+# 病因：`scene_source` 只扫一层时，`if scene_text` 为空 → live 名字可解析/转场兑现/
+# beats 越界三类判据**整段静默跳过**还 rc=0。修复口径：只要 src 里有**任何** .tsx
+# （scene_text 非空），某一镜切不出 `const S…: React.FC<` 函数体就记 P0。
+# BF1 夹具：最小一份"有场景源码"的工程（scenes.tsx 存在但**没有** FC 形态的镜函数）
+# → 8 镜各报一条"场景源码不可读，判据无法执行"。needle 是该分支独有的报错文案。
+td, rc0, out0 = mkproj()
+io.open(os.path.join(td, 'src/scenes.tsx'), 'w', encoding='utf-8', newline='').write(
+    "export const Scenes = () => null;" + NL)
+case('BF1 组合门禁 · 有源码但镜函数切不出（覆盖率自述）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:场景源码不可读，判据无法执行', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+# BF2 · 同一判据的**方向对照**：带模板全量 src（每镜都有 `const S…: React.FC<`）
+# 必须放行 —— 证明 BF1 不是"见到源码就报"，覆盖率自述只在真切不出时才响。
+td, rc0, out0 = mksrc()
+case('BF2 组合门禁 · 镜函数齐全的原样 src（阴性对照）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_pass', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+# ── BG · validate-presentation resolved/declared 一致性（HEAD 新硬拦）──
+# 病因：旧版 `if not rec: continue` —— 改了 shots.json 没重跑 resolve-shots 时，
+# resolved 陈旧缺镜，整段 G-1 被静默跳过还能 exit 0。
+# 夹具：resolve 之后**人为删掉 resolved 的最后一镜**（模拟陈旧清单），declared 仍有 8 镜
+# → 镜数不一致 + 缺记录两处都点名"疑未重跑 scripts/resolve-shots.py"。
+# 放行侧已由 E（resolved 与 declared 一致 → presentation PASS）覆盖，不重复造。
+td, rc0, out0 = mkproj()
+rp = os.path.join(td, 'manifests/shots.resolved.json')
+rr = json.loads(io.open(rp, encoding='utf-8').read())
+assert len(rr['shots']) >= 2, 'resolved 不足 2 镜，删一条就不是"不一致"而是清空了'
+dropped = rr['shots'].pop()['id']
+io.open(rp, 'w', encoding='utf-8', newline='').write(json.dumps(rr, ensure_ascii=False))
+case(f'BG 呈现门禁 · resolved 被删成 7 镜（缺 {dropped}，疑未重跑 resolve）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:疑未重跑', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+])
+cleanup(td)
+
 print()
 print('== 负向抽查明细 ==')
+_steps = 0
 for name, ok, detail in results:
     print(('PASS  ' if ok else 'FAIL  ') + name)
+    _steps += len(detail)
     for d in detail:
         print(d)
+print(f'合计：用例 {len(results)} · 断言 {_steps} · {"全部通过" if all(r[1] for r in results) else "存在失败"}')
 sys.exit(0 if all(r[1] for r in results) else 1)

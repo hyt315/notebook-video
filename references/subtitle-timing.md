@@ -31,12 +31,13 @@ Preferring a clause-mark break on an equidistant tie is load-bearing — without
 # 1. Build. The tool prints every boundary it had to move and why, and warns about long cues.
 node "<SKILL_DIR>/scripts/notebook-video.mjs" build-semantic-captions audio/narration.mp3.json manifests/semantic-caption-lines.txt manifests/caption-cues.json --lead-ms 60 --protected-phrases manifests/protected-caption-phrases.txt
 
-# 2. Gate it. `phrase rule: enforced` on the last line is the proof the rule ran; if it says
-#    SKIPPED, BudouX was not resolvable and the word-cut rule did NOT run.
+# 2. Gate it. `phrase rule: enforced` on the last line is the proof the rule ran. The CLI now
+#    closes the delivery path: it auto-detects the project's node_modules/budoux and always adds
+#    --require-budoux, so a missing BudouX is a hard failure — never a silent SKIPPED pass.
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-semantic-breaks manifests/caption-cues.json manifests/protected-caption-phrases.txt
 ```
 
-Both tools find BudouX by walking up from the caption file to the project's `node_modules`. **If the project has not run `npm ci` yet, the phrase rule is skipped and the tools say so on stderr** — they print `WARNING: BudouX ...`, the validator still exits 0, and the cue file records `"break_rule": "mechanical-only (BudouX unavailable)"`. That degradation is loud on purpose: a silently skipped check is the same defect as no check. Pass `--budoux-dir PATH` to point at any `node_modules` that has `budoux`.
+Both tools find BudouX by walking up from the caption file to the project's `node_modules`. On the delivery path (the CLI above) **installing project dependencies is a precondition, not a skippable item**: the CLI injects `--require-budoux` automatically — with the detected `--budoux-dir` when `node_modules/budoux` exists, and still `--require-budoux` when it does not, so the run fails and names the fix (`npm ci` in the project, or `--budoux-dir`). Only an explicit `--no-budoux` opts out, and invoking the validator script directly keeps the legacy loud-skip behavior (stderr `WARNING: BudouX ...`, exit 0, cue file records `"break_rule": "mechanical-only (BudouX unavailable)"`) for bare fixtures. Pass `--budoux-dir PATH` to point at any `node_modules` that has `budoux`.
 
 To see the rule actually work on a project that has no `node_modules`, point at one that does and feed it the fixture:
 
@@ -101,9 +102,11 @@ Run the browser fit gate plus both file validators after any narration edit:
 # CaptionFitGate runs automatically during Remotion render. It measures the bundled font,
 # converts delivery-scaled width back to design pixels, and rejects widths over 1334px.
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-caption-sync audio/narration.mp3.json manifests/caption-cues.json
+# Delivery path: the CLI auto-adds --require-budoux (plus --budoux-dir when the project's
+# node_modules/budoux is detected); a missing BudouX fails the gate instead of skipping quietly.
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-semantic-breaks manifests/caption-cues.json manifests/protected-caption-phrases.txt
 ```
 
 Reject word-stream mismatch, non-semantic segmentation, a break that is not a BudouX phrase boundary or a clause break, a cue starting with a closing mark, an ASCII model/product token split, a protected phrase crossing a cue boundary, overflow, horizontal jitter, two-line text, trailing visual punctuation, dark subtitle side marks or a changed contour.
 
-The word-cut rule is the one that catches what the phrase list misses, so read the validator's last line: it ends with `phrase rule: enforced (BudouX from …)` when the rule ran, and with the word skipped followed by "BudouX not found" when it did not — in that case only the mechanical checks and the phrase list were applied.
+The word-cut rule is the one that catches what the phrase list misses, so read the validator's last line: it ends with `phrase rule: enforced (BudouX from …)` when the rule ran. On the delivery path (the CLI) that line is mandatory — the CLI passes `--require-budoux`, so an unresolvable BudouX exits non-zero instead of degrading. The `SKIPPED — BudouX not found` tail only remains reachable via a deliberate `--no-budoux` or a direct script invocation on a bare fixture; there, only the mechanical checks and the phrase list were applied.

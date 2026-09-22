@@ -51,7 +51,10 @@ jobs:
           node scripts/notebook-video.mjs validate-presentation assets/lecture-template
           node scripts/notebook-video.mjs validate-audio-levels assets/lecture-template
           node scripts/notebook-video.mjs validate-caption-sync assets/lecture-template/audio/narration.mp3.json assets/lecture-template/manifests/caption-cues.json
-          node scripts/notebook-video.mjs validate-semantic-breaks assets/lecture-template/manifests/caption-cues.json assets/lecture-template/manifests/protected-caption-phrases.txt
+          # ⚠️ 这里刻意**不走 CLI** 而直调脚本：CLI 的 `validate-semantic-breaks` 已收口为交付语义
+          # （自动注入 --require-budoux，缺 BudouX 即 rc≠0），而本步骤排在 `npm ci` 之前、BudouX 还没装，
+          # 只能以"跳过并告警"的形式跑；真正的 enforced 校验在下面「Re-run the phrase rule」一步（带 --require-budoux）。
+          python3 scripts/validate-semantic-breaks.py assets/lecture-template/manifests/caption-cues.json assets/lecture-template/manifests/protected-caption-phrases.txt
       - name: Run the negative fixtures (every gate must really block)
         # 「名存实亡的门禁是最危险的缺陷」——这一条保障每道门禁都有"喂坏输入必须拦住"的实证。
         # 脚本自己找模板（`SKILL/assets/lecture-template`），不吃参数——别再传一个没用的路径进来。
