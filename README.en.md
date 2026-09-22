@@ -6,7 +6,7 @@
 
 **Turn one sentence into a 2K Chinese explainer video: code-drawn scenes, frame-accurate TTS sync, camera language enforced by automated gates.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
 [![GitHub Stars](https://img.shields.io/github/stars/hyt315/notebook-video?style=social)](https://github.com/hyt315/notebook-video/stargazers)
@@ -241,8 +241,9 @@ notebook-video/
 ├── SKILL.md                          # Core skill definition and production workflow
 ├── manifest.json                     # Skill metadata (version lives here)
 ├── README.md / README.en.md          # Chinese / English documentation
-├── CHANGELOG.md                      # Version history (currently v2.9.0)
-├── LICENSE                           # MIT License
+├── CHANGELOG.md                      # Version history (currently v3.1.0)
+├── LICENSE                           # Apache License 2.0
+├── NOTICE                            # Third-party font / asset / dependency notices
 ├── CONTRIBUTING.md · CODE_OF_CONDUCT.md · SECURITY.md · SUPPORT.md
 ├── assets/
 │   ├── demo/                         # Finished films & previews
@@ -322,7 +323,7 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md). If this skill
 
 ## 📄 License
 
-Released under the [MIT License](LICENSE).
+Released under the [Apache License 2.0](LICENSE). Licences and attribution for bundled third-party material (the LXGW WenKai typeface, sound effects, Remotion dependencies, TTS providers) are recorded in [NOTICE](NOTICE); the dependency inventory is in [DEPENDENCIES.md](DEPENDENCIES.md).
 
 ---
 

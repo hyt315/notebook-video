@@ -6,7 +6,7 @@
 
 **Turn one sentence into a 2K Chinese explainer video: code-drawn scenes, frame-accurate TTS sync, camera language enforced by automated gates.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
 [![GitHub Stars](https://img.shields.io/github/stars/hyt315/notebook-video?style=social)](https://github.com/hyt315/notebook-video/stargazers)
@@ -319,4 +319,4 @@ scenes.tsx         场景层（示例片 8 镜；换题材重写这一层）
 
 ## 📄 开源协议
 
-本项目采用 [MIT 许可证](LICENSE) 开源。
+本项目采用 [Apache License 2.0](LICENSE) 开源。随包第三方素材（LXGW 楷体正文、音效、Remotion 依赖、TTS 提供方等）的授权与归属见 [NOTICE](NOTICE)，第三方依赖清单见 [DEPENDENCIES.md](DEPENDENCIES.md)。
