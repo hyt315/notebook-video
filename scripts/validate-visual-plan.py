@@ -26,11 +26,18 @@ def validate_canvas_mode(project: Path) -> list[str]:
     """Cross-check composition width, design wrapper, subtitle safe width and strip margins."""
     src = project / "src" / "index.tsx"
     if not src.is_file():
+        # 工程可以没有 index.tsx（BC 类最小夹具/纯规划工程），维持原行为：整段跳过。
         return []
     text = src.read_text(encoding="utf-8")
     comp = re.search(r"<Composition[^>]*width=\{(\d+)\}", text)
     if not comp:
-        return []
+        # 文件在、但抽不到 Composition 宽度：画布一致性判据**无法执行**。
+        # 静默 return [] 等于"没跑成"冒充"跑过了"—— 必须报成判据失败（与 validate-composition
+        # 的"场景源码不可读，判据无法执行"同一档位：直接进 errors，rc=1）。
+        return [
+            "canvas: src/index.tsx exists but no inline <Composition ... width={N}> could be parsed "
+            "— canvas consistency check cannot run (the film composition must declare its output width inline)"
+        ]
     width = int(comp.group(1))
     mode = CANVAS_MODES.get(width)
     if mode is None:

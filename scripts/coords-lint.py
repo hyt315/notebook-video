@@ -19,7 +19,10 @@ from pathlib import Path
 OVERLAYS = ("StampSeal", "Burst", "Callout", "ChipContract", "Funnel", "ChatThread")
 # 老模块里的覆盖层类件（不在 src/components/ 下，但同样是"场景坐标"语义）
 LEGACY_OVERLAYS = ("StampBanner",)
-COORD = re.compile(r"\b([xy])=\{(\d+)\}")
+# 负整数字面量也进识别（`x={-220}` 这类飞出左/上缘的写法此前对 linter 完全隐形）。
+# 边界钉死在 `\{` 与 `\}` 之间：只认**纯整数字面量**，`x={a-1}` / `x={w-40}` 这类
+# 表达式里 `-` 前面还有标识符字符，落不进 `\{(-?\d+)\}`，不会被误配。
+COORD = re.compile(r"\b([xy])=\{(-?\d+)\}")
 PROP_BLOCK = re.compile(r"export\s+const\s+([A-Z]\w*)\s*:\s*React\.FC<\{(.*?)\}>", re.S)
 
 
@@ -73,6 +76,9 @@ def main() -> int:
                         comp = name
                 line = text.count("\n", 0, match.start()) + 1
                 where = f"{tsx.name}:{line} {comp} {axis}={value}"
+                # 已知边界（刻意**不改**）：1920/1440 是两块锁画布 (1920x1080 / 1080x1440) 的
+                # **并集**上限，不是本片画布的上限 —— 横屏片 y=1200 实际早已出界但这里不报。
+                # 收紧成"按工程画布口径"要动 validate-visual-plan 的 canvas 判据链，动它=动契约。
                 if value > 1920 or (axis == "y" and value > 1440):
                     errors.append(f"OFF-CANVAS {where}")
                 elif comp != "?" and (value > 1000 if axis == "x" else value > 700):

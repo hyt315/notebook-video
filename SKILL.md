@@ -48,7 +48,7 @@ Read only what the current production needs. **写任何场景之前，先读前
 **先读** [references/independent-parts.md](references/independent-parts.md) — 部件分解、z-order、进出场契约（动任何部件之前读）。
 **必读** [references/fxkit.md](references/fxkit.md) 与 [references/media-routing.md](references/media-routing.md) 的「修辞动作 → 组件」表 — 选组件之前读：**`live` 里每个名字都要能在表上指到**（这是选型纪律；门禁实际查的是"这个名字必须真的出现在场景源码里"，见 `validate-composition.py`）；写 `f={f}` 与 `frame={f}` 的地方见 fxkit 的命名陷阱。修辞工具件（`Callout` / `Checklist` / `JumpInText`）在 `src/toolkit.tsx`；**新封装层在 `src/components/`（Radix 手风琴与标签页、语法高亮、d3 图表、零依赖炫效果、描线/几何、中文反推字号）——选型前先看这一层**。
 > **"一共有哪些件"只查一处：[media-routing.md §5.1 组件权威索引](references/media-routing.md#51-组件权威索引53-件--选型只查这一处)**（53 件逐件：用途 / 何时用 / **何时别用** / 接触表第几页 / 真实使用记录）。
-> `fxkit.md` 与 `showcase.tsx` 各自只保留实现细节与接触表版面，**不再维护组件清单**——别从接触表反推"有哪些件"，那里有 11 件根本没上。
+> `fxkit.md` 与 `showcase.tsx` 各自只保留实现细节与接触表版面，**不再维护组件清单**——别从接触表反推"有哪些件"，那里有 10 件根本没上。
 **何时读**（确定画幅时）：[references/canvas-modes.md](references/canvas-modes.md)（3:4 另读 [references/portrait-illustration-system.md](references/portrait-illustration-system.md)）。
 **何时读**：仅当用户接受了可选的生图附加路线时，读 [references/visual-director.md](references/visual-director.md)。
 **何时读**（组装工程 / 抓 HTML / 跨平台排错时）：[references/official-skills-exemplar.md](references/official-skills-exemplar.md)、[references/html-capture.md](references/html-capture.md)、[references/cross-platform-compatibility.md](references/cross-platform-compatibility.md)、[references/windows-compatibility.md](references/windows-compatibility.md)。
@@ -133,7 +133,7 @@ python "<SKILL_DIR>/scripts/resolve-shots.py" ./notebook-video-project
 python "<SKILL_DIR>/scripts/validate-shot-motion.py" ./notebook-video-project
 python "<SKILL_DIR>/scripts/validate-composition.py" ./notebook-video-project
 
-# see components before choosing them (17-page contact sheet (`SHOWCASE_PAGES`), 1 fps → one image per page)
+# see components before choosing them (18-page contact sheet (`SHOWCASE_PAGES`); a select filter grabs each page's frames 6 and 21 → two mid-page frames per page, tiled 6x6)
 node "<SKILL_DIR>/scripts/notebook-video.mjs" showcase ./notebook-video-project
 
 # ⑥ render, then iterate cheaply on ranges
@@ -242,7 +242,7 @@ python "<SKILL_DIR>/scripts/selftest.py"
 Good fixtures must pass and each broken fixture (protected phrase split across cues, mismatched caption
 sync, non-video input) must be rejected by the matching gate.
 
-For the build-time gates, run the negative spot-check — it feeds fifty-four fixtures to the gates (a shot table whose anchor leaves the frame, a pan beyond the zoom budget, adjacent scenes sharing a
+For the build-time gates, run the negative spot-check — it feeds sixty-three fixtures to the gates (a shot table whose anchor leaves the frame, a pan beyond the zoom budget, adjacent scenes sharing a
 skeleton, a shot with no live component, a timeline gap, a faked `live`/media name, a camera move that never
 moves, a frame-prop typo in the fxkit layer and in the components layer, a beat that spoils its line, a beat
 pointing at another shot's cue, a beat landing too late for its line, a beat legal but flush against that
@@ -256,7 +256,7 @@ run fixtures), the layering contract violated both ways, a visual plan with an i
 uncovered frame gap, an inaudible sfx mix and a corrupt audio file (a failed measurement must hard-fail
 the gate, not pass), an official-example copy with a tampered canvas, a scene source whose shot functions
 cannot be found, a stale resolved timeline, and a BudouX-less delivery) plus negative controls, and
-asserts each gate blocks, warns or passes as expected — 97 assertions, 48 of which pin or forbid the expected message
+asserts each gate blocks, warns or passes as expected — 109 assertions, 52 of which pin or forbid the expected message
 substring, so "failed for some other reason" cannot pass as a blocked fixture.
 **A gate that exists in name only is the most dangerous defect.**
 

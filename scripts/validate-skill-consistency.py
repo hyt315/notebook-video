@@ -170,6 +170,57 @@ def check_enum_dual_source() -> list[str]:
     return problems
 
 
+# ---------------------------------------------------------------------------
+# 画布参数集双真源交叉校验：validate-visual-plan.py 的 CANVAS_MODES（python 判据侧）
+# vs 模板 src/theme/canvas.ts 的 MODES（TS 运行时真源）。check_enum_dual_source 比的是
+# 字符串集合；这里比的是**数值对集合**——按 compW（输出画布宽，两共同有的锁键）配对，
+# 逐字段比 design 宽高 / 字幕安全宽 / 边距 / 底距。任一侧改数值而另一侧忘跟 → 红。
+# ---------------------------------------------------------------------------
+CANVAS_NUMERIC_FIELDS = (  # (validate-visual-plan.py 键, canvas.ts 键)
+    ('design_width', 'designW'),
+    ('design_height', 'designH'),
+    ('subtitle_safe_width', 'safe'),
+    ('subtitle_margin', 'subMar'),
+    ('subtitle_bottom', 'subBottom'),
+)
+
+
+def check_canvas_mode_dual_source() -> list[str]:
+    problems: list[str] = []
+    vp = (SKILL / 'scripts' / 'validate-visual-plan.py').read_text(encoding='utf-8', errors='ignore')
+    ct = (SKILL / 'assets' / 'lecture-template' / 'src' / 'theme' / 'canvas.ts').read_text(encoding='utf-8', errors='ignore')
+    # py 侧：`    2560: {"label": "16:9", "design_width": 1920, ...},`
+    py: dict[int, dict[str, int]] = {}
+    for m in re.finditer(r'^\s*(\d+):\s*\{([^\n]*)\},?\s*$', vp, re.M):
+        body = m.group(2)
+        nums = {k: int(v) for k, v in re.findall(r'"(\w+)":\s*(\d+)', body)}
+        if 'design_width' in nums:
+            py[int(m.group(1))] = nums
+    # ts 侧：`  '16:9': {compW: 2560, compH: 1440, designW: 1920, ...},`
+    ts: dict[int, dict[str, int]] = {}
+    for m in re.finditer(r"'([^']+)':\s*\{([^}]*)\}", ct):
+        nums = {k: int(v) for k, v in re.findall(r'\b(\w+):\s*(\d+)\b', m.group(2))}
+        if 'compW' in nums:
+            ts[nums['compW']] = nums
+    if not py or not ts:
+        problems.append('canvas dual-source parse failed: CANVAS_MODES in scripts/validate-visual-plan.py '
+                        'or MODES in assets/lecture-template/src/theme/canvas.ts')
+        return problems
+    if set(py) != set(ts):
+        problems.append(f"canvas mode set drift: validate-visual-plan.py {sorted(py)} vs canvas.ts {sorted(ts)}")
+        return problems
+    for width in sorted(py):
+        for py_key, ts_key in CANVAS_NUMERIC_FIELDS:
+            if py_key not in py[width] or ts_key not in ts[width]:
+                problems.append(f"canvas dual-source parse failed: compW {width} missing {py_key}/{ts_key}")
+                continue
+            if py[width][py_key] != ts[width][ts_key]:
+                problems.append(
+                    f"canvas mode numeric drift: compW {width} {py_key}={py[width][py_key]} vs "
+                    f"{ts_key}={ts[width][ts_key]} (scripts/validate-visual-plan.py vs src/theme/canvas.ts)")
+    return problems
+
+
 def main() -> None:
     problems: list[str] = []
     text_files = [
@@ -278,6 +329,7 @@ def main() -> None:
 
     problems.extend(check_doc_identifiers())
     problems.extend(check_enum_dual_source())
+    problems.extend(check_canvas_mode_dual_source())
 
     if problems:
         for problem in problems:

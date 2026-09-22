@@ -1106,6 +1106,101 @@ case('BJ 相机默认 · 显式 from==to 的零运动 push-in 仍被 P0 拦（�
 ])
 cleanup(td)
 
+# ════════════════════════════════════════════════════════════════════════════
+# CA–CF · 本轮三项收口的负向夹具（判据与夹具同版落地）
+#   CA = validate-visual-plan：index.tsx **在**但抽不到 <Composition width> →
+#        必须报"canvas consistency check cannot run"（旧版这里 return [] 静默跳过，
+#        画布一致性整段判据等于不存在）。
+#   CB = 同一判据的**放行侧**：index.tsx 带合法 width={2560} 的 Composition → 必须过
+#        （证明 CA 不是"见到 index.tsx 就报"；无 index.tsx 的放行侧仍由 BC3 钉着）。
+#   CC = match-timing：防护从 assert 换成 raise SystemExit 后，`python -O` 喂
+#        "lock 与 chapters 镜数不一致"的坏输入仍必须拦（needle = 新报错独有文案；
+#        旧版 -O 下 assert 被剥离，会带着错误数据往下跑到 FileNotFoundError 为止）。
+#   CD = validate-caption-sync：manifests/ 与 src/ 两份 caption-cues.json 都在且**不等** →
+#        必须报"dual-copy divergence"（防"校验一份、渲染另一份"）。
+#   CE = 两份等值 → 必须放行（CD 的阴性对照）。
+#   CF = validate-skill-consistency 新增的画布数值双真源交叉校验：把 canvas.ts 的
+#        designW 单独改掉 → 一致性检查必须红（needle = "canvas mode numeric drift"）。
+#        放行侧 = 本仓全量 `python scripts/validate-skill-consistency.py` rc=0（任务验证项）。
+# ════════════════════════════════════════════════════════════════════════════
+
+td = mkvisual(GOOD_SCENE, 120)
+os.makedirs(os.path.join(td, 'src'), exist_ok=True)
+io.open(os.path.join(td, 'src/index.tsx'), 'w', encoding='utf-8', newline='').write(
+    "import {registerRoot} from 'remotion';" + NL + "export const Root = () => null;" + NL)
+case('CA 视觉规划 · index.tsx 在但 Composition 宽度抽不出（判据无法执行）', [
+    ('must_block:canvas consistency check cannot run', 'validate-visual-plan', run([PY, VPLAN, td])),
+])
+cleanup(td)
+
+td = mkvisual(GOOD_SCENE, 120)
+os.makedirs(os.path.join(td, 'src'), exist_ok=True)
+io.open(os.path.join(td, 'src/index.tsx'), 'w', encoding='utf-8', newline='').write(
+    '<Composition id="NotebookVideoFilm" durationInFrames={120} fps={30} width={2560} height={1440}/>' + NL)
+case('CB 视觉规划 · 带合法 width={2560} 的 index.tsx（阴性对照，必须放行）', [
+    ('must_pass', 'validate-visual-plan', run([PY, VPLAN, td])),
+])
+cleanup(td)
+
+td = tempfile.mkdtemp(prefix='nv-mt-')
+os.makedirs(os.path.join(td, 'manifests'), exist_ok=True)
+io.open(os.path.join(td, 'manifests/chapters-timing-lock.json'), 'w', encoding='utf-8', newline='').write(
+    json.dumps([{'start_ms': 0, 'end_ms': 1000}, {'start_ms': 1000, 'end_ms': 2000}]))
+io.open(os.path.join(td, 'manifests/chapters.json'), 'w', encoding='utf-8', newline='').write(
+    json.dumps([{'start_ms': 0, 'end_ms': 1200}]))
+case('CC 时间对齐 · python -O 下镜数不一致仍必须拦（assert 已换 SystemExit）', [
+    ('must_block:chapter count mismatch', 'match-timing(-O)',
+     run([PY, '-O', os.path.join(SKILL, 'scripts/match-timing.py'), td])),
+])
+cleanup(td)
+
+CAPSYNC = os.path.join(SKILL, 'scripts/validate-caption-sync.py')
+
+
+def mkcues(diverge=False):
+    """最小"双份 cues"工程：manifests 与 src 各一份 caption-cues.json + 词级时间戳。
+    diverge=True 时只改 src 那份（真正被 index.tsx import 的那份），内容**不等**。"""
+    td_ = tempfile.mkdtemp(prefix='nv-cues-')
+    for sub in ('manifests', 'src', 'audio'):
+        os.makedirs(os.path.join(td_, sub), exist_ok=True)
+    shutil.copy(os.path.join(TPL, 'manifests/caption-cues.json'), os.path.join(td_, 'manifests/caption-cues.json'))
+    shutil.copy(os.path.join(TPL, 'manifests/caption-cues.json'), os.path.join(td_, 'src/caption-cues.json'))
+    shutil.copy(os.path.join(TPL, 'audio/narration.mp3.json'), os.path.join(td_, 'audio/narration.mp3.json'))
+    if diverge:
+        p = os.path.join(td_, 'src/caption-cues.json')
+        doc = json.loads(io.open(p, encoding='utf-8').read())
+        doc['cues'][0]['text'] = doc['cues'][0]['text'] + '（只改了渲染那份，校验那份不知道）'
+        io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(doc, ensure_ascii=False, indent=2))
+    return td_
+
+
+td = mkcues(diverge=True)
+case('CD 字幕同步 · manifests 与 src 两份 caption-cues 不等（校验一份渲染另一份）', [
+    ('must_block:dual-copy divergence', 'validate-caption-sync',
+     run([PY, CAPSYNC, os.path.join(td, 'audio/narration.mp3.json'), os.path.join(td, 'manifests/caption-cues.json')])),
+])
+cleanup(td)
+
+td = mkcues(diverge=False)
+case('CE 字幕同步 · 两份等值（阴性对照，必须放行）', [
+    ('must_pass', 'validate-caption-sync',
+     run([PY, CAPSYNC, os.path.join(td, 'audio/narration.mp3.json'), os.path.join(td, 'manifests/caption-cues.json')])),
+])
+cleanup(td)
+
+td_skill = mk_skill_copy()
+ctp = os.path.join(td_skill, 'assets/lecture-template/src/theme/canvas.ts')
+_ct = io.open(ctp, encoding='utf-8').read()
+assert "'16:9': {compW: 2560" in _ct, 'CF 锚点没找到（canvas.ts 的 16:9 行变了？）'
+_ct = _ct.replace("'16:9': {compW: 2560, compH: 1440, designW: 1920", "'16:9': {compW: 2560, compH: 1440, designW: 1900", 1)
+assert 'designW: 1900' in _ct, 'CF 夹具没改到 canvas.ts'
+io.open(ctp, 'w', encoding='utf-8', newline='').write(_ct)
+case('CF 一致性 · canvas.ts 的 designW 单独漂移（画布数值双真源交叉校验）', [
+    ('must_block:canvas mode numeric drift', 'validate-skill-consistency',
+     run([PY, os.path.join(SKILL, 'scripts/validate-skill-consistency.py'), '--root', td_skill])),
+])
+cleanup(td_skill)
+
 print()
 print('== 负向抽查明细 ==')
 _steps = 0

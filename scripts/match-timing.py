@@ -31,6 +31,10 @@ GAP_MS = 350
 
 norm = lambda s: re.sub(r"\s+", "", s)
 
+# 防护性检查一律 `if not …: raise SystemExit(...)`，**不用 assert**：
+# `python -O` 会把 assert 连同右侧表达式一起剥离 —— 门禁当场静默放行，
+# 正是本技能最忌的"门在名义上存在、实际不跑"。SystemExit 在任何 -O 档位下都生效。
+
 
 def probe_ms(path: str) -> int:
     out = subprocess.check_output(
@@ -66,7 +70,10 @@ def main() -> None:
 
     lock = json.load(open("manifests/chapters-timing-lock.json", encoding="utf-8"))
     newch = json.load(open("manifests/chapters.json", encoding="utf-8"))
-    assert len(lock) == len(newch), (len(lock), len(newch))
+    # 防护性检查一律 raise SystemExit，不用 assert：`python -O` 会把 assert 整条剥离，
+    # 关键门禁在 -O 下静默放行是本脚本最危险的失败模式（对齐 negative-gate-check 的门禁纪律）。
+    if len(lock) != len(newch):
+        raise SystemExit("chapter count mismatch: %d locked vs %d new" % (len(lock), len(newch)))
 
     paras = [p.strip() for p in open("narration.txt", encoding="utf-8") if p.strip()]
     counts = [len(norm(p)) for p in paras]
@@ -75,7 +82,8 @@ def main() -> None:
     for i in range(len(lock)):
         ms = sorted(glob.glob(os.path.join("audio", "seg%d-*.wav" % (i + 1))))
         ms = [m for m in ms if "matched" not in os.path.basename(m)]
-        assert len(ms) == 1, (i, ms)
+        if len(ms) != 1:
+            raise SystemExit("chapter %d: expected exactly one source seg wav, found %s" % (i + 1, ms))
         segs.append(ms[0])
 
     matched: list[str] = []
@@ -83,7 +91,9 @@ def main() -> None:
         old_dur = lock[i]["end_ms"] - lock[i]["start_ms"]
         real = probe_ms(segs[i])
         rate = real / max(1, old_dur)
-        assert 0.4 <= rate <= 2.5, ("chapter ratio out of range", i + 1, round(rate, 3))
+        if not 0.4 <= rate <= 2.5:
+            raise SystemExit("chapter ratio out of range: chapter %d rate=%s (allowed 0.4-2.5)"
+                             % (i + 1, round(rate, 3)))
         out = os.path.join("audio", "seg-matched%02d.wav" % (i + 1))
         subprocess.check_call(["ffmpeg", "-y", "-loglevel", "error", "-i", segs[i],
                                "-af", atempo_chain(rate), out])
@@ -91,7 +101,8 @@ def main() -> None:
         print("ch%02d old=%dms new=%dms rate=%.3f" % (i + 1, old_dur, real, rate))
 
     gap = os.path.join("audio", "gap.wav")
-    assert os.path.isfile(gap), "gap.wav missing: run the TTS adapter first"
+    if not os.path.isfile(gap):
+        raise SystemExit("gap.wav missing: run the TTS adapter first")
     concat_list = os.path.join("audio", "concat-matched.txt")
     with open(concat_list, "w", encoding="utf-8") as f:
         for i, seg in enumerate(matched):
@@ -107,7 +118,9 @@ def main() -> None:
                            "-ar", "48000", "-ac", "2", "-b:a", "192k", out_mp3])
 
     words = json.load(open(out_mp3 + ".json", encoding="utf-8"))
-    assert sum(counts) == len(words), (sum(counts), len(words))
+    if sum(counts) != len(words):
+        raise SystemExit("narration paragraph chars (%d) differ from word stream (%d)"
+                         % (sum(counts), len(words)))
     scaled: list[dict] = []
     k = 0
     for i in range(len(lock)):
@@ -120,7 +133,8 @@ def main() -> None:
             w["start"] = int(round(l0 + (w["start"] - n0) * f))
             w["end"] = int(round(l0 + (w["end"] - n0) * f))
             scaled.append(w)
-    assert k == len(words)
+    if k != len(words):
+        raise SystemExit("paragraph word counts consumed %d of %d words" % (k, len(words)))
     json.dump(scaled, open(out_mp3 + ".json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     json.dump(lock, open("manifests/chapters.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     total = lock[-1]["end_ms"]
