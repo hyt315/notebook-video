@@ -60,7 +60,7 @@
 > 接触表那支 MP4 **不含音频**（该 composition 本身不挂音轨）；它的原生画布是 1920×1080，交付文件用 `--scale=4/3` 输出 2560×1440 以对齐 16:9 锁定画布。
 > 想核对当前版本：在 `assets/lecture-template` 里 `npm install` 后跑 `npm run still`（抽帧）或 `npm run render`（整片）；接触表用 `node scripts/notebook-video.mjs showcase <工程目录>`。
 
-**画布**：锁定三种画布 —— 16:9（2560×1440）、4:3（1920×1440）、3:4 竖屏（1440×1920），均为原生 30fps。官方示例片按 **16:9 设计空间**编写；4:3 / 3:4 需要各自的版面重排（**不再用信箱化缩放冒充适配**），在做竖屏时按 `references/canvas-modes.md` 与 `references/portrait-illustration-system.md` 单独编写场景。
+**画布**：锁定三种画布 —— 16:9（2560×1440）、4:3（1920×1440）、3:4 竖屏（1440×1920），均为原生 30fps。官方示例片按 **16:9 设计空间**编写；4:3 / 3:4 需要各自的版面重排（**不再用信箱化缩放冒充适配**），在做竖屏时按 [`references/canvas-modes.md`](references/canvas-modes.md) 与 [`references/portrait-illustration-system.md`](references/portrait-illustration-system.md) 单独编写场景。
 
 ***
 
@@ -216,14 +216,14 @@ node scripts/notebook-video.mjs review-frames ./my-video r.mp4 0 570
 
 | 时机 | 文档 | 解决什么 |
 |---|---|---|
-| **动手前** | `locked-style-contract.json` | 绑定令牌、坐标与禁用项（不可改） |
-| **写场景前** | `scene-authoring.md` · `scene-skeletons.md` | 场景代码的标准形状、四种骨架、十个反复踩的坑 |
-| **选组件前** | `media-routing.md` 的「修辞动作 → 组件」表 · `fxkit.md` | 这个动作该用哪一件、**何时别用**、`frame` 与 `f` 的命名陷阱 |
-| **排分镜前** | `media-routing.md` · `shot-language.md` | 内容→介质路由、六个运镜意图（+ `still`）、缩放与平移预算 |
-| **写作前** | `narrative-hook.md` · `pacing-rhythm.md` | 前 3 秒怎么抓人、章节能量与呼吸 |
-| **做完对照** | `composition-gate.md` · `quality-checklist.md` | 每道门禁的判据、失败怎么修、交付事实卡 |
-| **配音与字幕** | `tts-audio.md` · `subtitle-timing.md` | 多音字规避、定速、词级时间戳、音效词汇 |
-| **出问题** | `windows-compatibility.md` · `cross-platform-compatibility.md` · `performance-design.md` | 跨平台、路径、渲染性能 |
+| **动手前** | [`locked-style-contract.json`](references/locked-style-contract.json) | 绑定令牌、坐标与禁用项（不可改） |
+| **写场景前** | [`scene-authoring.md`](references/scene-authoring.md) · [`scene-skeletons.md`](references/scene-skeletons.md) | 场景代码的标准形状、四种骨架、十个反复踩的坑 |
+| **选组件前** | [`media-routing.md`](references/media-routing.md) 的「修辞动作 → 组件」表 · [`fxkit.md`](references/fxkit.md) | 这个动作该用哪一件、**何时别用**、`frame` 与 `f` 的命名陷阱 |
+| **排分镜前** | [`media-routing.md`](references/media-routing.md) · [`shot-language.md`](references/shot-language.md) | 内容→介质路由、六个运镜意图（+ `still`）、缩放与平移预算 |
+| **写作前** | [`narrative-hook.md`](references/narrative-hook.md) · [`pacing-rhythm.md`](references/pacing-rhythm.md) | 前 3 秒怎么抓人、章节能量与呼吸 |
+| **做完对照** | [`composition-gate.md`](references/composition-gate.md) · [`quality-checklist.md`](references/quality-checklist.md) | 每道门禁的判据、失败怎么修、交付事实卡 |
+| **配音与字幕** | [`tts-audio.md`](references/tts-audio.md) · [`subtitle-timing.md`](references/subtitle-timing.md) | 多音字规避、定速、词级时间戳、音效词汇 |
+| **出问题** | [`windows-compatibility.md`](references/windows-compatibility.md) · [`cross-platform-compatibility.md`](references/cross-platform-compatibility.md) · [`performance-design.md`](references/performance-design.md) | 跨平台、路径、渲染性能 |
 
 ---
 

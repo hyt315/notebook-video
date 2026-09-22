@@ -222,14 +222,14 @@ node scripts/notebook-video.mjs review-frames ./my-video r.mp4 0 570
 
 | When | File | Why |
 |---|---|---|
-| **Before anything** | `locked-style-contract.json` | binding tokens, coordinates, rejection flags |
-| **Before writing scenes** | `scene-authoring.md` · `scene-skeletons.md` | the canonical scene shape, four skeletons, ten recurring pitfalls |
-| **Before choosing a component** | the gesture→component table in `media-routing.md` · `fxkit.md` | which component fits this rhetorical move, **when not to use it**, and the `frame` vs `f` trap |
-| **Before the shot table** | `media-routing.md` · `shot-language.md` | content→medium routing, six camera intents, zoom and pan budgets |
-| **Before writing** | `narrative-hook.md` · `pacing-rhythm.md` | the first three seconds, chapter energy and breathing |
-| **Before delivery** | `composition-gate.md` · `quality-checklist.md` | every gate's criteria, the fix runbook, the delivery fact card |
-| **Audio and captions** | `tts-audio.md` · `subtitle-timing.md` | polyphones, pace, word timings, sound vocabulary |
-| **When something breaks** | `windows-compatibility.md` · `cross-platform-compatibility.md` · `performance-design.md` | platforms, paths, render performance |
+| **Before anything** | [`locked-style-contract.json`](references/locked-style-contract.json) | binding tokens, coordinates, rejection flags |
+| **Before writing scenes** | [`scene-authoring.md`](references/scene-authoring.md) · [`scene-skeletons.md`](references/scene-skeletons.md) | the canonical scene shape, four skeletons, ten recurring pitfalls |
+| **Before choosing a component** | the gesture→component table in [`media-routing.md`](references/media-routing.md) · [`fxkit.md`](references/fxkit.md) | which component fits this rhetorical move, **when not to use it**, and the `frame` vs `f` trap |
+| **Before the shot table** | [`media-routing.md`](references/media-routing.md) · [`shot-language.md`](references/shot-language.md) | content→medium routing, six camera intents, zoom and pan budgets |
+| **Before writing** | [`narrative-hook.md`](references/narrative-hook.md) · [`pacing-rhythm.md`](references/pacing-rhythm.md) | the first three seconds, chapter energy and breathing |
+| **Before delivery** | [`composition-gate.md`](references/composition-gate.md) · [`quality-checklist.md`](references/quality-checklist.md) | every gate's criteria, the fix runbook, the delivery fact card |
+| **Audio and captions** | [`tts-audio.md`](references/tts-audio.md) · [`subtitle-timing.md`](references/subtitle-timing.md) | polyphones, pace, word timings, sound vocabulary |
+| **When something breaks** | [`windows-compatibility.md`](references/windows-compatibility.md) · [`cross-platform-compatibility.md`](references/cross-platform-compatibility.md) · [`performance-design.md`](references/performance-design.md) | platforms, paths, render performance |
 
 ---
 
