@@ -52,9 +52,8 @@
 
 ▶️ [组件接触表（MP4）](assets/demo/notebook-video-components-demo.mp4) — `NotebookVideoShowcase` 的组件接触表：17 页、每页 1 秒（1fps 抽帧恰好一页一张图），覆盖数据 / 控制台 / 卡片 / 对话 / 镜头意图 / 场景骨架 / 字效，以及 9 页封装层（图表变体、层级与关系、弹层与形状、手绘风与公式）。
 
-> ✅ **这批样片已按当前模板重渲**（2026-09-22）。`assets/demo/` 下 5 个文件全部来自 `assets/lecture-template`：`notebook-video-demo.mp4`（`NotebookVideoFilm`，8 镜 1150 帧 / 38.33s，2560×1440 @ 30fps，含旁白音轨）与由它重抽的 `notebook-video-demo.webp`（720×405 @ 15fps）；`hero.png` / `social-preview.png` 取新片第 1148 帧（1280×720，及该帧的 1280×640 裁切）；`notebook-video-components-demo.mp4` 是 `NotebookVideoShowcase` 接触表（17 页 × 30 帧 = 510 帧 / 17s）。
-> ⚠️ **两条仍然成立的说明**：接触表 composition 本身不含音频，这个 MP4 是**静音**的；它的原生画布是 1920×1080，交付文件用 `--scale=4/3` 输出 2560×1440 以对齐 16:9 锁定画布。
-> 📌 **本 README 不内嵌任何图片**（连线上的徽章也换成了文字链接）：GitHub 会把仓库内的图片发成 `github.com/…/raw/…` → 302 → `raw.githubusercontent.com`，而徽章走 `camo` → `img.shields.io`；这些域名在部分网络（含国内直连）不可达，表现就是页面"有的地方显示、有的地方一片空白"。要画面请点上面两条**视频链接**。
+> 接触表那支 MP4 **不含音频**（该 composition 本身不挂音轨）；它的原生画布是 1920×1080，交付文件用 `--scale=4/3` 输出 2560×1440 以对齐 16:9 锁定画布。
+> 本 README 不内嵌图片（徽章也是文字链接）：仓库内图片与徽章分别经 `raw.githubusercontent.com` / `camo.githubusercontent.com` 分发，部分网络不可达；要看画面请点上面两条**视频链接**。
 > 想核对当前版本：在 `assets/lecture-template` 里 `npm install` 后跑 `npm run still`（抽帧）或 `npm run render`（整片）；接触表用 `node scripts/notebook-video.mjs showcase <工程目录>`。
 
 **画布**：锁定三种画布 —— 16:9（2560×1440）、4:3（1920×1440）、3:4 竖屏（1440×1920），均为原生 30fps。官方示例片按 **16:9 设计空间**编写；4:3 / 3:4 需要各自的版面重排（**不再用信箱化缩放冒充适配**），在做竖屏时按 `references/canvas-modes.md` 与 `references/portrait-illustration-system.md` 单独编写场景。
