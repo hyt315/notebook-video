@@ -6,10 +6,7 @@
 
 **Turn one sentence into a 2K Chinese explainer video: code-drawn scenes, frame-accurate TTS sync, camera language enforced by automated gates.**
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
-[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
-[![GitHub Stars](https://img.shields.io/github/stars/hyt315/notebook-video?style=social)](https://github.com/hyt315/notebook-video/stargazers)
+[Apache License 2.0](LICENSE) · [Releases](https://github.com/hyt315/notebook-video/releases) · [Agent Skill spec](SKILL.md) · [Star ⭐](https://github.com/hyt315/notebook-video/stargazers)
 
 English | [中文](README.md)
 
@@ -57,7 +54,7 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 
 > ✅ **These samples have been re-rendered from the current template** (2026-09-22). All five files under `assets/demo/` now come from `assets/lecture-template`: `notebook-video-demo.mp4` (`NotebookVideoFilm`, 8 shots, 1150 frames / 38.33s, 2560×1440 @ 30 fps, with the narration track) and the `notebook-video-demo.webp` re-cut from it (720×405 @ 15 fps); `hero.png` and `social-preview.png` are frame 1148 of the new film (1280×720, and that frame cropped to 1280×640); `notebook-video-components-demo.mp4` is the `NotebookVideoShowcase` contact sheet (17 pages × 30 frames = 510 frames / 17s).
 > ⚠️ **Two caveats that still hold**: the contact-sheet composition carries no audio, so that MP4 is **silent**; and its native canvas is 1920×1080 — the shipped file is rendered with `--scale=4/3` to 2560×1440 to match the locked 16:9 canvas.
-> 📌 **This README embeds no images**: GitHub serves in-repo images from `github.com/…/raw/…`, which redirects (302) to `raw.githubusercontent.com` — a host unreachable on some networks, where the image flashes and then disappears. Use the two video links above.
+> 📌 **This README embeds no images at all** (even the badges are plain text links): GitHub serves in-repo images from `github.com/…/raw/…`, which redirects (302) to `raw.githubusercontent.com`, while badges go through `camo` → `img.shields.io` — hosts unreachable on some networks, where parts of the page simply render blank. For visuals, use the two **video links** above.
 > To check the current version: `npm install` inside `assets/lecture-template`, then `npm run still` (single frame) or `npm run render` (full film); for the contact sheet run `node scripts/notebook-video.mjs showcase <project-dir>`.
 
 **Canvases**: three are locked — 16:9 (2560×1440), 4:3 (1920×1440) and 3:4 portrait (1440×1920), all native 30 fps. The bundled example film is authored in the **16:9 design space**; 4:3 / 3:4 need their own dedicated layout pass (**letterbox scaling is no longer presented as adaptation**).
@@ -66,7 +63,7 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 
 | Aspect Ratio | Resolution | Video Demo | Best For |
 |---|---|---|---|
-| **16:9 Landscape** (Default) | 2560×1440 (2K) | [![16:9](assets/demo/notebook-video-demo.webp)](assets/demo/notebook-video-demo.mp4) | YouTube / Desktop / Lecture Walkthroughs |
+| **16:9 Landscape** (Default) | 2560×1440 (2K) | [Watch demo (MP4)](assets/demo/notebook-video-demo.mp4) | YouTube / Desktop / Lecture Walkthroughs |
 
 ---
 
