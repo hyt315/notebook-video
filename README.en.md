@@ -51,14 +51,13 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 
 ## 🎨 Visual Demos & Aspect Ratios
 
-![Notebook Video Demo (static poster)](assets/demo/hero.png)
-
-▶️ [Watch full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · 🎞 [Looping animation of the same film (WebP, 2.3 MB)](assets/demo/notebook-video-demo.webp)
+▶️ [Watch full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · 🎞 [Looping animation of the same film (WebP, 2.3 MB)](assets/demo/notebook-video-demo.webp) · Poster: [hero.png](assets/demo/hero.png)
 
 ▶️ [Component contact sheet (17 pages, 17s)](assets/demo/notebook-video-components-demo.mp4) — the `NotebookVideoShowcase` contact sheet: one page per second (a 1 fps extraction yields exactly one image per page) covering the data / console / card / dialogue media, the six camera intents, scene skeletons and type motion, plus nine wrapper-layer pages (chart variants, hierarchy and force layouts, overlays and shapes, sketch style and KaTeX).
 
 > ✅ **These samples have been re-rendered from the current template** (2026-09-22). All five files under `assets/demo/` now come from `assets/lecture-template`: `notebook-video-demo.mp4` (`NotebookVideoFilm`, 8 shots, 1150 frames / 38.33s, 2560×1440 @ 30 fps, with the narration track) and the `notebook-video-demo.webp` re-cut from it (720×405 @ 15 fps); `hero.png` and `social-preview.png` are frame 1148 of the new film (1280×720, and that frame cropped to 1280×640); `notebook-video-components-demo.mp4` is the `NotebookVideoShowcase` contact sheet (17 pages × 30 frames = 510 frames / 17s).
 > ⚠️ **Two caveats that still hold**: the contact-sheet composition carries no audio, so that MP4 is **silent**; and its native canvas is 1920×1080 — the shipped file is rendered with `--scale=4/3` to 2560×1440 to match the locked 16:9 canvas.
+> 📌 **This README embeds no images**: GitHub serves in-repo images from `github.com/…/raw/…`, which redirects (302) to `raw.githubusercontent.com` — a host unreachable on some networks, where the image flashes and then disappears. Use the two video links above.
 > To check the current version: `npm install` inside `assets/lecture-template`, then `npm run still` (single frame) or `npm run render` (full film); for the contact sheet run `node scripts/notebook-video.mjs showcase <project-dir>`.
 
 **Canvases**: three are locked — 16:9 (2560×1440), 4:3 (1920×1440) and 3:4 portrait (1440×1920), all native 30 fps. The bundled example film is authored in the **16:9 design space**; 4:3 / 3:4 need their own dedicated layout pass (**letterbox scaling is no longer presented as adaptation**).
