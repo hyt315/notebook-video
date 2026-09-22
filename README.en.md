@@ -51,9 +51,9 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 
 ## 🎨 Visual Demos & Aspect Ratios
 
-![Notebook Video Demo](assets/demo/notebook-video-demo.webp)
+![Notebook Video Demo (static poster)](assets/demo/hero.png)
 
-▶️ [Watch full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · Hero Asset: [hero.png](assets/demo/hero.png)
+▶️ [Watch full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · 🎞 [Looping animation of the same film (WebP, 2.3 MB)](assets/demo/notebook-video-demo.webp)
 
 ▶️ [Component contact sheet (17 pages, 17s)](assets/demo/notebook-video-components-demo.mp4) — the `NotebookVideoShowcase` contact sheet: one page per second (a 1 fps extraction yields exactly one image per page) covering the data / console / card / dialogue media, the six camera intents, scene skeletons and type motion, plus nine wrapper-layer pages (chart variants, hierarchy and force layouts, overlays and shapes, sketch style and KaTeX).
 

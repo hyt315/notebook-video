@@ -51,9 +51,9 @@
 
 ## 🎨 视觉成片与画幅
 
-![Notebook Video 成片演示](assets/demo/notebook-video-demo.webp)
+![Notebook Video 成片演示（静态首图）](assets/demo/hero.png)
 
-▶️ [观看完整演示视频（MP4）](assets/demo/notebook-video-demo.mp4) · 主视觉参考：[hero.png](assets/demo/hero.png)
+▶️ [观看完整演示视频（MP4）](assets/demo/notebook-video-demo.mp4) · 🎞 [同内容的循环动画（WebP，2.3 MB）](assets/demo/notebook-video-demo.webp)
 
 ▶️ [组件接触表（MP4）](assets/demo/notebook-video-components-demo.mp4) — `NotebookVideoShowcase` 的组件接触表：17 页、每页 1 秒（1fps 抽帧恰好一页一张图），覆盖数据 / 控制台 / 卡片 / 对话 / 镜头意图 / 场景骨架 / 字效，以及 9 页封装层（图表变体、层级与关系、弹层与形状、手绘风与公式）。
 
