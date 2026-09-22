@@ -39,7 +39,7 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 | **Four scene skeletons** | `Stage` (one subject evolves) / `Corridor` (an object travels a track) / `Split` (two-column contrast) / `Zoom` (wide → detail → annotation → wide); **no two adjacent scenes may share one, ≥3 per film** | Kills "four PowerPoint pages" structurally |
 | **Content → medium routing** | Console window / chart / code diff / display type / metric grid / concept diagram; **≥3 media per film**, and every explanation scene carries at least one component that **changes state as the narration proceeds** | The frame stops being "card + paragraph" forever |
 | **Restricted camera language** | Six intents per shot + an `anchor` out-of-bounds proof + a pan budget; **a declared move must actually move** | Real camera movement that can never push content off screen |
-| **Ten quality gates** | 6 build-time: shot→frame resolution, out-of-bounds proof, composition & density, **frame-prop-name check**, **audio levels**, **presentation (beat↔cue alignment / caption reading budget / font size & contrast)**; 4 runtime: caption width, card overflow, **text-vs-text overlap and occlusion**, slot overflow | A non-zero P0 **blocks the render**; each gate also logs coverage so **"no warning" and "never ran" are distinguishable** |
+| **Thirteen quality gates** | 6 build-time: shot→frame resolution, out-of-bounds proof, composition & density, **frame-prop-name check**, **audio levels**, **presentation (beat↔cue alignment / caption reading budget / font size & contrast)**; 6 runtime: caption width, card overflow, **text-vs-text overlap and occlusion**, **clipped graphics**, **measured lower-quarter density**, **main-slot occupancy**; 1 post-render: **whether the picture actually moves** | A non-zero P0 **blocks the render**; each gate also logs coverage so **"no warning" and "never ran" are distinguishable** |
 | **Material plates** | Real screenshots / official charts sit inside the locked cel frame (2.5px ink outline + hard shadow) with a caption and a source line, and can drift slowly toward the point that matters; assets are registered in **both** `visual-assets.json` and `asset-manifest.json` (source / rights / baked text / checksum) | For claims that need "this really is the official thing"; anything a diagram explains better stays drawn |
 | **Frame-accurate Chinese TTS sync** | Millisecond word timings → semantic sentence breaks → animation beats; trailing punctuation strictly stripped | No drifting captions, no audio-visual mismatch |
 | **Four locked skins** | `paper` (warm ivory notebook, default) / `cel` (anime cel) / `sticker` / `flat` | One script, four moods |
@@ -280,7 +280,7 @@ toolkit.tsx         rhetorical tools (Callout / Checklist / JumpInText)
 kit.tsx             Theme-agnostic atoms: PillTag / LineIcon / CheckBadge / TYPE
 insert.tsx          B-roll inserts + the five transitions
 overlap-gate.tsx    Runtime overlap / occlusion gate
-showcase.tsx        Component contact sheet (9 pages, for AI to pick by sight)
+showcase.tsx        Component contact sheet (17 pages, for AI to pick by sight)
 scenes.tsx          Scene layer (8-shot example film; rewrite this layer per topic)
 ```
 
