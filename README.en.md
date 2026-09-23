@@ -50,25 +50,11 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 
 ---
 
-## 🎨 Visual Demos & Aspect Ratios
-
-**Demo assets** (all live in the repo's `assets/demo/` folder — open that folder to view them): main film `notebook-video-demo.mp4` (2K, 180 s) · animated preview `notebook-video-demo.webp` · cover `hero.png` · component contact sheet `notebook-video-components-demo.mp4` (18 pages, one second each: a select filter grabs each page's frames 6 and 21 → two mid-page frames per page, tiled 6×6 = 36 cells; covering the data / console / card / dialogue media, the six camera intents, scene skeletons and type motion, plus ten wrapper-layer pages — chart variants, hierarchy and force layouts, overlays and shapes, sketch style and KaTeX, and the FocusFx attention page cycling all four modes). This README deliberately **embeds nothing and links no media file**: mobile clients prefetch media links for preview rendering, and multi-megabyte videos are enough to hang the page.
-
-> The contact-sheet MP4 is **2560×1440** (the locked 16:9 delivery canvas): the composition's native canvas is 1920×1080, so the delivery render scales it by 4/3. Its audio track is **silent AAC** — that composition carries no audio of its own, and the delivery chain adds the track.
+## 🎨 Aspect Ratios (three locked canvases)
 > To check the current version: `npm install` inside `assets/lecture-template`, then `npm run still` (single frame) or `npm run render` (full film). **For a delivery file, use `node scripts/notebook-video.mjs render <project> <output>`** — it rewrites the color metadata and normalizes loudness, which `npm run render` does not do (its output fails the `validate-video` color assertion).
 > The contact sheet is the same: `node scripts/notebook-video.mjs showcase <project-dir>` now renders at **delivery spec** (2560×1440 / silent AAC / color tags rewritten, matching the file in `assets/demo/`). `--scale` accepts a decimal literal only — `--scale=4/3` is rejected by the CLI, use `1.3333333333333333`.
 
 **Canvases**: three are locked — 16:9 (2560×1440), 4:3 (1920×1440) and 3:4 portrait (1440×1920), all native 30 fps. The bundled example film is authored in the **16:9 design space**; 4:3 / 3:4 need their own dedicated layout pass (**letterbox scaling is no longer presented as adaptation**).
-
-### Default Canvas: 16:9 Landscape
-
-| Aspect Ratio | Resolution | Video Demo | Best For |
-|---|---|---|---|
-| **16:9 Landscape** (Default) | 2560×1440 (2K) | `assets/demo/notebook-video-demo.mp4` | YouTube / Desktop / Lecture Walkthroughs |
-
----
-
----
 
 ## 📊 Production pipeline
 
@@ -214,23 +200,6 @@ node scripts/notebook-video.mjs review-frames ./my-video r.mp4 0 570
 
 ---
 
-## 📖 Where to read what
-
-`references/` loads on demand, not all at once. The order that matters most:
-
-| When | File | Why |
-|---|---|---|
-| **Before anything** | `references/locked-style-contract.json` | binding tokens, coordinates, rejection flags |
-| **Before writing scenes** | `references/scene-authoring.md` · `references/scene-skeletons.md` | the canonical scene shape, four skeletons, ten recurring pitfalls |
-| **Before choosing a component** | the gesture→component table in `references/media-routing.md` · `references/fxkit.md` | which component fits this rhetorical move, **when not to use it**, and the `frame` vs `f` trap |
-| **Before the shot table** | `references/media-routing.md` · `references/shot-language.md` | content→medium routing, six camera intents, zoom and pan budgets |
-| **Before writing** | `references/narrative-hook.md` · `references/pacing-rhythm.md` | the first three seconds, chapter energy and breathing |
-| **Before delivery** | `references/composition-gate.md` · `references/quality-checklist.md` | every gate's criteria, the fix runbook, the delivery fact card |
-| **Audio and captions** | `references/tts-audio.md` · `references/subtitle-timing.md` | polyphones, pace, word timings, sound vocabulary |
-| **When something breaks** | `references/windows-compatibility.md` · `references/cross-platform-compatibility.md` · `references/performance-design.md` | platforms, paths, render performance |
-
----
-
 ## 📁 File Structure
 
 ```
@@ -299,8 +268,6 @@ scenes.tsx          Scene layer (8-shot example film; rewrite this layer per top
 
 - **Q: Do I need to re-time everything after editing the script?**\
   A: No. The shot table only references cues; frame numbers, camera keyframes and SFX pinning are all derived from the TTS word timestamps by `resolve-shots.py`.
-
-
 
 - **Q: Do I need expensive image generation AI models?**  
   A: No. The default Lecture Composition route uses 100% React + SVG code drawing with zero image generation costs.

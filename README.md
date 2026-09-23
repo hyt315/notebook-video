@@ -50,11 +50,8 @@
 
 ---
 
-## 🎨 视觉成片与画幅
+## 🎨 画幅（锁定三种）
 
-**演示素材**（都在仓库 `assets/demo/` 文件夹里，想看请进该文件夹点开文件）：主片 `notebook-video-demo.mp4`（2K，180 秒）· 动态预览 `notebook-video-demo.webp` · 封面 `hero.png` · 组件接触表 `notebook-video-components-demo.mp4`（18 页、每页 1 秒：select 滤镜按帧号抽每页第 6/21 帧两张中段图，6×6=36 格一张 JPG；覆盖数据 / 控制台 / 卡片 / 对话 / 镜头意图 / 场景骨架 / 字效，以及 10 页封装层——图表变体、层级与关系、弹层与形状、手绘风与公式、注意力 FocusFx 四态轮转）。本 README 刻意**不内嵌、也不直链**这些媒体：移动端会为页面里的媒体链接做预览预取，几 MB 的视频足以让 README 卡死。
-
-> 接触表那支 MP4 是 **2560×1440**（对齐 16:9 锁定画布）：composition 原生画布是 1920×1080，交付渲染时按 4/3 放大；音轨是一条**静音 AAC**（该 composition 本身不挂音频，音轨由交付链路补上）。
 > 想核对当前版本：在 `assets/lecture-template` 里 `npm install` 后跑 `npm run still`（抽帧）；**要出片请走交付链路** `node scripts/notebook-video.mjs render <工程> <输出>` —— 它会做色彩元数据回写与响度归一，而 `npm run render` **不做**这一步，产出的文件过不了 `validate-video` 的色彩断言。
 > 接触表同理：`node scripts/notebook-video.mjs showcase <工程目录>` 现在**直接出交付规格**（2560×1440 / 静音 AAC / 色彩四项回写，与 `assets/demo/` 里那份一致）。`--scale` 只吃十进制字面量 —— `--scale=4/3` 会被 CLI 拒绝，要写 `1.3333333333333333`。
 
@@ -205,23 +202,6 @@ node scripts/notebook-video.mjs review-frames ./my-video r.mp4 0 570
 | **版本记录** | `CHANGELOG.md` |
 
 ---
-
----
-
-## 📖 参考文档导读
-
-`references/` 是按需加载的，不是一次读完。按 SKILL.md 的读取时机，最容易踩的顺序是这几份：
-
-| 时机 | 文档 | 解决什么 |
-|---|---|---|
-| **动手前** | `references/locked-style-contract.json` | 绑定令牌、坐标与禁用项（不可改） |
-| **写场景前** | `references/scene-authoring.md` · `references/scene-skeletons.md` | 场景代码的标准形状、四种骨架、十个反复踩的坑 |
-| **选组件前** | `references/media-routing.md` 的「修辞动作 → 组件」表 · `references/fxkit.md` | 这个动作该用哪一件、**何时别用**、`frame` 与 `f` 的命名陷阱 |
-| **排分镜前** | `references/media-routing.md` · `references/shot-language.md` | 内容→介质路由、六个运镜意图（+ `still`）、缩放与平移预算 |
-| **写作前** | `references/narrative-hook.md` · `references/pacing-rhythm.md` | 前 3 秒怎么抓人、章节能量与呼吸 |
-| **做完对照** | `references/composition-gate.md` · `references/quality-checklist.md` | 每道门禁的判据、失败怎么修、交付事实卡 |
-| **配音与字幕** | `references/tts-audio.md` · `references/subtitle-timing.md` | 多音字规避、定速、词级时间戳、音效词汇 |
-| **出问题** | `references/windows-compatibility.md` · `references/cross-platform-compatibility.md` · `references/performance-design.md` | 跨平台、路径、渲染性能 |
 
 ---
 
