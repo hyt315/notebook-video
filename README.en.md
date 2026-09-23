@@ -210,7 +210,7 @@ node scripts/notebook-video.mjs review-frames ./my-video r.mp4 0 570
 | **SSH** | `git clone git@github.com:hyt315/notebook-video.git` |
 | **ZIP** | [Download ZIP](https://github.com/hyt315/notebook-video/archive/refs/heads/main.zip) |
 | **Single file** | `curl -O https://raw.githubusercontent.com/hyt315/notebook-video/main/SKILL.md` |
-| **Version history** | [CHANGELOG.md](CHANGELOG.md) |
+| **Version history** | `CHANGELOG.md` |
 
 ---
 
@@ -222,14 +222,14 @@ node scripts/notebook-video.mjs review-frames ./my-video r.mp4 0 570
 
 | When | File | Why |
 |---|---|---|
-| **Before anything** | [`locked-style-contract.json`](references/locked-style-contract.json) | binding tokens, coordinates, rejection flags |
-| **Before writing scenes** | [`scene-authoring.md`](references/scene-authoring.md) · [`scene-skeletons.md`](references/scene-skeletons.md) | the canonical scene shape, four skeletons, ten recurring pitfalls |
-| **Before choosing a component** | the gesture→component table in [`media-routing.md`](references/media-routing.md) · [`fxkit.md`](references/fxkit.md) | which component fits this rhetorical move, **when not to use it**, and the `frame` vs `f` trap |
-| **Before the shot table** | [`media-routing.md`](references/media-routing.md) · [`shot-language.md`](references/shot-language.md) | content→medium routing, six camera intents, zoom and pan budgets |
-| **Before writing** | [`narrative-hook.md`](references/narrative-hook.md) · [`pacing-rhythm.md`](references/pacing-rhythm.md) | the first three seconds, chapter energy and breathing |
-| **Before delivery** | [`composition-gate.md`](references/composition-gate.md) · [`quality-checklist.md`](references/quality-checklist.md) | every gate's criteria, the fix runbook, the delivery fact card |
-| **Audio and captions** | [`tts-audio.md`](references/tts-audio.md) · [`subtitle-timing.md`](references/subtitle-timing.md) | polyphones, pace, word timings, sound vocabulary |
-| **When something breaks** | [`windows-compatibility.md`](references/windows-compatibility.md) · [`cross-platform-compatibility.md`](references/cross-platform-compatibility.md) · [`performance-design.md`](references/performance-design.md) | platforms, paths, render performance |
+| **Before anything** | `references/locked-style-contract.json` | binding tokens, coordinates, rejection flags |
+| **Before writing scenes** | `references/scene-authoring.md` · `references/scene-skeletons.md` | the canonical scene shape, four skeletons, ten recurring pitfalls |
+| **Before choosing a component** | the gesture→component table in `references/media-routing.md` · `references/fxkit.md` | which component fits this rhetorical move, **when not to use it**, and the `frame` vs `f` trap |
+| **Before the shot table** | `references/media-routing.md` · `references/shot-language.md` | content→medium routing, six camera intents, zoom and pan budgets |
+| **Before writing** | `references/narrative-hook.md` · `references/pacing-rhythm.md` | the first three seconds, chapter energy and breathing |
+| **Before delivery** | `references/composition-gate.md` · `references/quality-checklist.md` | every gate's criteria, the fix runbook, the delivery fact card |
+| **Audio and captions** | `references/tts-audio.md` · `references/subtitle-timing.md` | polyphones, pace, word timings, sound vocabulary |
+| **When something breaks** | `references/windows-compatibility.md` · `references/cross-platform-compatibility.md` · `references/performance-design.md` | platforms, paths, render performance |
 
 ---
 
@@ -317,7 +317,7 @@ scenes.tsx          Scene layer (8-shot example film; rewrite this layer per top
 
 ## 🤝 Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md). If this skill helped you, please give it a [Star ⭐](https://github.com/hyt315/notebook-video/stargazers)!
+Contributions are welcome! See `CONTRIBUTING.md`. If this skill helped you, please give it a [Star ⭐](https://github.com/hyt315/notebook-video/stargazers)!
 
 ---
 
@@ -325,7 +325,7 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md). If this skill
 
 ## 📄 License
 
-Released under the [Apache License 2.0](LICENSE). Licences and attribution for bundled third-party material (the LXGW WenKai typeface, sound effects, Remotion dependencies, TTS providers) are recorded in [NOTICE](NOTICE); the dependency inventory is in [DEPENDENCIES.md](DEPENDENCIES.md).
+Released under Apache License 2.0 (full text in the `LICENSE` file at the repo root). Licences and attribution for bundled third-party material (the LXGW WenKai typeface, sound effects, Remotion dependencies, TTS providers) are recorded in `NOTICE`; the dependency inventory is in `DEPENDENCIES.md`.
 
 ---
 
