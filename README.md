@@ -321,4 +321,4 @@ scenes.tsx         场景层（示例片 8 镜；换题材重写这一层）
 
 ## 📄 开源协议
 
-本项目采用 Apache License 2.0 开源（协议全文见仓库根 `LICENSE` 文件）。随包第三方素材（LXGW 楷体正文、音效、Remotion 依赖、TTS 提供方等）的授权与归属见 `NOTICE`，第三方依赖清单见 `DEPENDENCIES.md`。
+本项目采用 Apache License 2.0 开源（协议全文见仓库根 LICENSE 文件）。随包第三方素材（LXGW 楷体正文、音效、Remotion 依赖、TTS 提供方等）的授权与归属见 NOTICE 文件，第三方依赖清单见 `DEPENDENCIES.md`。

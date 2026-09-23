@@ -325,7 +325,7 @@ Contributions are welcome! See `CONTRIBUTING.md`. If this skill helped you, plea
 
 ## 📄 License
 
-Released under Apache License 2.0 (full text in the `LICENSE` file at the repo root). Licences and attribution for bundled third-party material (the LXGW WenKai typeface, sound effects, Remotion dependencies, TTS providers) are recorded in `NOTICE`; the dependency inventory is in `DEPENDENCIES.md`.
+Released under Apache License 2.0 (full text in the LICENSE file at the repo root). Licences and attribution for bundled third-party material (the LXGW WenKai typeface, sound effects, Remotion dependencies, TTS providers) are recorded in NOTICE; the dependency inventory is in `DEPENDENCIES.md`.
 
 ---
 
