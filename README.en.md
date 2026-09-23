@@ -66,7 +66,7 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 
 | Aspect Ratio | Resolution | Video Demo | Best For |
 |---|---|---|---|
-| **16:9 Landscape** (Default) | 2560×1440 (2K) | [![16:9](assets/demo/notebook-video-demo.webp)](assets/demo/notebook-video-demo.mp4) | YouTube / Desktop / Lecture Walkthroughs |
+| **16:9 Landscape** (Default) | 2560×1440 (2K) | [▶️ 16:9 demo (MP4)](assets/demo/notebook-video-demo.mp4) | YouTube / Desktop / Lecture Walkthroughs |
 
 ---
 
