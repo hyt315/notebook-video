@@ -52,9 +52,7 @@
 
 ## 🎨 视觉成片与画幅
 
-▶️ [观看完整演示视频（MP4）](assets/demo/notebook-video-demo.mp4) · [动态预览（WebP）](assets/demo/notebook-video-demo.webp) · 主视觉参考：[hero.png](assets/demo/hero.png)
-
-▶️ [组件接触表（MP4）](assets/demo/notebook-video-components-demo.mp4) — `NotebookVideoShowcase` 的组件接触表：18 页、每页 1 秒（抽帧用 select 滤镜按帧号取每页第 6/21 帧两张中段图，6×6=36 格一张 JPG），覆盖数据 / 控制台 / 卡片 / 对话 / 镜头意图 / 场景骨架 / 字效，以及 10 页封装层（图表变体、层级与关系、弹层与形状、手绘风与公式、注意力 FocusFx 四态轮转）。
+**演示素材**（都在仓库 `assets/demo/` 文件夹里，想看请进该文件夹点开文件）：主片 `notebook-video-demo.mp4`（2K，180 秒）· 动态预览 `notebook-video-demo.webp` · 封面 `hero.png` · 组件接触表 `notebook-video-components-demo.mp4`（18 页、每页 1 秒：select 滤镜按帧号抽每页第 6/21 帧两张中段图，6×6=36 格一张 JPG；覆盖数据 / 控制台 / 卡片 / 对话 / 镜头意图 / 场景骨架 / 字效，以及 10 页封装层——图表变体、层级与关系、弹层与形状、手绘风与公式、注意力 FocusFx 四态轮转）。本 README 刻意**不内嵌、也不直链**这些媒体：移动端会为页面里的媒体链接做预览预取，几 MB 的视频足以让 README 卡死。
 
 > 接触表那支 MP4 是 **2560×1440**（对齐 16:9 锁定画布）：composition 原生画布是 1920×1080，交付渲染时按 4/3 放大；音轨是一条**静音 AAC**（该 composition 本身不挂音频，音轨由交付链路补上）。
 > 想核对当前版本：在 `assets/lecture-template` 里 `npm install` 后跑 `npm run still`（抽帧）；**要出片请走交付链路** `node scripts/notebook-video.mjs render <工程> <输出>` —— 它会做色彩元数据回写与响度归一，而 `npm run render` **不做**这一步，产出的文件过不了 `validate-video` 的色彩断言。

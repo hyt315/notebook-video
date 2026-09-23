@@ -52,9 +52,7 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 
 ## 🎨 Visual Demos & Aspect Ratios
 
-▶️ [Watch full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · [Animated preview (WebP)](assets/demo/notebook-video-demo.webp) · Hero Asset: [hero.png](assets/demo/hero.png)
-
-▶️ [Component contact sheet (18 pages, 18s)](assets/demo/notebook-video-components-demo.mp4) — the `NotebookVideoShowcase` contact sheet: one page per second (a select filter grabs each page's frames 6 and 21 → two mid-page frames per page, tiled 6×6 = 36 cells) covering the data / console / card / dialogue media, the six camera intents, scene skeletons and type motion, plus ten wrapper-layer pages (chart variants, hierarchy and force layouts, overlays and shapes, sketch style and KaTeX, and the FocusFx attention page cycling all four modes).
+**Demo assets** (all live in the repo's `assets/demo/` folder — open that folder to view them): main film `notebook-video-demo.mp4` (2K, 180 s) · animated preview `notebook-video-demo.webp` · cover `hero.png` · component contact sheet `notebook-video-components-demo.mp4` (18 pages, one second each: a select filter grabs each page's frames 6 and 21 → two mid-page frames per page, tiled 6×6 = 36 cells; covering the data / console / card / dialogue media, the six camera intents, scene skeletons and type motion, plus ten wrapper-layer pages — chart variants, hierarchy and force layouts, overlays and shapes, sketch style and KaTeX, and the FocusFx attention page cycling all four modes). This README deliberately **embeds nothing and links no media file**: mobile clients prefetch media links for preview rendering, and multi-megabyte videos are enough to hang the page.
 
 > The contact-sheet MP4 is **2560×1440** (the locked 16:9 delivery canvas): the composition's native canvas is 1920×1080, so the delivery render scales it by 4/3. Its audio track is **silent AAC** — that composition carries no audio of its own, and the delivery chain adds the track.
 > To check the current version: `npm install` inside `assets/lecture-template`, then `npm run still` (single frame) or `npm run render` (full film). **For a delivery file, use `node scripts/notebook-video.mjs render <project> <output>`** — it rewrites the color metadata and normalizes loudness, which `npm run render` does not do (its output fails the `validate-video` color assertion).
@@ -66,7 +64,7 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 
 | Aspect Ratio | Resolution | Video Demo | Best For |
 |---|---|---|---|
-| **16:9 Landscape** (Default) | 2560×1440 (2K) | [▶️ 16:9 demo (MP4)](assets/demo/notebook-video-demo.mp4) | YouTube / Desktop / Lecture Walkthroughs |
+| **16:9 Landscape** (Default) | 2560×1440 (2K) | `assets/demo/notebook-video-demo.mp4` | YouTube / Desktop / Lecture Walkthroughs |
 
 ---
 
