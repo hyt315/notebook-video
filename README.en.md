@@ -50,11 +50,29 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 
 ---
 
-## 🎨 Aspect Ratios (three locked canvases)
+## 🎨 Visual Demos & Aspect Ratios
+
+![Notebook Video Demo](assets/demo/notebook-video-demo.webp)
+
+▶️ [Watch full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · Hero Asset: [hero.png](assets/demo/hero.png)
+
+▶️ [Component contact sheet (18 pages, 18s)](assets/demo/notebook-video-components-demo.mp4) — the `NotebookVideoShowcase` contact sheet: one page per second (a select filter grabs each page's frames 6 and 21 → two mid-page frames per page, tiled 6×6 = 36 cells) covering the data / console / card / dialogue media, the six camera intents, scene skeletons and type motion, plus ten wrapper-layer pages (chart variants, hierarchy and force layouts, overlays and shapes, sketch style and KaTeX, and the FocusFx attention page cycling all four modes).
+
+> The contact-sheet MP4 is **2560×1440** (the locked 16:9 delivery canvas): the composition's native canvas is 1920×1080, so the delivery render scales it by 4/3. Its audio track is **silent AAC** — that composition carries no audio of its own, and the delivery chain adds the track.
 > To check the current version: `npm install` inside `assets/lecture-template`, then `npm run still` (single frame) or `npm run render` (full film). **For a delivery file, use `node scripts/notebook-video.mjs render <project> <output>`** — it rewrites the color metadata and normalizes loudness, which `npm run render` does not do (its output fails the `validate-video` color assertion).
 > The contact sheet is the same: `node scripts/notebook-video.mjs showcase <project-dir>` now renders at **delivery spec** (2560×1440 / silent AAC / color tags rewritten, matching the file in `assets/demo/`). `--scale` accepts a decimal literal only — `--scale=4/3` is rejected by the CLI, use `1.3333333333333333`.
 
 **Canvases**: three are locked — 16:9 (2560×1440), 4:3 (1920×1440) and 3:4 portrait (1440×1920), all native 30 fps. The bundled example film is authored in the **16:9 design space**; 4:3 / 3:4 need their own dedicated layout pass (**letterbox scaling is no longer presented as adaptation**).
+
+### Default Canvas: 16:9 Landscape
+
+| Aspect Ratio | Resolution | Video Demo | Best For |
+|---|---|---|---|
+| **16:9 Landscape** (Default) | 2560×1440 (2K) | [![16:9](assets/demo/notebook-video-demo.webp)](assets/demo/notebook-video-demo.mp4) | YouTube / Desktop / Lecture Walkthroughs |
+
+---
+
+---
 
 ## 📊 Production pipeline
 
@@ -194,9 +212,26 @@ node scripts/notebook-video.mjs review-frames ./my-video r.mp4 0 570
 | **SSH** | `git clone git@github.com:hyt315/notebook-video.git` |
 | **ZIP** | [Download ZIP](https://github.com/hyt315/notebook-video/archive/refs/heads/main.zip) |
 | **Single file** | `curl -O https://raw.githubusercontent.com/hyt315/notebook-video/main/SKILL.md` |
-| **Version history** | `CHANGELOG.md` |
+| **Version history** | [CHANGELOG.md](CHANGELOG.md) |
 
 ---
+
+---
+
+## 📖 Where to read what
+
+`references/` loads on demand, not all at once. The order that matters most:
+
+| When | File | Why |
+|---|---|---|
+| **Before anything** | [`locked-style-contract.json`](references/locked-style-contract.json) | binding tokens, coordinates, rejection flags |
+| **Before writing scenes** | [`scene-authoring.md`](references/scene-authoring.md) · [`scene-skeletons.md`](references/scene-skeletons.md) | the canonical scene shape, four skeletons, ten recurring pitfalls |
+| **Before choosing a component** | the gesture→component table in [`media-routing.md`](references/media-routing.md) · [`fxkit.md`](references/fxkit.md) | which component fits this rhetorical move, **when not to use it**, and the `frame` vs `f` trap |
+| **Before the shot table** | [`media-routing.md`](references/media-routing.md) · [`shot-language.md`](references/shot-language.md) | content→medium routing, six camera intents, zoom and pan budgets |
+| **Before writing** | [`narrative-hook.md`](references/narrative-hook.md) · [`pacing-rhythm.md`](references/pacing-rhythm.md) | the first three seconds, chapter energy and breathing |
+| **Before delivery** | [`composition-gate.md`](references/composition-gate.md) · [`quality-checklist.md`](references/quality-checklist.md) | every gate's criteria, the fix runbook, the delivery fact card |
+| **Audio and captions** | [`tts-audio.md`](references/tts-audio.md) · [`subtitle-timing.md`](references/subtitle-timing.md) | polyphones, pace, word timings, sound vocabulary |
+| **When something breaks** | [`windows-compatibility.md`](references/windows-compatibility.md) · [`cross-platform-compatibility.md`](references/cross-platform-compatibility.md) · [`performance-design.md`](references/performance-design.md) | platforms, paths, render performance |
 
 ---
 
@@ -269,6 +304,8 @@ scenes.tsx          Scene layer (8-shot example film; rewrite this layer per top
 - **Q: Do I need to re-time everything after editing the script?**\
   A: No. The shot table only references cues; frame numbers, camera keyframes and SFX pinning are all derived from the TTS word timestamps by `resolve-shots.py`.
 
+
+
 - **Q: Do I need expensive image generation AI models?**  
   A: No. The default Lecture Composition route uses 100% React + SVG code drawing with zero image generation costs.
 - **Q: How does it ensure subtitles never overflow?**  
@@ -282,7 +319,7 @@ scenes.tsx          Scene layer (8-shot example film; rewrite this layer per top
 
 ## 🤝 Contributing
 
-Contributions are welcome! See `CONTRIBUTING.md`. If this skill helped you, please give it a [Star ⭐](https://github.com/hyt315/notebook-video/stargazers)!
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md). If this skill helped you, please give it a [Star ⭐](https://github.com/hyt315/notebook-video/stargazers)!
 
 ---
 
@@ -290,7 +327,7 @@ Contributions are welcome! See `CONTRIBUTING.md`. If this skill helped you, plea
 
 ## 📄 License
 
-Released under Apache License 2.0 (full text in the LICENSE file at the repo root). Licences and attribution for bundled third-party material (the LXGW WenKai typeface, sound effects, Remotion dependencies, TTS providers) are recorded in NOTICE; the dependency inventory is in `DEPENDENCIES.md`.
+Released under the [Apache License 2.0](LICENSE). Licences and attribution for bundled third-party material (the LXGW WenKai typeface, sound effects, Remotion dependencies, TTS providers) are recorded in [NOTICE](NOTICE); the dependency inventory is in [DEPENDENCIES.md](DEPENDENCIES.md).
 
 ---
 

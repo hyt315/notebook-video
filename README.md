@@ -50,12 +50,19 @@
 
 ---
 
-## 🎨 画幅（锁定三种）
+## 🎨 视觉成片与画幅
 
+![Notebook Video 成片演示](assets/demo/notebook-video-demo.webp)
+
+▶️ [观看完整演示视频（MP4）](assets/demo/notebook-video-demo.mp4) · 主视觉参考：[hero.png](assets/demo/hero.png)
+
+▶️ [组件接触表（MP4）](assets/demo/notebook-video-components-demo.mp4) — `NotebookVideoShowcase` 的组件接触表：18 页、每页 1 秒（抽帧用 select 滤镜按帧号取每页第 6/21 帧两张中段图，6×6=36 格一张 JPG），覆盖数据 / 控制台 / 卡片 / 对话 / 镜头意图 / 场景骨架 / 字效，以及 10 页封装层（图表变体、层级与关系、弹层与形状、手绘风与公式、注意力 FocusFx 四态轮转）。
+
+> 接触表那支 MP4 是 **2560×1440**（对齐 16:9 锁定画布）：composition 原生画布是 1920×1080，交付渲染时按 4/3 放大；音轨是一条**静音 AAC**（该 composition 本身不挂音频，音轨由交付链路补上）。
 > 想核对当前版本：在 `assets/lecture-template` 里 `npm install` 后跑 `npm run still`（抽帧）；**要出片请走交付链路** `node scripts/notebook-video.mjs render <工程> <输出>` —— 它会做色彩元数据回写与响度归一，而 `npm run render` **不做**这一步，产出的文件过不了 `validate-video` 的色彩断言。
 > 接触表同理：`node scripts/notebook-video.mjs showcase <工程目录>` 现在**直接出交付规格**（2560×1440 / 静音 AAC / 色彩四项回写，与 `assets/demo/` 里那份一致）。`--scale` 只吃十进制字面量 —— `--scale=4/3` 会被 CLI 拒绝，要写 `1.3333333333333333`。
 
-**画布**：锁定三种画布 —— 16:9（2560×1440）、4:3（1920×1440）、3:4 竖屏（1440×1920），均为原生 30fps。官方示例片按 **16:9 设计空间**编写；4:3 / 3:4 需要各自的版面重排（**不再用信箱化缩放冒充适配**），在做竖屏时按 `references/canvas-modes.md` 与 `references/portrait-illustration-system.md` 单独编写场景。
+**画布**：锁定三种画布 —— 16:9（2560×1440）、4:3（1920×1440）、3:4 竖屏（1440×1920），均为原生 30fps。官方示例片按 **16:9 设计空间**编写；4:3 / 3:4 需要各自的版面重排（**不再用信箱化缩放冒充适配**），在做竖屏时按 [`references/canvas-modes.md`](references/canvas-modes.md) 与 [`references/portrait-illustration-system.md`](references/portrait-illustration-system.md) 单独编写场景。
 
 ***
 
@@ -199,9 +206,26 @@ node scripts/notebook-video.mjs review-frames ./my-video r.mp4 0 570
 | **SSH** | `git clone git@github.com:hyt315/notebook-video.git` |
 | **ZIP** | [下载 ZIP](https://github.com/hyt315/notebook-video/archive/refs/heads/main.zip) |
 | **单文件** | `curl -O https://raw.githubusercontent.com/hyt315/notebook-video/main/SKILL.md` |
-| **版本记录** | `CHANGELOG.md` |
+| **版本记录** | [CHANGELOG.md](CHANGELOG.md) |
 
 ---
+
+---
+
+## 📖 参考文档导读
+
+`references/` 是按需加载的，不是一次读完。按 SKILL.md 的读取时机，最容易踩的顺序是这几份：
+
+| 时机 | 文档 | 解决什么 |
+|---|---|---|
+| **动手前** | [`locked-style-contract.json`](references/locked-style-contract.json) | 绑定令牌、坐标与禁用项（不可改） |
+| **写场景前** | [`scene-authoring.md`](references/scene-authoring.md) · [`scene-skeletons.md`](references/scene-skeletons.md) | 场景代码的标准形状、四种骨架、十个反复踩的坑 |
+| **选组件前** | [`media-routing.md`](references/media-routing.md) 的「修辞动作 → 组件」表 · [`fxkit.md`](references/fxkit.md) | 这个动作该用哪一件、**何时别用**、`frame` 与 `f` 的命名陷阱 |
+| **排分镜前** | [`media-routing.md`](references/media-routing.md) · [`shot-language.md`](references/shot-language.md) | 内容→介质路由、六个运镜意图（+ `still`）、缩放与平移预算 |
+| **写作前** | [`narrative-hook.md`](references/narrative-hook.md) · [`pacing-rhythm.md`](references/pacing-rhythm.md) | 前 3 秒怎么抓人、章节能量与呼吸 |
+| **做完对照** | [`composition-gate.md`](references/composition-gate.md) · [`quality-checklist.md`](references/quality-checklist.md) | 每道门禁的判据、失败怎么修、交付事实卡 |
+| **配音与字幕** | [`tts-audio.md`](references/tts-audio.md) · [`subtitle-timing.md`](references/subtitle-timing.md) | 多音字规避、定速、词级时间戳、音效词汇 |
+| **出问题** | [`windows-compatibility.md`](references/windows-compatibility.md) · [`cross-platform-compatibility.md`](references/cross-platform-compatibility.md) · [`performance-design.md`](references/performance-design.md) | 跨平台、路径、渲染性能 |
 
 ---
 
@@ -268,7 +292,7 @@ scenes.tsx         场景层（示例片 8 镜；换题材重写这一层）
   A：不需要。默认路线 100% 用 React + SVG 代码绘制，零生图成本。
 
 - **Q：那能用开源的 UI 组件库吗？**\
-  A：能，而且鼓励。被禁的只有「按次付费、结果不可复现」的生成式模型；开源库随模板一次 `npm install` 装好就能直接 `import`，不需要额外授权。边界见 `references/dependency-policy.md`。
+  A：能，而且鼓励。被禁的只有「按次付费、结果不可复现」的生成式模型；开源库随模板一次 `npm install` 装好就能直接 `import`，不需要额外授权。边界见 [references/dependency-policy.md](references/dependency-policy.md)。
 
 - **Q：怎么保证做出来不像 PPT？**\
   A：靠四层，而且都有门禁兜底：① 四种构图不同的骨架，**相邻场景不得同款**；② **每支片 ≥3 种视觉介质**、每个讲解场景至少一个会随旁白变状态的组件；③ 每章至少 3 次运镜（全片按片长配额），景别真的会变；④ 门禁 P0 不为 0 就**拒绝渲染**。
@@ -291,7 +315,7 @@ scenes.tsx         场景层（示例片 8 镜；换题材重写这一层）
 
 ## 🤝 参与贡献
 
-欢迎提交 Issue 与 Pull Request！详见 `CONTRIBUTING.md`。如果这个技能对你有帮助，欢迎在 GitHub 上点个 [Star ⭐](https://github.com/hyt315/notebook-video/stargazers)！
+欢迎提交 Issue 与 Pull Request！详见 [CONTRIBUTING.md](CONTRIBUTING.md)。如果这个技能对你有帮助，欢迎在 GitHub 上点个 [Star ⭐](https://github.com/hyt315/notebook-video/stargazers)！
 
 ***
 
@@ -299,4 +323,4 @@ scenes.tsx         场景层（示例片 8 镜；换题材重写这一层）
 
 ## 📄 开源协议
 
-本项目采用 Apache License 2.0 开源（协议全文见仓库根 LICENSE 文件）。随包第三方素材（LXGW 楷体正文、音效、Remotion 依赖、TTS 提供方等）的授权与归属见 NOTICE 文件，第三方依赖清单见 `DEPENDENCIES.md`。
+本项目采用 [Apache License 2.0](LICENSE) 开源。随包第三方素材（LXGW 楷体正文、音效、Remotion 依赖、TTS 提供方等）的授权与归属见 [NOTICE](NOTICE)，第三方依赖清单见 [DEPENDENCIES.md](DEPENDENCIES.md)。
