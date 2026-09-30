@@ -1,49 +1,13 @@
 #!/usr/bin/env python3
-"""validate-presentation.py · 呈现效果门禁（T1：纯算术，不渲染）
+"""validate-presentation.py · 时间/字幕/对比度的可计算检查（T1：不渲染）
 
-它回答的是**其它门禁都没问过**的问题：观众此刻该看哪里、读不读得过来。
-现有的门禁查的是"画面里有没有 / 够不够多 / 会不会撞"；这一道查"讲与画对不对得上、读得动吗"。
-（数量口径 2026-09-22 复核：全技能 14 道门禁 = 构建期 6 + 渲染期 7 + 成片后验 1，
-  表见 SKILL.md 的 The gates；本道是构建期那 6 道之一 —— 数字变了以那张表为准，别在本文件里改。）
-每条判据都是纯算术（读 manifests 与源码字面量），零新增数据模型、不需要渲染。
+阻断可静态证明的错配：声明的视觉 beat 不在其口播句/镜头时间范围、分镜与解析时间轴过期、
+正文与其背景对比不足。保留字幕速度、断行/行数、小字、beat聚集和可选作者注记为 P1 诊断。
+这些数值来自特定行业/项目经验，不是普遍可及性阈值；真实阅读舒适度必须在输出尺寸和目标设备上看。
+每句旁白可以没有新动画/新图形：继续解释同一张图、读图或停顿都可能是正确设计。
 
-判据（可计算形式见下）：
-
-  G-1 时间接近（P0）——把授权契约第 9 条「元素出现帧绑到讲到它的那一句」变成代码
-    ① 每个 beat 的绝对帧 ∈ [shot.from, shot.to]（含边界：允许"切在下一句起点"的那一拍）
-    ② 每个 beat 声明的 cue ∈ [cueFirst, cueLast] 或 = cueLast+1（同上）
-    ③ 每个 beat 的 offset ≥ −12 帧（元素不得早于它那句 0.4s 以上出现 = 防提前剧透）
-    ③b 每个 beat 的 offset ≤ 该句帧数 + 8（**不得晚于那句讲完**：台词讲完了元素才出现 = 脱节）。
-       上界与下界缺一不可——第一版只有③，`{cue:0, offset:200}`（讲完 6.7s 才出现）照样 PASS。
-    ⚠️ 8 帧这条容差是**承重墙**：模板最紧的合法拍就是 `offset = 该句帧数`（"句末那拍"是设计约定），
-       把容差整个吃掉。所以另外报一条 P1（`BEAT_TIGHT_FRAMES=4`）：距上界 ≤4 帧就预警。
-       实测口径见 references/presentation-gate.md §G-1；**每次换配音 / 重算 cue 都要重跑本门禁**。
-    ④ 每条 cue 在本镜内至少有一个 beat；确实不需要的必须在 shots.json 里显式声明
-       `silentCues: [cueIndex, ...]`（显式声明才放行——这就是"要求写出结论"的做法）
-    ⚠️ 与调研报告原文的差异（报告写的是 `|beat − cueStart| ≤ 6`）：**照抄会给正确的数据报错**。
-       我们的 beats 本来就允许句内偏移（`{cue:13, offset:100}` 是"同一句的第二拍"，
-       S7/S8 各有一处，实测会被逐字判为偏差 96–100 帧）。所以真正的可检查形式是
-       "beat 落在它声明的那句/那一镜的范围内、且不提前也不拖后"，而不是"必须贴住句首 6 帧"。
-
-  G-2 字幕阅读预算（P0）——Netflix 中文（简体）Timed Text Style Guide
-    · 阅读速度 ≤ 9 加权字/秒（成人档；加权：CJK 计 1，ASCII/数字计 0.5，**不需要分词**）
-    · 单行 ≤ 16 加权字；≤ 2 行
-
-  G-3 可读性底线（P0 地板 + P1 档位）
-    · P0：任何 `fontSize: <13` 的字面量（13 = 技能自己的 `MIN_LABEL_FONT` 口径，不是新魔数）
-    · P1：13–15（低于"标注 ≥16"档）
-    · P0：正文色（ink / white）落在主题各表面上 < 4.5:1（WCAG 2.2 SC 1.4.3，不四舍五入）
-    · P1：`muted` on 表面 < 4.5（它是装饰性 kicker，按大字 3:1 判）
-    · P1：强调色当**文字色**时低于要求（<24px 要 4.5、≥24px 或 ≥18.5px 粗体要 3.0）
-      —— 这一条是**已知的真实缺陷**（四套皮肤里 gold/green 当文字色只有 1.4–3.3:1），
-      怎么处置（调深色值 / 约定这些色只用于图形）是审美决定，留给用户，见 CHANGELOG。
-
-  G-5 节拍拥挤（P1，代理指标）
-    · 同一镜内 ≥3 个 beat 落在 12 帧窗口 → P1（"好几件事挤在一拍上"）
-    · ⚠️ 调研报告原文的 G-5 是"每帧新开始的入场动画数直方图"，那需要元素级的 `enters` 声明
-      （现有数据没有）→ 这里只做数据支持得了的代理形式，并在文档里写明差距。
-
-退出码：0 通过（P0=0）/ 1 有 P0 / 2 用法或文件错误。零第三方依赖，Python 3.10+。
+WCAG 2.2 SC 1.4.3 的正文对比度基线不等于字幕速度标准；WCAG 1.2.2 要求同步的预录字幕，
+但没有统一最短停留时间或中文字/秒数值。技能脚本使用 Python 3.10+ 标准库。
 """
 from __future__ import annotations
 
@@ -189,8 +153,6 @@ def check_timeline(project: Path) -> tuple[list, list]:
                 "疑未重跑 scripts/resolve-shots.py）：G-1 判据对本镜没有跑成，不许当成已通过")})
             continue
         cue_first, cue_last = int(rec["cueFirst"]), int(rec["cueLast"])
-        silent = {int(x) for x in (dec.get("silentCues") or [])}
-        covered: set[int] = set()
         for bt in dec.get("beats") or []:
             ci = int(bt["cue"])
             off = int(bt.get("offset", 0))
@@ -214,12 +176,8 @@ def check_timeline(project: Path) -> tuple[list, list]:
                 p0.append({"id": sid, "issue": f"beat(cue{ci}) offset={off} 晚于该句结束 {off - ms_frame(cue_ms)} 帧（上限 {BEAT_LATE_FRAMES} 帧容差；该句 {ms_frame(cue_ms)} 帧）：元素在旁白讲完后才出现 = 与台词脱节"})
             elif limit - off <= BEAT_TIGHT_FRAMES:
                 p1.append({"id": sid, "issue": f"beat(cue{ci}) 距容差上界只剩 {limit - off} 帧（该句 {ms_frame(cue_ms)} 帧 / offset={off}）：合法但**贴边**，配音或 cue 表一变就可能落成 P0 —— 请把它挪回句中或句末"})
-            if cue_first <= ci <= cue_last:
-                covered.add(ci)
-        # ④ 每条 cue 至少有一拍（除非显式声明 silentCues）
-        for ci in range(cue_first, cue_last + 1):
-            if ci not in covered and ci not in silent:
-                p0.append({"id": sid, "issue": f"cue{ci}「{cues[ci]['text'][:10]}」在本镜内没有任何 beat（若确实不需要，在本镜声明 silentCues:[{ci}]）"})
+        # 没有视觉事件的旁白句不一定是漏画：可以在同一张图上继续讲解，或留时间阅读。
+        # 只检查作者实际声明的 beat 是否与其 cue/镜头时间一致，不要求每句都触发新动效。
         # G-5 代理：同一镜内 ≥3 个 beat 挤在 12 帧窗口
         abs_beats = sorted(rec.get("beatsAbs") or [])
         for i in range(len(abs_beats) - BEAT_CLUSTER_MAX + 1):
@@ -236,12 +194,12 @@ def check_timeline(project: Path) -> tuple[list, list]:
         wl = sum(line_lens)
         cps = wl / dur
         if cps > CPS_MAX:
-            p0.append({"id": f"cue{i}", "issue": f"阅读速度 {cps:.1f} 字/秒 > {CPS_MAX}（{wl:.0f} 加权字 / {dur:.1f}s）：{text[:16]}"})
+            p1.append({"id": f"cue{i}", "issue": f"参考阅读预算 {CPS_MAX} 加权字/秒：本条 {cps:.1f}（{wl:.0f} 字 / {dur:.1f}s）；按实际观众、语义复杂度和手机预览校准，不是 WCAG 数值门槛：{text[:16]}"})
         worst = max(line_lens)
         if worst > LINE_MAX:
-            p0.append({"id": f"cue{i}", "issue": f"某一**行** {worst:.0f} 加权字 > {LINE_MAX}（本 cue 共 {len(line_lens)} 行）：{text[:16]}"})
+            p1.append({"id": f"cue{i}", "issue": f"行长参考预算 {LINE_MAX} 加权字：本行 {worst:.0f} 字（本 cue 共 {len(line_lens)} 行）；实际检查断行和手机预览：{text[:16]}"})
         if len([l for l in text.split("\n") if l.strip()]) > 2:
-            p0.append({"id": f"cue{i}", "issue": f"字幕超过 2 行：{text[:16]}"})
+            p1.append({"id": f"cue{i}", "issue": f"字幕超过建议的 2 行；请核对停留时长、分句或画面占用：{text[:16]}"})
     return p0, p1
 
 
@@ -305,7 +263,7 @@ def check_readability(project: Path) -> tuple[list, list]:
             for m in FONT_RE.finditer(line):
                 size = int(m.group(1))
                 if size < FONT_FLOOR:
-                    p0.append({"id": "src", "issue": f"{rel} fontSize:{size} 低于绝对地板 {FONT_FLOOR}（口径 = MIN_LABEL_FONT）"})
+                    p1.append({"id": "src", "issue": f"{rel} fontSize:{size} 低于项目字号参考值 {FONT_FLOOR}；请在最终输出尺寸/目标设备检查，不能仅凭设计像素判定可读性"})
                 elif size < FONT_LABEL_MIN:
                     band.setdefault(str(f.relative_to(project)), []).append((n, size))
             for m in TYPE_RE.finditer(line):
@@ -313,7 +271,7 @@ def check_readability(project: Path) -> tuple[list, list]:
                 if size is None:
                     p1.append({"id": "src", "issue": f"{rel} TYPE.{m.group(1)} 不在字号表里"})
                 elif size < FONT_FLOOR:
-                    p0.append({"id": "src", "issue": f"{rel} TYPE.{m.group(1)}={size} 低于绝对地板 {FONT_FLOOR}"})
+                    p1.append({"id": "src", "issue": f"{rel} TYPE.{m.group(1)}={size} 低于项目字号参考值 {FONT_FLOOR}；请在最终输出尺寸/目标设备检查"})
 
     for rel, items in sorted(band.items()):
         sizes = sorted({s for _, s in items})
@@ -409,106 +367,36 @@ def check_readability(project: Path) -> tuple[list, list]:
     return p0, p1
 
 
-# ------------------------------------------------- G-14/G-15/G-16 讲法字段完整性
-# 编号说明（2026-09-21 修撞号）：这一组原来标成 "G-6"，而 **G-6 是调研报告里"对比层结构闭合"**
-# 的编号（见 references/presentation-gate.md 的"还没做的"）。本组的编号以
-# references/narrative-moves.md §4 为准：G-14 `move` 闭合 / G-15 `evidence` 被当成 JSX 用 /
-# G-16 误解与留白（G-17 known→new 闭合尚未实现）。
-# ⚠️ G-15 的档次在 2026-09-22 从"真的会动（本镜 + 帧驱动链）"退回"名字被当成 JSX 用"：
-#    口径、代价与"不做哪半边"逐条写在下面 check_evidence 那一节，也写回了 narrative-moves.md §2。
-#
-# 为什么加这一条（2026-09-21）：`narrative-moves.md` 把 move / evidence / hold /
-# misconception 四个槽位写成**必填**，但**十道门禁没有一道读过它们**，而且：
-#   · `resolve-shots.py` 在把 shots.json 解析成 shots.resolved.json 时**把这四个字段整组丢掉**
-#     （那份解析结果里只有 skeleton/live/keys/beats… 没有 move/evidence/hold/misconception）
-#     → 下游所有读 resolved 的门禁**根本看不到它们**，想查也没得查；
-#   · 实测：把 S19 的 move 删掉，改前全部门禁照旧 PASS。
-# 这一条读**作者手写的 shots.json**（字段的唯一定源），并把 resolve 的透传一并修好（同一轮）。
+# ------------------------------------------------ optional teaching-design annotations
+# `move` / `evidence` / `hold` / `misconception` are prompts for authoring and review,
+# not proof of instructional quality. Omission is valid; automated text matching cannot
+# determine whether a diagram actually explains the spoken idea.
 MOVES = {"引入", "定位", "推进", "传递", "对比", "拆分/合并", "累积", "收束", "反证", "回看"}
-HOLD_MIN = 40        # 留白预算下限：narrative-moves.md 里**标定**出来的线（不是拍的）
-MOVE_MIN_KINDS = 5   # 全片至少用到几种叙事动作（10 种里挑）：只写 1–2 种等于没有编排
-MOVE_RUN_LIMIT = 3   # G-14②：同一 move **连续 ≥3 镜**即违规（文档原文"不得连续 ≥3 镜"，含 3）
 
 
 def check_narrative(project: Path) -> tuple[list, list]:
     p0, p1 = [], []
     doc = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8"))
     shots = doc["shots"] if isinstance(doc, dict) and "shots" in doc else doc
-    kinds: dict[str, int] = {}
     for s in shots:
         sid = s.get("id", "?")
         mv = str(s.get("move") or "").strip()
-        ev = str(s.get("evidence") or "").strip()
+        if mv and mv not in MOVES:
+            p1.append({"id": sid, "issue": f"可选 move 注记「{mv}」不在建议词表里；可自定义，不影响渲染/放行"})
         hold = s.get("hold")
-        if not mv:
-            p0.append({"id": sid, "issue": "缺 move（叙事动作）：讲法规范要求每镜声明它在这一章里干哪件事"})
-        elif mv not in MOVES:
-            p0.append({"id": sid, "issue": f"move=«{mv}» 不在叙事动作表里（只能是 {'/'.join(sorted(MOVES))}）"})
-        else:
-            kinds[mv] = kinds.get(mv, 0) + 1
-        if not ev:
-            p0.append({"id": sid, "issue": "缺 evidence（该镜内真的会变的那件组件）：没有它就没法验证「讲到哪亮到哪」"})
-        if hold is None:
-            p0.append({"id": sid, "issue": "缺 hold（留白预算，单位帧）"})
-        elif not isinstance(hold, int) or hold < HOLD_MIN:
-            p0.append({"id": sid, "issue": f"hold={hold!r} 低于标定线 {HOLD_MIN} 帧"})
+        if hold is not None and (not isinstance(hold, int) or hold < 0):
+            p1.append({"id": sid, "issue": f"可选 hold 注记 {hold!r} 应为非负帧数；不设留白也允许"})
         mis = str(s.get("misconception") or "").strip()
         nomis = bool(s.get("noMisconception"))
         why = str(s.get("why") or "").strip()
         if mis and nomis:
-            p0.append({"id": sid, "issue": "同时写了 misconception 与 noMisconception：只能二选一"})
-        elif not mis and not nomis:
-            p0.append({"id": sid, "issue": "必须二选一：misconception（本镜要拆掉的误解）或 noMisconception(+why)"})
+            p1.append({"id": sid, "issue": "可选教学注记同时写了 misconception 与 noMisconception；请复核是否自相矛盾"})
         elif nomis and not why:
-            p0.append({"id": sid, "issue": "标了 noMisconception 却没写 why（为什么不设误解）"})
-
-    # ---- G-14② 同一 move 不得连续 ≥3 镜（2026-09-22 补：这条规则写了两处、**从来没有门禁**）----
-    # 文档原文（narrative-moves.md §2）：「闭合 10 个，**同一个 `move` 不得连续 ≥3 镜**」，§4 把
-    # 它列进 G-14 —— 但本脚本此前只查了"每镜的 move 是不是 10 个名字之一"，**没有任何连续镜检查**。
-    # 也就是说这条规则从落地起就没被执行过：写 3 镜连续 `引入` 的片子照旧 PASS。
-    #
-    # 级别 = P0，依据是这条规则的出处（`呈现效果调研.md` §5.7）：「同一种 `move` 不得连续 ≥3 镜
-    # **（与骨架重复检查同级）**」—— 而相邻同骨架在 `validate-composition.py` 是 **P0（P0-1）**；
-    # narrative-moves.md §2 用的也是"**不得**"（禁令），不是"建议"。
-    # ⚠️ §4 那一行的级别格原先写的是 "P0 / P1"，读起来像"连续这半条算 P1"——两种读法都说得通，
-    #    这里按出处取 P0，并**把口径写回文档**（narrative-moves.md §2/§4 已改成显式 P0），不再靠猜。
-    #
-    # 口径：按 shots.json 的镜序逐镜比较（= 成片顺序：resolve-shots 要求 from 连续，两者必然一致），
-    #      同一 move 的**极大连续段** ≥3 镜即报一条，报出**哪几镜、连续了几个、什么 move**。
-    #      缺 move / 不在闭集的镜**打断计数**：它自己已经另报 P0，既不在这里重复刷屏，
-    #      也不许把它两侧的段接成一条假的"连续"——第一版写成 `continue`（跳过但不打断），
-    #      于是 `引入,引入,缺move,引入` 被报成"S1→S2→S4 连续 3 镜"，那是一句用户照着改不了的假话
-    #      （负向夹具 AE 抓到的）。
-    runs: list[tuple[str, list[str]]] = []
-    run_move: str | None = None
-    run_ids: list[str] = []
-    for s in shots:
-        mv = str(s.get("move") or "").strip()
-        if mv not in MOVES:
-            if run_move is not None:
-                runs.append((run_move, run_ids))
-            run_move, run_ids = None, []
-            continue
-        if mv != run_move:
-            if run_move is not None:
-                runs.append((run_move, run_ids))
-            run_move, run_ids = mv, []
-        run_ids.append(s.get("id", "?"))
-    if run_move is not None:
-        runs.append((run_move, run_ids))
-    for mv, ids in runs:
-        if len(ids) >= MOVE_RUN_LIMIT:
-            p0.append({"id": f"{ids[0]}–{ids[-1]}", "issue": (
-                f"同一 move 连续 {len(ids)} 镜：{'→'.join(ids)} 都是 «{mv}»（上限 {MOVE_RUN_LIMIT - 1} 镜，"
-                f"判据 = 文档的「同一个 move 不得连续 ≥{MOVE_RUN_LIMIT} 镜」）：连续同动作会让观众觉得"
-                f"这几镜在干同一件事，请换一个叙事动作或把其中两镜合并")})
-
-    if kinds and len(kinds) < MOVE_MIN_KINDS:
-        p1.append({"id": "-", "issue": f"全片只用到 {len(kinds)} 种叙事动作（{sorted(kinds)}），建议 ≥{MOVE_MIN_KINDS} 种"})
+            p1.append({"id": sid, "issue": "已标 noMisconception，但可选 why 理由为空；可补充也可删除该注记"})
     return p0, p1
 
 
-# ------------------------------------------------- G-15 `evidence` 是不是真用在源码里（v2 简版）
+# ------------------------------------------------- optional `evidence` hint sanity check
 #
 # ⚠️ 这条判据此前**名存实亡**：文档（`narrative-moves.md` §2 / `presentation-gate.md` §G-15）把它写成
 # 必填且"静态元素不算证据"，而本脚本读 `evidence` 的唯一一处是 `if not ev:`（**只查字段非空**）——
@@ -581,14 +469,13 @@ def check_evidence(project: Path) -> tuple[list, list]:
         sid = s.get("id", "?")
         ev = str(s.get("evidence") or "").strip()
         if not ev:
-            continue                             # 缺字段已由 check_narrative 报过，不重复刷屏
+            continue                             # evidence 是可选提示，不是每镜必须声明的契约
         if _evidence_used(code, ev):
             continue
-        p0.append({"id": sid, "issue": (
+        p1.append({"id": sid, "issue": (
             f"evidence=«{ev}» 在场景源码（{where}）里**找不到这个用法**：名字要么写错了、"
             f"要么从来没被当成 JSX 用渲染出来（只写在注释 / 字符串 / import 行里都不算「用到」）。"
-            f"G-15 要求 `evidence` 指向真的会变的那件东西，指向一个不存在的用法 = 这条声明无法被验证"
-            f"（判据与**已知边界**见 narrative-moves.md §2）")})
+            f"这是可选设计注记的核对提示：作者若写下了目标，可复查注记与实际画面是否匹配；未写注记仍然允许")})
     return p0, p1
 
 

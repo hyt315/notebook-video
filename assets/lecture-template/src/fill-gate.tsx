@@ -3,16 +3,12 @@ import {cancelRender, continueRender, delayRender, useCurrentFrame} from 'remoti
 import {useCanvas} from './theme/canvas';
 
 // ============================================================================
-// FillGate · 「下 1/4 有没有填满」的**实测**门（v1）
+// FillGate · optional occupied-area diagnostic; intentionally not mounted by default.
 //
-// 为什么要新写一个（2026-09-21）：这条判据（composition-gate.md 的 P0-4
-// 「zones ∈[3,5]；bottomFill == true（底边接近 y=876，下 1/4 不留空洞）」）**本来就有门禁**，
-// 但它查的是清单里的一个布尔字段：
-//     `if s.get("bottomFill") is not True: → P0`
-// 而 `bottomFill` 是**生成分镜表的脚本自己写死的常量**（make-shots.py 里每一镜都写 `True`），
-// `resolve-shots.py` 再原样透传 —— 于是「生成器写 True → 门禁要求 True」，
-// **这道门在结构上永远不可能失败**。实测成片里 17/21 镜的下三分之一是空的，它一次都没响。
-// 改成实测：**量画面上真实的信息元素铺到多低**，再和 y=876 这条线比。
+// The occupied height of a frame is a rough visual statistic, not a reliable quality judgment:
+// whitespace may be useful for reading, a centered formula, or a focused static explanation. This
+// component remains available for authors who deliberately want measurements for a specific layout,
+// but never fill blank regions solely to satisfy its output.
 //
 // 判据：把「信息元素」的 rect 取并集，取其**最低边**（设计坐标）。
 //   · 信息元素 = 有文字的元素 ∪ 有真实边框的元素 ∪ 有真实描边的图形。
@@ -21,14 +17,11 @@ import {useCanvas} from './theme/canvas';
 //   · 与另三道门同一条纪律：**逐帧持 delayRender**（否则截帧先于测量，装了等于没装）、
 //     **等 `document.fonts.ready`**（不能像旧版 OverlapGate 那样直接 return）。
 //
-// 为什么默认 warn 而不是 block：
-//   「铺到多低」是**版面审美**（P0-4 是硬条款，但它的口径"底边接近 y=876"本身是观感线），
-//   而"文字被裁 / 元素互相压 / 图形被裁"那三件是**画错了**，已经有门禁在硬拦。
-//   为一条观感线把整片渲染打断，代价大于收益 → 出声、进日志、可复查。
-//   （**不设 NODE_ENV 门**：渲染包是 production 模式，dev-only 的门在出片路径上永远看不到。）
+// It reports geometry only. Caption fit, overlap, clipping, and actual cue/visual alignment are separate
+// concerns and must be reviewed independently.
 // ============================================================================
 
-/** 内容底线（设计坐标）：composition-gate.md P0-4 的同一个数，不新造魔数。 */
+/** Reference floor used only by this optional measurement, not a delivery threshold. */
 const FLOOR_Y = 876;
 /** 容差（设计像素）：卡片下沿与底线差几个像素不算空洞。 */
 const TOL = 24;

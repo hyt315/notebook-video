@@ -7,52 +7,17 @@
     {
       "id": "S1",
       "chapter": "代码不再孤独",
-      "skeleton": "Stage",
+      "coreRelation": "本地代码连接到远程仓库后，协作机会从个人设备扩展到世界各地的开发者。",
+      "visualCarrier": "终端命令和本地到远程的关系图展示推送前后的可见性变化，并贯穿本镜旁白。",
       "cues": [
         0,
         3
       ],
-      "media": [
-        "console",
-        "graphic"
-      ],
-      "live": [
-        "ConsoleWindow",
-        "StampBanner",
-        "Callout",
-        "StatRow"
-      ],
       "camera": {
-        "intent": "establish",
-        "at": 24,
-        "dur": 38,
-        "x": 960,
-        "y": 540,
-        "from": 1.0,
-        "to": 1.03
+        "intent": "still"
       },
-      "anchor": {
-        "x": 200,
-        "y": 170,
-        "w": 1520,
-        "h": 710
-      },
-      "contentBand": {
-        "x": 160,
-        "y": 130,
-        "w": 1600,
-        "h": 780
-      },
-      "hero": {
-        "name": "本地仓库",
-        "size": 640,
-        "kind": "text"
-      },
-      "zones": 4,
-      "bottomFill": true,
-      "cover": "paper",
       "transition": "cut",
-      "entry": "rise",
+      "entry": "none",
       "beats": [
         {
           "cue": 0,
@@ -74,60 +39,22 @@
           "cue": 4,
           "offset": 0
         }
-      ],
-      "move": "引入",
-      "evidence": "ConsoleWindow",
-      "hold": 45,
-      "misconception": "以为开源就是\"把代码丢上去\""
+      ]
     },
     {
       "id": "S2",
       "chapter": "入场三步",
-      "skeleton": "Corridor",
+      "coreRelation": "参与他人项目、发布自己的作品、持续运营，是进入开源协作的三个不同阶段。",
+      "visualCarrier": "一条三站流程轨道同时标出参与、发布和运营，作为静态总览支持本镜旁白。",
       "cues": [
         4,
         4
       ],
-      "media": [
-        "graphic",
-        "chart"
-      ],
-      "live": [
-        "StampSeal"
-      ],
       "camera": {
-        "intent": "pan-follow",
-        "at": 8,
-        "dur": 40,
-        "fromX": 920,
-        "fromY": 540,
-        "x": 1000,
-        "y": 540,
-        "from": 1.06,
-        "to": 1.06
+        "intent": "still"
       },
-      "anchor": {
-        "x": 220,
-        "y": 180,
-        "w": 1480,
-        "h": 700
-      },
-      "contentBand": {
-        "x": 160,
-        "y": 130,
-        "w": 1600,
-        "h": 780
-      },
-      "hero": {
-        "name": "三步轨道",
-        "size": 140,
-        "kind": "text"
-      },
-      "zones": 3,
-      "bottomFill": true,
-      "cover": "paper",
       "transition": "cut",
-      "entry": "rise",
+      "entry": "none",
       "beats": [
         {
           "cue": 4,
@@ -137,61 +64,22 @@
           "cue": 5,
           "offset": 0
         }
-      ],
-      "move": "推进",
-      "evidence": "StampSeal",
-      "hold": 40,
-      "noMisconception": true,
-      "why": "本镜是流程推进，不设误解（避免每镜都套同一个模子）"
+      ]
     },
     {
       "id": "S3",
       "chapter": "入场三步",
-      "skeleton": "Zoom",
+      "coreRelation": "第一个有价值的贡献可以很小；PR以可审阅的具体改动进入协作流程。",
+      "visualCarrier": "拼写修正diff与提交前检查清单把小改动、规则和评审呈现在同一画面中。",
       "cues": [
         5,
         6
       ],
-      "media": [
-        "code",
-        "console"
-      ],
-      "live": [
-        "DiffView",
-        "Typewriter",
-        "Checklist"
-      ],
       "camera": {
-        "intent": "reveal",
-        "at": 30,
-        "dur": 38,
-        "x": 970,
-        "y": 526,
-        "from": 1.04,
-        "to": 1.1
+        "intent": "still"
       },
-      "anchor": {
-        "x": 200,
-        "y": 170,
-        "w": 1520,
-        "h": 710
-      },
-      "contentBand": {
-        "x": 160,
-        "y": 130,
-        "w": 1600,
-        "h": 780
-      },
-      "hero": {
-        "name": "第一个 PR",
-        "size": 620,
-        "kind": "text"
-      },
-      "zones": 4,
-      "bottomFill": true,
-      "cover": "paper",
-      "transition": "reveal",
-      "entry": "zoom",
+      "transition": "cut",
+      "entry": "none",
       "beats": [
         {
           "cue": 5,
@@ -205,59 +93,22 @@
           "cue": 7,
           "offset": 0
         }
-      ],
-      "move": "传递",
-      "evidence": "Checklist",
-      "hold": 40,
-      "misconception": "以为提交一次就等于参与了"
+      ]
     },
     {
       "id": "S4",
       "chapter": "第二步 · 发布",
-      "skeleton": "Split",
+      "coreRelation": "README、LICENSE和CI分别帮助别人理解、合法使用并验证一个开源仓库。",
+      "visualCarrier": "左右对照一个随手上传与一个专业仓库，并列显示README、LICENSE和CI三项依据。",
       "cues": [
         7,
         8
       ],
-      "media": [
-        "text",
-        "code"
-      ],
-      "live": [
-        "FitCard",
-        "StaggerList"
-      ],
       "camera": {
-        "intent": "push-in",
-        "at": 18,
-        "dur": 36,
-        "x": 960,
-        "y": 526,
-        "from": 1.04,
-        "to": 1.1
+        "intent": "still"
       },
-      "anchor": {
-        "x": 200,
-        "y": 170,
-        "w": 1520,
-        "h": 710
-      },
-      "contentBand": {
-        "x": 160,
-        "y": 130,
-        "w": 1600,
-        "h": 780
-      },
-      "hero": {
-        "name": "仓库清单",
-        "size": 620,
-        "kind": "text"
-      },
-      "zones": 4,
-      "bottomFill": true,
-      "cover": "paper",
       "transition": "cut",
-      "entry": "slide",
+      "entry": "none",
       "beats": [
         {
           "cue": 7,
@@ -271,59 +122,22 @@
           "cue": 9,
           "offset": 0
         }
-      ],
-      "move": "对比",
-      "evidence": "StaggerList",
-      "hold": 45,
-      "misconception": "以为发布是\"点一下按钮\""
+      ]
     },
     {
       "id": "S5",
       "chapter": "第三步 · 运营与三技能",
-      "skeleton": "Stage",
+      "coreRelation": "Issue分流、PR审查与按时发布把新问题逐步转成稳定迭代。",
+      "visualCarrier": "分阶段运营轨道配合Issue到合并发布的漏斗和版本进度环，呈现工作流关系。",
       "cues": [
         9,
         10
       ],
-      "media": [
-        "chart",
-        "metric"
-      ],
-      "live": [
-        "Funnel",
-        "ProgressRing"
-      ],
       "camera": {
-        "intent": "push-in",
-        "at": 20,
-        "dur": 38,
-        "x": 960,
-        "y": 530,
-        "from": 1.03,
-        "to": 1.08
+        "intent": "still"
       },
-      "anchor": {
-        "x": 200,
-        "y": 170,
-        "w": 1520,
-        "h": 710
-      },
-      "contentBand": {
-        "x": 160,
-        "y": 130,
-        "w": 1600,
-        "h": 780
-      },
-      "hero": {
-        "name": "运营控制台",
-        "size": 620,
-        "kind": "text"
-      },
-      "zones": 4,
-      "bottomFill": true,
-      "cover": "paper",
       "transition": "cut",
-      "entry": "fade",
+      "entry": "none",
       "beats": [
         {
           "cue": 9,
@@ -337,61 +151,22 @@
           "cue": 11,
           "offset": 0
         }
-      ],
-      "move": "定位",
-      "evidence": "ProgressRing",
-      "hold": 40,
-      "noMisconception": true,
-      "why": "本镜是能力定位，不需要先立误解"
+      ]
     },
     {
       "id": "S6",
       "chapter": "第三步 · 运营与三技能",
-      "skeleton": "Corridor",
+      "coreRelation": "三个AI技能分别对应参与他人项目、发布自己的作品和运营持续发版。",
+      "visualCarrier": "三站流程图把三个技能名称与各自任务并列对应，支持本镜关于工具分工的旁白。",
       "cues": [
         11,
         12
       ],
-      "media": [
-        "graphic",
-        "text"
-      ],
-      "live": [
-        "StampSeal"
-      ],
       "camera": {
-        "intent": "pan-follow",
-        "at": 8,
-        "dur": 40,
-        "fromX": 1000,
-        "fromY": 540,
-        "x": 920,
-        "y": 540,
-        "from": 1.06,
-        "to": 1.06
+        "intent": "still"
       },
-      "anchor": {
-        "x": 220,
-        "y": 180,
-        "w": 1480,
-        "h": 700
-      },
-      "contentBand": {
-        "x": 160,
-        "y": 130,
-        "w": 1600,
-        "h": 780
-      },
-      "hero": {
-        "name": "三个技能",
-        "size": 140,
-        "kind": "text"
-      },
-      "zones": 3,
-      "bottomFill": true,
-      "cover": "paper",
       "transition": "cut",
-      "entry": "rise",
+      "entry": "none",
       "beats": [
         {
           "cue": 11,
@@ -405,60 +180,22 @@
           "cue": 13,
           "offset": 0
         }
-      ],
-      "move": "累积",
-      "evidence": "StampSeal",
-      "hold": 40,
-      "noMisconception": true,
-      "why": "本镜是上一镜的累积收束，直接延续"
+      ]
     },
     {
       "id": "S7",
       "chapter": "第三步 · 运营与三技能",
-      "skeleton": "Zoom",
+      "coreRelation": "智能体可以沿着读规则、完成小改动、复查的顺序陪伴用户走完贡献流程。",
+      "visualCarrier": "三轮对话逐步展开为读指南、提交改动和检查结果，旁边汇总完整协作路径。",
       "cues": [
         13,
         13
       ],
-      "media": [
-        "console",
-        "text"
-      ],
-      "live": [
-        "ChatThread",
-        "SkeletonCard"
-      ],
       "camera": {
-        "intent": "reveal",
-        "at": 26,
-        "dur": 38,
-        "x": 970,
-        "y": 540,
-        "from": 1.04,
-        "to": 1.08
+        "intent": "still"
       },
-      "anchor": {
-        "x": 200,
-        "y": 170,
-        "w": 1520,
-        "h": 710
-      },
-      "contentBand": {
-        "x": 160,
-        "y": 130,
-        "w": 1600,
-        "h": 780
-      },
-      "hero": {
-        "name": "智能体",
-        "size": 600,
-        "kind": "text"
-      },
-      "zones": 3,
-      "bottomFill": true,
-      "cover": "paper",
-      "transition": "reveal",
-      "entry": "zoom",
+      "transition": "cut",
+      "entry": "none",
       "beats": [
         {
           "cue": 13,
@@ -472,60 +209,22 @@
           "cue": 14,
           "offset": 0
         }
-      ],
-      "move": "反证",
-      "evidence": "ChatThread",
-      "hold": 45,
-      "misconception": "以为把文档写完就有人来用"
+      ]
     },
     {
       "id": "S8",
       "chapter": "第三步 · 运营与三技能",
-      "skeleton": "Stage",
+      "coreRelation": "系列学习从参与进阶到发布和运营；观众可以按阶段逐步掌握，而非一次完成。",
+      "visualCarrier": "三列期数卡片对照每阶段的起点与结果，结论条收束三步学习路径和行动入口。",
       "cues": [
         14,
         15
       ],
-      "media": [
-        "metric",
-        "text"
-      ],
-      "live": [
-        "MetricGrid",
-        "StampBanner",
-        "VerdictBar"
-      ],
       "camera": {
-        "intent": "pull-back",
-        "at": 16,
-        "dur": 40,
-        "x": 960,
-        "y": 540,
-        "from": 1.1,
-        "to": 1.0
+        "intent": "still"
       },
-      "anchor": {
-        "x": 200,
-        "y": 170,
-        "w": 1520,
-        "h": 710
-      },
-      "contentBand": {
-        "x": 160,
-        "y": 130,
-        "w": 1600,
-        "h": 780
-      },
-      "hero": {
-        "name": "三期计划",
-        "size": 600,
-        "kind": "text"
-      },
-      "zones": 3,
-      "bottomFill": true,
-      "cover": "paper",
       "transition": "cut",
-      "entry": "fade",
+      "entry": "none",
       "beats": [
         {
           "cue": 14,
@@ -543,11 +242,7 @@
           "cue": 15,
           "offset": 96
         }
-      ],
-      "move": "收束",
-      "evidence": "VerdictBar",
-      "hold": 50,
-      "misconception": "以为开源只产出代码"
+      ]
     }
   ]
 }

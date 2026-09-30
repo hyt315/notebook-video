@@ -471,7 +471,9 @@ export const StatRow: React.FC<{
   width: number;
   height?: number;
   gap?: number;
-}> = ({f, startAt, items, width, height = 150, gap = 22}) => {
+  valueFontSize?: number;
+  labelFontSize?: number;
+}> = ({f, startAt, items, width, height = 150, gap = 22, valueFontSize = TYPE.displayXS, labelFontSize = TYPE.labelS}) => {
   // 卡片是固定尺寸、文案是变量——开发期用实测宽度自检，文案比卡片宽就在控制台出声
   const cardInnerW = (width - gap * Math.max(0, items.length - 1)) / Math.max(1, items.length) - 60 - 14;
   return (
@@ -480,8 +482,8 @@ export const StatRow: React.FC<{
         const p = prog(f, startAt + i * 8, 26);
         const shown = typeof it.value === 'number' ? `${Math.round(it.value * p)}${it.suffix ?? ''}` : it.value;
         if (process.env.NODE_ENV !== 'production') {
-          fitsWithin({text: String(shown), boxWidth: cardInnerW, fontSize: TYPE.displayXS, fontWeight: 700, label: `StatRow[${i}] 值`});
-          fitsWithin({text: it.label, boxWidth: cardInnerW, fontSize: TYPE.labelS, label: `StatRow[${i}] 标签`});
+          fitsWithin({text: String(shown), boxWidth: cardInnerW, fontSize: valueFontSize, fontWeight: 700, label: `StatRow[${i}] 值`});
+          fitsWithin({text: it.label, boxWidth: cardInnerW, fontSize: labelFontSize, label: `StatRow[${i}] 标签`});
         }
         return (
           <div
@@ -501,8 +503,8 @@ export const StatRow: React.FC<{
               justifyContent: 'center',
             }}
           >
-            <div style={{fontFamily: 'Space,Kai,monospace', fontSize: TYPE.displayXS, fontWeight: 700, color: it.tone}}>{shown}</div>
-            <div style={{fontFamily: 'Kai,sans-serif', fontSize: TYPE.labelS, color: C.ink, marginTop: 8}}>{it.label}</div>
+            <div style={{fontFamily: 'Space,Kai,monospace', fontSize: valueFontSize, fontWeight: 700, color: it.tone}}>{shown}</div>
+            <div style={{fontFamily: 'Kai,sans-serif', fontSize: labelFontSize, color: C.ink, marginTop: 8}}>{it.label}</div>
           </div>
         );
       })}

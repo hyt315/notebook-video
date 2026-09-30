@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-"""validate-shot-motion.py · 镜头出界证明门禁（P0，可阻断渲染）
+"""validate-shot-motion.py · camera geometry safety check
 
-把"相机契约"从"靠自觉"变成"可执行证明"。v2.8 的 Camera Micro-Framing Invariant
-把相机锁在 x∈[945,975] / s∈[1.00,1.018]（这是 16:9 的 1920×1080 设计空间口径，3:4 空间从无
-对应数值可套；景别变化 1.8%，等同定焦），代价是全片没有镜头在动；而按 v2.8.0 源码复算，
-CAM_KEYS_P（轨道已随 v2.9.0 删除）10 个关键帧 s 超旧上限 1.018，真正可见窗出画的是
-8 个关键帧（最大 383px，逐帧扫描非零露底约 862–892 帧、随亚像素容差浮动）——无人发现，
-两个极端都是"没有校验"造成的。本脚本用纯算术证明"镜头运动后，本镜声明必须可见的 anchor
-仍然完整落在可见窗内"，因此可以把"不出界"从"靠不动"换成"靠证明"。
+Static framing is valid and needs no meaningless anchor. Whenever a camera transform changes the view,
+require an explicit essential-content anchor and check the visible window at every key. Also validate
+timeline coverage, transform limits and runtime pan-clamping risks. A declared move that did not occur is
+only a P1 note; it is not an instruction to animate.
 
-数学（与 assets/lecture-template/src/shotkit.tsx 完全一致）：
+Geometry constants below use the template's 16:9 1920×1080 design space. The 4:3 and 3:4 layouts have
+not been adequately tested; do not treat this validator as proof of their safety until it is extended and
+the corresponding layouts are rendered and reviewed.
+
+Camera geometry (must stay in sync with assets/lecture-template/src/shotkit.tsx):
     可见窗 left = x - 960/s, right = x + 960/s, top = y - 540/s, bottom = y + 540/s
-    (x, y, s) 在相邻关键帧之间单调变化，而 left/right/top/bottom 对 x 与 s 都单调，
-    因此一个区间的极值必在端点取得 → **只需逐关键帧校验即可得到精确结论**（非近似）。
+    The rendered camera keys are expanded by resolve-shots.py, so this check does not create a second
+    timing source. A still view at the neutral center cannot crop the stage.
 
 用法：
     python scripts/validate-shot-motion.py PROJECT_DIR
@@ -42,14 +43,7 @@ INTENT_MAX_ZOOM = {
 }
 TEXT_ZOOM_MAX = 1.35
 GRAPHIC_ZOOM_MAX = 1.60
-ROT_MAX = 6.0  # micro-orbit 的 rotY 上限（度）
-CAM_DUR = (30, 45)  # 单次运镜时长（帧），references/shot-language.md
-# 每章运镜配额要有时长比例感：短视频章节只有 7 秒时强求 3 次是无意义的。
-# 规则：章节 ≥20 秒 → ≥3 次；否则 ≥1 次。另有全片配额 ceil(秒/12)，下限 4。
-CHAPTER_MIN_MOVES_LONG = 3
-CHAPTER_LONG_SECONDS = 20
-CHAPTER_MIN_MOVES_SHORT = 1
-FILM_MOVES_MIN_PER_12S = 12  # 每 12 秒至少 1 次运镜
+ROT_MAX = 6.0  # micro-orbit 的 rotY 上限（度）；仅限作者主动选择该运动时
 
 
 def visible_window(x: float, y: float, s: float) -> tuple[float, float, float, float]:
@@ -111,9 +105,18 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
         sid = s["id"]
         keys = cam_keys(s)
         anchor = s.get("anchor")
-        if not anchor:
-            p0.append({"id": sid, "issue": "缺少 anchor（本镜必须始终可见的矩形）；无法证明不出界"})
-            continue
+        has_transform = any(
+            abs(k.get("s", 1.0) - 1.0) > 1e-6
+            or abs(k.get("x", STAGE_CX) - STAGE_CX) > 1e-6
+            or abs(k.get("y", STAGE_CY) - STAGE_CY) > 1e-6
+            or abs(k.get("rotY", 0.0)) > 1e-6
+            for k in keys
+        )
+        # A neutral still camera cannot crop the stage, so requiring a hand-authored
+        # rectangle there adds paperwork without adding a safety proof. Any transform
+        # still requires an explicit teaching-content anchor.
+        if not anchor and has_transform:
+            p0.append({"id": sid, "issue": "相机有zoom/pan/orbit变换却缺少 anchor；无法证明教学主体不出界"})
         frames = [k["f"] for k in keys]
         if frames != sorted(frames):
             p0.append({"id": sid, "issue": "相机关键帧 f 不是单调递增"})
@@ -121,7 +124,21 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
             p0.append({"id": sid, "issue": f"相机关键帧必须覆盖 [0,{s['duration']}]，实际 [{frames[0]},{frames[-1]}]"})
         cam = s.get("camera") or {}
         intent = s.get("cameraIntent", cam.get("intent", "still"))
-        hero_kind = s.get("hero", {}).get("kind", "text")
+        if intent != "still" and keys:
+            first = keys[0]
+            has_camera_change = any(
+                abs(k.get("s", 1.0) - first.get("s", 1.0)) > 0.005
+                or abs(k.get("x", STAGE_CX) - first.get("x", STAGE_CX)) > 1.0
+                or abs(k.get("y", STAGE_CY) - first.get("y", STAGE_CY)) > 1.0
+                or abs(k.get("rotY", 0.0) - first.get("rotY", 0.0)) > 0.1
+                for k in keys[1:]
+            )
+            if not has_camera_change:
+                p1.append({"id": sid, "issue": (
+                    f"cameraIntent={intent!r} 但关键帧没有可见相机变化；这是可选注记与实现不一致，"
+                    "修正注记或忽略即可，不代表镜头必须运动")})
+        hero = s.get("hero") or {}
+        hero_kind = hero.get("kind", "text") if isinstance(hero, dict) else "text"
         cap = min(INTENT_MAX_ZOOM.get(intent, 1.0), GRAPHIC_ZOOM_MAX if hero_kind == "graphic" else TEXT_ZOOM_MAX)
         for k in keys:
             if k["s"] < 1.0 - 1e-6:
@@ -140,51 +157,17 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
             cxk = min(STAGE_CX + bx2, max(STAGE_CX - bx2, k["x"]))
             cyk = min(STAGE_CY + by2, max(STAGE_CY - by2, k["y"]))
             left, right, top, bottom = visible_window(cxk, cyk, k["s"])
-            ax, ay, aw, ah = anchor["x"], anchor["y"], anchor["w"], anchor["h"]
-            for axis, need, lo, hi in (("x", ax, left, right), ("x", ax + aw, left, right), ("y", ay, top, bottom), ("y", ay + ah, top, bottom)):
-                if need < lo - 0.5:
-                    p0.append({"id": sid, "f": k["f"], "issue": f"anchor 出界：{axis}={need:.0f} < 可见边界 {lo:.0f}"})
-                elif need > hi + 0.5:
-                    p0.append({"id": sid, "f": k["f"], "issue": f"anchor 出界：{axis}={need:.0f} > 可见边界 {hi:.0f}"})
-
-        # ---- 运镜时长与配额 ----
-        if intent != "still":
-            span = int(cam.get("dur", 38))
-            if not (CAM_DUR[0] <= span <= CAM_DUR[1]):
-                p1.append({"id": sid, "issue": f"单次运镜 {span} 帧，建议 {CAM_DUR[0]}–{CAM_DUR[1]} 帧"})
-            moving = sum(1 for a, b in zip(keys, keys[1:]) if abs(a["s"] - b["s"]) > 1e-6 or abs(a["x"] - b["x"]) > 1e-6 or abs(a["y"] - b["y"]) > 1e-6)
-            if moving > 1:
-                p1.append({"id": sid, "issue": f"本镜有 {moving} 段位移，约定每镜 ≤1 次运镜"})
-            # P0：声明了运镜就必须真的动。否则"把 still 改名成 push-in"就能同时骗过
-            # 意图多样性统计和每章运镜配额，而画面完全静止（v2.8 的老毛病换了件衣服）。
-            scale_span = max(k["s"] for k in keys) - min(k["s"] for k in keys)
-            pan_span = (max(k["x"] for k in keys) - min(k["x"] for k in keys)) + (max(k["y"] for k in keys) - min(k["y"] for k in keys))
-            if scale_span < 0.02 - 1e-9 and pan_span < 20 - 1e-9:
-                p0.append({"id": sid, "issue": f"声明 intent={intent} 但关键帧几乎不动（Δs={scale_span:.3f}, Δ平移={pan_span:.1f}px）；把 still 改名成运镜不算运镜"})
-
-    # ---- 每章运镜配额 ----
-    chapters: dict[str, list[dict]] = {}
-    for s in shots:
-        chapters.setdefault(s.get("chapter", "-"), []).append(s)
-    for name, group in chapters.items():
-        moves = [s for s in group if s.get("cameraIntent", "still") != "still"]
-        seconds = sum(s["duration"] for s in group) / 30.0
-        need = CHAPTER_MIN_MOVES_LONG if seconds >= CHAPTER_LONG_SECONDS else CHAPTER_MIN_MOVES_SHORT
-        if len(moves) < need:
-            p0.append({"id": f"chapter:{name}", "issue": f"本章（{seconds:.1f}s）仅 {len(moves)} 次运镜，配额 ≥{need}"})
-    total_moves = sum(1 for s in shots if s.get("cameraIntent", "still") != "still")
-    film_need = max(4, -(-int(duration) // (FILM_MOVES_MIN_PER_12S * 30)))
-    if total_moves < film_need:
-        p0.append({"id": "-", "issue": f"全片仅 {total_moves} 次运镜，按片长 {duration / 30:.1f}s 要求 ≥{film_need} 次"})
-    all_intents = {s.get("cameraIntent", "still") for s in shots}
-    if len(all_intents - {"still"}) < 3:
-        p0.append({"id": "-", "issue": f"全片仅 {len(all_intents - {'still'})} 种镜头意图（不含 still），要求 ≥3 种"})
+            if anchor:
+                ax, ay, aw, ah = anchor["x"], anchor["y"], anchor["w"], anchor["h"]
+                for axis, need, lo, hi in (("x", ax, left, right), ("x", ax + aw, left, right), ("y", ay, top, bottom), ("y", ay + ah, top, bottom)):
+                    if need < lo - 0.5:
+                        p0.append({"id": sid, "f": k["f"], "issue": f"anchor 出界：{axis}={need:.0f} < 可见边界 {lo:.0f}"})
+                    elif need > hi + 0.5:
+                        p0.append({"id": sid, "f": k["f"], "issue": f"anchor 出界：{axis}={need:.0f} > 可见边界 {hi:.0f}"})
 
     # ---- 背景装饰区可读性：内容压到装饰区必须声明 cover ----
     decor = DECOR_ZONES.get(theme, [])
     for s in shots:
-        # 2026-09-21：这里原来只在 `bottomFill is False` 时报（生成器永远写 True → 死门）。
-        # 与 validate-composition 同步降级：声明位只查存在性，实测交给渲染期 FillGate。
         band = s.get("contentBand")
         if not band or not decor:
             continue
@@ -193,48 +176,7 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
                 if not s.get("cover"):
                     p1.append({"id": s["id"], "issue": f"内容带与 {theme} 背景装饰区重叠，但未声明 cover（文字可能被装饰吃掉）"})
                 break
-    p1 += check_beat_gaps(shots)
     return p0, p1
-
-
-# ---------------------------------------------------------------------------
-# 节拍空档（P1，**代理指标**，不是判据）
-#
-# 2026-09-21 加。起因：用户在成片 2:58 报「那个组件它没有动」——S19 里走廊停稳、
-# 下一件还没入场，画面 2.5 秒没动，而当时**十道门禁全部 PASS**。
-#
-# ⚠️ **先离线标定，再定阈值**（实测数据，别拍脑袋）：
-#     本片 21 镜的「相邻节拍最大间隔 / 镜长」：中位 31.6%、最大 56.9%。
-#     · 按调研建议的 **40%** 判：S8(56.9%) / S4(45.9%) / S13(45.3%) / S14(44.8%) /
-#       S15(43.5%) / S17(43.5%) / S11(41.3%) —— **七张已被用户接受的镜会被判死**；
-#     · 而真正出事的那一镜 **S19 只有 30.4%** —— **按 40% 判它照样 PASS**。
-#   根因：beats 是**旁白节拍**，不是**画面事件**。元素绑在某一拍上，但它的入场动画
-#   可能在 30 帧内就演完了，离下一拍还有几十帧什么都不动（S19 正是如此）。
-#   所以这条**只当"这一镜是不是整段没词"的粗筛**，定在 60%（抓明显异常，放过已被接受的片）；
-#   真正的判据是 `validate-motion-gaps.py`（量成片里画面到底动没动，T3 后验）。
-BEAT_GAP_MAX_RATIO = 0.60
-
-
-def check_beat_gaps(shots: list[dict]) -> list[dict]:
-    out: list[dict] = []
-    for s in shots:
-        beats = sorted(int(b) for b in (s.get("beats") or []))
-        dur = int(s.get("duration") or 0)
-        if dur <= 0 or not beats:
-            continue
-        marks = [0] + beats + [dur]
-        gaps = [marks[i + 1] - marks[i] for i in range(len(marks) - 1)]
-        worst = max(gaps)
-        ratio = worst / dur
-        if ratio > BEAT_GAP_MAX_RATIO:
-            out.append(
-                {
-                    "id": s["id"],
-                    "issue": f"相邻节拍最大间隔 {worst} 帧 = 镜长的 {ratio * 100:.0f}%（上限 {BEAT_GAP_MAX_RATIO:.0%}）："
-                    f"这一段没有任何新事件绑定，旁白在讲、画面容易被读作停住",
-                }
-            )
-    return out
 
 
 DECOR_ZONES: dict[str, list[dict]] = {

@@ -1,13 +1,12 @@
 import React from 'react';
-import {AbsoluteFill, Img, staticFile} from 'remotion';
-import {useCanvas} from './canvas';
+import {AbsoluteFill} from 'remotion';
 import type {Theme} from './types';
 
 // ============================================================================
-// FLAT 主题：现代扁平·几何小怪兽插画风（LOCKED）
-// 设计语言：灰细边白卡 + 彩色硬偏移影、几何小怪兽背景、悬浮圆角彩条字幕。
+// FLAT 主题：现代扁平·几何色块风
+// 设计语言：灰细边白卡 + 彩色硬偏移影、安静冷灰蓝底、悬浮圆角彩条字幕。
 // 色彩系统：靛蓝为主角色，珊瑚/薄荷/金黄按同档饱和度≈65-85 明度≈54-62 推导。
-// 本文件所有数值均为锁定值，制作时整体引用，不得调参。
+// 纯色底取代会侵入教学卡/结论条的吉祥物位图；角色与色块仍由内容按需表达。
 // ============================================================================
 
 const palette: Theme['palette'] = {
@@ -72,18 +71,8 @@ const aesthetic: Theme['aesthetic'] = {
 const paperShadow = (lift: number) =>
   `${7 + 3 * lift}px ${7 + 3 * lift}px 0 ${palette.blue}`;
 
-// 背景（LOCKED）：固定资产图，每比例一张——16:9 2560×1440（与画布 1:1 逐像素）；
-// 4:3 2240×1680、3:4 1680×2240（画布的 7/6 超采样，比例同比）；渲染时 cover 等比缩放
-// 不裁切不拉伸。探头式小怪兽（右下靛蓝圆怪从底边探出上半身+左下薄荷山丘
-// 珊瑚小怪探头）、浅灰蓝噪点纸面、85% 留白。禁止改回代码自绘背景。
-const BG_BY_MODE = {'16:9': 'bg-flat-169.jpg', '4:3': 'bg-flat-43.jpg', '3:4': 'bg-flat-34.jpg'} as const;
-
-const Background: React.FC = () => {
-  const {canvas} = useCanvas();
-  return <AbsoluteFill style={{background: palette.paperBase}}>
-    <Img src={staticFile(BG_BY_MODE[canvas])} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
-  </AbsoluteFill>;
-};
+// 安静的冷灰蓝纯色底；卡片、硬偏移影和语义色块承担主题识别，不铺无关插画。
+const Background: React.FC = () => <AbsoluteFill style={{background: palette.paperBase}} />;
 
 // 无框色影卡：白卡 + 2px 中性灰细边（界定上/左缘，非墨框）+ 实色硬偏移影（界定右下缘）；
 // 场景传 borderColor 时影子同步变色。
@@ -105,12 +94,8 @@ const SubtitleChrome: Theme['SubtitleChrome'] = ({mode, children}) =>
     </div>
   </div>;
 
-// 背景装饰区（LOCKED 声明）：画幅级高对比装饰所占矩形（1920×1080 设计坐标）。
-// flat 的背景右下角有一个大卡通角色、左下角有绿丘与红方块，压在上面的文字会被吃掉。
-const backgroundDecorZones = [
-  {x: 1240, y: 380, w: 680, h: 700},   // 右下：蓝色卡通角色
-  {x: 0, y: 700, w: 780, h: 380},      // 左下：绿色丘 + 红色方块
-];
+// 背景已无大幅装饰；无需预留背景遮挡区。
+const backgroundDecorZones: Theme['backgroundDecorZones'] = [];
 
 export const THEME: Theme = {
   id: 'flat',

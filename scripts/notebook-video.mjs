@@ -135,11 +135,15 @@ const newProject = async (args) => {
   // whose hero scene demonstrates the optional image-generation add-on.
   const templateDir = classic ? 'example-project' : 'lecture-template';
   fs.cpSync(path.join(SKILL_DIR, 'assets', templateDir), target, {recursive: true, force: true});
-  // Theme selection rewrites the one-line theme switch in the copied project.
-  if (!classic && style !== 'paper') {
+  // The one film-level base treatment must agree in the runtime skin and shot plan.
+  if (!classic) {
     const activePath = path.join(target, 'src', 'theme', 'active.ts');
     if (!fs.existsSync(activePath)) fail(`Theme switch is missing in the copied template: ${activePath}`);
-    fs.writeFileSync(activePath, `import {THEME} from './${style}';\nexport {THEME};\n`);
+    if (style !== 'paper') fs.writeFileSync(activePath, `import {THEME} from './${style}';\nexport {THEME};\n`);
+    const shotsPath = path.join(target, 'manifests', 'shots.json');
+    const shotsDoc = JSON.parse(fs.readFileSync(shotsPath, 'utf8'));
+    shotsDoc.theme = style;
+    fs.writeFileSync(shotsPath, `${JSON.stringify(shotsDoc, null, 2)}\n`);
   }
   const fontDir = path.join(SKILL_DIR, 'assets', 'fonts');
   const publicDir = path.join(target, 'public');
@@ -155,8 +159,8 @@ const newProject = async (args) => {
   } else {
     console.log(`Created official lecture-template Remotion notebook project (pure code-drawn SVG default): ${target}`);
     const themeDoc = style === 'paper' ? 'references/visual-system.md' : `references/theme-${style}.md`;
-    console.log(`Theme locked to "${style}". Style contract: ${themeDoc}.`);
-    console.log('Multi-zone lecture composition rules: references/lecture-composition.md. Image generation stays an optional add-on offered separately.');
+    console.log(`Base visual treatment selected: "${style}". Guidance: ${themeDoc}.`);
+    console.log('Cue-indexed teaching composition: references/lecture-composition.md. Image generation stays an optional add-on offered separately.');
   }
   console.log('Preserve the engine, background, subtitle, chrome, asset gate, audio tree and frame conventions. Replace topic content, visual plan, registered imagery and semantic scene objects.');
   console.log('Narration audio is intentionally not bundled. Generate or supply licensed audio, then run sync before rendering.');

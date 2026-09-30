@@ -1,18 +1,14 @@
 import React, {useEffect, useRef} from 'react';
 import {Easing, continueRender, delayRender, interpolate} from 'remotion';
 import {THEME} from './theme/active';
+import {useCanvas} from './theme/canvas';
 
 // ============================================================================
-// stagekit · 大主体骨架 v1（N 个独立边框 → 1 个主体 + 附着信息）
+// stagekit · 可选的状态/分区布局助手
 //
-// 为什么需要它：v2.8 的四个场景结构同构（Paper + 标题 + 编号列表 + 贴标），
-// 换内容不换结构，读起来就是「四个 PPT 页」。本层提供一个「活体主体」：
-// 同一实例常驻不卸载，随旁白在 5–6 个 phase 之间演化状态。
-//
-// 三条硬标准（references/scene-skeletons.md）：
-//   1. 占主体：16:9 下 ≥1024×620 设计像素，或占画幅宽 ≥60%；
-//   2. 有状态机：≥5 拍，每拍 2–4 秒，全程同一实例；
-//   3. 能装东西：main / rail / stamp 三个命名槽。
+// 适合“同一对象跨几个解释状态演化”的镜头，不是所有场景的标准模板。静态图表、
+// 单个清晰标签、截图、留白或不使用 StageFrame 都可以更适合当前内容。Phase、
+// header、rail、stamp 与 main 槽按需采用；没有最少阶段数、面积或槽位填充配额。
 //
 // 坐标铁律：x/y 永远相对于最近的 positioned 祖先。放进 Paper/StageFrame 内部
 // 时坐标变成「框内相对坐标」；只有直接放在场景根下才是舞台坐标。
@@ -66,19 +62,19 @@ export const useStageMachine = (phases: Phase[], f: number): StageCtx => {
 };
 
 // ---------------------------------------------------------------------------
-// SlotGuard：main 槽「到底占住了没有」的实测护栏。
+// SlotGuard：作者主动选择的 main 槽占用诊断。
 //
 // 2026-09-21 补：本文件此前**引用了 `SlotGuard`，却从来没有定义过它**（只有版本串里写着名字）。
 // 全仓库搜不到定义，`tsc` 报 TS2304；因为在 dev 分支上才挂它，出片那条路径永远走不到，
 // 于是「引用了不存在的标识符」一路静默 —— 只要进一次 Studio / dev 就是 ReferenceError。
 // 实现逐字取自 overview-film 的 v5 版本（同仓库下游工程，已在成片里跑过）。
 //
-// 它守的是什么：scene-skeletons.md 那条**观感标准**「活体主体要占主体」——
-// 成片实测过一镜：StageFrame 给足了 428px 高的 main 槽（画布 1080 的 39.6%），
-// 调用方却只在槽里放了一行字（47px），占用 11%，整块读成「一张空纸 + 一行标题」。
-// 组件的槽是给够的，占不占得住由**槽里的内容**决定 —— 这条护栏就是把"没占住"变成出声的数字。
+// 它量测主槽内内容的大致垂直覆盖率并发出诊断；小占用率可能是留白/静态图的有意选择，
+// 需结合本镜的视觉任务判断，不为提高比例添加无关装饰。
 //
-// 为什么只出声不拦：它守的是观感标准，不是画错。为观感标准打断整片渲染，代价远大于收益；
+// 为什么不默认挂载：槽位占用只是粗略观感代理，无法判断一段留白是否利于理解；
+// 它仅供作者主动选择的布局诊断，不是统一质量要求，也不应为通过而添加装饰。
+// 为观感标准打断整片渲染，代价远大于收益；
 // 真正该硬拦的是「文字被裁」「元素互相压」，那两件已经有 CardFitGate 与 OverlapGate。
 // 为什么不出声在 dev 门里：本仓库出片走 production 包，dev-only 的门看不到 ——
 // 出声必须发生在出图路径上。（测量排在 rAF 里，所以同样持一个 delayRender，
@@ -127,10 +123,9 @@ export const SlotGuard: React.FC<{f: number; mainW: number; mainH: number; tag: 
         const cover = used / hr.height;
         if (cover < 0.35 && typeof console !== 'undefined') {
           console.warn(
-            `[SlotGuard] @${Math.round(f)} StageFrame「${tag}」main 槽只用了 ${Math.round(cover * 100)}% 的高度` +
+            `[SlotGuard] @${Math.round(f)} StageFrame「${tag}」main 槽垂直覆盖率 ${Math.round(cover * 100)}%` +
               `（${leaves} 个内容块 / 槽 ${Math.round(slotW)}×${Math.round(slotH)} 设计像素）。` +
-              `scene-skeletons.md 要求活体主体"占主体：≥1024×620 或占画幅宽 ≥60%"，` +
-              `槽里的内容要给 height:'100%' 并用状态机填满（见 scene-authoring.md §2）。`
+              `这是几何诊断，不是质量分；请结合旁白和静态/动态画面的讲解作用判断。`
           );
         } else if (typeof console !== 'undefined') {
           console.warn(`[SlotGuard] @${Math.round(f)} 「${tag}」main 槽占用 ${Math.round(cover * 100)}%（${leaves} 块）`);
@@ -170,21 +165,25 @@ export const StageFrame: React.FC<{
   lift?: number;
   z?: number;
   railW?: number;
+  railH?: number;
+  railPlacement?: 'side' | 'top' | 'bottom';
   pad?: number;
-}> = ({x, y, w, h, f, phases, header, rail, stamp, children, borderColor, lift = 0.24, z = 70, railW = 0, pad = 26}) => {
+}> = ({x, y, w, h, f, phases, header, rail, stamp, children, borderColor, lift = 0.24, z = 70, railW = 0, railH, railPlacement = 'side', pad = 26}) => {
   const C = THEME.palette;
+  const {canvas} = useCanvas();
+  const placement = rail ? (canvas === '3:4' && railPlacement === 'side' ? 'bottom' : railPlacement) : 'side';
   const ctx = useStageMachine(phases, f);
   // 入场：位移/缩放与透明度用**不同时钟**（22px 上浮 26 帧、透明度 20 帧、描影 30 帧）。
   // 同一时长会让整块读成「一个刚体出现」；错开 4–6 帧才读成「纸落下来」。
   const opIn = ease(f, 0, 20);
   const mvIn = ease(f, 0, 26);
   const shadowIn = ease(f, 0, 30);
-  const railPx = rail ? railW || Math.round(w * 0.26) : 0;
+  const railPx = rail ? railW || Math.round((w - pad * 2) * 0.26) : 0;
   const headH = header ? 56 : 0;
   const stampH = stamp ? 56 : 0;
+  const contentH = h - pad * 2 - headH - stampH - (stamp ? 14 : 0);
+  const railHeight = rail ? railH ?? Math.round(contentH * 0.24) : 0;
   // main 槽真正可用的宽/高——给槽内组件传宽度前必须先算这两个数（见 scene-authoring.md）。
-  const mainW = w - pad * 2 - (rail ? railPx + 18 : 0);
-  const mainH = h - pad * 2 - headH - stampH - (stamp ? 14 : 0) - (header ? 14 : 0);
   const Paper = THEME.Paper;
   // 头部滑变：由 phase.at 派生（不要用 ref 记「上一帧」——Remotion 逐帧乱序渲染，ref 不可靠）
   const swapP = ease(f, ctx.phase.at, ctx.phase.at + 16);
@@ -206,9 +205,11 @@ export const StageFrame: React.FC<{
             </div>
           </div>
         )}
-        <div style={{display: 'flex', gap: 18, height: h - pad * 2 - headH - stampH - (stamp ? 14 : 0), marginTop: header ? 14 : 0}}>
-          <div style={{position: 'relative', flex: 1, minWidth: 0}}>{children(ctx)}<SlotGuard f={f} mainW={mainW} mainH={mainH} tag={(phases[0] && (phases[0].label || phases[0].state)) || 'stage'} /></div>
-          {rail && <div style={{position: 'relative', width: railPx, flex: `0 0 ${railPx}px`}}>{rail(ctx)}</div>}
+        <div style={{display: 'flex', flexDirection: placement === 'side' ? 'row' : 'column', gap: 18, height: contentH, marginTop: header ? 14 : 0, minHeight: 0}}>
+          {rail && placement === 'top' && <div style={{position: 'relative', width: '100%', height: railHeight, flex: `0 0 ${railHeight}px`}}>{rail(ctx)}</div>}
+          <div style={{position: 'relative', flex: '1 1 auto', minWidth: 0, minHeight: 0}}>{children(ctx)}</div>
+          {rail && placement === 'bottom' && <div style={{position: 'relative', width: '100%', height: railHeight, flex: `0 0 ${railHeight}px`}}>{rail(ctx)}</div>}
+          {rail && placement === 'side' && <div style={{position: 'relative', width: railPx, flex: `0 0 ${railPx}px`, minWidth: 0}}>{rail(ctx)}</div>}
         </div>
         {stamp && <div style={{position: 'relative', height: stampH, marginTop: 14, borderTop: `1.5px dashed ${C.line}`, display: 'flex', alignItems: 'center'}}>{stamp(ctx)}</div>}
       </Paper>
@@ -220,11 +221,32 @@ export const StageFrame: React.FC<{
 // PhaseRail：状态进度轨。把「状态机」显式画出来——观众能看见主体在推进，
 // 这是「主线演化」和「卡片轮播」在观感上的分水岭。
 // ---------------------------------------------------------------------------
-export const PhaseRail: React.FC<{phases: Phase[]; ctx: StageCtx; w?: number; color?: string}> = ({phases, ctx, w = 260, color}) => {
+export const PhaseRail: React.FC<{phases: Phase[]; ctx: StageCtx; w?: number; color?: string; orientation?: 'vertical' | 'horizontal'; fontSize?: number; dotSize?: number}> = ({phases, ctx, w = 260, color, orientation = 'vertical', fontSize = 21, dotSize = 22}) => {
   const C = THEME.palette;
   const on = color ?? C.blue;
   // 当前绝对帧：phase.at + local。所有动画都从 phases[].at 派生 → 乱序渲染也确定。
   const f = ctx.phase.at + ctx.local;
+  if (orientation === 'horizontal') return (
+    <div style={{width: w, display: 'flex', alignItems: 'center', gap: 12}}>
+      {phases.map((p, i) => {
+        const done = i < ctx.index;
+        const active = i === ctx.index;
+        const take = ease(f, p.at, p.at + 14);
+        const rowIn = ease(f, p.at - 14, p.at + 6);
+        const pulse = active ? 1 + 0.18 * Math.sin(Math.PI * Math.min(1, take)) : 0;
+        const halo = active ? (1 - take) * 7 : 0;
+        const dotScale = active ? 1 + pulse * 0.18 : done ? 0.94 : 1;
+        const connector = ease(f, p.at + 2, p.at + 14);
+        return <React.Fragment key={p.state}>
+          <div style={{display: 'flex', alignItems: 'center', gap: 10, flex: '0 0 auto', opacity: done || active ? 1 : 0.34, transform: `translateY(${(1 - rowIn) * -8}px)`}}>
+            <span style={{width: dotSize, height: dotSize, borderRadius: 99, flex: '0 0 auto', display: 'grid', placeItems: 'center', background: done ? C.green : active ? on : C.mutedFill, color: C.white, fontFamily: 'Space', fontWeight: 700, fontSize: Math.max(13, dotSize * 0.58), boxShadow: halo > 0.4 ? `0 0 0 ${halo}px ${on}22` : 'none', transform: `scale(${dotScale})`}}>{done ? '✓' : i + 1}</span>
+            <span style={{fontSize, fontWeight: 700, color: active ? on : C.ink, whiteSpace: 'nowrap'}}>{p.label ?? p.state}</span>
+          </div>
+          {i < phases.length - 1 && <div style={{height: 2, flex: '1 1 18px', minWidth: 12, background: C.line, overflow: 'hidden'}}><div style={{height: '100%', width: `${100 * connector}%`, background: done ? C.green : on}} /></div>}
+        </React.Fragment>;
+      })}
+    </div>
+  );
   return (
     <div style={{width: w, display: 'flex', flexDirection: 'column', gap: 0}}>
       {phases.map((p, i) => {
@@ -250,7 +272,7 @@ export const PhaseRail: React.FC<{phases: Phase[]; ctx: StageCtx; w?: number; co
               >
                 {done ? '✓' : i + 1}
               </span>
-              <span style={{fontSize: 21, fontWeight: 700, color: active ? on : C.ink, whiteSpace: 'nowrap'}}>{p.label ?? p.state}</span>
+              <span style={{fontSize, fontWeight: 700, color: active ? on : C.ink, whiteSpace: 'nowrap'}}>{p.label ?? p.state}</span>
             </div>
             {i < phases.length - 1 && (
               <div style={{marginLeft: 10, width: 2, height: 12, background: done ? C.green : C.line, transformOrigin: 'top center', transform: `scaleY(${done ? 1 : connector})`}} />
@@ -262,4 +284,4 @@ export const PhaseRail: React.FC<{phases: Phase[]; ctx: StageCtx; w?: number; co
   );
 };
 
-export const STAGEKIT_VERSION = 'stagekit-v5 · StageFrame + state machine + PhaseRail + SlotGuard（v4 只把 SlotGuard 写进版本串、代码里从未定义过，tsc 报 TS2304；v5 补上实现，实测 main 槽占用并出声） + header swap';
+export const STAGEKIT_VERSION = 'stagekit-v6 · optional StageFrame + state machine + PhaseRail / optional SlotGuard diagnostic + header swap';

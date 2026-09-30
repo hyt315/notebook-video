@@ -1,6 +1,7 @@
 {
   "version": "warm-ivory-remotion-2k30-v9-visual-director",
-  "status": "official-current",
+  "status": "reference-exemplar",
+  "scope_note": "This file records one concrete 16:9 visual-director exemplar and shared engineering facts. Its paper palette, exact layouts, timing examples and asset choices are not universal style requirements. Every film still requires a coherent chosen treatment, cue coverage, a core learning relation per shot and a real visual carrier.",
   "canonical_entry": "assets/example-project/src/index.tsx",
   "canonical_composition": "NotebookVideoFilm",
   "canvas": {
@@ -22,6 +23,7 @@
         "height": 1440,
         "design_width": 1920,
         "design_height": 1080,
+        "test_status": "relatively mature target; verify each film",
         "subtitle_bounds": [
           188,
           934,
@@ -35,6 +37,7 @@
         "height": 1440,
         "design_width": 1440,
         "design_height": 1080,
+        "test_status": "not adequately tested here; unknown",
         "subtitle_bounds": [
           60,
           934,
@@ -48,6 +51,7 @@
         "height": 1920,
         "design_width": 1080,
         "design_height": 1440,
+        "test_status": "not adequately tested here; unknown",
         "subtitle_bounds": [
           50,
           1296,
@@ -168,7 +172,7 @@
     "component_unit": "integer frames",
     "conversion": "Math.round(ms * fps / 1000)",
     "subtitle_lead_frames": 2,
-    "meaningful_state_interval_seconds": [
+    "reference_state_interval_seconds": [
       2,
       4
     ]
@@ -202,18 +206,6 @@
     "slot_occlusion_only_after_crossing": true
   },
   "motion_system": {
-    "work_zone_min_gap_px": 70,
-    "central_temporary_transfer_limit": 1,
-    "preferred_large_semantic_objects": [
-      3,
-      5
-    ],
-    "persistent_task_object_for_continuous_process": true,
-    "shared_track_state_changes": true,
-    "inserted_part_below_front_lip": true,
-    "residual_fragment_forbidden": true,
-    "clear_previous_metaphor_before_next": true,
-    "anti_ppt_functional_components_required": true,
     "camera_is_per_shot": true,
     "camera_intents": [
       "establish",
@@ -224,10 +216,8 @@
       "micro-orbit",
       "still"
     ],
-    "camera_anchor_proof_required": true,
-    "camera_min_moves_per_chapter": 3,
-    "camera_max_moves_per_shot": 1,
-    "camera_move_frames": [
+    "camera_anchor_required_when_framing_changes": true,
+    "reference_camera_move_frames": [
       30,
       45
     ],
@@ -240,21 +230,17 @@
       0.7,
       1.0
     ],
-    "scene_skeletons": [
+    "available_scene_skeletons": [
       "Stage",
       "Corridor",
       "Split",
       "Zoom"
     ],
-    "adjacent_skeleton_must_differ": true,
-    "min_skeleton_kinds": 3,
-    "min_media_kinds": 3,
-    "live_component_required_per_explanation_scene": true,
-    "zones_per_scene": [
-      3,
-      5
-    ],
-    "bottom_quarter_must_be_filled": true,
+    "cue_visual_support_required": true,
+    "core_relation_per_shot_required": true,
+    "visual_carrier_per_shot_required": true,
+    "every_cue_covered_by_exactly_one_shot": true,
+    "static_teaching_holds_allowed": true,
     "transition_kinds": [
       "cut",
       "handoff",
@@ -325,7 +311,7 @@
     "faststart": true
   },
   "aesthetic_system": {
-    "locked_constants": [
+    "reference_constants": [
       "C",
       "TYPE",
       "AESTHETIC",
@@ -347,27 +333,28 @@
     ],
     "system_glyph_icons": false,
     "single_line_icon_language": true,
-    "static_grade_only": true,
+    "static_grade_only_in_this_exemplar": true,
     "animated_grain": false,
     "fixed_four_act_grammar": false,
     "adaptive_scene_modes": true
   },
-  "future_update_rule": "For future aesthetic changes, render a replacement and obtain user approval before overwriting this official example.",
+  "future_update_rule": "Treat this as a reference example; do not impose its aesthetics on unrelated films. Render and review a new example before replacing the maintained reference.",
   "timing_system": {
-    "element_entrance_bound_to_cue_beat": true,
-    "entrance_frames": 22,
-    "entrance_easing": "bezier(0.16,1,0.3,1)",
-    "intra_beat_stagger_frames": [
+    "cue_anchoring_used_when_semantically_helpful": true,
+    "reference_entrance_frames": 22,
+    "reference_entrance_easing": "bezier(0.16,1,0.3,1)",
+    "reference_intra_beat_stagger_frames": [
       2,
       8
     ],
-    "scene_exit_frames": 18,
-    "forbid_bulk_reveal_at_shot_start": true
+    "reference_scene_exit_frames": 18,
+    "bulk_reveal_rejected_when_it_hides_required_visual_support": true,
+    "static_reading_hold_allowed": true
   },
   "readability_system": {
-    "background_bitmaps_locked": true,
-    "decor_zone_cover_required": true,
-    "cover_plate_must_be_feathered": true,
-    "cover_plate_z_below_content": true
+    "background_bitmaps_locked": false,
+    "decor_zone_cover_conditional_on_actual_overlap": true,
+    "cover_plate_must_be_feathered_when_used_as_full_frame_wash": true,
+    "cover_plate_z_below_content_when_used": true
   }
 }

@@ -1,9 +1,9 @@
 {
   "name": "notebook-video",
-  "version": "3.1.2",
+  "version": "3.1.3",
   "owner": "hyt315",
   "license": "Apache-2.0",
-  "updated_at": "2026-09-22",
+  "updated_at": "2026-09-30",
   "status": "active",
   "maturity_tier": "production"
 }

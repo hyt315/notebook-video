@@ -82,7 +82,7 @@ const Grade: React.FC = () => <AbsoluteFill style={{pointerEvents: 'none', zInde
 </AbsoluteFill>;
 
 const SubtitleChrome: Theme['SubtitleChrome'] = ({mode, children}) =>
-  <div style={{position: 'absolute', left: mode.subMar, right: mode.subMar, bottom: 20, zIndex: 200, display: 'grid', placeItems: 'center'}}>
+  <div style={{position: 'absolute', left: mode.subMar, right: mode.subMar, bottom: mode.subBottom, zIndex: 200, display: 'grid', placeItems: 'center'}}>
     <div style={{width: mode.safe, display: 'grid', placeItems: 'center', fontFamily: 'Kai', fontSize: mode.subFont, lineHeight: 1.18, letterSpacing: 1.6, color: palette.ink, textShadow: '0 1px 4px rgba(255,255,255,0.8), 0 2px 10px rgba(40,30,20,0.15)', whiteSpace: 'nowrap'}}>
       {children}
     </div>

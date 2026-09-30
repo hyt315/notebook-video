@@ -4,6 +4,66 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+## [3.1.3] - 2026-09-30
+
+> 对照基线 `v3.1.2`：**63 个文件，+2 029 行，−4 488 行**。
+
+### 背景与动机
+
+本版是一次以修 bug、校正门禁口径和完成官方样例多画幅适配为主的**补丁版**。它沿用已有的学习目标与视觉承载原则，让自动检查聚焦于可验证的问题；不重做组件体系，也不把此前已完成的视觉教学优先改造包装成重大新功能。
+
+### 修复与校验口径
+
+- `validate-composition.py` 将阻断项收回到可验证的教学覆盖：每条旁白 cue 恰好由一镜覆盖，每镜声明核心关系与视觉承载，场景源码须包含可识别的可见 JSX。静态图示可以支持连续多个 cue；不再要求固定骨架、组件、介质或运动数量，也不强制画面填满。
+- `resolve-shots.py` 与 `validate-shot-motion.py` 收紧镜头声明和实际相机几何的对应关系：静止镜头无需 anchor，只有实际改变取景的相机移动才需做几何安全校验。
+- `validate-presentation.py` 将字幕读速、行长等经验性可读性指标作为人工复核提示，不再把它们等同于确定的技术错误；明确的时间与对比度问题仍按门禁判据处理。负向/正向夹具同步覆盖合法静态画面与三画幅约束。
+
+### 三画幅适配与文档
+
+- 官方八镜样例分别为 16:9（2560×1440）、4:3（1920×1440）和 3:4（1440×1920）单独重排并静音渲染；每个画幅均为 **8 镜、1150 帧、30 fps、38.33 秒**。另生成静音审阅输出，并检查 390px 接触表、七处切点及卡片适配、文字重叠、图形裁切和画布边界。
+- README、技能说明与画幅参考文档同步验证范围和限制：结果仅适用于仓库自带的官方样例，不代表任意新项目自动适配。
+
+### 已知边界
+
+- 本轮**未运行 BudouX**；字幕短语边界没有因此获得验证。
+- 未进行盲评或真实设备测试。审阅渲染为静音；**音频/TTS 未更改，也未作音频验证**。
+
+### 测试
+
+12 项回归检查通过；本地复跑 `selftest.py` **11/11**、`validate-skill-consistency.py` 均通过；负向门禁 **76 例 / 130 条断言**通过。门禁汇总为 **P0=0、P1=7**，P1 提示仍保留，不表述为全部清零。三画幅静音渲染与上述样例尺寸和时长核对通过。
+
+---
+
+## [3.1.3] - 2026-09-30 (English)
+
+> Against baseline `v3.1.2`: **63 files, +2,029 / −4,488 lines**.
+
+### Motivation
+
+This is a **patch release** focused on bug fixes, correcting gate criteria, and finishing aspect-ratio adaptation for the bundled example. It carries forward the existing learning-goal and visible-carrier principles, while keeping automated checks focused on verifiable issues. It does not rebuild the component system or repackage the previously completed teaching-first work as a major new feature.
+
+### Fixes and validation criteria
+
+- `validate-composition.py` now blocks on mechanically checkable instructional coverage: every narration cue belongs to exactly one shot, each shot declares its core relation and visual carrier, and scene source must contain recognizable visible JSX. A static diagram may support consecutive cues; fixed quotas for skeletons, components, media, or motion and a requirement to fill the canvas are removed.
+- `resolve-shots.py` and `validate-shot-motion.py` align shot declarations with actual camera geometry: a still shot needs no anchor, and geometry safety is checked when camera motion actually changes framing.
+- `validate-presentation.py` treats heuristic caption-reading speed and line-length measures as review prompts rather than certain technical failures; explicit timing and contrast issues remain governed by their checks. Positive and negative fixtures also cover valid static scenes and the three-canvas constraints.
+
+### Three-canvas adaptation and documentation
+
+- The bundled eight-shot example was independently reflowed and silently rendered in 16:9 (2560×1440), 4:3 (1920×1440), and 3:4 (1440×1920). Each format is **8 shots, 1,150 frames, 30 fps, and 38.33 seconds**. Silent review output was generated; checks covered 390px contact sheets, all seven cut points, card fit, text overlap, graphic clipping, and canvas bounds.
+- The README, skill instructions, and aspect-ratio reference now state the verification scope and limits: these results cover the bundled official example only and do not imply automatic adaptation of arbitrary new projects.
+
+### Known limitations
+
+- BudouX was **not run** in this round, so phrase-boundary behavior was not validated.
+- No blind review or physical-device test was performed. Review renders were silent; **audio/TTS was unchanged and was not validated**.
+
+### Tests
+
+All 12 regression checks passed; the local rerun of `selftest.py` passed **11/11**, and `validate-skill-consistency.py` passed. The negative-gate suite passed **76 cases / 130 assertions**. Gate summary: **P0=0, P1=7**; the P1 prompts remain recorded and are not described as cleared. The three silent renders passed the stated sample dimensions and duration checks.
+
+---
+
 ## [3.1.2] - 2026-09-22
 
 > 对照基线 `v3.1.1`：**35 个文件，+1 020 行，−145 行**。

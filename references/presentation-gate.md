@@ -1,204 +1,36 @@
-# 呈现效果门禁（`validate-presentation.py`）
+# Presentation gate: what code can prove, and what it cannot
 
-> **数量口径**（2026-09-22 复核）：本道加入时全技能 9 道门禁、它是第 10 道；**现在是 14 道** ——
-> 构建期 6 + 渲染期 7 + 成片后验 1（表见 `SKILL.md` 的 The gates），本道是构建期那 6 道之一。
-> 其它门禁查的是「画面里**有没有** / **够不够多** / **会不会撞**」。这一道查的是它们**都没问过**的那一层：
-> **观众此刻该看哪里、读不读得过来、讲的和画的对不对得上。**
-> 纯算术、不需要渲染、零新增数据模型——与其它构建期门禁同一形态。调研与依据见 `呈现效果调研.md`。
+`validate-presentation.py` is a build-time arithmetic and source-inspection aid. It is not a learning-quality score. `validate-composition.py` separately requires exactly one shot to cover each narration cue, a non-placeholder `coreRelation` and `visualCarrier` for every shot, and a recognizable visual JSX node when scene source is available. These checks catch omissions, not semantic truth: current implementation is authoritative; use both validators and keep fixtures in `scripts/negative-gate-check.py` aligned.
 
-运行：
+## P0: demonstrable integrity failures
 
-```bash
-python scripts/validate-presentation.py PROJECT_DIR [--json]
-# 或 CLI：
-node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
-```
+The checker blocks stale/missing `shots.resolved.json` records, timing declarations outside a shot or its stated cue, beats that materially precede or trail the spoken idea, invalid cue references, and explicit color pairs below the applicable contrast requirement. P0 means a concrete integrity/accessibility failure that can be checked from project data; it does not mean the scene must be visually active.
 
-退出码：`0` = P0 为 0（通过）· `1` = 有 P0 · `2` = 用法/文件错误。
+A shot may have no `beats`, and a narration cue need not trigger a new visual event. Every cue must still be covered by a shot whose declared visual carrier supports its core relation. A stable, readable diagram may continue to be explained or read. If a beat is declared, its timing must be correct; the checker also warns when a legal beat sits close to the timing tolerance. Missing carrier/relationship declarations or a scene with no visible JSX node are blocking omissions; whether the declared scene actually explains the narration remains a human judgment.
 
-## 一、判据（每条都给可计算形式）
+Text/background contrast follows WCAG 2.2 SC 1.4.3 where applicable: 4.5:1 for ordinary text and 3:1 for large text. WCAG 2.2 SC 1.2.2 requires synchronized captions for prerecorded media but does **not** define a universal reading-speed, character-per-second, or minimum-display-time threshold.
 
-### G-1 时间接近（P0）——把授权契约第 9 条变成代码
+## P1: useful prompts, not universal thresholds
 
-契约原文：「元素出现帧绑到讲到它的那一句」。数据早就有（`shots.json` 的 `beats` 是从 cue 推出来的），**只缺断言**。
+The validator reports its configured subtitle reading-speed, line-length, line-count, beat-clustering, small-font, palette-role, and optional author-note observations as P1. These are review prompts, not WCAG compliance verdicts or automatic reasons to add motion, delete content, or reject a coherent composition. Inspect the rendered output in its intended size, language, viewing context, and audience.
 
-| # | 断言 | 可计算形式 |
-|---|---|---|
-| ① | beat 落在本镜区间内 | `cueFrame(beat.cue) + beat.offset ∈ [shot.from, shot.to]`（**含 to 边界**：允许"切在下一句起点"的那一拍） |
-| ② | beat 声明的 cue 属于本镜 | `cue ∈ [cueFirst, cueLast + 1]`（同上，允许 +1 的边界拍） |
-| ③ | 不提前剧透 | `beat.offset ≥ −12 帧`（0.4s） |
-| ③b | **不拖后**（不得晚于那句讲完） | `beat.offset ≤ 该句帧数 + 8`（`BEAT_LATE_FRAMES`）。超出 = "台词已经讲完，元素才出现"，与台词脱节 |
-| ③b-P1 | 贴边预警 | 距上界只剩 ≤4 帧（`BEAT_TIGHT_FRAMES`）→ P1。**合法但脆**：配音或 cue 表一变就先从这里挤成 P0 |
-| ④ | 每条 cue 至少有一拍 | 本镜 `cueFirst..cueLast` 全被 `beats` 覆盖；确实不需要的必须在 `shots.json` 里显式写 `silentCues: [i]`（**要写出来才放行**） |
+The project currently uses a 9 weighted-character-per-second and 16 weighted-character-per-line reference to find cues that may need review. These values are operational defaults, not universal human limits. A 13-design-pixel font is a code search reference, not proof of legibility in final output pixels. Read the reported cue at phone size and, when possible, on the actual target device.
 
-> ⚠️ **下界与上界缺一不可，而且 8 帧这条容差是「承重墙」不是安全边际**（复核两轮实测后如实写清）：
-> · 第一版只有③（防提前），`{cue:0, offset:200}`（台词讲完 6.7 s 才出现）实测 **PASS** —— 这是复核抓到的真漏洞，③b 就是补它的。
-> · 上界贴着真实数据：**模板最紧的合法拍就是 `offset = 该句帧数`**（"这句讲完时那拍出现"是设计约定），
->   把 8 帧容差**整个吃掉**（实测余量恰好 8 帧）。demo 上更紧：S8/cue14 只剩 **2 帧**、S7/cue13 剩 **5 帧**（修数据前）。
-> · 所以：**任何一次换配音 / 重算 cue 表，都必须重跑本门禁**；"上界贴着数据"这件事不许被当成有安全边际。
->   贴边的合法拍会被 ③b-P1 单独点名，好让下一个人先看见它，而不是等它变成 P0。
-> · 修数据的方向永远是"把拍挪回句内/句末"，**不是把容差调大**——调大就放走了"讲完才出现"这类脱节。
+## Optional teaching-design notes
 
-> ⚠️ **与调研报告原文的差异（重要）**：报告写的形式是 `|beat − cueStart| ≤ 6 帧`。
-> **照抄会给正确的数据报 P0**：我们的 `beats` 本来就允许句内偏移（`{cue:13, offset:100}` = "同一句的第二拍"），
-> 现有的 S7/S8 各有一处，逐字判会被报成偏差 96–100 帧。所以真实可检查的形式是
-> **"beat 落在它声明的那句/那一镜的范围内、且不提前也不拖后"**，而不是"必须贴住句首 6 帧"。
-> 这条判据的实证依据：temporal contiguity（PMC12691884 逐字定义）+ 视听线索同步实验（JEP 2019, DOI 10.1037/edu0000285）。
+`move`, `evidence`, `hold`, `misconception`, `noMisconception`, and `why` are optional planning prompts, not required per-shot fields. They can help an author state an intent, but cannot prove that the visual teaches it.
 
-### G-2 字幕阅读预算（P0）——Netflix 中文（简体）Timed Text Style Guide
+- If `move` is supplied, an unknown suggestion produces a P1 note; repeated or omitted moves are allowed.
+- If `hold` is supplied, its type is checked; no minimum still duration is enforced.
+- If misconception fields conflict, or `noMisconception` lacks its optional reason, the script may prompt review; omission is valid.
+- If `evidence` is supplied, the checker only verifies that its name appears as JSX in scene source somewhere. It does not establish that the named element appears in that shot, changes over time, is correct, or explains the narration. A cross-shot match is a known limitation.
 
-| 判据 | 值 | 说明 |
-|---|---|---|
-| 阅读速度 | ≤ **9 加权字/秒** | 成人档（儿童 7）。**加权**：CJK 计 1、ASCII/数字计 0.5 —— **不需要分词**，正好绕开"按空格分词对中文失效"的坑 |
-| 单行宽度 | ≤ **16 加权字** | 同上 |
-| 行数 | ≤ **2 行** | 同上 |
+## Human review remains necessary
 
-数据：`manifests/caption-cues.json` 的 `text / start_ms / speech_end_ms`（**零新增数据**）。
+Read and listen through the whole film at full speed. Verify that important changes and highlights refer to the currently spoken idea, leave time to read diagrams/captions, and do not add distracting sound. Still frames can be correct. A useful comparison is between a visual cue synchronized with the spoken reference and the same cue when it is absent, early, or late—but do not make highlighting mandatory on every line.
 
-### G-3 可读性底线（P0 地板 + P1 档位）
+The checks do not evaluate factual truth, pedagogical transfer, viewer comfort, aesthetic preference, visual hierarchy, whether a diagram is self-explanatory, or whether a hold feels too long. Only viewer evaluation can support those claims.
 
-| 判据 | 档位 | 依凭 |
-|---|---|---|
-| 任何 `fontSize < 13` | **P0** | 13 = 技能自己的 `MIN_LABEL_FONT`（`components/data.tsx`），**不是新魔数**；报告建议把这条既有政策从"图元标签"扩到全库 |
-| `fontSize ∈ [13,16)` | P1（按文件聚合） | "标注 ≥16"档 |
-| 正文色 `ink` / 反白 `white` on `ink` 对比度 < 4.5:1 | **P0** | WCAG 2.2 SC 1.4.3（大字号 3:1；**不四舍五入**，4.499 不通过） |
-| `muted` on 表面 < 3.0 | **P0** | muted 是装饰性 kicker，按大字档判 |
-| `muted` 3.0–4.5 | P1 | 同上，提示一档 |
-| **`*Ink` 文字安全色**在任一纸面上 < 4.5:1 | **P0** | `blueInk/orangeInk/greenInk/goldInk/redInk` 是**专门**用来当文字色的（约定与来历见 `theme-system.md` 的"文字安全色"一节）：它们不过，就等于"把强调色压暗到能当文字用"这个约定是空话。**这一条同时是新增机制的自检**——没有它，加了 Ink 也没人验 |
-| 被 `color:` 用过的**任意其它调色板键** on 纸面 < 4.5:1 | P1（按主题聚合） | 用原色（或 `orangeDeep` 这类填充 token）当文字色。**修法是换成对应的 Ink 变体，不是调松门禁** |
-| 彩色填充上的白字 < 3.0 | P1（按主题聚合） | 见下"已知真实缺陷" |
+## Regression proof
 
-> **遇到"强调色当文字色"该怎么做（本轮的处置，照做就行）**：① 这个词位本来就该是文字 → 换成对应的 `*Ink`；
-> ② 这个 token 同时还要当填充（如 `orangeDeep` 是章节序号渐变的深色端）→ **原值保留给填充，文字位改 `orangeInk`**；
-> ③ 这个 token 只当文字用（如 `headerAccent` / `headerSub`）→ 就地把它压到过线（同色相按 WCAG 反解）。
-> 实测这一步在模板上把 `flat/paper: orangeDeep`（4.19 / 2.83:1）与 `sticker: headerAccent / headerSub`（2.40 / 3.14:1）三条 P1 清掉了。
-
-> ⚠️ **这道对比度检查的能力边界（复核实测，别高估它）**：它只读 `theme/*.tsx` 里 `palette` 那个字面量，
-> 且只认**标准键名**。实测两条绕过路径都走得通：
-> ① **硬编码文字色**（`<div style={{color:'#dcdcdc', background:'#faf7f2'}}>` = **1.28:1**，本仓 `contrast()` 复算 = 1.283）→ **rc=0 完全不报**；
-> ② **把正文色改名**（palette 里加 `fg:'#eeeeee'` 并当文字色用）→ 只报 P1，不阻断。
-> 同一类漏检面还有两种常见写法：**`linear-gradient()` / `conic-gradient()` 里的停靠色**（颜色在字符串里，
-> 且是两层叠加后的实际对比）、**SVG 元素的 `fill` / `stroke`**（不是 `color`）——都读不到。
-> 也就是说：**它能拦"用标准键写错了色值"，拦不住"换个写法压低对比"**。
-> 真要在渲染期量真实 DOM 的 computed color/背景（连硬编码、渐变、SVG fill 一起抓），属于 T2 的 FocusGate
-> （尚未实现）/G-9 那一批（调研报告 §5.2），**本轮没做**。
-
-> ✅ **扫描口径（第三轮复核提出后已修）**：本门禁与 `import_integrity` 都**只扫"值位置"**——
-> 扫描前把注释内部与**字符串字面量内部**统一抹成空格（长度与行号一字不动，所以行号永远等于编辑器里那一行）。
-> 于是：注释里的反例（"`fontSize: 8` 是禁止写法"）、**模板字符串里的代码样例**
-> （接触表/测试页里 `const CODE = \`import X from './y';\`` 就是，本仓库确实这么写）都不再被当成真代码。
-> 遗留边界（写清楚，不死磕）：**如果哪天真的把可执行的 import/字号写在字符串里**（例如从字符串生成场景源码），
-> 那道门禁看不见它——这类写法本技能不鼓励，真出现时要靠人看。
-> 反过来的边界也在：**注释里的确写错的代码**不会被拦（这正是我们要的，注释里的反例是文档，不是缺陷）。
-
-> ⚠️ **这里踩过两次假阳性，记下来免得重犯**：判对比度时**不能用静态交叉去猜"谁会压在谁上面"**。
-> 第一版把 `white × paper` 全交叉算了一遍 → `white on paper = 1.00:1` 被报成 P0（白字**永远不会**压在白纸上）；
-> 第二版改用 `background: C.x` 推断，结果 `background: C.paper`（卡片底色）又把 `white on paper` 请了回来。
-> 结论：**配对必须是声明的契约**——正文 `ink on 表面`、深底反白 `white on ink`、彩色反白 `white on <强调色>`、
-> 次要文字 `muted on 表面`、彩字 `<强调色> on 表面`，就这五类，写在脚本里。
-
-### G-14/G-15/G-16 讲法字段（P0/P1）——**判据见 `narrative-moves.md` §4**
-
-本脚本还有第二组检查：`shots.json` 里的 `move` / `evidence` / `hold` / `misconception(+noMisconception+why)`
-四类**讲法字段**是否写全、`move` 是否落在 10 个名字的闭集里、`hold` 是否 ≥ 标定线、误解二选一是否成立。
-判据、取值与标定过程都在 [narrative-moves.md](narrative-moves.md) §2–§4，这里不重复。
-
-> ⚠️ **这一条此前是名存实亡的（G-15 的 `evidence`，2026-09-22 补，当天又按实测二次简化）**：文档把判法写成
-> "该名字必须出现在本镜场景源码里，且它所在的 JSX 块内有帧驱动的量；**静态元素不算证据**"，而代码里读
-> `evidence` 的唯一一处是 `if not ev:`（**只查字段非空**）—— 名字写成不存在的、或指向一个不动的卡片，
-> 门禁都不会响。这与 `CardFitGate` / `OverlapGate` / `bottomFill` 是同一类病（文档里有、代码里没有）。
->
-> **现在的口径（比上一版更窄，但不留做不到的承诺）**：只查**一件事** ——
-> `evidence` 的名字必须**作为 JSX 用法**（`<名字 …>` / `<名字/>`）出现在该工程的**场景源码**里
-> （扫前用 `noncode()` 抹掉注释与字符串，所以**只在注释/import/字符串里出现的名字会被报出来**，P0）。
-> 判据、算法与"怎么判的"三段都在 [narrative-moves.md](narrative-moves.md) §2，这里不重复。
->
-> **不做哪半边（写清代价，别高估它）**：
-> · **不做本镜作用域**：名字在本镜没用到、但在**别的镜**用了，会**漏**（夹具 AG 现在就是这个语义：必须放行）。
-> · **不做"是不是静态"**：不解析 JSX 结构、不看帧驱动 —— 指向一个在本镜里不动的静态卡片**不会响**。
->   砍掉它的理由：那一半只能做白名单判定，而误报面实测到了（帧经 `ctx` 传进组件的 `PhaseRail` 会被判成静态，
->   而它恰是动作表推荐的首选件 —— 判成 P0 就是"照文档写、门禁拦你"）。
-> · **不做降级**：上一版在"切不出本镜"时要降级并自报 P1 —— 现在没有"本镜"这一层，无级可降。
->
-> **为什么敢砍**（实测）：上一版是 465 行（手写 JSX 遍历 + 本镜切片 + 帧驱动白名单 + 降级分支），
-> 它在接触表上抓到的真缺陷与本版**是同一批**。取舍与本技能其它判据一致：**宁可少报，不要假报告**。
-> **真实工程 overview-film 的 S2 就是这条判据抓到的真缺陷**（`MetricGrid` 已被换成手绘行 + `Chart`，
-> 只在注释里留名）—— 这一条**新口径仍然抓得住**（夹具 AJ 钉的就是它）。
-
-> ⚠️ **编号（2026-09-21 修撞号）**：这一组**不是 G-6**。G-6 在调研报告里是"**对比层结构闭合**"（需要 `compare` 字段），
-> 至今**未实现**（见本文第四节）。本组用 `narrative-moves.md` §4 的编号：G-14 `move` 闭合 / G-15 `evidence` 真的会动 /
-> G-16 误解与留白；G-17（`known → new` 闭合）尚未实现。
-> 判断依据：**编号属于调研报告的清单，新门禁只能往后排**——两边都叫 G-6 会让"哪道门在报"变成猜谜。
-
-### G-5 节拍拥挤（P1，**代理指标**）
-
-同一镜内 **≥3 个 beat 落在 12 帧窗口** → P1（好几件事挤在一拍上，观众分不清该看哪）。
-
-> ⚠️ 报告原文的 G-5 是"每帧**新开始的入场动画数**直方图"，那需要元素级的 `enters` 声明，**现有数据里没有**。
-> 这里只做数据支持得了的代理形式，差距写在 Known gaps 里。
-
-## 二、这道门禁自带负向夹具（`scripts/negative-gate-check.py` 的 I–M · R · S · X · Y · AC–AE · AF–AK）
-
-**每条判据都有"喂坏输入必须拦住"的证据 + 阴性对照**（技能铁律：名存实亡的门禁是最危险的缺陷——
-本轮刚抓到 `CardFitGate` 从装上那天起就没拦过一次）。
-下表输出是**实跑抄录**；`must_block:<子串>` 断言保证"因别的原因失败"不算通过。
-
-| 夹具 | 喂了什么坏输入 | 门禁实际报的 |
-|---|---|---|
-| I | 把 S1 的第二拍改成 `{cue:1, offset:-13}`（提前剧透） | `P0 S1: beat(cue1) offset=-13 早于该句 13 帧（上限 12）` |
-| **S** | 把 S1 的第一拍推到 `offset=200`（该句 31 帧，讲到 6.7 s 后才出现） | `P0 S1: beat(cue0) offset=200 晚于该句结束 169 帧（上限 8 帧容差；该句 31 帧）` |
-| **R** | 把 S7/cue13 的第二拍推到 `offset=112`（该句 106 帧 → 距上界只剩 2 帧，**仍在容差内**） | **rc=0**（放行）+ `P1 S7: beat(cue13) 距容差上界只剩 2 帧…合法但**贴边**` |
-| J | 让 S2 的 beat 引用 S7 的 cue | `P0 S2: beat(cue13+0) 落在 803 帧，超出本镜 [213,286]` |
-| K | 把 cue1 写成 36 加权字 / 0.9s | `P0 cue1: 阅读速度 40.0 字/秒 > 9.0` |
-| L | 写一个 `fontSize: 9` 的场景文件 | `P0 src: src\tooSmall.tsx:1 fontSize:9 低于绝对地板 13` |
-| M | 把主题的 `ink` 改成近乎白色（压白底） | `P0 theme:paper: 正文色 ink on paper = 1.12:1 < 4.5` |
-| **X** | 删掉 S3 的 `move`（讲法字段 G-14） | `P0 S3: 缺 move（叙事动作）：讲法规范要求每镜声明它在这一章里干哪件事` |
-| **Y** | 把 `paper` 的 `blueInk` 改成 `#eeeeee`（文字安全色） | `P0 theme:paper: 文字安全色没过 4.5:1（它们是**专门**用来当文字色的）：blueInk 1.07:1(on paperWarm)` |
-| **AC** | 把 S1–S3 三镜的 `move` 都写成同一个 `引入`（同一 `move` 连续 3 镜，G-14②） | `P0 S1–S3: 同一 move 连续 3 镜：S1→S2→S3 都是 «引入»（上限 2 镜，判据 = 文档的「同一个 move 不得连续 ≥3 镜」…）` |
-| **AD**（对照） | 同样的改法**只改 2 镜**（连续 2 镜，上限之内） | **rc=0**（放行）+ `结论：P0=0 P1=0 → PASS` —— 证明这条不是"见到重复就拦"，上限就是 2 镜 |
-| **AE** | S1/S2 与 S4 都是 `引入`、中间 S3 的 `move` 删掉（夹一镜缺 move） | `P0 S3: 缺 move（叙事动作）：讲法规范要求每镜声明它在这一章里干哪件事` **且不报**「同一 move 连续」（`must_absent`：缺 move 打断计数，不许把两侧拼成 S1→S2→S4 的假"连续 3 镜"） |
-| E（对照） | **原样分镜** | `validate-presentation` **通过**（证明门不是"见谁拦谁"） |
-| **AF** | S1 的 `evidence` 改成一个**源码里不存在**的名字（夹具用的是 GhostWidget 这类假名） | `P0 S1: evidence=«GhostWidget» 在场景源码（scenes.tsx）里**找不到这个用法**…`（并断言**不许**走成"静态"那一侧） |
-| **AG**（改写） | S1 的 `evidence` 改成 `StaggerList`（它**只在 S4** 出现） | **rc=0（放行）** —— 这条夹具的**语义变了**：它不再测"本镜作用域"（那一层已按实测砍掉），而是把"**已知漏检**"钉在明处：名字没在本镜用到、只在别的镜用了，判据看不见。谁哪天加回本镜作用域，它会先失败（那是有意的信号） |
-| **AJ** | S1 的 `evidence` 改成 `exitAt`（模板里**只在注释中留名**的已删小助手） | `P0 S1: evidence=«exitAt» …**找不到这个用法**` —— 注释里的名字不算"用到"（`noncode()` 那一层） |
-| **AK**（对照） | **原样 + 带模板 `src`** | `validate-presentation` **通过** —— 模板 8 镜的 `evidence` 个个合格（E 用例没有 src，走不到这条判据） |
-
-> ⚠️ X 与 Y 是**本轮新增判据的夹具**（判据加了而夹具没加，这道门仍然只是名义存在）。
-> Y 还兼作"新增机制的自检"：五个 `*Ink` 是专门用来当文字色的，喂一个过不了 4.5:1 的进去必须报 P0。
-
-> ⚠️ AC–AE 是 **G-14②（同一 `move` 不得连续 ≥3 镜）判据、文档口径与夹具同版落地**的那一组
-> （口径写回 [narrative-moves.md](narrative-moves.md) §2：**极大连续段 ≥3 镜即违规，最多连续 2 镜**，P0）。
-> AD 是阴性对照；AE 专钉"缺 move 打断计数"这条口径 —— 判据第一版写成 `continue`（跳过但那一段不断开）时，
-> 夹具当场抓出「S1→S2→S4 连续 3 镜」这句用户照着改不了的假话。
-
-> ⚠️ AF–AK 是 **G-15（`evidence`）同版落地**的那一组，也是"这条判据此前**只查字段非空**"的直接证据：
-> AF/AJ 钉 **P0 那一半**（不存在 / 只在注释里），AK 是阴性对照，AG 钉住"**不做本镜作用域**"这条口径的**代价**。
-> **删掉的两条夹具**（AH/AI 帧驱动 vs 静态、AL 降级）对应的能力在二次简化里被砍掉了 ——
-> 夹具不留，但代价逐条写进了 [narrative-moves.md](narrative-moves.md) §2 与本文的 G-15 段，
-> **不留做不到的承诺**；`validate-presentation.py` 里那段注释同样列出了"不做什么、代价是什么"。
-
-> ⚠️ 夹具 I 的第一版**根本没测到③**：它给 S2 的 `cue4` 加负 offset，而那个 cue 的帧号恰好等于 S2 镜起点，
-> 任何负 offset 都先撞判据①"落在镜外"→ 永远走不到"提前剧透"。复核读完整输出才发现，现改用 S1 的 cue1。
-
-## 三、已知的真实缺陷（P1 报出来、处置留给人）
-
-跑一遍现有分镜，**P0 = 0**，但 P1 里有一条必须点名：
-
-> **四套皮肤的强调色当文字色时对比度不足**：gold 1.35–2.94:1、green 1.78–3.04:1、orange 2.03–3.54:1、
-> orangeDeep 2.49–2.83:1（大字档需 3.0、小字需 4.5）。彩色填充上的白字同样有问题（sticker 的 white on gold = 1.44:1）。
-> 这是**真实的可读性缺陷**（不是判据太严），但它属于**审美决定**：要么把这几支色值调深、要么约定
-> "这些色只用于图形填充、当文字时改用 `ink`"。**没有替用户改四个主题的配色**，只把数字与用到处报出来。
->
-> ✅ **2026-09-21 的处置（部分落地）**：约定已经落成机制 —— 每支强调色补一个 `*Ink` 文字安全色
-> （同色相按 WCAG 反解压暗，见 `theme-system.md`），五个 Ink 现在都过 4.5:1；
-> 又把**残留的三个"用填充色当文字"的色名**按同一办法清掉：`number/boolean` 的语法高亮从 `orangeDeep`
-> 换成 `orangeInk`（原值继续留给章节序号渐变），sticker 的 `headerAccent` / `headerSub` 就地压暗。
-> 于是 `flat/paper: orangeDeep` 与 `sticker: headerAccent / headerSub` 三条 P1 消失。
-> **仍未处理的是另一半**：彩色填充上的白字（sticker 的 blue/orange/orangeDeep/green/gold 全在 1.44–2.66:1）
-> —— 那要么把填充色压深、要么给白字加描边，是纯审美取舍，**留给用户拍板**。
-
-## 四、还没做的
-
-- G-4 屏上文字总量预算、G-6 对比层结构闭合（需要 `compare` 字段）、G-8 空间接近、G-13 信号-旁白对齐
-  （需要序数词/实体名闭集）——都在调研报告的批次 B/C 里。
-- G-5 的原始形式（元素级 `enters` 直方图）需要新声明，见 Known gaps。
+Run `python scripts/negative-gate-check.py`. Fixtures should prove that concrete timing, contrast, missing-source, missing-cue-coverage, missing-core-relation, missing-visual-carrier, and empty-scene failures are caught. They should also prove that a genuinely visual static camera, repeated layout, absent beat, unfilled lower frame, and omitted optional teaching note pass without a complexity quota.

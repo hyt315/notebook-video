@@ -28,9 +28,8 @@ import {FitCard, Typewriter, StampSeal, Funnel, ChatThread, ProgressRing, Stagge
 | `f={f}` | `components/`（**新封装层全部**）、`media`（`ConsoleWindow` `MetricGrid` `StampBanner`）、`stagekit`（`StageFrame` `PhaseRail`）、`skeletons`（`Corridor` `SplitStage` `ZoomStage`）、`insert`（`RevealMask`）、`shotkit`（`ShotCamera` `CoverPanel`） |
 | 不收帧参数 | `kit` 的 `PillTag/LineIcon/CheckBadge`、`CoverPanel`、`PhaseRail`（从 `ctx` 取）、`ShotCamera`（内部自取） |
 
-> **写列表错峰（v2.11 校准）**：`StaggerList` 默认 `stagger=6`。实测 18–30 帧的错峰在中文旁白下会读成
-> "一个个淡出来"，观众看不到"成串落下"，还会让后几张卡在旁白已经讲下一句时才出现（用户会报"四项只看到三项"）。
-> **同句内错峰 ≤8 帧**；真正需要长间隔的是叙事节拍，那应该由 `beats` 决定，不是由 `stagger` 决定。
+> **列表错峰是可选节奏**：`StaggerList` 默认 `stagger=6`。一次中文旁白样例中，18–30 帧的错峰读起来像逐条淡入，并让后续项目落到下一句之后；这是特定样片的审查观察，不是通用帧数门槛。
+> 依据阅读速度、语义和旁白对齐决定是否错峰，并在实际播放中检查；不要求同句内使用固定帧数上限。若长间隔是在表达叙事推进，用 `beats` 明确记录其含义。
 
 ## 本轮动效升级（v3，多时钟）
 
@@ -118,7 +117,7 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 |---|---|---|
 | `Callout` | 圈住一处 + 旁边手写标注 | `x,y,w,h,text,textDy,textDx,color,rotate,start,frame` |
 | `Checklist` | 列一份清单；`done` 给完成数，序号变对勾 | `items,start,stagger,colors,done,rowH,fontSize,frame` |
-| `JumpInText` | 逐字跳入（钩子与收尾，全片 1–2 处） | `items[{text,color,colorActive}],fontSize,start,stagger,frame` |
+| `JumpInText` | 逐字跳入（当文字动作能强化语义时可用） | `items[{text,color,colorActive}],fontSize,start,stagger,frame` |
 
 `Callout` **不带** `data-gate-allow`：画圈的椭圆是 `fill="none"` 的 SVG，`OverlapGate` 的 `looksSolid`
 本来就不会把它当遮挡物；而标注文字是"另一条信息"，必须继续参与重叠判定（白名单只留给镜头交接与同位置换信息）。
@@ -135,4 +134,3 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 2. **坐标看祖先**：`x/y` 永远相对于最近的 positioned 祖先。放在
    `Paper` 卡片内部时是"卡片相对坐标"；只有直接放在场景根 div 下
    才是场景坐标。S4 印章曾因写成场景坐标而飞出屏（渲染不报错）。
-

@@ -59,14 +59,13 @@ export const RevealMask: React.FC<{f: number; at: number; dur?: number; dir?: 'l
 };
 
 /**
- * 转场清单：全片只用这 3 式。
+ * 当前镜的 transition 描述它如何进入；cut 是直接替换，handoff/reveal 只在有教学用途时显式选择。
  * `scripts/validate-composition.py` 自带同一份集合（其 `TRANSITIONS`）作为判据，
- * 多样性的判据也在那边（按 shot 表的 `transition` 字段统计，与这个数组无关）。
+ * 这里没有转场种类数量或多样性配额。
  * 两处一致性由 `scripts/validate-skill-consistency.py` 交叉校验，漂移会被门禁拦下。
  */
 export const TRANSITIONS = ['cut', 'handoff', 'reveal'] as const;
-// v3.0.1：whip / paper-turn 已删除——它们在两条成片里零引用，且 whip 要真生效必须改交接引擎。
-// cut 的真实实现是引擎的 10 帧叠帧（index.tsx），handoff 需要 carrier 声明，reveal 由 RevealMask 实现。
+// `cut` 不叠加上一镜；`handoff` 需与上一镜声明同一 carrier，`reveal` 由 RevealMask 明确实现。
 export type TransitionKind = (typeof TRANSITIONS)[number];
 
 /**

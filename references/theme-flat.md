@@ -1,60 +1,13 @@
-﻿# Theme contract: flat (modern flat geometric monsters)
+# Optional visual treatment: flat
 
-Status: LOCKED. This theme ships fully implemented in `assets/lecture-template/src/theme/flat.tsx`. Production runs select it with `new-project ./dir --style=flat` and never edit the theme file. Read this document instead of the other theme docs; the three style contracts are mutually exclusive by design (progressive disclosure).
+The `flat` implementation in `assets/lecture-template/src/theme/flat.tsx` offers clean geometric shapes, restrained edges, and simple color blocks. It can serve direct comparison, data, process, and low-decoration diagrams. Flat does not mean “remove important detail”; the right amount of information depends on the lesson.
 
-## Design language
+## Use when it helps
 
-Modern flat geometric with playful character: gray-hairline white cards with colored offset solid shadows, geometric little monsters peeking from the corners, stars / exclamation / squiggle props, floating rounded subtitle pill. Energy is confident, quirky and editorial.
+Start with a clear background, a small semantic palette, stable baselines, and precise labels. A chart or relationship may need no card at all. A character, monster, shadow, gradient, pill subtitle, or corner decoration is optional. Avoid adding a mascot or floating shapes unless they help explain or orient the viewer.
 
-## Locked tokens (do not invent alternatives)
+The former per-canvas mascot background was reviewed on the bundled eight-shot sample at 390px. Its large bottom-right character appeared behind the 3:4 conclusion area, so the template now uses a quiet cool gray-blue field. The white cards, semantic colors, hard-offset shadows, and blue subtitle treatment remain the `flat` visual language. The old `public/bg-flat-*` bitmaps are retained as inactive source assets, not loaded by this theme. Keep text live and inspect actual glyph size/contrast at output dimensions.
 
-- Canvas: 16:9 (2560×1440) 是模板默认注册的画布；4:3 / 3:4 需要自己改 canvas 参数并重排版面（见 canvas-modes.md）。 Layout coordinates are unchanged from the default; only skin and decoration change.
+## Boundaries
 
-- Base surface: cool light gray-blue `#f2f4f7`; cards pure white. The cool tone is the point: it must never drift back toward a warm paper white.
-
-- Ink: `#191919` for monster pupils/mouths, prop dot matrix and body text.
-
-- Accents: indigo `#3b4ed8` (blue slot, the lead), coral `#f05f42` (primary/orange slot), mint `#41d27b` (green slot), sun `#f0c63c` (gold slot). All accents are derived on one step (saturation ≈65–85, lightness ≈54–62) under the indigo lead — never invent off-step colors.
-
-- Card skin: pure white card with a `2px` neutral gray hairline (`rgba(25,25,25,0.30)`, defines the top/left edges on the pale surface — not an ink frame), `20px` radius, offset solid shadow `7px 7px 0` in indigo `#3b4ed8` by default — when a scene passes a semantic accent color the shadow takes that color, so each card reads as a color-blocked tile; lift extends the offset slightly. No ink border, no inset liner, no blur anywhere.
-
-- Background (LOCKED fixed raster): one AI-generated image per canvas ratio, selected automatically from `public/bg-flat-<169|43|34>.jpg` (`16:9` 2560×1440 pixel-exact 1:1 with the canvas; `4:3` 2240×1680 and `3:4` 1680×2240 exported at 7/6 supersampling of the canvas; every ratio is aspect-exact to its canvas and renders as a uniform 6/7 downscale — no crop, no stretch). The image carries the complete background language: pale gray-blue `#f2f4f7` grained paper, an indigo round blob monster peeking from the bottom edge bottom-right (gold antenna ball, big eyes, blush, smile — head and shoulders only), a mint hill bottom-left with a tiny coral square monster peeking out, ~85% clean whitespace, top corners and center reserved for content. The code-drawn SVG monster/props background is retired; never restore it and never draw extra elements on top of the image.
-
-- Grade: none by design. Color contrast carries the composition; do not add soft-light warmth or vignette.
-
-- Subtitle: floating rounded pill (indigo `#3b4ed8`, radius 26, padding 16×40, hard offset ink shadow `7px 7px 0`), bottom-centered at 40px, coral dot before the text and mint dot after; bold white Kai text. No full-width bar, no box, no tape.
-
-## Scene adaptation rules
-
-- Keep every layout coordinate, type scale, motion helper and frame contract from the default lecture template. Do not redesign zones.
-
-- Scene graphics use geometric primitives (rects, circles, bars) with flat fills and hard-edged strokes; no gradients, no soft shadows, no blur.
-
-- White cards keep full opacity so text stays readable; the monsters in the background image never overlap the content zones — verify on the first frame of each scene.
-
-- Emphasis color rotation (coral → indigo → mint) follows the existing semantic color slots.
-
-## Rejection flags
-
-- Any blur, gradient or vignette.
-
-- Restoring the code-drawn SVG monster/props background, or drawing any extra element on top of the locked background image.
-
-- Subtitle rendered as a full-width bar, or as a floating white chip (that belongs to cel/sticker).
-
-- Ink-bordered cards or white inset liners (that is the cel theme's language; flat cards carry only the 2px gray hairline plus colored shadows).
-
-- Replacing or regenerating the background images with off-palette colors, or stretching a wrong-ratio image onto a canvas.
-
-## Background decoration zones (v2.10)
-
-`flat`'s locked background carries a large blue cartoon character at the lower right plus a green hill
-and red rounded square at the lower left — the same size class as the product mascot, so it can read as
-a second mascot. The image is locked; the readability rule is the same as `cel`:
-
-- content overlapping a declared zone sits on a `CoverPanel` (wash `z` below content, never above);
-- Film-level fallback: `CoverPanel` with `tone="wash"` and `z={-1}` (the old `BackgroundMute` was removed in v3.0.1).
-
-Declared zones (1920×1080 design space): `(1240,380,680,700)`, `(0,700,780,380)`.
-See [media-routing.md](media-routing.md) §4.
-
+Choose colours for meaning and contrast, not to satisfy a prescribed rotation. A fill color that fails contrast should not be used behind small white text. Gridlines, axes, reference labels, and baselines are part of the data when needed. Still and sparse frames are valid when they make the comparison clearer.

@@ -1,167 +1,32 @@
-# Lecture composition: the default multi-zone visual route
+# Lecture composition: make the learning relationship easy to understand
 
-## Contents
+A composition succeeds when it helps the intended viewer follow the claim, evidence and relation. A moving scene is not automatically more video-like or more educational than a static diagram. **What is mandatory is an explanation—not a prescribed aesthetic or a certain amount of motion.**
 
-- [The six rules](#the-six-rules)
-  - [1. Pure code-drawn graphics](#1-pure-code-drawn-graphics)
-  - [2. Multi-zone layout](#2-multi-zone-layout)
-  - [3. Text and graphics are co-stars](#3-text-and-graphics-are-co-stars)
-  - [4. Frame-accurate speech sync](#4-frame-accurate-speech-sync)
-  - [5. Demonstrative animation](#5-demonstrative-animation)
-  - [6. Series component reuse](#6-series-component-reuse)
-- [Skeletons, media and camera (v2.10)](#skeletons-media-and-camera-v210)
-- [Working the template](#working-the-template)
-- [Self-check before rendering](#self-check-before-rendering)
+## Plan from the teaching task
 
-## Skeletons, media and camera (v2.10)
+1. Define the intended viewer, viewing context and observable learning outcome.
+2. Identify what the viewer must notice, compare, track, or infer. Verify facts, examples, units and sources.
+3. Select and record one coherent visual treatment for the film. A paper-like surface is the shipped default; cel, sticker, flat or a restrained hybrid may suit a particular subject or audience. Do not leave the visual plan blank or choose a style to satisfy a numeric diversity target.
+4. Create a cue-indexed storyboard. Every narration cue must be assigned to exactly one shot. Every shot must name its `coreRelation` and actual visible `visualCarrier`; the chosen scene must make that relation legible, not merely decorate it.
+5. Select the simplest effective representation: labeled diagram, graph, equation, code/UI, readable text, image, staged process, animated change, or a combination. Keep evidence and comparisons needed for understanding; remove irrelevant decoration rather than necessary information.
+6. Set the hierarchy, reference links, caption space and reading time. Decide when content needs to appear or change; a stable, readable view may continue across several cues.
 
-The six rules below describe the visual language. Three further layers decide **how a scene is framed
-and what medium it uses**, and they are enforced by machine gates:
+## Reusable composition patterns
 
-1. **Skeletons** — pick one of `Stage` (one subject evolving through 3–6 states), `Corridor` (a
-   persistent object travelling a shared track), `Split` (two columns compared) or `Zoom`
-   (whole → focus → annotate → back). Adjacent scenes must not share a skeleton and the film must use
-   at least three. See [scene-skeletons.md](scene-skeletons.md).
-2. **Media** — every scene must answer "what medium does this passage use" before "which card".
-   At least three distinct media per film, and at least one live component per explanation scene.
-   Pure card-and-bullets scenes are rejected. See [media-routing.md](media-routing.md).
-3. **Camera** — one intent per shot plus a provably-visible `anchor`, ≥3 moves per chapter. See
-   [shot-language.md](shot-language.md).
+`StageFrame`, `Corridor`, `SplitStage` and `ZoomStage` are optional helpers for state-on-one-subject, meaningful paths, aligned comparisons and detail views. Use, adapt, repeat, or omit them according to the explanation. Repeated layouts, large areas of whitespace, one medium, or few components are not failures by themselves. Conversely, leaving the visual support blank is not an acceptable interpretation of simplicity.
 
-All three are checked by `scripts/validate-composition.py` and `scripts/validate-shot-motion.py`;
-read [composition-gate.md](composition-gate.md) before rendering.
+## Text, graphics and narration
 
-This is the default visual route for every notebook video. It is pure
-code-drawn SVG plus rich synchronized text, so it works in every
-environment and never depends on an image-generation model. Follow the
-steps mechanically; the template already contains a working example of
-every pattern named here.
+Captions make required speech accessible; narration and image may deliberately divide or reinforce information. Do not assume every channel must independently repeat everything, nor delete captions without considering accessibility and the audience. Check that the combined channels are accurate, non-contradictory, and no more redundant than the task requires.
 
-Image generation is an optional add-on, not part of this route. Before
-production, ask the user once whether they want generated support art for
-concrete hero scenes, and tell them plainly: the add-on's quality depends
-entirely on the image-generation model of the current tool, and Codex
-with its built-in image generation is the best-suited environment for it.
-Only if they accept, follow `visual-director.md` for
-that subset of scenes. When declined or unavailable, produce everything
-below with SVG only.
+A highlight, color change, label or sound cue should refer to the object currently being discussed. When an accent is used, synchronize it to its spoken referent; a stable view is appropriate when viewers are reading or reasoning. Not every cue needs a new element, beat, sound or animation. The human review question is whether the displayed content supports the narrated idea at that moment.
 
-## The six rules
+## Timing, geometry and comfort
 
-### 1. Pure code-drawn graphics
+Use cue-derived frame times where available. `resolve-shots.py` maps narration cues to shots; `validate-presentation.py` catches specific timing/reference errors and emits review prompts for subtitle speed, line length and font size. Treat its thresholds as operational heuristics, not universal human limits or WCAG text-speed requirements.
 
-Every visual object — mascot, diagram, machine, chart, arrow — is SVG
-written by hand inside the Remotion component tree. No bitmap is required.
-Benefits you must exploit: strokes can grow (`strokeDasharray` +
-`strokeDashoffset`), parts can move independently, and colors always match
-the locked palette. Copy `LineIcon`, `ShapeDraw`, `PathDraw`-style
-components from the template instead of inventing new drawing styles.
+Camera movement is optional. A still camera is valid. Define the essential-content `anchor` when a zoom, pan or orbit changes framing, so `validate-shot-motion.py` can prove crop safety. Check rendered labels and captions at intended output/playback size; a design-space pixel value is not proof of phone readability.
 
-### 2. Multi-zone layout
+## Rendering and learning review
 
-A scene is not one hero object. Split the 1920×1080 design canvas into
-3–5 functional zones, for example:
-
-- left: explanation panel (`Paper` with a WenKai title + body copy);
-- right or center: the graphic demonstration area;
-- bottom or side: a progressive checklist or comparison cards;
-- floating: small annotation stickers that appear on cue.
-
-Keep the locked density budget: **each zone runs one main action at a
-time**, unrelated cards stay ≥70px apart, and only one temporary transfer
-object crosses the central corridor at once. Multi-zone means parallel
-zones, never parallel actions inside one zone.
-
-### 3. Text and graphics are co-stars
-
-Text is not a caption garnish. Pair every graphic demonstration with
-readable text that carries the same knowledge: checklists that tick item
-by item, good/bad comparison cards, warning strips, step stickers. The
-viewer should be able to learn from the text alone or the animation alone.
-
-### 4. Frame-accurate speech sync
-
-Every appearance frame comes from the caption cue table, never from
-guessing. Mechanical procedure:
-
-1. Run the TTS adapter, then `build-semantic-captions`, producing
-   `manifests/caption-cues.json`.
-2. Print the cue frame table:
-
-   ```text
-   python -c "import json; d=json.load(open('manifests/caption-cues.json',encoding='utf-8'))['cues']; [print(i+1, round(c['start_ms']*30/1000), round(c['speech_end_ms']*30/1000), c['text'][:16]) for i,c in enumerate(d)]"
-   ```
-
-3. Scene boundary = start frame of the first cue of each narration
-   paragraph (the chapter-segmented adapter also writes
-   `manifests/chapters.json` with exact chapter frames).
-4. Element appearance frame = start frame of the line that speaks about it,
-   minus the scene start frame (scenes use local frames `l`).
-5. A checklist item lights up on the cue that says it; a lamp turns red on
-   the cue that says "red"; a version digit brightens on the cue that names
-   it. Speak it, then show it — never earlier than the previous cue.
-
-### 5. Demonstrative animation
-
-Animations must carry knowledge, not just decorate entries:
-
-- a persistent task card travels a shared track and changes state at each
-  station (process explanations);
-- a card is copied/flies from one owner to another (fork, transfer, push);
-- one line inside a log panel highlights (locating an error);
-- gauges fill, digits light up positionally, growth chains light level by
-  level (states and quantities).
-
-Entries/exits still use the restrained `pop`/`ease` helpers; the knowledge
-payload lives in what the object does between them.
-
-### 6. Series component reuse
-
-One channel, one visual IP. Reuse the same mascot, paper cards, badges and
-list patterns across every episode of a series, and cross-reference
-episodes in the closing scene. New graphics become reusable components
-written next to the existing ones, in the same stroke and palette style.
-
-## Working the template
-
-`new-project` copies `assets/lecture-template`, a fully validated
-900-frame film that demonstrates every rule. The source file is layered:
-
-- **LOCKED layer** — aesthetic core, subtitle, background, chrome, gates:
-  never edit.
-- **Component library** — `Paper`, `LineIcon`, `CheckBadge`,
-  rails, gauges: reuse directly, extend by imitation.
-- **Content layer** — `COPY`, scene boundaries, `Scene*` components,
-  `Sound` frame lists: rewrite this layer for a new topic.
-
-To change duration, follow the duration-extension invariant in
-`remotion-architecture.md` and update
-`DURATION`, the scene guards and `manifests/asset-manifest.json` together.
-
-## Self-check before rendering
-
-Answer every question with yes; fix the scene otherwise.
-
-1. Does every scene have at least three populated zones (except a
-   deliberate title/CTA scene)?
-2. Can every animation start frame be traced to a specific cue line?
-3. Is the bitmap count zero on this route (`visual-assets.json` assets
-   empty), unless the user explicitly accepted the image add-on?
-4. Does each zone run only one main action at a time, with ≥70px
-   separation between unrelated cards?
-5. Does at least one animation per explanatory scene demonstrate the
-   mechanism (transfer, highlight, fill, state change) rather than only
-   entering?
-6. Do checklists tick exactly when their line is spoken?
-7. Did the standard QA battery pass (`validate-visual-plan`,
-   `validate-layering`, `validate-caption-sync`,
-   `validate-semantic-breaks`, `validate-video`)?
-8. Is all reading text pure ink (`C.ink`)? The muted tone is reserved
-   for decorative kickers and struck-through contrast words; body copy
-   in muted gray fails on phone screens.
-9. Do content cards extend down to about 40px above the subtitle strip
-   (bottom edge near y=876 in the 1080 design space)? A film whose
-   lower quarter stays empty wastes exactly the area phones show
-   largest.
-10. Does every SVG element keep at least 24px clearance from its
-    neighbors, with no text label sitting on top of a graphic?
+After a representative frame test, render the actual film and watch it at normal speed with its narration. Verify visual-to-speech alignment, factual accuracy, legibility, reading time, overlap/cropping, overall comfort and ending. The 16:9 target is relatively mature but must still be checked for the specific film. 4:3 and 3:4 require separate layout passes and remain unknown until actually rendered. Automated gates cannot establish comprehension, transfer, viewer comfort or preference; test with viewers before making those claims.

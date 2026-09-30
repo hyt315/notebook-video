@@ -5,7 +5,8 @@
 每步各自声明期望：`(kind, label, (rc, out))`，kind 四种：
   · `must_block:<子串>`  rc != 0 **且**输出含该子串（不带子串则只要求 rc != 0）
   · `must_absent:<子串>` rc != 0 **且**输出**不含**该子串——用来钉"不该报的那一侧"
-                         （例如注释/字符串里的反例不许被当成违规报出来）
+                         （例如有其他阻断问题时，注释/字符串里的反例不许被当成违规报出来）
+  · `must_not_contain:<子串>` rc == 0 且不含该子串——用于 P1 诊断中核对没有误报
   · `must_warn:<子串>`   rc == 0 **且**含该子串——P1 级判据"放行但要点名"的夹具
   · `must_pass`          rc == 0（阴性对照：合法输入必须全过）
 
@@ -55,9 +56,9 @@ def case(name, steps):
         # 于是它因为"链接断了"而失败，根本没测到"文档写了不存在的组件名"）。
         # `must_absent:<子串>` = 必须失败**且**输出里**没有**该子串，用来钉"不许误报"的那一侧。
         kind_base, _sep, arg = kind.partition(':')
-        good = (rc == 0) if kind_base in ('must_pass', 'must_warn') else (rc != 0)
+        good = (rc == 0) if kind_base in ('must_pass', 'must_warn', 'must_not_contain') else (rc != 0)
         if arg:
-            good = good and (arg not in out if kind_base == 'must_absent' else arg in out)
+            good = good and (arg not in out if kind_base in ('must_absent', 'must_not_contain') else arg in out)
         ok = ok and good
         lines = [l.strip() for l in out.split('\n') if l.strip()][:2]
         detail.append(f"    {'PASS' if good else 'FAIL'}  [{kind}] {label}: rc={rc} · {' / '.join(lines)[:230]}")
@@ -134,8 +135,12 @@ if len(sys.argv) >= 3 and sys.argv[1] == '--canvas-bounds-wiring':
         print(p)
     sys.exit(0 if not probs else 1)
 
-# ── A：anchor 出界 → validate-shot-motion 必须拦 ──
-td, rc0, out0 = mkproj(lambda d: (d['shots'][0].__setitem__('anchor', {'x': 1900, 'y': 1500, 'w': 1200, 'h': 600}), d)[1])
+# ── A：移动相机的 anchor 出界 → validate-shot-motion 必须拦 ──
+def mut_bad_anchor(d):
+    d['shots'][0]['camera'] = {'intent': 'push-in', 'at': 10, 'dur': 30, 'from': 1.0, 'to': 1.2}
+    d['shots'][0]['anchor'] = {'x': 1900, 'y': 1500, 'w': 1200, 'h': 600}
+    return d
+td, rc0, out0 = mkproj(mut_bad_anchor)
 case('A 镜头 anchor 出界', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
     ('must_block:anchor 出界', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
@@ -154,15 +159,19 @@ case('B 平移超预算（s=1.0 平移 ±220px）', [
 ])
 cleanup(td)
 
-# ── C：相邻同骨架 + 抽掉活性组件 → validate-composition 必须拦 ──
+# ── C：相邻同骨架 + 无活性组件 → 可行的简洁静态方案必须放行 ──
 def mut_skel(d):
-    d['shots'][1]['skeleton'] = d['shots'][0]['skeleton']
+    d['shots'][0]['skeleton'] = 'Stage'
+    d['shots'][1]['skeleton'] = 'Stage'
+    d['shots'][0]['media'] = []
+    d['shots'][1]['media'] = []
+    d['shots'][0]['live'] = []
     d['shots'][1]['live'] = []
     return d
 td, rc0, out0 = mkproj(mut_skel)
-case('C 相邻同骨架 + 无活性组件', [
+case('C 相邻同骨架 + 无活性组件（不构成失败）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:同骨架', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+    ('must_pass', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
 ])
 cleanup(td)
 
@@ -173,36 +182,35 @@ cleanup(td)
 
 NL = chr(10)
 
-# ── F：假 live / 假 media 名 → validate-composition 必须拦（v2.11 新增）──
-# 旧版只查"live 非空、media 去重 ≥3"，编造的名字照样过；现在 live 必须在场景文件里真实出现。
+# ── F：作者自选的 live / media 注记不是构图门槛 ──
 def mut_fake(d):
     d['shots'][0]['live'] = ['NO_SUCH_COMPONENT_9876']
     d['shots'][1]['media'] = ['FAKE_MEDIUM_A', 'FAKE_MEDIUM_B', 'FAKE_MEDIUM_C']
     return d
 td, rc0, out0 = mkproj(mut_fake)
-# 需要一个带真实组件名的场景文件，否则"可解析"这一条无从判定
-io.open(os.path.join(td, 'src/scenes.tsx'), 'w', encoding='utf-8', newline='').write(
-    "import {ConsoleWindow} from './media';" + NL + "export const S=()=> <ConsoleWindow/>;" + NL)
-case('F 造假 live / media 名', [
+case('F 未使用 live / media 注记（不影响有效画面）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:未知介质', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+    ('must_pass', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
 ])
 cleanup(td)
 
-# ── G：冻结的假运镜（声明 intent 但关键帧不动）→ validate-shot-motion 必须拦（v2.11 新增）──
-td, rc0, out0 = mkproj(lambda d: (d['shots'][1].__setitem__('cameraIntent', 'pan-follow'), d)[1])
-if rc0 == 0:
-    import json as _json
-    rp = os.path.join(td, 'manifests/shots.resolved.json')
-    rr = _json.loads(io.open(rp, encoding='utf-8').read())
-    for s in rr['shots']:
-        if s['id'] == 'S2':
-            for k in s['keys']:
-                k['s'] = 1.0; k['x'] = 960.0; k['y'] = 540.0
-    io.open(rp, 'w', encoding='utf-8', newline='').write(_json.dumps(rr, ensure_ascii=False))
-case('G 冻结的假运镜', [
+# ── G：没有相机运动、无anchor、没有复杂组件配额的方案合法 ──
+def mut_static(d):
+    for s in d['shots']:
+        s['camera'] = {'intent': 'still'}
+        s.pop('anchor', None)
+        s['transition'] = 'cut'
+        s['skeleton'] = 'Stage'
+        s['live'] = []
+        s['media'] = []
+        s.pop('zones', None)
+        s.pop('bottomFill', None)
+    return d
+td, rc0, out0 = mkproj(mut_static)
+case('G cue匹配但全静态、无anchor、单骨架/无live仍通过', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:几乎不动', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
+    ('must_pass', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
+    ('must_pass', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
 ])
 cleanup(td)
 
@@ -279,7 +287,7 @@ case('R 呈现效果 · 距容差上界只剩 2 帧（贴边预警）', [
 ])
 cleanup(td)
 
-# ── K · 呈现效果门禁 G-2：字幕阅读速度超预算（40 字塞进 1 秒）→ 必须拦 ──
+# ── K · 呈现效果门禁：字幕阅读速度超项目参考预算应提示、但不阻断 ──
 def mut_dense(td_):
     p = os.path.join(td_, 'manifests/caption-cues.json')
     doc = json.loads(io.open(p, encoding='utf-8').read())
@@ -289,19 +297,19 @@ def mut_dense(td_):
     io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(doc, ensure_ascii=False, indent=2))
 td, rc0, out0 = mkproj()
 mut_dense(td)
-case('K 呈现效果 · 字幕 40 字压进 0.9 秒', [
+case('K 呈现效果 · 字幕 40 字压进 0.9 秒（提示复查）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:阅读速度', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_warn:参考阅读预算', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
-# ── L · 呈现效果门禁 G-3：字号低于绝对地板 13 → 必须拦 ──
+# ── L · 呈现效果门禁：低设计字号提示在成片像素尺度复核 ──
 td, rc0, out0 = mkproj()
 io.open(os.path.join(td, 'src/tooSmall.tsx'), 'w', encoding='utf-8', newline='').write(
     "export const S=()=> <div style={{fontSize: 9}}>太小的字</div>;" + NL)
-case('L 呈现效果 · 字号 9px 低于地板', [
+case('L 呈现效果 · 字号 9px 低于项目参考线（提示复查）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:低于绝对地板', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_warn:项目字号参考值', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
@@ -386,7 +394,20 @@ case('P 一致性 · 文档写了不存在的组件名', [
 ])
 cleanup(td_skill)
 
-# ── E：阴性对照：原样分镜表三道门必须全过（证明门不是"见谁拦谁"） ──
+# ── P2 · 默认 cut 必须是硬切；只允许显式 handoff 叠加上一镜 ──
+td_skill = mk_skill_copy()
+engine = os.path.join(td_skill, 'assets/lecture-template/src/index.tsx')
+engine_text = io.open(engine, encoding='utf-8').read()
+conditional = "const handoffP=prevId&&incomingTransition==='handoff'?Math.max(0,1-(f-s.from)/HANDOFF):0;"
+unconditional = "const handoffP=prevId?Math.max(0,1-(f-s.from)/HANDOFF):0;"
+assert conditional in engine_text, '夹具没找到显式 handoff 条件（锚点变了？）'
+io.open(engine, 'w', encoding='utf-8', newline='').write(engine_text.replace(conditional, unconditional, 1))
+case('P2 转场引擎 · 默认 cut 不能叠加上一镜', [
+    ('must_block:default cut must be direct', 'validate-skill-consistency', run([PY, os.path.join(SKILL, 'scripts/validate-skill-consistency.py'), '--root', td_skill])),
+])
+cleanup(td_skill)
+
+# ── E：阴性对照：原样分镜表三道门必须全过（证明门不是"见谁拦谁") ──
 td, rc0, out0 = mkproj()
 case('E 阴性对照（原样应全过）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
@@ -426,12 +447,12 @@ case('Q import_integrity · 桶文件 + 组件层内部 + 坏再导出', [
 ])
 cleanup(td)
 
-# ── T · 字号扫描只认"值位置"：注释 / 字符串 / JSX 撇号都不许误报，真违规仍必须报 ──
+# ── T · 字号扫描只认"值位置"：注释 / 字符串 / JSX 撇号都不许误报；真低字号是 P1 复核提示 ──
 # 第三轮复核指出：我声称的"四条夹具"是当场跑的、**没固化**（脚本里只有 L 一条），回归护栏是空的。
 # 这个夹具把四条行为钉死在同一份文件上——行号写死，故意让 needle 唯一：
 #   第 1 行 模板字符串里的代码样例（`fontSize: 8` 那种，本仓库确实这么写文档）
 #   第 2 行 块注释里的反例 · 第 3 行 整行注释 · 第 4 行 JSX 撇号 don't 后面的行尾注释
-#   第 5 行 真违规 → 必须报"第 5 行"
+#   第 5 行 真实低字号 → 必须出现非阻断 P1 复核提示
 td, rc0, out0 = mkproj()
 with io.open(os.path.join(td, 'src/audit-fonts.tsx'), 'w', encoding='utf-8', newline='') as fh:
     fh.write(NL.join([
@@ -441,11 +462,11 @@ with io.open(os.path.join(td, 'src/audit-fonts.tsx'), 'w', encoding='utf-8', new
         "export const A = () => <div>don't</div>; // fontSize: 8",
         "export const B = () => <div style={{fontSize: 9}}/>;",
     ]) + NL)
-case('T 字号扫描只认代码（注释/字符串/撇号不误报，真违规仍拦）', [
-    ('must_block:audit-fonts.tsx:5 fontSize:9', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-    ('must_absent:audit-fonts.tsx:1 fontSize', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-    ('must_absent:audit-fonts.tsx:2 fontSize', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-    ('must_absent:audit-fonts.tsx:4 fontSize', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+case('T 字号扫描只认代码（注释/字符串/撇号不误报，真实低字号仅提示复核）', [
+    ('must_warn:audit-fonts.tsx:5 fontSize:9', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_not_contain:audit-fonts.tsx:1 fontSize', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_not_contain:audit-fonts.tsx:2 fontSize', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_not_contain:audit-fonts.tsx:4 fontSize', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
@@ -545,16 +566,14 @@ def mksrc(replace_scene=None):
     return td, rc0, out0
 
 
-# ── X · 讲法字段必填（G-14/G-15/G-16）：删掉一镜的 move → validate-presentation 必须拦 ──
-# 为什么值得单独一条：这四个字段**曾经在 resolve 那一步被整组丢掉**，
-# 于是"规范要求必填"下游根本看不见（实测删掉 move，全部门禁照旧 PASS）。
+# ── X · 教学设计注记可选：删掉 move 不应阻断实际内容 ──
 def mut_move(d):
     d['shots'][2].pop('move', None)
     return d
 td, rc0, out0 = mkproj(mut_move)
-case('X 讲法字段 · 缺 move（G-14）', [
+case('X 讲法字段 · 缺可选move注记（放行）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:缺 move', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_pass', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
@@ -675,36 +694,27 @@ case('AB4 画布越界门禁 · 削掉"只看叶元素"的收窄', [
 cleanup(td)
 
 # ════════════════════════════════════════════════════════════════════════════
-# AC/AD/AE · 讲法字段 G-14②：同一 `move` **不得连续 ≥3 镜**
+# AC/AD/AE · `move` 是可选设计注记：可重复、可省略，不设连续数量配额
 #
-# 为什么补这一组：这条规则在 `references/narrative-moves.md` 写了**两处**（§2 动作表的开头、§4 门禁表），
-# 可它此前**从没被任何门禁读过** —— `validate-presentation.py` 的 G-14 只查了"move 是不是 10 个名字
-# 之一"，于是写 3 镜连续 `引入` 的 shots.json 照旧 PASS。**判据加了而夹具没加 = 那道门仍然只是名义存在**，
-# 所以判据与夹具同版落地：
-#   AC = 连续 3 镜必须拦（阈值下界，文档说"不得连续 ≥3 镜"）；
-#   AD = 连续 2 镜必须放行（阴性对照，证明它不是"见到重复就拦"—— 上限是 2 镜）；
-#   AE = 中间夹一镜**缺 move** 时，不许把它两侧接成一条假的"连续 3 镜"（缺 move 自己另报 P0）。
-#        ⚠️ 这条不是凑数：判据的第一版写的是 `continue`（跳过缺 move 的那镜但**不打断计数**），
-#        于是 `引入,引入,缺move,引入` 被报成"S1→S2→S4 连续 3 镜"—— 一句用户照着改不了的假话。
-#        夹具当场抓到，判据才改成"遇到非闭集 move 就断段"。
+# 这些用例防止后续不经意地把风格建议重新变成渲染门槛。
 # ════════════════════════════════════════════════════════════════════════════
 
 def mut_move_run(d, first, count):
-    """把从 first 起的 count 镜改成同一个 move（模板 S1 本来就是 `引入`）。"""
+    """给指定镜头写入相同的可选 move 注记。"""
     for k in range(first, first + count):
-        d['shots'][k]['move'] = d['shots'][first]['move']
+        d['shots'][k]['move'] = '引入'
     return d
 
 
 td, rc0, out0 = mkproj(lambda d: mut_move_run(d, 0, 3))
-case('AC 讲法字段 · 同一 move 连续 3 镜（G-14②）', [
+case('AC 可选move注记 · 连续三镜相同也不设配额', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:同一 move 连续 3 镜', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_pass', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
 td, rc0, out0 = mkproj(lambda d: mut_move_run(d, 0, 2))
-case('AD 讲法字段 · 同一 move 连续 2 镜（阴性对照，必须放行）', [
+case('AD 可选move注记 · 连续两镜相同仍放行', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
     ('must_pass', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
@@ -712,7 +722,7 @@ cleanup(td)
 
 
 def mut_move_run_gap(d):
-    """S1/S2/S4 都是 `引入`，S3 删掉 move：不许报"连续 3 镜"（缺 move 已经报了 P0）。"""
+    """S1/S2/S4 写相同可选注记，S3省略；缺省不触发任何连贯性配额。"""
     mut_move_run(d, 0, 2)
     d['shots'][3]['move'] = d['shots'][0]['move']
     d['shots'][2].pop('move', None)
@@ -720,10 +730,9 @@ def mut_move_run_gap(d):
 
 
 td, rc0, out0 = mkproj(mut_move_run_gap)
-case('AE 讲法字段 · 缺 move 打断连续计数（不许拼出假的连续）', [
+case('AE 可选move注记 · 省略字段合法且不计算连续配额', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:缺 move', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-    ('must_absent:同一 move 连续', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_pass', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
@@ -785,10 +794,10 @@ def mut_evidence(idx, name):
 
 # AF · 名字在源码里根本不存在 → 必须拦（且不能走成"静态"那一侧）
 td, rc0, out0 = mksrc_mut(mut_evidence(0, 'GhostWidget'))
-case('AF 讲法字段 · evidence 指向源码里不存在的名字（G-15）', [
+case('AF 讲法字段 · 可选evidence指向源码里不存在的名字（提示复核）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:找不到这个用法', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-    ('must_absent:看不出一丝帧驱动', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_warn:找不到这个用法', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_not_contain:看不出一丝帧驱动', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
@@ -805,9 +814,9 @@ cleanup(td)
 
 # AJ · 名字只出现在**注释**里（`exitAt` 是模板里被删掉、只在注释中留名的小助手）→ 必须拦
 td, rc0, out0 = mksrc_mut(mut_evidence(0, 'exitAt'))
-case('AJ 讲法字段 · evidence 只出现在注释里（注释里的名字不算"用到"）', [
+case('AJ 讲法字段 · 可选evidence只出现在注释里（提示复核）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:找不到这个用法', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_warn:找不到这个用法', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
@@ -912,57 +921,56 @@ case('BC3 视觉规划 · 自洽的最小规划（阴性对照，必须放行）
 ])
 cleanup(td)
 
-# ── BD · validate-audio-levels（音效可听度：峰值地板 -12 dBFS）──
-# 素材用标准库 wave 现合成 16-bit 正弦（离线、零下载）；ffmpeg 实测：
-#   幅度 200 → 峰值 -44.3 dBFS（顶 P0）；幅度 26000 → -2.0 dBFS（该放行）。
-# ⚠️ BD1/BD2 依赖环境里有 ffmpeg：没装时门禁按纪律报 rc=2"测量失败"，
-# 夹具会如实红掉 —— 这正是 HEAD 修掉的"静默放行"反面的镜像，不是夹具的锅。
-def write_tone_wav(path, amp, secs=0.3, rate=22050):
-    import math, struct, wave
-    n = int(secs * rate)
-    with wave.open(path, 'wb') as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(rate)
-        w.writeframes(b''.join(struct.pack('<h', int(amp * math.sin(2 * math.pi * 440 * i / rate)))
-                               for i in range(n)))
 
-
-def mksfxproj(files):
-    """files: {名字: 字节生成器}。返回带 public/sfx 的最小工程目录。"""
-    td = tempfile.mkdtemp(prefix='nv-sfx-')
-    d = os.path.join(td, 'public', 'sfx')
-    os.makedirs(d, exist_ok=True)
-    for name, gen in files.items():
-        p = os.path.join(d, name)
-        if gen is None:
-            open(p, 'wb').close()
-        elif isinstance(gen, bytes):
-            io.open(p, 'wb').write(gen)
-        else:
-            gen(p)
+def mk_canvas_fixture(width43=1920, height34=1920, duration34='DURATION', subtitle_bottom='mode.subBottom', drop34=False):
+    td = mkvisual(GOOD_SCENE, 120)
+    os.makedirs(os.path.join(td, 'src', 'theme'), exist_ok=True)
+    index_lines = [
+        '<Composition id="NotebookVideoFilm" component={Film16x9} durationInFrames={DURATION} fps={FPS} width={2560} height={1440}/>',
+        f'<Composition id="NotebookVideoFilm43" component={{Film4x3}} durationInFrames={{DURATION}} fps={{FPS}} width={{{width43}}} height={{1440}}/>',
+    ]
+    if not drop34:
+        index_lines.append(f'<Composition id="NotebookVideoFilm34" component={{Film3x4}} durationInFrames={{{duration34}}} fps={{FPS}} width={{1440}} height={{{height34}}}/>')
+    index = '\n'.join(index_lines)
+    io.open(os.path.join(td, 'src', 'index.tsx'), 'w', encoding='utf-8').write(index)
+    paper = f"const SubtitleChrome = ({{mode}}) => <div style={{{{bottom: {subtitle_bottom}}}}}/>;\nexport const THEME = {{}};\n"
+    io.open(os.path.join(td, 'src', 'theme', 'paper.tsx'), 'w', encoding='utf-8').write(paper)
     return td
 
 
-ALEV = os.path.join(SKILL, 'scripts/validate-audio-levels.py')
-td = mksfxproj({'quiet.wav': lambda p: write_tone_wav(p, 200)})
-case('BD1 音效可听度 · 素材峰值 -44 dBFS（太轻）', [
-    ('must_block:低于 -12 dBFS', 'validate-audio-levels', run([PY, ALEV, td])),
+td = mk_canvas_fixture()
+case('BC4 画幅一致性 · 三比例尺寸/时长/fps 与字幕 safe-area 均对齐（阴性对照）', [
+    ('must_pass', 'validate-visual-plan', run([PY, VPLAN, td])),
 ])
 cleanup(td)
 
-td = mksfxproj({'loud.wav': lambda p: write_tone_wav(p, 26000)})
-case('BD2 音效可听度 · 素材峰值 -2 dBFS（阴性对照，必须放行）', [
-    ('must_pass', 'validate-audio-levels', run([PY, ALEV, td])),
+td = mk_canvas_fixture(width43=1918)
+case('BC5 画幅一致性 · 4:3 Composition 宽度漂移必须失败', [
+    ('must_block:NotebookVideoFilm43 (4:3) must use width=1920', 'validate-visual-plan', run([PY, VPLAN, td])),
 ])
 cleanup(td)
 
-# BD3 · HEAD 新行为：素材**读不到峰值**（损坏/非音频）→ rc=2 门禁自身故障，不是 rc=1 内容问题。
-# 判据核实：peak_db() 拿不到 max_volume 就记 measure_fail → main 里先于一切 PASS/FAIL 结论打
-# "门禁自身故障"并 return 2。"测量没跑成"与"内容没测出缺陷"必须可区分（旧版记 P1 → rc=0 静默过）。
-td = mksfxproj({'corrupt.wav': b'THIS IS NOT A WAVE FILE, just some text bytes.'})
-case('BD3 音效可听度 · 损坏素材读不到峰值 → rc=2 门禁自身故障', [
-    ('must_block:门禁自身故障', 'validate-audio-levels', run([PY, ALEV, td])),
+td = mk_canvas_fixture(height34=1918)
+case('BC8 画幅一致性 · 3:4 Composition 高度漂移必须失败', [
+    ('must_block:NotebookVideoFilm34 (3:4 portrait) must use height=1920', 'validate-visual-plan', run([PY, VPLAN, td])),
+])
+cleanup(td)
+
+td = mk_canvas_fixture(drop34=True)
+case('BC9 画幅一致性 · 注册 4:3 后漏掉 3:4 Composition 必须失败', [
+    ('must_block:multi-ratio film must register NotebookVideoFilm34', 'validate-visual-plan', run([PY, VPLAN, td])),
+])
+cleanup(td)
+
+td = mk_canvas_fixture(duration34='DURATION-1')
+case('BC6 画幅一致性 · 3:4 Composition 时长漂移必须失败', [
+    ('must_block:all film ratios must share durationInFrames', 'validate-visual-plan', run([PY, VPLAN, td])),
+])
+cleanup(td)
+
+td = mk_canvas_fixture(subtitle_bottom='20')
+case('BC7 画幅一致性 · SubtitleChrome 不按模式底距定位必须失败', [
+    ('must_block:must use mode.subBottom', 'validate-visual-plan', run([PY, VPLAN, td])),
 ])
 cleanup(td)
 
@@ -1033,6 +1041,87 @@ td, rc0, out0 = mksrc(lambda t: t.replace(
 case('BF3 组合门禁 · 裸 FC 形态（import {FC} + `: FC<`）必须放行', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
     ('must_pass', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+# ── BF4–BF8 · 教学承载是必需的；皮肤、骨架和运动套路不是 ──
+def mut_minimal_still(d):
+    for s in d['shots']:
+        s['camera'] = {'intent': 'still'}
+        s.pop('anchor', None)
+        s['transition'] = 'cut'
+        for field in ('skeleton', 'media', 'live', 'zones', 'bottomFill', 'beats',
+                      'move', 'evidence', 'hold', 'misconception', 'noMisconception', 'why'):
+            s.pop(field, None)
+    return d
+
+def write_static_scene(td_, blank_sid=None):
+    lines = ["import React from 'react';"]
+    for i in range(1, 9):
+        sid = f'S{i}'
+        if sid == blank_sid:
+            lines.append(f'export const {sid}Scene: React.FC<{{f?: number}}> = () => null;')
+        else:
+            lines.append(
+                f'export const {sid}Scene: React.FC<{{f?: number}}> = () => '
+                f'<div style={{{{position: "absolute"}}}}>Static labeled teaching diagram for {sid}</div>;'
+            )
+    io.open(os.path.join(td_, 'src/scenes.tsx'), 'w', encoding='utf-8', newline='').write(NL.join(lines) + NL)
+
+td, rc0, out0 = mkproj(mut_minimal_still)
+write_static_scene(td)
+case('BF4 静态图文支持cue、无视觉配额与无相机运动仍通过', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_pass', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
+    ('must_pass', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+td, rc0, out0 = mkproj(lambda d: (d['shots'][0].__setitem__('visualCarrier', ''), d)[1])
+write_static_scene(td)
+case('BF5 缺少视觉承载声明必须失败', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:visualCarrier', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+td, rc0, out0 = mkproj(lambda d: (d['shots'][0].__setitem__('coreRelation', ''), d)[1])
+write_static_scene(td)
+case('BF6 缺少核心学习关系必须失败', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:coreRelation', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+td, rc0, out0 = mkproj(lambda d: (d['shots'][0].__setitem__('cues', [1, 3]), d)[1])
+write_static_scene(td)
+case('BF7 漏掉一条旁白cue的视觉支持必须失败', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:旁白 cue 0 被 0 个镜头覆盖', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+td, rc0, out0 = mkproj(mut_minimal_still)
+write_static_scene(td, blank_sid='S1')
+case('BF8 声明有视觉但场景源码实际返回空必须失败', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:没有可识别的视觉 JSX 节点', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+td, rc0, out0 = mkproj(lambda d: (d.pop('theme', None), d)[1])
+case('BF9 未明确选择整片视觉处理必须失败', [
+    ('must_block:必须为整片明确选择 theme', 'resolve-shots', (rc0, out0)),
+])
+cleanup(td)
+
+td, rc0, out0 = mkproj(lambda d: (d.__setitem__('theme', 'cel'), d)[1])
+os.makedirs(os.path.join(td, 'src/theme'), exist_ok=True)
+io.open(os.path.join(td, 'src/theme/active.ts'), 'w', encoding='utf-8', newline='').write(
+    "import {THEME} from './paper';\nexport {THEME};\n")
+case('BF10 visual treatment与实际运行skin不一致必须失败', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:与 src/theme/active.ts', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
 ])
 cleanup(td)
 
@@ -1110,12 +1199,12 @@ case('BI 相机默认 · establish 省略 to → resolved s 尾值 1.03（正向
 ])
 cleanup(td)
 
-# BJ · 真正零运动（显式 from==to 的 push-in）→ "声明运镜却不动"P0 必须仍拦（判据不许因收口失效）
+# BJ · 显式声明 push-in 但实际关键帧不动 → 只报注记不一致提示，不阻断
 td, rc0, out0 = mkproj(mut_cam(2, {'intent': 'push-in', 'at': 10, 'dur': 38,
                                    'x': 960, 'y': 540, 'from': 1.0, 'to': 1.0}))
-case('BJ 相机默认 · 显式 from==to 的零运动 push-in 仍被 P0 拦（喂准的坏输入）', [
+case('BJ 相机默认 · 显式 from==to 的push-in只提示实际静止', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:几乎不动', 'validate-shot-motion', run([PY, MOTION, td])),
+    ('must_warn:cameraIntent', 'validate-shot-motion', run([PY, MOTION, td])),
 ])
 cleanup(td)
 

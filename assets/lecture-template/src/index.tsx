@@ -6,12 +6,10 @@ import cueData from './caption-cues.json';
 // ============================================================================
 // LECTURE TEMPLATE · 讲课式默认模板（纯代码 SVG，不依赖任何生图能力）
 //
-// 本文件分三层，改写时只碰第三层：
-//   第一层 LOCKED：美学核心 + 字幕/背景/章节条/资产门，一律不改。
-//   第二层 组件库：Paper、LineIcon、CheckBadge、PillTag、StampBanner 等，
-//            直接复用；需要新图形时仿照它们的写法新增组件。
-//   第三层 场景内容：COPY、SCENE 边界、各 Scene* 组件、Sound 音效表，
-//            换题材时重写这一层。
+// 本文件将共用引擎、复用组件和场景内容分开；视觉选择服务于本片的讲解目标。
+//   共用引擎：字幕/背景/章节条/资源装配和渲染安全门；
+//   组件库：可复用的 Paper、LineIcon、CheckBadge、PillTag 等；按需选用；
+//   场景内容：COPY、SCENE 边界、各 Scene* 组件、音效表及画面处理。
 //
 // 帧号来源（机械流程，照做即可）：
 //   1. 先跑 TTS 适配器拿到 audio/narration.mp3.json，再用官方
@@ -19,7 +17,7 @@ import cueData from './caption-cues.json';
 //   2. 打印每条 cue 的帧区间：round(start_ms*30/1000) 到
 //      round(speech_end_ms*30/1000)。
 //   3. 场景边界 = 每章首条 cue 的起始帧；元素出现帧 = 对应台词的起始帧
-//      减去场景起始帧（场景内部用本地帧 l）。说到哪，亮到哪。
+//      减去场景起始帧（场景内部用本地帧 l）。若某个视觉强调需同步口播，则对齐对应cue。
 //
 // 画面组织六规范见 references/lecture-composition.md。
 // ============================================================================
@@ -29,7 +27,7 @@ import {MODES, CanvasMode, CanvasContext, useCanvas} from './theme/canvas';
 import {THEME} from './theme/active';
 import {JumpInText} from './toolkit';
 import {PillTag, TYPE} from './kit';
-// v2.10 视觉体系四层：镜头 / 骨架 / 介质 / 门禁。用法见 references/shot-language.md、
+// Shot plan / camera / optional layout / safety gates. 用法见 references/shot-language.md、
 // scene-skeletons.md、media-routing.md、composition-gate.md。
 // 四层组件按需 import —— tsconfig 开了 noUnusedLocals，导了不用会被 tsc 判错，
 // 所以这里只留本文件真用到的，其余列名备查：
@@ -41,7 +39,6 @@ import {PillTag, TYPE} from './kit';
 import {Showcase, SHOWCASE_PAGES} from './showcase';
 import {OverlapGate} from './overlap-gate';
 import {ClippingGate} from './clipping-gate';
-import {FillGate} from './fill-gate';
 import {CanvasBoundsGate} from './canvas-bounds-gate';
 import {SHOTS, SHOT_IDS, SHOT_TOTAL} from './shots';
 import {SCENES} from './scenes';
@@ -49,8 +46,8 @@ const BASE_FPS=30,FPS=30,MOTION_FPS=30,TIMELINE_SCALE=1,DURATION=SHOT_TOTAL,DESI
 const useCurrentFrame=()=>useRawCurrentFrame()*BASE_FPS/FPS/TIMELINE_SCALE;
 const deliveryFrame=(designFrame:number)=>Math.round(designFrame*FPS*TIMELINE_SCALE/BASE_FPS);
 
-// LOCKED AESTHETIC CORE：美学核由主题包提供（src/theme/active.ts 选定），
-// 调色板 / 美学参数 / 卡片皮肤 / 背景 / 调色层全部来自 THEME，本层不做任何风格判断。
+// Shared visual tokens come from the selected bundled treatment in src/theme/active.ts.
+// This keeps palette/surfaces coherent; it does not lock an authored film to one immutable style.
 const C=THEME.palette;
 const AESTHETIC=THEME.aesthetic;
 const Background=THEME.Background;
@@ -246,15 +243,14 @@ const Subtitle=()=>{
 };
 
 const Chrome=()=>{
-  const {isPortrait}=useCanvas();
+  const {canvas}=useCanvas();
+  const wide=canvas==='16:9',isPortrait=canvas==='3:4';
   const f=q(useCurrentFrame()),stage=Math.max(0,CHAPTER_STARTS.filter((x)=>f>=x).length-1),local=f-CHAPTER_STARTS[stage],p=pop(local,-8),titles=COPY.chapterTitles;
   return <>
-    <Paper lift={0.3} style={{left:isPortrait?40:92,top:isPortrait?80:74,width:isPortrait?330:392,height:isPortrait?84:90,zIndex:150,display:'flex',alignItems:'center',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${.96+.04*p})`,overflow:'hidden',padding:0}}>
-      <div style={{width:isPortrait?60:72,height:'100%',background:`linear-gradient(135deg,${C.orange},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:isPortrait?28:31,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
-      <div style={{padding:isPortrait?'6px 12px':'8px 16px',flex:1,minWidth:0}}>
-        <div style={{display:'flex',alignItems:'center',gap:6}}>
-          <PillTag text={COPY.chromeKicker} color={C.blue} bg={C.blueLight} fontSize={TYPE.microS}/>
-        </div>
+    <Paper lift={0.3} style={{left:wide?92:40,top:wide?74:80,width:wide?392:isPortrait?560:500,height:wide?90:isPortrait?98:94,zIndex:150,display:'flex',alignItems:'center',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${.96+.04*p})`,overflow:'hidden',padding:0}}>
+      <div style={{width:wide?72:70,height:'100%',background:`linear-gradient(135deg,${C.orange},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:wide?31:30,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
+      <div style={{padding:wide?'8px 16px':'8px 14px',flex:1,minWidth:0}}>
+        {wide&&<div style={{display:'flex',alignItems:'center',gap:6}}><PillTag text={COPY.chromeKicker} color={C.blue} bg={C.blueLight} fontSize={TYPE.microS}/></div>}
         {(() => {
           // v3.0.2：固定卡片里放可变长标题，必须"按可用宽自适应字号 + 禁止换行"。
           // 实测可用内宽 286px（392 − 2 描边 − 72 编号块 − 32 内边距），而 TYPE.titleS=27px 时
@@ -262,22 +258,22 @@ const Chrome=()=>{
           // 这里按字数算字号：CJK 按 1 字宽、ASCII/空格/间隔号按 0.55 折算，并夹到 [19, TYPE.titleS]。
           const title = String(titles[stage] ?? '');
           const units = [...title].reduce((n, ch) => n + (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(ch) ? 1 : 0.55), 0) || 1;
-          const availW = isPortrait ? 214 : 286;
-          const fitSize = Math.max(19, Math.min(TYPE.titleS, Math.floor(availW / units)));
+          const availW = wide ? 286 : isPortrait ? 458 : 398;
+          const fitSize = wide ? Math.max(19, Math.min(TYPE.titleS, Math.floor(availW / units))) : Math.min(34, Math.floor(availW / units));
           return <JumpInText key={stage} items={[{text:title}]} fontSize={fitSize}
             start={CHAPTER_STARTS[stage]+8} stagger={1.1}
             style={{marginTop:3,justifyContent:'flex-start',flexWrap:'nowrap',whiteSpace:'nowrap',overflow:'hidden',maxWidth:availW}}/>;
         })()}
       </div>
     </Paper>
-    <div style={{position:'absolute',right:isPortrait?40:88,top:isPortrait?76:70,zIndex:140,textAlign:'right',maxWidth:isPortrait?560:1180,overflow:'hidden'}}>
-      <div style={{fontSize:TYPE.labelM,fontWeight:700,letterSpacing:4,color:C.headerAccent,fontFamily:'Clash,Space'}}>{COPY.header}</div>
-      <div style={{fontSize:TYPE.microL,marginTop:6,color:C.headerSub,fontFamily:'Space,Kai'}}>{COPY.headerSub}</div>
+    <div style={{position:'absolute',right:wide?88:40,top:wide?70:80,zIndex:140,textAlign:'right',maxWidth:wide?1180:500,overflow:'hidden'}}>
+      <div style={{fontSize:wide?TYPE.labelM:34,fontWeight:700,letterSpacing:wide?4:1,color:C.headerAccent,fontFamily:'Clash,Space'}}>{COPY.header}</div>
+      {wide&&<div style={{fontSize:TYPE.microL,marginTop:6,color:C.headerSub,fontFamily:'Space,Kai'}}>{COPY.headerSub}</div>}
     </div>
   </>;
 };
 
-const HANDOFF=10; // 镜头边界的交接帧数：下一镜开始时把上一镜末帧叠上来淡出，避免出现空帧
+const HANDOFF=10; // 仅当前镜明确选择 handoff 时，短暂保留上一镜末帧；默认 cut 是硬切。
 const FinalDemo=()=>{
   // 只挂载活动镜头（性能契约）：由分镜表决定当前是哪一镜。
   const f=q(useCurrentFrame());
@@ -288,7 +284,8 @@ const FinalDemo=()=>{
   const prevId=idx>0?SHOT_IDS[idx-1]:null;
   const Scene=SCENES[id];
   const PrevScene=prevId?SCENES[prevId]:null;
-  const handoffP=prevId?Math.max(0,1-(f-s.from)/HANDOFF):0;
+  const incomingTransition=String(s.transition??'cut');
+  const handoffP=prevId&&incomingTransition==='handoff'?Math.max(0,1-(f-s.from)/HANDOFF):0;
   return <>
     {PrevScene&&prevId&&handoffP>0.01&&(
       <div data-gate-allow="handoff" style={{position:'absolute',inset:0,zIndex:130,opacity:handoffP}}><PrevScene f={SHOTS[prevId].duration-1}/></div>
@@ -296,8 +293,6 @@ const FinalDemo=()=>{
     {f<s.to&&<Scene f={f-s.from}/>}
   </>;
 };
-
-
 // 音效钉帧（硬规则）：一律相对所属镜头起点推导，改台词重跑解析后自动跟着走。
 // 中间节拍轮换用的三种"落位/切换"音（必须在 SFX 之前声明：flatMap 立即执行）
 const SECOND=['sfx/drop.ogg','sfx/toggle.ogg','sfx/click.ogg'];
@@ -322,7 +317,7 @@ const SFX=SHOT_IDS.flatMap((id)=>{
   // （shots.ts 生成时只写 establish/push-in/pull-back/pan-follow/reveal），所以 `!== 'still'` 恒真。
   // 这句的意图是「静止镜不加咔哒声」，实际一个都没排除。改成**正向名单**：
   // 名单里没有的值（含将来的 'still'）不加音 —— 语义与作者本意一致，类型也干净。
-  if((CAM_MOTION as readonly string[]).includes(s.cameraIntent)) list.push({src:'sfx/click.ogg',at:s.from+(s.keys[2]?.f??30),vol:0.26});
+  if((CAM_MOTION as readonly string[]).includes(s.cameraIntent)) list.push({src:'sfx/click.ogg',at:s.from+((s.keys as readonly {f:number}[])[2]?.f??30),vol:0.26});
   return list;
 });
 const Sound=()=>{
@@ -348,8 +343,7 @@ const FilmLayout:React.FC<{canvas:CanvasMode}>=({canvas})=>{
   const isPortrait=canvas==='3:4';
   return <CanvasContext.Provider value={{canvas,isPortrait,mode}}>
     <AbsoluteFill style={{overflow:'hidden',background:C.paperBase}}>
-      {/* data-design-root：FillGate 靠它把「输出像素」折回「设计像素」（ratio 实测，不假设 --scale）。
-    缺了它 FillGate 会静默 return —— 门禁装了等于没装，所以这个属性是门禁契约的一部分。 */}
+      {/* data-design-root identifies the design-space canvas root for layout helpers and diagnostics. */}
       <div data-design-root style={{position:'absolute',left:0,top:0,width:mode.designW,height:mode.designH,transform:`scale(${mode.scale})`,transformOrigin:'0 0',fontFamily:'Kai,sans-serif',color:C.ink,overflow:'hidden'}}>
         <Fonts/><AssetGate/><CaptionFitGate/><CardFitGate/><OverlapGate mode="block" watch={WATCH}/><ClippingGate mode="block" watch={WATCH}/>
         {/* CanvasBoundsGate（v2 简版）：只判「**含文字的叶元素**的墨迹 rect 越出画布」。
@@ -361,8 +355,7 @@ const FilmLayout:React.FC<{canvas:CanvasMode}>=({canvas})=>{
             等它在片子上抓到第一处真缺陷，再谈升回 block。
             口径与实测见 references/composition-gate.md §5.2 / §6。 */}
         <CanvasBoundsGate mode="warn"/>
-        {/* FillGate 默认 warn：P0-4 是"观感线"，为它打断整片渲染不划算；出水进日志、可复查 */}
-        <FillGate mode="warn" watch={WATCH}/><Sound/><Background/>
+        <Sound/><Background/>
         {<><Chrome/><FinalDemo/></>}
         <Grade/>
         <Subtitle/>
@@ -372,9 +365,9 @@ const FilmLayout:React.FC<{canvas:CanvasMode}>=({canvas})=>{
 };
 
 const Film16x9=()=> <FilmLayout canvas="16:9"/>;
-// 4:3 / 3:4 两个交付画布**定义但默认不注册**（契约见 references/canvas-modes.md）：
-// 切换时自己改 canvas 参数并重排版面，不许用 scale(0.75) 信箱化冒充适配。
-// 导出是为了过 noUnusedLocals —— 它们的使用方式是「作者在下面 Root 里挂上去」，不是被 import。
+// 三种交付画布都在 Root 注册；FilmLayout 把画布上下文交给场景、字幕与主题组件。
+// 各镜需在目标设计空间重排内容，不能用 scale(0.75) 信箱化冒充适配；锁定尺寸见
+// references/canvas-modes.md，validate-visual-plan.py 检查三种 Composition 的尺寸和共享时间轴。
 export const Film4x3=()=> <FilmLayout canvas="4:3"/>;
 export const Film3x4=()=> <FilmLayout canvas="3:4"/>;
 
@@ -395,7 +388,7 @@ export const Film3x4=()=> <FilmLayout canvas="3:4"/>;
 //     舞台等比 0.7），5 件全部落在画布内；18 页在 block 下逐页抽帧跑过一遍，每页 rc=0 且有图，
 //     无一处误报 —— 于是把 warn 收敛回 block。
 // 判据上的理由：越出画布 = 件**整件看不见**或被切掉一块，属于**画错了**，
-// 与「图形被裁」「文字互相压」同级，不是 FillGate 那种观感线；
+// 与「图形被裁」「文字互相压」同级，是实际文本边界错误；
 // 而接触表是「看见才会用」的唯一入口（references/media-routing.md §6），件看不见就该中断渲染，
 // 不能默默出一张缺件的目录页。
 // v2 简版换实现后的复验（2026-09-22）：原样 6 页（帧 35/65/95/155/275/395）rc=0 有图零报告；
@@ -407,10 +400,11 @@ const ShowcaseComposition=()=> <>
 </>;
 
 const Root=()=> <>
-  {/* 官方模板示例片（8 镜 / 4 骨架）。本版场景按 1920×1080 设计空间编写：
-      4:3 与 3:4 需要各自的版面重排，不再用 scale(0.75) 信箱化冒充适配
-      （见 references/canvas-modes.md 与 portrait-illustration-system.md）。 */}
+  {/* 官方模板示例片（8 镜）：同一cue时间线按三套独立Mode版式渲染；
+      场景载体、图表/对照关系、字幕safe-area由画布上下文选择，不对16:9整页缩放。 */}
   <Composition id="NotebookVideoFilm" component={Film16x9} durationInFrames={DURATION} fps={FPS} width={2560} height={1440}/>
+  <Composition id="NotebookVideoFilm43" component={Film4x3} durationInFrames={DURATION} fps={FPS} width={1920} height={1440}/>
+  <Composition id="NotebookVideoFilm34" component={Film3x4} durationInFrames={DURATION} fps={FPS} width={1440} height={1920}/>
   {/* 组件接触表：18 页 × 1 秒（`SHOWCASE_PAGES`）；抽帧用 select 滤镜按帧号取每页第 6/21 帧两张中段图，
       6×6=36 格一张 JPG，供 AI 看图选型（时长 = SHOWCASE_PAGES*30，加页自动跟随） */}
   <Composition id="NotebookVideoShowcase" component={ShowcaseComposition} durationInFrames={SHOWCASE_PAGES*30} fps={FPS} width={1920} height={1080}/>

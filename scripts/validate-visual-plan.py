@@ -21,6 +21,62 @@ CANVAS_MODES = {
     1440: {"label": "3:4 portrait", "design_width": 1080, "design_height": 1440, "subtitle_safe_width": 900, "subtitle_margin": 50, "subtitle_bottom": 40},
 }
 
+FILM_COMPOSITIONS = {
+    "NotebookVideoFilm": (2560, 1440, "16:9"),
+    "NotebookVideoFilm43": (1920, 1440, "4:3"),
+    "NotebookVideoFilm34": (1440, 1920, "3:4 portrait"),
+}
+
+
+def validate_registered_canvas_compositions(text: str) -> list[str]:
+    """If a project opts into multiple ratios, lock all three sizes and shared timing."""
+    tags = re.findall(r"<Composition\b[^>]*>", text)
+    declarations: dict[str, dict[str, str | None]] = {}
+    for tag in tags:
+        identity = re.search(r'\bid="([^"]+)"', tag)
+        if not identity or identity.group(1) not in FILM_COMPOSITIONS:
+            continue
+        name = identity.group(1)
+        declarations[name] = {
+            key: (match.group(1).strip() if match else None)
+            for key, pattern in {
+                "width": r"\bwidth=\{([^}]+)\}",
+                "height": r"\bheight=\{([^}]+)\}",
+                "duration": r"\bdurationInFrames=\{([^}]+)\}",
+                "fps": r"\bfps=\{([^}]+)\}",
+            }.items()
+            for match in [re.search(pattern, tag)]
+        }
+
+    # Standalone projects may remain 16:9-only. Once either secondary film
+    # composition is registered, the complete locked set is required; the
+    # bundled lecture template opts into all three compositions.
+    if not ({"NotebookVideoFilm43", "NotebookVideoFilm34"} & declarations.keys()):
+        return []
+
+    errors: list[str] = []
+    for name, (width, height, label) in FILM_COMPOSITIONS.items():
+        entry = declarations.get(name)
+        if entry is None:
+            errors.append(f"canvas: multi-ratio film must register {name} ({label})")
+            continue
+        for axis, expected in (("width", width), ("height", height)):
+            if entry[axis] != str(expected):
+                errors.append(
+                    f"canvas: {name} ({label}) must use {axis}={expected}, found {entry[axis]!r}"
+                )
+        if entry["duration"] is None or entry["fps"] is None:
+            errors.append(f"canvas: {name} must declare durationInFrames and fps inline")
+
+    timing = [declarations.get(name) for name in FILM_COMPOSITIONS]
+    durations = {item["duration"] for item in timing if item and item["duration"] is not None}
+    frame_rates = {item["fps"] for item in timing if item and item["fps"] is not None}
+    if len(durations) > 1:
+        errors.append(f"canvas: all film ratios must share durationInFrames, found {sorted(durations)}")
+    if len(frame_rates) > 1:
+        errors.append(f"canvas: all film ratios must share fps, found {sorted(frame_rates)}")
+    return errors
+
 
 def validate_canvas_mode(project: Path) -> list[str]:
     """Cross-check composition width, design wrapper, subtitle safe width and strip margins."""
@@ -29,6 +85,7 @@ def validate_canvas_mode(project: Path) -> list[str]:
         # 工程可以没有 index.tsx（BC 类最小夹具/纯规划工程），维持原行为：整段跳过。
         return []
     text = src.read_text(encoding="utf-8")
+    errors = validate_registered_canvas_compositions(text)
     # 画布口径的真身是**影片 Composition**（模板里实名 `NotebookVideoFilm`，见
     # assets/lecture-template/src/index.tsx:413）。旧版 `re.search` 取全文件**第一个**
     # `width={数字}`：实测影片标签用变量宽（`width={compW}`）时，判据抓到后面 showcase
@@ -50,7 +107,6 @@ def validate_canvas_mode(project: Path) -> list[str]:
     mode = CANVAS_MODES.get(width)
     if mode is None:
         return [f"canvas: Composition width {width} is not a locked canvas (2560, 1920 or 1440)"]
-    errors: list[str] = []
     label = mode["label"]
 
     wrapper = re.search(r"width:(\d+),height:(\d+),transform:'scale\(", text)
@@ -76,6 +132,14 @@ def validate_canvas_mode(project: Path) -> list[str]:
         if bottom != mode["subtitle_bottom"]:
             errors.append(
                 f"canvas: {label} subtitle strip bottom must be {mode['subtitle_bottom']}, found {bottom}"
+            )
+    paper = project / "src" / "theme" / "paper.tsx"
+    if paper.is_file():
+        paper_text = paper.read_text(encoding="utf-8")
+        subtitle = re.search(r"const SubtitleChrome[\s\S]*?(?=\n(?:export |const |type |interface )|\Z)", paper_text)
+        if subtitle and "bottom: mode.subBottom" not in subtitle.group(0):
+            errors.append(
+                f"canvas: {label} SubtitleChrome must use mode.subBottom so runtime positioning matches the locked subtitle safe-area"
             )
     return errors
 
