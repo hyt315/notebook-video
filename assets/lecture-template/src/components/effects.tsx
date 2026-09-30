@@ -140,20 +140,18 @@ export const NoiseJitter: React.FC<{
  * VerdictBar — 全宽结论条。
  * 每个场景用它收束并填满底部（内容底边 y=1168 的版式契约）。
  */
-export const VerdictBar: React.FC<{f: number; delay: number; text: string; tag: string; tone: string; width: number; fontSize?: number; tagFontSize?: number}> = ({
+export const VerdictBar: React.FC<{f: number; delay: number; text: string; tag: string; tone: string; width: number}> = ({
   f,
   delay,
   text,
   tag,
   tone,
   width,
-  fontSize = TYPE.titleXS,
-  tagFontSize = TYPE.microL,
 }) => {
   const p = prog(f, delay, 24);
   // 全宽条同样：文案长度可变，开发期实测自检
   if (process.env.NODE_ENV !== 'production') {
-    fitsWithin({text, boxWidth: width - 80 - 120, fontSize, label: 'VerdictBar'});
+    fitsWithin({text, boxWidth: width - 80 - 120, fontSize: TYPE.titleXS, label: 'VerdictBar'});
   }
   return (
     <div
@@ -174,7 +172,7 @@ export const VerdictBar: React.FC<{f: number; delay: number; text: string; tag: 
         style={{
           flex: '0 0 auto',
           fontFamily: 'Space,Kai,monospace',
-          fontSize: tagFontSize,
+          fontSize: TYPE.microL,
           fontWeight: 700,
           color: C.ink,
           background: tone,
@@ -184,7 +182,7 @@ export const VerdictBar: React.FC<{f: number; delay: number; text: string; tag: 
       >
         {tag}
       </span>
-      <span style={{fontFamily: 'Kai,sans-serif', fontSize, color: C.white, lineHeight: 1.5}}>{text}</span>
+      <span style={{fontFamily: 'Kai,sans-serif', fontSize: TYPE.titleXS, color: C.white, lineHeight: 1.5}}>{text}</span>
     </div>
   );
 };

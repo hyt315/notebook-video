@@ -1,41 +1,42 @@
 import React from 'react';
 import {Easing, interpolate} from 'remotion';
 import {THEME} from './theme/active';
-import {CanvasMode, MODES, useCanvas} from './theme/canvas';
 
 // ============================================================================
-// shotkit · optional, bounded camera helpers
+// shotkit · 镜头层 v1（每个 shot 一段受限相机）
 //
-// A still camera is a valid default. Use movement only when it clarifies a
-// spatial relation, sequence, comparison, or change of focus. When framing
-// changes, `anchor` records the essential region; `safeCheck()` uses the same
-// geometry as scripts/validate-shot-motion.py to verify it stays in view.
+// 为什么需要它：v2.8 的 CameraRig 是「全片一条关键帧轨道」，且被
+// Camera Micro-Framing Invariant 锁在 x∈[945,975] / s∈[1.00,1.018]
+// ——这三个界是 16:9 的 1920×1080 设计空间里的取值，3:4 空间（1080×1440）
+// 从未有对应数值可套；景别变化 1.8%，等同定焦，观众感受到的是「翻页」。
 //
-// Camera intent and movement notes describe author choices, not quotas. This
-// module keeps technical zoom/pan limits and leaves the decision to move—or to
-// hold on a readable frame—to the instructional design.
+// 本层的做法：把「自由曲线」换成「带内置不变量的受限配方」。
+//   1. 每镜声明一个 intent（六个之一）+ 少量参数，曲线由 intent 决定；
+//   2. 每镜额外声明 anchor（本镜必须始终可见的矩形）；
+//   3. safeCheck() 用纯算术证明 anchor 在任意关键帧都落在可见窗内——
+//      不需要渲染，脚本与运行时共用同一份数学（见 scripts/validate-shot-motion.py）。
 //
-// Chrome / chapter cards / captions remain in screen space outside the camera.
-// Without 3D keyframes the camera uses translate+scale.
+// 铁律（Shot Camera Invariant）：
+//   - 每镜 ≥1 次运镜、≤1 次；单次 30–45 帧 easeInOut；整片运镜配额见
+//     references/shot-language.md；
+//   - 含文字的镜头 zoom ≤ 1.35（纯图形镜头可到 1.60，硬上限 1.60）；
+//   - Chrome / 章节卡 / 字幕永远在相机之外（屏幕空间），不受任何运镜影响；
+//   - 无 3D 关键帧时走纯 translate+scale 路径，渲染结果与旧版逐像素一致。
 // ============================================================================
 
-// `still` is an explicit, supported camera intent. It does not count against
-// any movement budget; a static frame may be clearest for teaching or reading.
+// `still` 补进来（tsc TS2367）：`stillCam` 的注释明写「still 是合法选择，但全片配额受限」，
+// 可类型里一直没有它 —— 于是 index.tsx 的 `s.cameraIntent !== 'still'` 被 tsc 判成
+// 「两个类型没有交集、这个比较永真」。补进来之后那句话才有意义（本片 8 镜都不是 still）。
 export type ShotIntent = 'still' | 'establish' | 'push-in' | 'pull-back' | 'pan-follow' | 'reveal' | 'micro-orbit';
 
 /** 相机关键帧：f=该 shot 的本地帧；x/y=注视点（设计坐标）；s=缩放。 */
 export type CamKey = {f: number; x: number; y: number; s: number; rotY?: number};
 
-/** Optional anchor: essential content that must remain visible when framing changes. */
+/** anchor：本镜必须始终可见的矩形（设计坐标）。 */
 export type Anchor = {x: number; y: number; w: number; h: number};
 
-/** 相机设计坐标；STAGE remains the backwards-compatible 16:9 default. */
-export type StageSpec = {w: number; h: number; cx: number; cy: number};
-export const STAGE: StageSpec = {w: 1920, h: 1080, cx: 960, cy: 540};
-export const stageFor = (canvas: CanvasMode): StageSpec => {
-  const mode = MODES[canvas];
-  return {w: mode.designW, h: mode.designH, cx: mode.designW / 2, cy: mode.designH / 2};
-};
+/** 设计坐标系（与 index.tsx 的 1920×1080 舞台一致）。 */
+export const STAGE = {w: 1920, h: 1080, cx: 960, cy: 540} as const;
 
 /** 相机缩放硬上限。含文字的镜头用 TEXT_ZOOM_MAX，纯图形镜头可到 GRAPHIC_ZOOM_MAX。 */
 export const TEXT_ZOOM_MAX = 1.35;
@@ -44,32 +45,31 @@ export const GRAPHIC_ZOOM_MAX = 1.6;
 const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
 
 /**
- * Pan safety budget: camera translation moves the full scene, so at s=1.00
+ * 平移安全预算（**镜头铁律之二**）：相机平移会整层移动内容，所以在 s=1.00 时
  * 任何平移都会把内容推出画面、露出边缘（实测：pan-follow 在 s=1.0 下把左侧站名裁掉）。
  *
  * 几何上，缩放为 s 时可见窗半宽 = 960/s，只要窗口仍落在 1920×1080 舞台内就不会露边，
  * 因此可用的最大平移量为：
  *     maxPanX = 960 * (1 - 1/s)      maxPanY = 540 * (1 - 1/s)
- * A requested pan therefore needs enough zoom to cover the exposed edge
- * (s=1.06 → ±54px; s=1.12 → ±103px).
+ * 即 **想平移多少，就必须先缩放到能覆盖它**（s=1.06 → ±54px；s=1.12 → ±103px）。
  * camAt() 会按此钳制；scripts/validate-shot-motion.py 用同一公式检查，
  * 请求量超出预算时记 P1（说明平移会被削减）。
  */
-export const panBudget = (s: number, stage: StageSpec = STAGE) => ({
-  x: stage.cx * (1 - 1 / Math.max(1, s)),
-  y: stage.cy * (1 - 1 / Math.max(1, s)),
+export const panBudget = (s: number) => ({
+  x: STAGE.cx * (1 - 1 / Math.max(1, s)),
+  y: STAGE.cy * (1 - 1 / Math.max(1, s)),
 });
 
-const clampPan = (x: number, y: number, s: number, stage: StageSpec = STAGE) => {
-  const b = panBudget(s, stage);
+const clampPan = (x: number, y: number, s: number) => {
+  const b = panBudget(s);
   return {
-    x: Math.min(stage.cx + b.x, Math.max(stage.cx - b.x, x)),
-    y: Math.min(stage.cy + b.y, Math.max(stage.cy - b.y, y)),
+    x: Math.min(STAGE.cx + b.x, Math.max(STAGE.cx - b.x, x)),
+    y: Math.min(STAGE.cy + b.y, Math.max(STAGE.cy - b.y, y)),
   };
 };
 const easeInOut = Easing.inOut(Easing.cubic);
 
-/** Suggested durations for helper-generated camera moves (frames), not a movement quota. */
+/** 运镜默认时长（帧）：shot-language.md 规定单次 30–45 帧。 */
 export const CAM_DUR = {short: 30, std: 38, long: 45} as const;
 
 type IntentOpts = {
@@ -89,8 +89,6 @@ type IntentOpts = {
   dur?: number;
   /** micro-orbit：绕 Y 轴角度 */
   rotY?: number;
-  /** 目标设计画幅；省略时兼容原16:9坐标。 */
-  stage?: StageSpec;
 };
 
 /**
@@ -98,9 +96,8 @@ type IntentOpts = {
  * 刻意只暴露少量参数：曲线形状由 intent 决定，调用方改不出「AI 乱写相机」那种曲线。
  */
 export const shotCam = (intent: ShotIntent, o: IntentOpts): CamKey[] => {
-  const stage = o.stage ?? STAGE;
-  const x = o.x ?? stage.cx;
-  const y = o.y ?? stage.cy;
+  const x = o.x ?? STAGE.cx;
+  const y = o.y ?? STAGE.cy;
   const at = o.at ?? 0;
   const dur = o.dur ?? CAM_DUR.std;
   const end = o.duration;
@@ -138,22 +135,18 @@ export const shotCam = (intent: ShotIntent, o: IntentOpts): CamKey[] => {
   }
 };
 
-/** Static camera path. Still is valid for any duration and does not require an anchor. */
-export const stillCam = (duration: number, x?: number, y?: number, s = 1, stage: StageSpec = STAGE): CamKey[] => {
-  const cx = x ?? stage.cx;
-  const cy = y ?? stage.cy;
-  return [
-    {f: 0, x: cx, y: cy, s},
-    {f: Math.max(0, duration - 1), x: cx, y: cy, s},
-  ];
-};
+/** 静止镜头（明确表示本镜不运镜）。still 是合法选择，但全片配额受限。 */
+export const stillCam = (duration: number, x = STAGE.cx, y = STAGE.cy, s = 1): CamKey[] => [
+  {f: 0, x, y, s},
+  {f: duration, x, y, s},
+];
 
 /** 插值求某帧的相机状态。 */
-export const camAt = (keys: readonly CamKey[], f: number, stage: StageSpec = STAGE): {x: number; y: number; s: number; rotY: number} => {
-  if (keys.length === 0) return {x: stage.cx, y: stage.cy, s: 1, rotY: 0};
+export const camAt = (keys: readonly CamKey[], f: number): {x: number; y: number; s: number; rotY: number} => {
+  if (keys.length === 0) return {x: STAGE.cx, y: STAGE.cy, s: 1, rotY: 0};
   if (keys.length === 1 || f <= keys[0].f) {
     const k = keys[0];
-    const c = clampPan(k.x, k.y, k.s, stage);
+    const c = clampPan(k.x, k.y, k.s);
     return {x: c.x, y: c.y, s: k.s, rotY: k.rotY ?? 0};
   }
   let i = 0;
@@ -162,7 +155,7 @@ export const camAt = (keys: readonly CamKey[], f: number, stage: StageSpec = STA
   const b = keys[i + 1];
   const p = interpolate(f, [a.f, Math.max(a.f + 1, b.f)], [0, 1], {...clamp, easing: easeInOut});
   const s = a.s + (b.s - a.s) * p;
-  const c = clampPan(a.x + (b.x - a.x) * p, a.y + (b.y - a.y) * p, s, stage);
+  const c = clampPan(a.x + (b.x - a.x) * p, a.y + (b.y - a.y) * p, s);
   return {
     x: c.x,
     y: c.y,
@@ -172,15 +165,15 @@ export const camAt = (keys: readonly CamKey[], f: number, stage: StageSpec = STA
 };
 
 /** 相机变换：注视点 (x,y) 落在画面中心，缩放 s。与旧 CameraRig 公式一致 → 兼容。 */
-export const camTransform = (x: number, y: number, s: number, stage: StageSpec = STAGE): string =>
-  `translate(${stage.cx - x * s}px,${stage.cy - y * s}px) scale(${s})`;
+export const camTransform = (x: number, y: number, s: number): string =>
+  `translate(${STAGE.cx - x * s}px,${STAGE.cy - y * s}px) scale(${s})`;
 
 /** 可见窗（设计坐标）。anchor 必须落在其中。 */
-export const visibleWindow = (x: number, y: number, s: number, stage: StageSpec = STAGE) => ({
-  left: x - stage.cx / s,
-  right: x + stage.cx / s,
-  top: y - stage.cy / s,
-  bottom: y + stage.cy / s,
+export const visibleWindow = (x: number, y: number, s: number) => ({
+  left: x - STAGE.cx / s,
+  right: x + STAGE.cx / s,
+  top: y - STAGE.cy / s,
+  bottom: y + STAGE.cy / s,
 });
 
 export type SafeViolation = {f: number; axis: 'x' | 'y'; need: number; got: number};
@@ -189,7 +182,7 @@ export type SafeViolation = {f: number; axis: 'x' | 'y'; need: number; got: numb
  * 出界数学证明：逐关键帧检查 anchor 是否完整落在可见窗内。
  * 纯算术、零渲染。脚本 scripts/validate-shot-motion.py 用同一套数学复核 shots.json。
  */
-export const safeCheck = (keys: readonly CamKey[], anchor: Anchor, zoomMax: number, stage: StageSpec = STAGE): SafeViolation[] => {
+export const safeCheck = (keys: readonly CamKey[], anchor: Anchor, zoomMax: number): SafeViolation[] => {
   const bad: SafeViolation[] = [];
   const span = Math.max(...keys.map((k) => k.f), 1);
   const step = Math.max(1, Math.round(span / Math.max(2, Math.ceil(span / 8))));
@@ -197,8 +190,8 @@ export const safeCheck = (keys: readonly CamKey[], anchor: Anchor, zoomMax: numb
     if (k.s > zoomMax + 1e-6) bad.push({f: k.f, axis: 'x', need: zoomMax, got: k.s});
   }
   for (let f = 0; f <= span; f += step) {
-    const c = camAt(keys, f, stage);
-    const w = visibleWindow(c.x, c.y, c.s, stage);
+    const c = camAt(keys, f);
+    const w = visibleWindow(c.x, c.y, c.s);
     if (anchor.x < w.left) bad.push({f, axis: 'x', need: anchor.x, got: w.left});
     if (anchor.x + anchor.w > w.right) bad.push({f, axis: 'x', need: anchor.x + anchor.w, got: w.right});
     if (anchor.y < w.top) bad.push({f, axis: 'y', need: anchor.y, got: w.top});
@@ -222,11 +215,9 @@ export const ShotCamera: React.FC<{
   zoomMax?: number;
   children?: React.ReactNode;
 }> = ({keys, f, anchor, zoomMax = TEXT_ZOOM_MAX, children}) => {
-  const {canvas} = useCanvas();
-  const stage = stageFor(canvas);
-  const c = camAt(keys, f, stage);
+  const c = camAt(keys, f);
   if (process.env.NODE_ENV !== 'production' && anchor) {
-    const bad = safeCheck(keys, anchor, zoomMax, stage);
+    const bad = safeCheck(keys, anchor, zoomMax);
     if (bad.length) console.warn('[shotkit] anchor 出界', bad.slice(0, 3));
   }
   // 3D 路径：有 rotY 时用 CSS zoom 而非 transform:scale，避免 Chromium 先光栅化再放大导致文字发虚。
@@ -239,7 +230,7 @@ export const ShotCamera: React.FC<{
             inset: 0,
             transformOrigin: '0 0',
             zoom: c.s,
-            transform: `translate(${stage.cx - c.x}px,${stage.cy - c.y}px) rotateY(${c.rotY}deg)`,
+            transform: `translate(${STAGE.cx - c.x}px,${STAGE.cy - c.y}px) rotateY(${c.rotY}deg)`,
           }}
         >
           {children}
@@ -248,15 +239,15 @@ export const ShotCamera: React.FC<{
     );
   }
   return (
-    <div style={{position: 'absolute', inset: 0, transformOrigin: '0 0', transform: camTransform(c.x, c.y, c.s, stage)}}>
+    <div style={{position: 'absolute', inset: 0, transformOrigin: '0 0', transform: camTransform(c.x, c.y, c.s)}}>
       {children}
     </div>
   );
 };
 
 // ---------------------------------------------------------------------------
-// Depth coefficients for optional parallax treatment. Use only when depth
-// clarifies the scene; they are not a required visual effect.
+// DepthLayers：景深视差。系数阶梯 0.35 / 0.7 / 1.0，层数 ≤3。
+// far/mid 层按系数分担相机的位移与缩放，产生真实纵深；层数越多越廉价，故 ≤3。
 // ---------------------------------------------------------------------------
 export const DEPTH = {far: 0.35, mid: 0.7, near: 1} as const;
 
@@ -305,9 +296,11 @@ export const CoverPanel: React.FC<{
 };
 
 /**
- * Optional, deterministic ambient motion helper. Do not add it merely to avoid
- * stillness: a quiet hold is valid. Use only when subtle motion has a clear
- * visual purpose and does not compete with the instructional carrier.
+ * ambientBreath：每镜**唯一**的缓慢环境运动（Rule 5）。
+ * 为什么需要：所有元素都"动完就永久静止"时，画面会像被暂停；一个几乎察觉不到的
+ * 背景呼吸给前景提供参照，观感立刻"活"起来。
+ * 预算（写死在函数里，防止被滥用）：幅度 ≤4%、周期 120–180 帧、正弦缓动、
+ * **只能放在背景/次级元素上**，绝不放内容层（内容动会分散注意力，且违反"内容只在语义节点变化"）。
  */
 export const ambientBreath = (f: number, period = 150, amp = 0.03) => {
   const a = Math.min(0.04, Math.max(0, amp));

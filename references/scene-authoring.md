@@ -1,72 +1,175 @@
-# Scene authoring: from learning goal to a rendered explanation
+# 场景编写说明书（照着抄，不要重新发明）
 
-This guide is a workflow, not a copy-this-layout mandate. Reuse the template engine and components where helpful, but let each film's content determine its storyboard and visual form.
+> 这份文档是给**执行 AI** 的：本技能的用法是「强 AI 做出一版最好的成片 → 把它的结构与代码沉淀成模板
+> → 后续用任何（包括较弱的）AI 照着模板模仿，收敛到 95% 的水平」。
+> 所以**模板里的代码形状就是标准答案**；你的任务是**照抄结构、替换内容**，不是自由发挥。
+>
+> 看不懂就想一句话：**结构别动，只换内容。** 需要换结构时，先读
+> [scene-skeletons.md](scene-skeletons.md) 与 [composition-gate.md](composition-gate.md)。
 
-## 1. Before the shot table
+---
 
-1. State the intended viewer, viewing context, and one or more learning outcomes.
-2. Write the factual narration and semantic caption cues; check claims, units, examples and source provenance.
-3. Decide which information belongs in speech, captions, and visuals. Keep what the viewer needs; remove irrelevant decoration, not evidence or explanation.
-4. Choose and record a coherent visual treatment for the film. If the user has no preference, the shipped `paper` treatment is a sensible explicit default. `cel`, `sticker`, `flat`, or a restrained hybrid may fit another audience or concept. Do not leave the choice implicit or select a skin solely to fill a quota.
-5. Sketch the storyboard as relationships first: what must the viewer notice, compare, follow, or infer? A storyboard may reuse a layout; it need not rotate through all helper types.
+## 目录
 
-## 2. Cue-indexed shot plan
+- [0. 六步流程（顺序不要跳）](#0-六步流程顺序不要跳)
+- [1. 分镜表长什么样](#1-分镜表长什么样可直接改造)
+- [2. 场景代码的标准形状](#2-场景代码的标准形状照抄)
+- [3. 反复踩的十个坑](#3-反复踩的十个坑每个都是真金白银换的)
+- [4. 渲染前自检](#4-渲染前自检逐条打勾)
+- [5. 想做得更好时的顺序](#5-想做得更好时的顺序)
 
-`manifests/shots.json` is the semantic source of truth. Write cue indices, not frame numbers; `resolve-shots.py` derives timing from the caption cues. Each cue must be covered by exactly one shot. A single shot and one clear static image may support several cues when that image genuinely explains them.
+## 0. 六步流程（顺序不要跳）
 
-Every shot must include:
+```text
+① 锁内容      narration.txt + manifests/semantic-caption-lines.txt（一行为一条 cue）
+② 写分镜表    manifests/shots.json（语义层：只写"覆盖哪几句 cue"，不写帧号）
+③ 解析        python scripts/resolve-shots.py PROJECT       → src/shots.ts + shots.resolved.json
+④ 写场景      src/scenes.tsx（每个 shot 一个组件；照 §2 的代码形状）
+⑤ 过门禁      validate-shot-motion.py / validate-composition.py（P0 必须为 0）
+⑥ 出片复核    render → 抽 1fps 接触表 → 逐帧看边界/最长字幕/最复杂运动
+```
 
-- `coreRelation`: the key concept, comparison, causal link, step, or takeaway it teaches.
-- `visualCarrier`: the visible diagram, text, chart, image, code/UI, example, or meaningful state depiction that supports the relation.
-- `cues`: inclusive first/last narration cue indices covered by that shot.
+②之前的输入是③；④依赖③生成的 `SHOTS`；⑤必须在⑥之前。**顺序错了会白干。**
 
-The particular medium, skeleton, skin, camera move, beat-level reveal and animation are chosen only when they improve explanation. Missing visual support is not optional: a shot that is merely decorative or blank does not satisfy the task. These declarations make omissions inspectable but cannot prove semantic correctness; that is decided by reviewing the actual film with its narration.
+---
 
-Example of a readable static relationship; there is no movement quota:
+## 1. 分镜表长什么样（可直接改造）
 
 ```json
 {
-  "duration": 900,
-  "theme": "paper",
-  "canvas": "16:9",
-  "shots": [{
-    "id": "S1",
-    "chapter": "Request and response",
-    "cues": [0, 2],
-    "coreRelation": "A request reaches the server before the server returns a response.",
-    "visualCarrier": "A labeled two-way arrow diagram remains on screen through these cues.",
-    "camera": {"intent": "still"},
-    "transition": "cut"
-  }]
+  "duration": 1126, "theme": "paper", "canvas": "16:9",
+  "shots": [
+    {
+      "id": "S1",
+      "chapter": "代码不再孤独",
+      "skeleton": "Stage",
+      "cues": [0, 3],
+      "media": ["console", "graphic"],
+      "live": ["ConsoleWindow", "StampBanner"],
+      "camera": {"intent": "establish", "at": 24, "dur": 38, "x": 960, "y": 540, "from": 1.0, "to": 1.03},
+      "anchor": {"x": 340, "y": 180, "w": 1240, "h": 660},
+      "contentBand": {"x": 180, "y": 120, "w": 1560, "h": 800},
+      "hero": {"name": "本地仓库", "size": 640, "kind": "text"},
+      "zones": 4, "bottomFill": true, "cover": "paper",
+      "transition": "cut", "entry": "rise",
+      "beats": [{"cue": 0}, {"cue": 1}, {"cue": 2}, {"cue": 3}]
+    }
+  ]
 }
 ```
 
-A production manifest with additional constraints (audio duration, tail frames, protected phrases, canvas mode) must obey the values of that project. Do not copy the example duration blindly.
+- `cues: [起, 止]` 是**闭区间**；`from` = 首句起始帧，`to` = 下一镜首句起始帧（末镜 = 末句结束 + `tail`）。
+- **禁止**在分镜表里手写帧号。**禁止**手改 `src/shots.ts`（它带 AUTO-GENERATED 头）。
+- `beats` 覆盖每一句的起始帧即可；若某段超过 110 帧没有变化，解析器会提醒你补拍。
 
-## 3. Draw the scene
+---
 
-- Use one clearly organized visual hierarchy. Assign space for captions and labels, and choose their size by testing the final output at its actual intended display size.
-- Put highlights beside or on the object currently being described; synchronize changes to the word or phrase they refer to. No change is needed while a stable image is still being read or reasoned about.
-- Use an existing component when it performs a clear job. Prefer direct diagram/text/SVG when simpler. Do not implement a mature open-source component from scratch merely to avoid a permitted, locked dependency.
-- Components and compositional helpers are not goals by themselves. Verify that a cited component is called and visible in the rendered scene and contributes to understanding.
-- `ShotCamera` is useful when a shot has a chosen move. A static camera is valid; omit an `anchor` if framing never changes. When a zoom, pan, or orbit changes framing, define the essential-content `anchor` and let the safety validator check every camera key.
-- Keep time frame-deterministic: animations must be pure functions of the Remotion frame, not CSS autoplay, wall-clock timers or random values. If an element enters, use cue-derived timing when the narration gives a meaningful anchor.
+## 2. 场景代码的标准形状（照抄）
 
-## 4. Validate and render
+```tsx
+import {SHOTS} from './shots';
+import {ShotCamera, CoverPanel} from './shotkit';
+import {StageFrame, PhaseRail} from './stagekit';
 
-Run from the project directory:
+const C = THEME.palette;
+const IN = 22;
+/** 入场：22 帧 easeOut + 上浮 + 微缩放。所有元素都用它。 */
+const enterAt = (f: number, at: number): React.CSSProperties => {
+  const p = easeOut(f, at, at + IN);
+  return {opacity: p, transform: `translateY(${(1 - p) * 22}px) scale(${0.975 + 0.025 * p})`};
+};
 
-```text
-python scripts/resolve-shots.py PROJECT
-python scripts/validate-shot-motion.py PROJECT
-python scripts/validate-composition.py PROJECT
-python scripts/validate-presentation.py PROJECT
-npm run typecheck
-npm run render
+const S1: React.FC<{f: number}> = ({f}) => {
+  const b = SHOTS.S1.beats;
+  const at = (i: number, d = 0) => (b[Math.min(i, b.length - 1)] ?? 0) + d;
+  const phases = [
+    {at: at(0), state: 'local', label: '代码躺在硬盘里'},
+    {at: at(1), state: 'push',  label: '接上 GitHub'},
+    {at: at(2), state: 'world', label: '全世界一起造'},
+  ];
+  return (
+    <Shot id="S1" f={f} entry="rise">
+      <StageFrame x={210} y={176} w={1500} h={710} f={f} phases={phases} railW={390}
+        header={() => <span>…</span>}
+        rail={({index}) => <PhaseRail phases={phases} ctx={…} />}
+        stamp={() => <StampBanner x={0} y={0} w={1000} f={f} at={at(2)} text="…" />}>
+        {() => (
+          <div style={{position: 'relative', height: '100%'}}>
+            <ConsoleWindow x={0} y={0} w={1000} h={300} f={f} rows={rows} rowGap={62} />
+            <div style={{position: 'absolute', left: 0, top: 372, display: 'flex', gap: 14}}>
+              {chips.map((x) => <div key={x.k} style={{…, ...enterAt(f, x.at)}}>…</div>)}
+            </div>
+          </div>
+        )}
+      </StageFrame>
+    </Shot>
+  );
+};
 ```
 
-The checks can verify timeline integrity, cue coverage, required relation/carrier declarations, recognizable scene JSX, and geometric camera safety. They cannot check whether the content is true, whether the picture actually explains the words, or whether the pacing feels comfortable.
+四个骨架的组件（`StageFrame` / `Corridor` / `SplitStage` / `ZoomStage`）与介质组件
+（`ConsoleWindow` / `MetricGrid` / `StampBanner` / fxkit 的 9 件）都已提供。
+**先用现成的，缺什么再补；补的要加进接触表。**
 
-After a representative still/contact sheet, render the whole film. Inspect first/last frames, each shot boundary, longest captions, key diagrams/highlights, visible overlaps/clipping, and any frame with fast movement. Then watch the **complete film at normal speed with audio**: compare each spoken phrase with the visual, allow enough time to read, and listen for distracting or mistimed sound. Review the 16:9 output at native size and in a 390-pixel-wide phone preview; evaluate other aspect ratios separately and label them untested if not rendered.
+### 槽宽公式（给槽内组件传宽度前先算）
 
-A rendered example or creator review is not a blind audience study. Do not claim improved learning, comfort, or comprehension without appropriately blinded viewers and a fit-for-purpose task.
+```
+mainW = w − pad×2 − (rail ? railW + 18 : 0)
+mainH = h − pad×2 − headH − stampH − (stamp ? 14 : 0) − (header ? 14 : 0)
+```
+
+`StageFrame` 会把这两个值算好，并用 `SlotGuard` 在**出图路径**上实测 main 槽的**占用率**（槽里有内容的
+最内层元素的高度并集 ÷ 槽高），占用 <35% 会在控制台打警告并连槽的 `mainW×mainH` 一起报出来。
+所以两件事都要做：① 给 `ConsoleWindow` / `SkeletonCard` / `MetricGrid` 传 `w` 之前，**先算 `mainW`**，
+不要凭感觉写整数；② 槽里的内容要**撑满 `mainH`**（外层 `height:'100%'`，内部再按 `mainH` 分栏/分拍），
+不要只放一行字——实测过一镜：槽给足 428px（画布 1080 的 39.6%），内容只有一行 47px，占用 11%。
+判据与做法见 [scene-skeletons.md](scene-skeletons.md) §3 第 4 条。
+
+### 三个必须遵守的写法
+
+1. **元素出现帧绑到节拍**：`enterAt(f, at(i))`，不要用 `popS(f, 0)` 或镜头开头的固定帧。
+2. **容器里不要混用**"文档流内的标题"和"绝对定位组件"——两者都从容器原点起，会精确重叠。
+   给绝对定位组件显式 `y`，或把标题也绝对定位。
+3. **整幅底托用负 z 且羽化**（见 [media-routing.md](media-routing.md) §4.2）：
+   `z={-1}`、`boxShadow:'none'`、径向渐变。正 z 会把整镜内容压成半透明。
+
+---
+
+## 3. 反复踩的十个坑（每个都是真金白银换的）
+
+| # | 症状 | 真因 | 修法 |
+|---|---|---|---|
+| 1 | 动画整体错位、`Frame NaN` | 给 **fxkit** 组件传了 `f`（它的参数叫 `frame`），`f` 被静默忽略 → 回落到全局帧 | fxkit 传 `frame={f}`；v2.10 新模块传 `f={f}`；跑 `validate-frame-props.py` |
+| 2 | 镜头一动，边缘内容被裁掉 | 平移会整层移动内容，`s=1.0` 时必然露边 | 平移量须由缩放覆盖：`maxPanX=960(1−1/s)`；`pan-follow` 自带 `from≥1.06` |
+| 3 | 一屏字叠成一团 | 文档流标题 + 绝对定位组件都从容器原点起 | 给组件显式 `y`，或把标题绝对定位 |
+| 4 | 整镜内容发灰/半透明 | 底托用了**正 z-index**，压住所有 `z-index:auto` 的场景元素 | 底托 `z={-1}` |
+| 5 | 画面下沿一条硬缝 | 底托是硬边矩形 | 径向羽化 + 去掉描边环 |
+| 6 | 字幕被裁切却没人报错 | `CaptionFitGate` 曾硬编码 16:9 的字号/安全宽 | 已修：按当前画布与主题实测（**修好后会更严格，会拦下以前静默放行的字幕**） |
+| 7 | **给槽内组件传的宽度超过了槽的可用宽**，不透明组件压住右侧轨道文字 | 没算 `mainW = w − pad×2 − railW − 18`，凭感觉写 `w=1060` 而实际只有 1035 | 先算 `mainW/mainH` 再传宽度；`StageFrame` 内建 `SlotGuard` 会在控制台警告超宽（见 §2 下方） |
+| 8 | 两个不同信息互相压字（门禁报 `OverlapGate`） | 真的重叠 | 按 §4 自检逐条修；**只有**"同一信息在同位置替换"和"镜头交接"才允许用 `data-gate-allow` 白名单 |
+| 9 | **多张卡片精确叠在同一点**，文字互相穿刺（实测：S12 四张事实卡全叠在一起） | flex 子项**只含绝对定位子元素**时没有在流内容，宽度塌成 0 → 四张 248px 宽的卡被 `gap:20` 排到 x=0/20/40/60 | 给这类 wrapper **显式 `width` + `height`**，或不要包一层、直接把宽高给卡片本身；`OverlapGate` 会报这种重叠 |
+| 10 | 卡片最后一行被裁掉一截 | `FitCard` 的高度是手写的，比内容矮（实测矮 25px），叠加 `overflow:hidden` 后文字被切 | 高度用 `fitH(rows, padTop, padBottom)` 算；渲染期 `CardFitGate` 用 `scrollHeight > clientHeight` 拦真裁切（容差 6px，吸收行盒取整） |
+| 11 | **场景标题/顶层卡片与左上角章节卡撞车**（实测：多镜标题在 y=120 发生遮挡） | 全局 `Chrome` 章节卡占用 `x: 92..484, y: 74..164`；独立元素写在 `top: 100~140` 发生物理重叠 | 场景标题放入 `StageFrame` 内由槽统一管理，或独立元素保持 `y >= 170`；`coords-lint.py` 会对 `y < 170` 报警 |
+| 12 | **卡片/文字满屏瞬间全出，退化成 PPT** | 场景内多个子项、对比条或对话的 `start` 全部写死为 `0` 或同一帧 | **台词节拍阶梯涌现（铁律）**：必须强绑定 `beats`（`start={at(i)}`），随旁白语流逐项点亮与打字吐字 |
+
+---
+
+## 4. 渲染前自检（逐条打勾）
+
+- [ ] `resolve-shots.py` 通过（时间轴连续、覆盖 = duration）
+- [ ] `validate-shot-motion.py` **P0 = 0**（含每镜 anchor 出界证明、平移预算）
+- [ ] `validate-composition.py` **P0 = 0**（骨架相邻不同款、活性组件覆盖、介质 ≥3 种、下 1/4 填满）
+- [ ] 一镜内**没有元素在它该出现的那句之前出现**
+- [ ] 章节卡 / 页眉 / 字幕都在 `ShotCamera` **之外**
+- [ ] 压到背景装饰区的内容坐在底托上；底托是负 z + 羽化
+- [ ] 用到的每个构件都在 `NotebookVideoShowcase` 接触表里出现过
+- [ ] **首次渲染后读一遍控制台**：`OverlapGate`（文字重叠/遮挡）与 `SlotGuard`（槽内溢出）的警告必须清空，或逐条确认是"有意覆盖"并补上 `data-gate-allow`
+- [ ] 进度类动画用 `scaleX`，数值类用 `tabular-nums`（见 motion-design.md 六律）
+
+---
+
+## 5. 想做得更好时的顺序
+
+先改**内容层的表达**（换介质、换骨架、把一屏元素拆成逐句出现），
+再改**参数**（时间、位移、缩放、颜色），**最后**才考虑动引擎。
+**不要**为了"更炫"加新组件——本技能的失效模式从来不是组件不够，而是没被用上、或结构同构。

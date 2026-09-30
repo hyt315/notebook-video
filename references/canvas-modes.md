@@ -1,47 +1,61 @@
-# Canvas modes and validation status
+# Canvas modes: 16:9, 4:3 and 3:4 portrait
 
-A rendered aspect ratio is not merely a composition-size setting. Scene content, typography, subtitles and safe margins must be checked together. Composition registration is necessary but not sufficient: reusable helpers expose the active mode, and each scene must deliberately lay out its own content in that design space.
+Three delivery canvases coexist in this skill. Ask the user once at kickoff which one this production uses; the answer decides every layout coordinate for the film. **默认只注册 16:9**（`Root` 里只挂 `NotebookVideoFilm` 2560×1440；`Film4x3`/`Film3x4` 定义了但未注册）——切 4:3 / 3:4 要自己改 canvas 参数并重排版面，详见本文其余部分。
 
-## Locked delivery specifications
+- **16:9** is the default for landscape platforms with a 16:9 player (for example Bilibili).
+- **4:3** trades side width for a taller mobile presence: on a phone feed the same fonts render about one third larger. Choose it for landscape films whose primary audience watches on phones.
+- **3:4 portrait** is the native shape for portrait feeds (for example Douyin). It shows near-fullscreen on a phone without the platform's bottom UI covering the frame, so the subtitle strip stays at the bottom as usual. Do not use 9:16: it is verified to leave a dead lower band under the platform UI and reads too long.
+
+## Parameter table
 
 | Parameter | 16:9 | 4:3 | 3:4 portrait |
 | --- | --- | --- | --- |
-| Composition | 2560×1440 | 1920×1440 | 1440×1920 |
+| Composition (delivery) | 2560×1440 | 1920×1440 | 1440×1920 |
 | Design coordinate space | 1920×1080 | 1440×1080 | 1080×1440 |
-| Scale | 4/3 | 4/3 | 4/3 |
-| Subtitle left/right margin | 188 | 60 | 50 |
-| Subtitle bottom margin | 34 | 34 | 40 |
-| Subtitle safe width | 1334 | 1060 | 900 |
-| Subtitle type size (WenKai Lite) | 44 | 44 | 40 |
-| 390px-wide review viewport | 390×219 | 390×293 | 390×520 |
+| Film wrapper `width`/`height` | 1920/1080 | 1440/1080 | 1080/1440 |
+| Delivery scale | 4/3 | 4/3 | 4/3 |
+| Subtitle text `left/right` | 188 | 60 | 50 |
+| Subtitle text `bottom` (no bar) | 34 | 34 | 40 |
+| `TYPE.subtitle` (WenKai Lite) | 44 | 44 | 40 |
+| `AESTHETIC.subtitleSafeWidth` | 1334 | 1060 | 900 |
+| Usable content width (after paper margins) | ~1700 | ~1250 | ~980 |
+| Column layout | two columns | two narrowed columns | single column, cards stacked |
 
-These values are defined in `assets/lecture-template/src/theme/canvas.ts`; `validate-visual-plan.py` cross-checks them against registered Composition dimensions and the theme's runtime subtitle offset. Once a project registers a secondary film Composition, the validator requires all three film IDs, their locked width/height values, and identical `durationInFrames` and `fps`.
+The multi-zone style is preserved in every mode — never reduce the number of zones to fit a narrower canvas; shrink card widths and paddings (landscape) or stack the zones vertically (portrait) instead.
 
-## What was actually reviewed
+> **口径：这张表全是「契约值」（2026-09-22 复核）。** 每一行都对应 `assets/lecture-template/src/theme/canvas.ts` 的 `MODES[x]` 字段（`subMar` 188/60/50 · `subBottom` 34/34/40 · `subH` 112/112/104 · `safe` 1334/1060/900 · `subFont` 44/44/40），
+> 与 `scripts/validate-visual-plan.py` 的 `CANVAS_MODES[*]`（`subtitle_margin` / `subtitle_bottom` / `subtitle_safe_width`）**同值**——门禁核对的就是这一列。
+> **不要**把渲染时的值填进这张表：四套皮肤的 `SubtitleChrome` 各自另有渲染时的 `bottom`（`paper` 20 / `cel` 44 / `sticker` 42 / `flat` 40，按**皮肤**分、不按画布模式分），
+> 而自带示例工程 `assets/example-project/src/index.tsx` 的 `Subtitle` 是直接写死 `bottom:18` 的（只有 16:9 一种画布）。
+> 2026-09-02 那一版把这一格写成 `18 | 18 | 18`，用的就是示例工程那个值——口径错了，所以三个画布列全填了同一个数；现按契约值改回 34/34/40（3:4 的 40 与 §3 第 1 条本来一致）。
 
-### Bundled product template: official eight-shot example
+## Authoring a 4:3 film
 
-The reusable lecture template now has registered 16:9, 4:3 and 3:4 film Compositions. Its shared camera, StageFrame/PhaseRail and Corridor helpers read the active design space; the official S1–S8 example separately reflows its content for each canvas instead of scaling or letterboxing the 16:9 page. Teaching copy, shot order, cues and the lesson's core relationships remain the same. Actual 390px review led to larger 4:3 secondary text in S4's repository comparison/evidence list and S6's skill labels/details, and larger 16:9 S4 comparison/evidence/explanation text; the wide comparison's two redundant summaries were shortened without changing the three README/LICENSE/CI teaching roles. S4's role notes and three evidence-item entrances were also retimed to complete before the cut. The comparison's losing-side text remains intentionally secondary and struck through, but the compounded opacity fade was reduced so that supporting explanation does not disappear at phone size.
+1. Start from the lecture template, then set the four 4:3 values above in `src/index.tsx` (`Composition` width, Film wrapper width, subtitle margins, `subtitleSafeWidth`). All four must change together — a real production shipped a 4:3 film with 16:9 subtitle margins because one of the four was missed.
+2. Lay out scenes in the 1440-wide space. Convert a 16:9 two-column scene by narrowing both cards (not by dropping a zone); wide SVG diagrams may be wrapped in `transform:scale(0.85)` with `transformOrigin:'0 0'` instead of redrawing.
+3. Caption lines must pass the 1060px width gate; prefer splitting a long semantic line over shrinking the subtitle font.
+4. `validate-visual-plan` cross-checks the values against the `Composition` width and fails on any mixed-mode file, so run it before every render.
 
-All eight scenes of the official example were rendered as complete 1150-frame, 30 fps, silent H.264 videos in all three locked dimensions. Each mode has a 390px-wide, eight-shot contact sheet plus a full sequence of all seven scene boundaries (before / cut / after). The render also ran CardFitGate, OverlapGate, ClippingGate and CanvasBoundsGate. A first parallel render reported an isolated S2 vertical state-label overlap and a 4:3 bounds warning that did not reproduce in an exact-frame or 650–660 single-worker trace. The 3:4 state label was then anchored to its own prior station during transitions, and final full-film verification is run serially so the DOM-measuring gates inspect a stable frame.
+## Authoring a 3:4 portrait film
 
-Review outputs: `../../notebook-video-review/audit/official-template-final/` (full MP4s and per-mode logs) and `../../notebook-video-review/audit/official-template-final/mobile-390/` (390px shot and cut-boundary contact sheets).
+1. Set every 3:4 column value above together: `Composition` 1440×1920, wrapper 1080×1440, subtitle margins 50, bottom 40, height 104, `TYPE.subtitle` 40, `subtitleSafeWidth` 900. The caption width gate must measure at the same 40px WenKai setting.
+2. Chapter chrome moves to y≈80; content region runs y≈200–1290; the subtitle strip sits at the bottom as in landscape modes.
+3. Two-column scenes become stacked zones: full-width cards (~980 wide) laid top to bottom, each keeping its own bottom-anchored conclusion strip. Timeline SVGs stretch to ~900 wide — often larger than their landscape versions.
+4. Caption lines must pass the 900px gate at 40px; portrait lines break shorter (about 13 CJK characters).
+5. `validate-video` accepts 2560×1440, 1920×1440 and 1440×1920 containers; every other QA gate is unchanged.
 
-### Separate comparison fixture: five-shot lesson sample
+## Mobile readability type floor (all modes)
 
-The five-shot teaching sample is an external audit fixture under `../../notebook-video-review/after-project/`, not the bundled eight-shot product example. Its original 16:9 content and lesson are retained; its own 4:3/3:4 scene variants are only used to compare the same five shots/cues across aspect ratios. The fixture was fully rerendered as a 900-frame, 30 fps, silent H.264 film in all three dimensions, with its own 390px contact sheets, hard-cut checks, and text-boundary / overlap / clipping gates. It is not evidence that every customer-authored film will auto-reflow.
+Small text is the main reason films look blurry on phones. Titles and the subtitle are already large enough; the floor below raises only the small tiers. New projects must use:
 
-Review outputs: `../../notebook-video-review/audit/aspect-final/` (full MP4s and per-mode logs) and `../../notebook-video-review/audit/aspect-final/mobile-390/` (390px previews and hard-cut sheets). The pre-reflow diagnostics remain under `../../notebook-video-review/after-project/renders/aspect-diagnostic/mobile-390/`.
+```text
+bodyL:26  bodyM:24  bodyS:23
+labelL:22 labelM:21 labelS:20
+microL:18 microS:16
+```
 
-## How to use these modes
+Display/title tiers and the per-mode subtitle size stay as in the locked core. Never author content text below 16px design size; if a note only fits below that, cut it or move it into the narration.
 
-1. Register the intended delivery Composition at the exact dimensions above. Do not resize or letterbox a 16:9 page and call it an aspect adaptation.
-2. Read the active canvas mode through `useCanvas()` in each scene. Place and size the visual carrier, comparison, process, labels and conclusions deliberately for that design space; shared helpers such as `StageFrame`, `PhaseRail`, `Corridor` and camera safety checks accept mode-aware geometry.
-3. Preserve the teaching relationship and the original cue timing when reflowing. A comparison may remain side-by-side at 4:3 and stack in 3:4; a process may change from horizontal to vertical while retaining its labels, state and order.
-4. Keep subtitle text inside that mode's `safe` width and position its strip with the matching bottom margin. Check measured captions as well as the visible frame.
-5. Render the complete film and inspect representative 390px frames, including every scene and scene boundaries. A valid canvas table, unit test, or design-pixel font value does not prove that the finished output is readable.
-6. Treat whitespace and stillness as valid when the visible diagram continues to carry the narrated lesson. Do not add motion or objects to fill unused canvas.
+## Full-canvas vertical budget
 
-## Scope and remaining limits
-
-Three-mode support covers the registered runtime, shared helpers, and bundled eight-shot example; it does not automatically redesign arbitrary scenes in a new project. The five-shot fixture is reported separately above and must not be confused with the product template. The frame review was an agent self-review, not a blinded viewer study, and no real-phone or other physical-device test was performed. Audio, TTS, synchronization, phrase timing and learning outcomes remain outside this visual-only validation. No universal minimum design-pixel font size is declared: check the actual 390px target output for each text role and preserve non-cropping, non-overlap and subtitle-safe-area boundaries.
+Content must use the full height between the chapter chrome and the subtitle strip: in the landscape modes card tops start near y=190 and card bottoms reach about y=876 (40px of breathing room above the strip); in 3:4 portrait the same rule gives a content region of roughly y=200–1290. An empty lower quarter is a layout defect, not negative space: on a phone the area just above the subtitle is the largest, most-read region of the frame. Bottom-anchored conclusion strips inside each card are the standard way to consume that height.

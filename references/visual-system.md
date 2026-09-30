@@ -1,38 +1,69 @@
-# Visual system: choose the representation that explains the idea
+# Locked visual system: warm ivory Remotion notebook
 
-This is a decision guide, not a locked art direction. Reuse the existing Remotion template, shared components, pinned dependencies, and tested output geometry. The author may select a restrained visual treatment that supports the subject; no one style, skeleton, media kind, or amount of animation is required.
+Treat this as a low-freedom system. Copy the canonical components from `assets/lecture-template/src/index.tsx` (or `assets/example-project/src/index.tsx` on the `--classic` route).
 
-## Before styling
+## Canvas and camera
 
-1. Identify the audience, learning goal, exact claim, and any critical relationship or process.
-2. Decide what viewers should notice, compare, or be able to do afterward.
-3. Identify the best evidence: a real interface, data series, equation, diagram, source excerpt, physical object, or concise explanation.
-4. Sketch the sequence of ideas and its audio/caption timing. Only then choose a visual treatment.
-5. Render representative real frames early. A mood board or style label is not a substitute for a frame made with the actual text, diagrams, assets, and crop.
+- 2560×1440, native 30fps. **相机是镜头级的**：每镜在自己的 `camera` 字段里声明意图与关键帧（`ShotCamera` + `shotCam`/`stillCam`，见 shot-language.md）。v2.9.0 起**没有全片级相机轨道**（`CameraRig` 与 `CAM_KEYS_L/CAM_KEYS_P` 已删除）。
+- Preserve a 1920×1080 design coordinate system and scale it by 4/3 inside the native 2K composition.
+- Animate physical paper poses natively at 30fps; do not create duplicate delivery frames.
+- Keep subtitle space clear from y=925 downward.
+- Beyond the per-shot recipes, do not add global zoom, shake, breathing, parallax, animated grain or depth-of-field.
 
-## Composition
+## Background
 
-Use the smallest composition that makes the knowledge visible—not the smallest amount of information. A single stable, well-labelled diagram may explain more than several decorative panels. A complex mechanism may need states, a transfer path, synchronized labels, or more than one representation. White space is allowed; every region need not contain an element.
+Use the official `Background` implementation unchanged:
 
-Give the main subject, its relationship to the other elements, and the current explanation a clear hierarchy. Keep labels next to their referents. Use visual change only where it clarifies a claim, progression, contrast, or attention cue. Allow enough time for a new diagram or caption to be read.
+- full-canvas ivory surface (`C.paperBase`) with no outer desk band, page outline or page shadow — the paper is the frame itself, so no nested frame rings appear on small screens;
+- 54px low-contrast grid inside the inner rule, `(72,58)` to `(1848,1020)`;
+- static restrained dot texture controlled by `AESTHETIC.textureOpacity`;
+- no frame-to-frame texture change.
 
-## Visual treatments
+Background marks remain subordinate to all semantic objects.
 
-`paper`, `cel`, `sticker`, and `flat` are optional sets of palette, surface, edge, and accent treatments implemented in `assets/lecture-template/src/theme/`. They describe visual vocabularies, not subject categories or goals. `paper` is the current CLI default; that default is not a rule that every object must look like paper. Use the base skin coherently, and selectively borrow a compatible visual device only when it adds meaning. Do not mix skins just to prove variety.
+## Typography
 
-- **Paper:** quiet editorial/notebook cues; useful for annotation, note-taking, or procedural explanations. Texture, depth, and paper cards are optional, not a requirement for every panel.
-- **Cel:** high-contrast outline and flat color; useful when distinct regions or a drawn sequence improve recognition. Speed lines and saturated accents are optional.
-- **Sticker:** soft, playful accents; use where informality supports the audience and topic. Tape, doodles, tilt, and rounded cards are not mandatory.
-- **Flat:** geometric shapes and clean type; often suitable for direct comparison, data, or low-decoration diagrams. Character art is optional.
+- LXGW WenKai Lite Regular: subtitles and body.
+- LXGW WenKai Lite Medium: headings.
+- Clash Display / Space Grotesk: Latin accents, EP tags and code-ish strings.
+- Subtitle: 40px.
+- Avoid readable text below 17px.
+- Include fonts and license files in the editable package.
 
-Color contrast, legibility, geometry, and caption-safe space are more important than stylistic fidelity. Check rendered pixels, not only theme tokens. Do not bake exact wording, numerical values, or labels into raster art.
+## Paper and depth
 
-## Images and components
+Use the official v9 `Paper` implementation unchanged. The paper surface, outline and shadow move together; do not add unused wrapper primitives merely to satisfy documentation.
 
-Use a raster image when seeing a real-world subject or atmosphere materially improves the explanation; otherwise Remotion SVG/HTML and live text may be clearer and more reproducible. Keep exact labels and data in the editable composition. Record asset provenance and rights.
+At rest, use a close dark offset shadow. When a card lifts, increase x/y offset and blur while lowering alpha. On landing, return to the close shadow and permit one restrained spring overshoot.
 
-Reuse a bundled open-source component when it solves the visual task well. The project's `scripts/` remain standard-library-only; the Remotion template uses its pinned lockfile dependencies. Do not add a new dependency without authorization. Do not add a component because a reference project looks impressive: verify it enters the actual frame and earns its place in the explanation.
+Do not add dynamic shadow to fixed panels. Do not use large permanent blurred halos.
 
-## Final review
+## Chapter and header
 
-Review storyboards as rendered frames, then watch and listen to the full film. Verify semantic alignment, comfortable reading, and visual stability in the target delivery context. For this task, 16:9 is the primary but not presumptively successful canvas; 4:3 and 3:4 remain unverified until separately rendered and reviewed.
+- Chapter card: left 92, top 74, width 350, height 82, z=150.
+- Technical header: right 88, top 70, z=140.
+- Keep the chapter stable within a section. Use in-scene micro labels for smaller beats.
+
+## Subtitle input
+
+Use the exact `Subtitle` component. Pure text pinned near the bottom - no bar, no torn contour:
+
+- left/right: 188px; bottom: 18px;
+- one centered line, WenKai Lite 44px (40px on 3:4), letterSpacing 1.6;
+- per-word reveal with per-character stagger (0.9 frames); words fade-slide 6px over ~2.5 frames;
+- 180ms lead over the TTS word start; a hidden full-width placeholder keeps the line from shifting horizontally;
+- only a soft text shadow; never a dark border, side marks, orange locator or blue ring.
+- 1334px safe text width;
+- one centered 40px line.
+
+The previous dark outline produced black side artifacts and is forbidden. The paper contour supplies the edge. Do not draw an inner sine line, cursor, progress line, rounded search bar or dark endpoint.
+
+Reserve the fully revealed phrase width so partial reveal never shifts. Hide trailing punctuation visually while keeping it in timing data.
+
+## Information density
+
+Use one hero, three to seven supporting semantic parts, a visible relationship and local feedback. Keep enough negative space to identify the hierarchy. Do not fill empty space with decorative text, loose dots or unrelated paper scraps.
+
+## Materials
+
+Use CSS/SVG paper components for exact labels. Generated images may supply topic-specific illustrations, but do not bake final Chinese labels or multiple independently moving parts into one raster image.

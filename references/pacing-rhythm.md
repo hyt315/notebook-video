@@ -1,27 +1,43 @@
-# Pacing and reading holds
+# Pacing and rhythm contract
 
-Pacing is the rate at which viewers must interpret new information, not the amount of movement in a film. Choose timing from the narration, visual task, language, and intended viewing conditions. A deliberate still hold may be the clearest choice while a viewer reads a label or compares two states.
+A film whose every chapter has the same structure, density and speed loses viewers after a minute even when each scene is individually good. This contract makes energy rise and fall on purpose. It complements `narrative-hook.md`: the hook wins the first ten seconds, pacing keeps the rest.
 
-## Plan around learning tasks
+## Hammer frames
 
-For each cue or short passage, identify what the viewer must do: recognize an object, read a claim, compare values, follow a process, or infer a cause. Then provide enough time and visual continuity for that task. Avoid introducing unrelated information merely to create a new beat.
+Plan two or three hammer moments per film (roughly one per 60–90 seconds, never two in adjacent chapters). A hammer moment is the single most quotable line of a chapter shown as a full-screen statement:
 
-Vary density or pace when a meaningful change in the material calls for it. New concepts may benefit from fewer simultaneous elements and longer holds; a familiar procedure or recap may support a quicker sequence. These are starting hypotheses, not fixed chapter categories or timing thresholds. Check the rendered film with narration at normal speed.
+- one oversized sentence (displayL or larger) on an otherwise nearly empty paper, held 1.5–2.5 seconds;
+- all other zones exit completely before it enters; the multi-zone layout resumes after it;
+- place it on the narration line it quotes, timed from the cue table like every other element;
+- choose lines that reverse an assumption or compress the chapter ("冲突不是报错，是 Git 在问你意见"), not summaries.
 
-## Optional emphasis moments
+Mark each hammer frame in `storyboard.md` with `Hammer:` plus its cue number so the reviewer can check the beat spacing.
 
-An oversized statement, state change, diagram highlight, or short pause can make a central idea easier to notice. Use one only when it clarifies the spoken point, and align it with the relevant narration. Do not require a fixed number of emphasis moments, full-screen text, motion, sound effects, or camera changes. The visual should remain long enough to read for its actual audience and display size.
+## Fast and slow chapters
 
-## Chapter boundaries and ending
+Alternate chapter energy instead of keeping one speed:
 
-Use a chapter card, pause, transition, or sound only when it helps the audience follow a real change in topic or gives a needed moment to process. A blank interval, rustle, or exit animation is not mandatory. The final passage should answer the learning objective or state a useful next step; it does not need an artificially sparse layout, mascot, save prompt, or teaser.
+- **Slow chapters** (new concepts): fewer elements per beat, longer readable holds, state changes every 3–4 seconds.
+- **Fast chapters** (procedures, lists, montages): denser element entries, state changes every 1.5–2.5 seconds, clipped holds.
+- Never schedule two slow chapters back to back; separate them with a fast chapter or a hammer frame.
 
-## Review
+With a chapter-segmented TTS adapter, give each paragraph its own style instruction: calmer and slightly slower for slow chapters, brisker with more energy for fast chapters and the hook. Keep one voice; vary delivery, not identity.
 
-- Do cue timing, visual changes, and any spoken emphasis refer to the same idea?
-- Is each new element introduced when it can be understood, without crowding the narration?
-- Are deliberate reading holds preserved rather than mislabeled as motion gaps?
-- Does each transition mark a meaningful boundary, or can it be removed?
-- Does the ending complete the explanation at a pace the viewer can follow?
+## Chapter breathing
 
-Resolve discomfort or confusion in the actual render. Do not treat chapter alternation, action counts, transition frequency, or a target motion density as a quality score.
+Between chapters insert a breath of 0.5–1 second: the outgoing scene completes its exit, the paper stays briefly empty except chrome, then the incoming chapter's first element pops. Do not butt the last element of one chapter directly against the first element of the next. The existing rustle transition sound marks this breath.
+
+## Ending beat
+
+The final chapter drops density on purpose: at most three elements (wrap-up line, mascot, closing card) so the film visibly lands instead of stopping mid-texture.
+
+For knowledge films the closing card is a save hook, not a follow plea: recommendation algorithms weight saves and shares above completion for this genre. Give viewers a concrete reason to save — "点个收藏，下次写崩了翻出来照着敲" names the exact future moment they will need the film — and pair it with a code-drawn star that draws its outline and fills on the spoken word. When the film belongs to a series, add a one-line next-episode teaser under the save card; keep platform references to the compliant "主页可以查看" wording with no account names or links.
+
+## Review gate
+
+Before the full render, check on the contact sheet or range renders:
+
+- hammer frames exist, are alone on screen, and are spaced by at least one chapter;
+- no two adjacent chapters share the same energy level in the storyboard table;
+- every chapter boundary shows the breathing gap;
+- the last scene is visibly sparser than the body chapters.

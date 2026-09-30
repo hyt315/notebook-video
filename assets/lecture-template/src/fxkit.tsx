@@ -1,7 +1,6 @@
 import React from 'react';
 import {Easing, interpolate, spring, useCurrentFrame} from 'remotion';
 import {THEME} from './theme/active';
-import {useCanvas} from './theme/canvas';
 
 // ============================================================================
 // fxkit · 固定动效组件库 v1（反 PPT 专用）
@@ -144,9 +143,7 @@ export const StampSeal:React.FC<{
 export const Funnel:React.FC<{
   x:number;y:number;w:number;rows:{label:string;sub:string;count:string;color:string;ratio:number}[];
   start?:number;stagger?:number;frame?:number;exitStart?:number;
-  labelSize?:number;subSize?:number;countSize?:number;
-  showDrops?:boolean;
-}> = ({x,y,w,rows,start=0,stagger=14,frame,exitStart,labelSize=FX_T.titleXS,subSize=FX_T.labelL,countSize=FX_T.titleM,showDrops=true})=>{
+}> = ({x,y,w,rows,start=0,stagger=14,frame,exitStart})=>{
   const f = useF(frame);
   return <div style={{position:'absolute',left:x,top:y,width:w,...exitStyle(f,exitStart)}}>
     {rows.map((r,i)=>{
@@ -154,14 +151,14 @@ export const Funnel:React.FC<{
       const wp = easeOutSoft(f,s+8,s+34);
       return <div key={r.label} style={{position:'relative',opacity:p,transform:`translateX(${-30*(1-p)}px)`,marginBottom:i<rows.length-1?10:0}}>
         <div style={{display:'flex',alignItems:'baseline',gap:10,marginBottom:6}}>
-          <span style={{fontSize:labelSize,fontWeight:700,color:C.ink}}>{r.label}</span>
-          <span style={{fontSize:subSize,fontWeight:700,color:r.color}}>{r.sub}</span>
-          <span style={{marginLeft:'auto',fontFamily:'Space',fontWeight:700,fontSize:countSize,color:r.color}}>{r.count}</span>
+          <span style={{fontSize:FX_T.titleXS,fontWeight:700,color:C.ink}}>{r.label}</span>
+          <span style={{fontSize:FX_T.labelL,fontWeight:700,color:r.color}}>{r.sub}</span>
+          <span style={{marginLeft:'auto',fontFamily:'Space',fontWeight:700,fontSize:FX_T.titleM,color:r.color}}>{r.count}</span>
         </div>
         <div style={{height:22,background:C.gaugeTrack,borderRadius:99,border:`2px solid ${C.ink}`,overflow:'hidden'}}>
           <div style={{height:'100%',width:'100%',background:r.color,borderRadius:99,transformOrigin:'left center',transform:`scaleX(${Math.max(0.04,r.ratio*wp)})`}}/>
         </div>
-        {showDrops && [0,1,2].map(d=>{
+        {[0,1,2].map(d=>{
           // 每颗水滴再错开 3 帧 → 三条流而不是三个同步的点
           const cyc = (f-s-10-d*3+hash01(i*3+d)*9)%36;
           const dy = cyc<0?0:(cyc/36)*40;
@@ -174,23 +171,21 @@ export const Funnel:React.FC<{
 
 // ---- 6. ChatThread：对话气泡。typing 三点 12 帧 → 气泡 pop，左右交替 ----
 export const ChatThread:React.FC<{
-  x:number;y:number;w:number;msgs:{side:'l'|'r';text:string;at:number}[];frame?:number;exitStart?:number;fontSize?:number;
-}> = ({x,y,w,msgs,frame,exitStart,fontSize=FX_T.labelL})=>{
+  x:number;y:number;w:number;msgs:{side:'l'|'r';text:string;at:number}[];frame?:number;exitStart?:number;
+}> = ({x,y,w,msgs,frame,exitStart})=>{
   const f = useF(frame);
-  const shownStep = Math.max(52, Math.ceil(fontSize * 1.65 + 16));
-  const typingStep = Math.max(40, Math.ceil(fontSize * 1.25 + 14));
   let dy = 0;
   return <div style={{position:'absolute',left:x,top:y,width:w,...exitStyle(f,exitStart)}}>
     {msgs.map((m,i)=>{
       const typing = f>=m.at&&f<m.at+12, shown = f>=m.at+12;
       const y0 = dy;
-      if(shown) dy+=shownStep; else if(typing) dy+=typingStep;
+      if(shown) dy+=52; else if(typing) dy+=40;
       if(!typing&&!shown) return null;
       const mine = m.side==='r';
       return <div key={i} style={{position:'absolute',top:y0,left:mine?'auto':0,right:mine?0:'auto',maxWidth:'82%',opacity:shown?popS(f,m.at+12,'snappy'):1,transform:shown?`translateY(${14*(1-popS(f,m.at+12,'snappy'))}px) scale(${.92+.08*popS(f,m.at+12,'snappy')})`:'none'}}>
         {typing
           ? <span style={{display:'inline-flex',gap:5,background:'#ffffff',border:`2px solid ${C.ink}`,borderRadius:14,padding:'10px 14px'}}>{[0,1,2].map(d=><span key={d} style={{width:8,height:8,borderRadius:99,background:C.ink,opacity:.35+.55*Math.abs(Math.sin(f*0.5+d*0.9))}}/>)}</span>
-          : <span style={{display:'inline-block',background:mine?C.blue:'#ffffff',color:mine?'#fff':C.ink,border:`2px solid ${mine?C.blue:C.ink}`,boxShadow:`2.5px 2.5px 0 ${C.ink}`,borderRadius:14,fontSize,fontWeight:700,padding:'10px 16px'}}>{m.text}</span>}
+          : <span style={{display:'inline-block',background:mine?C.blue:'#ffffff',color:mine?'#fff':C.ink,border:`2px solid ${mine?C.blue:C.ink}`,boxShadow:`2.5px 2.5px 0 ${C.ink}`,borderRadius:14,fontSize:FX_T.labelL,fontWeight:700,padding:'10px 16px'}}>{m.text}</span>}
       </div>;
     })}
     <div style={{height:dy}}/>
@@ -198,8 +193,8 @@ export const ChatThread:React.FC<{
 };
 
 export const ProgressRing:React.FC<{
-  size?:number;pct:number;label?:string;color?:string;start?:number;duration?:number;frame?:number;valueSize?:number;labelSize?:number;
-}> = ({size=96,pct,label,color=C.green,start=0,duration=36,frame,valueSize=22,labelSize=13})=>{
+  size?:number;pct:number;label?:string;color?:string;start?:number;duration?:number;frame?:number;
+}> = ({size=96,pct,label,color=C.green,start=0,duration=36,frame})=>{
   const f = useF(frame);
   // 弧与数字用**不同时钟**（30 / 约 24 帧，数字晚 2 帧起步）：同一条曲线会让"数字就是那条弧"，
   // 错开后读作"表盘在走、读数是跟读数"。默认总时长 30 帧（约 Magic UI 的 1s 节拍）。
@@ -218,23 +213,22 @@ export const ProgressRing:React.FC<{
       {p>0.02&&p<1&&<circle cx={capX} cy={capY} r={5.5} fill={color}/>}
     </svg>
     <div style={{position:'absolute',inset:0,display:'grid',placeItems:'center',textAlign:'center'}}>
-          <div><div style={{fontFamily:'Space',fontWeight:700,fontSize:valueSize,color,fontVariantNumeric:'tabular-nums'}}>{Math.round(shown*100*tp)}<span style={{fontSize:Math.round(valueSize*0.64),marginLeft:1}}>%</span></div>{label&&<div style={{fontSize:labelSize,fontWeight:700,color:C.ink}}>{label}</div>}</div>
+      <div><div style={{fontFamily:'Space',fontWeight:700,fontSize:22,color,fontVariantNumeric:'tabular-nums'}}>{Math.round(shown*100*tp)}<span style={{fontSize:14,marginLeft:1}}>%</span></div>{label&&<div style={{fontSize: 13,fontWeight:700,color:C.ink}}>{label}</div>}</div>
     </div>
   </div>;
 };
 
 export const StaggerList:React.FC<{
   x:number;y:number;w:number;items:{icon?:string;text:string;sub?:string;color:string}[];start?:number;stagger?:number;frame?:number;exitStart?:number;
-  fontSize?:number;subFontSize?:number;
-}> = ({x,y,w,items,start=0,stagger=6,frame,exitStart,fontSize=FX_T.titleXS,subFontSize=FX_T.labelM})=>{
+}> = ({x,y,w,items,start=0,stagger=6,frame,exitStart})=>{
   const f = useF(frame);
   return <div style={{position:'absolute',left:x,top:y,width:w,...exitStyle(f,exitStart)}}>
     {items.map((it,i)=>{
       const s = start+i*stagger, p = popS(f,s,'soft'), opP = easeOutSoft(f,s,s+14);
       return <div key={it.text} style={{display:'flex',alignItems:'center',gap:12,marginBottom:i<items.length-1?10:0,opacity:opP,transform:`translateX(${30*(1-p)}px) rotate(${(1-p)*1.2}deg)`}}>
         <span style={{width:34,height:34,borderRadius:99,background:it.color,color:'#fff',display:'grid',placeItems:'center',fontFamily:'Space',fontWeight:700,fontSize:16,flex:'0 0 auto',border:`2px solid ${C.ink}`}}>{it.icon??i+1}</span>
-        <span style={{fontSize,fontWeight:700,color:C.ink}}>{it.text}</span>
-        {it.sub&&<span style={{fontSize:subFontSize,fontWeight:700,color:it.color}}>{it.sub}</span>}
+        <span style={{fontSize:FX_T.titleXS,fontWeight:700,color:C.ink}}>{it.text}</span>
+        {it.sub&&<span style={{fontSize:FX_T.labelM,fontWeight:700,color:it.color}}>{it.sub}</span>}
       </div>;
     })}
   </div>;
@@ -244,18 +238,12 @@ export const FXKIT_VERSION = 'fxkit-v3 · 9 components · multi-clock motion · 
 
 export const DiffView:React.FC<{
   x:number;y:number;w:number;title?:string;lines:{k:'-'|'+'|' ';text:string;at:number}[];frame?:number;exitStart?:number;
-  fontSize?:number;titleFontSize?:number;
-}> = ({x,y,w,title='patch.diff',lines,frame,exitStart,fontSize,titleFontSize})=>{
+}> = ({x,y,w,title='patch.diff',lines,frame,exitStart})=>{
   const f = useF(frame);
-  const {canvas} = useCanvas();
-  // These are component defaults tuned against the three 390px review outputs,
-  // not a universal minimum; a caller can still choose sizes for its own text role.
-  const bodySize = fontSize ?? (canvas === '16:9' ? 32 : canvas === '4:3' ? 28 : 22);
-  const headingSize = titleFontSize ?? (canvas === '16:9' ? 24 : canvas === '4:3' ? 22 : 18);
   return <div style={{position:'absolute',left:x,top:y,width:w,background:'#14110f',border:`2.5px solid ${C.ink}`,borderRadius:10,boxShadow:`3px 3px 0 ${C.ink}`,overflow:'hidden',...exitStyle(f,exitStart)}}>
     <div style={{height:30,display:'flex',alignItems:'center',gap:7,paddingLeft:14,borderBottom:'1.5px solid #2d2621'}}>
       {[C.red,C.gold,C.green].map((c,i)=><span key={i} style={{width:9,height:9,borderRadius:99,background:c}}/>)}
-      <span style={{marginLeft:6,fontFamily:'Space',fontWeight:600,fontSize:headingSize,letterSpacing:1,color:'#fdfdfb',opacity:.85}}>{title}</span>
+      <span style={{marginLeft:6,fontFamily:'Space',fontWeight:600,fontSize: 13,letterSpacing:1,color:'#fdfdfb',opacity:.85}}>{title}</span>
     </div>
     <div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:7}}>
       {lines.map((ln,i)=>{
@@ -267,7 +255,7 @@ export const DiffView:React.FC<{
         const mp = ln.k==='-'?easeInQuad(f,ln.at,ln.at+12):easeOutSoft(f,ln.at,ln.at+16);
         const sweep = pulse(f,ln.at,16);
         const col = ln.k==='-'?'#ff7b72':ln.k==='+'?C.green:'#c9c2b8';
-        return <div key={i} style={{position:'relative',display:'flex',gap:10,fontFamily:'Space,monospace',fontWeight:600,fontSize:bodySize,color:ln.k===' '?'#fdfdfb':col,background:ln.k===' '?'none':ln.k==='-'?'rgba(255,59,48,.12)':'rgba(36,188,110,.12)',borderRadius:6,padding:'3px 10px',opacity:p*mp,transform:`translateX(${dir*16*(1-mp)}px)`,whiteSpace:'nowrap',overflow:'hidden'}}>{sweep>0.02&&<span style={{position:'absolute',inset:0,background:`rgba(255,255,255,${0.18*sweep})`,pointerEvents:'none'}}/>}<span>{ln.k}</span><span>{ln.text}</span></div>;
+        return <div key={i} style={{position:'relative',display:'flex',gap:10,fontFamily:'Space,monospace',fontWeight:600,fontSize:15,color:ln.k===' '?'#fdfdfb':col,background:ln.k===' '?'none':ln.k==='-'?'rgba(255,59,48,.12)':'rgba(36,188,110,.12)',borderRadius:6,padding:'3px 10px',opacity:p*mp,transform:`translateX(${dir*16*(1-mp)}px)`,whiteSpace:'nowrap',overflow:'hidden'}}>{sweep>0.02&&<span style={{position:'absolute',inset:0,background:`rgba(255,255,255,${0.18*sweep})`,pointerEvents:'none'}}/>}<span>{ln.k}</span><span>{ln.text}</span></div>;
       })}
     </div>
   </div>;

@@ -208,16 +208,13 @@ export const CanvasBoundsGate: React.FC<{
       }
       release();
     };
-    // 全片连续seek时，首次 rAF 偶尔先于 React/浏览器完成当前帧的布局提交；
-    // 已用连续区间对照确认这会把旧帧DOM rect误报成当前帧越界。再等一帧后测量。
-    const afterPaint = () => requestAnimationFrame(() => { if (!cancelled) measure(); });
     const id = requestAnimationFrame(() => {
       if (document.fonts && document.fonts.status !== 'loaded') {
-        // 等字体与下一次layout paint就绪（不能直接 return —— 其他门禁也会被跳过）
-        document.fonts.ready.then(afterPaint).catch(afterPaint);
+        // 等字体就绪再量（不能直接 return —— 另外两道门禁都因此每帧跳过，等于不存在）
+        document.fonts.ready.then(() => { if (!cancelled) measure(); }).catch(() => measure());
         return;
       }
-      afterPaint();
+      measure();
     });
     return () => {
       cancelled = true;

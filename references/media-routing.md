@@ -1,7 +1,7 @@
 # 内容 → 视觉介质 路由
 
-> Status: component/routing reference. Implementations live in `assets/lecture-template/src/media.tsx`, `fxkit.tsx`, `kit.tsx`, and `src/components/`.
-> This is a menu of candidates—not a diversity requirement. The composition gate checks per-cue visual support and source integrity, not how many media types a film uses.
+> 状态：**v2.10 生效**。落地件：`assets/lecture-template/src/media.tsx`、`fxkit.tsx`、`kit.tsx`。
+> 门禁：`scripts/validate-composition.py`（介质多样性 ≥3 种）。
 
 ## 目录
 
@@ -16,21 +16,20 @@
 
 ## 1. 要解决的问题
 
-This section helps decide how a topic should be expressed, not how to make every film visually diverse.
-Cards, text, diagrams, charts, photographs, code and animation are all legitimate when they serve the
-learning task. A repetitive card sequence may fail because its teaching relationships are unclear—not
-because it lacks a minimum number of media types. Conversely, a varied film can still be confusing.
+v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为全是同一种介质：卡片 + 文字**。
 
-Use the map as a selection aid when an appropriate helper exists. The package inventory is not a prompt
-to assemble components. Verify that any component used is actually rendered and contributes to the
-explanation; if a simple SVG or text layout communicates better, use that instead.
+反过来，真正让视频不像 PPT 的，是**同一支片子里出现了不同的视觉介质**。
+这一层解决的就是"这段内容该用什么形式表达"。
+
+同时它也是"给一堆组件让 AI 拼积木"这条路的修复：那种做法失败的原因不是组件不好，
+而是**缺"什么时候该用哪个"的决策入口**——组件在仓库里吃灰（实测 34 个库里 32 个引用数为 0）。
 
 ## 2. 路由表
 
-> Each row suggests a likely starting point and when another form may fit. It is not a command to use a
-> listed component. A well-chosen default can help authors; no component or medium count is a quality goal.
-> Adding reusable dependencies/components remains subject to [dependency-policy.md](dependency-policy.md),
-> while an individual film should use only what it needs. Inventory details remain in [§5.1](#51-组件权威索引53-件--选型只查这一处).
+> **每行只给一个「首选」**，其余标注了「何时才用」。一行里并列三个平级选项，等于没给建议——
+> 上一版的实测教训：路由表里有名字的组件照样一件不用（23 件从未出现在任何画面里，其中 **21 件早已登记在本表**）。
+> **加组件 = 换掉一件**；总数上限见 [dependency-policy.md](dependency-policy.md) §8。
+> 本表管"这段内容该配哪个件"；**"一共有些什么件、每件的用途/边界/接触表页/真实使用记录"只看 [§5.1 组件权威索引](#51-组件权威索引53-件--选型只查这一处)**。
 
 
 | 内容类型 | 视觉介质 | 组件（模块） |
@@ -48,7 +47,7 @@ explanation; if a simple SVG or text layout communicates better, use that instea
 | 几何 / 图形强调 | 参数化图形 | **`ShapeDraw` / `SHAPES`（components，@remotion/shapes）** ← 五角星/六边形/星芒/**标注框 callout**/**箭头 arrow**/**心形 heart** 都不用手画。**饼图/份额别找图形件**：有数据用 `Chart variant="pie"`（带扇区百分比 + 图例），只有一个百分比用 `ProgressRing` |
 | 指向 / 沿线运动 | 箭头沿路径跑并自动转向 | **`PathDraw` 的 `showArrow`（components，`getTangentAtLength`）** ← 此前要自己差分算切线 |
 | 证据 / 细节 | 纯代码局部放大 | `ZoomStage`（skeletons） |
-| 指标结论 | 适合时可选 `StatRow`、`MetricGrid` 或 `VerdictBar`；吸底不是必要位置，数值不必动画 |
+| 指标结论 | 一排指标卡（数字随帧滚动）→ **`StatRow`**；全宽收束条 → **`VerdictBar`**（均在 `components/`）；前后值成对 → `MetricGrid`；吸底盖章 → `StampBanner`（media） |
 | 对话 / 交互 / 提示词 | 拟真对话窗 / 气泡 | `ChatThread`（fxkit） |
 | 层级 / 树状结构 | 目录树 / 组织图 → `TreeView`；**占比与层级用"面积＝数值"表达 → `TreeView` 的 `variant`：`treemap` 矩形树图 / `pack` 圆形打包 / `sunburst` 旭日图**（均在 `components/`，d3-hierarchy） |
 | 地理 / 全球视野 | 地球 / 地图 | **`GeoView`（`components/`，d3-geo + `world-atlas` 陆地轮廓）** ← 画的是**真陆地轮廓**（`land-110m`，55 KB 进 bundle）并可叠经纬度标记点；`projection="flat"`（naturalEarth1）看全局、默认正交投影可 `spin` 自转。**不含国界与地名**（要国界得换 `countries-110m.json` 并另立一件，别偷偷扩 `GeoView` 的语义） |
@@ -64,30 +63,32 @@ explanation; if a simple SVG or text layout communicates better, use that instea
 | 文字排版 | 反推字号 | **`FitTextBox` / `fitChineseTextOnNLines`（components/fittext）** ← 治卡片文字被裁的正解。图元标签（treemap 格子 / 气泡 / 扇区）用 **`fitNodeLabel`**：宽度与高度**都要**过，反推字号低于 13px 就**降级不画字**并进图例 |
 | 逐条揭示 | 遮罩擦除 | **`ClipReveal`（components，clip-path 按帧推进；旧件 `RevealMask` 在 `insert.tsx`）** |
 
-**Instructional requirement:** every narration cue must have readable visual support and every shot must
-name the relation it teaches and its actual visual carrier. The carrier may remain static across multiple
-cues. There is no minimum number of media types, active components, transitions, layouts or camera moves.
-Do not use component variety as a proxy for whether an explanation is clear.
+**硬约束（门禁 P0）**：全片 ≥3 种不同介质；**每个讲解场景 ≥1 个活性组件**（会随旁白变化状态的演示件），
+"一盒子弹"式纯卡片堆禁止。
 
 ## 3. A 场景 / B 场景（A-roll / B-roll 的本土化）
 
-An A/B-style main/supporting visual is one optional way to preserve context while inspecting a detail. It is
-not a required two-track grammar. A direct diagram, a text-only explanation, or one stable image may be
-clearer and shorter.
+参考项目用 A/B 双轨解决"碎片感 vs 呆板感"的两难。讲解片里不需要实拍剪辑意义上的双轨，只需要：
 
-- **Main view**: preserve the subject, data, or claim as the stable context.
-- **Detail view**: optionally inspect one relevant part and return to context; no requirement to change media.
-- A magnified view or `ZoomStage` can be useful when detail would otherwise be too small, but avoid a zoom when a label or callout is sufficient.
+- **A 场景 = 主线演化轨**：一个主体常驻，随旁白换内部状态（`StageFrame`）。
+  **不是卡片轮播。**
+- **B 场景 = 辅助取证轨**：换一种**视觉介质**插入 0.8–2 秒（24–60 帧），说完即回。
+  **B 不是"另一个场景"，而是 A 的一次注意力转移**；不留残片、不另起场景。
+- 实现：`skeletons.ZoomStage`（B 段由场景自身在区间外返回 `null`，物理上保证无残片）
+  （整体→聚焦→标注→回整体）。
 
-When using a detail insert, return to a state that preserves the relevant context; do not use the insert solely to create motion.
+**A↔B 的关系**：B 结束时必须回到 A 的同一状态，观众不丢上下文。
 
 **注意**：v2.9 的 `recipes/EvidenceBridge.tsx` 就是这个思路的图片版实现，可回收使用。
 
 ## 4. 背景契约（**必读**）
 
-### 4.1 Background treatment is a design choice
+### 4.1 背景图是锁定的、好看的，不换
 
-The shipped `paper`, `cel`, `sticker`, and `flat` backgrounds are optional exemplars, not immutable. A project may use, adapt, or omit a background treatment. Whatever the choice, check contrast and obstruction against the actual scene content. When content overlaps an unavoidable decorative region, a local backing plate such as `CoverPanel` may restore legibility:
+四套皮肤里 `cel` / `sticker` / `flat` 三套用的是固定资产背景位图（`paper` 为纯代码绘制背景），**画幅级、高对比**的装饰（cel 的左下爆炸贴、
+右下速度线；flat 的右下卡通角色）。它们很好看，**不要替换、不要重绘**。
+
+但**内容压到装饰上时，文字会被吃掉**。所以契约是：
 
 > **内容压在装饰区之上时，必须坐在 `CoverPanel` 上**（v3.0.1 起 `BackgroundMute` 已删除：它在 paper/sticker 皮肤下必然返回 null，是条死路）。
 
@@ -133,11 +134,15 @@ The shipped `paper`, `cel`, `sticker`, and `flat` backgrounds are optional exemp
 `validate-shot-motion.py` 的 P1 检查：若某镜 `contentBand` 与主题装饰区相交但未声明 `cover`，
 报"文字可能被装饰吃掉"。级别 P1（警告），成片前人工确认。
 
-### 4.4 Whitespace is allowed
+### 4.4 面板要填满，不要留大片空白
 
-Do not fill a panel or the lower quarter solely to satisfy a density target. Give the actual content a
-balanced hierarchy; if a panel feels too large, resize or restyle it when that improves the scene. Keep
-legibility and caption space, not occupied-area percentage, as the criterion.
+用户会明确感到"白色面板比以前差"，而逐帧比对证明**像素没变**——变的感受来自**空白**：
+满的面板像纸，空的面板像刺眼的白盒子。所以：
+
+- 面板的内容带要按可用高度排布（本模板 `StageFrame` 的 main 区高度 = `h − pad×2 − headH − stampH`），
+  不要在 520px 高的框里只放 196px 高的内容；
+- 拿不准时**居中**内容，或缩小框高，而不是让下方留 58% 空白；
+- **不要**用降低不透明度来"救"空白面板——那只会让文字更难读。
 
 ### 4.5 有意覆盖要显式声明（门禁白名单）
 
@@ -146,7 +151,7 @@ legibility and caption space, not occupied-area percentage, as the criterion.
 
 | 场景 | 标注 |
 |---|---|
-| 显式 handoff 的交接叠帧（当前镜声明 handoff，并与上一镜共享 carrier） | `data-gate-allow="handoff"` |
+| 镜头边界的交接叠帧 | `data-gate-allow="handoff"` |
 | 头部/标题的滑变双层 | `data-gate-allow="swap"` |
 | 指标新旧数值的替换 | `data-gate-allow="value-swap"` |
 | 整块要跳过的区域 | `data-gate-skip` |
@@ -233,25 +238,25 @@ legibility and caption space, not occupied-area percentage, as the criterion.
 | `Typewriter`（fxkit） | 打字机（标点分级停顿、块光标） | "一个字一个字敲出来" | 讲"改了什么"→`DiffView`；整段代码→`HighlightCode` | ② | 参考片 S3 |
 | `StampSeal`（fxkit） | 印章砸下（2.6x→1 回弹，-8°） | 盖章定论 | 字数 >4 会溢出圆 | ③ | 参考片 S2 S6 |
 | `Funnel`（fxkit） | 尝试漏斗（宽进窄出 + 计数 + 滴落点） | 逐级递减的漏斗 / 收束 | 只有一个百分比→`ProgressRing` | ③ | 参考片 S5 |
-| `ChatThread`（fxkit） | 对话气泡（typing 三点→pop，左右交替） | 模拟确有意义的对话 / Prompt 交互 | 依可读高度安排回合；长对话拆镜，避免填充无关气泡 | ④ | 参考片 S7 |
+| `ChatThread`（fxkit） | 对话气泡（typing 三点→pop，左右交替） | 模拟 AI 对话 / Prompt 交互 | 条数建议 2–3 条（1 问 + 1~2 答），否则溢出窗口高度 | ④ | 参考片 S7 |
 | `ProgressRing`（fxkit） | 进度环（dashoffset 填充 + 中央标签） | **只有一个**百分比 | 多份额对比→`Chart`；有前后值→`MetricGrid` | ① | 参考片 S5 |
 | `DiffView`（fxkit） | 补丁 diff（红删绿加，逐行滑入） | 讲"改了什么" | 不是补丁语义（无增无删）时别用 | ② | 参考片 S3 |
 | `SkeletonCard`（fxkit） | 骨架→内容（等待 beats 先占位） | 已知要等（拉取 / 计算有过程） | 内容本来就该立刻出现时别用 | ③ | 参考片 S7 |
-| `StaggerList`（fxkit） | 级联列表（逐行滑入 + 微旋转） | 顺序本身有助于理解时 | 按阅读节奏实看；错峰过慢可能读成逐条淡入；要完成态→`Checklist` | ① | 参考片 S4 |
+| `StaggerList`（fxkit） | 级联列表（逐行滑入 + 微旋转） | 只是"逐行出现"、防 bullets 堆砌 | 同句内错峰 ≤8 帧（18–30 帧会读成"一个个淡出来"）；要完成态→`Checklist` | ① | 参考片 S4 |
 | `ConsoleWindow`（media） | 控制台 / 终端窗口介质 | 表现"正在跑"、命令行 | 必须给 `h`，否则高度由内容撑；带行号高亮的代码→`HighlightCode` | ② | 参考片 S1 |
 | `MetricGrid`（media） | 指标网格（before→after **替换**，数字滚动） | 有前后值成对 | 只有一个值→`StatRow` | ② | 参考片 S8 |
-| `StampBanner`（media） | 结论吸底条（三段式落定 + 底色闪） | 一条结论确需突出时 | 多条结论按教学关系分开，或改用普通文字；不设每片使用次数 | 未展示 | 参考片 S1 S5 S8 |
-| `StageFrame`（stagekit） | 活体主体框（header / main / rail / stamp） | 同一主体的状态或关系变化适合放在统一框架中时 | 可只呈现少量关键状态；静态或简单关系用更简洁的图形即可，无最少拍数 | 未展示 | 参考片 S1 S5 S8 |
+| `StampBanner`（media） | 结论吸底条（三段式落定 + 底色闪） | 砸一句结论、吸底 | 一镜别砸两条 | 未展示 | 参考片 S1 S5 S8 |
+| `StageFrame`（stagekit） | 活体主体框（header / main / rail / stamp） | 一个主体持续演化（≥5 拍） | 只有 2–3 拍时别用（状态机撑不起来） | 未展示 | 参考片 S1 S5 S8 |
 | `PhaseRail`（stagekit） | 状态进度轨（把状态机显式画出来） | 要把"推进到第几步"给观众看见 | 静态内容别用（没有状态可推） | ④ | 参考片 S1 S5 |
-| `Corridor`（skeletons） | 走廊 / 流程骨架（到站 + 停留 + 对勾描线） | 空间化路径能更清楚地表达流程时 | 简单流程也可用直线、标签或静态图；按内容选最简清晰形式 | ⑥ | 参考片 S2 S6 |
+| `Corridor`（skeletons） | 走廊 / 流程骨架（到站 + 停留 + 对勾描线） | 演示一段流程 | 站点 <3 个时改用 `StaggerList` | ⑥ | 参考片 S2 S6 |
 | `SplitStage`（skeletons） | 双栏对比骨架（先暗输方，再亮赢方） | 两个**对等**对象对比 | 两方不是同一维度时别用 Split | ⑥ | 参考片 S4 |
 | `ZoomStage`（skeletons） | 整体→聚焦→标注→回整体（B 段插入） | 要放大看局部（0.8–2s 取证） | 会缩放，静止元素别用 | ⑥ | 参考片 S3 S7 |
 | `RevealMask`（insert） | 镜头级遮罩揭示（ltr/rtl/ttb） | 镜头进场要"揭开" | 逐条揭示→`ClipReveal` | 未展示 | 参考片 8 镜共用的 `Shot` 外壳（实际只有 S3/S7 传了 `reveal`） |
-| `ShotCamera`（shotkit） | 受限相机外壳（只做 transform/opacity） | 需要统一镜头变换/透明度外壳时；静态 key 合法 | 运动可选；页眉 / 章节卡 / 字幕应保持稳定，不随主体镜头移动 | 未展示 | 参考片 8 镜 |
+| `ShotCamera`（shotkit） | 受限相机外壳（只做 transform/opacity） | 每一镜都要（相机就是镜头语言） | 页眉 / 章节卡 / 字幕要放在它**之外**（否则被运镜带动） | 未展示 | 参考片 8 镜 |
 | `CoverPanel`（shotkit） | 底托 / 卡片底（`tone='wash'` 必须 `z={-1}` 且羽化） | 内容压到背景装饰区时 | 整幅 wash 不能用正 z、不能是硬边矩形 | 未展示 | 参考片 8 镜 |
 | `Callout`（toolkit） | 圈住一处 + 引线 + 手写标注 | 圈住 / 指出一处 | 画面已有高亮时别叠（重复编码） | ⑦ | 参考片 S1 |
 | `Checklist`（toolkit） | 带完成态的清单（`done` 后序号变对勾） | 列一份清单、要完成态 | 项 >6 会溢出；只是逐行出现→`StaggerList` | ⑦ | 参考片 S3 |
-| `JumpInText`（toolkit） | 逐字跳入（字色激活） | 一句重点确需文字动作强调时 | 普通讲解文字无需跳动；按语义和小屏可读性决定，不设全片次数上限 | ⑧ | 引擎章节条（全片，`index.tsx`） |
+| `JumpInText`（toolkit） | 逐字跳入（字色激活） | 念一句口号（钩子与收尾） | 全片最多 1–2 处；讲解中段用会显浮夸 | ⑧ | 引擎章节条（全片，`index.tsx`） |
 
 **两处缺口（本表如实标出，别当成"覆盖完整"；处置见 [dependency-policy.md](dependency-policy.md) §8）**
 
@@ -323,40 +328,44 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR    # 再抽接触表 
 核验口径：想看 `flip` 这类"50% 处侧对镜头"的转场，仍按 §5.1 `SceneTransitions` 行的提示截 25% / 75%；
 默认串的是 `wipe`，抽帧位（6 / 21）不需要为它特殊照顾。
 
-## 7. Review checklist
+## 7. 自检
 
-- [ ] The complete narration is assigned to shots; each shot states its core learning relation and actual visible carrier.
-- [ ] Every cue has readable support; a stable diagram may serve multiple cues while it remains relevant.
-- [ ] The chosen visual treatment keeps content, background, labels and captions legible together; use a backing panel only when needed.
-- [ ] Any component used appears in the scene source and rendered output, and has an instructional/editorial job.
-- [ ] Camera transforms and graphics stay in bounds; there is no requirement to move the camera or fill unused space.
+- [ ] 全片 ≥3 种介质，且每个讲解场景 ≥1 个活性组件；
+- [ ] 每一段内容都问过"这块内容该用什么**介质**"，而不是"用哪张卡片"；
+- [ ] 压到背景装饰区的内容都坐在 `CoverPanel` 上；
+- [ ] 用到的构件都能在 **§5.1 组件权威索引**里指到；新构件要同时登记进索引（并视情形加进接触表——
+      引擎外壳 / 原子件不需要进接触表，见 §5.1「两处缺口」）；
+- [ ] 没有把 wash 底板的 z 设到内容之上。
 
 ---
 
 ## 修辞动作 → 组件（v3.0.1）
 
-上面那张表路由的是**内容类型**（数据 / 流程 / 对比…）。这一张列出一些可能的**修辞动作**，供需要时查阅；不需要每镜挑一件组件。若 `live` 写在shot table里，它只是作者注记，不是构图门槛。
+上面那张表路由的是**内容类型**（数据 / 流程 / 对比…）。这一张路由的是**你此刻要做的修辞动作**——
+"我要强调这一点""我要念一句口号""我要表现两者的关系"。写场景前先在这里查一遍：
+**`live` 里写的每个名字，都应该能在这张表（或 `fxkit.md` 的组件表）里指到。**
 
 | 修辞动作 | 首选 | 备选 | **何时别用** |
 |---|---|---|---|
 | 圈住/指出一处 | `Callout`（画圈+引线+手写标注，`toolkit.tsx`） | `ZoomStage`（要放大才能用） | 画面已有高亮时别叠（重复编码）；`ZoomStage` 会缩放，静止元素别用 |
 | 表现两者关系/因果 | `PathDraw`（描线生长，`components/`） | `Corridor`（隐含顺序） | 已有导轨/时间轴时别叠；**关系是"网"而不是"链"时改用 `NetworkGraph`** |
 | 表现"谁连着谁"（无层级、无方向） | `NetworkGraph`（力导向，`components/`） | `TreeView`（有层级时才用） | 别用树硬画网状关系——树会凭空造出一个不存在的上下级 |
-| 表现"某个设置被改了" | `ControlStack`（控件状态随旁白变化，`components/`） | `Accordion` `Tabs`（是"展开/切换"，不是"被改动"） | 只呈现解释当下操作所需的控件；若标签拥挤或失去焦点，拆镜或简化 |
-| 表现"弹出来一个框" | `OverlayFrame`（dialog / menu / popover / tooltip，`components/`） | `ConsoleWindow`（整块界面，`media.tsx`） | 避免多个弹层同时遮挡信息；若比较本身需要多层，检查层级与阅读顺序 |
+| 表现"某个设置被改了" | `ControlStack`（控件状态随旁白变化，`components/`） | `Accordion` `Tabs`（是"展开/切换"，不是"被改动"） | 一行一个控件，别把 6 种控件塞进一镜；控件是主角时才用（否则它抢戏） |
+| 表现"弹出来一个框" | `OverlayFrame`（dialog / menu / popover / tooltip，`components/`） | `ConsoleWindow`（整块界面，`media.tsx`） | 弹层别一次冒三个；弹层压在背景装饰区时同样要坐 `CoverPanel` |
 | 表现"箭头沿路线跑过去" | `PathDraw` 的 `showArrow`（`components/`，`getTangentAtLength`） | `MorphShape`（形状变形） | 路径短于 200px 时箭头会盖住整条线 |
-| 强调一瞬（警告感） | `GlowFrame`（流光边框，`components/`） | `ShimmerText`（只强调一句话时） | 两种强调同时出现时确认各自有不同教学作用，避免重复编码；要"真的变了个状态"就用 `ControlStack` |
-| 砸一句结论 | `StampBanner` | — | 多条结论可能挤压画面；按教学关系拆分，或用普通文字/列表 |
+| 强调一瞬（警告感） | `GlowFrame`（流光边框，`components/`） | `ShimmerText`（只强调一句话时） | 二选一，别叠用；要"真的变了个状态"就用 `ControlStack`，不是靠倾斜 |
+| 砸一句结论 | `StampBanner` | — | 一镜别砸两条（两条会互压底线） |
 | 认证/盖章 | `StampSeal` | — | 字数 >4 会溢出圆 |
-| 念一句口号 | `JumpInText`（逐字跳入） / `ShimmerText`（闪光，`components/`） | `StampBanner` | 选择一个适合语气的处理；重复强调可能干扰，但没有通用次数上限 |
+| 念一句口号 | `JumpInText`（逐字跳入） / `ShimmerText`（闪光，`components/`） | `StampBanner` | 全片最多 1–2 处（钩子与收尾）；讲解中段用会显浮夸 |
 | 报一个大数字 | `StatRow`（`components/`，数字随帧滚动） | `MetricGrid`（有前后值时） | 数字已在 `MetricGrid` 里滚动时别重复 |
 | 对比两方（对等） | `SplitStage` | `StatRow`（不等权时，`components/`） | 两方不是同一维度时别用 Split |
-| 列一份清单 | `Checklist`（带完成态，`toolkit.tsx`） | `StaggerList` | 项目数可能超过组件容量时分组或拆镜；错峰按阅读与旁白校准 |
-| 演示一段流程 | `Corridor` | `PathDraw`（描线生长，`components/`） | 简单路径也可直接用静态线、标签或箭头；选择最清楚的表达 |
-| 一个主体持续演化 | `StageFrame`（用于确有状态过程时） | `Corridor` | 若内容没有状态变化，静态图或另一种简单构图可能更清楚 |
+| 列一份清单 | `Checklist`（带完成态，`toolkit.tsx`） | `StaggerList` | 项 >6 会溢出；`StaggerList` 错峰必须 ≤8 帧 |
+| 演示一段流程 | `Corridor` | `PathDraw`（描线生长，`components/`） | 站点 <3 个时改用 `StaggerList` |
+| 一个主体持续演化 | `StageFrame`（≥5 拍） | `Corridor` | 只有 2–3 拍时别用（状态机撑不起来） |
 | 证明"这是官方/真实" | `HighlightCode` 的窗口壳（`components/`） | — | 纯代码路线不做实拍框；能用代码画清的别用实拍（实拍只能走可选生图附加路线） |
 | 表现"正在跑/正在写" | `ConsoleWindow` / `HighlightCode` | `Typewriter` | `ConsoleWindow` 一定给 `h`，否则高度由内容撑 |
-| 模拟 AI 对话 / Prompt 交互 | `ChatThread`（`fxkit`） | `Tabs`（多方案对比时，`components/`） | 按窗口可读高度安排回合；长对话拆镜，避免无关气泡分散注意 |
+| 模拟 AI 对话 / Prompt 交互 | `ChatThread`（`fxkit`） | `Tabs`（多方案对比时，`components/`） | 对话条数建议 2–3 条（1 问 + 1~2 答），避免溢出窗口高度 |
 | 页面形态 | `HighlightCode` 的窗口壳（`components/`） | `ConsoleWindow`（终端形态） | 终端内容用 `ConsoleWindow`；带行号/高亮的代码用 `HighlightCode` |
 
-**两条边界**：① 可复用组件库扩张遵循 [dependency-policy.md](dependency-policy.md) §8 的“加一件=换掉一件”或说明新增能力与证据；这不意味着单部成片必须替换或堆叠画面元素。② 组件必须执行它擅长的动作并真实出现在成片里；找不到必要用途就不用它。不要把风格多样性当作组件使用目标。
+**两条纪律**：① 加组件 = **换掉**画面里的一个元素，不是往里加元素；② 一个组件只有落在"它擅长的那个修辞动作"上才算数——
+找不到对应动作就别加（为凑多样性堆组件，是这张表要防的事）。

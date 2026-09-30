@@ -5,8 +5,8 @@
 7 组音效绝对帧数组）。改一句台词就要手改几十处，且极易漏改。
 
 本工具的做法（借 anything2explainer 的 token 思路，但拒绝它"把帧号硬编码进源码"的落法）：
-    1. 你在 manifests/shots.json 里为全片选定一个一致的基础 visual treatment，并声明每镜的
-       `coreRelation`、`visualCarrier` 和 `cues: [起, 止]`；可选设计注记按需填写；
+    1. 你在 manifests/shots.json 里**只声明这台镜头覆盖哪几句 cue**（`cues: [起, 止]`），
+       以及节拍、镜头意图、骨架、介质、活性组件等语义字段；
     2. 本脚本从 caption-cues.json 的 TTS 词级时间戳推出所有绝对帧号；
     3. 生成 src/shots.ts（含已展开的相机关键帧表），场景代码只 import 常量。
 
@@ -28,7 +28,6 @@ from pathlib import Path
 
 FPS = 30
 STAGE_CX, STAGE_CY = 960.0, 540.0
-THEME_IDS = {"paper", "cel", "sticker", "flat"}
 
 
 def ms_frame(ms: float) -> int:
@@ -108,9 +107,6 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
     cues = cues_doc["cues"]
     shots = shots_doc.get("shots", [])
     problems: list[str] = []
-    theme_id = shots_doc.get("theme")
-    if theme_id not in THEME_IDS:
-        problems.append(f"shots.json 必须为整片明确选择 theme（{', '.join(sorted(THEME_IDS))}）；可在该基础处理上做克制、连贯的混合")
     out: list[dict] = []
     cursor = 0
     # 第一遍：求每镜的 from（= 其首句 cue 的起始帧；首镜固定 0）
@@ -159,11 +155,6 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
         rec = {
             "id": sid,
             "chapter": s.get("chapter", ""),
-            # Every covered narration cue needs an authored learning relation and
-            # a concrete visual carrier. These declarations are checked by
-            # validate-composition.py; they do not require a new visual event per cue.
-            "coreRelation": s.get("coreRelation"),
-            "visualCarrier": s.get("visualCarrier"),
             "skeleton": s.get("skeleton", "Stage"),
             "media": list(s.get("media") or []),
             "live": list(s.get("live") or []),
@@ -179,7 +170,7 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
             "transition": s.get("transition", "cut"),
             # v3.0.1：由分镜表推导，场景层不再手写这个布尔（消除"表说 cut、代码写 reveal"的不一致）
             "reveal": s.get("transition", "cut") == "reveal",
-            "entry": s.get("entry", "none"),
+            "entry": s.get("entry", "rise"),
             "explanation": bool(s.get("explanation", True)),
             "zones": s.get("zones"),
             "bottomFill": s.get("bottomFill"),
@@ -232,7 +223,6 @@ def main() -> int:
         print(f"项目目录不存在：{project}", file=sys.stderr)
         return 2
     text, out, problems = resolve(project)
-    theme_id = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8")).get("theme")
     for r in out:
         print(f"  {r['id']:>6} {r['from']:>5}–{r['to']:<5} {r['duration']:>5}f  {r['skeleton']:<8} {r['chapter']}")
     if problems:
@@ -245,6 +235,7 @@ def main() -> int:
     target = project / "src" / "shots.ts"
     with io.open(target, "w", encoding="utf-8", newline="") as fh:
         fh.write(text)
+    theme_id = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8")).get("theme", "cel")
     resolved = {"duration": out[-1]["to"] if out else 0, "theme": theme_id, "shots": out}
     with io.open(project / "manifests" / "shots.resolved.json", "w", encoding="utf-8", newline="") as fh:
         fh.write(json.dumps(resolved, ensure_ascii=False, indent=2))

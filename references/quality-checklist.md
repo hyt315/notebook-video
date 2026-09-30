@@ -1,44 +1,136 @@
 # Delivery acceptance checklist
 
-This checklist separates **hard technical failures**, **human visual review**, and **audience-learning evidence**. Passing scripts proves only the checks they actually perform; it does not prove the film is clear, comfortable, attractive, or educational.
+## 目录
 
-## 1. Learning and story
+- [Story](#story)
+- [Architecture](#architecture)
+- [Visuals](#visuals)
+- [Subtitle](#subtitle)
+- [Audio](#audio)
+- [File validation](#file-validation)
+- [Deliverables（交付物与事实卡）](#deliverables-原文迁自-skillmd)
+## Story
 
-- State the intended learning outcome and the important claim or relationship in plain language.
-- Check factual claims, units, examples, calculations, and source provenance. A diagram, spoken claim, and displayed number that represent the same concept should derive from the same data/model where practical.
-- Read the narration while viewing its corresponding frames. Every cue must have a readable visual carrier and each shot plan must state the core relation it teaches; verify that the rendered picture actually explains that relation. A cue does not have to produce a new animation: the viewer may still be reading or reasoning about the current image.
-- Preserve the information needed to understand the topic. Remove irrelevant decoration, not necessary explanations, captions, comparisons, or evidence merely to make a scene look simpler.
-- Allow still frames and reading holds when they help the viewer orient, inspect, or think. The required instructional task is visual support for the narration and its core relations; the chosen skin, camera moves, scene skeletons, media kinds, zones, state changes, and moving components have no minimum count.
-- Treat a silent-viewing pass as a diagnostic, not a universal rule: some videos should work without narration; others intentionally rely on spoken explanation and accurate captions.
+- A concrete, verified payoff or tension is visible within 1.5 seconds; an honest open loop follows by 8 seconds.
+- Each scene has one main idea and one physical action.
+- The visual story remains understandable without narration.
+- The opening gives a concrete, verified payoff or tension before context, and the storyboard identifies a later evidence-based callback.
+- A meaningful state changes every 2–4 seconds.
+- The final message holds at least one second.
 
-## 2. Visual design and comfort
+## Architecture
 
-- Choose a visual treatment because it supports the subject, audience, and intended tone. `paper`, `cel`, `sticker`, and `flat` are optional vocabularies, not required identities or quotas. A restrained hybrid is acceptable when it improves comprehension.
-- Give each frame a readable hierarchy. Whitespace is allowed; do not fill it merely to satisfy an area or density target.
-- Use a component only when it is actually rendered and helps explain, compare, locate, or remember something. A library inventory or attractive still frame alone is not evidence of usefulness.
-- Check actual output-size contrast, glyph rendering, text wrapping, diagram labels, crop/overscan, and overlap. Follow WCAG contrast requirements where applicable; do not describe subtitle speed or minimum display time as WCAG thresholds.
-- Inspect the 16:9 output at native size and as a 390-pixel-wide phone preview as a practical diagnostic, then check a real target device if available. This is not a universal pass/fail pixel threshold.
-- **Canvas status:** 16:9 is the user's relatively mature target, but still needs review on each changed film; it is not presumed good. 4:3 and 3:4 have not been adequately tested here; report their status as unknown, not as good or defective.
+- React + TypeScript + Remotion is the primary renderer.
+- TTS milliseconds convert once to integer frames.
+- Subtitle, animation and sound share the same FPS convention.
+- Fonts and media resolve before the first rendered frame.
+- Action audio is declared with its visible action.
 
-## 3. Captions and audio
+## Visuals
 
-- Captions accurately represent the required speech and meaningful non-speech audio, use natural semantic breaks, and remain synchronized with the narration.
-- Review the longest and fastest cues at the intended playback size. Reading-speed, line-length, and design-pixel measurements are prompts to inspect, not proof of comfort.
-- Listen to the complete film at normal speed. Speech must be intelligible; no missing, clipped, delayed, or accidentally duplicated sections. Sound effects should correspond to a meaningful audible/visible event and should not compete with speech. The template defaults to narration-only; add music only after an otherwise-identical with/without A/B indicates it helps this lesson.
-- Check measured duration, peak, loudness, sample rate, and channel layout against the requested delivery specification. Record measurements rather than claiming a target was met without checking it.
+- Background, chapter, header and subtitle match the canonical example.
+- Every scene declares one primary **media kind** (`chart` / `console` / `code` / `graphic` / `text` / `metric`) — 这是默认路线的路由维度。`image-text` 只在用户接受可选的生图附加路线时才出现（见 visual-director.md）。
+- Concrete subjects use original, supplied or licensed imagery when seeing the subject materially improves comprehension.
+- Generated imagery contains no baked labels, charts, logos or UI text; exact information remains in Remotion.
+- Every raster is registered in `visual-assets.json` with source, prompt/description, crop policy and rights.
+- Image scenes synchronize recognition, callout, relation and conclusion instead of placing a static image beside unrelated copy.
+- Generated images receive only restrained crop reveal or push-in motion; annotations move independently.
+- Every independently moving object is an independent component.
+- Every large object has one home zone and one destination zone.
+- Unrelated cards keep at least 70px separation, including airborne shadows.
+- The central corridor contains at most one dominant temporary transfer object.
+- A continuous process preserves one task object and changes its state at real stations.
+- Floating objects stay above lower bases.
+- Slot occlusion begins only after a visible crossing.
+- Inserted modules finish fully behind the front lip with no residual fragment.
+- Temporary components exit completely; no half corner remains.
+- Dynamic shadow changes only when paper lifts.
+- In the official v9 engine, paper uses its locked lift-linked contact/environment shadow recipe; no component invents a conflicting shadow.
+- In the official v9 engine, display, title, body, label and micro copy use its locked type scale.
+- In the official v9 engine, system glyphs and emoji are not used as production icons; use its locked line-icon language.
+- In the official v9 engine, the whole-film grade is static and restrained; no animated grain or moving light texture.
+- In the official v9 engine, ordinary production edits stay inside `COPY`, narration, semantic captions, visual plan, registered image assets, timing and topic-specific scene objects.
+- Data dashes move only during a real transfer and in the correct direction.
+- Text-bearing paper has visible padding on all sides.
+- Exact Chinese text and real brand assets are preserved.
+- No malformed labels, invented logos or softened Chinese glyphs.
+- No large accidental empty area during a spoken explanation.
+- No clutter from unrelated dots, scraps, steam or continuous movement.
+- No effect stack, miniature card pile or unused half-visible layer remains on screen.
+- No global zoom, shake, animated noise, posterize or full-screen page turn.
+- Shot camera: every shot declares one intent from the closed set (`establish` / `push-in` / `pull-back` / `pan-follow` / `reveal` / `micro-orbit` / `still`) plus an `anchor`; `scripts/validate-shot-motion.py` must prove the anchor stays fully visible at every keyframe (P0 = 0). Zoom ≤ 1.35 on shots carrying text. At least 3 camera moves per chapter (>=20s chapters; >=1 for shorter ones) and at least 3 distinct intents per film — a film with a frozen frame reads as page-turning.
+- Scene skeletons: at least 3 of `Stage` / `Corridor` / `Split` / `Zoom`, and no two adjacent scenes share a skeleton (`scripts/validate-composition.py`).
+- Visual media: at least 3 distinct media across the film (chart / console / code / graphic / text / metric), and every explanation scene carries at least one live component that changes state with the narration. A pure card-and-bullets scene is rejected.
+- Density: every scene declares 3–5 functional zones and fills the lower quarter (bottom edge near y=876). An empty lower half is a PPT tell.
+- Background readability: content that overlaps a locked background decoration zone (`theme.backgroundDecorZones`) must sit on a `CoverPanel`; the background bitmap itself stays untouched.
+- Runtime overlap gate: after the first render, the console must show **no `OverlapGate` warnings** (text-vs-text overlap and paint-order occlusion, sampled every 15 frames). Intentional overlaps (shot handoff, header swap, metric value replacement) must be marked `data-gate-allow`; never use the allow-list to hide two different pieces of information colliding.
+- Main-slot fill gate (render path): **no `SlotGuard` warnings** — the main slot of `StageFrame` hands over the whole remaining height (`h − pad×2 − header − stamp`), so the content must fill it (target ≥60%; the guard reports the occupancy every rendered frame and speaks up below 35%). A one-line content in a full-height slot is the measured failure mode (11%). Width is still yours to budget: `mainW = w − pad×2 − railW − 18`.
+- Motion: progress-like bars animate `scaleX` (never `width`); numeric readouts use `tabular-nums` with fixed fraction digits; every element's multi-property entrance uses different clocks (see motion-design.md).
+- Anti-PPT Functional Components: 技术概念（检索 / 记忆 / 上下文 / 契约 / 嵌入 / 安全）**不要**用一整排等大的要点卡去讲，要用**真的随旁白变化**的构件。可选件从真实存在的里面挑：`ConsoleWindow`（`media.tsx`）、`MetricGrid`（`media.tsx`）、`Funnel` / `ProgressRing` / `ChatThread`（`fxkit.tsx`）、`Chart` / `TreeView` / `NetworkGraph` / `ControlStack`（`src/components/`）。
+  > 历史注：本条曾经点名 BrainwaveEEG / VectorRadarSonar / BM25TokenRibbon / HookMountBay / RedactionScanner / ChipContract 六件并要求 MUST use —— 那六件定义在 `index.tsx` 内部、**零 export、且没有任何一处 JSX 渲染过**，按本技能自己的「零引用」判据正是待删除项，已于 v3.1 删除。**不要再把不可达的名字写成硬要求。**
 
-## 4. Render and delivery integrity
+## Subtitle
 
-- Source compiles; lockfile and declared dependencies match the rendered project. Do not add a dependency just to imitate a reference project.
-- Timeline, word timings, captions, animation, and sound use the same frame-rate convention. Frame output is deterministic.
-- Confirm canvas dimensions, native frame rate, codec, audio stream, duration, and complete ending. Inspect first/last frames, scene boundaries, long captions, and representative key visual events.
-- Review a contact sheet for overall pacing and hierarchy; if a scene contains rapid motion, additionally inspect a short frame strip. Do not use motion-gap software to classify deliberate stillness as a defect.
-- Resolve actual clipping, overlap, missing assets, malformed text, stale timeline, and encoding errors. Do not alter a validator threshold only to make a render pass.
+- Bottom-pinned pure caption text is present in every scene (no bar, no torn contour).
+- No dark border, black side mark, inner line, orange locator or blue ring.
+- One centered line, WenKai Lite 44px (40px on 3:4).
+- `CaptionFitGate` measures every fully revealed cue with the loaded WenKai font in the real render browser; every cue fits within the canvas safe width.
+- Partial reveal does not shift horizontally (hidden full-width placeholder).
+- Internal punctuation remains; trailing punctuation (`，。！？；、,.!?;:`) is strictly stripped and hidden visually via `cleanFull` and gated character length. Trailing punctuation mark on screen is an immediate rejection flag.
+- Caption segmentation is explicitly `semantic`, never `draft-character-count`.
+- Every model/product name, benchmark, number-plus-unit expression and fixed technical term is listed in the protected-phrase manifest.
+- No protected phrase crosses a cue boundary; no ASCII identifier is split between cues.
+- Cue words flatten to the exact TTS word stream.
+- Caption timing leads measured speech by no more than about 80ms.
 
-## 5. Audience evidence
+## Audio
 
-A creator review is not a blind viewer test. If learning or comfort improvement is claimed, compare the same content and audio under blinded labels, with representative viewers who do not know the implementation. Ask about comfort, the intended takeaway, and a concrete transfer/application question; separate correctness from confidence or aesthetic preference. Record audience size and limitations. Do not invent or infer outside feedback when no participants were available.
+- Correct voice and complete narration.
+- No hidden voice delay.
+- Effects land on visible actions.
+- Speech remains dominant.
+- Integrated loudness is about -16 LUFS.
+- True peak is no higher than -1.5dBTP.
 
-## 6. Do not mistake these for goals
+## File validation
 
-No minimum number of styles, media types, camera moves, animated elements, layout zones, effects, or components; no requirement to fill the lower quarter; no penalty for a static explanatory hold. Their use is judged by whether it helps the particular teaching task.
+- H.264 video and AAC audio are present.
+- 2560×1440 at native 30fps unless the user explicitly requested a genuinely native high-frame-rate production.
+- Audio is 48kHz stereo.
+- Video duration includes at least 0.7 seconds after narration.
+- No black frames or truncated ending.
+- No unintended scaling or softening pass.
+- Contact sheet includes every scene.
+- Films over 60 seconds include at least 24 evenly spaced frames plus dense motion sheets for the two most complex movements.
+- Opening, scene boundaries, longest caption, hover/insert midpoints and closing frame are inspected manually.
+- Opening range 0–360 is inspected at 0.5s, 2s, 4s, 8s and 10s; the primary claim is visible by 1.5s and the deferred question is paid off later.
+
+Do not update the skill from a design proposal. Update only after the user approves the actual rendered film.
+
+## Deliverables (原文迁自 SKILL.md)
+
+Unless the user asks for less, deliver:
+
+1. narration and time-coded storyboard (derived from the shot table);
+2. a visual plan — for v2.9 this is the shot table itself: skeleton, media, live components, camera intent, anchor, zones, bottom-fill, transition, entry, beats;
+3. semantic part manifest with layer and exit contracts;
+4. `visual-assets.json` with source, prompt summary, crop policy and rights for every raster;
+5. Chinese narration plus word timing JSON;
+6. one-line semantic caption cues plus a protected-phrase manifest;
+7. delivery-canvas H.264/AAC MP4 (2560×1440 for 16:9);
+8. contact sheet and motion checks for long films;
+9. editable source ZIP with fonts, licenses, audio and manifests;
+10. delivery fact card verified against the baseline table below.
+
+### 交付指标事实卡 (Fact Card)
+
+| 层级 | 检查项 (Metric/Item) | 测量实值 (Value) | 正常基线 (Baseline) | 状态判定 (Status) |
+|---|---|---|---|---|
+| L1 基础层 | 交付画幅与帧率 | 2560×1440 | 锁定 30fps 原生无重复帧 | 🟢 正常 |
+| L1 基础层 | 响度与音频混音 | −16 LUFS / −1.5 dBTP | 48kHz 立体声 AAC | 🟢 正常 |
+| L2 核心层 | 字幕与台词对齐 | 词级整帧同步 (msFrame) | 零断行拆分/零边缘伪影 | 🟢 正常 |
+| L3 校验层 | 黑帧与图层穿透 | 0 处黑帧 / 零残留碎片 | 所有元件完整离场与遮挡 | 🟢 正常 |
+| L3 校验层 | 构图门禁 | P0 = 0 | 骨架相邻不同款 / 活性组件覆盖 / 介质 ≥3 | 🟢 正常 |
+| L3 校验层 | 重叠门禁 | OverlapGate 零警告 | 有意覆盖须标 `data-gate-allow` | 🟢 正常 |
+
+Do not stop at prompts, still images, a silent animation or an unvalidated render.

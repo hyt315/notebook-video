@@ -1,23 +1,96 @@
-# Template visual assets and engineering invariants
+# Official aesthetic system
 
-The template contains a current 16:9-first visual implementation, reusable components, fonts, and palette tokens. These are tested starting points, not a requirement to make every video look like one pre-approved art direction. Use a project copy and render real frames before changing shared behavior; a style name, preview sheet, or palette alone cannot establish that an edit is better.
+This document defines the aesthetic layer preserved by `warm-ivory-remotion-2k30-v9-visual-director`.
+This package contains one official aesthetic track and one canonical example project.
 
-## Keep reliable engineering behavior
+## Locked production grammar
 
-- Remotion is the bundled renderer. Frame-dependent output should be deterministic and use a single documented FPS convention.
-- Reuse the lockfile and existing open-source component layer where licensed and helpful. `scripts/*.py` are standard-library-only; template dependencies are pinned. A new dependency not already listed needs approval.
-- Keep content text and important data editable and sourceable. Raster artwork can provide a subject or atmosphere, but should not be the only source of an exact label, value, or relationship.
-- Load licensed fonts and media before their first use. Keep source/rights notes for third-party and generated assets.
-- Use the actual canvas dimensions, the correct subtitle-safe geometry, and frame-boundary timing. Each canvas requires its own layout validation; the presence of a canvas option is not evidence it has been tested.
-- Preserve caption accuracy and synchronization. Use applicable WCAG contrast requirements, while treating reading speed and minimum hold-time values as project-specific review prompts.
-- A component, background, shadow, effect, card skin, mascot, or camera path is optional unless the topic genuinely needs it. “Official” does not mean every scene must display it.
+The v9 system preserves the fixed camera, subtitle geometry, native 30fps paper motion, declarative audio tree, asset gate and final draw order while allowing the scene grammar to follow meaning. Before storyboarding, select one primary **media kind** for each scene (`chart` / `console` / `code` / `graphic` / `text` / `metric` — 默认路线的路由维度，见 media-routing.md); `image-text` only applies on the optional visual-director route. Read `visual-director.md`.
 
-## Choose visual form from meaning
+Generated imagery is an optional input layer. When an authorized image-generation tool is available, use it for concrete subjects and promotional hero shots where it improves comprehension. Keep exact text, arrows, diagrams and timing in Remotion. A project must remain buildable with user-supplied, licensed or native SVG assets when image generation is unavailable.
 
-Sketch the teaching claim and evidence first. Choose between a static explanation, live diagram, chart, code excerpt, real interface, image, comparison, or sequence according to what makes the idea visible. A still frame can be the clearest visual. Negative space need not be filled; do not turn component, movement, media, scene-family, or style variety into acceptance thresholds.
+## Locked aesthetic core
 
-`paper`, `cel`, `sticker`, and `flat` are available treatments in `theme-system.md`. Preserve the user's requested style when given. Otherwise choose a restrained base and adapt it when the subject or rendered result calls for a change. Check the actual text, assets, contrast, and composition in the rendered film.
+The following values and helpers are part of the official engine and are not ordinary content-editing surfaces:
 
-## Review the rendered artifact
+- `C`: approved semantic palette roles;
+- `TYPE`: display, title, body, label and micro typography scale;
+- `AESTHETIC`: subtitle width, paper radius/outline, texture, grid and grade values;
+- `paperShadow(lift)`: contact and environment shadow linked to real paper lift;
+- `LineIcon` and `CheckBadge`: one consistent line-icon language;
+- `Grade`: restrained static whole-film warmth and vignette.
 
-Inspect key frames and a contact sheet, then watch and listen to the whole output at normal speed. Review important information on the intended device/size. Record known untested canvases and limitations. Do not claim user or audience approval based on an automated gate or internal review.
+Semantic colors must come from `C`; material-specific neutral shades may remain inside the locked component implementation. Do not introduce new inline semantic colors, system glyphs, emoji, independent shadows or animated grain. Small optical adjustments are allowed only when they preserve the official visual result.
+
+## Ordinary editable surface
+
+Ordinary production models should primarily edit:
+
+1. the `COPY` block in `src/index.tsx`;
+2. `narration.txt`;
+3. semantic caption lines and protected phrases;
+4. scene timing constants when required by narration;
+5. the visual plan and `manifests/visual-assets.json`;
+6. generated or supplied raster assets in `public/illustrations/`;
+7. topic-specific scene objects that preserve the same physical ownership and motion grammar;
+8. **the wrapped component layer in `src/components/`** — import and use the components that ship with the
+   template, parameterised per scene. This is an explicitly permitted surface: reach for a ready-made
+   wrapped component before hand-writing SVG. The dependency boundary and the component rules live in
+   [dependency-policy.md](dependency-policy.md); the template's `package.json` already declares those
+   libraries, so no separate authorisation is needed to use them.
+
+Stable semantic IDs must remain separate from display labels. Changing visible copy must not break scene branching, icon choice, z-order, transfer paths or slot occlusion.
+
+## Visual rules
+
+- Preserve spacious composition and one hero action per zone; scene count follows the content.
+- Choose image-plus-text, pure text or pure graphic mode from meaning rather than repeating one scene family.
+- Treat generated bitmaps as animated assets, never as the finished scene.
+- Keep exact labels and diagrams outside the bitmap as live Remotion layers.
+- Record source, prompt summary, crop policy and rights for every raster asset.
+- Keep the bottom-pinned pure caption text at one centered line (no torn bar).
+- Use browser-native caption measurement after the exact font is loaded.
+- Use the official palette and type scale; do not invent per-scene styling.
+- Use lift-linked paper shadows only for moving paper.
+- Keep the grade static and restrained.
+- Use the official line icons (`LineIcon`) as the primary icon language, instead of system glyphs or emoji.
+  Topic-specific marks (brand logos, technology identities) may use the pinned `react-icons` sets
+  (`fa` solid = brands; `fi`/`lu` = line icons; `si` = 品牌 logo 兜底 —— v3.1 起放开 `lu`，因为 `react-icons/lu` 与 `fi` **同源同款**、字节级相同；混排时按 `LineIcon` 的视觉重量压一档 `strokeWidth`。见 dependency-policy.md §7.5）
+- Preserve the same persistent task-card, shared-track and physical-slot logic.
+
+## Future updates
+
+For future aesthetic changes, work in a disposable project copy, render the complete film, obtain user approval, and only then overwrite the official example and contract.
+
+## Locked official elements (原文迁自 SKILL.md)
+
+Keep these official elements locked until the user approves a future rendered replacement:
+
+- React + TypeScript + Remotion rendering core;
+- locked premium motion contracts shipped in the template: `JumpInText` per-glyph 3D flip titles, `ShimmerText` sweep on CTA strings, multi-keyframe figure roll-ins, per-word subtitle reveal, and the v2.9 shot layer (see [shot-language.md](shot-language.md));
+- fixed native 30fps motion, rendered and delivered on one of three locked canvases: 2560×1440 (16:9), 1920×1440 (4:3) or 1440×1920 (3:4 portrait), chosen once at kickoff;
+- no duplicate-frame upconversion; use 60fps only when motion is authored natively at 60fps;
+- mount only the active scene, with at most two scenes during a short handoff;
+- animate moving objects with transforms instead of per-frame layout properties (**progress bars animate `scaleX`, never `width`**);
+- bright layered warm-ivory notebook background;
+- stable top-left chapter card and top-right technical header, both **outside** the shot camera;
+- bottom-pinned pure caption text with per-word reveal, no decorative bar, no dark border or side artifacts;
+- pure bottom subtitle with soft text shadow, no dark border, side marks, locator or ring;
+- LXGW WenKai Lite as the unified CJK typeface plus Clash Display / Space Grotesk Latin accents;
+- TTS word timing converted once to integer absolute frames;
+- independent semantic parts with explicit z-order, entry and complete exit;
+- a spatial density budget: one hero action per zone, no temporary stack in the center;
+- a shot layer: every shot declares one camera intent from the closed set plus an `anchor` that `validate-shot-motion.py` must prove stays visible (restricted recipes, not free curves — and not frozen framing);
+- four scene skeletons (`Stage` / `Corridor` / `Split` / `Zoom`) with **no two adjacent scenes sharing one**, and at least three per film;
+- content→medium routing: at least three distinct visual media per film, and at least one live state-changing component per explanation scene (**a pure card-and-bullets scene is a gate failure**);
+- a shot table that references narration cues instead of hard-coded frame numbers ([scene-skeletons.md](scene-skeletons.md));
+- background readability via `CoverPanel`: the locked background bitmaps stay as they are, and content overlapping a declared decoration zone sits on a feathered backing plate ([media-routing.md](media-routing.md));
+- shared-track continuity when one object changes state across several stations;
+- real slot geometry: insertable parts cross the slot, move behind the front lip and disappear fully;
+- declarative narration and action effects inside the Remotion component tree;
+- font/audio/image asset preload gate before the first frame;
+- a visual plan selecting pure text/graphic scenes by default, with image-plus-text only after the user accepts the add-on;
+- optional generated imagery as preloaded Remotion assets with prompt, crop and rights records;
+- H.264/AAC output, automated QA, contact sheets and editable source package.
+
+Do not write an experimental change into this skill until the user sees the rendered film and explicitly approves it.

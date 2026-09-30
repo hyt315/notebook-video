@@ -33,8 +33,8 @@ def run(*args: str) -> None:
 
 def main() -> None:
     contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
-    if contract.get("version") != STYLE or contract.get("status") != "reference-exemplar":
-        raise SystemExit("reference exemplar identity changed")
+    if contract.get("version") != STYLE or contract.get("status") != "official-current":
+        raise SystemExit("official style identity changed")
     canvas = contract["canvas"]
     if (canvas["width"], canvas["height"], canvas["delivery_fps"], canvas["physical_motion_fps"]) != (2560, 1440, 30, 30):
         raise SystemExit("2K/30 canvas or native motion rate changed")
@@ -182,7 +182,7 @@ def main() -> None:
     run(sys.executable, str(SKILL / "scripts" / "validate-visual-plan.py"), str(EXAMPLE))
     run(sys.executable, str(SKILL / "scripts" / "validate-caption-sync.py"), str(EXAMPLE / "audio" / "narration.mp3.json"), str(cues_path))
     run(sys.executable, str(SKILL / "scripts" / "validate-semantic-breaks.py"), str(cues_path), str(EXAMPLE / "manifests" / "protected-caption-phrases.txt"))
-    print("Warm-ivory v9 visual-director 2K/30 reference exemplar is internally consistent")
+    print("Official warm-ivory v9 visual-director 2K/30 exemplar is internally consistent and style-locked")
 
 
 if __name__ == "__main__":

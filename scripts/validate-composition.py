@@ -1,9 +1,24 @@
 #!/usr/bin/env python3
-"""validate-composition.py · 分镜与源码一致性检查
+"""validate-composition.py · 构图与活性门禁（P0 阻断渲染 / P1 仅警告）
 
-此脚本不以密度、主题/骨架种数、活性组件数、镜长分布或镜头运动频次代理教学质量。
-它要求每个旁白 cue 恰好被一个镜头覆盖；每镜必须声明所表达的核心关系和实际视觉承载，
-且可读到该镜的场景 JSX。静态画面可以连续支持多个 cue；实际语义匹配仍须观审成片。
+这是整套体系里**唯一能把"审美"变成门禁**的部分，也是让改进不随时间退化的保障。
+没有它，v2.8 的强制条款再多也会像今天一样全部空转——规范强制使用活性组件、
+实现引用数为 0，9 个校验脚本没有一条能发现。
+
+检查项（判据与档位见 references/composition-gate.md）：
+
+  P0-1  骨架重复度        相邻场景不得同骨架；全片 ≥3 种；未知骨架名 → fail
+  P0-2  活性组件覆盖率     每个讲解场景 ≥1 个活性组件；**且每个名字必须能在场景文件里找到**
+  P0-3  镜头意图多样性     全片 ≥3 种 intent（不含 still）
+  P0-4  密度硬条款         3–5 个功能分区；下 1/4 填满（**不再被 explanation:false 绕过**）
+  P0-5  介质多样性         全片 ≥3 种不同视觉介质，且取值必须在闭合集合内
+  P0-6  枚举闭合           转场 / 入场 / 介质 / 骨架 / 意图 全是闭合集合，写错名字即 fail
+  P1-7  单镜过长           单镜 > 300 帧（10s）提示锯开（基准 4–6s、最长 ≤9s）
+  P1-8  骨架指纹重复       同一 (骨架,意图,转场,入场) 组合每出现一次就提示
+  P1-9  镜长分布           最长/最短 < 2 倍、或 >80% 镜头集中在同一档 → 读起来是节拍器
+  P1-10 主角尺寸           hero 必须声明，且 size 是"主体短边设计像素"（图形 ≥255 / 大字 ≥144）
+  P1-11 转场 / 入场多样性  ≥2 种 / ≥3 种
+  P1-12 状态变化间隔       汇总报告（带帧区间与所涉台词），不再每镜刷 1 条
 
 用法：
     python scripts/validate-composition.py PROJECT_DIR [--strict] [--json]
@@ -18,11 +33,30 @@ import re
 import sys
 from pathlib import Path
 
-# 这些枚举进入解析/渲染行为；无效值是实现错误，应当被拦下。
+# 闭合集合：写错名字必须被拦下（v2.11 前这些字段是自由字符串，
+# 实测把 media 写成 ["FAKE_MEDIUM_A",...]、live 写成 ["NO_SUCH_COMPONENT"] 也能 P0=0 通过）
+SKELETONS = {"Stage", "Corridor", "Split", "Zoom"}
 INTENTS = {"establish", "push-in", "pull-back", "pan-follow", "reveal", "micro-orbit", "still"}
 TRANSITIONS = {"cut", "handoff", "reveal"}   # v3.0.1 收缩：whip / paper-turn 已删除
-ENTRIES = {"none", "rise", "slide", "fade", "zoom"}
-THEMES = {"paper", "cel", "sticker", "flat"}
+ENTRIES = {"rise", "slide", "fade", "zoom"}
+MEDIA_KINDS = {"chart", "console", "code", "graphic", "text", "metric"}
+
+MIN_SKELETONS = 3
+MIN_MEDIA = 3
+MIN_INTENTS = 3
+MIN_TRANSITIONS = 2
+MIN_ENTRIES = 3
+ZONE_RANGE = (3, 5)
+MAX_EXPLANATION_FALSE = 1     # 一部片最多 1 镜可以不走"讲解场景"的活性要求（章节卡）
+MAX_SHOT_FRAMES = 300         # 单镜上限 10s
+MIN_LENGTH_RATIO = 2.0        # 最长/最短 倍数下限（测出来是节拍器）
+MAX_BAND_SHARE = 0.8          # 同一时长档最多占 80%
+MAX_BEAT_GAP = 120            # 文档的慢章节上限（3–4s）；超过它才算越界
+SLOW_GAP = 90                 # 汇总时把 >3s 的间隔也列出来（供评审，不判缺陷）
+HERO_MIN_GRAPHIC = 255        # a2e 720p 的 170px × 1.5（设计空间 1920×1080）
+HERO_MIN_TEXT = 144           # a2e 720p 的 96px × 1.5
+
+BANDS = ((0, 60, "≤2s"), (61, 120, "2–4s"), (121, 240, "4–8s"), (241, 10 ** 9, ">8s"))
 
 
 def load(project: Path) -> dict:
@@ -33,7 +67,7 @@ def load(project: Path) -> dict:
 
 
 def scene_source(project: Path) -> str:
-    """场景文件全文：用于转场实现和 beat 索引的源码一致性检查。
+    """场景文件全文：用来确认 live 里的名字真的被引用过（而不是编出来的）。
 
     ⚠️ 必须**递归**扫（与同文件 import_integrity 的 rglob 对齐）：旧版写成
     `src.glob("*.tsx")` 只扫一层，场景文件放在子目录（src/scenes/ 等）时整段读不到，
@@ -265,25 +299,7 @@ def _shot_body(scene_text: str, sid: str) -> str:
     return ""
 
 
-_NONVISUAL_JSX = {"Shot", "ShotCamera", "Sequence", "Audio", "AbsoluteFill", "Fragment", "React.Fragment"}
-_JSX_NODE = re.compile(
-    r"<\s*([A-Z][A-Za-z0-9_.]*|div|span|svg|p|h[1-6]|img|canvas|text|path|line|g|circle|rect|foreignObject)\b"
-)
-_GENERIC_DECLARATIONS = {"", "todo", "tbd", "later", "none", "n/a", "无", "暂无", "待定", "待补", "待填写", "待确认"}
-
-
-def _meaningful_declaration(value: object) -> bool:
-    if not isinstance(value, str):
-        return False
-    text = re.sub(r"\s+", " ", value).strip()
-    return len(text) >= 10 and text.casefold() not in _GENERIC_DECLARATIONS
-
-
-def _has_visual_node(body: str) -> bool:
-    return any(name not in _NONVISUAL_JSX for name in _JSX_NODE.findall(body))
-
-
-def check(data: dict, scene_text: str = "", cue_count: int | None = None) -> tuple[list[dict], list[dict], list[str]]:
+def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], list[str]]:
     p0: list[dict] = []
     p1: list[dict] = []
     notes: list[str] = []
@@ -291,55 +307,40 @@ def check(data: dict, scene_text: str = "", cue_count: int | None = None) -> tup
     if not shots:
         p0.append({"id": "-", "issue": "shots.json 没有 shots"})
         return p0, p1, notes
-    if data.get("theme") not in THEMES:
-        p0.append({"id": "-", "issue": f"必须为整片明确选择一个已实现的基础视觉处理 theme：{sorted(THEMES)}；不要将皮肤/多样性当作质量代理"})
-
-    # ---- 每个旁白 cue 都要有一个可审阅的画面承载与核心学习关系 ----
-    if cue_count is None:
-        p0.append({"id": "-", "issue": "无法读取 caption-cues.json；不能证明每条旁白有对应的视觉承载"})
-    else:
-        for cue in range(cue_count):
-            covering = [s for s in shots if isinstance(s.get("cueFirst"), int) and isinstance(s.get("cueLast"), int)
-                        and s["cueFirst"] <= cue <= s["cueLast"]]
-            if len(covering) != 1:
-                p0.append({"id": f"cue {cue}", "issue": f"旁白 cue {cue} 被 {len(covering)} 个镜头覆盖；必须恰好由一个有视觉承载的镜头覆盖"})
-    for s in shots:
-        sid = s.get("id", "?")
-        for field, label in (("coreRelation", "核心学习关系"), ("visualCarrier", "视觉承载")):
-            if not _meaningful_declaration(s.get(field)):
-                p0.append({"id": sid, "issue": f"缺少可审阅的{label}声明（{field}）；可以静态，但不能没有画面支持或学习关系"})
 
     # ---- 覆盖率自述：场景源码存在时，每一镜都必须找得到自己的场景函数体 ----
     # 病因（2026-09 修复）：scene_source 此前只扫 src 一层，子目录里的场景文件读不到，
-    # 下面所有 `if scene_text` 判据（转场声明是否兑现 / beats 下标越界）
+    # 下面所有 `if scene_text` 判据（live 名字可解析 / 转场声明是否兑现 / beats 下标越界）
     # 就整段静默跳过，rc 照样 0 —— "没报"和"没跑"必须可区分。
     # 口径：工程里一份 .tsx 都没有时维持原行为（负向抽查的最小夹具只有分镜表，无从比对）；
     #       只要有场景源码，某镜在源码里切不出函数体就是**测量没跑成**，记 P0 点名。
     if scene_text:
         for s in shots:
             sid = s.get("id", "?")
-            body = _shot_body(scene_text, sid)
-            if not body:
+            if not _shot_body(scene_text, sid):
                 p0.append({"id": sid, "issue": (
                     "场景源码不可读，判据无法执行：在 src/**/*.tsx 里找不到本镜的场景函数"
                     "（`const S…: React.FC<` / `: FC<` / `function S1(…)` / "
                     "`const S1 = (…): JSX.Element` 诸形态之一）——凡是需要场景源码的判据（live 名字是否真被引用、"
                     "转场声明是否兑现、beats 下标越界）对本镜都没有跑成，不许当成已通过")})
-            elif not _has_visual_node(body):
-                p0.append({"id": sid, "issue": "场景函数没有可识别的视觉 JSX 节点；空场景/仅音频不能充当旁白 cue 的视觉承载"})
 
-    # ---- Validate authored camera/transition/entry values; no variety quota is applied. ----
+    # ---- P0-6 枚举闭合（先做，后面的多样性统计才有意义）----
     unknown_intents = {s.get("cameraIntent", "still") for s in shots} - INTENTS
     if unknown_intents:
         p0.append({"id": "-", "issue": f"未知镜头意图 {sorted(unknown_intents)}；只能是 {sorted(INTENTS)}"})
     bad_tr = {s.get("transition", "cut") for s in shots} - TRANSITIONS
     if bad_tr:
         p0.append({"id": "-", "issue": f"未知转场 {sorted(bad_tr)}；只能是 {sorted(TRANSITIONS)}"})
-    bad_en = {s.get("entry", "none") for s in shots} - ENTRIES
+    bad_en = {s.get("entry", "rise") for s in shots} - ENTRIES
     if bad_en:
         p0.append({"id": "-", "issue": f"未知入场方式 {sorted(bad_en)}；只能是 {sorted(ENTRIES)}"})
+    bad_media = {m for s in shots for m in (s.get("media") or [])} - MEDIA_KINDS
+    if bad_media:
+        p0.append({"id": "-", "issue": f"未知介质 {sorted(bad_media)}；只能是 {sorted(MEDIA_KINDS)}"})
 
-    # ---- P0 声明即承诺：transition 描述当前镜如何进入；声明必须与场景实现一致 ----
+    # ---- P0 声明即承诺：声明的转场必须真的被实现 ----
+    # 背景：两条成片都出现过"分镜表声明 handoff、代码里从未实现"，以及 SWE-2 的 S1
+    # "表写 cut、代码写 reveal"。声明不兑现 = 分镜表在说谎，必须拦下。
     def shot_block(sid: str) -> str:
         # 收到本镜 </Shot> 为止：旧版窗口 400 字符，实测窗口长 413，会越过边界吞掉下一镜
         m = re.search(r"<Shot\b[^>]*\bid=\"%s\"[\s\S]*?</Shot>" % re.escape(sid), scene_text)
@@ -360,20 +361,51 @@ def check(data: dict, scene_text: str = "", cue_count: int | None = None) -> tup
             p0.append({"id": s.get("id", "?"), "issue": "声明 transition=cut，但场景里写了 reveal（表与实现不一致）"})
         if tr == "handoff":
             carrier = (s.get("carrier") or "").strip()
-            prev = shots[i - 1] if i > 0 else None
+            nxt = shots[i + 1] if i + 1 < len(shots) else None
             if not carrier:
-                p0.append({"id": s.get("id", "?"), "issue": "声明 transition=handoff 但没有 carrier；只有同一视觉对象跨镜延续时才选择 handoff，否则使用默认 cut"})
-            elif not prev or (prev.get("carrier") or "").strip() != carrier:
-                p0.append({"id": s.get("id", "?"), "issue": f"carrier=\"{carrier}\" 但上一镜没有声明同一个 carrier（交接对象跨镜不连续）"})
+                p0.append({"id": s.get("id", "?"), "issue": "声明 transition=handoff 但没有 carrier；引擎的镜间叠帧是全局生效的，没有 carrier 的 handoff 与 cut 没有区别 → 要么补 carrier，要么改成 cut"})
+            elif not nxt or (nxt.get("carrier") or "").strip() != carrier:
+                p0.append({"id": s.get("id", "?"), "issue": f"carrier=\"{carrier}\" 但下一镜没有声明同一个 carrier（交接对象跨镜不连续）"})
 
-    # 骨架、介质、区域和组件标签是作者的可选构图提示，不是画质代理：
-    # 静态、一种介质或留白都可能是教学上最清晰的选择。
-    # 这里只保留可复现的错误检查（例如 beat 索引越界会让渲染崩溃或元素消失）。
+    # ---- P0-1 骨架重复度 ----
+    seq = [(s.get("id", "?"), s.get("skeleton", "?")) for s in shots]
+    for (a_id, a), (b_id, b) in zip(seq, seq[1:]):
+        if a == b:
+            p0.append({"id": b_id, "issue": f"与上一镜同骨架（{a}）；相邻场景必须不同骨架"})
+    kinds = {k for _, k in seq}
+    unknown = kinds - SKELETONS
+    if unknown:
+        p0.append({"id": "-", "issue": f"未知骨架 {sorted(unknown)}；只能是 {sorted(SKELETONS)}"})
+    if len(kinds & SKELETONS) < MIN_SKELETONS:
+        p0.append({"id": "-", "issue": f"全片仅 {len(kinds & SKELETONS)} 种骨架，要求 ≥{MIN_SKELETONS} 种"})
+
+    # ---- P0-2 活性组件覆盖率（含"名字可解析"）+ P0-4 密度 ----
+    # explanation:false 只能豁免"活性组件"这一条，且全片最多 1 镜；
+    # zones / bottomFill 与 explanation 无关，永远校验（旧版一个 false 就能把整块跳过）。
+    non_expl = [s.get("id", "?") for s in shots if s.get("explanation", True) is False]
+    if len(non_expl) > MAX_EXPLANATION_FALSE:
+        p0.append({"id": "-", "issue": f"{len(non_expl)} 镜标了 explanation:false（{non_expl}），最多允许 {MAX_EXPLANATION_FALSE} 镜"})
+    live_names: set[str] = set()
     for s in shots:
         sid = s.get("id", "?")
+        if s.get("explanation", True) is not False:
+            live = [x for x in (s.get("live") or []) if x]
+            if not live:
+                p0.append({"id": sid, "issue": "讲解场景没有任何活性组件（纯卡片堆）；禁止"})
+            for name in live:
+                live_names.add(str(name))
+                if scene_text and not re.search(r"\b" + re.escape(str(name)) + r"\b", scene_text):
+                    p0.append({"id": sid, "issue": f"活性组件 “{name}” 在场景文件里找不到（没 import 也没渲染）；写名字前先在接触表里看见它"})
+        zones = s.get("zones")
+        if zones is None:
+            p0.append({"id": sid, "issue": "缺少 zones（本镜功能分区数）"})
+        elif not isinstance(zones, int) or not (ZONE_RANGE[0] <= zones <= ZONE_RANGE[1]):
+            p0.append({"id": sid, "issue": f"功能分区 {zones!r}，契约要求 {ZONE_RANGE[0]}–{ZONE_RANGE[1]} 个整数"})
+        # 逐镜取函数体，再去注释后扫描（两件都是实测踩出来的）：
+        #   · 整份文件一起扫会把"某镜用了 b[9]"算到每一镜头上（夹具只改 S19 却报了 21 条）；
+        #   · 不去注释会把解释性注释里写到的 `b[3]` 当成真代码（实测第一次跑误报两镜）。
         code_only = "" if not scene_text else _shot_body(scene_text, sid)
         if code_only:
-            # 逐镜取函数体，再去注释后扫描，避免注释中的代码示例误报。
             # ---- beats 下标越界（2026-09-21 加。**这条本来能救两次事故**）----
             # 场景里写 `SHOTS.Sx.beats[k]` 取节拍，而 beats 的长度由分镜的 cue 区间决定。
             # 一旦镜里只有 3 拍而场景写了 `b[3]`：
@@ -416,9 +448,137 @@ def check(data: dict, scene_text: str = "", cue_count: int | None = None) -> tup
                 mark(f"SHOTS.{ref}.beats[{mm.group(2)}]", int(mm.group(2)), ref_idx, f"{ref} 这一镜")
             for _expr in sorted(too_far):
                 p0.append({"id": sid, "issue": too_far[_expr]})
-    # Do not score aesthetic diversity, composition density, or motion frequency.
-    # Those judgments require reviewing the actual picture against the narrated idea.
-    notes.append(f"已校验：cue覆盖 / 核心关系与视觉承载声明 / 场景视觉节点 / 镜头枚举 / 转场兑现 / beats索引；{len(shots)} 镜")
+        # 2026-09-21 降级（**这道门原来永远不会失败**）：它校验 `bottomFill == True`，
+        # 而这个字段是生成分镜表的脚本**自己写死的常量**（make-shots.py 每一镜都写 True），
+        # resolve-shots 再原样透传 —— 生成器写 True、门禁要求 True，结构上不可能报错。
+        # 实测成片里 17/21 镜的下 1/4 是空的，它一次都没响。
+        # 现在只查"字段在不在"（缺字段是真配置错误），真正的判据交给渲染期的 FillGate
+        # （实测信息元素的最低边 vs y=876，量的是画面而不是声明）。
+        if "bottomFill" not in s:
+            p0.append({"id": sid, "issue": "缺 bottomFill 字段（下 1/4 密度的声明位；实测判据见渲染期 FillGate）"})
+
+    # ---- P0-3 镜头意图多样性 ----
+    intents = {s.get("cameraIntent", "still") for s in shots}
+    if len(intents - {"still"}) < MIN_INTENTS:
+        p0.append({"id": "-", "issue": f"全片仅 {len(intents - {'still'})} 种镜头意图，要求 ≥{MIN_INTENTS} 种"})
+
+    # ---- P0-5 介质多样性 ----
+    media: set[str] = set()
+    for s in shots:
+        for m in s.get("media") or []:
+            media.add(m)
+    if len(media) < MIN_MEDIA:
+        p0.append({"id": "-", "issue": f"全片仅 {len(media)} 种视觉介质 {sorted(media)}，要求 ≥{MIN_MEDIA} 种"})
+
+    # ---- P1 单镜过长（工艺项，不阻断；结构由作者决定）----
+    for s in shots:
+        dur = int(s.get("duration") or 0)
+        if dur > MAX_SHOT_FRAMES:
+            # 注意：f-string 里不要复用同种引号（PEP 701 只在 Python 3.12+ 合法，本脚本声明支持 3.10+）
+            p1.append({"id": s.get("id", "?"), "issue": "单镜 %d 帧（%.1fs）超过 %d 帧参考上限；基准是单镜 4–6s、最长 ≤9s" % (dur, dur / 30, MAX_SHOT_FRAMES)})
+
+    # ---- P1-8 骨架指纹重复 ----
+    fp: dict[tuple, list[str]] = {}
+    for s in shots:
+        key = (s.get("skeleton"), s.get("cameraIntent"), s.get("transition"), s.get("entry"))
+        fp.setdefault(key, []).append(s.get("id", "?"))
+    for key, ids in fp.items():
+        if len(ids) > 1:
+            p1.append({"id": "-", "issue": f"骨架指纹 {key} 出现 {len(ids)} 次（{ids}）；隔镜重复会让观众觉得“这段我看过”"})
+
+    # ---- P1-9 镜长分布 ----
+    durs = [int(s.get("duration") or 0) for s in shots]
+    if len(durs) >= 3:
+        lo, hi = min(durs), max(durs)
+        ratio = hi / max(1, lo)
+        if ratio < MIN_LENGTH_RATIO:
+            p1.append({"id": "-", "issue": f"最长/最短镜头仅 {ratio:.2f} 倍（{hi}/{lo}），全片一个速度=节拍器；建议 2.5–3 倍以上"})
+        share = {}
+        for d in durs:
+            for a, b, name in BANDS:
+                if a <= d <= b:
+                    share[name] = share.get(name, 0) + 1
+                    break
+        worst = max(share.items(), key=lambda kv: kv[1])
+        if worst[1] / len(durs) > MAX_BAND_SHARE:
+            p1.append({"id": "-", "issue": f"{worst[1]}/{len(durs)} 镜落在同一时长档（{worst[0]}）；长短要错开"})
+        if not any(d <= 120 for d in durs):
+            p1.append({"id": "-", "issue": "全片没有 ≤4s 的短镜；插入镜/重音镜头都该在这一档"})
+
+    # ---- P1-10 主角尺寸 ----
+    for s in shots:
+        hero = s.get("hero") or {}
+        size = hero.get("size")
+        kind = hero.get("kind", "text")
+        if size is None:
+            p1.append({"id": s.get("id", "?"), "issue": "未声明 hero（主角）"})
+            continue
+        floor = HERO_MIN_GRAPHIC if kind == "graphic" else HERO_MIN_TEXT
+        if int(size) < floor:
+            p1.append({"id": s.get("id", "?"), "issue": f"hero.size={size}（{kind}）低于 {floor}；这个字段必须是**主体短边设计像素**，不是随便填的数"})
+
+    # ---- P1-11 转场 / 入场多样性 ----
+    transitions = [s.get("transition", "cut") for s in shots]
+    if len(set(transitions)) < MIN_TRANSITIONS:
+        p1.append({"id": "-", "issue": f"全片仅 {len(set(transitions))} 种转场，建议 ≥{MIN_TRANSITIONS} 种"})
+    entries = [s.get("entry", "rise") for s in shots]
+    if len(set(entries)) < MIN_ENTRIES:
+        p1.append({"id": "-", "issue": f"全片仅 {len(set(entries))} 种入场方式，建议 ≥{MIN_ENTRIES} 种"})
+
+    # ---- P1-12 状态变化间隔（汇总，带帧区间归因）----
+    runs = []
+    for s in shots:
+        frames = sorted(int(b) for b in (s.get("beatsAbs") or []))
+        if not frames:
+            p1.append({"id": s.get("id", "?"), "issue": "未声明 beats（状态变化帧），无法判断节奏"})
+            continue
+        marks = [int(s["from"])] + frames + [int(s["to"])]
+        gaps = [(b - a, a, b) for a, b in zip(marks, marks[1:])]
+        if not gaps:
+            continue
+        worst, a, b = max(gaps)
+        if worst > SLOW_GAP:
+            runs.append((worst, s.get("id", "?"), a, b))
+    over = [r for r in runs if r[0] > MAX_BEAT_GAP]
+    near = [r for r in runs if SLOW_GAP < r[0] <= MAX_BEAT_GAP]
+    if over:
+        detail = "；".join(f"{i}({w}帧 f={a}-{b})" for w, i, a, b in sorted(over, reverse=True)[:4])
+        p1.append({"id": "-", "issue": f"{len(over)} 处变化间隔 >{MAX_BEAT_GAP} 帧（4s），已超出文档的慢章节上限（3–4s）：{detail}"})
+    if near:
+        detail = "；".join(f"{i}({w}帧 f={a}-{b})" for w, i, a, b in sorted(near, reverse=True)[:4])
+        p1.append({"id": "-", "issue": f"{len(near)} 处变化间隔在 3–4s（慢章节正常范围，但连成片会让节奏偏平）；若这些区段画面完全静止，按 motion-design 补一次呼吸：{detail}"})
+
+    # ---- P1 组件词汇多样性（阈值用 DeepSeek 与 SWE-2 两条成片实测校准）----
+    # 结构件豁免：骨架/外壳/相机/底托/小标签本来就该反复出现，要求它们多样化是荒谬的。
+    STRUCTURAL = {"StageFrame", "Corridor", "SplitStage", "ZoomStage", "PhaseRail",
+                  "ShotCamera", "CoverPanel", "LineIcon", "CheckBadge", "PillTag",
+                  "StampBanner", "FitCard", "CardHead", "Shot"}
+    used: dict[str, set] = {}
+    for s in shots:
+        for name in (s.get("live") or []):
+            if name and name not in STRUCTURAL:
+                used.setdefault(name, set()).add(s.get("id", "?"))
+    n_used = len(used)
+    need = 10 if len(shots) >= 16 else (7 if len(shots) >= 8 else 5)
+    if n_used < need:
+        p1.append({"id": "-", "issue": f"可选组件只用了 {n_used} 件（{sorted(used)}），{len(shots)} 镜建议 ≥{need} 件；修辞动作 → 组件 见 media-routing.md"})
+    for name, ids in used.items():
+        share = len(ids) / max(1, len(shots))
+        if share > 0.35:
+            p1.append({"id": "-", "issue": f"“{name}” 出现在 {len(ids)}/{len(shots)} 镜（{share:.0%}）超过 35%；同一件高频复用要换表达"})
+    # ---- P1 反堆砌：只出现 1 镜的可选件 = 堆砌指纹 ----
+    lonely = sorted(n for n, ids in used.items() if len(ids) == 1)
+    # 只在成片（≥12 镜）上判：短样板片里"一件只出现 1 镜"是正常演示，不算堆砌
+    if len(shots) >= 12 and len(lonely) >= 5:
+        p1.append({"id": "-", "issue": f"{len(lonely)} 件可选组件只出现在 1 个镜头里（{lonely}）——像是为凑多样性塞的，请人工确认它们是否真的承接了某个修辞动作"})
+    # ---- P1 节拍密度：长镜但节拍稀疏 → 台词还在念，画面已经冻住 ----
+    for s in shots:
+        dur = int(s.get("duration") or 0); nb = len(s.get("beatsAbs") or [])
+        if dur > 240 and nb < 3:
+            p1.append({"id": s.get("id", "?"), "issue": f"本镜 {dur} 帧（{dur / 30:.1f}s）只有 {nb} 个节拍；画面会在台词中途静止，建议补节拍或锯开"})
+
+    # 覆盖率自述：让"没报"和"没跑"可区分
+    notes.append(f"已校验：枚举 5 类 / live {len(live_names)} 个名字 / hero {len(shots)} 镜 / 时长 {len(durs)} 镜")
     return p0, p1, notes
 
 
@@ -433,19 +593,7 @@ def main() -> int:
         print(f"项目目录不存在：{project}", file=sys.stderr)
         return 2
     data = load(project)
-    cue_path = project / "manifests" / "caption-cues.json"
-    cue_count = None
-    if cue_path.exists():
-        cue_doc = json.loads(cue_path.read_text(encoding="utf-8"))
-        cue_count = len(cue_doc.get("cues", []))
-    p0, p1, notes = check(data, scene_source(project), cue_count)
-    active_theme = project / "src" / "theme" / "active.ts"
-    if active_theme.is_file():
-        active_text = active_theme.read_text(encoding="utf-8", errors="replace")
-        match = re.search(r"from\s+['\"]\./(paper|cel|sticker|flat)['\"]", active_text)
-        if not match or match.group(1) != data.get("theme"):
-            actual = match.group(1) if match else "unreadable/unsupported"
-            p0.append({"id": "-", "issue": f"shots.json theme={data.get('theme')!r} 与 src/theme/active.ts 的运行皮肤={actual!r} 不一致；需选定并同步整片处理"})
+    p0, p1, notes = check(data, scene_source(project))
     ii_p0, ii_note = import_integrity(project)
     p0 += ii_p0
     if ii_note:

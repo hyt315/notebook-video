@@ -1,47 +1,266 @@
-# Composition gates: verify omissions and technical errors, not aesthetic quotas
+# 构图门禁：把"审美"变成可执行检查
 
-The build-time checks in `scripts/validate-composition.py` and `scripts/validate-shot-motion.py` verify inspectable facts about a shot plan and camera geometry. They do **not** score teaching quality, artistic taste, visual density, or the quantity of motion/components.
+> 状态：**v2.10 生效**。脚本：`scripts/validate-composition.py`、`scripts/validate-shot-motion.py`。
 
-## What remains mandatory
+## 目录
 
-Every narration cue must be covered by exactly one resolved shot. Each shot must declare a meaningful `coreRelation` (the idea/relationship it teaches) and `visualCarrier` (the actual visible support), and each authored shot function must contain a recognizable visual JSX node. An audio-only function, blank shot, or generic placeholder cannot count as the carrier. A still diagram can support one cue or a range of cues; it does not need a new animation for each sentence.
+- [1. 为什么必须有这一层](#1-为什么必须有这一层)
+- [2. 十一项检查](#2-十一项检查)
+- [3. 怎么跑](#3-怎么跑)
+- [4. 失败时怎么办](#4-失败时怎么办)
+- [5. 与运行时门禁的分工](#5-与运行时门禁的分工)
+- [6. 交付门槛](#6-交付门槛)
 
-These are inspectable declarations and source-shape checks, **not semantic proof**. They cannot determine whether the displayed material truly explains the narration. Watch the render to establish that.
+## 1. 为什么必须有这一层
 
-## Build checks
+v2.8 有大量强制条款，但**全部空转**：
 
-`validate-composition.py` blocks:
+- `SKILL.md:251` 与 `quality-checklist.md:53` 明文强制技术概念必须使用活性组件 —— 实测 34 个库组件里 **32 个引用数为 0**；
+- 明文禁止"卡片堆文字" —— 样板片自己就是卡片堆；
+- 9 个校验脚本**没有一条**能发现这件事。
 
-- no shots, missing cue metadata, a cue with zero or multiple covering shots, missing/placeholder `coreRelation` or `visualCarrier`, or a shot function with no recognizable visual JSX;
-- a shot whose scene function cannot be found when scene sources exist;
-- unknown camera-intent, transition, or entry enum values;
-- a declared reveal transition with no matching reveal in its shot, an inconsistent cut/reveal declaration, or a handoff without a matching carrier in the next shot;
-- an out-of-range local beat index, a reference to a nonexistent shot's beat list, or a relative import of a missing named export.
+**没有"会因为像 PPT 而拒绝渲染"的门禁，条款再多也会随时间退化。** 这一层就是那个门禁。
 
-`validate-shot-motion.py` blocks:
+同时它也是"减负"的前提：条款可以少，但被检查的条款必须真的被执行。所以这里的规则**少而硬**。
 
-- gaps/overlaps in the resolved shot timeline or failure to cover the declared duration;
-- transformed camera keys whose frames are unordered or do not span the shot, zoom/rotation/pan outside safe limits, or a transformed camera without an explicit anchor;
-- an essential-content anchor outside the visible window at any key, and a render camera declaration that runtime would silently clamp.
+## 2. 十一项检查
 
-A neutral still camera needs no meaningless anchor. Declaring a non-still intent without actual change is a P1 note, not a reason to add motion. When a project supplies a `contentBand` and the selected `cel`/`flat` background treatment has a known decorative overlap, the composition checker can issue a P1 prompt to verify readability/cover; no background or skin is immutable.
+> 数法（2026-09-22 复核）：**P0 七项**（P0-1…P0-7）+ **P1 四项**（P1-7…P1-10）= 十一项。
+> 本节标题原先写"八项检查"、目录那条链接又写"十项检查"且锚点指向 `#2-八项检查` —— 三个数互不相同，
+> 现按实际条数统一成"十一项检查"（标题、目录链接文字、锚点三处一致；`#2-八项检查` 这个旧锚点已不存在）。
 
-## What is deliberately not a gate
+### P0（阻断渲染）
 
-The validators do not require a minimum number of skeletons, media types, active components, beat changes, transitions, entries, camera moves, occupied zones, or filled lower-screen area. Repetition, whitespace, and still frames can be appropriate. Lack of actual visual support is still a failure under the required cue/shot fields and source check above.
+| # | 检查 | 判据 |
+|---|---|---|
+| **P0-1** | 骨架重复度 | 相邻场景不得同骨架；全片 ≥3 种骨架（`Stage`/`Corridor`/`Split`/`Zoom`） |
+| **P0-2** | 活性组件覆盖率 | 每个讲解场景（`explanation != false`）必须声明 ≥1 个活性组件；**纯卡片堆 → fail** |
+| **P0-3** | 镜头意图多样性 | 全片 ≥3 种 intent（不含 `still`）；每章 ≥3 次运镜（**章节 <20s 时 ≥1 次**；后者在 `validate-shot-motion` 查） |
+| **P0-4** | 密度硬条款 | 每镜 `zones` ∈ [3,5]；**`bottomFill` 字段必须在**（缺字段=配置错误）。⚠️ 2026-09-21 降级：这里**只查存在性**，"到底填满了没有"由渲染期 `FillGate` 实测——见下 |
+| **P0-5** | 介质多样性 | 全片 ≥3 种不同视觉介质 |
+| **P0-6** | 镜头出界证明 | 逐镜、逐关键帧证明 `anchor` 完整落在可见窗内（见 `shot-language.md` §3） |
+| **P0-7** | beats 下标越界 | 逐镜扫场景源码里的 `b[k]` 与 `SHOTS.Sx.beats[k]`（**两种写法都扫**），k 必须 < 该镜真实拍数。越界取到的是 `undefined`：传进 `interpolate` 会**整帧渲染失败**，传进比较则**那件东西永远不出现**（两种都在成片里实测过，都不报错） |
 
-## Run
+### P1（只警告，成片前人工确认）
+
+| # | 检查 | 判据 |
+|---|---|---|
+| **P1-7** | 转场多样性 | ≥2 种（`cut` / `handoff` / `reveal`） |
+| **P1-8** | 入场方式多样性 | ≥3 种（`rise` / `slide` / `fade` / `zoom`） |
+| **P1-9** | 状态变化间隔 | 任意 120 帧（4s）内至少一次画面变化；静止 >45 帧提示补呼吸 |
+| **P1-10** | 背景装饰可读性 | `contentBand` 与主题装饰区相交时须声明 `cover` |
+
+> **P0-4 的来历与降级**：v2.8 官方样片的接触表里，多个采样帧中部大片空白、下 1/4 常常空着——
+> "画面下半空洞"是 PPT 感的主要来源之一。所以 `bottomFill` 是 P0。
+>
+> ⚠️ **2026-09-21 降级（这道门原来永远不会失败）**：本门禁原来校验 `bottomFill == true`，
+> 而这个字段是生成分镜表的脚本**自己写死的常量**（`make-shots.py` 每一镜都写 `true`），
+> `resolve-shots.py` 再原样透传——**生成器写 true、门禁要求 true，结构上不可能报错**。
+> 实测成片里 17/21 镜的下 1/4 是空的，它一次都没响。
+> 现在声明位**只查字段在不在**（缺字段是真配置错误）；真实判据交给**渲染期的 `FillGate`**：
+> 它量的是画面（信息元素的最低边 vs y=876），不是声明。
+> 判分方式随门禁阶段而变：**声明能查的只有"写没写"，"做没做到"必须实测**。
+
+## 3. 怎么跑
 
 ```text
+# 先解析分镜表（生成 src/shots.ts 与 shots.resolved.json）
 python scripts/resolve-shots.py PROJECT_DIR
+
+# 构图与活性门禁
 python scripts/validate-composition.py PROJECT_DIR
+python scripts/validate-composition.py PROJECT_DIR --strict     # P1 也算失败（交付前建议）
+python scripts/validate-composition.py PROJECT_DIR --json       # 机器可读
+
+# 镜头出界证明 + 每章运镜配额
 python scripts/validate-shot-motion.py PROJECT_DIR
 ```
 
-Both checks use Python's standard library. Use `--json` for structured output and `--strict` to make composition P1 prompts fail a local test run. A P1 prompt is not automatically an aesthetic defect; review it against the rendered scene.
+退出码：`0` 通过（可含 P1）/ `1` 存在 P0（或 `--strict` 下存在 P1）/ `2` 用法或文件错误。
+两者都是**纯标准库、只读**，可直接放进 CI。
 
-## Browser/runtime checks
+## 4. 失败时怎么办
 
-The template separately runs `CaptionFitGate`, `CardFitGate`, `OverlapGate`, `ClippingGate`, and `CanvasBoundsGate` for layout, overlap, clipping and text-bound issues. The lower-quarter `FillGate` and `StageFrame`'s `SlotGuard` are not mounted as default quality requirements; `SlotGuard` remains available as an optional diagnostic. See each implementation and `SKILL.md` for the active gates. A motion-gap script is an optional post-render diagnostic, not a pass/fail quality rule.
+| 失败项 | 正确修法 |
+|---|---|
+| P0-1 相邻同骨架 | 换骨架，**不是**改 `shots.json` 里的字符串。构图真的不同才算换。 |
+| P0-2 纯卡片堆 | 找出这一段"机制是什么"，换成能演示它的构件（见 `media-routing.md` §2）。 |
+| P0-3 运镜不足 | 给章节首镜加 `establish`，给聚焦处加 `push-in`；不要为了凑数加无意义甩镜。 |
+| P0-4 下 1/4 空洞 | 补一个真实信息元素（指标条 / 结论条 / 清单），**不是**放大现有卡片凑面积。这一条的**判据现在在渲染期 `FillGate`**：改完要重渲那一镜的抽帧看 `[FillGate]` 出水，构建期只会告诉你"字段写没写"。 |
+| P0-5 介质单一 | 至少换一段内容用另一种介质（图表 / 控制台 / 大字 / 补丁）。 |
+| P0-6 出界 | 收窄运镜幅度或把 `anchor` 改成真正的解说对象外框；**不要**把 anchor 改小来绕过检查。 |
+| P1-9 长时间无变化 | 在最长间隔中点加一次状态变化（元素入场 / 数值变化 / 主体相位切换）。 |
 
-Passing every automated gate does not establish factual accuracy, caption comfort, semantic alignment, learning, or audience preference. Review the complete rendered film with audio and intended display sizes.
+> **不要把门禁改松来通过。** 如果某条判据在真实题材上系统性误报，说明判据要改，
+> 但那要经过"出片验证 + 用户确认"，而不是当场调阈值。
+
+### 4.6 修复顺序（实战经验）
+
+先修**组件级**（一次修好全部场景），再修**场景级坐标**。本版实测的四个组件级根因：
+
+1. `ZoomStage` 的缩放矩阵 math 写错（`translate` 用未缩放单位）+ 没有按内容尺寸设上限
+   → 四个场景被裁 100–500px。**修法**：三段式 `translate(框心) scale(k) translate(-焦点)`
+   ＋ 传 `contentW/contentH` 让缩放自动钳制。
+2. `Corridor` 的状态标签与站点标签之间没有垂直预算（只剩 3.6px）→ 四个走廊场景全部压字。
+   **修法**：状态标签放到承载物**上方** 46px，站点标签下移 96px。
+3. 固定像素宽度撞上随 `railW` 变化的动态列宽（`w=1060 > mainW=1035`），不透明控制台压住轨道文字。
+4. 承载物 124×110 完全盖住站点圆环与对勾 → 缩小承载物 / 把到站反馈画在环外侧。
+
+## 5. 与运行时门禁的分工
+
+| 门禁 | 时机 | 抓什么 |
+|---|---|---|
+| `validate-shot-motion.py` / `validate-composition.py` | **构建期**（不渲染） | 构图 / 骨架 / 介质 / 镜头配方与出界 |
+| `CardFitGate` | **渲染期**（浏览器内） | 文字溢出卡片（v2.8 实测抓到 4 处真实出格） |
+| `SlotGuard` | **渲染期**（出图路径，`StageFrame` 内） | `StageFrame` main 槽的**占用率**（槽内有内容的最内层元素并集高度 ÷ 槽高，<35% 出声）——抓的是"槽给足了、内容没填满"（实测一镜 428px 的槽只用了 11%）；槽宽仍按 `mainW = w − pad×2 − railW − 18` 自己先算 |
+| `OverlapGate` | **渲染期**（浏览器内，每 15 帧抽样） | **文字两两重叠 + 文字被遮挡**（本版实测抓出 3 类真实缺陷；有意覆盖用 `data-gate-allow` 白名单） |
+| `CanvasBoundsGate` | **渲染期**（浏览器内，每帧） | **含文字的叶元素**（HTML 叶 + SVG `text`/`tspan`）的**墨迹 rect 越出视口**（= composition 尺寸，输出像素口径）。这是此前**四道门禁都不管**的一类：`ClippingGate` 只认 SVG 图元、`CardFitGate` 只管卡片内溢出、`OverlapGate` 管互相压、`FillGate` 管铺到多低，而构建期 `coords-lint.py` 明确把 `Corridor`/`ZoomStage`/`StageFrame` 这类**布局件**排除在外 —— 第 ⑥ 页「按 Flash 结算」被画布右缘裁掉就是这么漏过去的。**v2 只判文字叶元素**（不判图形/版面件、不做设计坐标回折），判据与代价见 §5.2 |
+| `CaptionFitGate` | **渲染期**（浏览器内） | 字幕超宽（按当前画幅与主题真实字重/字距测量） |
+| `validate-caption-sync.py` / `validate-semantic-breaks.py` | 构建期 | 字幕与 TTS 词边界一致、保护短语不被切开 |
+| `validate-presentation.py` | 构建期 | **呈现效果**：beat↔cue 时间接近、字幕阅读预算（Netflix 中文规范）、字号地板 13px 与正文色对比度（WCAG 4.5:1）。现有门禁都没问过「讲与画对不对得上、读不读得过来」——见 [presentation-gate.md](presentation-gate.md) |
+| `validate-video.sh` | 交付前 | 时长、音视频编码、**色彩契约**（四项元数据，见 §6.1）、响度、黑帧 |
+
+**分工原则**：能用算术在构建期证明的，不要留到渲染期；只有需要真实字体/布局测量的，
+才放在浏览器内。
+
+### 5.2 渲染期门禁 `CanvasBoundsGate`（画布越界 · v2 简版）
+
+**来历（实测，不是假设）**：接触表第 ⑥ 页第三站的标签块越出画布右缘被裁 ——
+文案「按 Flash 结算」实际渲成「按 Flash 结」。根因是 `Corridor x={100} w={1720}`
+让标签块伸到设计 x=2010，而组件内标签块固定 `left: pts[i]-150, width: 300`。
+**这一件当时是用户用眼睛看出来的，四道渲染期门禁 + 构建期一条都没响**：
+`ClippingGate` 的选择器里没有 div（这是 div 画的布局件）、`CardFitGate` 只量卡片内、
+`OverlapGate` 只量互相压、`FillGate` 只量铺多低，`coords-lint.py` 又把布局件排除在外。
+
+**判据（v2 · 2026-09-22 换实现）**：
+**含文字的叶元素**（HTML 叶 + SVG `text` / `tspan`）的**墨迹矩形**，扣掉会裁切的祖先后，
+仍越出视口（= composition 尺寸）≥ **6 像素** → 出声；**落定态**（有效不透明度 ≥ 0.98）越界 ≥ **20 像素** →
+硬拦（`cancelRender`，rc≠0 且不产出任何图）。
+文件规模：**468 行 → 231 行**（其中判据代码 144 行 + 75 行"为什么"注释 —— 本仓库惯例；
+仓库外那份参考简版是 117 行（代码 108）+ 硬拦纪律的 `release()` 处置）。
+
+- 判据点落在**墨迹**上：文字用 `Range` 取并集（块级元素整块宽不是字，居中文字会被整块宽误判）。
+- **硬拦条件是「落定态 + ≥20 像素」两条同时成立**（与 `ClippingGate` 同口径）。
+  ⚠️ 与仓库外那份参考简版有一处**有意差异**：参考版的**代码**是"任何 >6px 越界即硬拦"（与它自己文件头的
+  注释不一致 —— 那里写的是"落定态且越界 ≥20 设计像素"）。本仓库取后者：入场途中元素还在画布外飞是运动、
+  不是版面错误，在交付渲染的最后一刻为它硬拦不划算。实测这次抓到的两处（26px / 27px）**都在门槛之上**，
+  两种口径的命中结果一致。
+- 「扣掉会裁切的祖先」= 取景框（`ZoomStage` 视口、接触表里 scale 过的格子）是**有意**裁切，
+  被它裁住的部分不算越界；铺满整个视口的祖先不算裁切（与它求交是恒等操作，却会把"越出画布"一起抹掉）。
+- 阈值单位是**输出像素**（`2560×1440` 输出上 20px ≈ 15 设计像素）：**不做设计坐标回折**。
+
+**它不查什么 / v2 砍掉的四件（每件都写了代价，别高估这道门禁）**：
+
+| 不做 | v1 怎么做 | 为什么砍 | 代价（如实写） |
+|---|---|---|---|
+| 设计坐标回折 | `[data-design-root]` 实测比例 k + `ShotCamera` 等比特换求逆 + 世界层判定（3 个近似函数） | 两种口径在接触表上抓到的是**同一批**真缺陷；在 2560×1440 的片子上它一次真缺陷都没报出过 | 片子上的阈值是**输出像素**；换 `--scale` 时判据跟着输出走，不跟设计坐标 |
+| 图形 / 版面件分支 | SVG 图元 +「有可见边框或实底且含文字」的块 | 这半边与 `ClippingGate`（图元被 `<svg>` 视口或 `overflow` 祖先裁）**在同一批元素上重复报** —— 只判文字叶元素天然避开这个重复 | 越出画布但**一个字都没有**的装饰块（`Tape` 那类斜纹胶带）不判；`ClippingGate` 也不管它（那是"没有裁切祖先"的情形）—— **已知空白** |
+| 一整套排除规则 | `z ≥ 140` 锁定 chrome 层 / 铺底底托 ≥92% 画布 / 小型取景框内的放大内容 | 三条的存在意义全是"别让**图形/版面块**误报"，而 v2 根本不判图形与版面块 | 无：那三类本来就不是文字叶元素（chrome 层里的**文字**会被判，实测接触表上零报告） |
+| 按帧抽样 + 事件帧 `watch` | 每 15 帧 + 关键帧强制抽样 | 少一层采样逻辑；一次 DOM 扫描 + Range 量字在帧预算内 | 每帧都量：**整片渲染没有实测过**（本次只跑了 still，每帧测量对整片耗时的实际影响未被证明；片子上若发现渲染变慢，这里是第一嫌疑） |
+
+- **相机不计入**：v2 没有相机逆变换，所以被运镜放大推到画布外的文字**会**出声（那是运镜，不是版面错误）。
+  这就是**片子那条挂 `warn` 而不是 `block`** 的原因（见 §6）。实测抽帧：模板片子帧 300 / 900 零报告，
+  但这条误报面**存在**，在这里写清楚 —— 它也是"片子不上 block"这个决定的依据之一。
+
+**何时会响**：
+
+- **硬拦（`cancelRender`，rc≠0 且不产出图）**：仅在 `mode="block"`（接触表）下，
+  元素**已落定**（有效不透明度 ≥ 0.98）且在输出像素里越出 ≥ **20 像素**。
+  落定前（入场途中元素还在画布外飞）只出声不拦 —— 那是运动，不是版面错误。
+- **只出声**：`mode="warn"` 档（片子）；未落定的越界。
+- **覆盖率日志**：每 150 帧一次 `[CanvasBoundsGate] @帧 扫过 N 个文字叶，无越界`
+  （探针里开 `debug` 则每帧都打）—— 让「没报」与「没跑」可区分。扫过 **0** 个要当异常查。
+
+**怎么修**（按出现顺序处理，别调阈值）：
+
+1. 看日志里的文字与越界量（形如 `按 Flash 结算 越出右缘 26px`）—— 直接能定位到组件。
+2. **容器给窄一点 / 内容收回来**：本例是 `Corridor` 的 `x/w` 给太满，
+   让端点标签块（`pts[i] ± 150`）伸出了画布 —— 改成 `x={130} w={1580}`（两端对称留 190px）。
+   `skeletons.tsx` 里的注释记着这条口径。
+3. 内容确实要出画布（有意出血/取景）：在组件上标 `data-gate-allow="<理由>"`，
+   **不要**把阈值调大 —— 那会让"半个字被裁"这类缺陷重新变得看不见。
+4. 接触表这类**目录 composition**：格子摆不下就换页或改成两行，别让第 N 件落在画布外（见下）。
+
+**真实命中之一（已修，可当"这条门禁到底抓什么"的实例）**：接触表第 ③ 页声明 **5 件**、
+而 `Grid4` 只有 **4 格**，第 5 件（`FitTextBox · 中文反推字号（封装层）`）被摆到 `top=1076`，
+整格落在 1080 高的画布外 **466px** —— 渲出来的第 ③ 页只有 4 格，那件组件在接触表上**根本看不见**。
+
+修法：给"一页 5 件"一张自己的格子表（`showcase.tsx` 的 `Grid5`：3 列 × 2 行，格子 610×470，
+舞台等比 0.7），**不是**往 4 格里塞第 5 件 —— 画布高 1080 放不下第三行，宽 1920 也放不下 3 个 900 宽的格子
+（3×610 + 2×25 间隙 + 2×20 边距 = 1920，刚好铺满且左右对称；纵向沿用 76 / 576 两行，页间节奏不变）。
+那一轮（v1 门禁）的验收记录留在 CHANGELOG：17 页在 block 下逐页抽帧，**每页 rc=0 且有图、零报告**；
+与修前对比**只有第 ③ 页的像素变了，其余 16 页逐字节相同**。
+
+**v2 的实测（2026-09-22，夹具工程 `.tmp-simplify-verify`，复用现成 `node_modules`，用完可删）**：
+
+| 场景 | 怎么造 | 期望 | 实测 |
+|---|---|---|---|
+| 原样接触表 6 页（帧 35 / 65 / 95 / 155 / 275 / 395） | 直接用**修好后**的 `showcase.tsx` | rc=0、有图、零报告 | rc=0、有图；4 页开着 `debug` 各打出一条覆盖率：**扫过 27 / 25 / 20 / 74 个文字叶，无越界** |
+| 第 ⑥ 页缺陷（帧 155，`mode="block"`） | 把 `Corridor` 改回历史值 `x={100} w={1720}` | rc≠0、不出图、点名同一处 | **rc=1、无图**、`共 2 处文字越出画布（落定态 2 处）：按 Flash 结算 越出右缘 26px \| 账单只按 Flash 价 越出右缘 26px` |
+| 第 ③ 页缺陷（帧 65，`mode="block"`） | 第 ③ 页改回 `Grid4`（第 5 件落回画布外） | rc≠0、不出图 | **rc=1、无图**、`共 1 处文字越出画布（落定态 1 处）：FitTextBox · 越出下缘 27px` |
+| 片子（帧 300 / 900，`mode="warn"`） | 原样模板片子 | rc=0、有图 | rc=0、有图；帧 300 的覆盖率：`扫过 15 个文字叶，无越界`（该帧两道门禁同挂，见下） |
+
+**与 `ClippingGate` 的重复报（v1 遗留问题，v2 的实测对照）**：v1 在"图形越出 `<svg>` 视口"那半边与
+`ClippingGate` 会对**同一批元素**各报一次。v2 只判文字叶元素，所以同一处**只会有一次报告**。
+实测（把 `ClippingGate(mode="warn", sampleEvery=1)` 与 `CanvasBoundsGate` 挂在**同一条 composition** 上）：
+第 ⑥ 页缺陷那一帧（帧 150）`CanvasBoundsGate` 报 2 处（26px × 2），`ClippingGate` 同帧打的是
+`图形要素扫过 16 个，无被裁` —— **它跑了、但没有对同一处出声**。反过来也成立：帧 395 上
+`ClippingGate` 报了 `path 超出 svg[svg 视口] 20833px`（那是**图形**被容器裁，不是文字出画布），
+`CanvasBoundsGate` 同帧报的是"扫过 74 个文字叶，无越界" —— 两道门禁各管各的，交集不在同一处。
+残留的理论重叠面（写清楚，不假装为零）：SVG `text` / `tspan` 若**既越出 `<svg>` 视口、可见部分又越出画布**，
+两道门会各报一次 —— 但那时报的是**两件事**（"被容器裁了一半" vs "文字还出了画布"），不是重复。
+
+**负向夹具（渲染期门禁没法在构建期跑）**：`scripts/negative-gate-check.py` 的 **AB0–AB4**（静态检查：
+接线、档位、硬拦纪律、判据收窄各一条）；真渲染的夹具工程建在演示目录之外（本次是 `.tmp-simplify-verify`，
+与技能仓库同级、复用现成 `node_modules`、可随时删掉重建）。**别把渲染夹具塞进交付工程里**：
+它的存在意义就是"喂坏输入必须拦住"，留在工程里只会污染成片。
+
+## 6. 交付门槛
+
+- `validate-composition.py` **P0 = 0**；
+- `validate-shot-motion.py` **P0 = 0**；
+- P1 项逐条人工确认（每条都要有结论，不能"没看"）；
+- `CardFitGate` / `CaptionFitGate` 在整片渲染中没有触发 `cancelRender`；
+- **`CanvasBoundsGate` 在片子（`NotebookVideoFilm`）上是 `warn`**（2026-09-22 改，与接触表**不同档**）：
+  渲染日志里要确认**有没有** `[CanvasBoundsGate]` 的出水 —— 有出水就逐条人工确认（那是"文字可能被画布切掉"
+  的嫌疑，不是自动放行）；它**不再**在片子上硬拦。理由：v2 判据的实测来源全是接触表，
+  而硬拦发生在**交付渲染的最后一刻**，判据一旦误报，代价是整片不出（见 §5.2 的"砍掉的四件"）。
+  等它在片子上抓到第一处真缺陷，再谈升回 block —— 这条口径由 `negative-gate-check.py` 的 **AB3** 夹具守着。
+- 接触表（`NotebookVideoShowcase`）的 `CanvasBoundsGate` 保持 **block**：
+  第 ③ 页那处真实越界（第 5 件落在画布外 466px）已修在 `showcase.tsx` 的 `Grid5`（见 §5.2）。
+  件整件看不见 = 目录页缺件，属于画错了，不能退回 warn；
+- **色彩契约（新增）**：`validate-video` 断言交付 mp4 的
+  `color_range / color_space / color_transfer / color_primaries` 精确等于 `tv / bt709 / bt709 / bt709`，
+  任一项不符即 fail（打印实际值与修复提示）。见 §6.1；
+- 若某条判据被人工判定为误报，**记录在案并说明理由**，不要静默放宽。
+
+### 6.1 色彩契约断言（`validate-video`）
+
+**补的是什么缺口**：色彩这一层，生产端有两道（`--color-space=bt709` + 渲染后 `h264_metadata` 回写 SPS VUI，
+见 `windows-compatibility.md`），**交付端一道都没有** —— 谁把参数删了不会被发现：片子照样渲得出来、
+看上去也正常，但四项元数据退化成 `pc / bt470bg / unknown / unknown`，严格播放器按 BT.601 + 满幅解释，
+饱和色偏移。
+
+**判据**：四项精确等于 `tv / bt709 / bt709 / bt709`。缺字段的流 ffprobe 不返回该项，一律按 `unknown` 报出来。
+
+**为什么只认这一个组合，"等价组合"论证如下**（不要把它放宽成"看起来自洽就行"）：
+
+1. 交付画布都是 SDR 网络播放：`pc`（满幅）会被当有限幅解释而压暗/偏色，`bt470bg`（BT.601）与 `bt709`
+   矩阵不同，同样偏色 —— 这两项就是本仓库上一轮修掉的缺陷本身，放行等于把缺陷放回来；
+2. "自洽"无法只从这四项推出来：`pc + bt709×3` 在字段上也自洽，但**不是本链路产的片**
+   （渲染端已按 `range=limited` 转换过像素，见 `windows-compatibility.md` 第 1 条），
+   放行它等于把"标错范围"当合格；
+3. 门禁的职责是抓**漂移**，判据就该精确等于契约，而不是"看起来合理"。
+
+**只挂交付门**：Remotion 自己 stitch 出来的 raw mp4（未经 `h264_metadata` 回写）本来就不满足这四项，
+所以这条断言只在 `validate-video` 上，不去卡渲染路径。
+
+**正反对照（实跑）**：
+
+- 反例 —— 老片 `overview-film/renders/film.mp4`（四项里两项 unknown）→ **rc=1**：
+  `color_range = pc（合同要求 tv）` · `color_space = bt470bg` · `color_transfer = unknown` ·
+  `color_primaries = unknown`，附 `pix_fmt=yuvj420p`；
+- 正例 —— **新渲的短片段**（`render-range` 第 300–599 帧，2560×1440）→ **rc=0**：
+  `container valid: H.264/AAC 2560x1440 30fps, 10.048s` /
+  `color valid: color_range=tv color_space=bt709 color_transfer=bt709 color_primaries=bt709 (pix_fmt=yuv420p)` /
+  `audio valid: -17.1 LUFS, -3.8 dBTP` / `No black frames detected.`

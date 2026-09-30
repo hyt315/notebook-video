@@ -74,9 +74,7 @@ export const ConsoleWindow: React.FC<{
   cursor?: boolean;
   /** 'log'：逐行写入（默认）；'typing'：逐字打出来 */
   variant?: 'log' | 'typing';
-  fontSize?: number;
-  headerFontSize?: number;
-}> = ({x, y, w, h, f, title = 'console', rows, start = 0, rowGap = 44, status, side, sideW = 260, z = 74, exitStart, cursor = true, variant = 'log', fontSize = 22, headerFontSize = 13}) => {
+}> = ({x, y, w, h, f, title = 'console', rows, start = 0, rowGap = 44, status, side, sideW = 260, z = 74, exitStart, cursor = true, variant = 'log'}) => {
   const C = THEME.palette;
   const opIn = easeOut(f, 0, 14);
   const mvIn = easeOut(f, 0, 18);
@@ -107,9 +105,9 @@ export const ConsoleWindow: React.FC<{
               const p = easeOut(f, 2 + i * 3, 12 + i * 3);
               return <span key={i} style={{width: 10, height: 10, borderRadius: 99, background: c, border: '1px solid #000', opacity: p, transform: `scale(${0.6 + 0.4 * p})`}} />;
             })}
-            <span style={{marginLeft: 8, fontFamily: 'Space,monospace', fontWeight: 600, fontSize: headerFontSize, letterSpacing: 1, color: '#fdfdfb', opacity: 0.85}}>{title}</span>
+            <span style={{marginLeft: 8, fontFamily: 'Space,monospace', fontWeight: 600, fontSize: 13, letterSpacing: 1, color: '#fdfdfb', opacity: 0.85}}>{title}</span>
             {status && (
-              <span style={{marginLeft: 'auto', marginRight: 12, fontFamily: 'Space,monospace', fontSize: headerFontSize, fontWeight: 700, background: `${statusTone}22`, color: statusTone, border: `1px solid ${statusTone}66`, borderRadius: 999, padding: '2px 10px', whiteSpace: 'nowrap', transform: `scale(${1 + 0.06 * pulse(f, lastAt, 10)})`}}>{status.text}</span>
+              <span style={{marginLeft: 'auto', marginRight: 12, fontFamily: 'Space,monospace', fontSize: 13, fontWeight: 700, background: `${statusTone}22`, color: statusTone, border: `1px solid ${statusTone}66`, borderRadius: 999, padding: '2px 10px', whiteSpace: 'nowrap', transform: `scale(${1 + 0.06 * pulse(f, lastAt, 10)})`}}>{status.text}</span>
             )}
           </div>
           <div style={{height: bodyH ?? 'auto', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: Math.max(6, rowGap - 22), position: 'relative'}}>
@@ -123,7 +121,7 @@ export const ConsoleWindow: React.FC<{
               const flash = (r.tone === 'ok' || r.tone === 'warn') ? (1 - easeOut(f, at, at + 14)) : 0;
               const sweep = isLast ? pulse(f, at + 16, 20) : 0;
               return (
-                <div key={i} style={{position: 'relative', display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'Space,Kai,monospace', fontWeight: 600, fontSize, color: tone(r.tone), borderRadius: 6, padding: '2px 6px', overflow: 'hidden', background: flash > 0.02 ? `${tone(r.tone)}22` : 'transparent'}}>
+                <div key={i} style={{position: 'relative', display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'Space,Kai,monospace', fontWeight: 600, fontSize: 22, color: tone(r.tone), borderRadius: 6, padding: '2px 6px', overflow: 'hidden', background: flash > 0.02 ? `${tone(r.tone)}22` : 'transparent'}}>
                   {r.tone === 'cmd' && <span style={{color: C.greenInk, opacity: glyphP, transform: `scale(${0.7 + 0.3 * glyphP})`}}>❯</span>}
                   {r.tone === 'ok' && <span style={{color: C.greenInk, opacity: glyphP, transform: `scale(${0.7 + 0.3 * glyphP})`}}>✓</span>}
                   <span style={{whiteSpace: 'nowrap', clipPath: `inset(0 ${(1 - wideP) * 100}% 0 0)`, transform: `translateX(${(1 - textP) * 14}px)`}}>{r.text}</span>
@@ -166,17 +164,13 @@ export const MetricGrid: React.FC<{
   z?: number;
   exitStart?: number;
   title?: string;
-  titleFontSize?: number;
-  labelFontSize?: number;
-  beforeFontSize?: number;
-  afterFontSize?: number;
-}> = ({x, y, w, f, items, cols = 4, start = 0, stagger = 12, cellH = 168, gap = 16, z = 74, exitStart, title, titleFontSize = 24, labelFontSize = 22, beforeFontSize = 30, afterFontSize = 38}) => {
+}> = ({x, y, w, f, items, cols = 4, start = 0, stagger = 12, cellH = 168, gap = 16, z = 74, exitStart, title}) => {
   const C = THEME.palette;
   const out = exitStart === undefined ? 0 : easeIO(f, exitStart, exitStart + 15);
   const cellW = (w - gap * (cols - 1)) / cols;
   return (
     <div style={{position: 'absolute', left: x, top: y, width: w, zIndex: z, opacity: 1 - out}}>
-      {title && <div style={{fontSize: titleFontSize, fontWeight: 700, color: C.muted, marginBottom: 12}}>{title}</div>}
+      {title && <div style={{fontSize: 24, fontWeight: 700, color: C.muted, marginBottom: 12}}>{title}</div>}
       <div style={{display: 'flex', gap, flexWrap: 'wrap'}}>
         {items.map((m, i) => {
           const at = start + i * stagger;
@@ -195,16 +189,16 @@ export const MetricGrid: React.FC<{
           return (
             <div key={m.label} style={{width: cellW, height: cellH, position: 'relative', background: C.paper, border: `2.5px solid ${accent}`, borderRadius: 12, boxShadow: `3px 3px 0 ${C.ink}`, padding: '16px 18px', opacity: cellOp, transform: `translateY(${24 * (1 - cellMv)}px) scale(${0.96 + 0.04 * cellMv})`}}>
               <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                <span style={{fontSize: labelFontSize, fontWeight: 700, color: C.ink}}>{m.label}</span>
+                <span style={{fontSize: 22, fontWeight: 700, color: C.ink}}>{m.label}</span>
                 {m.win && badgeP > 0.02 && (
                   <span style={{width: 24, height: 24, borderRadius: 99, background: C.green, color: '#fff', display: 'grid', placeItems: 'center', fontSize: 15, fontWeight: 700, opacity: badgeP, transform: `scale(${0.001 + 1.12 * Math.max(0, Math.sin(Math.PI * Math.min(1, badgeP)))})`}}>✓</span>
                 )}
               </div>
               <div style={{marginTop: 12, position: 'relative', height: 56, overflow: 'hidden', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1'}}>
                 {outP < 0.99 && (
-                  <div data-gate-allow="value-swap" style={{position: 'absolute', left: 0, top: 0, fontFamily: 'Space', fontWeight: 700, fontSize: beforeFontSize, color: C.muted, textDecoration: 'line-through', opacity: 1 - outP, transform: `translateY(${-56 * outP}px)`}}>{m.before}</div>
+                  <div data-gate-allow="value-swap" style={{position: 'absolute', left: 0, top: 0, fontFamily: 'Space', fontWeight: 700, fontSize: 30, color: C.muted, textDecoration: 'line-through', opacity: 1 - outP, transform: `translateY(${-56 * outP}px)`}}>{m.before}</div>
                 )}
-                <div data-gate-allow="value-swap" style={{position: 'absolute', left: 0, top: 0, fontFamily: 'Space', fontWeight: 700, fontSize: afterFontSize, color: accent, opacity: num1 ? swapOp : 1, transform: `translateY(${(1 - swapP) * 56}px)`}}>{shown}</div>
+                <div data-gate-allow="value-swap" style={{position: 'absolute', left: 0, top: 0, fontFamily: 'Space', fontWeight: 700, fontSize: 38, color: accent, opacity: num1 ? swapOp : 1, transform: `translateY(${(1 - swapP) * 56}px)`}}>{shown}</div>
               </div>
               <div style={{position: 'absolute', left: 18, right: 18, bottom: 16, height: 8, background: C.gaugeTrack, borderRadius: 99, overflow: 'hidden'}}>
                 <div style={{height: '100%', width: '100%', background: accent, borderRadius: 99, transformOrigin: 'left center', transform: `scaleX(${(m.win ? 0.92 : 0.4) * barP})`}} />
@@ -221,7 +215,7 @@ export const MetricGrid: React.FC<{
 // StampBanner：结论吸底条。三段式落定（冲击 6 帧 → 过冲到 1.03 → 回落 1）+ 底色一闪，
 // 于是存在一个能指出来的"砸中那一帧"；原来的 spring 是渐近的，永远不会真正落定。
 // ---------------------------------------------------------------------------
-export const StampBanner: React.FC<{x: number; y: number; w: number; f: number; at: number; text: string; color?: string; z?: number; fontSize?: number}> = ({x, y, w, f, at, text, color, z, fontSize = 28}) => {
+export const StampBanner: React.FC<{x: number; y: number; w: number; f: number; at: number; text: string; color?: string; z?: number}> = ({x, y, w, f, at, text, color, z}) => {
   const C = THEME.palette;
   const c = color ?? C.orange;
   if (f < at) return null;
@@ -232,7 +226,7 @@ export const StampBanner: React.FC<{x: number; y: number; w: number; f: number; 
   const scale = 0.94 + 0.06 * impact + 0.03 * over;
   return (
     <div style={{position: 'absolute', left: x, top: y, width: w, zIndex: z ?? 92, opacity: impact, transform: `translateY(${(1 - impact) * 18}px) scale(${scale})`, transformOrigin: 'center'}}>
-      <div style={{position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, height: 62, background: `${c}${Math.round((0.08 + 0.16 * flash) * 255).toString(16).padStart(2, '0')}`, border: `2px solid ${c}`, borderRadius: 14, fontSize, fontWeight: 700, color: c}}>
+      <div style={{position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, height: 62, background: `${c}${Math.round((0.08 + 0.16 * flash) * 255).toString(16).padStart(2, '0')}`, border: `2px solid ${c}`, borderRadius: 14, fontSize: 28, fontWeight: 700, color: c}}>
         {shock > 0.02 && <span style={{position: 'absolute', inset: -2, borderRadius: 14, opacity: 0.5 * (1 - shock), boxShadow: `0 0 0 ${shock * 12}px ${c}33`, pointerEvents: 'none'}} />}
         <span style={{display: 'inline-block', transform: 'rotate(-8deg)'}}>◆</span>
         {text}

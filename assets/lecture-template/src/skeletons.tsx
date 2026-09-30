@@ -1,7 +1,6 @@
 import React from 'react';
 import {Easing, interpolate} from 'remotion';
 import {THEME} from './theme/active';
-import {useCanvas} from './theme/canvas';
 
 // ============================================================================
 // skeletons · 四种场景骨架 v2
@@ -68,50 +67,33 @@ export const Corridor: React.FC<{
   stations: Station[];
   from?: number;
   to?: number;
-  h?: number;
-  orientation?: 'horizontal' | 'vertical';
   laneY?: number;
   z?: number;
   startBanner?: {at: number; text: string};
   /** 站点标签字号（默认 28）。标签是长 ASCII（如包名）时传 22，避免换行破坏对称。 */
   labelSize?: number;
-  detailSize?: number;
-  /** 竖排长站点名称可使用更宽的说明区；默认仍为 300 设计像素。 */
-  labelWidth?: number;
-  /** 流程状态标记字号；不传时保留原画幅默认值。 */
-  stateSize?: number;
 // `from`/`to` 也是入参但从未使用（tsc TS6133）：本件的行进完全由 stations[].at 驱动，
 // 这两个旋钮没有接线。类型保留、实现不声明。
-}> = ({x, y, w, h = 460, f, stations, laneY = 96, z = 72, startBanner, orientation, labelSize = 28, detailSize = 21, labelWidth = 300, stateSize}) => {
+}> = ({x, y, w, f, stations, laneY = 96, z = 72, startBanner, labelSize = 28}) => {
   const C = THEME.palette;
-  const {canvas, mode} = useCanvas();
-  const flow = orientation ?? (canvas === '3:4' ? 'vertical' : 'horizontal');
-  const isVertical = flow === 'vertical';
-  const resolvedStateSize = stateSize ?? (canvas === '16:9' ? 20 : 24);
   const n = stations.length;
-  const pts = stations.map((_, i) => isVertical
-    ? y + 116 + ((h - 212) / Math.max(1, n - 1)) * i
-    : x + (w / Math.max(1, n - 1)) * i);
-  const laneX = x + w / 2;
-  const laneScreenY = y + 40 + laneY;
+  const pts = stations.map((_, i) => x + (w / Math.max(1, n - 1)) * i);
+  const laneScreenY = 40 + laneY;
   const carrierSize = 104; // 略小于站点圆环直径，避免完全盖住「到达」反馈
+  const carrierTop = laneScreenY - carrierSize / 2;
 
   // 逐段行进：leg i 从 pts[i-1] 到 pts[i]，在 stations[i].at 处到站，然后停留 DWELL。
   // 用「当前帧落在哪一段」推导位置，纯函数、可乱序渲染。
   const legAt = (i: number) => stations[i].at;
-  let carrierCoord = pts[0];
+  let cx = pts[0];
   for (let i = 1; i < n; i++) {
     const arrive = legAt(i);
     const start = legAt(i - 1) + DWELL;
     const u = easeIO(f, start, arrive);
-    carrierCoord = pts[i - 1] + (pts[i] - pts[i - 1]) * u;
+    cx = pts[i - 1] + (pts[i] - pts[i - 1]) * u;
     if (f < arrive) break;
-    carrierCoord = pts[i];
+    cx = pts[i];
   }
-  const cx = isVertical ? laneX : carrierCoord;
-  const cy = isVertical ? carrierCoord : laneScreenY;
-  const carrierLeft = cx - carrierSize / 2;
-  const carrierTop = cy - carrierSize / 2;
   const arrived = stations.reduce((k, s) => (f >= s.at ? k + 1 : k), 0);
   const current = [...stations].reverse().find((s) => f >= s.at);
   const accent = current?.color ?? C.blue;
@@ -122,21 +104,14 @@ export const Corridor: React.FC<{
   const trailing = arrived >= n && f - stations[n - 1].at < 20;
 
   return (
-    <div style={{position: 'absolute', left: 0, top: 0, width: mode.designW, height: mode.designH, zIndex: z}}>
+    <div style={{position: 'absolute', left: 0, top: y, width: 1920, height: 460, zIndex: z}}>
       {startBanner && (
-        <div style={{position: 'absolute', left: x, top: y, opacity: easeOut(f, startBanner.at, startBanner.at + 14), fontSize: 26, fontWeight: 700, color: C.muted}}>{startBanner.text}</div>
+        <div style={{position: 'absolute', left: x, top: 0, opacity: easeOut(f, startBanner.at, startBanner.at + 14), fontSize: 26, fontWeight: 700, color: C.muted}}>{startBanner.text}</div>
       )}
-      <svg width={mode.designW} height={mode.designH} viewBox={`0 0 ${mode.designW} ${mode.designH}`} style={{position: 'absolute', left: 0, top: 0}}>
-        {isVertical ? <>
-          <line x1={laneX} y1={pts[0]} x2={laneX} y2={pts[n - 1]} stroke={C.line} strokeWidth={10} strokeLinecap="round" />
-          <line x1={laneX} y1={pts[0]} x2={laneX} y2={cy} stroke={C.blue} strokeWidth={10} strokeLinecap="round" />
-        </> : <>
-          <line x1={pts[0]} y1={laneScreenY} x2={pts[n - 1]} y2={laneScreenY} stroke={C.line} strokeWidth={10} strokeLinecap="round" />
-          <line x1={pts[0]} y1={laneScreenY} x2={cx} y2={laneScreenY} stroke={C.blue} strokeWidth={10} strokeLinecap="round" />
-        </>}
+      <svg width={1920} height={460} viewBox="0 0 1920 460" style={{position: 'absolute', left: 0, top: 40}}>
+        <line x1={pts[0]} y1={laneY} x2={pts[n - 1]} y2={laneY} stroke={C.line} strokeWidth={10} strokeLinecap="round" />
+        <line x1={pts[0]} y1={laneY} x2={cx} y2={laneY} stroke={C.blue} strokeWidth={10} strokeLinecap="round" />
         {pts.map((px, i) => {
-          const py = isVertical ? px : laneScreenY;
-          const stationX = isVertical ? laneX : px;
           const s = stations[i];
           const at = s.at;
           const on = f >= at;
@@ -145,11 +120,11 @@ export const Corridor: React.FC<{
           const checkP = easeOut(f, at, at + 12);      // 对勾描线
           return (
             <g key={s.label}>
-              <circle cx={stationX} cy={py} r={52} fill={C.paperBase} stroke={on ? color : C.line} strokeWidth={3.5} />
-              {ring > 0 && <circle cx={stationX} cy={py} r={52 + 26 * ring} fill="none" stroke={color} strokeWidth={3} opacity={0.28 * (1 - ring)} />}
+              <circle cx={px} cy={laneY} r={52} fill={C.paperBase} stroke={on ? color : C.line} strokeWidth={3.5} />
+              {ring > 0 && <circle cx={px} cy={laneY} r={52 + 26 * ring} fill="none" stroke={color} strokeWidth={3} opacity={0.28 * (1 - ring)} />}
               {on && (
                 <path
-                  d={`M${stationX - 14} ${py} l10 11 22-26`}
+                  d={`M${px - 14} ${laneY} l10 11 22-26`}
                   stroke={C.green} strokeWidth={7} fill="none" strokeLinecap="round" strokeLinejoin="round"
                   pathLength={1} strokeDasharray={1} strokeDashoffset={1 - checkP}
                 />
@@ -166,21 +141,21 @@ export const Corridor: React.FC<{
         const labP = easeOut(f, s.at + 3, s.at + 16);
         const detP = easeOut(f, s.at + 8, s.at + 22);
         return (
-          <div key={s.label} style={{position: 'absolute', left: isVertical ? laneX + 70 : pts[i] - 150, top: isVertical ? pts[i] - 36 : laneScreenY + STATION_DY, width: isVertical ? Math.min(labelWidth, mode.designW - laneX - 110) : 300, textAlign: isVertical ? 'left' : 'center'}}>
-            <div style={{fontFamily: 'Space', fontSize: canvas === '16:9' ? 17 : 20, color: C.blueInk, marginBottom: 4, opacity: numP, letterSpacing: 6 * (1 - numP)}}>0{i + 1}</div>
+          <div key={s.label} style={{position: 'absolute', left: pts[i] - 150, top: 40 + laneY + STATION_DY, width: 300, textAlign: 'center'}}>
+            <div style={{fontFamily: 'Space', fontSize: 17, color: C.blueInk, marginBottom: 4, opacity: numP, letterSpacing: 6 * (1 - numP)}}>0{i + 1}</div>
             <div style={{fontSize: labelSize, fontWeight: 700, color: on ? color : C.muted, opacity: on ? labP : 0.4, transform: `translateY(${(1 - labP) * 14}px)`, whiteSpace: labelSize <= 24 ? 'nowrap' : undefined}}>{s.label}</div>
-            {s.detail && <div style={{fontSize: detailSize, fontWeight: 600, color: C.muted, marginTop: 6, opacity: detP, transform: `translateY(${(1 - detP) * 10}px)`}}>{s.detail}</div>}
+            {s.detail && <div style={{fontSize: 21, fontWeight: 600, color: C.muted, marginTop: 6, opacity: detP, transform: `translateY(${(1 - detP) * 10}px)`}}>{s.detail}</div>}
           </div>
         );
       })}
       {/* 衰减残影：只在最后一段刚到时出现 */}
       {trailing && [1, 2, 3, 4].map((k) => (
-        <div key={k} style={{position: 'absolute', left: carrierLeft - (isVertical ? 0 : k * 14), top: carrierTop - (isVertical ? k * 14 : 0), width: carrierSize, height: carrierSize, opacity: 0.18 / k, transform: 'scale(1)', pointerEvents: 'none'}}>
+        <div key={k} style={{position: 'absolute', left: cx - carrierSize / 2 - k * 14, top: carrierTop, width: carrierSize, height: carrierSize, opacity: 0.18 / k, transform: 'scale(1)', pointerEvents: 'none'}}>
           <svg width={carrierSize} height={carrierSize} viewBox="0 0 120 112"><rect x={10} y={9} width={100} height={91} rx={22} fill={C.green} /></svg>
         </div>
       ))}
       {/* 持久对象：状态随站点改变，全程不卸载 */}
-      <div style={{position: 'absolute', left: carrierLeft, top: carrierTop, width: carrierSize, height: carrierSize, transform: `scale(${breathing})`, transformOrigin: 'center'}}>
+      <div style={{position: 'absolute', left: cx - carrierSize / 2, top: carrierTop, width: carrierSize, height: carrierSize, transform: `scale(${breathing})`, transformOrigin: 'center'}}>
         <svg width={carrierSize} height={carrierSize} viewBox="0 0 120 112">
           <rect x={10} y={9} width={100} height={91} rx={22} fill={arrived >= n ? C.green : accent} />
           <path d="M34 36H86M34 51H73M34 66H63" stroke="#fff" strokeWidth={5} strokeLinecap="round" />
@@ -188,7 +163,7 @@ export const Corridor: React.FC<{
         </svg>
       </div>
       {/* 状态标签：在承载物**上方**（下方会与站点标签重叠）。
-          切换时：当前标签跟随承载物；上一个标签锚在**它自己的站点**（横向取x、纵向取y）淡出——
+          切换时：当前标签跟随承载物；上一个标签锚在**它自己的站点 x** 上淡出——
           若让它跟着承载物走，两个标签会叠在一起（实测门禁报到 3500px²）。 */}
       {stations.map((s, i) => {
         if (!s.state) return null;
@@ -198,11 +173,10 @@ export const Corridor: React.FC<{
         const nextAt = stations[i + 1]?.at ?? s.at;
         const p = isCurrent ? easeOut(f, s.at, s.at + 12) : 1 - easeIn(f, nextAt, nextAt + 6);
         if (p <= 0.01) return null;
-        const labelX = isCurrent ? cx : (isVertical ? laneX : pts[i]);
-        const labelY = isVertical && !isCurrent ? pts[i] - carrierSize / 2 : carrierTop;
+        const labelX = isCurrent ? cx : pts[i];
         return (
-          <div key={`st-${s.label}`} style={{position: 'absolute', left: isVertical ? laneX - 310 : labelX - 122, top: labelY - LABEL_ABOVE, width: 244, textAlign: 'center', opacity: p, transform: `translateY(${(isCurrent ? 1 - p : -(1 - p)) * 12}px)`}}>
-            <span style={{fontSize: resolvedStateSize, fontWeight: 700, color: isCurrent ? accent : C.muted, whiteSpace: 'nowrap'}}>{s.state}</span>
+          <div key={`st-${s.label}`} style={{position: 'absolute', left: labelX - 122, top: carrierTop - LABEL_ABOVE, width: 244, textAlign: 'center', opacity: p, transform: `translateY(${(isCurrent ? 1 - p : -(1 - p)) * 12}px)`}}>
+            <span style={{fontSize: 20, fontWeight: 700, color: isCurrent ? accent : C.muted, whiteSpace: 'nowrap'}}>{s.state}</span>
           </div>
         );
       })}
@@ -226,10 +200,7 @@ export const SplitStage: React.FC<{
   winner?: 'left' | 'right' | null;
   winnerAt?: number;
   z?: number;
-  titleSize?: number;
-  subSize?: number;
-  rowSize?: number;
-}> = ({x, y, w, h, f, left, right, winner = null, winnerAt = 0, z = 72, titleSize = 27, subSize = 21, rowSize = 23}) => {
+}> = ({x, y, w, h, f, left, right, winner = null, winnerAt = 0, z = 72}) => {
   const C = THEME.palette;
   const colW = (w - 40) / 2;
   const panel = (side: 'left' | 'right', data: {title: string; sub?: string; rows: string[]; color?: string}, cx: number) => {
@@ -248,7 +219,7 @@ export const SplitStage: React.FC<{
       <div
         style={{
           position: 'absolute', left: cx, top: 0, width: colW, height: h,
-          opacity: p * (1 - loseP * 0.18),
+          opacity: p * (1 - loseP * 0.55),
           transform: `translateX(${dir * 60 * (1 - p)}px) translateY(${loseP * 6}px) scale(${(1 - loseP * 0.015) * (1 + zoomP * 0.03)})`,
         }}
       >
@@ -256,12 +227,12 @@ export const SplitStage: React.FC<{
         <div style={{position: 'absolute', left: 28, top: 24}}>
           <div style={{display: 'flex', alignItems: 'center', gap: 10}}>
             <span style={{width: 14, height: 14, borderRadius: 99, background: color}} />
-            <span style={{fontFamily: 'Space', fontSize: titleSize, fontWeight: 700, color}}>{data.title}</span>
+            <span style={{fontFamily: 'Space', fontSize: 27, fontWeight: 700, color}}>{data.title}</span>
             {isWin && badgeP > 0.05 && (
               <span style={{fontSize: 20, fontWeight: 700, color: '#fff', background: color, borderRadius: 999, padding: '2px 12px', opacity: badgeP, transform: `scale(${0.8 + 0.35 * Math.sin(Math.PI * Math.min(1, badgeP))})`}}>胜出</span>
             )}
           </div>
-          {data.sub && <div style={{fontSize: subSize, fontWeight: 600, color: C.muted, marginTop: 6}}>{data.sub}</div>}
+          {data.sub && <div style={{fontSize: 21, fontWeight: 600, color: C.muted, marginTop: 6}}>{data.sub}</div>}
         </div>
         <div style={{position: 'absolute', left: 28, right: 28, top: 108, display: 'flex', flexDirection: 'column', gap: 14}}>
           {data.rows.map((r, i) => {
@@ -269,7 +240,7 @@ export const SplitStage: React.FC<{
             // 输方的行：逐行划掉（比整体降透明度更能说明「被否决」）
             const strike = lose ? easeOut(f, winnerAt + 6 + i * 4, winnerAt + 16 + i * 4) : 0;
             return (
-              <div key={r} style={{position: 'relative', fontSize: rowSize, fontWeight: 700, color: isWin && winP > 0.5 ? color : C.ink, opacity: rp * (1 - loseP * 0.22), transform: `translateX(${16 * (1 - rp)}px)`}}>
+              <div key={r} style={{position: 'relative', fontSize: 23, fontWeight: 700, color: isWin && winP > 0.5 ? color : C.ink, opacity: rp * (1 - loseP * 0.45), transform: `translateX(${16 * (1 - rp)}px)`}}>
                 {r}
                 {strike > 0 && <span style={{position: 'absolute', left: 0, top: '52%', height: 2, width: `${strike * 100}%`, background: C.muted, opacity: 0.7}} />}
               </div>

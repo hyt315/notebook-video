@@ -149,13 +149,14 @@ def check_doc_identifiers() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# 枚举集合双真源交叉校验：只对 validate-composition.py 实际执行的闭集约束做校验。
-# Layout/skeleton helpers remain available in source, but they are not quality quotas or required manifest fields.
+# 枚举集合双真源交叉校验：模板源码 vs validate-composition.py 的判据集合。
+# 两侧各自独立存在（脚本读不到工程运行副本，也不该去读），漂移只会红在这一条上。
 # ---------------------------------------------------------------------------
 def check_enum_dual_source() -> list[str]:
     problems: list[str] = []
     vc = (SKILL / 'scripts' / 'validate-composition.py').read_text(encoding='utf-8', errors='ignore')
-    for name, ts_rel in (('TRANSITIONS', 'assets/lecture-template/src/insert.tsx'),):
+    for name, ts_rel in (('TRANSITIONS', 'assets/lecture-template/src/insert.tsx'),
+                         ('SKELETONS', 'assets/lecture-template/src/skeletons.tsx')):
         ts = (SKILL / ts_rel).read_text(encoding='utf-8', errors='ignore')
         m_ts = re.search(rf'export const {name} = \[([^\]]*)\] as const', ts)
         m_py = re.search(rf'^{name} = \{{([^}}]*)\}}', vc, re.M)
@@ -167,15 +168,6 @@ def check_enum_dual_source() -> list[str]:
         if ts_set != py_set:
             problems.append(f"{name} set drift: {ts_rel} {sorted(ts_set)} vs scripts/validate-composition.py {sorted(py_set)}")
     return problems
-
-
-def check_transition_engine_contract() -> list[str]:
-    source = (SKILL / 'assets' / 'lecture-template' / 'src' / 'index.tsx').read_text(encoding='utf-8', errors='ignore')
-    incoming = re.search(r"const incomingTransition\s*=\s*String\(s\.transition\s*\?\?\s*['\"]cut['\"]\)", source)
-    overlay = re.search(r"const handoffP\s*=\s*prevId\s*&&\s*incomingTransition\s*===\s*['\"]handoff['\"]\s*\?", source)
-    if not (incoming and overlay):
-        return ["FinalDemo must overlay the previous shot only for an explicit incoming transition=handoff; default cut must be direct"]
-    return []
 
 
 # ---------------------------------------------------------------------------
@@ -250,10 +242,8 @@ _PY_PRESENT = 'scripts/validate-presentation.py'
 _PY_GAPS = 'scripts/validate-motion-gaps.py'
 _PY_STAGE = r'^STAGE_CX,\s*STAGE_CY\s*=\s*([\d.]+)'
 _PY_STAGE_CY = r'^STAGE_CX,\s*STAGE_CY\s*=\s*[\d.]+,\s*([\d.]+)'
-# Accept the explicit StageSpec annotation used by the mode-aware shotkit; STAGE
-# remains the backward-compatible 16:9 default paired with Python motion checks.
-_TS_STAGE_CX = r'STAGE(?:\s*:\s*StageSpec)?\s*=\s*\{[^}]*cx:\s*([\d.]+)'
-_TS_STAGE_CY = r'STAGE(?:\s*:\s*StageSpec)?\s*=\s*\{[^}]*cy:\s*([\d.]+)'
+_TS_STAGE_CX = r'STAGE = \{[^}]*cx:\s*([\d.]+)'
+_TS_STAGE_CY = r'STAGE = \{[^}]*cy:\s*([\d.]+)'
 _NUM_DUAL_PAIRS = (
     # 字号绝对地板：data.tsx「反推低于它就不画字」⇄ G-3 地板（判据侧注释自证口径 = MIN_LABEL_FONT）
     ('MIN_LABEL_FONT vs FONT_FLOOR', _TS_DATA, r'export const MIN_LABEL_FONT\s*=\s*([\d.]+)', _PY_PRESENT, r'^FONT_FLOOR\s*=\s*([\d.]+)'),
@@ -265,8 +255,11 @@ _NUM_DUAL_PAIRS = (
     # 相机缩放上限
     ('TEXT_ZOOM_MAX', _TS_SHOTKIT, r'export const TEXT_ZOOM_MAX\s*=\s*([\d.]+)', _PY_MOTION, r'^TEXT_ZOOM_MAX\s*=\s*([\d.]+)'),
     ('GRAPHIC_ZOOM_MAX', _TS_SHOTKIT, r'export const GRAPHIC_ZOOM_MAX\s*=\s*([\d.]+)', _PY_MOTION, r'^GRAPHIC_ZOOM_MAX\s*=\s*([\d.]+)'),
-    # 默认时长（相机 safety validator 直接复用 resolver，不再重复保存另一份回落值）
+    # 运镜时长合法区间 (30,45) 与默认 38（std ⇄ 两侧 cam.get("dur", …) 回落值）
+    ('CAM_DUR.short vs CAM_DUR[0]', _TS_SHOTKIT, r'CAM_DUR = \{short:\s*([\d.]+)', _PY_MOTION, r'^CAM_DUR = \(([\d.]+),'),
+    ('CAM_DUR.long vs CAM_DUR[1]', _TS_SHOTKIT, r'CAM_DUR = \{[^}]*long:\s*([\d.]+)', _PY_MOTION, r'^CAM_DUR = \([\d.]+,\s*([\d.]+)\)'),
     ('CAM_DUR.std vs resolve dur default', _TS_SHOTKIT, r'CAM_DUR = \{[^}]*std:\s*([\d.]+)', _PY_RESOLVE, r'cam\.get\("dur",\s*([\d.]+)\)'),
+    ('CAM_DUR.std vs motion dur default', _TS_SHOTKIT, r'CAM_DUR = \{[^}]*std:\s*([\d.]+)', _PY_MOTION, r'cam\.get\("dur",\s*([\d.]+)\)'),
     # FPS：模板注册值 ⇄ 判据里真拿它做 ms→帧 换算的命名常量（motion/composition 的内联 30 不收，见上）
     ('FPS vs resolve FPS', _TS_INDEX, r'(?<!\w)FPS\s*=\s*([\d.]+)', _PY_RESOLVE, r'^FPS\s*=\s*([\d.]+)'),
     ('FPS vs presentation FPS', _TS_INDEX, r'(?<!\w)FPS\s*=\s*([\d.]+)', _PY_PRESENT, r'^FPS\s*=\s*([\d.]+)'),
@@ -360,17 +353,8 @@ def main() -> None:
             problems.append("theme switch active.ts must ship defaulting to './paper'")
         for theme_id in ('cel', 'sticker', 'flat'):
             theme_src = (theme_dir / f'{theme_id}.tsx').read_text(encoding='utf-8', errors='ignore')
-            if not re.search(r"useCanvas\(\)", theme_src):
-                declares_no_decor = re.search(
-                    r"const\s+backgroundDecorZones\s*:\s*Theme\['backgroundDecorZones'\]\s*=\s*\[\s*\]\s*;",
-                    theme_src,
-                )
-                exports_no_decor = re.search(r"\bbackgroundDecorZones\s*,", theme_src)
-                if not (declares_no_decor and exports_no_decor):
-                    problems.append(
-                        f"theme {theme_id}.tsx must anchor background decoration via useCanvas() "
-                        "or explicitly declare and export empty backgroundDecorZones"
-                    )
+            if not re.search(r"useCanvas\(\)", theme_src) and theme_id != 'flat':
+                problems.append(f"theme {theme_id}.tsx must anchor decoration via useCanvas()")
 
     with tempfile.TemporaryDirectory(prefix='notebook-video-package-test-') as temp:
         root = Path(temp)
@@ -414,7 +398,6 @@ def main() -> None:
 
     problems.extend(check_doc_identifiers())
     problems.extend(check_enum_dual_source())
-    problems.extend(check_transition_engine_contract())
     problems.extend(check_canvas_mode_dual_source())
     problems.extend(check_numeric_dual_source())
 

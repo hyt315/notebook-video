@@ -1,33 +1,131 @@
-# Teaching-design notes: optional prompts for a shot plan
+# 讲法规范（叙事动作 · 误解优先 · 留白）——第三张表：**怎么讲**
 
-This page offers questions for planning an explanation, not a required shot taxonomy or a scoring rubric. Use only the prompts that help the topic. An ordinary statement, uninterrupted explanation, static diagram, or deliberate pause may need none of them.
+> 这份文档回答的问题不是"画得好不好"，而是**"讲得对不对"**。
+> 起因是一次实证：**同一份牛顿定律内容**，364 名大一物理生分两组——
+> "清楚流畅的讲解版" 26 题从 6.0 → **6.3（等于没学）**；"**先说出误解、再反驳**"的版本 6 → **11**。
+> 而且讲解版那组**自评"简单、清楚、易懂"，对自己的答案更有信心**（错得更理直气壮）。
+> 出处与完整拆解见 `讲解手法拆解.md`。
+>
+> 我们此前的片子在结构上就是"**说明文（Exposition）**"：「想入场，其实只要三步。第一步…」——
+> 这正是上面那个"清楚了但没学"的版本。本规范落三条最小改动，专治它。
 
-## Optional questions
+## 1. 三条字段（写进 `manifests/shots.json` 的每镜）
 
-Before building a visual, an author may note:
+| 字段 | 含义 | 取值 | 级别 |
+|---|---|---|---|
+| `misconception` | **观众此刻脑子里的错误想法**（用观众的话写，不是术语） | 一句话；或 `noMisconception: true` + 理由 | P0 必填其一 |
+| `known` → `new` | 这镜**从什么已知**推到**什么新知**（相邻镜必须闭合：`known` 要能在前面某镜的 `new` 里找到，或属于常识锚点） | 各一句短语 | P0（闭合）/ P1（锚点存疑） |
+| `hold` | 留白预算：**这镜里至少有一段什么都不新增** | 帧数（见 §3 标定） | P0 |
 
-- **Teaching move:** Is this passage introducing a concept, locating a detail, showing a process, transferring an object/state, comparing alternatives, decomposing or combining, accumulating evidence, refuting an old value, or revisiting a conclusion?
-- **Evidence:** What visible object, relationship, source, or measured result supports the spoken claim?
-- **Audience assumption:** Is there a real, likely misconception to address? If not, do not invent one just to create dramatic conflict.
-- **Reading hold:** Does the audience need time to inspect a diagram, compare two values, or think? A hold can be static and can be longer or shorter than a neighboring shot.
-- **Knowledge bridge:** What previous idea does this part use, and what new idea should it add? This is useful for complex or cumulative material but is not a required field in every manifest.
+**`misconception` 必须可豁免，而且豁免要写理由。** 实验的另一半结论是：先立误解**对外行收益最大，对已经学得很好的观众零增益、还会让人觉得被冒犯**。所以规范要求的是"**要么立一个真误解，要么写清为什么这镜不需要**"，不是"每镜都要卖关子"。
 
-These are a menu. Do not turn “one action at a time”, “one beat per sentence”, a minimum hold, or a minimum variety of moves into universal gates. Visual change should coincide with meaning when change is useful; it is not necessary just because a sentence boundary exists.
+```jsonc
+// 正面：先立误解
+{"id": "S3", "misconception": "很多人以为 PR 一提交就自动生效", "known": "本地改了代码", "new": "远端还没有你的提交", "hold": 45}
+// 豁免：写理由
+{"id": "S7", "noMisconception": true, "why": "这镜是操作复述，观众上一镜刚被纠正过，再立一次会显得啰嗦",
+ "known": "已推送成功", "new": "PR 是请别人看，不是自动合并", "hold": 40}
+```
 
-## Optional vocabulary
+## 2. 叙事动作（闭合集，一镜一个 `move`）
 
-When a compact label helps an author or reviewer, this suggestion set is available:
+第二张表（修辞动作 → 组件）解决"用哪件"，这张表解决"**此刻在讲什么动作**"。
+闭合 10 个，**同一个 `move` 不得连续 ≥3 镜**：
 
-`引入` · `定位` · `推进` · `传递` · `对比` · `拆分/合并` · `累积` · `收束` · `反证` · `回看`
+| # | 动作 | 观众能看出什么（视觉证据） | 首选件 |
+|---|---|---|---|
+| 1 | 引入 | 一个新实体出现 + 名字贴上去 | `Paper` + `PillTag`/`TopicIcon` |
+| 2 | 定位 | 某个已存在的东西被点亮/圈住，**其余退** | **`FocusFx`(dim/spot)** / `Callout` |
+| 3 | 推进 | 同一主体进入下一状态 | `StageFrame`/`PhaseRail` |
+| 4 | 传递 | 东西从 A 移动到 B（可见路径） | `Corridor`/`PathDraw` |
+| 5 | 对比 | 两个状态同屏并陈 + 差异被标出 | `SplitStage`/`MetricGrid` |
+| 6 | 拆分/合并 | 一个变多个 / 多个变一个 | `SplitStage`/`MorphShape` |
+| 7 | 累积 | 已经讲过的东西留在那里、越讲越满 | `Checklist`/`StaggerList` |
+| 8 | 收束 | 结论条出现，前面内容退到次要 | `VerdictBar`/`StatRow` |
+| 9 | **反证** | **先给错的（或旧值），再给对的，两者被区分** | `MetricGrid`/`SplitStage` |
+| 10 | 回看 | 把前面几件再摆一次（复用同一视觉件） | 复用既有骨架 |
 
-The names do not prescribe a component. A comparison could use aligned numbers, a chart, a line of code, an equation, a spoken explanation, or another suitable representation. Do not select a visual because it is listed here.
+> **「不得连续 ≥3 镜」的判据口径（2026-09-22 写回；原文只有这一句，太容易读歪）**：
+> 按**成片镜序**（= `shots.json` 里的顺序；`resolve-shots` 要求 `from` 连续，两者必然一致）逐镜比较，
+> 同一 `move` 的**极大连续段 ≥3 镜即违规** —— 即同一动作**最多连续 2 镜**，第 3 镜就是错（不是"超过 3 镜"）。
+> 跨章节**不重置**（观众不认章节号，只认"刚才连着三镜在干同一件事"）；缺 `move` 或不在闭集里的镜
+> **打断计数**（它们自己另报 P0，不在这里重复刷屏），所以不会拼出跨越断点的假"连续"。
+> **级别是 P0**：这条规则的出处（`呈现效果调研.md` §5.7）写的是"同一种 `move` 不得连续 ≥3 镜
+> **（与骨架重复检查同级）**"，而"相邻同骨架"在 `validate-composition.py` 里就是 P0。
+> 实测：连续 3 镜 → `P0 S1–S3: 同一 move 连续 3 镜：S1→S2→S3 都是 «引入»（上限 2 镜…）`；连续 2 镜不报。
 
-## What the automated note checks actually do
+**`evidence` 必填**：指到一个**在该镜内真的会变**的元素。**静态元素不算证据。**
 
-In `shots.json`, all note fields are optional. `validate-presentation.py` may flag contradictory optional notes and checks basic types. If an `evidence` name is provided, it can confirm only that a corresponding JSX name occurs in some scene source file. It does not check shot-local scope, frame-by-frame movement, factual correctness, or whether viewers understand the evidence. Omitting the note is valid.
+> 上面这句是**作者侧的写作要求**；门禁只能验其中一半（验到哪一步见下），别把要求当成"门禁已经保证"。
 
-## Use evidence with care
+> **判法的最终口径（2026-09-22 二次简化后落地，与代码同版）**：
+> `validate-presentation.py` 现在只查**一件事** —— **名字有没有被当成 JSX 用法**（`<名字 …>` / `<名字/>`）
+> **出现在该工程的场景源码里**：
+>
+> | 判据 | 检查 | 级别 |
+> |---|---|---|
+> | G-15 **用在源码里** | `evidence` 的名字作为 **JSX 用法**出现在场景源码里；**注释、字符串、import 行里都不算"用到"** | **P0** |
+>
+> **怎么判的**：扫之前先用 `noncode()` 把注释与字符串抹成空格（所以"只在注释里写过这个名字"会被报出来），
+> 再用 `<名字` + 一个非标识符字符 去匹配。场景源码 = `src/**` 里名字带 `scene` 的 `.tsx`
+> （与 `validate-frame-props.py` 的 SCENE_HINT 同一口径）；一个都没有就退到任一 `.tsx`；
+> 连 `.tsx` 都没有则报一条 P1 说明**这条判据没生效**（让"没报"与"没跑"可区分）。
+>
+> **不做的（代价写在明处，别高估它）**：
+> · **不做本镜作用域**：名字只要在该工程的场景源码里被用到就算过 ——
+>   **名字在本镜没用到、但在别的镜用了，会漏**。夹具 AG 现在就是这个语义（必须放行），用来把这条口径钉在明处：
+>   谁哪天加回本镜作用域，它会先失败。
+> · **不做"是不是静态"**：不解析 JSX 结构、不看帧驱动量。所以**指向一个在本镜里从头到尾不动的静态卡片，
+>   门禁不会响**（只要那个名字在别处被 JSX 用到过）。砍掉它的理由：那一半只能做**白名单**判定，
+>   而它的误报面已经实测到了 —— 帧经 `ctx` 这类不透明参数传进组件的写法会被判成静态，
+>   本表「推进」推荐的首选件 `PhaseRail` 恰好就是这种写法，判成 P0 等于"照本表写、门禁拦你"。
+> · **不做降级**：上一版在"切不出本镜"时要降级并自报一条 P1 —— 现在没有"本镜"这一层，无级可降。
+>
+> **为什么敢砍到这一步（实测，不是省事）**：上一版是 465 行的实现（手写 JSX 遍历 + 本镜切片 + 帧驱动白名单
+> + 降级分支）。实测它在**接触表**上抓到的真缺陷与本版**是同一批**（第 ⑥ 页 `26px × 2`、第 ③ 页 `27px`），
+> 而那三层复杂度各自都带来了误报面或维护成本。取舍与本仓库其它判据一致：**宁可少报，也不要假报告**。
+> 实测（两个真实工程）：`assets/lecture-template` 8 镜全过；真实工程 `overview-film` 的 **S2 报 P0** ——
+> 它把 `MetricGrid` 换成了手绘行 + `Chart`，只在注释里留了一句"这里本来用 MetricGrid"。
+> 夹具：`scripts/negative-gate-check.py` 的 **AF / AG / AJ / AK**（AF 名字不存在、AJ 只在注释里 → 必须拦；
+> AK 原样模板必须全过；AG 是上面那条"别镜"口径的钉住夹具）。
 
-Research on misconception-first explanation and multimedia signaling is informative but context-specific. A compelling correction can help where the audience actually holds the misconception; it can also waste time or frustrate an audience that does not. A synchronized visual highlight may help direct attention when it points to the object being described; this does not imply every spoken phrase should trigger a new graphic, color change, or sound effect.
+## 3. 留白预算：先标定，再定阈值
 
-Keep facts and values coherent across narration, diagrams, source data, and labels. If they are generated from one mathematical or process model, that can reduce inconsistency. Otherwise document and verify the relevant source.
+**标定方法**：拿现有成片（`demo-video`，8 镜 / 1453 帧）离线数"无新增窗"——即同一镜内相邻两个 beat 之间、以及镜首/镜尾到最近 beat 的帧数，取每镜最长的一段。
+
+| 镜 | 时长 | beat 数 | 相邻 beat 最小间隔 | **最长"无新增"窗** |
+|---|---|---|---|---|
+| S1 | 333 | 5 | 50 | **134** |
+| S2 | 106 | 2 | 106 | 106 |
+| S3 | 184 | 3 | 80 | 104 |
+| S4 | 167 | 3 | 80 | 87 |
+| S5 | 158 | 3 | 78 | 80 |
+| S6 | 141 | 3 | 69 | 72 |
+| S7 | 106 | 3 | **9** | 97 |
+| S8 | 258 | 4 | **8** | 96 |
+
+**标定结论**：
+- 现有片子**每一镜都已经有 ≥72 帧（2.4 s）的无新增窗**——所以报告里"留白 ≥30 帧"那条**对现状等于没检查**（全都过）。**不能照抄这个数。**
+- 取 **`hold ≥ 40 帧（1.33 s）`** 作为 P0：比现状最小值 72 再留 32 帧余量，既不误伤现有片，又能拦住"每 20 帧蹦一个新元素"的过载镜。
+- 另加 **P1：相邻 beat < 20 帧**（现状有两处 9 / 8 帧）→ 提示"两件事挤在一拍"，**不阻断**（它是节奏问题，不是对错问题）。
+- ⚠️ 这两条都是**从我们自己片子的真实数据标定出来的**，不是拍脑袋；等新长片出来后要用新数据再标定一次。
+
+## 4. 落到门禁（`validate-presentation.py` 的 G-14/G-15/G-16）
+
+| 判据 | 检查 | 级别 |
+|---|---|---|
+| G-14 `move` 闭合 | 每镜必填 `move` 且属于 §2 的 10 个名字；同一 `move` 不得连续 ≥3 镜（**连续 3 镜起即违规**，口径见 §2 的注） | P0（两条都是） |
+| G-15 `evidence` 用在源码里 | 见 §2 的判法：名字必须**作为 JSX 用法**出现在该工程的场景源码里（**不做本镜作用域、不做帧驱动判定** —— 代价见 §2） | P0 |
+| G-16 误解与留白 | `misconception` 或 `noMisconception`+`why` 二选一；`hold` ≥ 标定值 | P0 |
+| G-17 `known → new` 闭合 | 相邻镜的 `known` 能在前面某镜的 `new` 里找到（或标为常识锚点） | P1 |
+
+**为什么这些能机械检查**：三个字段都是**声明**，而声明可以：
+① 检查枚举闭合；② 检查指向的元素真的在动；③ 检查阈值；④ 检查跨镜一致性。
+这与本技能既有的治理方式一致——**不靠自觉，靠"写出来 + 被检查"**。
+
+## 5. 与既有文档的关系
+
+- **第二张表**（`media-routing.md` 的"修辞动作 → 组件"）：管**用哪件**。
+- **本表**：管**此刻在讲什么动作**、**观众带着什么误解**、**哪里留白**。
+- **`presentation-gate.md`**：管"讲与画对不对得上、读不读得过来"（T1 纯算术）。
+- 三者的关系是：本表决定**这一镜要做什么事**，第二张表决定**用哪件做**，presentation gate 检查**做出来的东西跟旁白对不对得上**。

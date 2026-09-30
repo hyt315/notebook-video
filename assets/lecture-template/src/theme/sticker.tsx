@@ -1,12 +1,13 @@
 import React from 'react';
-import {AbsoluteFill} from 'remotion';
+import {AbsoluteFill, Img, staticFile} from 'remotion';
+import {useCanvas} from './canvas';
 import type {Theme} from './types';
 
 // ============================================================================
 // STICKER 主题：卡通贴纸·手账风（LOCKED）
-// 设计语言：白边贴纸、和纸胶带、马克笔高亮、糖果色与安静薄荷色底。
+// 设计语言：白边贴纸、和纸胶带、马克笔高亮、手绘涂鸦、糖果色。
 // 色彩系统：粉色为主角色，蓝/绿按粉彩同阶梯推导（高明度低刺激），不许跳出档位。
-// 移除跨越开放流程留白的网格/角落涂鸦位图；贴纸语汇由卡片、胶带和标注承担。
+// 本文件所有数值均为锁定值，制作时整体引用，不得调参。
 // ============================================================================
 
 const palette: Theme['palette'] = {
@@ -67,7 +68,7 @@ const palette: Theme['palette'] = {
 
 const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 22, paperOutline: 0,
-  textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: .04,
+  textureOpacity: 0, gridOpacity: .10, gradeWarmth: 0, gradeVignette: .04,
   subtitleWeight: 700, subtitleLetterSpacing: 1.6, subtitlePadX: 72,
 };
 
@@ -75,11 +76,17 @@ const aesthetic: Theme['aesthetic'] = {
 const paperShadow = (lift: number) =>
   `0 ${4 + 4 * lift}px 0 rgba(74,59,47,${0.12 + 0.05 * lift}),0 ${10 + 12 * lift}px ${22 + 16 * lift}px rgba(74,59,47,${0.17 + 0.07 * lift})`;
 
-// 安静的浅薄荷色底；避免网格纹理与流程线/状态点在手机尺寸争夺注意力。
-const Background: React.FC = () => <AbsoluteFill style={{background: palette.paperBase}} />;
+// 背景（LOCKED）：固定资产图，每比例一张——16:9 2560×1440（与画布 1:1 逐像素）；
+// 4:3 2240×1680、3:4 1680×2240（画布的 7/6 超采样，比例同比）；渲染时 cover 等比缩放
+// 不裁切不拉伸。含薄荷网格纸、四角涂鸦、和纸胶带。禁止改回代码自绘背景。
+const BG_BY_MODE = {'16:9': 'bg-sticker-169.jpg', '4:3': 'bg-sticker-43.jpg', '3:4': 'bg-sticker-34.jpg'} as const;
 
-// 背景保持纯色，无画幅级装饰，因此无需按画布声明遮挡区。
-const backgroundDecorZones: Theme['backgroundDecorZones'] = [];
+const Background: React.FC = () => {
+  const {canvas} = useCanvas();
+  return <AbsoluteFill style={{background: palette.paperBase}}>
+    <Img src={staticFile(BG_BY_MODE[canvas])} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+  </AbsoluteFill>;
+};
 
 // 白边贴纸卡：内圈细墨线（贴纸印刷边）+ 外圈白边（模切边）+ 加深软影，三层保证边界可见。
 const Paper: Theme['Paper'] = ({children, style, lift = 0}) =>
@@ -121,6 +128,5 @@ export const THEME: Theme = {
   Paper,
   Grade,
   SubtitleChrome,
-  backgroundDecorZones,
   extras: {Tape},
 };
