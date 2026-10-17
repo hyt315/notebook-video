@@ -198,6 +198,16 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
                 problems.append(f"{sid}: bg={s['bg']!r} 不是 main / chapter / quiet 之一")
             else:
                 rec["bg"] = s["bg"]
+        # v4.3：音效覆盖（见 src/sfx.ts）。不写就不出键，旧分镜表解析结果逐字节不变。
+        if s.get("sfx") is not None:
+            sfx = s["sfx"]
+            events = {"whoosh", "pop", "click", "typing", "success", "error", "chart", "highlight", "chapter", "riser"}
+            if sfx != "none" and not (isinstance(sfx, list) and all(isinstance(o, dict) and o.get("event") in events and ("beat" in o or "at" in o) for o in sfx)):
+                problems.append(f"{sid}: sfx 必须是 \"none\" 或 [{{event, beat|at, vol?}}]，event ∈ {sorted(events)}")
+            else:
+                rec["sfx"] = sfx
+        if s.get("sfxAuto") is not None:
+            rec["sfxAuto"] = bool(s["sfxAuto"])
         out.append(rec)
         cursor = to
     total = cursor

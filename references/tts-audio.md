@@ -120,30 +120,24 @@ Put narration in the component tree:
 <Audio src={staticFile('narration.mp3')} volume={1} />
 ```
 
-Put action effects at their visible action frames:
+Action effects come from the **prebuilt SFX library** and are scheduled automatically from the shot table
+(`src/sfx.ts` → `planSfx`); you do not hand-place `<Audio>` tags. See `references/sfx-library.md` for the event list,
+the automatic rules and the per-shot `sfx` override. Every cue is pinned to a shot start or a beat, so retiming the
+narration and re-running `resolve-shots` moves the sounds with the picture.
 
-```tsx
-<Sequence from={actionFrame} layout="none">
-  <Audio src={staticFile('sfx/paper-tap.wav')} volume={0.18} />
-</Sequence>
-```
+## Sound vocabulary (v4.3 library events)
 
-Use the same absolute frame value for the action and its sound. Preview the real mix before export.
+`whoosh` transition · `pop` appear · `click` tap/step · `typing` code/console · `success` check/verdict ·
+`error` misconception refuted · `chart` bars/lines grow · `highlight` key word/number · `chapter` chapter sting ·
+`riser` builds into a chapter or payoff. Optional `bed.ogg` music bed (quiet pad loop).
 
-## Sound vocabulary
-
-- paper slide/lift: filtered pink-noise rustle;
-- data transfer: short high-passed whoosh;
-- landing or click: 30–100ms tap;
-- pass/completion: 150–400ms soft chime.
-
-Do not place effects on invisible actions or every small movement.
+Do not place effects on invisible actions or every small movement; the planner already drops cues closer than 6 frames.
 
 ## Mix and export
 
 - Narration is primary.
 - No hidden narration delay.
-- Optional BGM remains roughly -25 to -30dB under speech and requires user approval.
+- The library is normalised to -18 LUFS (100 ms blocks, peak ≤ -1 dBFS); `SFX_GAIN` (0.30–0.55) puts effects 8–12 LU under the -16 LUFS narration target. The optional bed plays around -41 LUFS (BED_GAIN 0.28); set it to 0 if the user does not want music.
 - Target about -16 LUFS and at most -1.5dBTP.
 - Export 48kHz stereo AAC at about 192kbps.
 

@@ -214,6 +214,28 @@ def main() -> int:
                 str(NODE), str(ROOT / "scripts" / "notebook-video.mjs"),
                 "validate-video", str(__file__), "30"])
 
+    # ---- v4.3 音效库：好夹具必须通过；篡改文件 / 增益越界必须被拦 ----
+    if shutil.which("ffmpeg"):
+        tpl = ROOT / "assets" / "lecture-template"
+        good = run(sys.executable, str(ROOT / "scripts" / "validate-audio-levels.py"), str(tpl))
+        check("音效库：模板通过 validate-audio-levels", good.returncode == 0, f"rc={good.returncode}")
+        with tempfile.TemporaryDirectory() as td2:
+            proj = Path(td2) / "p"
+            (proj / "src").mkdir(parents=True)
+            shutil.copytree(tpl / "public" / "sfx", proj / "public" / "sfx")
+            shutil.copy(tpl / "src" / "sfx.ts", proj / "src" / "sfx.ts")
+            with open(proj / "public" / "sfx" / "lib" / "pop.ogg", "ab") as fh:
+                fh.write(b"x")
+            r1 = run(sys.executable, str(ROOT / "scripts" / "validate-audio-levels.py"), str(proj))
+            check("负向：音效文件被篡改（sha256）被拦", r1.returncode == 1 and "sha256" in r1.stdout, f"rc={r1.returncode}")
+            shutil.copy(tpl / "public" / "sfx" / "lib" / "pop.ogg", proj / "public" / "sfx" / "lib" / "pop.ogg")
+            ts = (proj / "src" / "sfx.ts").read_text(encoding="utf-8").replace("success: 0.5,", "success: 0.9,")
+            (proj / "src" / "sfx.ts").write_text(ts, encoding="utf-8")
+            r2 = run(sys.executable, str(ROOT / "scripts" / "validate-audio-levels.py"), str(proj))
+            check("负向：音效增益越界被拦", r2.returncode == 1 and "SFX_GAIN" in r2.stdout, f"rc={r2.returncode}")
+    else:
+        check("音效库门禁（需要 ffmpeg）", False, "ffmpeg 不在 PATH，无法回归音效库门禁")
+
     failed = [r for r in results if not r[1]]
     if not failed:
         print(f"SELFTEST PASS (all {len(results)} checks passed)")

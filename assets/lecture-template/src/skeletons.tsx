@@ -304,13 +304,20 @@ export const ZoomStage: React.FC<{
   const dim = easeIO(f, at.focus, at.annotate) * (1 - easeIO(f, at.back, at.back + 20));
   const fxp = focus.fx * w;
   const fyp = focus.fy * h;
+  // v4.3：只钳缩放倍数还不够 —— 焦点不在内容正中时，放大后的内容会从**一侧**被框裁掉
+  // （参考片 S3 帧 ~380：DiffView 右缘越出取景框 ~66px）。给了 contentW/H 就再钳平移：
+  // 内容 [0,contentW]×[0,contentH] 放大后必须整体留在框内（k ≤ kMax 保证一定放得下）。
+  const clampOff = (off: number, frame: number, content?: number) =>
+    content === undefined ? off : Math.min(Math.max(off, 0), Math.max(0, frame - k * content));
+  const offX = clampOff(w / 2 - k * fxp, w, contentW);
+  const offY = clampOff(h / 2 - k * fyp, h, contentH);
   return (
     <div style={{position: 'absolute', left: x, top: y, width: w, height: h, zIndex: z}}>
       {/* data-fit-skip：这一层是**缩放取景框**，被放大的子层必然溢出（实测 scrollWidth 1093 vs 996），
           那是"推近"本身的效果，不是文字被裁。里面的卡片仍会各自被 CardFitGate 独立量测。 */}
       <div data-fit-skip="zoom-viewport" style={{position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: 14, background: C.paper, border: `2.5px solid ${C.line}`}}>
         {/* 三段式：先平移到框心，再缩放，再把焦点平移回原点 —— 这样焦点一定落在框心 */}
-        <div style={{position: 'absolute', inset: 0, transformOrigin: '0 0', transform: `translate(${w / 2}px, ${h / 2}px) scale(${k}) translate(${-fxp}px, ${-fyp}px)`, filter: dim > 0 ? `brightness(${1 + dim * 0.04})` : undefined}}>{children}</div>
+        <div style={{position: 'absolute', inset: 0, transformOrigin: '0 0', transform: `translate(${offX}px, ${offY}px) scale(${k})`, filter: dim > 0 ? `brightness(${1 + dim * 0.04})` : undefined}}>{children}</div>
         {/* 框内暗角：让聚焦读成「打光」而不是单纯放大 */}
         {/* v4.1：由整框灰罩（rgba 墨色 10%，把白卡压成浑浊的灰）改为以焦点（= 框心）为圆心的
             径向冷色暗角（海军蓝 ≤10%，不用墨黑以免发灰）：焦点保持纸白，只把边缘轻压下去，读成「打光」而不是「变灰」。 */}
@@ -322,7 +329,7 @@ export const ZoomStage: React.FC<{
           {/* 引线：从标注指向焦点，画出来（stroke 用 dashoffset 描线，不用缩放弹出） */}
           <svg width={w} height={h} style={{position: 'absolute', left: 0, top: 0, pointerEvents: 'none'}}>
             {(() => {
-              const cx0 = 18, cy0 = h - 20, cx1 = fxp, cy1 = fyp;
+              const cx0 = 18, cy0 = h - 20, cx1 = offX + k * fxp, cy1 = offY + k * fyp;
               const lineP = easeOut(f, at.annotate + 2, at.annotate + 16);
               return <>
                 <line x1={cx0} y1={cy0} x2={cx0 + (cx1 - cx0) * lineP} y2={cy0 + (cy1 - cy0) * lineP} stroke={C.muted} strokeWidth={1.5} strokeDasharray="6 6" />

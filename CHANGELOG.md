@@ -4,6 +4,36 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+## [4.3.0] - 2026-10-17
+
+> 预制语义音效库（Phase 4）+ 遗留问题修复 + 60 秒组件演示片。音效由 earshot（开发期工具）在代码里合成并质检后提交进仓库，普通用户不需要安装 earshot；引擎按分镜表语义自动排音效，每镜可覆盖。
+> Prebuilt semantic SFX library (Phase 4), leftover fixes and a 60-second component demo. Sounds are rendered in code and QC'd with earshot (dev-time only) and committed; users never install earshot. The engine schedules SFX from shot-table semantics, with a per-shot override.
+
+### 新增 / Added
+
+- `public/sfx/lib/`：10 个语义音效（whoosh / pop / click / typing / success / error / chart / highlight / chapter / riser）+ 可选音乐床 `bed.ogg`；单声道 48 kHz Ogg Vorbis，一次性音效每个 4–15 KB，统一 -18 LUFS（100 ms 块）、峰值 ≤ -1 dBFS；CC0（代码合成，无采样）。
+  10 semantic one-shots + optional `bed.ogg`; mono 48 kHz Ogg Vorbis, 4–15 KB each, all at -18 LUFS (100 ms blocks), peak ≤ -1 dBFS; CC0 (synthesized, no samples).
+- `public/sfx/sfx-manifest.json`：每个文件的 sha256、时长、响度、峰值、来源配方、许可、用途、earshot 匹配分。
+- `src/sfx.ts`：`SFX_EVENTS` / `SFX_FILES` / `SFX_GAIN` / `planSfx()`——按章节、转场、节拍、介质（code→typing、chart→chart）、结论件（→success）、误解（→error）自动排；6 帧内去重按优先级保留。
+- 分镜表 `sfx` / `sfxAuto` 覆盖字段（`resolve-shots.py` 校验并透传）。
+- `scripts/dev/build-sfx-library.py`（维护者专用，需要 earshot）：渲染 earshot forge 配方 → 修剪/混单声道 → 响度归一 → 编码 → `earshot match` 质检 → 写 manifest。
+- `src/mascot-gate.tsx`（MascotGate，warn）：卡片与背景下方两角的角色/装饰相交 > 24px 时在渲染日志里给出修法。
+- `references/sfx-library.md`；`assets/demo/v4.3-demo/`（演示片分镜、字幕、场景源码）。
+
+### 删除 / Removed
+
+- 来源未登记的旧音效 `bgm.mp3`、`click.ogg`、`drop.ogg`、`toggle.ogg` 与四个旧 WAV（`chime` / `data-whoosh` / `paper-rustle` / `paper-tap`）；`index.tsx` 里手写的音效轮换表与运镜咔哒声。
+
+### 修复 / Fixed
+
+- `ZoomStage`：给了 `contentW/H` 时不但钳缩放倍数，也钳平移，放大后内容整体留在取景框内（参考片 S3 帧 ~380 的 `DiffView` 右缘越出取景框）；引线终点跟随真实焦点。参考片 S3 的 DiffView 宽度 944 → 780。
+- 大卡片压住 flat 背景角色：新增 MascotGate 实测提醒（见上）。
+
+### 变更 / Changed
+
+- `validate-audio-levels.py`：新增音效库口径（manifest 存在且可解析、文件 sha256、峰值 ≤ -0.5、库内响度容差、`src/sfx.ts` 事件/文件与 manifest 一致、`SFX_GAIN` 在 0.15–0.70）。
+- `references/tts-audio.md` 音效章节改为指向音效库；NOTICE 第 2 条更新。
+
 ## [4.2.0] - 2026-10-17
 
 > 组件换成熟开源件（Phase 3）：能用成熟、帧安全的开源库就不再手写，库的配色一律重映射到 `flat` / `cel` 的主题 token。12 个 Radix 包移除；代码高亮换 Shiki；图标换 lucide-react + simple-icons；`DiffView` 用 jsdiff 算行；`MorphShape` 用 flubber；`Chart` 的轴与形状用 visx。组件数不变（`src/components/` 仍 27 件，全库 53 件），场景 API 向后兼容。

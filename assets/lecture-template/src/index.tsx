@@ -43,6 +43,8 @@ import {OverlapGate} from './overlap-gate';
 import {ClippingGate} from './clipping-gate';
 import {FillGate} from './fill-gate';
 import {CanvasBoundsGate} from './canvas-bounds-gate';
+import {MascotGate} from './mascot-gate';
+import {planSfx, SFX_BED, BED_GAIN} from './sfx';
 import {SHOTS, SHOT_IDS, SHOT_TOTAL} from './shots';
 import {SCENES} from './scenes';
 import {FontFaces} from './fonts';
@@ -316,40 +318,17 @@ const Backdrop=()=>{
   </>;
 };
 
-// 音效钉帧（硬规则）：一律相对所属镜头起点推导，改台词重跑解析后自动跟着走。
-// 中间节拍轮换用的三种"落位/切换"音（必须在 SFX 之前声明：flatMap 立即执行）
-const SECOND=['sfx/drop.ogg','sfx/toggle.ogg','sfx/click.ogg'];
-// 会运镜的意图名单（`still` 刻意不在内）：给「静止镜不出咔哒声」这条规则一个真判据。
-const CAM_MOTION=['establish','push-in','pull-back','pan-follow','reveal','micro-orbit'] as const;
-const SFX=SHOT_IDS.flatMap((id)=>{
-  const s=SHOTS[id];
-  const isChapter=(CHAPTER_STARTS as readonly number[]).includes(s.from);
-  const list:{src:string;at:number;vol:number}[]=[];
-  // v3.0.1：音效从"按镜头比例"改为**绑定节拍（beats）**。
-  // 旧规则把 whoosh 钉在时长的 42% 处——那一帧画面上什么都没有，正是 tts-audio.md 明令禁止的
-  // "把音效放在看不见的动作上"。节拍数组本身就是"讲到这一句"的时刻，视觉也在这里落，
-  // 所以按节拍钉帧既对得上画面，又沿用同一套自动重定时机制。
-  if (isChapter) list.push({src:'sfx/paper-rustle.wav',at:s.from+4,vol:0.38});   // 换章：翻纸
-  s.beats.forEach((b:number,i:number)=>{
-    const at=s.from+b;
-    if(i===0) list.push({src:'sfx/paper-tap.wav',at,vol:0.34});                  // 首拍：落纸
-    else if(i===s.beats.length-1) list.push({src:'sfx/chime.wav',at,vol:0.40});   // 末拍：完成音
-    else list.push({src:SECOND[i%SECOND.length],at,vol:0.30});                    // 中间拍：轮换落位/切换/轻击
-  });
-  // tsc TS2367 抓出来的死比较：`s.cameraIntent` 的推断类型里根本没有 'still'
-  // （shots.ts 生成时只写 establish/push-in/pull-back/pan-follow/reveal），所以 `!== 'still'` 恒真。
-  // 这句的意图是「静止镜不加咔哒声」，实际一个都没排除。改成**正向名单**：
-  // 名单里没有的值（含将来的 'still'）不加音 —— 语义与作者本意一致，类型也干净。
-  if((CAM_MOTION as readonly string[]).includes(s.cameraIntent)) list.push({src:'sfx/click.ogg',at:s.from+(s.keys[2]?.f??30),vol:0.26});
-  return list;
-});
+// 音效（v4.3）：预制语义音效库 + 按分镜表语义自动排（src/sfx.ts 的 planSfx）。
+// 一律相对所属镜头起点推导，改台词重跑 resolve-shots 后自动跟着走；每镜可用 `sfx` 字段覆盖。
+// 混音：音效库统一 -18 LUFS(100ms)，SFX_GAIN 把它们压到人声（-16 LUFS）下方 8–12 LU；音乐床 ≈ -36 LUFS。
+const SFX_PLAN=planSfx(SHOT_IDS.map((id)=>SHOTS[id] as any),CHAPTER_STARTS,DURATION);
 const Sound=()=>{
   const f=useCurrentFrame();
-  const bgmVol=interpolate(f,[0,30,DURATION-45,DURATION],[0,0.08,0.08,0],{...clamp,easing:Easing.linear});
+  const bedVol=interpolate(f,[0,30,DURATION-45,DURATION],[0,BED_GAIN,BED_GAIN,0],{...clamp,easing:Easing.linear});
   return <>
     <Audio src={staticFile('narration.mp3')} volume={1}/>
-    <Audio src={staticFile('sfx/bgm.mp3')} volume={bgmVol} loop/>
-    {SFX.map((x,i)=><Sequence key={`${x.src}-${i}`} from={deliveryFrame(x.at)} layout="none"><Audio src={staticFile(x.src)} volume={x.vol}/></Sequence>)}
+    <Audio src={staticFile(SFX_BED)} volume={bedVol} loop/>
+    {SFX_PLAN.map((x,i)=><Sequence key={`${x.event}-${i}`} from={deliveryFrame(x.at)} layout="none"><Audio src={staticFile(x.src)} volume={x.vol}/></Sequence>)}
   </>;
 };
 
@@ -379,7 +358,7 @@ const FilmLayout:React.FC=()=>{
             口径与实测见 references/composition-gate.md §5.2 / §6。 */}
         <CanvasBoundsGate mode="warn"/>
         {/* FillGate 默认 warn：P0-4 是"观感线"，为它打断整片渲染不划算；出水进日志、可复查 */}
-        <FillGate mode="warn" watch={WATCH}/><Sound/><Backdrop/>
+        <FillGate mode="warn" watch={WATCH}/><MascotGate watch={WATCH}/><Sound/><Backdrop/>
         {<><Chrome/><FinalDemo/></>}
         <Grade/>
         <Subtitle/>

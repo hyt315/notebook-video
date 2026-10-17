@@ -1,6 +1,6 @@
 ---
 name: notebook-video
-version: 4.2.0
+version: 4.3.0
 description: Create complete Chinese 2K (2560×1440, 16:9 only) flat-geometric or anime-cel explainer and promotional videos with React, TypeScript and Remotion. Two locked skins — `flat` (default) and `cel`. The default visual route is pure code-drawn composition (SVG diagrams, mascots, progressive checklists, annotation tags) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes a per-shot restricted camera with an out-of-bounds proof, four scene skeletons with a content-to-medium routing table, a cue-indexed shot table, native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering and fourteen automated quality gates (including a frame-prop-name gate that catches the highest-frequency silent failure in this codebase). Use when the user asks to 做科普视频, 扁平风或动漫风讲解视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
 ---
 
@@ -208,7 +208,7 @@ scripts/resolve-shots.py            分镜表 → 帧号与相机关键帧（唯
 scripts/validate-shot-motion.py     构建期：镜头出界证明 + 运镜配额
 scripts/validate-composition.py     构建期：骨架 / 活性组件 / 介质 / 密度 / 枚举闭合 / live 可解析 / 主角尺寸 / 镜长分布
 scripts/validate-frame-props.py     构建期：fxkit 传 frame、其他模块传 f —— 写错即 P0（会静默回落到全局帧）
-scripts/validate-audio-levels.py    构建期：音效素材峰值 < -12 dBFS 即 P0（录太轻 = 混音后等于没有音效）
+scripts/validate-audio-levels.py    构建期：音效素材峰值 < -12 dBFS 即 P0；预制音效库 hash/响度/峰值/事件映射/增益一致性（references/sfx-library.md）
 scripts/validate-presentation.py    构建期：呈现效果（beat↔cue 对齐 / 字幕阅读预算 / 字号与对比度）——现有门禁都没问过的那一层
 scripts/validate-caption-sync.py    字幕与 TTS 词边界一致
 scripts/validate-semantic-breaks.py 保护短语不被切断

@@ -165,12 +165,12 @@ const S3FirstPr: React.FC<{f: number}> = ({f}) => {
   return (
     <Shot id="S3" f={f} entry="zoom" reveal>
       <ZoomStage x={210} y={200} w={1000} h={600} f={f} focus={{fx: 0.44, fy: 0.5}} zoom={1.34}
-        contentW={944} contentH={420}
+        contentW={850} contentH={420}
         at={{focus: at(1), annotate: at(1) + 30, back: at(1) + 90}} label="第一个 PR 不必大">
         <div style={{position: 'absolute', inset: 0, padding: 26, background: C.paper}}>
           <CardHead icon="branch" text="pull-request.diff" right={<PillTag text="EP 1" color={C.orange} bg={C.orangeLight} />} />
           <div style={enterAt(f, at(0))}>
-            <DiffView x={30} y={92} w={944} frame={f} title="docs/typo.patch"
+            <DiffView x={30} y={92} w={780} frame={f} title="docs/typo.patch"
               lines={[
                 {k: ' ', text: '#### 安装', at: at(0)},
                 {k: '-', text: 'npm i notebook-vido', at: at(0, 24)},

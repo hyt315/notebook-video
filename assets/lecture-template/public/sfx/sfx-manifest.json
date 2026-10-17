@@ -1,0 +1,278 @@
+{
+  "version": 1,
+  "target_lufs_100ms": -18.0,
+  "tolerance_lu": 1.5,
+  "peak_ceiling_dbfs": -1.0,
+  "bed_lufs_100ms": -30.0,
+  "mix": {
+    "narration_target_lufs": -16,
+    "note": "one-shots play at the engine's per-event gain (0.30-0.55, about -5..-10 dB), so they sit roughly 8-12 LU under narration; the bed plays at 0.28 (about -41 LUFS)."
+  },
+  "built_with": "earshot 0.2.0 (github.com/Leonxlnx/earshot, MIT) — dev-time only",
+  "events": [
+    {
+      "event": "whoosh",
+      "file": "sfx/lib/whoosh.ogg",
+      "sha256": "fe72cd053bdaabfea28833ab7a25a40388f65e92ea08a68cc380916475a46ad2",
+      "bytes": 6297,
+      "duration_s": 0.356,
+      "loudness_lufs_100ms": -18.0,
+      "peak_dbfs": -2.1,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "tool": "earshot forge 0.2.0",
+        "recipe": "whoosh",
+        "seed_bank_index": 25
+      },
+      "description": "a fast clean air whoosh for a slide transition",
+      "intended_use": "shot transition / camera move / handoff",
+      "license": "CC0-1.0 (generated in code; no recorded samples)",
+      "qc": {
+        "earshot_match_z": 5.78,
+        "verdict": "strong"
+      }
+    },
+    {
+      "event": "pop",
+      "file": "sfx/lib/pop.ogg",
+      "sha256": "a46caabc75be551091f157993fbc3dfb4e36598a104183488e5e44bf5693321c",
+      "bytes": 5121,
+      "duration_s": 0.197,
+      "loudness_lufs_100ms": -18.1,
+      "peak_dbfs": -1.2,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "tool": "earshot forge 0.2.0",
+        "recipe": "pop",
+        "seed_bank_index": 6
+      },
+      "description": "a short soft tonal pop",
+      "intended_use": "an element appears (first beat of a shot)",
+      "license": "CC0-1.0 (generated in code; no recorded samples)",
+      "qc": {
+        "earshot_match_z": 2.49,
+        "verdict": "weak"
+      }
+    },
+    {
+      "event": "click",
+      "file": "sfx/lib/click.ogg",
+      "sha256": "e9beee235ceb74ed3610ed853fa5eee57dcdb7983672f720eb2ffb242c92aac8",
+      "bytes": 3879,
+      "duration_s": 0.051,
+      "loudness_lufs_100ms": -18.9,
+      "peak_dbfs": -5.4,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "tool": "earshot forge 0.2.0",
+        "recipe": "click",
+        "seed_bank_index": 4
+      },
+      "description": "a clean crisp user interface click tap",
+      "intended_use": "a list item, step or toggle lands",
+      "license": "CC0-1.0 (generated in code; no recorded samples)",
+      "qc": {
+        "earshot_match_z": 2.77,
+        "verdict": "plausible"
+      }
+    },
+    {
+      "event": "typing",
+      "file": "sfx/lib/typing.ogg",
+      "sha256": "534c86b95f261bbbcab2ebcd4f2fb6db16e8a6a81718b808fba2982364acac73",
+      "bytes": 8667,
+      "duration_s": 0.559,
+      "loudness_lufs_100ms": -19.1,
+      "peak_dbfs": -5.3,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "tool": "earshot forge 0.2.0",
+        "recipe": "keypress",
+        "seed_bank_index": [
+          0,
+          6,
+          7,
+          8
+        ]
+      },
+      "description": "a quick run of soft digital keyboard typing ticks",
+      "intended_use": "code / console lines being written",
+      "license": "CC0-1.0 (generated in code; no recorded samples)",
+      "qc": {
+        "earshot_match_z": 4.19,
+        "verdict": "strong"
+      }
+    },
+    {
+      "event": "success",
+      "file": "sfx/lib/success.ogg",
+      "sha256": "554a4c87d60058b903a2c69a19e06c2223b5290801747ec32ab4e816dd0d485f",
+      "bytes": 6467,
+      "duration_s": 0.397,
+      "loudness_lufs_100ms": -18.2,
+      "peak_dbfs": -4.8,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "tool": "earshot forge 0.2.0",
+        "recipe": "notify",
+        "seed_bank_index": 13
+      },
+      "description": "a short bright positive success chime, task complete",
+      "intended_use": "check mark, verdict, conclusion lands",
+      "license": "CC0-1.0 (generated in code; no recorded samples)",
+      "qc": {
+        "earshot_match_z": 3.88,
+        "verdict": "strong"
+      }
+    },
+    {
+      "event": "error",
+      "file": "sfx/lib/error.ogg",
+      "sha256": "c2c271ef4649e005fc347d757a062ad5a71c7723e3e2a5910825247f25733bcd",
+      "bytes": 9846,
+      "duration_s": 0.609,
+      "loudness_lufs_100ms": -18.3,
+      "peak_dbfs": -2.7,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "tool": "earshot forge 0.2.0",
+        "recipe": "glitch",
+        "seed_bank_index": 10
+      },
+      "description": "a short low digital error buzz, wrong answer",
+      "intended_use": "a misconception is refuted / wrong value struck",
+      "license": "CC0-1.0 (generated in code; no recorded samples)",
+      "qc": {
+        "earshot_match_z": 2.79,
+        "verdict": "plausible"
+      }
+    },
+    {
+      "event": "chart",
+      "file": "sfx/lib/chart.ogg",
+      "sha256": "83e0068ea8c25b5a8f82f0c989676f281ff246fbf26714c00d8ce6ae5e589b07",
+      "bytes": 6069,
+      "duration_s": 0.329,
+      "loudness_lufs_100ms": -18.4,
+      "peak_dbfs": -11.6,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "tool": "earshot forge 0.2.0",
+        "recipe": "zip",
+        "seed_bank_index": 9
+      },
+      "description": "a quick rising tonal synth sweep as a bar chart grows",
+      "intended_use": "bars / lines / rings grow",
+      "license": "CC0-1.0 (generated in code; no recorded samples)",
+      "qc": {
+        "earshot_match_z": 2.47,
+        "verdict": "weak"
+      }
+    },
+    {
+      "event": "highlight",
+      "file": "sfx/lib/highlight.ogg",
+      "sha256": "d2decc8c39f8da860aecea352f39ec73db491248ba4d0169c781efe8a6d1d2d3",
+      "bytes": 5601,
+      "duration_s": 0.377,
+      "loudness_lufs_100ms": -18.1,
+      "peak_dbfs": -8.4,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "tool": "earshot forge 0.2.0",
+        "recipe": "notify",
+        "seed_bank_index": 14
+      },
+      "description": "a light bright ding highlighting a word",
+      "intended_use": "a key word or number is highlighted",
+      "license": "CC0-1.0 (generated in code; no recorded samples)",
+      "qc": {
+        "earshot_match_z": 2.04,
+        "verdict": "weak"
+      }
+    },
+    {
+      "event": "chapter",
+      "file": "sfx/lib/chapter.ogg",
+      "sha256": "f1233f0df3bbea40ae842187551b07b803741cd6234ebbce3c6c10467d96629d",
+      "bytes": 14326,
+      "duration_s": 1.15,
+      "loudness_lufs_100ms": -18.2,
+      "peak_dbfs": -7.0,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "tool": "earshot forge 0.2.0",
+        "recipe": "shimmer",
+        "seed_bank_index": 10
+      },
+      "description": "a bright short logo sting chime opening a new chapter",
+      "intended_use": "chapter card / new section",
+      "license": "CC0-1.0 (generated in code; no recorded samples)",
+      "qc": {
+        "earshot_match_z": 3.72,
+        "verdict": "strong"
+      }
+    },
+    {
+      "event": "riser",
+      "file": "sfx/lib/riser.ogg",
+      "sha256": "082d386158a4e95ac661098f14c789aee0d02dfcabd90d3c1f82e894e7e04737",
+      "bytes": 14523,
+      "duration_s": 1.5,
+      "loudness_lufs_100ms": -18.4,
+      "peak_dbfs": -3.4,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "tool": "earshot forge 0.2.0",
+        "recipe": "riser",
+        "seed_bank_index": 1
+      },
+      "description": "a soft short cinematic riser building into a reveal",
+      "intended_use": "builds into a chapter or payoff (ends on the hit)",
+      "license": "CC0-1.0 (generated in code; no recorded samples)",
+      "qc": {
+        "earshot_match_z": 1.63,
+        "verdict": "no match"
+      }
+    },
+    {
+      "event": "bed",
+      "file": "sfx/lib/bed.ogg",
+      "sha256": "60ecef774ba793bdd26b7a5a08015e9b6eb3826e19f1e99e1b8d53cce61fea29",
+      "bytes": 63152,
+      "duration_s": 32.0,
+      "loudness_lufs_100ms": -30.1,
+      "peak_dbfs": -18.6,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "tool": "scripts/dev/build-sfx-library.py music_bed()",
+        "recipe": "additive pad"
+      },
+      "description": "quiet ambient pad, seamless 32 s loop",
+      "intended_use": "optional music bed (loop)",
+      "license": "CC0-1.0 (generated in code)"
+    }
+  ]
+}

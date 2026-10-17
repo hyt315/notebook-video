@@ -1,0 +1,1227 @@
+{
+ "cues": [
+  {
+   "text": "一个接口，平均要等 1.2 秒。",
+   "words": [
+    {
+     "part": "一",
+     "start": 300,
+     "end": 525
+    },
+    {
+     "part": "个",
+     "start": 525,
+     "end": 750
+    },
+    {
+     "part": "接",
+     "start": 750,
+     "end": 975
+    },
+    {
+     "part": "口",
+     "start": 975,
+     "end": 1200
+    },
+    {
+     "part": "，",
+     "start": 1200,
+     "end": 1425
+    },
+    {
+     "part": "平",
+     "start": 1425,
+     "end": 1650
+    },
+    {
+     "part": "均",
+     "start": 1650,
+     "end": 1875
+    },
+    {
+     "part": "要",
+     "start": 1875,
+     "end": 2100
+    },
+    {
+     "part": "等",
+     "start": 2100,
+     "end": 2325
+    },
+    {
+     "part": "1.2",
+     "start": 2325,
+     "end": 2550
+    },
+    {
+     "part": "秒",
+     "start": 2550,
+     "end": 2775
+    },
+    {
+     "part": "。",
+     "start": 2775,
+     "end": 3000
+    }
+   ],
+   "start_ms": 300,
+   "speech_end_ms": 3000,
+   "reveal_end_ms": 3000,
+   "start": 0.3,
+   "speech_end": 3.0,
+   "reveal_end": 3.0
+  },
+  {
+   "text": "技术栈很常见：Python、Postgres、Redis。",
+   "words": [
+    {
+     "part": "技",
+     "start": 3600,
+     "end": 3892
+    },
+    {
+     "part": "术",
+     "start": 3892,
+     "end": 4185
+    },
+    {
+     "part": "栈",
+     "start": 4185,
+     "end": 4477
+    },
+    {
+     "part": "很",
+     "start": 4477,
+     "end": 4769
+    },
+    {
+     "part": "常",
+     "start": 4769,
+     "end": 5062
+    },
+    {
+     "part": "见",
+     "start": 5062,
+     "end": 5354
+    },
+    {
+     "part": "：",
+     "start": 5354,
+     "end": 5646
+    },
+    {
+     "part": "Python",
+     "start": 5646,
+     "end": 5938
+    },
+    {
+     "part": "、",
+     "start": 5938,
+     "end": 6231
+    },
+    {
+     "part": "Postgres",
+     "start": 6231,
+     "end": 6523
+    },
+    {
+     "part": "、",
+     "start": 6523,
+     "end": 6815
+    },
+    {
+     "part": "Redis",
+     "start": 6815,
+     "end": 7108
+    },
+    {
+     "part": "。",
+     "start": 7108,
+     "end": 7400
+    }
+   ],
+   "start_ms": 3600,
+   "speech_end_ms": 7400,
+   "reveal_end_ms": 7400,
+   "start": 3.6,
+   "speech_end": 7.4,
+   "reveal_end": 7.4
+  },
+  {
+   "text": "先别急着怪数据库。",
+   "words": [
+    {
+     "part": "先",
+     "start": 8200,
+     "end": 8444
+    },
+    {
+     "part": "别",
+     "start": 8444,
+     "end": 8689
+    },
+    {
+     "part": "急",
+     "start": 8689,
+     "end": 8933
+    },
+    {
+     "part": "着",
+     "start": 8933,
+     "end": 9178
+    },
+    {
+     "part": "怪",
+     "start": 9178,
+     "end": 9422
+    },
+    {
+     "part": "数",
+     "start": 9422,
+     "end": 9667
+    },
+    {
+     "part": "据",
+     "start": 9667,
+     "end": 9911
+    },
+    {
+     "part": "库",
+     "start": 9911,
+     "end": 10156
+    },
+    {
+     "part": "。",
+     "start": 10156,
+     "end": 10400
+    }
+   ],
+   "start_ms": 8200,
+   "speech_end_ms": 10400,
+   "reveal_end_ms": 10400,
+   "start": 8.2,
+   "speech_end": 10.4,
+   "reveal_end": 10.4
+  },
+  {
+   "text": "把每个接口的耗时画出来，慢的只有一个。",
+   "words": [
+    {
+     "part": "把",
+     "start": 10800,
+     "end": 11000
+    },
+    {
+     "part": "每",
+     "start": 11000,
+     "end": 11200
+    },
+    {
+     "part": "个",
+     "start": 11200,
+     "end": 11400
+    },
+    {
+     "part": "接",
+     "start": 11400,
+     "end": 11600
+    },
+    {
+     "part": "口",
+     "start": 11600,
+     "end": 11800
+    },
+    {
+     "part": "的",
+     "start": 11800,
+     "end": 12000
+    },
+    {
+     "part": "耗",
+     "start": 12000,
+     "end": 12200
+    },
+    {
+     "part": "时",
+     "start": 12200,
+     "end": 12400
+    },
+    {
+     "part": "画",
+     "start": 12400,
+     "end": 12600
+    },
+    {
+     "part": "出",
+     "start": 12600,
+     "end": 12800
+    },
+    {
+     "part": "来",
+     "start": 12800,
+     "end": 13000
+    },
+    {
+     "part": "，",
+     "start": 13000,
+     "end": 13200
+    },
+    {
+     "part": "慢",
+     "start": 13200,
+     "end": 13400
+    },
+    {
+     "part": "的",
+     "start": 13400,
+     "end": 13600
+    },
+    {
+     "part": "只",
+     "start": 13600,
+     "end": 13800
+    },
+    {
+     "part": "有",
+     "start": 13800,
+     "end": 14000
+    },
+    {
+     "part": "一",
+     "start": 14000,
+     "end": 14200
+    },
+    {
+     "part": "个",
+     "start": 14200,
+     "end": 14400
+    },
+    {
+     "part": "。",
+     "start": 14400,
+     "end": 14600
+    }
+   ],
+   "start_ms": 10800,
+   "speech_end_ms": 14600,
+   "reveal_end_ms": 14600,
+   "start": 10.8,
+   "speech_end": 14.6,
+   "reveal_end": 14.6
+  },
+  {
+   "text": "问题在这里：每次请求都重新查一遍。",
+   "words": [
+    {
+     "part": "问",
+     "start": 15300,
+     "end": 15506
+    },
+    {
+     "part": "题",
+     "start": 15506,
+     "end": 15712
+    },
+    {
+     "part": "在",
+     "start": 15712,
+     "end": 15918
+    },
+    {
+     "part": "这",
+     "start": 15918,
+     "end": 16124
+    },
+    {
+     "part": "里",
+     "start": 16124,
+     "end": 16329
+    },
+    {
+     "part": "：",
+     "start": 16329,
+     "end": 16535
+    },
+    {
+     "part": "每",
+     "start": 16535,
+     "end": 16741
+    },
+    {
+     "part": "次",
+     "start": 16741,
+     "end": 16947
+    },
+    {
+     "part": "请",
+     "start": 16947,
+     "end": 17153
+    },
+    {
+     "part": "求",
+     "start": 17153,
+     "end": 17359
+    },
+    {
+     "part": "都",
+     "start": 17359,
+     "end": 17565
+    },
+    {
+     "part": "重",
+     "start": 17565,
+     "end": 17771
+    },
+    {
+     "part": "新",
+     "start": 17771,
+     "end": 17976
+    },
+    {
+     "part": "查",
+     "start": 17976,
+     "end": 18182
+    },
+    {
+     "part": "一",
+     "start": 18182,
+     "end": 18388
+    },
+    {
+     "part": "遍",
+     "start": 18388,
+     "end": 18594
+    },
+    {
+     "part": "。",
+     "start": 18594,
+     "end": 18800
+    }
+   ],
+   "start_ms": 15300,
+   "speech_end_ms": 18800,
+   "reveal_end_ms": 18800,
+   "start": 15.3,
+   "speech_end": 18.8,
+   "reveal_end": 18.8
+  },
+  {
+   "text": "加一个缓存装饰器，结果就能复用。",
+   "words": [
+    {
+     "part": "加",
+     "start": 19400,
+     "end": 19650
+    },
+    {
+     "part": "一",
+     "start": 19650,
+     "end": 19900
+    },
+    {
+     "part": "个",
+     "start": 19900,
+     "end": 20150
+    },
+    {
+     "part": "缓",
+     "start": 20150,
+     "end": 20400
+    },
+    {
+     "part": "存",
+     "start": 20400,
+     "end": 20650
+    },
+    {
+     "part": "装",
+     "start": 20650,
+     "end": 20900
+    },
+    {
+     "part": "饰",
+     "start": 20900,
+     "end": 21150
+    },
+    {
+     "part": "器",
+     "start": 21150,
+     "end": 21400
+    },
+    {
+     "part": "，",
+     "start": 21400,
+     "end": 21650
+    },
+    {
+     "part": "结",
+     "start": 21650,
+     "end": 21900
+    },
+    {
+     "part": "果",
+     "start": 21900,
+     "end": 22150
+    },
+    {
+     "part": "就",
+     "start": 22150,
+     "end": 22400
+    },
+    {
+     "part": "能",
+     "start": 22400,
+     "end": 22650
+    },
+    {
+     "part": "复",
+     "start": 22650,
+     "end": 22900
+    },
+    {
+     "part": "用",
+     "start": 22900,
+     "end": 23150
+    },
+    {
+     "part": "。",
+     "start": 23150,
+     "end": 23400
+    }
+   ],
+   "start_ms": 19400,
+   "speech_end_ms": 23400,
+   "reveal_end_ms": 23400,
+   "start": 19.4,
+   "speech_end": 23.4,
+   "reveal_end": 23.4
+  },
+  {
+   "text": "改动只有三行。",
+   "words": [
+    {
+     "part": "改",
+     "start": 24300,
+     "end": 24586
+    },
+    {
+     "part": "动",
+     "start": 24586,
+     "end": 24871
+    },
+    {
+     "part": "只",
+     "start": 24871,
+     "end": 25157
+    },
+    {
+     "part": "有",
+     "start": 25157,
+     "end": 25443
+    },
+    {
+     "part": "三",
+     "start": 25443,
+     "end": 25729
+    },
+    {
+     "part": "行",
+     "start": 25729,
+     "end": 26014
+    },
+    {
+     "part": "。",
+     "start": 26014,
+     "end": 26300
+    }
+   ],
+   "start_ms": 24300,
+   "speech_end_ms": 26300,
+   "reveal_end_ms": 26300,
+   "start": 24.3,
+   "speech_end": 26.3,
+   "reveal_end": 26.3
+  },
+  {
+   "text": "删掉旧调用，换成带缓存的版本。",
+   "words": [
+    {
+     "part": "删",
+     "start": 26800,
+     "end": 27093
+    },
+    {
+     "part": "掉",
+     "start": 27093,
+     "end": 27387
+    },
+    {
+     "part": "旧",
+     "start": 27387,
+     "end": 27680
+    },
+    {
+     "part": "调",
+     "start": 27680,
+     "end": 27973
+    },
+    {
+     "part": "用",
+     "start": 27973,
+     "end": 28267
+    },
+    {
+     "part": "，",
+     "start": 28267,
+     "end": 28560
+    },
+    {
+     "part": "换",
+     "start": 28560,
+     "end": 28853
+    },
+    {
+     "part": "成",
+     "start": 28853,
+     "end": 29147
+    },
+    {
+     "part": "带",
+     "start": 29147,
+     "end": 29440
+    },
+    {
+     "part": "缓",
+     "start": 29440,
+     "end": 29733
+    },
+    {
+     "part": "存",
+     "start": 29733,
+     "end": 30027
+    },
+    {
+     "part": "的",
+     "start": 30027,
+     "end": 30320
+    },
+    {
+     "part": "版",
+     "start": 30320,
+     "end": 30613
+    },
+    {
+     "part": "本",
+     "start": 30613,
+     "end": 30907
+    },
+    {
+     "part": "。",
+     "start": 30907,
+     "end": 31200
+    }
+   ],
+   "start_ms": 26800,
+   "speech_end_ms": 31200,
+   "reveal_end_ms": 31200,
+   "start": 26.8,
+   "speech_end": 31.2,
+   "reveal_end": 31.2
+  },
+  {
+   "text": "以前，每个请求都要走到数据库。",
+   "words": [
+    {
+     "part": "以",
+     "start": 32300,
+     "end": 32520
+    },
+    {
+     "part": "前",
+     "start": 32520,
+     "end": 32740
+    },
+    {
+     "part": "，",
+     "start": 32740,
+     "end": 32960
+    },
+    {
+     "part": "每",
+     "start": 32960,
+     "end": 33180
+    },
+    {
+     "part": "个",
+     "start": 33180,
+     "end": 33400
+    },
+    {
+     "part": "请",
+     "start": 33400,
+     "end": 33620
+    },
+    {
+     "part": "求",
+     "start": 33620,
+     "end": 33840
+    },
+    {
+     "part": "都",
+     "start": 33840,
+     "end": 34060
+    },
+    {
+     "part": "要",
+     "start": 34060,
+     "end": 34280
+    },
+    {
+     "part": "走",
+     "start": 34280,
+     "end": 34500
+    },
+    {
+     "part": "到",
+     "start": 34500,
+     "end": 34720
+    },
+    {
+     "part": "数",
+     "start": 34720,
+     "end": 34940
+    },
+    {
+     "part": "据",
+     "start": 34940,
+     "end": 35160
+    },
+    {
+     "part": "库",
+     "start": 35160,
+     "end": 35380
+    },
+    {
+     "part": "。",
+     "start": 35380,
+     "end": 35600
+    }
+   ],
+   "start_ms": 32300,
+   "speech_end_ms": 35600,
+   "reveal_end_ms": 35600,
+   "start": 32.3,
+   "speech_end": 35.6,
+   "reveal_end": 35.6
+  },
+  {
+   "text": "现在，大部分请求在缓存层就被接住。",
+   "words": [
+    {
+     "part": "现",
+     "start": 36000,
+     "end": 36212
+    },
+    {
+     "part": "在",
+     "start": 36212,
+     "end": 36424
+    },
+    {
+     "part": "，",
+     "start": 36424,
+     "end": 36635
+    },
+    {
+     "part": "大",
+     "start": 36635,
+     "end": 36847
+    },
+    {
+     "part": "部",
+     "start": 36847,
+     "end": 37059
+    },
+    {
+     "part": "分",
+     "start": 37059,
+     "end": 37271
+    },
+    {
+     "part": "请",
+     "start": 37271,
+     "end": 37482
+    },
+    {
+     "part": "求",
+     "start": 37482,
+     "end": 37694
+    },
+    {
+     "part": "在",
+     "start": 37694,
+     "end": 37906
+    },
+    {
+     "part": "缓",
+     "start": 37906,
+     "end": 38118
+    },
+    {
+     "part": "存",
+     "start": 38118,
+     "end": 38329
+    },
+    {
+     "part": "层",
+     "start": 38329,
+     "end": 38541
+    },
+    {
+     "part": "就",
+     "start": 38541,
+     "end": 38753
+    },
+    {
+     "part": "被",
+     "start": 38753,
+     "end": 38965
+    },
+    {
+     "part": "接",
+     "start": 38965,
+     "end": 39176
+    },
+    {
+     "part": "住",
+     "start": 39176,
+     "end": 39388
+    },
+    {
+     "part": "。",
+     "start": 39388,
+     "end": 39600
+    }
+   ],
+   "start_ms": 36000,
+   "speech_end_ms": 39600,
+   "reveal_end_ms": 39600,
+   "start": 36.0,
+   "speech_end": 39.6,
+   "reveal_end": 39.6
+  },
+  {
+   "text": "整条链路变成三站：请求、缓存、数据库。",
+   "words": [
+    {
+     "part": "整",
+     "start": 40300,
+     "end": 40495
+    },
+    {
+     "part": "条",
+     "start": 40495,
+     "end": 40689
+    },
+    {
+     "part": "链",
+     "start": 40689,
+     "end": 40884
+    },
+    {
+     "part": "路",
+     "start": 40884,
+     "end": 41079
+    },
+    {
+     "part": "变",
+     "start": 41079,
+     "end": 41274
+    },
+    {
+     "part": "成",
+     "start": 41274,
+     "end": 41468
+    },
+    {
+     "part": "三",
+     "start": 41468,
+     "end": 41663
+    },
+    {
+     "part": "站",
+     "start": 41663,
+     "end": 41858
+    },
+    {
+     "part": "：",
+     "start": 41858,
+     "end": 42053
+    },
+    {
+     "part": "请",
+     "start": 42053,
+     "end": 42247
+    },
+    {
+     "part": "求",
+     "start": 42247,
+     "end": 42442
+    },
+    {
+     "part": "、",
+     "start": 42442,
+     "end": 42637
+    },
+    {
+     "part": "缓",
+     "start": 42637,
+     "end": 42832
+    },
+    {
+     "part": "存",
+     "start": 42832,
+     "end": 43026
+    },
+    {
+     "part": "、",
+     "start": 43026,
+     "end": 43221
+    },
+    {
+     "part": "数",
+     "start": 43221,
+     "end": 43416
+    },
+    {
+     "part": "据",
+     "start": 43416,
+     "end": 43611
+    },
+    {
+     "part": "库",
+     "start": 43611,
+     "end": 43805
+    },
+    {
+     "part": "。",
+     "start": 43805,
+     "end": 44000
+    }
+   ],
+   "start_ms": 40300,
+   "speech_end_ms": 44000,
+   "reveal_end_ms": 44000,
+   "start": 40.3,
+   "speech_end": 44.0,
+   "reveal_end": 44.0
+  },
+  {
+   "text": "只有缓存没命中，才会往下走。",
+   "words": [
+    {
+     "part": "只",
+     "start": 44400,
+     "end": 44629
+    },
+    {
+     "part": "有",
+     "start": 44629,
+     "end": 44857
+    },
+    {
+     "part": "缓",
+     "start": 44857,
+     "end": 45086
+    },
+    {
+     "part": "存",
+     "start": 45086,
+     "end": 45314
+    },
+    {
+     "part": "没",
+     "start": 45314,
+     "end": 45543
+    },
+    {
+     "part": "命",
+     "start": 45543,
+     "end": 45771
+    },
+    {
+     "part": "中",
+     "start": 45771,
+     "end": 46000
+    },
+    {
+     "part": "，",
+     "start": 46000,
+     "end": 46229
+    },
+    {
+     "part": "才",
+     "start": 46229,
+     "end": 46457
+    },
+    {
+     "part": "会",
+     "start": 46457,
+     "end": 46686
+    },
+    {
+     "part": "往",
+     "start": 46686,
+     "end": 46914
+    },
+    {
+     "part": "下",
+     "start": 46914,
+     "end": 47143
+    },
+    {
+     "part": "走",
+     "start": 47143,
+     "end": 47371
+    },
+    {
+     "part": "。",
+     "start": 47371,
+     "end": 47600
+    }
+   ],
+   "start_ms": 44400,
+   "speech_end_ms": 47600,
+   "reveal_end_ms": 47600,
+   "start": 44.4,
+   "speech_end": 47.6,
+   "reveal_end": 47.6
+  },
+  {
+   "text": "上线一周，平均耗时从 1.2 秒降到 0.24 秒。",
+   "words": [
+    {
+     "part": "上",
+     "start": 48300,
+     "end": 48553
+    },
+    {
+     "part": "线",
+     "start": 48553,
+     "end": 48806
+    },
+    {
+     "part": "一",
+     "start": 48806,
+     "end": 49059
+    },
+    {
+     "part": "周",
+     "start": 49059,
+     "end": 49312
+    },
+    {
+     "part": "，",
+     "start": 49312,
+     "end": 49565
+    },
+    {
+     "part": "平",
+     "start": 49565,
+     "end": 49818
+    },
+    {
+     "part": "均",
+     "start": 49818,
+     "end": 50071
+    },
+    {
+     "part": "耗",
+     "start": 50071,
+     "end": 50324
+    },
+    {
+     "part": "时",
+     "start": 50324,
+     "end": 50576
+    },
+    {
+     "part": "从",
+     "start": 50576,
+     "end": 50829
+    },
+    {
+     "part": "1.2",
+     "start": 50829,
+     "end": 51082
+    },
+    {
+     "part": "秒",
+     "start": 51082,
+     "end": 51335
+    },
+    {
+     "part": "降",
+     "start": 51335,
+     "end": 51588
+    },
+    {
+     "part": "到",
+     "start": 51588,
+     "end": 51841
+    },
+    {
+     "part": "0.24",
+     "start": 51841,
+     "end": 52094
+    },
+    {
+     "part": "秒",
+     "start": 52094,
+     "end": 52347
+    },
+    {
+     "part": "。",
+     "start": 52347,
+     "end": 52600
+    }
+   ],
+   "start_ms": 48300,
+   "speech_end_ms": 52600,
+   "reveal_end_ms": 52600,
+   "start": 48.3,
+   "speech_end": 52.6,
+   "reveal_end": 52.6
+  },
+  {
+   "text": "数据库负载也降了七成。",
+   "words": [
+    {
+     "part": "数",
+     "start": 53000,
+     "end": 53236
+    },
+    {
+     "part": "据",
+     "start": 53236,
+     "end": 53473
+    },
+    {
+     "part": "库",
+     "start": 53473,
+     "end": 53709
+    },
+    {
+     "part": "负",
+     "start": 53709,
+     "end": 53945
+    },
+    {
+     "part": "载",
+     "start": 53945,
+     "end": 54182
+    },
+    {
+     "part": "也",
+     "start": 54182,
+     "end": 54418
+    },
+    {
+     "part": "降",
+     "start": 54418,
+     "end": 54655
+    },
+    {
+     "part": "了",
+     "start": 54655,
+     "end": 54891
+    },
+    {
+     "part": "七",
+     "start": 54891,
+     "end": 55127
+    },
+    {
+     "part": "成",
+     "start": 55127,
+     "end": 55364
+    },
+    {
+     "part": "。",
+     "start": 55364,
+     "end": 55600
+    }
+   ],
+   "start_ms": 53000,
+   "speech_end_ms": 55600,
+   "reveal_end_ms": 55600,
+   "start": 53.0,
+   "speech_end": 55.6,
+   "reveal_end": 55.6
+  },
+  {
+   "text": "一行缓存，五倍速度。",
+   "words": [
+    {
+     "part": "一",
+     "start": 56000,
+     "end": 56280
+    },
+    {
+     "part": "行",
+     "start": 56280,
+     "end": 56560
+    },
+    {
+     "part": "缓",
+     "start": 56560,
+     "end": 56840
+    },
+    {
+     "part": "存",
+     "start": 56840,
+     "end": 57120
+    },
+    {
+     "part": "，",
+     "start": 57120,
+     "end": 57400
+    },
+    {
+     "part": "五",
+     "start": 57400,
+     "end": 57680
+    },
+    {
+     "part": "倍",
+     "start": 57680,
+     "end": 57960
+    },
+    {
+     "part": "速",
+     "start": 57960,
+     "end": 58240
+    },
+    {
+     "part": "度",
+     "start": 58240,
+     "end": 58520
+    },
+    {
+     "part": "。",
+     "start": 58520,
+     "end": 58800
+    }
+   ],
+   "start_ms": 56000,
+   "speech_end_ms": 58800,
+   "reveal_end_ms": 58800,
+   "start": 56.0,
+   "speech_end": 58.8,
+   "reveal_end": 58.8
+  }
+ ],
+ "source": "demo storyboard (no narration; subtitle timing authored)",
+ "lead_ms": 0,
+ "segmentation": "manual"
+}

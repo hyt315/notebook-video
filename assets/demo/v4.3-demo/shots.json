@@ -1,0 +1,477 @@
+{
+ "$comment": "notebook-video v4.3 组件演示片（约 60 秒）：缓存让接口快 5 倍。",
+ "duration": 1800,
+ "theme": "flat",
+ "canvas": "16:9",
+ "shots": [
+  {
+   "id": "S1",
+   "chapter": "慢在哪里",
+   "skeleton": "Stage",
+   "cues": [
+    0,
+    1
+   ],
+   "media": [
+    "console",
+    "graphic"
+   ],
+   "live": [
+    "ConsoleWindow",
+    "IconWall"
+   ],
+   "camera": {
+    "intent": "establish",
+    "at": 20,
+    "dur": 38,
+    "x": 960,
+    "y": 540,
+    "from": 1.0,
+    "to": 1.04
+   },
+   "anchor": {
+    "x": 200,
+    "y": 170,
+    "w": 1520,
+    "h": 690
+   },
+   "contentBand": {
+    "x": 160,
+    "y": 130,
+    "w": 1600,
+    "h": 760
+   },
+   "hero": {
+    "name": "慢接口",
+    "size": 620,
+    "kind": "text"
+   },
+   "zones": 4,
+   "bottomFill": true,
+   "cover": "paper",
+   "transition": "cut",
+   "entry": "rise",
+   "beats": [
+    {
+     "cue": 0,
+     "offset": 0
+    },
+    {
+     "cue": 1,
+     "offset": 0
+    },
+    {
+     "cue": 1,
+     "offset": 60
+    }
+   ],
+   "move": "引入",
+   "evidence": "ConsoleWindow",
+   "hold": 40,
+   "noMisconception": true,
+   "why": "开场先立现象，不立误解"
+  },
+  {
+   "id": "S2",
+   "chapter": "慢在哪里",
+   "skeleton": "Stage",
+   "cues": [
+    2,
+    3
+   ],
+   "media": [
+    "chart",
+    "metric"
+   ],
+   "live": [
+    "Chart",
+    "StatRow"
+   ],
+   "camera": {
+    "intent": "push-in",
+    "at": 24,
+    "dur": 38,
+    "x": 960,
+    "y": 540,
+    "from": 1.0,
+    "to": 1.03
+   },
+   "anchor": {
+    "x": 200,
+    "y": 170,
+    "w": 1520,
+    "h": 690
+   },
+   "contentBand": {
+    "x": 160,
+    "y": 130,
+    "w": 1600,
+    "h": 760
+   },
+   "hero": {
+    "name": "耗时柱状图",
+    "size": 620,
+    "kind": "text"
+   },
+   "zones": 4,
+   "bottomFill": true,
+   "cover": "paper",
+   "transition": "cut",
+   "entry": "fade",
+   "beats": [
+    {
+     "cue": 2,
+     "offset": 0
+    },
+    {
+     "cue": 3,
+     "offset": 0
+    },
+    {
+     "cue": 3,
+     "offset": 60
+    }
+   ],
+   "move": "反证",
+   "evidence": "Chart",
+   "hold": 40,
+   "misconception": "以为是数据库太慢"
+  },
+  {
+   "id": "S3",
+   "chapter": "改一行代码",
+   "skeleton": "Stage",
+   "cues": [
+    4,
+    5
+   ],
+   "media": [
+    "code",
+    "text"
+   ],
+   "live": [
+    "HighlightCode",
+    "FitCard"
+   ],
+   "camera": {
+    "intent": "push-in",
+    "at": 20,
+    "dur": 38,
+    "x": 960,
+    "y": 540,
+    "from": 1.0,
+    "to": 1.03
+   },
+   "anchor": {
+    "x": 200,
+    "y": 170,
+    "w": 1520,
+    "h": 690
+   },
+   "contentBand": {
+    "x": 160,
+    "y": 130,
+    "w": 1600,
+    "h": 760
+   },
+   "hero": {
+    "name": "缓存装饰器",
+    "size": 620,
+    "kind": "text"
+   },
+   "zones": 4,
+   "bottomFill": true,
+   "cover": "paper",
+   "transition": "cut",
+   "entry": "rise",
+   "beats": [
+    {
+     "cue": 4,
+     "offset": 0
+    },
+    {
+     "cue": 5,
+     "offset": 0
+    },
+    {
+     "cue": 5,
+     "offset": 50
+    }
+   ],
+   "move": "定位",
+   "evidence": "HighlightCode",
+   "hold": 40,
+   "noMisconception": true,
+   "why": "本镜直接给出修法"
+  },
+  {
+   "id": "S4",
+   "chapter": "改一行代码",
+   "skeleton": "Zoom",
+   "cues": [
+    6,
+    7
+   ],
+   "media": [
+    "code",
+    "console"
+   ],
+   "live": [
+    "DiffView",
+    "Checklist"
+   ],
+   "camera": {
+    "intent": "reveal",
+    "at": 26,
+    "dur": 38,
+    "x": 960,
+    "y": 540,
+    "from": 1.0,
+    "to": 1.04
+   },
+   "anchor": {
+    "x": 200,
+    "y": 170,
+    "w": 1520,
+    "h": 690
+   },
+   "contentBand": {
+    "x": 160,
+    "y": 130,
+    "w": 1600,
+    "h": 760
+   },
+   "hero": {
+    "name": "三行 diff",
+    "size": 620,
+    "kind": "text"
+   },
+   "zones": 4,
+   "bottomFill": true,
+   "cover": "paper",
+   "transition": "reveal",
+   "entry": "zoom",
+   "beats": [
+    {
+     "cue": 6,
+     "offset": 0
+    },
+    {
+     "cue": 7,
+     "offset": 0
+    },
+    {
+     "cue": 7,
+     "offset": 70
+    }
+   ],
+   "move": "对比",
+   "evidence": "DiffView",
+   "hold": 40,
+   "noMisconception": true,
+   "why": "上一镜的延续，展示改动"
+  },
+  {
+   "id": "S5",
+   "chapter": "结构怎么变",
+   "skeleton": "Split",
+   "cues": [
+    8,
+    9
+   ],
+   "media": [
+    "graphic",
+    "text"
+   ],
+   "live": [
+    "MorphShape",
+    "TreeView"
+   ],
+   "camera": {
+    "intent": "push-in",
+    "at": 20,
+    "dur": 38,
+    "x": 960,
+    "y": 540,
+    "from": 1.0,
+    "to": 1.03
+   },
+   "anchor": {
+    "x": 200,
+    "y": 170,
+    "w": 1520,
+    "h": 690
+   },
+   "contentBand": {
+    "x": 160,
+    "y": 130,
+    "w": 1600,
+    "h": 760
+   },
+   "hero": {
+    "name": "形状变形",
+    "size": 620,
+    "kind": "text"
+   },
+   "zones": 4,
+   "bottomFill": true,
+   "cover": "paper",
+   "transition": "cut",
+   "entry": "rise",
+   "beats": [
+    {
+     "cue": 8,
+     "offset": 0
+    },
+    {
+     "cue": 9,
+     "offset": 0
+    },
+    {
+     "cue": 9,
+     "offset": 50
+    }
+   ],
+   "move": "对比",
+   "evidence": "MorphShape",
+   "hold": 40,
+   "misconception": "以为缓存只是换了个数据库"
+  },
+  {
+   "id": "S6",
+   "chapter": "结构怎么变",
+   "skeleton": "Corridor",
+   "cues": [
+    10,
+    11
+   ],
+   "media": [
+    "graphic",
+    "text"
+   ],
+   "live": [
+    "Corridor",
+    "Tabs"
+   ],
+   "camera": {
+    "intent": "pan-follow",
+    "at": 8,
+    "dur": 40,
+    "x": 920,
+    "y": 540,
+    "from": 1.04,
+    "to": 1.04
+   },
+   "anchor": {
+    "x": 200,
+    "y": 170,
+    "w": 1520,
+    "h": 690
+   },
+   "contentBand": {
+    "x": 160,
+    "y": 130,
+    "w": 1600,
+    "h": 760
+   },
+   "hero": {
+    "name": "三站链路",
+    "size": 620,
+    "kind": "text"
+   },
+   "zones": 3,
+   "bottomFill": true,
+   "cover": "paper",
+   "transition": "cut",
+   "entry": "rise",
+   "beats": [
+    {
+     "cue": 10,
+     "offset": 0
+    },
+    {
+     "cue": 11,
+     "offset": 0
+    },
+    {
+     "cue": 11,
+     "offset": 50
+    }
+   ],
+   "move": "推进",
+   "evidence": "Corridor",
+   "hold": 40,
+   "noMisconception": true,
+   "why": "流程推进，不设误解"
+  },
+  {
+   "id": "S7",
+   "chapter": "结果",
+   "skeleton": "Stage",
+   "cues": [
+    12,
+    14
+   ],
+   "media": [
+    "chart",
+    "metric"
+   ],
+   "live": [
+    "Chart",
+    "MetricGrid",
+    "VerdictBar"
+   ],
+   "camera": {
+    "intent": "pull-back",
+    "at": 16,
+    "dur": 40,
+    "x": 960,
+    "y": 540,
+    "from": 1.06,
+    "to": 1.0
+   },
+   "anchor": {
+    "x": 200,
+    "y": 170,
+    "w": 1520,
+    "h": 690
+   },
+   "contentBand": {
+    "x": 160,
+    "y": 130,
+    "w": 1600,
+    "h": 760
+   },
+   "hero": {
+    "name": "结果",
+    "size": 620,
+    "kind": "text"
+   },
+   "zones": 3,
+   "bottomFill": true,
+   "cover": "paper",
+   "transition": "cut",
+   "entry": "fade",
+   "beats": [
+    {
+     "cue": 12,
+     "offset": 0
+    },
+    {
+     "cue": 13,
+     "offset": 0
+    },
+    {
+     "cue": 14,
+     "offset": 0
+    }
+   ],
+   "move": "收束",
+   "evidence": "VerdictBar",
+   "hold": 40,
+   "noMisconception": true,
+   "why": "收束镜，直接给结果",
+   "to": 1800
+  }
+ ]
+}
