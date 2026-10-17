@@ -37,25 +37,47 @@
     {
       "event": "pop",
       "file": "sfx/lib/pop.ogg",
-      "sha256": "a46caabc75be551091f157993fbc3dfb4e36598a104183488e5e44bf5693321c",
-      "bytes": 5121,
-      "duration_s": 0.197,
-      "loudness_lufs_100ms": -18.1,
-      "peak_dbfs": -1.2,
+      "sha256": "f9d37ae42d6b1dca4f233e3922e31da08edaf2bcb197cc4c161dede5a4fe56e5",
+      "bytes": 4849,
+      "duration_s": 0.167,
+      "loudness_lufs_100ms": -18.0,
+      "peak_dbfs": -2.2,
       "channels": 1,
       "sample_rate": 48000,
       "codec": "vorbis",
       "source": {
         "tool": "earshot forge 0.2.0",
-        "recipe": "pop",
-        "seed_bank_index": 6
+        "recipe": "layered",
+        "layers": [
+          {
+            "recipe": "popin",
+            "seed_bank_index": 14,
+            "gain_db": -3.0,
+            "offset_s": 0.0,
+            "pitch_ratio": 1.0
+          },
+          {
+            "recipe": "pop",
+            "seed_bank_index": 7,
+            "gain_db": 0.0,
+            "offset_s": 0.002,
+            "pitch_ratio": 1.0
+          },
+          {
+            "recipe": "impact",
+            "seed_bank_index": 6,
+            "gain_db": -18.0,
+            "offset_s": 0.0,
+            "pitch_ratio": 1.0
+          }
+        ]
       },
-      "description": "a short soft tonal pop",
-      "intended_use": "an element appears (first beat of a shot)",
+      "description": "a punchy round pop with a low thump as an element pops onto the screen",
+      "intended_use": "an element appears (first beat of a shot) / a key number lands",
       "license": "CC0-1.0 (generated in code; no recorded samples)",
       "qc": {
-        "earshot_match_z": 2.49,
-        "verdict": "weak"
+        "earshot_match_z": 3.01,
+        "verdict": "strong"
       }
     },
     {
@@ -162,25 +184,47 @@
     {
       "event": "chart",
       "file": "sfx/lib/chart.ogg",
-      "sha256": "83e0068ea8c25b5a8f82f0c989676f281ff246fbf26714c00d8ce6ae5e589b07",
-      "bytes": 6069,
-      "duration_s": 0.329,
-      "loudness_lufs_100ms": -18.4,
-      "peak_dbfs": -11.6,
+      "sha256": "32b653165a68570e3a915d46b5d39ba89e800152d1f3d5d9f7b985689e554f6d",
+      "bytes": 6507,
+      "duration_s": 0.369,
+      "loudness_lufs_100ms": -18.5,
+      "peak_dbfs": -9.9,
       "channels": 1,
       "sample_rate": 48000,
       "codec": "vorbis",
       "source": {
         "tool": "earshot forge 0.2.0",
-        "recipe": "zip",
-        "seed_bank_index": 9
+        "recipe": "layered",
+        "layers": [
+          {
+            "recipe": "zip",
+            "seed_bank_index": 5,
+            "gain_db": 0.0,
+            "offset_s": 0.0,
+            "pitch_ratio": 1.0
+          },
+          {
+            "recipe": "zip",
+            "seed_bank_index": 0,
+            "gain_db": -2.0,
+            "offset_s": 0.01,
+            "pitch_ratio": 1.0
+          },
+          {
+            "recipe": "popin",
+            "seed_bank_index": 10,
+            "gain_db": -8.0,
+            "offset_s": 0.2,
+            "pitch_ratio": 1.0
+          }
+        ]
       },
       "description": "a quick rising tonal synth sweep as a bar chart grows",
       "intended_use": "bars / lines / rings grow",
       "license": "CC0-1.0 (generated in code; no recorded samples)",
       "qc": {
-        "earshot_match_z": 2.47,
-        "verdict": "weak"
+        "earshot_match_z": 3.15,
+        "verdict": "strong"
       }
     },
     {

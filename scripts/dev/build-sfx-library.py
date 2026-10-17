@@ -39,16 +39,51 @@ SR = 48000
 # event -> (recipe, seed-bank index, description, intended use, options)
 PICKS = {
     "whoosh":    ("whoosh", 25, "a fast clean air whoosh for a slide transition", "shot transition / camera move / handoff", {}),
-    "pop":       ("pop", 6, "a short soft tonal pop", "an element appears (first beat of a shot)", {}),
+    # v4.4: pop and chart are LAYERED designs (see LAYERS below) - the single-recipe v4.3 versions read weak
+    # under narration (earshot match z 2.49 / 2.47, "weak").
+    "pop":       ("layers", "pop", "a punchy round pop with a low thump as an element pops onto the screen", "an element appears (first beat of a shot) / a key number lands", {}),
     "click":     ("click", 4, "a clean crisp user interface click tap", "a list item, step or toggle lands", {}),
     "typing":    ("keypress", [0, 6, 7, 8], "a quick run of soft digital keyboard typing ticks", "code / console lines being written", {"burst": True}),
     "success":   ("notify", 13, "a short bright positive success chime, task complete", "check mark, verdict, conclusion lands", {}),
     "error":     ("glitch", 10, "a short low digital error buzz, wrong answer", "a misconception is refuted / wrong value struck", {}),
-    "chart":     ("zip", 9, "a quick rising tonal synth sweep as a bar chart grows", "bars / lines / rings grow", {}),
+    "chart":     ("layers", "chart", "a quick rising tonal synth sweep as a bar chart grows", "bars / lines / rings grow", {}),
     "highlight": ("notify", 14, "a light bright ding highlighting a word", "a key word or number is highlighted", {}),
     "chapter":   ("shimmer", 10, "a bright short logo sting chime opening a new chapter", "chapter card / new section", {}),
     "riser":     ("riser", 1, "a soft short cinematic riser building into a reveal", "builds into a chapter or payoff (ends on the hit)", {"tail": 1.5}),
 }
+
+
+# v4.4 layered designs: (recipe, seed-bank index, gain dB, offset s, pitch ratio, keep s or None).
+# pop   = round low body (popin #14, 107 Hz + sub) + bright bubble tick (pop #7) + a trimmed sub hit (impact #6)
+#         for weight: a pop you feel, not a faint "plip". earshot match z 3.10 (strong) vs 2.82 for v4.3.
+# chart = two upward tonal zips (zip #5 + zip #0, 10 ms apart: a thicker, wider sweep) that land on a soft
+#         round thump (popin #10) as the bars reach their value. z 3.08 (strong) vs 2.47 (weak) for v4.3.
+#         (A rising four-note arpeggio was tried and rejected: CLAP read it as "no match", z 0.95.)
+LAYERS = {
+    "pop": [("popin", 14, -3.0, 0.000, 1.0, None), ("pop", 7, 0.0, 0.002, 1.0, None), ("impact", 6, -18.0, 0.000, 1.0, 0.12)],
+    "chart": [("zip", 5, 0.0, 0.000, 1.0, None), ("zip", 0, -2.0, 0.010, 1.0, None), ("popin", 10, -8.0, 0.200, 1.0, None)],
+}
+
+
+def repitch(x: np.ndarray, ratio: float) -> np.ndarray:
+    """pitch up/down by resampling (shorter when higher - fine for one-shots)."""
+    if abs(ratio - 1.0) < 1e-6:
+        return x
+    n = max(8, int(round(len(x) / ratio)))
+    return np.interp(np.linspace(0, len(x) - 1, n), np.arange(len(x)), x)
+
+
+def layered(name: str) -> np.ndarray:
+    parts = []
+    for recipe, idx, gdb, off, ratio, keep in LAYERS[name]:
+        y = repitch(render_entry(recipe, idx), ratio)
+        if keep:
+            y = fade(y[: int(keep * SR)], 0, min(0.04, keep / 3))
+        parts.append((int(off * SR), y * 10 ** (gdb / 20)))
+    out = np.zeros(max(o + len(y) for o, y in parts))
+    for o, y in parts:
+        out[o:o + len(y)] += y
+    return out / (np.max(np.abs(out)) + 1e-12)
 
 
 def render_entry(recipe: str, idx: int) -> np.ndarray:
@@ -137,11 +172,23 @@ def decoded(dst: Path) -> np.ndarray:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-qc", action="store_true")
+    ap.add_argument("--only", default="", help="comma list of events to rebuild; the others keep their manifest entry and file")
     a = ap.parse_args()
+    only = {x.strip() for x in a.only.split(",") if x.strip()}
+    old = {}
+    try:
+        old = {e["event"]: e for e in json.loads((OUT / "sfx-manifest.json").read_text(encoding="utf-8"))["events"]}
+    except Exception:
+        only = set()
     LIB.mkdir(parents=True, exist_ok=True)
     entries = []
     for ev, (recipe, idx, desc, use, opt) in PICKS.items():
-        if opt.get("burst"):
+        if only and ev not in only and ev in old:
+            entries.append(old[ev])
+            continue
+        if recipe == "layers":
+            x = layered(idx)
+        elif opt.get("burst"):
             x = burst([render_entry(recipe, i) for i in idx])
         else:
             x = render_entry(recipe, idx)
@@ -156,16 +203,23 @@ def main() -> int:
                         "bytes": dst.stat().st_size, "duration_s": round(len(d) / SR, 3),
                         "loudness_lufs_100ms": round(loud(d), 1), "peak_dbfs": round(20 * np.log10(np.max(np.abs(d)) + 1e-12), 1),
                         "channels": 1, "sample_rate": SR, "codec": "vorbis",
-                        "source": {"tool": "earshot forge 0.2.0", "recipe": recipe, "seed_bank_index": idx},
+                        "source": ({"tool": "earshot forge 0.2.0", "recipe": "layered", "layers": [
+                                       {"recipe": r, "seed_bank_index": i, "gain_db": g, "offset_s": o, "pitch_ratio": pr} for r, i, g, o, pr, _k in LAYERS[idx]]}
+                                   if recipe == "layers" else {"tool": "earshot forge 0.2.0", "recipe": recipe, "seed_bank_index": idx}),
                         "description": desc, "intended_use": use,
                         "license": "CC0-1.0 (generated in code; no recorded samples)"})
         print(f"{ev:10s} {entries[-1]['duration_s']:5.2f}s {entries[-1]['loudness_lufs_100ms']:6.1f} LUFS "
               f"peak {entries[-1]['peak_dbfs']:5.1f} {entries[-1]['bytes']:6d} B", flush=True)
+    if only and "bed" in old:
+        bed_entry = old["bed"]
+    else:
+        bed_entry = None
     bed, _, _ = normalise(music_bed(), BED_LUFS)
     bed_dst = LIB / "bed.ogg"
-    encode(bed, bed_dst, q=2)
+    if bed_entry is None:
+        encode(bed, bed_dst, q=2)
     bd = decoded(bed_dst)
-    bed_entry = {"event": "bed", "file": "sfx/lib/bed.ogg", "sha256": hashlib.sha256(bed_dst.read_bytes()).hexdigest(),
+    bed_entry = bed_entry or {"event": "bed", "file": "sfx/lib/bed.ogg", "sha256": hashlib.sha256(bed_dst.read_bytes()).hexdigest(),
                  "bytes": bed_dst.stat().st_size, "duration_s": round(len(bd) / SR, 3),
                  "loudness_lufs_100ms": round(loud(bd), 1), "peak_dbfs": round(20 * np.log10(np.max(np.abs(bd)) + 1e-12), 1),
                  "channels": 1, "sample_rate": SR, "codec": "vorbis",
@@ -175,6 +229,8 @@ def main() -> int:
     if not a.no_qc:
         from earshot import api
         for e in entries:
+            if only and e["event"] not in only:
+                continue
             r = api.match(str(OUT.parent / e["file"]), e["description"])
             e["qc"] = {"earshot_match_z": round(float(r.get("z", 0)), 2), "verdict": r.get("verdict")}
             print(f"  QC {e['event']:10s} z={e['qc']['earshot_match_z']:+.2f} {e['qc']['verdict']}", flush=True)
