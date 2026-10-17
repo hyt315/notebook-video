@@ -42,7 +42,7 @@ export const MascotGate: React.FC<{watch: number[]}> = ({watch}) => {
         const k = rr.width / 1920;
         const hits: string[] = [];
         root.querySelectorAll<HTMLElement>('div').forEach((el) => {
-          if (el.closest('[data-gate-allow]') || !solidCard(el)) return;
+          if (el.closest('[data-gate-allow]') || el.closest('[data-cinema-focus]') || !solidCard(el)) return;
           let a: HTMLElement | null = el;
           while (a && a !== root) {
             const z = parseInt(getComputedStyle(a).zIndex || '0', 10);

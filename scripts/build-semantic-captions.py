@@ -172,6 +172,10 @@ def main() -> None:
                         help="directory holding node_modules (default: search up from the project)")
     parser.add_argument("--no-budoux", action="store_true",
                         help="skip phrase segmentation; only the mechanical half of the rule runs")
+    parser.add_argument("--max-chars", type=int, default=16,
+                        help="v4.4: hard cap per subtitle line (characters after stripping the trailing "
+                             "punctuation; ASCII counts 1). A longer approved line is split at the legal break "
+                             "nearest its middle; if no legal break exists the tool fails. 0 = off")
     parser.add_argument("--warn-chars", type=int, default=0,
                         help="warn (never break) when a cue exceeds this many characters; "
                              "off by default because width is a pixel question and the shipped "
@@ -267,6 +271,31 @@ def main() -> None:
             return ""
         return raw_stream[raw_index[start]:raw_index[end - 1] + 1].strip()
 
+    # ---- v4.4：每行 ≤ max_chars。超长的行在最靠近中点的合法断点处劈开（递归），绝不切词 ----
+    def units(start: int, end: int) -> int:
+        return len(re.sub(r"[，。！？；：、,.!?;:\s]+$", "", normalized(raw_slice(start, end))))
+
+    splits: list[tuple[str, str]] = []
+
+    def split_span(start: int, end: int) -> list[int]:
+        if args.max_chars <= 0 or units(start, end) <= args.max_chars:
+            return []
+        inner = [o for o in legal_sorted if start < o < end]
+        if not inner:
+            raise SystemExit(
+                f"Cue {raw_slice(start, end)!r} has {units(start, end)} characters (> {args.max_chars}) and no legal "
+                f"break inside it; shorten the narration line or add punctuation")
+        mid = (start + end) / 2
+        # balanced halves first, but a break right after a clause mark wins if it costs ≤2 characters of balance
+        cut = min(inner, key=lambda o: (max(units(start, o), units(o, end)) - (2.5 if o in preferred else 0.0), abs(o - mid)))
+        splits.append((raw_slice(start, cut), raw_slice(cut, end)))
+        return split_span(start, cut) + [cut] + split_span(cut, end)
+
+    bounds0 = [0, *placed, total]
+    extra: list[int] = []
+    for a0, b0 in zip(bounds0, bounds0[1:]):
+        extra += split_span(a0, b0)
+    placed = sorted(set(placed) | set(extra))
     bounds = [0, *placed, total]
     cues = []
     cursor = 0
@@ -322,6 +351,10 @@ def main() -> None:
         for index, was, now in repairs:
             print(f"  approved boundary {index}: character {was} -> {now} "
                   f"({raw_slice(max(0, now - 2), now)}|{raw_slice(now, min(total, now + 2))})")
+    if splits:
+        print(f"Split {len(splits)} line(s) longer than {args.max_chars} characters at legal breaks:")
+        for left, right in splits:
+            print(f"  {left} | {right}")
     if args.warn_chars > 0:
         long_cues = [(index, len(normalized(cue["text"])), cue["text"])
                      for index, cue in enumerate(cues, 1) if len(normalized(cue["text"])) > args.warn_chars]

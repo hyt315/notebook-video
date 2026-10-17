@@ -74,7 +74,10 @@ export const ConsoleWindow: React.FC<{
   cursor?: boolean;
   /** 'log'：逐行写入（默认）；'typing'：逐字打出来 */
   variant?: 'log' | 'typing';
-}> = ({x, y, w, h, f, title = 'console', rows, start = 0, rowGap = 44, status, side, sideW = 260, z = 74, exitStart, cursor = true, variant = 'log'}) => {
+  /** v4.4：行字号（设计像素，缺省 22）。成片里控制台是主角时给 28–34，标题栏/状态签随之等比。 */
+  fontSize?: number;
+}> = ({x, y, w, h, f, title = 'console', rows, start = 0, rowGap = 44, status, side, sideW = 260, z = 74, exitStart, cursor = true, variant = 'log', fontSize = 22}) => {
+  const k = fontSize / 22; // 标题栏 / 圆点 / 光标与字号等比
   const C = THEME.palette;
   const opIn = easeOut(f, 0, 14);
   const mvIn = easeOut(f, 0, 18);
@@ -100,17 +103,17 @@ export const ConsoleWindow: React.FC<{
     <div style={{position: 'absolute', left: x, top: y, width: w + (side ? sideW + 14 : 0), zIndex: z, opacity: opIn * (1 - out), transform: `translateY(${20 * (1 - mvIn) + 26 * out}px) scale(${0.99 + 0.01 * mvIn})`}}>
       <div style={{display: 'flex', gap: 14}}>
         <div style={{flex: 1, minWidth: 0, background: '#14110f', border: `2.5px solid ${C.ink}`, borderRadius: 12, boxShadow: `3.5px 3.5px 0 ${C.ink}`, overflow: 'hidden'}}>
-          <div style={{height: 38, background: '#1f1b18', display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 14, borderBottom: '1.5px solid #2d2621'}}>
+          <div style={{height: Math.round(38 * k), background: '#1f1b18', display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 14, borderBottom: '1.5px solid #2d2621'}}>
             {[C.red, C.gold, C.green].map((c, i) => {
               const p = easeOut(f, 2 + i * 3, 12 + i * 3);
-              return <span key={i} style={{width: 10, height: 10, borderRadius: 99, background: c, border: '1px solid #000', opacity: p, transform: `scale(${0.6 + 0.4 * p})`}} />;
+              return <span key={i} style={{width: Math.round(10 * k), height: Math.round(10 * k), borderRadius: 99, background: c, border: '1px solid #000', opacity: p, transform: `scale(${0.6 + 0.4 * p})`}} />;
             })}
-            <span style={{marginLeft: 8, fontFamily: 'Space,monospace', fontWeight: 600, fontSize: 13, letterSpacing: 1, color: '#fdfdfb', opacity: 0.85}}>{title}</span>
+            <span style={{marginLeft: 8, fontFamily: 'Space,monospace', fontWeight: 600, fontSize: Math.max(16, Math.round(16 * k)), letterSpacing: 1, color: '#fdfdfb', opacity: 0.85}}>{title}</span>
             {status && (
-              <span style={{marginLeft: 'auto', marginRight: 12, fontFamily: 'Space,monospace', fontSize: 13, fontWeight: 700, background: `${statusTone}22`, color: statusTone, border: `1px solid ${statusTone}66`, borderRadius: 999, padding: '2px 10px', whiteSpace: 'nowrap', transform: `scale(${1 + 0.06 * pulse(f, lastAt, 10)})`}}>{status.text}</span>
+              <span style={{marginLeft: 'auto', marginRight: 12, fontFamily: 'Space,monospace', fontSize: Math.max(16, Math.round(16 * k)), fontWeight: 700, background: `${statusTone}22`, color: statusTone, border: `1px solid ${statusTone}66`, borderRadius: 999, padding: '2px 10px', whiteSpace: 'nowrap', transform: `scale(${1 + 0.06 * pulse(f, lastAt, 10)})`}}>{status.text}</span>
             )}
           </div>
-          <div style={{height: bodyH ?? 'auto', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: Math.max(6, rowGap - 22), position: 'relative'}}>
+          <div style={{height: bodyH ?? 'auto', padding: `${Math.round(14 * k)}px ${Math.round(18 * k)}px`, display: 'flex', flexDirection: 'column', gap: Math.max(6, rowGap - 22), position: 'relative'}}>
             {rows.map((r, i) => {
               const at = rowAt(r, i);
               if (f < at) return null;
@@ -121,12 +124,12 @@ export const ConsoleWindow: React.FC<{
               const flash = (r.tone === 'ok' || r.tone === 'warn') ? (1 - easeOut(f, at, at + 14)) : 0;
               const sweep = isLast ? pulse(f, at + 16, 20) : 0;
               return (
-                <div key={i} style={{position: 'relative', display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'Space,Kai,monospace', fontWeight: 600, fontSize: 22, color: tone(r.tone), borderRadius: 6, padding: '2px 6px', overflow: 'hidden', background: flash > 0.02 ? `${tone(r.tone)}22` : 'transparent'}}>
+                <div key={i} style={{position: 'relative', display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'Space,Kai,monospace', fontWeight: 600, fontSize, color: tone(r.tone), borderRadius: 6, padding: '2px 6px', overflow: 'hidden', background: flash > 0.02 ? `${tone(r.tone)}22` : 'transparent'}}>
                   {r.tone === 'cmd' && <span style={{color: C.greenInk, opacity: glyphP, transform: `scale(${0.7 + 0.3 * glyphP})`}}>❯</span>}
                   {r.tone === 'ok' && <span style={{color: C.greenInk, opacity: glyphP, transform: `scale(${0.7 + 0.3 * glyphP})`}}>✓</span>}
                   <span style={{whiteSpace: 'nowrap', clipPath: `inset(0 ${(1 - wideP) * 100}% 0 0)`, transform: `translateX(${(1 - textP) * 14}px)`}}>{r.text}</span>
                   {cursor && cursorRow === i && (
-                    <span style={{display: 'inline-block', width: 8, height: 19, marginLeft: 2, background: C.green, opacity: blink, transform: `translateX(${(1 - cursorTravel) * -14}px)`}} />
+                    <span style={{display: 'inline-block', width: Math.round(8 * k), height: Math.round(19 * k), marginLeft: 2, background: C.green, opacity: blink, transform: `translateX(${(1 - cursorTravel) * -14}px)`}} />
                   )}
                   {sweep > 0.02 && (
                     <span style={{position: 'absolute', top: 0, bottom: 0, left: `${-10 + sweep * 120}%`, width: 3, background: tone(r.tone), opacity: 0.75 * (1 - sweep)}} />

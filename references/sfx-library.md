@@ -45,3 +45,18 @@ gain range.
 Rendered in code with **earshot** 0.2.0 (`earshot forge` recipes; https://github.com/Leonxlnx/earshot, MIT) — no
 recorded samples — and quality-checked with `earshot rank` / `earshot match` (CLAP). License: CC0-1.0.
 Users never install earshot. To rebuild: `python scripts/dev/build-sfx-library.py` (needs torch CPU + earshot).
+
+## v4.4: layered pop and chart
+
+`pop` and `chart` were the two weakest sounds of the v4.3 library (earshot CLAP match z 2.49 / 2.47, "weak"):
+under narration they read as a faint "plip" and a thin sweep. v4.4 rebuilds both as **layered** designs in
+`scripts/dev/build-sfx-library.py` (its LAYERS table):
+
+| Event | Layers (earshot forge recipe #seed, gain) | Match z |
+|---|---|---|
+| `pop` | round low body `popin #14` (−3 dB) + bright bubble tick `pop #7` (0 dB) + trimmed sub hit `impact #6` (120 ms, −18 dB) | 3.01 strong |
+| `chart` | upward tonal zip `zip #5` (0 dB) + `zip #0` 10 ms later (−2 dB) + landing thump `popin #10` at 200 ms (−8 dB) | 3.15 strong |
+
+A rising four-note arpeggio for `chart` was tried and rejected (CLAP read it as "no match", z 0.95).
+Rebuild only these two: `python scripts/dev/build-sfx-library.py --only pop,chart` (the other entries and
+files are kept byte-for-byte).

@@ -91,7 +91,17 @@
       "hold": 45,
       "misconception": "以为开源就是\"把代码丢上去\"",
       "noMisconception": null,
-      "why": null
+      "why": null,
+      "cinema": {
+        "drift": "auto",
+        "fit": {
+          "x": 960.0,
+          "y": 540.0,
+          "s": 1.0,
+          "fill": 0.865,
+          "fillAfter": 0.865
+        }
+      }
     },
     {
       "id": "S2",
@@ -173,7 +183,17 @@
       "hold": 40,
       "misconception": null,
       "noMisconception": true,
-      "why": "本镜是流程推进，不设误解（避免每镜都套同一个模子）"
+      "why": "本镜是流程推进，不设误解（避免每镜都套同一个模子）",
+      "cinema": {
+        "drift": "auto",
+        "fit": {
+          "x": 960.0,
+          "y": 540.0,
+          "s": 1.0,
+          "fill": 0.83,
+          "fillAfter": 0.83
+        }
+      }
     },
     {
       "id": "S3",
@@ -259,7 +279,17 @@
       "hold": 40,
       "misconception": "以为提交一次就等于参与了",
       "noMisconception": null,
-      "why": null
+      "why": null,
+      "cinema": {
+        "drift": "auto",
+        "fit": {
+          "x": 960.0,
+          "y": 540.0,
+          "s": 1.0,
+          "fill": 0.865,
+          "fillAfter": 0.865
+        }
+      }
     },
     {
       "id": "S4",
@@ -344,7 +374,17 @@
       "hold": 45,
       "misconception": "以为发布是\"点一下按钮\"",
       "noMisconception": null,
-      "why": null
+      "why": null,
+      "cinema": {
+        "drift": "auto",
+        "fit": {
+          "x": 960.0,
+          "y": 540.0,
+          "s": 1.0,
+          "fill": 0.865,
+          "fillAfter": 0.865
+        }
+      }
     },
     {
       "id": "S5",
@@ -429,7 +469,17 @@
       "hold": 40,
       "misconception": null,
       "noMisconception": true,
-      "why": "本镜是能力定位，不需要先立误解"
+      "why": "本镜是能力定位，不需要先立误解",
+      "cinema": {
+        "drift": "auto",
+        "fit": {
+          "x": 960.0,
+          "y": 540.0,
+          "s": 1.0,
+          "fill": 0.865,
+          "fillAfter": 0.865
+        }
+      }
     },
     {
       "id": "S6",
@@ -513,7 +563,17 @@
       "hold": 40,
       "misconception": null,
       "noMisconception": true,
-      "why": "本镜是上一镜的累积收束，直接延续"
+      "why": "本镜是上一镜的累积收束，直接延续",
+      "cinema": {
+        "drift": "auto",
+        "fit": {
+          "x": 960.0,
+          "y": 540.0,
+          "s": 1.0,
+          "fill": 0.83,
+          "fillAfter": 0.83
+        }
+      }
     },
     {
       "id": "S7",
@@ -598,7 +658,17 @@
       "hold": 45,
       "misconception": "以为把文档写完就有人来用",
       "noMisconception": null,
-      "why": null
+      "why": null,
+      "cinema": {
+        "drift": "auto",
+        "fit": {
+          "x": 960.0,
+          "y": 540.0,
+          "s": 1.0,
+          "fill": 0.865,
+          "fillAfter": 0.865
+        }
+      }
     },
     {
       "id": "S8",
@@ -686,7 +756,17 @@
       "hold": 50,
       "misconception": "以为开源只产出代码",
       "noMisconception": null,
-      "why": null
+      "why": null,
+      "cinema": {
+        "drift": "auto",
+        "fit": {
+          "x": 960.0,
+          "y": 540.0,
+          "s": 1.0,
+          "fill": 0.865,
+          "fillAfter": 0.865
+        }
+      }
     }
   ]
 }

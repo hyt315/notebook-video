@@ -42,9 +42,9 @@ export const CHART_BOX = {padL: 96, padR: 48, padT: 40, padB: 78, titleH: 44} as
 
 export type ChartDatum = {label: string; value: number};
 export type ChartSeries = {name: string; values: number[]; tone?: string};
-export const CHART_VARIANTS = ['line', 'area', 'stack', 'stackExpand', 'stream', 'radar', 'pie'] as const;
+export const CHART_VARIANTS = ['line', 'bar', 'area', 'stack', 'stackExpand', 'stream', 'radar', 'pie'] as const;
 
-export type ChartVariant = 'line' | 'area' | 'stack' | 'stackExpand' | 'stream' | 'radar' | 'pie';
+export type ChartVariant = 'line' | 'bar' | 'area' | 'stack' | 'stackExpand' | 'stream' | 'radar' | 'pie';
 
 const TONE = [C.blue, C.orange, C.green, C.gold, C.red];
 
@@ -158,6 +158,8 @@ export const Chart: React.FC<{
   tone?: string;
   /** 环形图的中心孔径（0 = 实心饼） */
   innerRadius?: number;
+  /** v4.4 bar 变体：要点名的那根柱（下标），用强调色实心填充，其余柱用主色浅填充 */
+  highlight?: number;
 }> = ({
   f,
   data,
@@ -173,6 +175,7 @@ export const Chart: React.FC<{
   showBars = true,
   tone,
   innerRadius = 0.52,
+  highlight,
 }) => {
   const accent = tone ?? C.blue;
   const rows = csv ? csvToChartData(csv) : (data ?? []);
@@ -408,8 +411,9 @@ export const Chart: React.FC<{
     );
   }
 
-  // ---- 单序列：line（默认）/ area ----
+  // ---- 单序列：line（默认）/ bar（v4.4：分类对比用实心柱，不再用平滑折线把四个接口连成一条「钟形曲线」）/ area ----
   const isArea = variant === 'area';
+  const isBar = variant === 'bar';
   // scaleBand 取代原来手算的 barW：柱宽、柱心、X 轴刻度位置全部由刻度尺给出
   const band = scaleBand<string>()
     .domain(rows.map((d, i) => `${d.label}#${i}`))
@@ -434,23 +438,27 @@ export const Chart: React.FC<{
   const singleSvg = (
     <g transform={`translate(${padL},${padT})`}>
       <YAxis ticks={y.ticks(5)} y={y} innerW={innerW} unit={unit} />
-      {showBars && !isArea
+      {(showBars || isBar) && !isArea
         ? rows.map((d, i) => {
             const hh = innerH - y(d.value);
             const q = prog(f, startAt + 6 + i * 5, 26);
             const bw = band.bandwidth();
+            // bar 变体：逐根错峰长高（每根 6 帧），点名的那根用强调色实心
+            const g = isBar ? prog(f, startAt + 8 + i * 6, 30) : barGrow;
+            const hot = isBar && highlight === i;
+            const fill = isBar ? (hot ? C.orange : `${accent}55`) : `${accent}22`;
             return (
               <Bar
                 key={d.label + i}
-                x={(band(`${d.label}#${i}`) ?? 0) + bw * 0.18}
-                y={innerH - hh * barGrow}
-                width={bw * 0.64}
-                height={hh * barGrow}
-                fill={`${accent}22`}
-                stroke={accent}
-                strokeWidth={2}
+                x={(band(`${d.label}#${i}`) ?? 0) + bw * (isBar ? 0.04 : 0.18)}
+                y={innerH - hh * g}
+                width={bw * (isBar ? 0.92 : 0.64)}
+                height={hh * g}
+                fill={fill}
+                stroke={hot ? C.orangeDeep : accent}
+                strokeWidth={isBar ? 3 : 2}
                 opacity={q}
-                rx={4}
+                rx={isBar ? 8 : 4}
               />
             );
           })
@@ -467,7 +475,7 @@ export const Chart: React.FC<{
           opacity={grow}
         />
       ) : null}
-      {rows.length > 0 ? (
+      {rows.length > 0 && !isBar ? (
         <LinePath<ChartDatum>
           data={rows}
           x={(_, i) => xAt(i)}
@@ -484,6 +492,16 @@ export const Chart: React.FC<{
       ) : null}
       <Axes innerW={innerW} innerH={innerH} labels={rows.map((d) => d.label)} at={xAt} />
       {rows.map((d, i) => {
+        if (isBar) {
+          // bar 变体：数值随柱一起计数上去，落在柱顶上方
+          const g = prog(f, startAt + 8 + i * 6, 30);
+          const hh = innerH - y(d.value);
+          return (
+            <text key={i} x={xAt(i)} y={innerH - hh * g - 16} textAnchor="middle" fontFamily="Space,monospace" fontSize={TYPE.titleS} fontWeight={700} fill={highlight === i ? C.orangeInk : C.ink} opacity={Math.min(1, g * 3)}>
+              {Math.round(d.value * g)}
+            </text>
+          );
+        }
         const q = prog(f, startAt + 8 + (i / Math.max(1, rows.length - 1)) * 36, 12);
         // 面积变体的首尾点是**贴着绘图区边缘**的（X 铺满整宽），数值标签若仍居中，
         // 头一个标签会伸到 Y 轴刻度字的下面（实测 frame 435：「12」压在「20k」上）。

@@ -163,6 +163,7 @@ export const ClippingGate: React.FC<{
         document.querySelectorAll<Element>(GRAPHIC_SEL).forEach((el) => {
           if (el.closest('[data-gate-skip]')) return;
           if (el.closest('[data-gate-allow]')) return;
+          if (el.closest('[data-cinema-focus]')) return; // v4.4：推近特写里被画框裁掉是镜头语言，不是版面裁切
           const clip = clipBoxOf(el);
           if (!clip) return; // 没有会裁切的祖先 → 不可能被裁
           const r = el.getBoundingClientRect();

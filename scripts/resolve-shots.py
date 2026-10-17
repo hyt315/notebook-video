@@ -88,6 +88,34 @@ def expand_cam(cam: dict, duration: int) -> list[dict]:
     return [head, {"f": duration, "x": x, "y": y, "s": to}]
 
 
+# v4.4 内容自动放大（与 src/cinema.tsx 的 CINEMA.fit* 同值）：anchor（本镜内容的外接矩形）占内容带
+# （安全区）面积不足 FIT_MIN 时，引擎把整镜按 anchor 中心推近到 FIT_TARGET；推近受三条上限钳制：
+# anchor 放大后仍完整落在内容带内、TEXT_ZOOM_MAX（与场景 ShotCamera 相乘后）、FIT_MAX_S。
+FIT_MIN, FIT_TARGET, FIT_HI = 0.60, 0.72, 0.80
+FIT_MAX_S = 1.30
+TEXT_ZOOM_MAX = 1.35
+
+
+def compute_fit(anchor: dict | None, band: dict, keys: list[dict], mode) -> dict:
+    """返回 {x, y, s, fill, fillAfter}：引擎的基准取景（注视点 + 缩放）。mode = "auto" | "none"。"""
+    base = {"x": 960.0, "y": 540.0, "s": 1.0, "fill": 1.0, "fillAfter": 1.0}
+    if not anchor or not band:
+        return base
+    aw, ah, bw, bh = float(anchor["w"]), float(anchor["h"]), float(band["w"]), float(band["h"])
+    fill = (aw * ah) / max(1.0, bw * bh)
+    base["fill"] = base["fillAfter"] = round(fill, 3)
+    if mode == "none" or fill >= FIT_MIN:
+        return base
+    scene_s = max([float(k.get("s", 1.0)) for k in keys] or [1.0])
+    s = min((FIT_TARGET / fill) ** 0.5, bw / aw, bh / ah, FIT_MAX_S, TEXT_ZOOM_MAX / max(1.0, scene_s))
+    s = max(1.0, s)
+    cx, cy = float(anchor["x"]) + aw / 2, float(anchor["y"]) + ah / 2
+    hx, hy = 960.0 / s, 540.0 / s
+    cx = min(1920.0 - hx, max(hx, cx))
+    cy = min(1080.0 - hy, max(hy, cy))
+    return {"x": round(cx, 1), "y": round(cy, 1), "s": round(s, 3), "fill": round(fill, 3), "fillAfter": round(fill * s * s, 3)}
+
+
 REGIONS = ("left", "right", "top", "bottom", "center", "top-left", "top-right", "bottom-left", "bottom-right")
 TRANSITIONS = ("auto", "cut", "reveal", "handoff", "whip", "whip-left", "whip-right", "zoom", "fade", "hard")
 
@@ -110,6 +138,7 @@ def resolve_cinema(s: dict, sid: str, frm: int, duration: int, cues: list, probl
 
     cinema: {
       drift: "auto" | "none" | 0.0–0.08,
+      fit: "auto" | "none",            # 内容自动放大（anchor 占安全区 < 60% 时推近到 72%）
       focus: [{beat: 1 | at: 40 | cue: 5, region: "right" | x,y,w,h, zoom?: 1.25, hold?: 60}],
       pan: {worldW: 2800, beat?: 0, at?: 10, dur?: 90, dir?: "ltr" | "rtl"}
     }"""
@@ -121,6 +150,11 @@ def resolve_cinema(s: dict, sid: str, frm: int, duration: int, cues: list, probl
         problems.append(f"{sid}: cinema.drift 必须是 auto / none / 数字")
         drift = "auto"
     out: dict = {"drift": drift}
+    fit_mode = c.get("fit", "auto")
+    if fit_mode not in ("auto", "none"):
+        problems.append(f"{sid}: cinema.fit 必须是 auto / none")
+        fit_mode = "auto"
+    out["fit"] = compute_fit(s.get("anchor"), band, expand_cam(dict(s.get("camera") or {"intent": "still"}), duration), fit_mode)
     focus = []
     for i, fk in enumerate(c.get("focus") or []):
         if "beat" in fk:
@@ -294,6 +328,9 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
                 problems.append(f"{sid}: sfx 必须是 \"none\" 或 [{{event, beat|at, vol?}}]，event ∈ {sorted(events)}")
             else:
                 rec["sfx"] = sfx
+        # v4.4：可选版式名（validate-composition 要求相邻两镜不同）。不写就不出键。
+        if s.get("layout") is not None:
+            rec["layout"] = str(s["layout"])
         if s.get("sfxAuto") is not None:
             rec["sfxAuto"] = bool(s["sfxAuto"])
         # v4.4：引擎摄影机（src/cinema.tsx）。不写 cinema 也会输出缺省 {drift:'auto'}，引擎照样慢推/漂移。

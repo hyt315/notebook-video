@@ -194,6 +194,48 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
                     p1.append({"id": s["id"], "issue": f"内容带与 {theme} 背景装饰区重叠，但未声明 cover（文字可能被装饰吃掉）"})
                 break
     p1 += check_beat_gaps(shots)
+    p0c, p1c = check_cinema(shots)
+    return p0 + p0c, p1 + p1c
+
+
+# ---------------------------------------------------------------------------
+# v4.4 引擎摄影机（src/cinema.tsx，resolve-shots 预算的 cinema 块）
+#   · 内容自动放大：anchor 占内容带（安全区）面积放大后应落在 60–80%。
+#     放大后仍 < 45% → P0（引擎已推到上限仍太小：内容本身画小了，PPT 感的头号来源）；
+#     45–60% → P1；> 90% → P1（太满、没有呼吸空间；80–90% 视作 anchor 外接框的正常余量）。
+#   · 焦点推近：focus.zoom × 场景缩放不超过 TEXT_ZOOM_MAX；焦点矩形放大后必须放得进画面。
+#   · 缺 cinema 块 → P1（旧工程没重跑 resolve-shots，引擎只剩缺省漂移、没有自动放大）。
+FIT_P0, FIT_LO, FIT_HI_WARN = 0.45, 0.60, 0.90
+
+
+def check_cinema(shots: list[dict]) -> tuple[list[dict], list[dict]]:
+    p0: list[dict] = []
+    p1: list[dict] = []
+    for s in shots:
+        sid = s["id"]
+        cin = s.get("cinema")
+        if not isinstance(cin, dict):
+            p1.append({"id": sid, "issue": "没有 cinema 块（旧解析结果？重跑 resolve-shots.py 才有内容自动放大 / 焦点推近）"})
+            continue
+        fit = cin.get("fit") or {}
+        fa = fit.get("fillAfter")
+        if isinstance(fa, (int, float)):
+            if fa < FIT_P0:
+                p0.append({"id": sid, "issue": f"内容只占安全区 {fa:.0%}（自动放大已到上限）：把内容本身画大（代码/差异镜头尤其要大），目标 60–80%"})
+            elif fa < FIT_LO:
+                p1.append({"id": sid, "issue": f"内容占安全区 {fa:.0%} < 60%：偏小，建议放大内容或收紧 anchor"})
+            elif fa > FIT_HI_WARN:
+                p1.append({"id": sid, "issue": f"anchor 占安全区 {fa:.0%} > 90%：太满，没有呼吸空间（或 anchor 写得比内容大）"})
+        scene_s = max([float(k.get("s", 1.0)) for k in cam_keys(s)] or [1.0])
+        for i, fk in enumerate(cin.get("focus") or []):
+            r = fk.get("rect") or {}
+            z = fk.get("zoom")
+            if z is not None and float(z) * scene_s > TEXT_ZOOM_MAX + 1e-6:
+                p1.append({"id": sid, "issue": f"cinema.focus[{i}].zoom={z} × 场景缩放 {scene_s} > {TEXT_ZOOM_MAX}，引擎会钳制"})
+            if r and (float(r.get("w", 0)) * max(1.1, float(z or 1.1)) > 1920 + 1 or float(r.get("h", 0)) * max(1.1, float(z or 1.1)) > 1080 + 1):
+                p1.append({"id": sid, "issue": f"cinema.focus[{i}] 焦点矩形放大后放不进画面（会被钳到可容纳的缩放）"})
+            if not (0 <= int(fk.get("at", 0)) < s["duration"]):
+                p0.append({"id": sid, "issue": f"cinema.focus[{i}].at={fk.get('at')} 不在本镜 [0,{s['duration']}) 内"})
     return p0, p1
 
 

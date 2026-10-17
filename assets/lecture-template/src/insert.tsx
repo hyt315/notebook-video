@@ -64,9 +64,10 @@ export const RevealMask: React.FC<{f: number; at: number; dur?: number; dir?: 'l
  * 多样性的判据也在那边（按 shot 表的 `transition` 字段统计，与这个数组无关）。
  * 两处一致性由 `scripts/validate-skill-consistency.py` 交叉校验，漂移会被门禁拦下。
  */
-export const TRANSITIONS = ['cut', 'handoff', 'reveal'] as const;
-// v3.0.1：whip / paper-turn 已删除——它们在两条成片里零引用，且 whip 要真生效必须改交接引擎。
-// cut 的真实实现是引擎的 10 帧叠帧（index.tsx），handoff 需要 carrier 声明，reveal 由 RevealMask 实现。
+export const TRANSITIONS = ['auto', 'cut', 'handoff', 'reveal', 'whip', 'whip-left', 'whip-right', 'zoom', 'fade', 'hard'] as const;
+// v4.4：转场由引擎实现（src/cinema.tsx 的 resolveTransition / transitionStyle）：auto（缺省）= 章节首镜 zoom 推穿、
+// 其余 whip 甩镜左右交替；cut / handoff / reveal 是旧写法，引擎按 auto 处理（reveal 另由 RevealMask 做镜内揭示）；
+// fade = 交叉淡化；hard = 真硬切。
 export type TransitionKind = (typeof TRANSITIONS)[number];
 
 /**

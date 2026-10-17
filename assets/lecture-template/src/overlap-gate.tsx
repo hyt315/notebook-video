@@ -236,6 +236,14 @@ export const OverlapGate: React.FC<{
               rect = new DOMRect(x0, y0, x1 - x0, y1 - y0);
             }
           }
+          // v4.4：引擎推近时世界层顶部有羽化遮罩（src/cinema.tsx cinemaMask），y < maskCut 的部分看不见 → 只量可见部分
+          const focusWorld = el.closest('[data-cinema-focus]') as HTMLElement | null;
+          if (focusWorld) {
+            const wr = focusWorld.getBoundingClientRect();
+            const cut = wr.top + (parseFloat(focusWorld.getAttribute('data-cinema-focus') || '0') * wr.height) / 1080;
+            if (rect.bottom <= cut) continue;
+            if (rect.top < cut) rect = new DOMRect(rect.left, cut, rect.width, rect.bottom - cut);
+          }
           if (rect.width * rect.height < 4) continue;
           const text = rawText.trim().slice(0, 16);
           if (ignoreKey && ignore.some((ig) => text.startsWith(ig))) continue;

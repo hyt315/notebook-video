@@ -1,6 +1,6 @@
 ---
 name: notebook-video
-version: 4.3.0
+version: 4.4.0
 description: Create complete Chinese 2K (2560×1440, 16:9 only) flat-geometric or anime-cel explainer and promotional videos with React, TypeScript and Remotion. Two locked skins — `flat` (default) and `cel`. The default visual route is pure code-drawn composition (SVG diagrams, mascots, progressive checklists, annotation tags) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes a per-shot restricted camera with an out-of-bounds proof, four scene skeletons with a content-to-medium routing table, a cue-indexed shot table, native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering and fourteen automated quality gates (including a frame-prop-name gate that catches the highest-frequency silent failure in this codebase). Use when the user asks to 做科普视频, 扁平风或动漫风讲解视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
 ---
 
@@ -38,6 +38,7 @@ Read only what the current production needs. **写任何场景之前，先读前
 **照抄** [references/scene-skeletons.md](references/scene-skeletons.md) — 四种骨架与分镜表结构（写分镜表前必读）。
 **先读** [references/media-routing.md](references/media-routing.md) — 内容→介质路由、**§5.1 组件权威索引（53 件逐件，选型只查这一处）**、A/B 场景、背景可读性契约。
 **先读** [references/shot-language.md](references/shot-language.md) — 六个运镜意图（+ `still` = 合法取值 7 个）、缩放预算、anchor 出界证明、平移预算。
+**先读** [references/cinema-camera.md](references/cinema-camera.md) — v4.4 引擎虚拟镜头：缺省缓推、`cinema.focus` 讲到哪推到哪、横摇、甩镜 / 推穿转场、视差、内容自动放大到安全区 60–80%、`KineticNumber` 关键数字、相邻 `layout` 不同。**这是「不像 PPT」的主开关。**
 **必读** [references/lecture-composition.md](references/lecture-composition.md) 与 [references/motion-design.md](references/motion-design.md) — 构图规范与多时钟动效六律。
 **何时读**（选定皮肤后只读那一份）： [references/theme-flat.md](references/theme-flat.md) (flat, default) **or** [references/theme-cel.md](references/theme-cel.md); the shared boundary and engine chrome are in [references/theme-system.md](references/theme-system.md).
 **必读** [references/official-aesthetic-system.md](references/official-aesthetic-system.md) — 不许改的锁定元素清单。
@@ -76,6 +77,8 @@ Read only what the current production needs. **写任何场景之前，先读前
 > 17. 页眉 / 章节卡 / 字幕放在 `ShotCamera` **之外**。
 > 18. 写场景文件后按顺序跑 `resolve-shots.py` → 构建期门禁，**P0 必须 = 0** 才允许渲染。
 > 19. 门禁失败只允许改内容（换骨架 / 换介质 / 补元素 / 改高度），**不许改阈值、不许改判据**；连续两次不过就停下来报告。
+> 20a. 字幕每行 ≤ 16 字（去句末标点后逐字计）：`build-semantic-captions.py` 自动在合法断点劈开超长行，`validate-caption-sync.py` 与渲染期 `CaptionFitGate` 双重把关。
+> 20b. 讲到哪推到哪：每个讲解镜至少想一次 `cinema.focus`；代码/差异镜头字号 ≥ 26，关键数字用 `KineticNumber`（见 [cinema-camera.md](references/cinema-camera.md)）。
 > 20. 首次渲染后读控制台：`OverlapGate` / `ClippingGate` / `CardFitGate` / `FillGate` 的覆盖率与告警必须清零或显式 `data-gate-allow`；拿不准就先出接触表看图。T3 的 `validate-motion-gaps` 也要跑（画面真的没动这类缺陷只有它能抓）。
 
 ## Create a project

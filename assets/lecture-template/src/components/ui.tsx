@@ -674,10 +674,14 @@ export const HighlightCode: React.FC<{
   height: number;
   width: number;
   title?: string;
-}> = ({f, code, language, startAt, lineStep, height, width, title}) => {
+  /** v4.4：代码字号（设计像素，缺省 TYPE.labelM=21）。成片的代码镜头请给 30–40：代码要大而清晰。 */
+  fontSize?: number;
+  /** v4.4：把高亮钉在某一行（0 起），不再随 lineStep 走；配合引擎 cinema.focus 推近到这一行。 */
+  active?: number;
+}> = ({f, code, language, startAt, lineStep, height, width, title, fontSize = TYPE.labelM, active}) => {
   const lines = highlightTokens(code, language);
   const lineCount = lines.length;
-  const activeLine = Math.max(0, Math.min(lineCount - 1, Math.floor((f - startAt) / lineStep)));
+  const activeLine = active ?? Math.max(0, Math.min(lineCount - 1, Math.floor((f - startAt) / lineStep)));
   return (
     <div style={{width, height, display: 'flex', flexDirection: 'column'}}>
       <div
@@ -712,7 +716,7 @@ export const HighlightCode: React.FC<{
         }}
       >
         <pre style={{margin: 0, padding: 0, background: 'none', overflow: 'visible'}}>
-          <code style={{display: 'block', fontFamily: 'Space,Consolas,monospace', fontSize: TYPE.labelM, lineHeight: 1.95, whiteSpace: 'pre', color: C.ink}}>
+          <code style={{display: 'block', fontFamily: 'Space,Consolas,monospace', fontSize, lineHeight: fontSize > 26 ? 1.6 : 1.95, whiteSpace: 'pre', color: C.ink}}>
             {lines.map((tokens, i) => {
               const on = i === activeLine;
               return (
@@ -735,7 +739,7 @@ export const HighlightCode: React.FC<{
                       textAlign: 'right',
                       color: C.muted,
                       fontFamily: 'Space,monospace',
-                      fontSize: TYPE.microS,
+                      fontSize: Math.max(TYPE.microS, Math.round(fontSize * 0.62)),
                       opacity: 0.8,
                       userSelect: 'none',
                     }}

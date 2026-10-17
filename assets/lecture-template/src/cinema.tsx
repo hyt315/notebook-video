@@ -8,6 +8,8 @@ import {camAt, STAGE, TEXT_ZOOM_MAX} from './shotkit';
 // 为什么有这一层：v4.3 之前每一镜都是「静止舞台 + 卡片依次出现」，即使 ShotCamera 推了 3%，
 // 观众感受仍是翻 PPT。本层在**引擎**里（index.tsx 的 FinalDemo / Backdrop）给每一镜套一台
 // 虚拟摄影机，分镜表什么都不写也有：
+//   0. fit     内容自动放大：anchor 占安全区（内容带）不足 60% 时，整镜按 anchor 中心推近到 72%
+//              （resolve-shots 预算成 cinema.fit，validate-shot-motion 复核 60–80%）；
 //   1. drift   缓推/漂移：每镜 3–5% 的慢推或横移，镜与镜之间自动换方向（不会全片同一种推）；
 //   2. focus   焦点跟随：分镜表 `cinema.focus` 声明「第几拍看哪里」，摄影机用弹簧曲线推近取景该区域，
 //              拍结束后拉回；区域可写矩形，也可写 region 简写（left/right/top/bottom/center…）；
@@ -26,8 +28,11 @@ export type Rect = {x: number; y: number; w: number; h: number};
 export type FocusRegion = 'left' | 'right' | 'top' | 'bottom' | 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 /** 已解析的焦点（resolve-shots 把 beat 换成本镜本地帧 at）。 */
 export type FocusKey = {at: number; hold: number; zoom?: number; rect: Rect};
+/** resolve-shots 预算好的基准取景（内容自动放大）：注视点 + 缩放；fill = anchor 占内容带面积比。 */
+export type FitSpec = {x: number; y: number; s: number; fill?: number; fillAfter?: number};
 export type CinemaSpec = {
   drift?: 'auto' | 'none' | number;
+  fit?: FitSpec;
   focus?: readonly FocusKey[];
   pan?: {worldW: number; at: number; dur: number; dir?: 'ltr' | 'rtl'} | null;
 };
@@ -45,6 +50,10 @@ export const CINEMA = {
   transition: 14, // 转场时长（帧）
   parallax: 0.3, // 背景跟随系数
   bgOverscan: 1.06, // 背景预放大，给视差留出不露边的余量
+  fitMin: 0.6, // 内容自动放大：anchor 占内容带面积 < 60% 才放大
+  fitTarget: 0.72, // 放大到 72%（60–80% 区间中段）
+  maskTop: 178, // 推近时世界层顶部遮罩的实心起点（设计 y）；页眉 / 章节卡底边约 164
+  maskCut: 160, // 门禁口径：y < maskCut 视作已被遮罩隐去
 } as const;
 
 const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
@@ -82,7 +91,8 @@ const driftPattern = (idx: number) => [
   {s0: 1, s1: 1, dx: -1},
 ][idx % 4];
 
-export type CamState = {x: number; y: number; s: number; tx: number};
+/** fw = 焦点推近权重（0 = 无焦点，1 = 完全推近）；引擎据此给世界层加顶部羽化遮罩、给门禁打 data-cinema-focus。 */
+export type CamState = {x: number; y: number; s: number; tx: number; fw?: number};
 
 /**
  * 引擎摄影机在本镜本地帧 f 的状态（设计坐标、作用在场景 ShotCamera **之外**）。
@@ -92,14 +102,16 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
   const sp = spec ?? {};
   const sc = sceneKeys && sceneKeys.length ? camAt(sceneKeys as any, f) : {x: STAGE.cx, y: STAGE.cy, s: 1, rotY: 0};
   const capS = Math.max(1, zoomMax / Math.max(1, sc.s)); // 引擎缩放上限（与场景缩放相乘后 ≤ zoomMax）
-  // ---- 1. drift ----
+  // ---- 0. fit（基准取景）+ 1. drift（围绕基准取景慢推/横移）----
+  const fit = sp.fit ?? {x: STAGE.cx, y: STAGE.cy, s: 1};
   const amt = sp.drift === 'none' ? 0 : typeof sp.drift === 'number' ? Math.max(0, Math.min(0.08, sp.drift)) : CINEMA.driftAmt;
   const pat = driftPattern(idx);
   const t = smooth(f, 0, Math.max(30, duration));
   const ds = pat.pull ? 1 + amt * (1 - t) : 1 + amt * t;
-  const s0 = Math.min(capS, ds);
-  const look0 = clampLook(STAGE.cx + pat.dx * CINEMA.driftPanPx * (t - 0.5) * 2, STAGE.cy, s0);
+  const s0 = Math.max(1, Math.min(capS, fit.s * ds));
+  const look0 = clampLook(fit.x + (pat.dx * CINEMA.driftPanPx * (t - 0.5) * 2) / Math.max(1, fit.s), fit.y, s0);
   let x = look0.x, y = look0.y, s = s0;
+  let fw = 0;
   // ---- 2. focus（弹簧推近、缓拉回；多个焦点首尾相接时直接从一个移到下一个）----
   for (const k of sp.focus ?? []) {
     const end = k.at + k.hold;
@@ -108,6 +120,7 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
     const pout = smooth(f, end, end + CINEMA.focusOut);
     const w = Math.max(0, Math.min(1, pin) * (1 - pout));
     if (w <= 0) continue;
+    fw = Math.max(fw, w);
     // 焦点矩形（场景设计坐标）→ 经场景 ShotCamera 映射到屏幕坐标
     const r = k.rect;
     const mx = (px: number) => STAGE.cx - sc.x * sc.s + px * sc.s;
@@ -128,7 +141,18 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
     tx = (sp.pan.dir === 'rtl' ? 1 - p : p) * span;
   }
   const c = clampLook(x, y, s);
-  return {x: c.x, y: c.y, s, tx};
+  return {x: c.x, y: c.y, s, tx, fw: sp.pan && tx > 0 ? Math.max(fw, 1) : fw};
+};
+
+/**
+ * 推近时的顶部羽化遮罩：焦点推近会把非焦点内容推到页眉 / 章节卡底下（实测 S3 卡片标题被页眉压住）。
+ * 世界层在 y < CINEMA.maskTop 处按 fw 渐隐（羽化 38px），chrome 下方永远干净；不推近时（fw=0）完全不生效。
+ * 门禁（OverlapGate）对带 data-cinema-focus 的世界层，只量 y ≥ maskCut 的可见部分（与遮罩同口径）。
+ */
+export const cinemaMask = (fw: number): string | undefined => {
+  if (!fw || fw < 0.01) return undefined;
+  const a = (1 - Math.min(1, fw)).toFixed(3);
+  return `linear-gradient(to bottom, rgba(0,0,0,${a}) 0px, rgba(0,0,0,${a}) ${CINEMA.maskTop - 38}px, #000 ${CINEMA.maskTop}px, #000 100%)`;
 };
 
 /** 摄影机变换（注视点 → 画面中心）。tx = 宽画布横摇偏移。 */
@@ -228,4 +252,35 @@ export const landPop = (f: number, landAt: number, amp = 0.18): number => {
 /** 描线进度（连接线/箭头绘入）：0→1，配合 strokeDasharray/strokeDashoffset。 */
 export const drawOn = (f: number, at: number, dur = 18) => interpolate(f, [at, at + dur], [0, 1], {...clamp, easing: Easing.inOut(Easing.cubic)});
 
-export const CINEMA_VERSION = 'cinema-v1 · drift · focus · world-pan · whip/zoom transitions · parallax';
+/**
+ * KineticNumber · 关键数字的动态排版（计数 + 落定缩放弹出 + 强调下划线扫入）。
+ * 用在「讲到这个数」的那一拍：at = 该拍本地帧。全部是帧的纯函数。
+ *   <KineticNumber f={f} at={at(1)} to={5} suffix="×" size={260} color={C.orange} label="更快" />
+ * from→to 计数 dur 帧（缺省 30），落定瞬间放大 1.18 回弹；数字用等宽数字（tabular-nums）防止计数时抖宽。
+ */
+export const KineticNumber: React.FC<{
+  f: number; at: number; to: number; from?: number; dur?: number; decimals?: number;
+  prefix?: string; suffix?: string; size?: number; color?: string; ink?: string; label?: string; labelSize?: number;
+  align?: 'left' | 'center' | 'right'; style?: React.CSSProperties;
+}> = ({f, at, to, from = 0, dur = 30, decimals = 0, prefix = '', suffix = '', size = 200, color = '#f08a24', ink, label, labelSize, align = 'left', style}) => {
+  const enter = spring({frame: f - at, fps: 30, config: {damping: 13, stiffness: 160, mass: 0.7}});
+  const o = interpolate(f, [at, at + 6], [0, 1], clamp);
+  const land = at + dur;
+  const sc = (0.55 + 0.45 * enter) * landPop(f, land, 0.18);
+  const bar = interpolate(f, [land - 2, land + 12], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
+  const origin = align === 'center' ? '50% 70%' : align === 'right' ? '100% 70%' : '0% 70%';
+  return (
+    <div style={{display: 'inline-flex', flexDirection: 'column', alignItems: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start', opacity: o, ...style}}>
+      <div style={{position: 'relative', transform: `scale(${sc.toFixed(4)})`, transformOrigin: origin, lineHeight: 0.92, whiteSpace: 'nowrap'}}>
+        <span style={{fontFamily: 'Clash,Space,Kai', fontWeight: 700, fontSize: size, color, fontVariantNumeric: 'tabular-nums', letterSpacing: -size * 0.02}}>
+          {prefix}{countUp(f, at, to, {from, dur, decimals})}
+        </span>
+        {suffix && <span style={{fontFamily: 'Clash,Space,Kai', fontWeight: 700, fontSize: size * 0.5, color, marginLeft: size * 0.04}}>{suffix}</span>}
+        <div style={{position: 'absolute', left: 0, bottom: -size * 0.06, height: Math.max(6, size * 0.045), width: `${(bar * 100).toFixed(2)}%`, background: color, borderRadius: 99, opacity: 0.85}} />
+      </div>
+      {label && <div style={{marginTop: size * 0.14, fontSize: labelSize ?? Math.max(30, size * 0.2), fontWeight: 700, color: ink ?? color, opacity: interpolate(f, [land - 6, land + 8], [0, 1], clamp)}}>{label}</div>}
+    </div>
+  );
+};
+
+export const CINEMA_VERSION = 'cinema-v1 · fit · drift · focus · world-pan · whip/zoom transitions · parallax · kinetic numbers';

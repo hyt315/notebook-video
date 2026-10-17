@@ -44,6 +44,8 @@ def main() -> None:
     parser.add_argument("tts_words_json", type=Path)
     parser.add_argument("caption_cues_json", type=Path)
     parser.add_argument("--max-lead-ms", type=int, default=80)
+    parser.add_argument("--max-chars", type=int, default=16,
+                        help="v4.4: characters per subtitle line after stripping trailing punctuation (0 = off)")
     args = parser.parse_args()
 
     source = json.loads(args.tts_words_json.read_text(encoding="utf-8"))
@@ -66,6 +68,10 @@ def main() -> None:
         joined = "".join(str(word["part"]) for word in words)
         if normalized(joined) != normalized(str(cue.get("text", ""))):
             failures.append(f"cue {index}: text differs from its TTS words")
+        n = len(re.sub(r"[，。！？；：、,.!?;:\s]+$", "", normalized(str(cue.get("text", "")))))
+        if args.max_chars > 0 and n > args.max_chars:
+            failures.append(f"cue {index}: {n} characters > {args.max_chars} per line ({cue.get('text')!r}); "
+                            f"re-run build-semantic-captions.py (it splits at legal breaks) or shorten the line")
         lead = int(words[0]["start"]) - int(cue["start_ms"])
         if lead < 0 or lead > args.max_lead_ms:
             failures.append(f"cue {index}: visual lead {lead}ms exceeds 0–{args.max_lead_ms}ms")

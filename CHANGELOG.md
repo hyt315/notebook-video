@@ -4,6 +4,38 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+## [4.4.0] - 2026-10-18
+
+> 去 PPT 感（Phase 5）：引擎级虚拟镜头（缺省缓推、讲到哪推到哪、横摇、甩镜 / 推穿转场、视差）、内容自动放大到安全区 60–80%、关键数字动态排版、字幕每行 ≤ 16 字、相邻镜头换布局，pop / chart 音效用 earshot 重做。分镜表什么都不写也有缺省运动；所有动画仍是帧的纯函数。
+> Kill the slide-deck feel (Phase 5): an engine-level virtual camera (default push-in, focus-follow, pans, whip / zoom-through transitions, parallax), automatic content enlargement to 60–80 % of the safe area, kinetic numbers, ≤ 16-character subtitle lines, a layout-change rule for adjacent shots, and layered earshot pop / chart sounds. Every animation is still a pure function of the frame.
+
+### 新增 / Added
+
+- `src/cinema.tsx`：引擎虚拟摄影机（`cinemaCamAt` / `transitionStyle` / `parallaxTransform` / `cinemaMask`），挂在 `index.tsx` 的 `FinalDemo` 与 `Backdrop`；分镜表新字段 `cinema: {fit, drift, focus, pan}`，镜级 `transition` 新取值 `auto`（缺省）/ `whip` / `whip-left` / `whip-right` / `zoom` / `fade` / `hard`。
+  Engine virtual camera wired into `FinalDemo` / `Backdrop`; new shot-table block `cinema` and engine transitions.
+- 内容自动放大：anchor 占内容带面积 < 60% 时整镜推近到 72%（`resolve-shots.py` 预算成 `cinema.fit`）。
+- `KineticNumber`（计数 + 落定弹出 + 下划线扫入）与运动助手 `popIn` / `countUp` / `landPop` / `drawOn` / `idleFloat`。
+- 推近时世界层顶部羽化遮罩：非焦点内容不会被推到页眉 / 章节卡底下。
+- 分镜表可选 `layout` 字段；`references/cinema-camera.md`；`assets/demo/v4.4-demo/`（60 秒演示片的分镜、字幕、场景源码）。
+- `HighlightCode` 新增 `fontSize` / `active`（把高亮钉在讲到的那一行）；`DiffView` 新增 `fontSize`；`ConsoleWindow` 新增 `fontSize`（标题栏、圆点、光标等比）。
+- `build-sfx-library.py --only <events>`：只重建指定音效，其余文件与 manifest 条目逐字节保留；`LAYERS` 分层合成。
+
+### 变更 / Changed
+
+- 音效 `pop`：圆润低频体（popin #14）+ 明亮气泡音头（pop #7）+ 修剪的超低频冲击（impact #6）；earshot 匹配 z 2.49 → 3.01（strong）。`chart`：两条上扬音调扫频（zip #5 + zip #0）+ 落定闷响（popin #10）；z 2.47 → 3.15（strong）。
+- 字幕每行 ≤ 16 字：`build-semantic-captions.py --max-chars 16`（缺省）在最靠近中点的合法断点自动劈开；`validate-caption-sync.py --max-chars 16` 与渲染期 `CaptionFitGate` 双重拦截。
+- 转场：旧版 10 帧交叉淡化换成 14 帧引擎转场；`cut` / `handoff` / `reveal` 作为旧写法继续接受（引擎按 `auto` 处理）。`insert.tsx` 的 `TRANSITIONS` 与 `validate-composition.py` 同步扩到 10 个取值。
+- `validate-shot-motion.py`：新增 cinema 段——`fillAfter` < 45% P0、45–60% / > 90% P1；焦点缩放与焦点矩形检查；缺 cinema 块 P1。
+- `validate-composition.py`：相邻两镜同 `layout` → P0。
+- `SKILL.md` 授权契约补 20a / 20b；`shot-language.md`、`scene-skeletons.md`、`subtitle-timing.md`、`sfx-library.md` 同步。
+
+### 修复 / Fixed
+
+- `ProgressRing`：描边、读数、标签随 `size` 等比（旧版写死 11px / 22px / 13px，放大到 300+ 时读数缩成一个点；13px 标签低于字号地板）。
+- `ConsoleWindow` 标题与状态签 13px → ≥ 16px（低于字号地板）。
+- 门禁误报：引擎推近（`data-cinema-focus`）的特写帧里，CanvasBoundsGate / FillGate / ClippingGate / MascotGate 不再把「镜头有意裁掉的内容」当版面缺陷；OverlapGate 只量遮罩以下的可见部分。
+- `pan-follow` 平移超出缩放预算时自动抬缩放（v4.3 的 S6 横摇只剩 ±37px）。
+
 ## [4.3.0] - 2026-10-17
 
 > 预制语义音效库（Phase 4）+ 遗留问题修复 + 60 秒组件演示片。音效由 earshot（开发期工具）在代码里合成并质检后提交进仓库，普通用户不需要安装 earshot；引擎按分镜表语义自动排音效，每镜可覆盖。

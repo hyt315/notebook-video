@@ -37,7 +37,7 @@ from pathlib import Path
 # 实测把 media 写成 ["FAKE_MEDIUM_A",...]、live 写成 ["NO_SUCH_COMPONENT"] 也能 P0=0 通过）
 SKELETONS = {"Stage", "Corridor", "Split", "Zoom"}
 INTENTS = {"establish", "push-in", "pull-back", "pan-follow", "reveal", "micro-orbit", "still"}
-TRANSITIONS = {"cut", "handoff", "reveal"}   # v3.0.1 收缩：whip / paper-turn 已删除
+TRANSITIONS = {"auto", "cut", "handoff", "reveal", "whip", "whip-left", "whip-right", "zoom", "fade", "hard"}   # v4.4：引擎级转场（src/cinema.tsx）回归；auto = 章节首镜 zoom、其余 whip
 ENTRIES = {"rise", "slide", "fade", "zoom"}
 MEDIA_KINDS = {"chart", "console", "code", "graphic", "text", "metric"}
 
@@ -328,7 +328,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     unknown_intents = {s.get("cameraIntent", "still") for s in shots} - INTENTS
     if unknown_intents:
         p0.append({"id": "-", "issue": f"未知镜头意图 {sorted(unknown_intents)}；只能是 {sorted(INTENTS)}"})
-    bad_tr = {s.get("transition", "cut") for s in shots} - TRANSITIONS
+    bad_tr = {s.get("transition", "auto") for s in shots} - TRANSITIONS
     if bad_tr:
         p0.append({"id": "-", "issue": f"未知转场 {sorted(bad_tr)}；只能是 {sorted(TRANSITIONS)}"})
     bad_en = {s.get("entry", "rise") for s in shots} - ENTRIES
@@ -351,7 +351,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     def has_reveal(blk: str) -> bool:
         return re.search(r'\breveal(?![A-Za-z0-9_$])', blk) is not None
     for i, s in enumerate(shots):
-        tr = s.get("transition", "cut")
+        tr = s.get("transition", "auto")
         # 场景源码缺失时（负向抽查的最小夹具只有分镜表）无从比对实现——跳过，只查分镜表内部自洽。
         # 与上面 live 名字的 `if scene_text` 同一口径：没源码不等于声明没兑现。
         blk = shot_block(s.get("id", "?")) if scene_text else ""
@@ -372,6 +372,12 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     for (a_id, a), (b_id, b) in zip(seq, seq[1:]):
         if a == b:
             p0.append({"id": b_id, "issue": f"与上一镜同骨架（{a}）；相邻场景必须不同骨架"})
+    # v4.4：相邻镜头换不同布局（layout 是可选的版式名：hero-number / split / code-full / grid / rail…）。
+    # 同骨架已被上一条拦下；同骨架以外，两镜都声明了 layout 且相同 → 观众读作「同一页换了字」。
+    lay = [(s.get("id", "?"), s.get("layout")) for s in shots]
+    for (a_id, a), (b_id, b) in zip(lay, lay[1:]):
+        if a and b and a == b:
+            p0.append({"id": b_id, "issue": f"与上一镜同布局（layout={a}）；相邻镜头必须换布局"})
     kinds = {k for _, k in seq}
     unknown = kinds - SKELETONS
     if unknown:
@@ -518,7 +524,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
             p1.append({"id": s.get("id", "?"), "issue": f"hero.size={size}（{kind}）低于 {floor}；这个字段必须是**主体短边设计像素**，不是随便填的数"})
 
     # ---- P1-11 转场 / 入场多样性 ----
-    transitions = [s.get("transition", "cut") for s in shots]
+    transitions = [s.get("transition", "auto") for s in shots]
     if len(set(transitions)) < MIN_TRANSITIONS:
         p1.append({"id": "-", "issue": f"全片仅 {len(set(transitions))} 种转场，建议 ≥{MIN_TRANSITIONS} 种"})
     entries = [s.get("entry", "rise") for s in shots]

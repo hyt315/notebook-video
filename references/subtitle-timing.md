@@ -110,3 +110,17 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-semantic-breaks manifests
 Reject word-stream mismatch, non-semantic segmentation, a break that is not a BudouX phrase boundary or a clause break, a cue starting with a closing mark, an ASCII model/product token split, a protected phrase crossing a cue boundary, overflow, horizontal jitter, two-line text, trailing visual punctuation, dark subtitle side marks or a changed contour.
 
 The word-cut rule is the one that catches what the phrase list misses, so read the validator's last line: it ends with `phrase rule: enforced (BudouX from …)` when the rule ran. On the delivery path (the CLI) that line is mandatory — the CLI passes `--require-budoux`, so an unresolvable BudouX exits non-zero instead of degrading. The `SKIPPED — BudouX not found` tail only remains reachable via a deliberate `--no-budoux` or a direct script invocation on a bare fixture; there, only the mechanical checks and the phrase list were applied.
+
+## Line length: at most 16 characters (v4.4)
+
+Every subtitle line is at most **16 characters** after stripping the trailing punctuation and whitespace
+(ASCII counts as one character each, so GitHub costs 6). Long lines are the second-largest source of the
+"slide deck" feel: the eye has to read a sentence instead of glancing at a phrase.
+
+- `build-semantic-captions.py --max-chars 16` (default) splits any approved line that is longer at the legal
+  break nearest its middle (a break right after a clause mark wins if it costs ≤ 2 characters of balance).
+  It never cuts inside a word, an ASCII token or a protected phrase; when a long line has no legal break it
+  fails and asks you to shorten the narration.
+- `validate-caption-sync.py --max-chars 16` (default) fails any cue that is still longer.
+- The render-time `CaptionFitGate` blocks the render for the same reason (`CAPTION_MAX_CHARS` in `src/index.tsx`).
+- `--max-chars 0` turns the rule off for a legacy project; do not ship that way.

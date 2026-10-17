@@ -148,9 +148,9 @@ def mut_pan(d):
                                'x': 1220, 'y': 540, 'from': 1.0, 'to': 1.0}
     return d
 td, rc0, out0 = mkproj(mut_pan)
-case('B 平移超预算（s=1.0 平移 ±220px）', [
+case('B 平移超预算（s=1.0 平移 ±220px → 自动抬缩放后超意图预算）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:超出缩放', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
+    ('must_block:预算', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
 ])
 cleanup(td)
 
@@ -387,6 +387,51 @@ case('P 一致性 · 文档写了不存在的组件名', [
     ('must_block:NoSuchComponent', 'validate-skill-consistency', run([PY, os.path.join(SKILL, 'scripts/validate-skill-consistency.py'), '--root', td_skill])),
 ])
 cleanup(td_skill)
+
+# ── AL：v4.4 相邻两镜同 layout → validate-composition 必须拦 ──
+def mut_layout(d):
+    for k, sh in enumerate(d['shots']):
+        sh['layout'] = 'grid' if k in (2, 3) else f'L{k}'
+    return d
+td, rc0, out0 = mkproj(mut_layout)
+case('AL 相邻镜头同布局（layout）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:同布局', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+# ── AM：v4.4 字幕一行超过 16 字 → validate-caption-sync 必须拦；拆开的原样必须过 ──
+def mk_long_caption():
+    td_ = tempfile.mkdtemp(prefix='nv-gate-')
+    doc = json.loads(io.open(os.path.join(TPL, 'manifests/caption-cues.json'), encoding='utf-8').read())
+    a, b, c = doc['cues'][0], doc['cues'][1], doc['cues'][2]
+    merged = dict(a)
+    merged['text'] = a['text'] + b['text'] + c['text']
+    merged['words'] = a['words'] + b['words'] + c['words']
+    merged['speech_end_ms'] = merged['reveal_end_ms'] = c['speech_end_ms']
+    doc['cues'] = [merged] + doc['cues'][3:]
+    io.open(os.path.join(td_, 'caption-cues.json'), 'w', encoding='utf-8').write(json.dumps(doc, ensure_ascii=False))
+    return td_
+td = mk_long_caption()
+WORDS = os.path.join(TPL, 'audio/narration.mp3.json')
+case('AM 字幕一行超过 16 字', [
+    ('must_block:characters > 16', 'validate-caption-sync', run([PY, os.path.join(SKILL, 'scripts/validate-caption-sync.py'), WORDS, os.path.join(td, 'caption-cues.json')])),
+    ('must_pass', '原样模板（阴性对照）', run([PY, os.path.join(SKILL, 'scripts/validate-caption-sync.py'), WORDS, os.path.join(TPL, 'manifests/caption-cues.json')])),
+])
+cleanup(td)
+
+# ── AN：v4.4 内容画得太小（anchor 只占安全区 20%）→ validate-shot-motion 必须拦 ──
+def mut_tiny(d):
+    d['shots'][0]['anchor'] = {'x': 700, 'y': 400, 'w': 560, 'h': 300}
+    d['shots'][0]['contentBand'] = {'x': 160, 'y': 130, 'w': 1600, 'h': 780}
+    d['shots'][0]['cinema'] = {'fit': 'none'}
+    return d
+td, rc0, out0 = mkproj(mut_tiny)
+case('AN 内容只占安全区 13%（关掉自动放大）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:内容只占安全区', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
+])
+cleanup(td)
 
 # ── E：阴性对照：原样分镜表三道门必须全过（证明门不是"见谁拦谁"） ──
 td, rc0, out0 = mkproj()

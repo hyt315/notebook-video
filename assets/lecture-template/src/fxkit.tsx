@@ -203,18 +203,20 @@ export const ProgressRing:React.FC<{
   const p = easeOutSoft(f,start,start+dur);
   const tp = easeOutSoft(f,start+2,start+2+Math.max(16,Math.round(dur*0.8)));
   const shown = Math.max(0,Math.min(1,pct));
-  const R = (size-14)/2, len = 2*Math.PI*R;
+  // v4.4：描边、读数、标签随 size 等比（旧版写死 11px 描边 / 22px 读数 / 13px 标签，放大到 300+ 时读数缩成一个点）
+  const sw = Math.max(11, Math.round(size*0.06)), numFs = Math.max(22, Math.round(size*0.23)), labFs = Math.max(16, Math.round(size*0.075));
+  const R = (size-sw-3)/2, len = 2*Math.PI*R;
   const angD = -90 + 360*shown*p;
   const capX = size/2 + R*Math.cos(angD*Math.PI/180), capY = size/2 + R*Math.sin(angD*Math.PI/180);
   const land = pulse(f,start+dur,12); // 过冲只给容器：数值类动画不能弹（会短暂显示错误的数）
   return <div style={{width:size,height:size,position:'relative',flex:'0 0 auto',transform:`scale(${1+0.03*land})`}}>
     <svg width={size} height={size}>
-      <circle cx={size/2} cy={size/2} r={R} fill="none" stroke={C.gaugeTrack} strokeWidth={11}/>
-      <circle cx={size/2} cy={size/2} r={R} fill="none" stroke={color} strokeWidth={11} strokeLinecap="round" strokeDasharray={len} strokeDashoffset={len*(1-shown*p)} transform={`rotate(-90 ${size/2} ${size/2})`}/>
-      {p>0.02&&p<1&&<circle cx={capX} cy={capY} r={5.5} fill={color}/>}
+      <circle cx={size/2} cy={size/2} r={R} fill="none" stroke={C.gaugeTrack} strokeWidth={sw}/>
+      <circle cx={size/2} cy={size/2} r={R} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeDasharray={len} strokeDashoffset={len*(1-shown*p)} transform={`rotate(-90 ${size/2} ${size/2})`}/>
+      {p>0.02&&p<1&&<circle cx={capX} cy={capY} r={sw/2} fill={color}/>}
     </svg>
     <div style={{position:'absolute',inset:0,display:'grid',placeItems:'center',textAlign:'center'}}>
-      <div><div style={{fontFamily:'Space',fontWeight:700,fontSize:22,color,fontVariantNumeric:'tabular-nums'}}>{Math.round(shown*100*tp)}<span style={{fontSize:14,marginLeft:1}}>%</span></div>{label&&<div style={{fontSize: 13,fontWeight:700,color:C.ink}}>{label}</div>}</div>
+      <div><div style={{fontFamily:'Space',fontWeight:700,fontSize:numFs,lineHeight:1.05,color,fontVariantNumeric:'tabular-nums'}}>{Math.round(shown*100*tp)}<span style={{fontSize:Math.max(16,Math.round(numFs*0.55)),marginLeft:1}}>%</span></div>{label&&<div style={{fontSize:labFs,fontWeight:700,color:C.ink}}>{label}</div>}</div>
     </div>
   </div>;
 };
@@ -270,18 +272,20 @@ export const DiffView:React.FC<{
   /** before/after 模式下第一行入场帧与逐行间隔 */
   startAt?:number;step?:number;
   frame?:number;exitStart?:number;
-}> = ({x,y,w,title='patch.diff',lines,before,after,startAt=0,step=14,frame,exitStart})=>{
+  /** v4.4：代码字号（设计像素）。缺省 15 适合接触表小格；**成片里的差异镜头请给 26–34**，让补丁大而清晰。 */
+  fontSize?:number;
+}> = ({x,y,w,title='patch.diff',lines,before,after,startAt=0,step=14,frame,exitStart,fontSize=15})=>{
   const f = useF(frame);
   const rows = React.useMemo(
     ()=> lines ?? (before!==undefined && after!==undefined ? diffToLines(before, after, startAt, step) : []),
     [lines, before, after, startAt, step]);
   const delInk = mixHex(C.red, C.white, 0.35), addInk = mixHex(C.green, C.white, 0.25);
   return <div style={{position:'absolute',left:x,top:y,width:w,background:C.ink,border:`2.5px solid ${C.ink}`,borderRadius:10,boxShadow:`3px 3px 0 ${C.ink}`,overflow:'hidden',...exitStyle(f,exitStart)}}>
-    <div style={{height:30,display:'flex',alignItems:'center',gap:7,paddingLeft:14,borderBottom:`1.5px solid ${C.white}1f`}}>
-      {[C.red,C.gold,C.green].map((c,i)=><span key={i} style={{width:9,height:9,borderRadius:99,background:c}}/>)}
-      <span style={{marginLeft:6,fontFamily:'Space',fontWeight:600,fontSize: 13,letterSpacing:1,color:C.white,opacity:.85}}>{title}</span>
+    <div style={{height:Math.round(fontSize*2),display:'flex',alignItems:'center',gap:Math.round(fontSize*0.47),paddingLeft:Math.round(fontSize*0.93),borderBottom:`1.5px solid ${C.white}1f`}}>
+      {[C.red,C.gold,C.green].map((c,i)=><span key={i} style={{width:Math.round(fontSize*0.6),height:Math.round(fontSize*0.6),borderRadius:99,background:c}}/>)}
+      <span style={{marginLeft:6,fontFamily:'Space',fontWeight:600,fontSize:Math.max(13,Math.round(fontSize*0.85)),letterSpacing:1,color:C.white,opacity:.85}}>{title}</span>
     </div>
-    <div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:7}}>
+    <div style={{padding:`${Math.round(fontSize*0.8)}px ${Math.round(fontSize*1.07)}px`,display:'flex',flexDirection:'column',gap:Math.round(fontSize*0.47)}}>
       {rows.map((ln,i)=>{
         if(f<ln.at) return null;
         const p = popS(f,ln.at,'snappy');
@@ -291,7 +295,7 @@ export const DiffView:React.FC<{
         const mp = ln.k==='-'?easeInQuad(f,ln.at,ln.at+12):easeOutSoft(f,ln.at,ln.at+16);
         const sweep = pulse(f,ln.at,16);
         const col = ln.k==='-'?delInk:ln.k==='+'?addInk:`${C.white}c4`;
-        return <div key={i} style={{position:'relative',display:'flex',gap:10,fontFamily:'Space,monospace',fontWeight:600,fontSize:15,color:ln.k===' '?C.white:col,background:ln.k===' '?'none':ln.k==='-'?`${C.red}26`:`${C.green}26`,borderRadius:6,padding:'3px 10px',opacity:p*mp,transform:`translateX(${dir*16*(1-mp)}px)`,whiteSpace:'pre',overflow:'hidden'}}>{sweep>0.02&&<span style={{position:'absolute',inset:0,background:`${C.white}${Math.round(0.18*sweep*255).toString(16).padStart(2,'0')}`,pointerEvents:'none'}}/>}<span>{ln.k}</span><span>{ln.text}</span></div>;
+        return <div key={i} style={{position:'relative',display:'flex',gap:10,fontFamily:'Space,monospace',fontWeight:600,fontSize,color:ln.k===' '?C.white:col,background:ln.k===' '?'none':ln.k==='-'?`${C.red}26`:`${C.green}26`,borderRadius:6,padding:`${Math.round(fontSize*0.2)}px ${Math.round(fontSize*0.67)}px`,opacity:p*mp,transform:`translateX(${dir*Math.round(fontSize*1.07)*(1-mp)}px)`,whiteSpace:'pre',overflow:'hidden'}}>{sweep>0.02&&<span style={{position:'absolute',inset:0,background:`${C.white}${Math.round(0.18*sweep*255).toString(16).padStart(2,'0')}`,pointerEvents:'none'}}/>}<span>{ln.k}</span><span>{ln.text}</span></div>;
       })}
     </div>
   </div>;
