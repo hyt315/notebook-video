@@ -119,25 +119,28 @@ const checkDeps = async () => {
 const THEME_IDS = ['flat', 'cel'];
 
 const newProject = async (args) => {
-  const classic = args.includes('--classic');
+  // v4.1.0：--classic（暖象牙纸面示例工程 example-project）已整体删除，给出明确报错而不是静默忽略。
+  if (args.includes('--classic')) fail('--classic was removed in v4.1.0 (the warm-ivory example project is gone). Use --style=flat (default) or --style=cel.', 2);
   const styleFlag = args.find((a) => a.startsWith('--style='));
   const style = styleFlag ? styleFlag.slice('--style='.length) : 'flat';
   if (!THEME_IDS.includes(style)) fail(`Unknown style "${style}". Valid values: ${THEME_IDS.join(', ')}`, 2);
-  const targetArg = args.find((a) => a !== '--classic' && !a.startsWith('--style='));
-  if (!targetArg) fail('Usage: notebook-video new-project PROJECT_DIRECTORY [--classic] [--style=flat|cel]', 2);
+  const targetArg = args.find((a) => !a.startsWith('--style='));
+  if (!targetArg) fail('Usage: notebook-video new-project PROJECT_DIRECTORY [--style=flat|cel]', 2);
   const target = resolvePath(targetArg);
   if (fs.existsSync(target)) {
     if (!fs.statSync(target).isDirectory()) fail(`Target exists and is not a directory: ${target}`);
     if (fs.readdirSync(target).length > 0) fail(`Target directory must be empty to prevent stale project files: ${target}`);
   } else fs.mkdirSync(target, {recursive: true});
 
-  // Default is the lecture template: pure code-drawn SVG scenes that work in
-  // every environment. --classic copies the original visual-director exemplar
-  // whose hero scene demonstrates the optional image-generation add-on.
-  const templateDir = classic ? 'example-project' : 'lecture-template';
-  fs.cpSync(path.join(SKILL_DIR, 'assets', templateDir), target, {recursive: true, force: true});
+  // The lecture template is the only project template: pure code-drawn SVG scenes
+  // over locked theme backgrounds that work in every environment.
+  fs.cpSync(path.join(SKILL_DIR, 'assets', 'lecture-template'), target, {
+    recursive: true, force: true,
+    // A developer checkout may have node_modules installed inside the template; never copy it.
+    filter: (src) => !src.split(path.sep).includes('node_modules'),
+  });
   // Theme selection rewrites the one-line theme switch in the copied project.
-  if (!classic && style !== 'flat') {
+  if (style !== 'flat') {
     const activePath = path.join(target, 'src', 'theme', 'active.ts');
     if (!fs.existsSync(activePath)) fail(`Theme switch is missing in the copied template: ${activePath}`);
     fs.writeFileSync(activePath, `import {THEME} from './${style}';\nexport {THEME};\n`);
@@ -151,14 +154,9 @@ const newProject = async (args) => {
     'LICENSE-OFL-1.1-LXGW.txt',
   ]) fs.copyFileSync(path.join(fontDir, name), path.join(publicDir, name));
   fs.mkdirSync(path.join(target, 'renders'), {recursive: true});
-  if (classic) {
-    console.log(`Created official v9 visual-director Remotion notebook project: ${target}`);
-  } else {
-    console.log(`Created official lecture-template Remotion notebook project (pure code-drawn SVG default): ${target}`);
-    const themeDoc = `references/theme-${style}.md`;
-    console.log(`Theme locked to "${style}". Style contract: ${themeDoc}.`);
-    console.log('Multi-zone lecture composition rules: references/lecture-composition.md. Image generation stays an optional add-on offered separately.');
-  }
+  console.log(`Created official lecture-template Remotion notebook project (pure code-drawn SVG default): ${target}`);
+  console.log(`Theme locked to "${style}". Style contract: references/theme-${style}.md.`);
+  console.log('Multi-zone lecture composition rules: references/lecture-composition.md. Image generation stays an optional add-on offered separately.');
   console.log('Preserve the engine, background, subtitle, chrome, asset gate, audio tree and frame conventions. Replace topic content, visual plan, registered imagery and semantic scene objects.');
   console.log('Narration audio is intentionally not bundled. Generate or supply licensed audio, then run sync before rendering.');
 };
@@ -484,7 +482,6 @@ const pythonCommandMap = new Map([
   ['validate-visual-plan', ['validate-visual-plan.py']],
   ['validate-caption-sync', ['validate-caption-sync.py']],
   ['validate-semantic-breaks', ['validate-semantic-breaks.py']],
-  ['validate-official-example', ['validate-official-example.py']],
   ['match-timing', ['match-timing.py']],
   ['resolve-shots', ['resolve-shots.py']],
   ['validate-shot-motion', ['validate-shot-motion.py']],
@@ -593,7 +590,7 @@ const showcase = async (args, sheetOnly = false) => {
 };
 
 const usage = () => {
-  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--classic] [--style=flat|cel]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\nvalidate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
+  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\nvalidate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };
 
 const main = async () => {

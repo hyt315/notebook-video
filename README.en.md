@@ -43,8 +43,8 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 | **Fourteen quality gates** | 6 build-time: shot→frame resolution, out-of-bounds proof, composition & density, **frame-prop-name check**, **audio levels**, **presentation (beat↔cue alignment / caption reading budget / font size & contrast)**; 7 runtime: caption width, card overflow, **text-vs-text overlap and occlusion**, **clipped graphics**, **canvas bounds**, **measured lower-quarter density**, **main-slot occupancy**; 1 post-render: **whether the picture actually moves** | A non-zero P0 **blocks the render**; each gate also logs coverage so **"no warning" and "never ran" are distinguishable** |
 | **Material plates** | Real screenshots / official charts sit inside the locked cel frame (2.5px ink outline + hard shadow) with a caption and a source line, and can drift slowly toward the point that matters; assets are registered in **both** `visual-assets.json` and `asset-manifest.json` (source / rights / baked text / checksum) | For claims that need "this really is the official thing"; anything a diagram explains better stays drawn |
 | **Frame-accurate Chinese TTS sync** | Millisecond word timings → semantic sentence breaks → animation beats; trailing punctuation strictly stripped | No drifting captions, no audio-visual mismatch |
-| **Two locked skins** | `flat` (flat geometric, default) / `cel` (anime cel) | One script, two moods |
-| **Background readability contract** | The locked background bitmap is **never altered**; content that sits over decoration rides a **semi-transparent** feathered plate (panel 88%, plate centre 76%) | Readability without a solid white board — the film does not turn into a white slide |
+| **Two locked skins** | `flat` (calm, friendly flat edu illustration, default) / `cel` (bold comic / manga); colours from Radix Colors, three backgrounds each (main / chapter / quiet) | One script, two moods |
+| **Background readability contract** | The locked background bitmaps are **never altered**; their central ~70% is a calm safe area with decoration only at the edges, so there is no full-frame wash — only content that overlaps a decoration zone sits on a plate | Readability without a solid white board — the film does not turn into a white slide |
 
 ---
 
@@ -242,14 +242,13 @@ notebook-video/
 ├── SKILL.md                          # Core skill definition and production workflow
 ├── manifest.json                     # Skill metadata (version lives here)
 ├── README.md / README.en.md          # Chinese / English documentation
-├── CHANGELOG.md                      # Version history (currently v4.0.0)
+├── CHANGELOG.md                      # Version history (currently v4.1.0)
 ├── LICENSE                           # Apache License 2.0
 ├── NOTICE                            # Third-party font / asset / dependency notices
 ├── CONTRIBUTING.md · CODE_OF_CONDUCT.md · SECURITY.md · SUPPORT.md
 ├── assets/
 │   ├── demo/                         # Finished films & previews
-│   ├── lecture-template/             # Official template (pure-code route, 8-shot example film)
-│   └── example-project/              # Classic route example (optional image add-on)
+│   └── lecture-template/             # The only official template (flat + cel skins, 8-shot example film)
 ├── scripts/                          # Python 3 stdlib / Node only — zero third-party deps
 │   ├── notebook-video.mjs            # Cross-platform runner (incl. the showcase command)
 │   ├── resolve-shots.py              # Shot table → frame numbers and camera keyframes

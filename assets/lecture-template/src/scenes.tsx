@@ -3,7 +3,7 @@ import {Easing, interpolate} from 'remotion';
 import {THEME} from './theme/active';
 import {CheckBadge, LineIcon, PillTag, TYPE} from './kit';
 import {ChatThread, DiffView, FitCard, Funnel, ProgressRing, SkeletonCard, StaggerList, StampSeal, Typewriter} from './fxkit';
-import {ShotCamera, CoverPanel, ambientBreath} from './shotkit';
+import {ShotCamera} from './shotkit';
 import {StageFrame, PhaseRail} from './stagekit';
 import {ConsoleWindow, MetricGrid, StampBanner} from './media';
 import {Corridor, SplitStage, ZoomStage} from './skeletons';
@@ -48,7 +48,12 @@ const useEntry = (f: number, entry: Entry) => {
   return {opacity: op, transform: `translateX(${dx}px) translateY(${dy}px) scale(${sc})`};
 };
 
-/** 每镜外壳：受限相机 + 入场 + 可选揭示转场 + 片尾干净淡出 + 羽化底托（负 z）。 */
+/**
+ * 每镜外壳：受限相机 + 入场 + 可选揭示转场。
+ * v4.1 起**不再**铺整幅半透明羽化底托：它盖住了背景四角的角色与装饰，把吉祥物洗成"幽灵"。
+ * 背景图的中央约 70% 本身就是安静的安全区；内容真压到装饰区时，按 readability 规则单独用
+ * CoverPanel（tone='paper'）垫那一块。
+ */
 const Shot: React.FC<{id: keyof typeof SHOTS; f: number; entry: Entry; reveal?: boolean; children: React.ReactNode}> = ({id, f, entry, reveal, children}) => {
   const s = SHOTS[id];
   const e = useEntry(f, entry);
@@ -56,11 +61,6 @@ const Shot: React.FC<{id: keyof typeof SHOTS; f: number; entry: Entry; reveal?: 
   // 交接由 index.tsx 的 FinalDemo 负责——下一镜开始时把上一镜的末帧叠在上面淡出。
   const body = (
     <div style={{position: 'absolute', inset: 0, opacity: e.opacity, transform: e.transform}}>
-      <CoverPanel
-        x={70} y={92} w={1780} h={846} tone="wash" z={-1} pad={0}
-        style={{boxShadow: 'none', borderRadius: 0, transform: `scale(${ambientBreath(f)})`, transformOrigin: '50% 50%',
-                background: `radial-gradient(125% 118% at 50% 50%, ${C.paperBase}F5 58%, ${C.paperBase}D6 82%, ${C.paperBase}00 100%)`}}
-      />
       {children}
     </div>
   );

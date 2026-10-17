@@ -5,7 +5,7 @@ Explain what changed and why.
 ## Validation
 
 - [ ] `node scripts/notebook-video.mjs validate-skill`
-- [ ] `node scripts/notebook-video.mjs validate-official-example`
+- [ ] `python3 scripts/selftest.py` and `python3 scripts/negative-gate-check.py`
 - [ ] Dependency audit completed
 - [ ] No credentials, caches, `node_modules` or generated renders were added
 - [ ] Font, audio and third-party notices are preserved

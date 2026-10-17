@@ -130,8 +130,8 @@ mainH = h − pad×2 − headH − stampH − (stamp ? 14 : 0) − (header ? 14 
 1. **元素出现帧绑到节拍**：`enterAt(f, at(i))`，不要用 `popS(f, 0)` 或镜头开头的固定帧。
 2. **容器里不要混用**"文档流内的标题"和"绝对定位组件"——两者都从容器原点起，会精确重叠。
    给绝对定位组件显式 `y`，或把标题也绝对定位。
-3. **整幅底托用负 z 且羽化**（见 [media-routing.md](media-routing.md) §4.2）：
-   `z={-1}`、`boxShadow:'none'`、径向渐变。正 z 会把整镜内容压成半透明。
+3. **不铺整幅底托**（v4.1，见 [media-routing.md](media-routing.md) §4.2）：背景中央本就是安全区；
+   局部底托若用 `tone='wash'`，必须 `z={-1}`、`boxShadow:'none'`、径向渐变。正 z 会把整镜内容压成半透明。
 
 ---
 

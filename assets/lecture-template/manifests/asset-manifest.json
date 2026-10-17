@@ -1,10 +1,14 @@
 {
-  "style_version": "warm-ivory-remotion-2k30-v9-visual-director",
+  "style_version": "notebook-video-v4.1-flat-cel",
   "composition": "NotebookVideoFilm",
   "duration_frames": 1150,
   "visual_asset_ids": [
-    "bg-cel-169",
-    "bg-flat-169"
+    "bg-flat-main",
+    "bg-flat-chapter",
+    "bg-flat-quiet",
+    "bg-cel-main",
+    "bg-cel-chapter",
+    "bg-cel-quiet"
   ],
   "scenes": [
     {
@@ -13,8 +17,8 @@
       "end_frame": 213,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
-        "bg-cel-169",
-        "bg-flat-169"
+        "bg-flat-chapter",
+        "bg-cel-chapter"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -33,8 +37,8 @@
       "end_frame": 286,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
-        "bg-cel-169",
-        "bg-flat-169"
+        "bg-flat-chapter",
+        "bg-cel-chapter"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -53,8 +57,8 @@
       "end_frame": 416,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
-        "bg-cel-169",
-        "bg-flat-169"
+        "bg-flat-quiet",
+        "bg-cel-quiet"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -73,8 +77,8 @@
       "end_frame": 532,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
-        "bg-cel-169",
-        "bg-flat-169"
+        "bg-flat-chapter",
+        "bg-cel-chapter"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -93,8 +97,8 @@
       "end_frame": 682,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
-        "bg-cel-169",
-        "bg-flat-169"
+        "bg-flat-chapter",
+        "bg-cel-chapter"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -113,8 +117,8 @@
       "end_frame": 803,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
-        "bg-cel-169",
-        "bg-flat-169"
+        "bg-flat-main",
+        "bg-cel-main"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -133,8 +137,8 @@
       "end_frame": 919,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
-        "bg-cel-169",
-        "bg-flat-169"
+        "bg-flat-main",
+        "bg-cel-main"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -153,8 +157,8 @@
       "end_frame": 1150,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
-        "bg-cel-169",
-        "bg-flat-169"
+        "bg-flat-main",
+        "bg-cel-main"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",

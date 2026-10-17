@@ -1,6 +1,6 @@
 # macOS + Windows cross-platform adaptation
 
-This build keeps one official `warm-ivory-remotion-2k30-v9-visual-director` Remotion project for every operating system. The component tree, fonts, registered image assets, timing, subtitle geometry, native 30fps motion, 2K/30fps output and FFmpeg settings are shared. Only the launcher, optional image-generation provider and filesystem layer adapt to the host OS.
+This build keeps one official Remotion project template (`assets/lecture-template`, themes flat + cel) for every operating system. The component tree, bundled fonts (including the CJK fallback for the Latin display faces, so no system font is ever needed), registered image assets, timing, subtitle geometry, native 30fps motion, 2K/30fps output and FFmpeg settings are shared. Only the launcher, optional image-generation provider and filesystem layer adapt to the host OS.
 
 ## Universal entry
 
@@ -29,12 +29,12 @@ The wrappers contain no separate rendering logic, so the two platforms cannot dr
 
 ## Verification performed
 
-- official exemplar and skill-wide consistency validation;
+- skill-wide consistency validation;
 - project creation, render-input synchronization and packaging;
 - paths containing spaces;
 - Node and Python syntax checks;
 - Remotion dependency installation and bundle compilation;
 - FFmpeg/FFprobe container, loudness, black-frame and contact-sheet QA;
-- SHA-256 comparison confirming the official example-project remains unchanged.
+- SHA-256 registration of every theme background in `manifests/visual-assets.json`.
 
 The build environment was Linux, so macOS and Windows wrapper behavior was statically audited rather than executed on native machines. The universal Node path is the authoritative entry on all systems.

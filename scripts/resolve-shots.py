@@ -191,6 +191,13 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
             "noMisconception": s.get("noMisconception"),
             "why": s.get("why"),
         }
+        # v4.1：可选的背景变体覆盖（main / chapter / quiet）。不写就不出这个键，引擎按规则自动选
+        # （章节首镜 → chapter；zones ≥ 4 → quiet；其余 → main），所以旧分镜表解析结果逐字节不变。
+        if s.get("bg") is not None:
+            if s["bg"] not in ("main", "chapter", "quiet"):
+                problems.append(f"{sid}: bg={s['bg']!r} 不是 main / chapter / quiet 之一")
+            else:
+                rec["bg"] = s["bg"]
         out.append(rec)
         cursor = to
     total = cursor

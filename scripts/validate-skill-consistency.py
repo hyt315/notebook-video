@@ -78,7 +78,7 @@ DOC_IDENT_WHITELIST = {
 
 
 def doc_defined_names() -> set[str]:
-    """本仓库"真实存在过"的标识符集合：模板 + 示例工程源码 ∪ **脚本里的常量与函数** ∪ manifests 字符串取值。
+    """本仓库"真实存在过"的标识符集合：模板源码 ∪ **脚本里的常量与函数** ∪ manifests 字符串取值。
 
     ⚠️ 第三项是必须的：文档会**正当**引用脚本常量（`BEAT_LATE_FRAMES`、`BEAT_TIGHT_FRAMES` 这类门禁口径），
     只扫 TS 源码会把它们当成"文档编出来的名字"报 P0 —— 复核第二轮我自己就踩了这条假阳性。
@@ -88,7 +88,7 @@ def doc_defined_names() -> set[str]:
         t = f.read_text(encoding='utf-8', errors='ignore')
         names |= set(re.findall(r'^([A-Za-z_][\w]*)\s*=', t, re.M))   # 模块级常量/变量
         names |= set(re.findall(r'^def\s+([A-Za-z_][\w]*)', t, re.M)) # 函数名
-    roots = [SKILL / 'assets' / 'lecture-template' / 'src', SKILL / 'assets' / 'example-project' / 'src']
+    roots = [SKILL / 'assets' / 'lecture-template' / 'src']
     for root in roots:
         if not root.is_dir():
             continue
@@ -314,6 +314,11 @@ def main() -> None:
         if forbidden_path.exists():
             problems.append(f"obsolete dual-track path remains: {forbidden_path.relative_to(SKILL)}")
 
+    # v4.1.0：暖象牙纸面示例工程（--classic）与它的一致性锁整体删除，不许回来。
+    for removed in (SKILL / 'assets' / 'example-project', SKILL / 'scripts' / 'validate-official-example.py'):
+        if removed.exists():
+            problems.append(f"removed example project is back: {removed.relative_to(SKILL)} (v4.1.0 ships the lecture template only)")
+
     if (SKILL / 'CANDIDATE-VALIDATION.md').exists():
         problems.append('one-run environment validation report remains inside the reusable skill')
 
@@ -352,6 +357,15 @@ def main() -> None:
         active = (theme_dir / 'active.ts').read_text(encoding='utf-8', errors='ignore')
         if "from './flat'" not in active:
             problems.append("theme switch active.ts must ship defaulting to './flat'")
+        # v4.1：每个主题三张锁定背景（main / chapter / quiet），文件名与 theme/*.tsx 的 BACKGROUNDS 表一致。
+        for theme_id in ('flat', 'cel'):
+            src_text = (theme_dir / f'{theme_id}.tsx').read_text(encoding='utf-8', errors='ignore') if (theme_dir / f'{theme_id}.tsx').is_file() else ''
+            for variant in ('main', 'chapter', 'quiet'):
+                rel = f'bg/bg-{theme_id}-{variant}.jpg'
+                if not (SKILL / 'assets' / 'lecture-template' / 'public' / rel).is_file():
+                    problems.append(f"missing theme background: assets/lecture-template/public/{rel}")
+                if f"'{rel}'" not in src_text:
+                    problems.append(f"theme {theme_id}.tsx does not map variant {variant} to '{rel}'")
         for removed in ('paper.tsx', 'sticker.tsx'):
             if (theme_dir / removed).exists():
                 problems.append(f"removed theme file is back: assets/lecture-template/src/theme/{removed} (v4.0.0 ships flat + cel only)")
@@ -406,8 +420,6 @@ def main() -> None:
             print(f"CONSISTENCY ERROR: {problem}", file=sys.stderr)
         raise SystemExit(len(problems))
 
-    subprocess.run([sys.executable, str(SKILL / 'scripts' / 'validate-official-example.py')], check=True)
-
     lecture = SKILL / 'assets' / 'lecture-template'
     lecture_cues = lecture / 'manifests' / 'caption-cues.json'
     lecture_src_cues = lecture / 'src' / 'caption-cues.json'
@@ -424,10 +436,10 @@ def main() -> None:
             "status": "pass",
             "read_only": True,
             "problems_count": len(problems),
-            "templates_validated": ["example-project", "lecture-template"],
+            "templates_validated": ["lecture-template"],
         }, indent=2))
     else:
-        print('Skill-wide consistency validation passed: both templates valid, single official v9 visual-director track, no obsolete renderer residue, stale render inputs or contract mismatch')
+        print('Skill-wide consistency validation passed: lecture template valid (flat + cel, 3 backgrounds each), no obsolete renderer residue, removed example project, stale render inputs or contract mismatch')
 
 
 if __name__ == '__main__':

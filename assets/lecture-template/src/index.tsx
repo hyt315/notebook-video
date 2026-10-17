@@ -45,6 +45,8 @@ import {FillGate} from './fill-gate';
 import {CanvasBoundsGate} from './canvas-bounds-gate';
 import {SHOTS, SHOT_IDS, SHOT_TOTAL} from './shots';
 import {SCENES} from './scenes';
+import {FontFaces} from './fonts';
+import type {BgVariant} from './theme/types';
 const BASE_FPS=30,FPS=30,MOTION_FPS=30,TIMELINE_SCALE=1,DURATION=SHOT_TOTAL,DESIGN_SCALE=4/3;
 const useCurrentFrame=()=>useRawCurrentFrame()*BASE_FPS/FPS/TIMELINE_SCALE;
 const deliveryFrame=(designFrame:number)=>Math.round(designFrame*FPS*TIMELINE_SCALE/BASE_FPS);
@@ -183,19 +185,7 @@ const CardFitGate=()=>{
 // 判定：> mode.safe 记 fail（真的会被裁切）；> mode.safe - subtitlePadX 只 warn（会顶到内边）。
 const CaptionFitGate=()=>{const {mode}=useCanvas();const safe=mode.safe,innerSafe=safe-(AESTHETIC.subtitlePadX??0),weight=AESTHETIC.subtitleWeight??400,ls=AESTHETIC.subtitleLetterSpacing??1.6;const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;let blocked=false;Promise.all([document.fonts.load(`${weight} ${mode.subFont}px Kai`),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){blocked=true;cancelRender(new Error('Subtitle measurement node is unavailable'));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const widths=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''}));const overflow=widths.filter(row=>row.width>safe+.5);const tight=widths.filter(row=>row.width>innerSafe+.5&&row.width<=safe+.5);if(tight.length&&typeof console!=='undefined')console.warn(`[CaptionFitGate] ${tight.length} 条字幕超过内边距安全宽 ${innerSafe}px（未裁切但会顶到字幕框内边）：${tight.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px`).join(' | ')}`);if(overflow.length){blocked=true;cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px>${safe}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live&&!blocked){blocked=true;cancelRender(error)}});return()=>{live=false}},[handle,mode.subFont,safe,innerSafe,weight,ls]);if(done)return null;return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:'Kai,sans-serif',fontSize:mode.subFont,fontWeight:weight,whiteSpace:'nowrap',letterSpacing:ls}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</div>};
 
-const Fonts=()=> <style>{`
-@font-face{font-family:Kai;src:url(${staticFile('LXGWWenKaiLite-Regular.ttf')}) format('truetype');font-weight:400}
-@font-face{font-family:Kai;src:url(${staticFile('LXGWWenKaiLite-Medium.ttf')}) format('truetype');font-weight:700}
-@font-face{font-family:Clash;src:url(${staticFile('fonts/ClashDisplay-Medium.woff2')}) format('woff2');font-weight:500}
-@font-face{font-family:Clash;src:url(${staticFile('fonts/ClashDisplay-Semibold.woff2')}) format('woff2');font-weight:600}
-@font-face{font-family:Clash;src:url(${staticFile('fonts/ClashDisplay-Bold.woff2')}) format('woff2');font-weight:700}
-@font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:400}
-@font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:500}
-@font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:600}
-@font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:700}
-@font-face{font-family:Caveat;src:url(${staticFile('fonts/Caveat-Latin.woff2')}) format('woff2');font-weight:400 700}
-*{box-sizing:border-box}html,body{margin:0;background:${C.paperBase}}body{font-family:Kai,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
-`}</style>;
+// 字体表（含 Clash / Space / Caveat 的 CJK 兜底）已抽到 src/fonts.tsx，成片与接触表共用。
 
 // ---- 可复用组件库 -------------------------------------------
 
@@ -223,23 +213,29 @@ const Subtitle=()=>{
   const full=cue?cleanTail(cue.text):'';
   const targetChars=full.length;
   const words=cue?cue.words.filter((w:any)=>w.startFrame<=f+lead):[];
-  let charSeq=0;
+  // v4.1：占位层与可见层用**同一套**分词加空格规则渲染。旧版占位层只放 cue.text，而可见层会在
+  // 中英文词之间补 \u00a0 —— 于是「三个 AI 技能」这类句子可见宽度大于占位宽度，最后一个字
+  // 顶进字幕框的右侧装饰点。现在两层字符完全一致，占位宽 = 最终宽。
+  const allWords=cue?cue.words:[];
+  const renderWords=(list:any[],animate:boolean)=>{
+    let charSeq=0;
+    return list.map((w:any,wi:number)=>{
+      const part=String(w.part);
+      const prev=wi>0?String(list[wi-1].part):'';
+      const spaced=(wi>0&&!/[\s，。！？；：、,.!?;:（(]$/.test(prev)&&!/^[\s，。！？；：、,.!?;:）)]/.test(part)&&!((/[A-Za-z0-9]$/.test(prev)&&/^[A-Za-z0-9]/.test(part))||(/[一-鿿]$/.test(prev)&&/^[一-鿿]/.test(part))))?'\u00a0':'';
+      return <span key={wi} style={{display:'inline-block'}}>{spaced}{part.split('').map((ch:any,ci:number)=>{
+        const idx=charSeq++;
+        if(idx>=targetChars) return null; // 铁律：严格消除任何词尾带出的句末标点符号
+        if(!animate) return <span key={ci} style={{display:'inline-block'}}>{ch}</span>;
+        const p=interpolate(f,[w.startFrame+ci*.9,w.startFrame+ci*.9+2.5],[0,1],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
+        return <span key={ci} style={{display:'inline-block',opacity:p,transform:`translateY(${6*(1-p)}px)`}}>{ch}</span>;
+      })}</span>;
+    });
+  };
   return <THEME.SubtitleChrome mode={mode}>
     <span style={{position:'relative'}}>
-        <span style={{visibility:'hidden'}}>{full}</span>
-        <span style={{position:'absolute',left:0,top:0}}>
-          {words.map((w:any,wi:number)=>{
-            const part=String(w.part);
-            const prev=wi>0?String(words[wi-1].part):'';
-            const spaced=(wi>0&&!/[\s，。！？；：、,.!?;:（(]$/.test(prev)&&!/^[\s，。！？；：、,.!?;:）)]/.test(part)&&!((/[A-Za-z0-9]$/.test(prev)&&/^[A-Za-z0-9]/.test(part))||(/[一-鿿]$/.test(prev)&&/^[一-鿿]/.test(part))))?'\u00a0':'';
-            return <span key={wi} style={{display:'inline-block'}}>{spaced}{part.split('').map((ch:any,ci:number)=>{
-              const idx=charSeq++;
-              if(idx>=targetChars) return null; // 铁律：严格消除任何词尾带出的句末标点符号
-              const p=interpolate(f,[w.startFrame+ci*.9,w.startFrame+ci*.9+2.5],[0,1],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
-              return <span key={ci} style={{display:'inline-block',opacity:p,transform:`translateY(${6*(1-p)}px)`}}>{ch}</span>;
-            })}</span>;
-          })}
-        </span>
+        <span style={{visibility:'hidden'}}>{renderWords(allWords,false)}</span>
+        <span style={{position:'absolute',left:0,top:0}}>{renderWords(words,true)}</span>
     </span>
   </THEME.SubtitleChrome>;
 };
@@ -268,8 +264,8 @@ const Chrome=()=>{
         })()}
       </div>
     </Paper>
-    <div style={{position:'absolute',right:88,top:70,zIndex:140,textAlign:'right',maxWidth:1180,overflow:'hidden'}}>
-      <div style={{fontSize:TYPE.labelM,fontWeight:700,letterSpacing:4,color:C.headerAccent,fontFamily:'Clash,Space'}}>{COPY.header}</div>
+    <div style={{position:'absolute',right:88,top:70,zIndex:140,textAlign:'right',maxWidth:1180,overflow:'hidden',...THEME.headerPlate}}>
+      <div style={{fontSize:TYPE.labelM,fontWeight:700,letterSpacing:4,color:C.headerAccent,fontFamily:'Clash,Space,Kai'}}>{COPY.header}</div>
       <div style={{fontSize:TYPE.microL,marginTop:6,color:C.headerSub,fontFamily:'Space,Kai'}}>{COPY.headerSub}</div>
     </div>
   </>;
@@ -295,6 +291,30 @@ const FinalDemo=()=>{
   </>;
 };
 
+
+// 背景变体（v4.1）：每镜一张，由分镜表推导，镜头交接时与上一镜的背景交叉淡化 HANDOFF 帧。
+//   · 分镜表里写了 `bg: 'main' | 'chapter' | 'quiet'` → 照写的用；
+//   · 否则：章节首镜 → chapter；信息密集（zones ≥ 4）→ quiet；其余 → main。
+// 三张图的中央约 70% 都是安静的安全区，所以镜头内容直接压在背景上，不再铺整幅半透明底托。
+const bgVariantFor=(id:string):BgVariant=>{
+  const s:any=(SHOTS as any)[id];
+  if(s?.bg==='main'||s?.bg==='chapter'||s?.bg==='quiet') return s.bg;
+  if((CHAPTER_STARTS as readonly number[]).includes(s.from)) return 'chapter';
+  if((s.zones??0)>=4) return 'quiet';
+  return 'main';
+};
+const Backdrop=()=>{
+  const f=q(useCurrentFrame());
+  let idx=0;
+  for(let i=0;i<SHOT_IDS.length;i++){ if(f>=SHOTS[SHOT_IDS[i]].from) idx=i; }
+  const cur=bgVariantFor(SHOT_IDS[idx]);
+  const prev=idx>0?bgVariantFor(SHOT_IDS[idx-1]):cur;
+  const p=prev!==cur?Math.max(0,1-(f-SHOTS[SHOT_IDS[idx]].from)/HANDOFF):0;
+  return <>
+    <Background variant={cur}/>
+    {p>0.01&&<AbsoluteFill style={{opacity:p}}><Background variant={prev}/></AbsoluteFill>}
+  </>;
+};
 
 // 音效钉帧（硬规则）：一律相对所属镜头起点推导，改台词重跑解析后自动跟着走。
 // 中间节拍轮换用的三种"落位/切换"音（必须在 SFX 之前声明：flatMap 立即执行）
@@ -348,7 +368,7 @@ const FilmLayout:React.FC=()=>{
       {/* data-design-root：FillGate 靠它把「输出像素」折回「设计像素」（ratio 实测，不假设 --scale）。
     缺了它 FillGate 会静默 return —— 门禁装了等于没装，所以这个属性是门禁契约的一部分。 */}
       <div data-design-root style={{position:'absolute',left:0,top:0,width:mode.designW,height:mode.designH,transform:`scale(${mode.scale})`,transformOrigin:'0 0',fontFamily:'Kai,sans-serif',color:C.ink,overflow:'hidden'}}>
-        <Fonts/><AssetGate/><CaptionFitGate/><CardFitGate/><OverlapGate mode="block" watch={WATCH}/><ClippingGate mode="block" watch={WATCH}/>
+        <FontFaces bg={C.paperBase}/><AssetGate/><CaptionFitGate/><CardFitGate/><OverlapGate mode="block" watch={WATCH}/><ClippingGate mode="block" watch={WATCH}/>
         {/* CanvasBoundsGate（v2 简版）：只判「**含文字的叶元素**的墨迹 rect 越出画布」。
             片子这条取 warn 而不是 block（2026-09-22 改，与接触表那条**不再同档**）：
             v2 的判据实测来源全是接触表，它在**片子**上还没有抓到过真缺陷；
@@ -359,7 +379,7 @@ const FilmLayout:React.FC=()=>{
             口径与实测见 references/composition-gate.md §5.2 / §6。 */}
         <CanvasBoundsGate mode="warn"/>
         {/* FillGate 默认 warn：P0-4 是"观感线"，为它打断整片渲染不划算；出水进日志、可复查 */}
-        <FillGate mode="warn" watch={WATCH}/><Sound/><Background/>
+        <FillGate mode="warn" watch={WATCH}/><Sound/><Backdrop/>
         {<><Chrome/><FinalDemo/></>}
         <Grade/>
         <Subtitle/>
@@ -395,6 +415,7 @@ const Film16x9=()=> <FilmLayout/>;
 // 把 `showcase.tsx` 的两处历史缺陷各改回去一次，这条 block 档仍然**各自抓住**（26px×2 / 27px，rc=1 不出图）。
 // 口径与实测表见 references/composition-gate.md §5.2。
 const ShowcaseComposition=()=> <>
+  <FontFaces bg={C.paperBase}/>
   <Showcase/>
   <CanvasBoundsGate mode="block"/>
 </>;

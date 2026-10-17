@@ -4,6 +4,58 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+## [4.1.0] - 2026-10-17
+
+> 视觉识别重做（Phase 2）：`flat` / `cel` 两套皮肤换成基于 Radix Colors 的新调色板与每主题三张新背景；删除 `--classic` 暖象牙纸面示例工程。`new-project --classic` 现在直接报错（rc=2）并提示改用 `--style`。
+
+### 删除
+
+- **`assets/example-project/`**（`--classic` 视觉导演示例工程、暖象牙纸面）与它的一致性锁 `scripts/validate-official-example.py`、CLI 命令 `validate-official-example`、负向夹具 BE1/BE2、CI 冒烟里的 classic 分支、dependabot 与 npm audit 对它的引用。
+- 旧背景 `public/bg-flat-169.jpg` / `public/bg-cel-169.jpg`。
+- 场景外壳 `Shot` 里的整幅半透明羽化底托（它盖住背景四角，把吉祥物洗成"幽灵"）。
+
+### 新增
+
+- **每主题三张锁定背景** `public/bg/bg-<theme>-{main,chapter,quiet}.jpg`（2560×1440，JPEG q85，中央约 70% 为安全区）；引擎按分镜表自动选（章节首镜 → chapter，zones ≥ 4 → quiet，其余 → main），`shots.json` 可写 `bg` 覆盖，变体之间按 10 帧交接交叉淡化。`Theme` 接口新增 `backgrounds` 表、`Background` 接受 `variant`。
+- **`src/fonts.tsx`**：字体表抽成共享组件 `FontFaces`，成片与接触表都挂；Clash / Space / Caveat 各追加 `unicode-range` 限定的 LXGW WenKai 字面，中文永不落到系统字体（修右上页眉豆腐块，Windows 同样有效）。
+- `Theme.headerPlate`：cel 的右上页眉坐在漫画旁白框里（背景右上角有速度线 / 爆炸星）。
+- `validate-skill-consistency.py`：example-project 回归即报错；每主题三张背景必须存在且被主题文件映射。负向夹具 BE' 钉住前一条。
+
+### 变更
+
+- **调色板**：两套皮肤改用 Radix Colors v3（MIT）的十六进制值（只抄值，无运行时依赖），保留全部 token 名。原色 = step 9；`*Ink` = step 11（必要时向 step 12 混 8–10%），在三个表面上都 ≥ 4.6:1。flat：天空 / 奶油底面、主蓝 blue 9、珊瑚 tomato 9、薄荷 jade 9、阳光黄 amber 9。cel：米白漫画纸、近黑墨、红 / 蓝 / 黄三原色。
+- **flat 皮肤**：卡片圆角 22、硬影 6px；字幕胶囊改用 `blueInk`（白字 ≥ 4.6:1）+ 海军蓝硬影。**cel 皮肤**：3px 墨边、4–8px 墨影、字幕框加墨边黄色偏移块。
+- 字幕占位层改为与可见层同一套分词加空格规则渲染，修"三个 AI 技能"这类中英混排句的最后一个字顶进字幕框右侧装饰点。（帧 260 的"想入场，其实只要三"是逐词浮现的中间帧，不是截断。）
+- `ZoomStage` 聚焦暗角由整框墨色 10% 灰罩改为以焦点为圆心的海军蓝径向暗角（≤10%），白卡不再发灰。
+- `resolve-shots.py` 透传可选的 `bg` 字段（不写则输出逐字节不变）。
+- `locked-style-contract.json` 改为 `notebook-video-v4.1-flat-cel`，canonical entry 指向模板；主题文档、README、SKILL.md、NOTICE 同步。
+
+## [4.1.0] - 2026-10-17 (English)
+
+> Visual identity rebuild (Phase 2): the `flat` / `cel` skins get Radix-based palettes and three new backgrounds each; the `--classic` warm-ivory example project is removed. `new-project --classic` now fails (rc=2) and points to `--style`.
+
+### Removed
+
+- **`assets/example-project/`** (the `--classic` warm-ivory visual-director example) with `scripts/validate-official-example.py`, the `validate-official-example` CLI command, negative fixtures BE1/BE2, the classic CI smoke branch and its dependabot / npm audit entries.
+- The old backgrounds `public/bg-flat-169.jpg` / `public/bg-cel-169.jpg`.
+- The full-frame translucent wash inside the scene `Shot` wrapper (it covered the background corners and ghosted the mascot).
+
+### Added
+
+- **Three locked backgrounds per theme**, `public/bg/bg-<theme>-{main,chapter,quiet}.jpg` (2560×1440, JPEG q85, calm central ~70%). The engine picks one per shot (chapter's first shot → chapter, zones ≥ 4 → quiet, else main), `shots.json` may override with `bg`, and variants cross-fade over the 10-frame handoff. `Theme` gains a `backgrounds` table; `Background` takes `variant`.
+- **`src/fonts.tsx`**: the font table becomes the shared `FontFaces` component (film and showcase); Clash / Space / Caveat each get a `unicode-range`-limited LXGW WenKai face, so CJK never falls back to a system font (fixes the tofu in the top-right header, Windows included).
+- `Theme.headerPlate`: cel puts the top-right header in a comic caption box.
+- `validate-skill-consistency.py` fails if the example project comes back and requires the three mapped backgrounds per theme; negative fixture BE' pins the former.
+
+### Changed
+
+- **Palettes** rebuilt on vendored Radix Colors v3 hex values (MIT, no runtime dependency), all token names kept. Fill = step 9; `*Ink` = step 11 (mixed 8–10% toward step 12 where needed), ≥ 4.6:1 on all three surfaces.
+- **flat**: 22px radius, 6px hard shadow, subtitle pill in `blueInk` with a navy offset. **cel**: 3px ink borders, 4–8px ink shadows, subtitle box with an ink-outlined yellow offset block.
+- The subtitle's reserved-width layer now renders the same words with the same spacing rule as the visible layer, fixing mixed CJK/Latin lines whose last glyph ran into the pill's end dot. (Frame 260's "想入场，其实只要三" was a mid-reveal frame, not a truncation.)
+- `ZoomStage` focus dim: a radial navy vignette (≤10%) around the focus instead of a flat 10% black wash.
+- `resolve-shots.py` passes an optional `bg` field through (output is byte-identical when absent).
+- `locked-style-contract.json` becomes `notebook-video-v4.1-flat-cel` with the template as canonical entry; theme docs, READMEs, SKILL.md and NOTICE updated.
+
 ## [4.0.0] - 2026-10-17
 
 > **破坏性版本（BREAKING）**：只保留 16:9 画布与 `flat`（默认）/ `cel` 两套皮肤；用 v3.x 的 4:3、3:4 画布或 `paper` / `sticker` 皮肤建的旧工程**不再支持**，也不提供迁移脚本。

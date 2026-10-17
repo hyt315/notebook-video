@@ -1,112 +1,118 @@
 import React from 'react';
 import {AbsoluteFill, Img, staticFile} from 'remotion';
-import type {Theme} from './types';
+import type {BgVariant, Theme} from './types';
 
 // ============================================================================
-// FLAT 主题：现代扁平·几何小怪兽插画风（LOCKED）
-// 设计语言：灰细边白卡 + 彩色硬偏移影、几何小怪兽背景、悬浮圆角彩条字幕。
-// 色彩系统：靛蓝为主角色，珊瑚/薄荷/金黄按同档饱和度≈65-85 明度≈54-62 推导。
+// FLAT 主题（默认）：安静、现代、友好的教育插画风（LOCKED）
+// 设计语言：天空蓝 / 奶油色底面 + 白卡 + 主题色硬偏移影；一个自信的主蓝，
+// 珊瑚 + 薄荷两个暖/冷辅色，阳光黄只做高亮；不用浑浊的灰。
+//
+// 色值来源：Radix Colors v3（MIT，© 2021 Radix，https://github.com/radix-ui/colors）。
+// 只把十六进制值抄进来（vendored），运行时不依赖任何包。每个值后面注明 Radix 色阶与级数：
+//   step 9  = 实色填充（按钮、色块、描边）
+//   step 11 = Radix 设计给「浅底上的文字」用的级数；本主题的 *Ink 再向 step 12 混 8–10%，
+//             使它在**全部三个表面**（paper / paperWarm / paperBase）上都 ≥ 4.6:1
+//             （validate-presentation 的门槛是 4.5，留 0.1 余量防取整）。
+// 约定：原色（blue/orange/green/gold/red）只用于填充与描边；当文字色一律用对应的 *Ink。
 // 本文件所有数值均为锁定值，制作时整体引用，不得调参。
 // ============================================================================
 
 const palette: Theme['palette'] = {
-  ink: '#191919',
-  muted: '#6f6a63',
-  blue: '#3b4ed8',
-  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
-  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
-  blueInk: '#3b4ed8',
-  blueLight: 'rgba(59,78,216,0.17)',
-  orange: '#f05f42',
-  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
-  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
-  orangeInk: '#bb4a33',
-  orangeLight: 'rgba(240,95,66,0.17)',
-  green: '#41d27b',
-  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
-  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
-  greenInk: '#277d49',
-  greenLight: 'rgba(65,210,123,0.19)',
-  gold: '#f0c63c',
-  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
-  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
-  goldInk: '#836c21',
-  red: '#e8382a',
-  // 文字安全色：同色相压暗，过 4.5 比 1（从 WCAG 反解出来的）。
-  // 约定：原色只用于填充与描边；当文字色一律用对应的 Ink 变体（presentation-gate 会查）。
-  redInk: '#ce3225',
-  navy: '#191919',
-  paper: '#ffffff',
-  paperWarm: '#f2f4f7',
-  paperBase: '#f2f4f7',
-  line: 'rgba(25,25,25,0.45)',
-  lineOrange: 'rgba(240,95,66,0.62)',
-  lineBlue: 'rgba(59,78,216,0.62)',
-  lineGreen: 'rgba(65,210,123,0.62)',
+  ink: '#1c2024',          // slate 12
+  muted: '#60646c',        // slate 11
+  blue: '#0090ff',         // blue 9 · 主角色
+  blueInk: '#0d6fc6',      // blue 11 → 12 混 8%（白/奶油/天空底上 ≥ 4.6:1）
+  blueLight: 'rgba(0,144,255,0.14)',
+  orange: '#e54d2e',       // tomato 9 · 珊瑚
+  orangeInk: '#d13415',    // tomato 11
+  orangeLight: 'rgba(229,77,46,0.14)',
+  green: '#29a383',        // jade 9 · 薄荷绿
+  greenInk: '#207d64',     // jade 11 → 12 混 8%
+  greenLight: 'rgba(41,163,131,0.16)',
+  gold: '#ffc53d',         // amber 9 · 阳光黄（只做高亮/色块，上面放 ink 字）
+  goldInk: '#a25f03',      // amber 11 → 12 混 10%
+  red: '#e5484d',          // red 9
+  redInk: '#ce2c31',       // red 11
+  navy: '#113264',         // blue 12
+  paper: '#ffffff',        // 卡片面
+  paperWarm: '#fefbe9',    // amber 2 · 奶油
+  paperBase: '#f1fafd',    // sky 2 · 天空底
+  line: 'rgba(28,32,36,0.34)',
+  lineOrange: 'rgba(229,77,46,0.60)',
+  lineBlue: 'rgba(0,144,255,0.60)',
+  lineGreen: 'rgba(41,163,131,0.60)',
   white: '#ffffff',
   // 场景层柔色
-  skyTint: '#e8ebfb',
-  blueLine: 'rgba(59,78,216,0.40)',
-  dotIdle: '#cfc8bc',
-  mutedFill: 'rgba(111,106,99,0.30)',
-  mutedBar: 'rgba(111,106,99,0.28)',
-  mutedWash: 'rgba(111,106,99,0.18)',
-  orangeSoft: '#f59784',
-  orangeDeep: '#d63d1f',
-  gaugeTrack: 'rgba(25,25,25,0.22)',
-  greenGlow: 'rgba(65,210,123,0.35)',
-  stageTint: 'rgba(242,244,247,0.5)',
-  headerAccent: '#191919',
-  headerSub: '#6f6a63',
+  skyTint: '#e6f4fe',      // blue 3
+  blueLine: 'rgba(0,144,255,0.42)',
+  dotIdle: '#cdced6',      // slate 7
+  mutedFill: 'rgba(96,100,108,0.26)',
+  mutedBar: 'rgba(96,100,108,0.22)',
+  mutedWash: 'rgba(96,100,108,0.14)',
+  orangeSoft: '#f5a898',   // tomato 7
+  orangeDeep: '#d13415',   // tomato 11
+  gaugeTrack: 'rgba(28,32,36,0.14)',
+  greenGlow: 'rgba(41,163,131,0.35)',
+  stageTint: 'rgba(230,244,254,0.55)',
+  headerAccent: '#113264', // blue 12（在天空底上 ≥ 11:1）
+  headerSub: '#60646c',
 };
 
 const aesthetic: Theme['aesthetic'] = {
-  subtitleSafeWidth: 1334, paperRadius: 20, paperOutline: 0,
+  subtitleSafeWidth: 1334, paperRadius: 22, paperOutline: 0,
   textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: 0,
   subtitleWeight: 700, subtitleLetterSpacing: 1.6, subtitlePadX: 108,
 };
 
-// 偏移实色影：无模糊、无墨边，主题蓝实色偏移（几何感不悬浮）。
-// 场景层直接调用时用默认蓝；Paper 卡片按 borderColor 换对应彩色影。
+// 偏移实色影：无模糊、无墨边（扁平语言）。场景层直接调用时用主蓝；
+// Paper 卡片按 borderColor 换对应彩色影。
 const paperShadow = (lift: number) =>
-  `${7 + 3 * lift}px ${7 + 3 * lift}px 0 ${palette.blue}`;
+  `${6 + 3 * lift}px ${6 + 3 * lift}px 0 ${palette.blue}`;
 
-// 背景（LOCKED）：固定资产图，16:9 2560×1440（与画布 1:1 逐像素）；渲染时 cover 等比缩放
-// 不裁切不拉伸。探头式小怪兽（右下靛蓝圆怪从底边探出上半身+左下薄荷山丘
-// 珊瑚小怪探头）、浅灰蓝噪点纸面、85% 留白。禁止改回代码自绘背景。
-const BG_IMAGE = 'bg-flat-169.jpg';
-
-const Background: React.FC = () => {
-  return <AbsoluteFill style={{background: palette.paperBase}}>
-    <Img src={staticFile(BG_IMAGE)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
-  </AbsoluteFill>;
+// 背景（LOCKED）：三张固定资产图，均为 2560×1440（与 16:9 画布 1:1 逐像素），渲染时 cover。
+// 中央约 70% 是安静的内容安全区，装饰只在四边与四角：
+//   main    右下角蓝色圆头机器人（天线 + 黄球）从底边探头，左下薄荷山丘 + 珊瑚小方块探头
+//   chapter 稍饱和的天空 + 中央奶油色柔光，机器人在左下挥手，珊瑚小方块在右下
+//   quiet   最安静：只剩右下角机器人头顶 + 左下一线山丘，给信息密集的镜头
+// 禁止改回代码自绘背景；换图要连同 manifests/visual-assets.json 的 sha256 一起换。
+const BACKGROUNDS: Record<BgVariant, string> = {
+  main: 'bg/bg-flat-main.jpg',
+  chapter: 'bg/bg-flat-chapter.jpg',
+  quiet: 'bg/bg-flat-quiet.jpg',
 };
 
-// 无框色影卡：白卡 + 2px 中性灰细边（界定上/左缘，非墨框）+ 实色硬偏移影（界定右下缘）；
-// 场景传 borderColor 时影子同步变色。
+const Background: Theme['Background'] = ({variant = 'main'}) => (
+  <AbsoluteFill style={{background: palette.paperBase}}>
+    <Img src={staticFile(BACKGROUNDS[variant])} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+  </AbsoluteFill>
+);
+
+// 白卡：2px 极浅墨边（界定上/左缘）+ 实色硬偏移影（界定右下缘）；场景传 borderColor 时影子同步变色。
 const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) =>
-  <div style={{position: 'absolute', backgroundColor: palette.paper, border: '2px solid rgba(25,25,25,0.30)', borderRadius: aesthetic.paperRadius, color: palette.ink, boxShadow: `${7 + 3 * lift}px ${7 + 3 * lift}px 0 ${borderColor || palette.blue}`, ...style}}>{children}</div>;
+  <div style={{position: 'absolute', backgroundColor: palette.paper, border: '2px solid rgba(28,32,36,0.14)', borderRadius: aesthetic.paperRadius, color: palette.ink, boxShadow: `${6 + 3 * lift}px ${6 + 3 * lift}px 0 ${borderColor || palette.blue}`, ...style}}>{children}</div>;
 
 // 扁平风不加任何调色层：纯色块对比即为视觉语言。
 const Grade: React.FC = () => null;
 
-// 悬浮圆角彩条字幕：靛蓝胶囊 + 墨色硬偏移影（扁平语言），两侧橙/绿小圆头，不再贴底横杠。
+// 悬浮圆角字幕条：深一级的主蓝胶囊（白字 ≥ 4.6:1）+ 海军蓝硬偏移影，两侧珊瑚 / 阳光黄小圆点。
 const SubtitleChrome: Theme['SubtitleChrome'] = ({mode, children}) =>
   <div style={{position: 'absolute', left: 0, right: 0, bottom: 40, zIndex: 200, display: 'flex', justifyContent: 'center'}}>
-    <div style={{background: palette.blue, borderRadius: 26, padding: '16px 40px', boxShadow: `7px 7px 0 rgba(25,25,25,0.9)`, display: 'flex', alignItems: 'center', maxWidth: mode.safe}}>
+    <div style={{background: palette.blueInk, borderRadius: 999, padding: '15px 40px', boxShadow: `0 6px 0 ${palette.navy}`, display: 'flex', alignItems: 'center', maxWidth: mode.safe}}>
       <div style={{width: 12, height: 12, background: palette.orange, borderRadius: '50%', marginRight: 22, flexShrink: 0}} />
       <div style={{fontFamily: 'Kai', fontSize: mode.subFont, fontWeight: 700, lineHeight: 1.18, letterSpacing: 1.6, color: palette.white, whiteSpace: 'nowrap'}}>
         {children}
       </div>
-      <div style={{width: 12, height: 12, background: palette.green, borderRadius: '50%', marginLeft: 22, flexShrink: 0}} />
+      <div style={{width: 12, height: 12, background: palette.gold, borderRadius: '50%', marginLeft: 22, flexShrink: 0}} />
     </div>
   </div>;
 
-// 背景装饰区（LOCKED 声明）：画幅级高对比装饰所占矩形（1920×1080 设计坐标）。
-// flat 的背景右下角有一个大卡通角色、左下角有绿丘与红方块，压在上面的文字会被吃掉。
+// 背景装饰区（LOCKED 声明）：三张背景图里装饰所占矩形的**并集**（1920×1080 设计坐标）。
+// 内容压到这些区域时必须坐在 CoverPanel（tone='paper'）上。
 const backgroundDecorZones = [
-  {x: 1240, y: 380, w: 680, h: 700},   // 右下：蓝色卡通角色
-  {x: 0, y: 700, w: 780, h: 380},      // 左下：绿色丘 + 红色方块
+  {x: 1500, y: 840, w: 420, h: 240},   // 右下：蓝色机器人（main / quiet）· 薄荷山丘 + 珊瑚小方块（chapter）
+  {x: 0, y: 840, w: 400, h: 240},      // 左下：薄荷山丘 + 珊瑚小方块（main / quiet）· 蓝色机器人（chapter）
+  {x: 0, y: 120, w: 190, h: 260},      // 左上：小云
+  {x: 1730, y: 120, w: 190, h: 260},   // 右上：小云
 ];
 
 export const THEME: Theme = {
@@ -114,6 +120,7 @@ export const THEME: Theme = {
   palette,
   aesthetic,
   paperShadow,
+  backgrounds: BACKGROUNDS,
   Background,
   Paper,
   Grade,

@@ -10,7 +10,7 @@
   · `must_pass`          rc == 0（阴性对照：合法输入必须全过）
 
 为什么子串断言是必须的：只看 rc 会把"因为别的原因失败"记成通过（第一版 P 用例就是这样假通过的）。"""
-import io, json, os, shutil, subprocess, sys, tempfile
+import io, json, os, re, shutil, subprocess, sys, tempfile
 
 SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TPL = os.path.join(SKILL, 'assets/lecture-template')
@@ -370,7 +370,9 @@ def mk_skill_copy():
     # 夹具就变成"因为别的原因失败"了（第一版的假通过）。
     for rel in ('assets/demo/notebook-video-demo.mp4', 'assets/demo/notebook-video-demo.webp',
                 'assets/demo/notebook-video-components-demo.mp4', 'assets/demo/hero.png',
-                'assets/demo/social-preview.png'):
+                'assets/demo/social-preview.png',
+                # v4.1：每主题三张背景（一致性检查只查 is_file，占位空文件即可）
+                *[f'assets/lecture-template/public/bg/bg-{t}-{v}.jpg' for t in ('flat', 'cel') for v in ('main', 'chapter', 'quiet')]):
         q = os.path.join(td, rel)
         if not os.path.exists(q):
             os.makedirs(os.path.dirname(q), exist_ok=True)
@@ -568,7 +570,8 @@ for name in ('types.ts', 'canvas.ts', 'active.ts', 'cel.tsx', 'flat.tsx'):
     if os.path.exists(src_p):
         shutil.copy(src_p, os.path.join(td, 'src/theme', name))
 ink_path = os.path.join(td, 'src/theme/flat.tsx')
-ink_text = io.open(ink_path, encoding='utf-8').read().replace("blueInk: '#3b4ed8'", "blueInk: '#eeeeee'")
+# v4.1：按正则改值，不写死旧色值（调色板换成 Radix 后旧的 '#3b4ed8' 已不存在）。
+ink_text = re.sub(r"blueInk: '#[0-9a-fA-F]{6}'", "blueInk: '#eeeeee'", io.open(ink_path, encoding='utf-8').read(), count=1)
 assert "blueInk: '#eeeeee'" in ink_text, '夹具没改到 flat 的 blueInk（值变了？）'
 io.open(ink_path, 'w', encoding='utf-8', newline='').write(ink_text)
 case('Y 文字安全色 · *Ink 压不过 4.5:1', [
@@ -823,7 +826,7 @@ cleanup(td)
 # BB–BG · 四道"零对抗夹具"门禁的补钉 + HEAD 里三条新硬拦行为的钉桩
 #
 # 审计结论：validate-layering / validate-visual-plan / validate-audio-levels /
-# validate-official-example 此前**只在 CI 与一致性检查里正向跑**，一条喂坏输入的
+# （v4.1 前还有 validate-official-example）此前**只在 CI 与一致性检查里正向跑**，一条喂坏输入的
 # 实证都没有 —— "门在名义上存在、实际静默放行"正是本脚本存在的意义要防的病。
 # 每一道各补 must_block（定向 needle，不用宽松匹配）+ must_pass 阴性对照
 # （好输入必须过，防判据写反方向把什么都拦）。全部离线自包含：临时目录造、结束清理。
@@ -966,37 +969,13 @@ case('BD3 音效可听度 · 损坏素材读不到峰值 → rc=2 门禁自身�
 ])
 cleanup(td)
 
-# ── BE · validate-official-example（官方示例一致性锁）──
-# 它校验的是**技能自带的 example-project**，没有 project 参数 —— 但 SKILL 路径由
-# 脚本自身位置推导，所以"整技能拷一份（临时目录）、改副本再跑副本里的脚本"就是合法喂点。
-# 副本裁掉 assets/demo 与 *.ttf（P 用例同款理由：快）；assets/fonts 的三个文件补零字节
-# 占位 —— 官方示例对它们只查 is_file()，而 example-project 的 png **必须真拷**
-# （validate-visual-plan 会核它的 sha256，空文件会先撞"missing or empty asset"，
-#  那又是一次"因为别的原因失败"）。
-def mk_skill_full():
-    td = tempfile.mkdtemp(prefix='nv-skill-full-')
-    ignore = shutil.ignore_patterns('node_modules', 'renders', '.git', '.cache', '.tools',
-                                    '__pycache__', 'demo', '*.mp4', '*.webp', '*.jpg', '*.ttf')
-    shutil.copytree(SKILL, td, dirs_exist_ok=True, ignore=ignore)
-    for name in ('LXGWWenKaiLite-Regular.ttf', 'LXGWWenKaiLite-Medium.ttf'):
-        q = os.path.join(td, 'assets', 'fonts', name)
-        if not os.path.exists(q):
-            open(q, 'wb').close()
-    return td
-
-
-td_skill = mk_skill_full()
-OE = os.path.join(td_skill, 'scripts/validate-official-example.py')
-case('BE1 官方示例 · 忠实副本必须全过（阴性对照）', [
-    ('must_pass', 'validate-official-example', run([PY, OE])),
-])
-# 坏输入：把契约的画布宽从 2560 改成 1080（身份锁的第一道判据）→ 必须点名"canvas ... changed"
-cp = os.path.join(td_skill, 'references/locked-style-contract.json')
-_doc = json.loads(io.open(cp, encoding='utf-8').read())
-_doc['canvas']['width'] = 1080
-io.open(cp, 'w', encoding='utf-8', newline='').write(json.dumps(_doc, ensure_ascii=False, indent=2))
-case('BE2 官方示例 · 契约画布宽被改成 1080', [
-    ('must_block:canvas or native motion rate changed', 'validate-official-example', run([PY, OE])),
+# ── BE · （v4.1.0 删除）validate-official-example 随 example-project 一起移除；
+# 技能级一致性由 P 用例（validate-skill-consistency --root）覆盖，其中包括
+# "example-project 不得回来"与"主题背景三变体齐全"两条新判据（见 BE' 用例）。
+td_skill = mk_skill_copy()
+os.makedirs(os.path.join(td_skill, 'assets', 'example-project'), exist_ok=True)
+case("BE' 一致性 · 已删除的 example-project 目录被放回来", [
+    ('must_block:removed example project is back', 'validate-skill-consistency', run([PY, os.path.join(SKILL, 'scripts/validate-skill-consistency.py'), '--root', td_skill])),
 ])
 cleanup(td_skill)
 

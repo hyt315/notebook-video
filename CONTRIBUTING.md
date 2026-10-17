@@ -8,8 +8,8 @@ Keep one official implementation. Do not introduce candidate and approved varian
 
 1. Create a focused branch from the latest default branch. Do not work directly on `main`.
 2. Keep the same Node launcher as the authoritative cross-platform implementation.
-3. Run `node scripts/notebook-video.mjs validate-skill` and `node scripts/notebook-video.mjs validate-official-example`.
-4. Run `npm audit --package-lock-only --ignore-scripts` in `assets/example-project`.
+3. Run `node scripts/notebook-video.mjs validate-skill`, `python3 scripts/selftest.py` and `python3 scripts/negative-gate-check.py`.
+4. Run `npm audit --package-lock-only --ignore-scripts` in `assets/lecture-template`.
 5. For visual or timing work, create a clean project with `new-project`, range-render the affected scene, then complete a full validated render before proposing a new default.
 6. Preserve source and third-party license notices.
 7. Do not add credentials, generated `node_modules`, cache directories, raw render intermediates or personal project files.

@@ -54,27 +54,44 @@ export interface ThemeAesthetic {
   subtitlePadX?: number;
 }
 
+/**
+ * 背景变体（v4.1）：每个主题三张锁定位图，中央约 70% 都是安静的内容安全区。
+ *   main    常规镜头
+ *   chapter 每章首镜（章节卡出现的那一镜），比 main 更有节庆感
+ *   quiet   信息密集的镜头（zones ≥ 4），装饰最少
+ * 引擎按分镜表自动选（index.tsx 的 bgVariantFor），分镜表可用 `bg` 字段显式覆盖。
+ */
+export type BgVariant = 'main' | 'chapter' | 'quiet';
+export const BG_VARIANTS: readonly BgVariant[] = ['main', 'chapter', 'quiet'];
+
 export interface Theme {
   id: 'flat' | 'cel';
   palette: ThemePalette;
   aesthetic: ThemeAesthetic;
   /** 卡片阴影：lift 0=静止贴面，1=完全举起。签名与语义所有主题一致。 */
   paperShadow: (lift: number) => string;
-  /** 整幅背景（含装饰），16:9 锁定坐标。 */
-  Background: React.FC;
+  /** 三张背景位图（public/ 下的相对路径），与 manifests/visual-assets.json 一一对应。 */
+  backgrounds: Record<BgVariant, string>;
+  /** 整幅背景（含装饰），16:9 锁定坐标；variant 缺省为 main。 */
+  Background: React.FC<{variant?: BgVariant}>;
   /** 卡片容器：props 契约与原 Paper 完全一致。 */
   Paper: React.FC<{children?: React.ReactNode; style?: React.CSSProperties; lift?: number; borderColor?: string}>;
   /** 全局调色层（柔光/暗角）。 */
   Grade: React.FC;
   /** 字幕容器：负责定位与外壳；内部的逐词浮现由引擎渲染为 children 传入。 */
   SubtitleChrome: React.FC<{mode: ModeSpec; children?: React.ReactNode}>;
+  /**
+   * 页眉底板（可选，v4.1）：右上角技术页眉的外壳样式。背景右上角有高对比装饰的主题
+   * （cel 的速度线 / 爆炸星）必须给页眉垫一块底板，否则墨字会被装饰吃掉；flat 不需要。
+   */
+  headerPlate?: React.CSSProperties;
   /** 主题专属锁定构件（如赛璐璐爆炸贴 Burst），场景层只传内容参数。 */
   extras?: Record<string, React.FC<any>>;
   /**
-   * 背景装饰区（可选）：背景位图里「画幅级、高对比」的锁定装饰所占的矩形
+   * 背景装饰区（可选）：三张背景位图里「画幅级、高对比」的锁定装饰所占矩形的并集
    * （1920×1080 设计坐标）。这些区域会吃掉压在上面的文字，因此：
    *   1. 内容压到装饰区时，必须坐在 CoverPanel（tone='paper'）上；
-   *   2. 需要成片级兜底时用 CoverPanel 铺一层羽化暖底。
+   *   2. 不要铺成片级整幅底托（v4.1 删除：它把四角装饰洗成幽灵）；背景中央本就是安全区。
    * 背景图本身不改——它很好看；只解决可读性。
    */
   backgroundDecorZones?: {x: number; y: number; w: number; h: number}[];

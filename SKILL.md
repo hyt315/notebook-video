@@ -1,6 +1,6 @@
 ---
 name: notebook-video
-version: 4.0.0
+version: 4.1.0
 description: Create complete Chinese 2K (2560×1440, 16:9 only) flat-geometric or anime-cel explainer and promotional videos with React, TypeScript and Remotion. Two locked skins — `flat` (default) and `cel`. The default visual route is pure code-drawn composition (SVG diagrams, mascots, progressive checklists, annotation tags) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes a per-shot restricted camera with an out-of-bounds proof, four scene skeletons with a content-to-medium routing table, a cue-indexed shot table, native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering and fourteen automated quality gates (including a frame-prop-name gate that catches the highest-frequency silent failure in this codebase). Use when the user asks to 做科普视频, 扁平风或动漫风讲解视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
 ---
 
@@ -71,7 +71,7 @@ Read only what the current production needs. **写任何场景之前，先读前
 > 12. 卡片高度必须用 `fitH()` 算，禁止手写"看着差不多"的固定高度（渲染期 `CardFitGate` 会拦下真裁切）。
 > 13. 给槽内组件传宽度前先算 `mainW = w − pad×2 − railW − 18`。
 > 14. 绝对定位构件的 `x/y` 相对**最近的定位祖先**，与文档流标题共用容器原点会精确重叠；**flex 子项若只含绝对定位子元素，必须显式给宽高**，否则宽度塌成 0、多张卡会叠在同一点。
-> 15. 整幅底托必须 `z={-1}` 且径向羽化；正 z 会把整镜内容压成半透明。
+> 15. 不铺整幅底托（v4.1 删除：它把背景四角的吉祥物洗成幽灵）；局部 `tone='wash'` 底托必须 `z={-1}` 且径向羽化，正 z 会把整镜内容压成半透明。
 > 16. 下 1/4 必须填满（底边接近 y=876）；面板下半空洞就是 PPT。**判据在渲染期 `FillGate`**（实测信息元素的最低边，不是读 `shots.json` 里那个声明字段——见 `references/composition-gate.md` 的 P0-4 降级说明）。
 > 17. 页眉 / 章节卡 / 字幕放在 `ShotCamera` **之外**。
 > 18. 写场景文件后按顺序跑 `resolve-shots.py` → 构建期门禁，**P0 必须 = 0** 才允许渲染。
@@ -89,8 +89,8 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./notebook-video-proje
 node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-project
 ```
 
-- `assets/lecture-template` (default) is the pure-code route; `--classic` copies
-  `assets/example-project`, the visual-director exemplar that demonstrates the optional image add-on.
+- `assets/lecture-template` is the only project template (the v4.0 `--classic` warm-ivory example was
+  removed in v4.1.0; the flag now fails with a pointer to `--style`).
 - Two skins, chosen once at kickoff: `flat` (default) and `cel`. Themes swap palette,
   card skin, background decoration and subtitle chrome only — every coordinate, type scale, motion
   contract and gate is shared.
@@ -214,8 +214,7 @@ scripts/validate-caption-sync.py    字幕与 TTS 词边界一致
 scripts/validate-semantic-breaks.py 保护短语不被切断
 scripts/validate-visual-plan.py     视觉计划与清单一致
 scripts/validate-layering.py        图层与离场契约
-scripts/validate-official-example.py 官方示例一致性锁
-scripts/validate-skill-consistency.py 仓库级一致性（双模板 + 文档链接 + 主题包完整性）
+scripts/validate-skill-consistency.py 仓库级一致性（模板 + 文档链接 + 主题包完整性 + 每主题三张背景）
 scripts/build-semantic-captions.py  语义字幕行 → cue 表
 scripts/match-timing.py             换配音后重对齐章节时间轴
 scripts/retime.py                   时长变化的机械重写（DURATION / 清单 / 音效建议表）
@@ -255,7 +254,7 @@ that only appears in a comment, and the untouched template with scene sources �
 run fixtures), the layering contract violated both ways, a visual plan with an invalid mode or an
 uncovered frame gap — plus one whose film composition declares no numeric width inline (the check must
 refuse to borrow a width from another composition rather than silently pass), an inaudible sfx mix and a corrupt audio file (a failed measurement must hard-fail
-the gate, not pass), an official-example copy with a tampered canvas, a scene source whose shot functions
+the gate, not pass), a skill copy with the removed example project put back, a scene source whose shot functions
 cannot be found — paired with one pinning that the bare `FC<` spelling of every shot function must pass —
 a stale resolved timeline, a match-timing mismatch fed under `python -O` (guards must never be plain
 `assert`s), two caption-cues copies that disagree (validate one while rendering the other), and the

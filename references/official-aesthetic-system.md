@@ -1,11 +1,11 @@
 # Official aesthetic system
 
-This document defines the aesthetic layer preserved by `warm-ivory-remotion-2k30-v9-visual-director`.
-This package contains one official aesthetic track and one canonical example project.
+This document defines the aesthetic layer preserved by `notebook-video-v4.1-flat-cel` (see `locked-style-contract.json`).
+This package contains one official aesthetic track, one canonical project template (`assets/lecture-template`) and two locked skins: `flat` (default) and `cel`. The v4.0 warm-ivory paper look and its `--classic` example project were removed in v4.1.0.
 
 ## Locked production grammar
 
-The v9 system preserves the fixed camera, subtitle geometry, native 30fps paper motion, declarative audio tree, asset gate and final draw order while allowing the scene grammar to follow meaning. Before storyboarding, select one primary **media kind** for each scene (`chart` / `console` / `code` / `graphic` / `text` / `metric` — 默认路线的路由维度，见 media-routing.md); `image-text` only applies on the optional visual-director route. Read `visual-director.md`.
+The system preserves the per-shot restricted camera, subtitle geometry, native 30fps card motion, declarative audio tree, asset gate and final draw order while allowing the scene grammar to follow meaning. Before storyboarding, select one primary **media kind** for each scene (`chart` / `console` / `code` / `graphic` / `text` / `metric` — 默认路线的路由维度，见 media-routing.md); `image-text` only applies on the optional visual-director route. Read `visual-director.md`.
 
 Generated imagery is an optional input layer. When an authorized image-generation tool is available, use it for concrete subjects and promotional hero shots where it improves comprehension. Keep exact text, arrows, diagrams and timing in Remotion. A project must remain buildable with user-supplied, licensed or native SVG assets when image generation is unavailable.
 
@@ -18,7 +18,7 @@ The following values and helpers are part of the official engine and are not ord
 - `AESTHETIC`: subtitle width, paper radius/outline, texture, grid and grade values;
 - `paperShadow(lift)`: contact and environment shadow linked to real paper lift;
 - `LineIcon` and `CheckBadge`: one consistent line-icon language;
-- `Grade`: restrained static whole-film warmth and vignette.
+- `Grade`: restrained static whole-film vignette (flat ships none; cel a 3% ink corner vignette).
 
 Semantic colors must come from `C`; material-specific neutral shades may remain inside the locked component implementation. Do not introduce new inline semantic colors, system glyphs, emoji, independent shadows or animated grain. Small optical adjustments are allowed only when they preserve the official visual result.
 
@@ -53,6 +53,7 @@ Stable semantic IDs must remain separate from display labels. Changing visible c
 - Use the official palette and type scale; do not invent per-scene styling.
 - Use lift-linked paper shadows only for moving paper.
 - Keep the grade static and restrained.
+- Never lay a full-frame translucent wash over the background: the three backgrounds per theme keep their central ~70% calm on purpose, and a wash turns the corner characters into ghosts.
 - Use the official line icons (`LineIcon`) as the primary icon language, instead of system glyphs or emoji.
   Topic-specific marks (brand logos, technology identities) may use the pinned `react-icons` sets
   (`fa` solid = brands; `fi`/`lu` = line icons; `si` = 品牌 logo 兜底 —— v3.1 起放开 `lu`，因为 `react-icons/lu` 与 `fi` **同源同款**、字节级相同；混排时按 `LineIcon` 的视觉重量压一档 `strokeWidth`。见 dependency-policy.md §7.5）
@@ -60,7 +61,7 @@ Stable semantic IDs must remain separate from display labels. Changing visible c
 
 ## Future updates
 
-For future aesthetic changes, work in a disposable project copy, render the complete film, obtain user approval, and only then overwrite the official example and contract.
+For future aesthetic changes, work in a disposable project copy, render the complete film, obtain user approval, and only then overwrite the template, the theme files and the contract.
 
 ## Locked official elements (原文迁自 SKILL.md)
 
@@ -72,11 +73,11 @@ Keep these official elements locked until the user approves a future rendered re
 - no duplicate-frame upconversion; use 60fps only when motion is authored natively at 60fps;
 - mount only the active scene, with at most two scenes during a short handoff;
 - animate moving objects with transforms instead of per-frame layout properties (**progress bars animate `scaleX`, never `width`**);
-- the active skin's locked background raster (`flat` default, or `cel`);
+- the active skin's three locked background rasters (`main` / `chapter` / `quiet`, `flat` default or `cel`), chosen per shot by the backdrop rule;
 - stable top-left chapter card and top-right technical header, both **outside** the shot camera;
 - bottom-pinned pure caption text with per-word reveal, no decorative bar, no dark border or side artifacts;
 - pure bottom subtitle with soft text shadow, no dark border, side marks, locator or ring;
-- LXGW WenKai Lite as the unified CJK typeface plus Clash Display / Space Grotesk Latin accents;
+- LXGW WenKai Lite as the unified CJK typeface plus Clash Display / Space Grotesk Latin accents, with WenKai registered as the CJK fallback face of every Latin display family (`src/fonts.tsx`) so no text ever falls back to a system font;
 - TTS word timing converted once to integer absolute frames;
 - independent semantic parts with explicit z-order, entry and complete exit;
 - a spatial density budget: one hero action per zone, no temporary stack in the center;

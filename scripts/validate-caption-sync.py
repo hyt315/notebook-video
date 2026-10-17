@@ -22,8 +22,8 @@ def dual_copy_failures(cues_path: Path) -> list[str]:
     `manifests/caption-cues.json`（各校验器按约定读这份）与 `src/caption-cues.json`
     （`src/index.tsx` 直接 import、真正进渲染的那份）。CLI `sync` 只在渲染前**静默复制**
     manifests→src，不是门禁：单独跑校验、或直接开 Studio 时，两份漂移零检出。
-    判据与技能侧一致性锁同口径（validate-skill-consistency 对模板、
-    validate-official-example 对示例工程都是字节相等）：两份都在、字节不等 → 报问题。
+    判据与技能侧一致性锁同口径（validate-skill-consistency 对模板是字节相等）：
+    两份都在、字节不等 → 报问题。
     只有 manifests/ 一份（或传的就是 src/ 那份）时不适用，跳过。"""
     if cues_path.name != "caption-cues.json" or cues_path.parent.name != "manifests":
         return []

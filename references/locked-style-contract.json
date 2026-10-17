@@ -1,7 +1,7 @@
 {
-  "version": "warm-ivory-remotion-2k30-v9-visual-director",
+  "version": "notebook-video-v4.1-flat-cel",
   "status": "official-current",
-  "canonical_entry": "assets/example-project/src/index.tsx",
+  "canonical_entry": "assets/lecture-template/src/index.tsx",
   "canonical_composition": "NotebookVideoFilm",
   "canvas": {
     "width": 2560,
@@ -42,46 +42,130 @@
     "encoder": "FFmpeg"
   },
   "palette": {
-    "ink": "#2b2924",
-    "muted": "#746956",
-    "paper": "#fffdf7",
-    "paper_warm": "#f7ecd8",
-    "ivory": "#f3e4c4",
-    "line": "#514a40",
-    "blue": "#2869b7",
-    "orange": "#ed5a32",
-    "green": "#43866a",
-    "gold": "#d2a128",
-    "red": "#bd4b3d",
-    "navy": "#2d3b4c",
-    "white": "#ffffff"
+    "source": "Radix Colors v3 (MIT, (c) 2021 Radix, https://github.com/radix-ui/colors) - hex values vendored, no runtime dependency",
+    "rules": {
+      "fill": "Radix step 9",
+      "text_safe_ink": "Radix step 11, mixed 8-10% toward step 12 where needed; >= 4.6:1 on paper, paperWarm and paperBase",
+      "text_on_accent": "accent fills carry white text except gold, which carries ink"
+    },
+    "flat": {
+      "ink": "#1c2024",
+      "muted": "#60646c",
+      "blue": "#0090ff",
+      "blueInk": "#0d6fc6",
+      "blueLight": "rgba(0,144,255,0.14)",
+      "orange": "#e54d2e",
+      "orangeInk": "#d13415",
+      "orangeLight": "rgba(229,77,46,0.14)",
+      "green": "#29a383",
+      "greenInk": "#207d64",
+      "greenLight": "rgba(41,163,131,0.16)",
+      "gold": "#ffc53d",
+      "goldInk": "#a25f03",
+      "red": "#e5484d",
+      "redInk": "#ce2c31",
+      "navy": "#113264",
+      "paper": "#ffffff",
+      "paperWarm": "#fefbe9",
+      "paperBase": "#f1fafd",
+      "line": "rgba(28,32,36,0.34)",
+      "lineOrange": "rgba(229,77,46,0.60)",
+      "lineBlue": "rgba(0,144,255,0.60)",
+      "lineGreen": "rgba(41,163,131,0.60)",
+      "white": "#ffffff",
+      "skyTint": "#e6f4fe",
+      "blueLine": "rgba(0,144,255,0.42)",
+      "dotIdle": "#cdced6",
+      "mutedFill": "rgba(96,100,108,0.26)",
+      "mutedBar": "rgba(96,100,108,0.22)",
+      "mutedWash": "rgba(96,100,108,0.14)",
+      "orangeSoft": "#f5a898",
+      "orangeDeep": "#d13415",
+      "gaugeTrack": "rgba(28,32,36,0.14)",
+      "greenGlow": "rgba(41,163,131,0.35)",
+      "stageTint": "rgba(230,244,254,0.55)",
+      "headerAccent": "#113264",
+      "headerSub": "#60646c"
+    },
+    "cel": {
+      "ink": "#111111",
+      "muted": "#63635e",
+      "blue": "#0090ff",
+      "blueInk": "#0d74ce",
+      "blueLight": "rgba(0,144,255,0.16)",
+      "orange": "#e5484d",
+      "orangeInk": "#ce2c31",
+      "orangeLight": "rgba(229,72,77,0.16)",
+      "green": "#46a758",
+      "greenInk": "#2a7e3b",
+      "greenLight": "rgba(70,167,88,0.16)",
+      "gold": "#ffe629",
+      "goldInk": "#956703",
+      "red": "#dc3e42",
+      "redInk": "#ce2c31",
+      "navy": "#113264",
+      "paper": "#ffffff",
+      "paperWarm": "#fdfdf9",
+      "paperBase": "#fefce9",
+      "line": "rgba(17,17,17,0.50)",
+      "lineOrange": "rgba(229,72,77,0.62)",
+      "lineBlue": "rgba(0,144,255,0.62)",
+      "lineGreen": "rgba(70,167,88,0.62)",
+      "white": "#ffffff",
+      "skyTint": "#e6f4fe",
+      "blueLine": "rgba(0,144,255,0.42)",
+      "dotIdle": "#cfceca",
+      "mutedFill": "rgba(99,99,94,0.30)",
+      "mutedBar": "rgba(99,99,94,0.26)",
+      "mutedWash": "rgba(99,99,94,0.16)",
+      "orangeSoft": "#f4a9aa",
+      "orangeDeep": "#ce2c31",
+      "gaugeTrack": "rgba(17,17,17,0.20)",
+      "greenGlow": "rgba(70,167,88,0.35)",
+      "stageTint": "rgba(255,250,184,0.45)",
+      "headerAccent": "#111111",
+      "headerSub": "#63635e"
+    }
   },
   "background": {
-    "outer_gradient": null,
-    "page_bounds": [
-      0,
-      0,
-      1920,
-      1080
+    "kind": "locked raster per theme and variant, 2560x1440, object-fit cover",
+    "directory": "public/bg",
+    "variants": [
+      "main",
+      "chapter",
+      "quiet"
     ],
-    "page": "#f3e4c4",
-    "page_outline": null,
-    "page_shadow": null,
-    "inner_bounds": [
-      72,
-      58,
-      1848,
-      1020
-    ],
-    "grid_spacing": 54,
-    "grid_opacity": 0.09,
-    "static_texture_opacity": 0.026,
+    "files": {
+      "flat": {
+        "main": "bg/bg-flat-main.jpg",
+        "chapter": "bg/bg-flat-chapter.jpg",
+        "quiet": "bg/bg-flat-quiet.jpg"
+      },
+      "cel": {
+        "main": "bg/bg-cel-main.jpg",
+        "chapter": "bg/bg-cel-chapter.jpg",
+        "quiet": "bg/bg-cel-quiet.jpg"
+      }
+    },
+    "selection": "shot-table bg field if present; else first shot of a chapter -> chapter; zones >= 4 -> quiet; else main",
+    "variant_crossfade_frames": 10,
+    "central_safe_area": "~70% of width and height, decoration only at edges and corners",
+    "baked_text": false,
+    "provenance_manifest": "manifests/visual-assets.json",
+    "full_frame_wash": false,
     "texture_animation": false
   },
   "fonts": {
-    "display": "LXGWWenKaiLite-Regular.ttf",
-    "body": "SourceHanSansCN-Regular.otf",
-    "bold": "SourceHanSansCN-Bold.otf",
+    "cjk_regular": "LXGWWenKaiLite-Regular.ttf",
+    "cjk_medium": "LXGWWenKaiLite-Medium.ttf",
+    "latin_accents": [
+      "ClashDisplay (500/600/700)",
+      "SpaceGrotesk-Latin",
+      "Caveat-Latin"
+    ],
+    "font_table": "src/fonts.tsx (FontFaces, mounted by the film and the showcase)",
+    "cjk_fallback": "every Latin display family also declares a unicode-range-limited WenKai face with identical weight descriptors, so CJK never falls back to a system font",
+    "system_fonts_required": false,
     "subtitle_px": 44,
     "readability_floor_px": 17,
     "preload_required": true
@@ -90,51 +174,60 @@
     "bounds": [
       92,
       74,
-      442,
-      156
+      484,
+      164
     ],
     "number_width": 72,
-    "number_fill": "#ed5a32",
-    "micro_color": "#2869b7",
+    "number_fill": "linear-gradient(theme orange -> orangeDeep), white numerals",
+    "kicker": "PillTag in theme blue on blueLight",
     "z": 150
   },
   "header": {
     "right": 88,
     "top": 70,
-    "label": "NOTEBOOK VIDEO / FINAL MOTION SYSTEM",
+    "label": "COPY.header (editable) + COPY.headerSub",
+    "font_stack": "'Clash,Space,Kai' / 'Space,Kai'",
+    "plate": "theme.headerPlate (cel: comic caption box; flat: none)",
     "z": 140
   },
   "paper_component": {
-    "surface": "radial highlight + restrained fibre lines + warm ivory gradient",
-    "outline": "#4d463d",
-    "outline_px": 1.6,
-    "corner_radius_px": 12,
+    "flat": {
+      "surface": "#ffffff",
+      "outline": "2px rgba(28,32,36,0.14)",
+      "corner_radius_px": 22,
+      "shadow": "hard offset 6px + 3px*lift in theme blue (or the scene borderColor), no blur"
+    },
+    "cel": {
+      "surface": "#ffffff",
+      "outline": "3px ink (#111111)",
+      "corner_radius_px": 8,
+      "shadow": "hard offset 4px + 4px*lift in ink, no blur",
+      "tilt": "deterministic +-0.7 deg max, hashed from position"
+    },
     "dynamic_shadow": true,
-    "airborne_shadow_rule": "increase x/y offset and blur while decreasing alpha",
-    "landed_shadow_rule": "small close dark shadow",
     "overshoot_count_max": 1,
-    "shadow_model": "two-level contact plus environment shadow linked to lift",
     "permanent_blurred_halo": false
   },
   "subtitle_input": {
     "required": true,
-    "name": "bottom-pinned-pure-caption-reveal",
+    "name": "bottom-pinned-per-word-reveal-in-theme-chrome",
     "bounds": [
       188,
       1006,
       1732,
       1062
     ],
-    "paper": "none (transparent, no bar)",
+    "paper": "theme SubtitleChrome (flat: blueInk pill with navy offset; cel: white caption box, 3px ink border, ink-outlined yellow offset block)",
     "dark_border": false,
     "dark_side_marks": false,
     "contour": "none",
-    "shadow": "text-shadow 0 2px 8px rgba(58,44,28,.28)",
+    "shadow": "none on text; chrome carries a hard offset",
     "orange_locator_relative": null,
     "blue_ring_relative": null,
     "measure_gate": "CaptionFitGate with loaded WenKai Lite over subtitleSafeWidth",
     "inner_line": false,
-    "trailing_punctuation_forbidden": true
+    "trailing_punctuation_forbidden": true,
+    "reserved_width": "hidden layer renders the same words with the same spacing rule as the visible layer, so the chrome width equals the final line width"
   },
   "timing": {
     "source_unit": "milliseconds",
@@ -305,7 +398,8 @@
       "paperShadow",
       "LineIcon",
       "CheckBadge",
-      "Grade"
+      "Grade",
+      "FontFaces"
     ],
     "editable_surface": [
       "COPY",
@@ -325,7 +419,7 @@
     "fixed_four_act_grammar": false,
     "adaptive_scene_modes": true
   },
-  "future_update_rule": "For future aesthetic changes, render a replacement and obtain user approval before overwriting this official example.",
+  "future_update_rule": "For future aesthetic changes, render a replacement in a disposable project copy and obtain user approval before overwriting the template, the theme files and this contract.",
   "timing_system": {
     "element_entrance_bound_to_cue_beat": true,
     "entrance_frames": 22,
@@ -341,6 +435,11 @@
     "background_bitmaps_locked": true,
     "decor_zone_cover_required": true,
     "cover_plate_must_be_feathered": true,
-    "cover_plate_z_below_content": true
-  }
+    "cover_plate_z_below_content": true,
+    "full_frame_wash_forbidden": true,
+    "decor_zones": "theme.backgroundDecorZones = union over the three background variants (1920x1080 design space)",
+    "header_plate_required_when_top_right_decorated": true,
+    "zoom_dim": "radial navy vignette <= 10% around the focus, never a flat black wash"
+  },
+  "_note_v4_1": "v4.1.0: the warm-ivory --classic example project (assets/example-project) and validate-official-example.py were removed; the lecture template is the only canonical project. Theme values below mirror src/theme/flat.tsx and src/theme/cel.tsx (those files are the runtime source of truth)."
 }

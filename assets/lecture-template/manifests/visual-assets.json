@@ -2,28 +2,76 @@
   "version": 1,
   "assets": [
     {
-      "id": "bg-cel-169",
-      "path": "public/bg-cel-169.jpg",
+      "id": "bg-flat-main",
+      "path": "public/bg/bg-flat-main.jpg",
       "source_type": "ai-generated",
-      "provider": "Trae GenerateImage",
-      "prompt_summary": "Anime cel storyboard background: aged near-white paper, halftone dot fields, bottom-left explosion star with checkerboard, bottom-right red/blue stars and radiating speed lines; decorations confined to corners, center clean.",
-      "use_context": "cel theme fixed background, 16:9 canvas, full-bleed Background layer",
-      "crop_policy": "none-pixel-exact",
+      "provider": "Hark generate_image, recomposed with a scripted NumPy pass (outside the skill) (corner characters masked out, scaled down and re-placed at the bottom corners; chapter = mirrored main + cream centre glow; quiet = main with clouds removed and characters scaled further), JPEG q85",
+      "prompt_summary": "Flat vector edu background: soft pale sky-blue to cream gradient with paper grain; small round blue robot mascot (antenna with sunny-yellow ball, big eyes, pink cheeks) peeking up from the bottom-right edge; low mint hill with a coral rounded-square buddy peeking bottom-left; tiny clouds and yellow dots in the corners; central ~70% empty.",
+      "use_context": "flat theme Background variant 'main' (regular shots), 16:9 canvas, full-bleed Background layer",
+      "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned",
       "baked_text": false,
-      "sha256": "ce7a094f36054f05d4aa0dd19795fff1fafb83b4054340f82809d7a70b436f6f"
+      "sha256": "7827abd435ff5231a8b43a07ad6de296703dc947e8201385f74a9b9f4128f46a"
     },
     {
-      "id": "bg-flat-169",
-      "path": "public/bg-flat-169.jpg",
+      "id": "bg-flat-chapter",
+      "path": "public/bg/bg-flat-chapter.jpg",
       "source_type": "ai-generated",
-      "provider": "Trae GenerateImage",
-      "prompt_summary": "Flat geometric background: pale gray-blue grained paper, indigo blob monster peeking from the bottom edge bottom-right (gold antenna ball, big eyes, blush, smile), tiny mint hill with coral square monster peeking bottom-left, ~85% whitespace.",
-      "use_context": "flat theme fixed background, 16:9 canvas, full-bleed Background layer",
-      "crop_policy": "none-pixel-exact",
+      "provider": "Hark generate_image, recomposed with a scripted NumPy pass (outside the skill) (corner characters masked out, scaled down and re-placed at the bottom corners; chapter = mirrored main + cream centre glow; quiet = main with clouds removed and characters scaled further), JPEG q85",
+      "prompt_summary": "Flat vector edu chapter background: slightly richer sky blue with a soft cream glow behind the centre; the blue robot mascot waving from the bottom-left corner; coral buddy behind a mint hill bottom-right; confetti dots and small clouds along the top corners; central ~70% empty.",
+      "use_context": "flat theme Background variant 'chapter' (first shot of each chapter), 16:9 canvas, full-bleed Background layer",
+      "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned",
       "baked_text": false,
-      "sha256": "846cd626cf11a2ddca8ec0d1f664f43619365a69502bed606d97447ce3714c91"
+      "sha256": "5388140dfd270f2ac36b9da60552f6fc84c13990b4aac431c18dde07df1e8d66"
+    },
+    {
+      "id": "bg-flat-quiet",
+      "path": "public/bg/bg-flat-quiet.jpg",
+      "source_type": "ai-generated",
+      "provider": "Hark generate_image, recomposed with a scripted NumPy pass (outside the skill) (corner characters masked out, scaled down and re-placed at the bottom corners; chapter = mirrored main + cream centre glow; quiet = main with clouds removed and characters scaled further), JPEG q85",
+      "prompt_summary": "Flat vector edu quiet background for dense scenes: almost flat pale sky to cream; only the top of the blue robot mascot's head and antenna at the bottom-right edge and a thin mint hill sliver bottom-left; central ~80% empty.",
+      "use_context": "flat theme Background variant 'quiet' (dense shots (zones >= 4)), 16:9 canvas, full-bleed Background layer",
+      "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
+      "rights": "project-owned",
+      "baked_text": false,
+      "sha256": "0e346418b8dea17262f2a464c6a8b9cb586b7ad58638eafa16c25d3202ca0dca"
+    },
+    {
+      "id": "bg-cel-main",
+      "path": "public/bg/bg-cel-main.jpg",
+      "source_type": "ai-generated",
+      "provider": "Hark generate_image (upscaled to 2560x1440 with ImageMagick Lanczos, JPEG q85)",
+      "prompt_summary": "Comic/manga pop-art background: off-white comic paper; corner-only decorations - black halftone fan with yellow ink-outlined starburst bottom-left, black speed lines top-right, red halftone with blue ink-outlined star bottom-right, blue halftone wedge top-left; central ~70% empty.",
+      "use_context": "cel theme Background variant 'main' (regular shots), 16:9 canvas, full-bleed Background layer",
+      "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
+      "rights": "project-owned",
+      "baked_text": false,
+      "sha256": "6155d11de9865a463475238cebe05c8db3d8f7f700d894ab60b149a38fc0b349"
+    },
+    {
+      "id": "bg-cel-chapter",
+      "path": "public/bg/bg-cel-chapter.jpg",
+      "source_type": "ai-generated",
+      "provider": "Hark generate_image (upscaled to 2560x1440 with ImageMagick Lanczos, JPEG q85)",
+      "prompt_summary": "Comic/manga pop-art chapter background: off-white comic paper; short black speed-line ticks along the left and right edges, yellow ink-outlined starburst top-right, red halftone wedge top-left, red star over halftone fan bottom-left, blue halftone with speed lines bottom-right; central ~75% empty.",
+      "use_context": "cel theme Background variant 'chapter' (first shot of each chapter), 16:9 canvas, full-bleed Background layer",
+      "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
+      "rights": "project-owned",
+      "baked_text": false,
+      "sha256": "834d9266df2e3780e1dbc9bdf44df9beb0cab12c199e6d0d879c0ffa4116d521"
+    },
+    {
+      "id": "bg-cel-quiet",
+      "path": "public/bg/bg-cel-quiet.jpg",
+      "source_type": "ai-generated",
+      "provider": "Hark generate_image (upscaled to 2560x1440 with ImageMagick Lanczos, JPEG q85)",
+      "prompt_summary": "Comic/manga pop-art quiet background for dense scenes: plain off-white comic paper; one small element per corner (yellow starburst top-left, speed lines top-right, halftone fan bottom-left, blue halftone bottom-right); central ~80% empty.",
+      "use_context": "cel theme Background variant 'quiet' (dense shots (zones >= 4)), 16:9 canvas, full-bleed Background layer",
+      "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
+      "rights": "project-owned",
+      "baked_text": false,
+      "sha256": "d32beba960ccd686afe047de79944dcc6cda04a31c43ce771b1e7c8e113fd9a7"
     }
   ]
 }

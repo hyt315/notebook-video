@@ -5,10 +5,11 @@ This product includes software developed as part of the Notebook Video project
 and bundles the following third-party materials:
 
 1. LXGW WenKai Lite (楷体正文) — SIL Open Font License 1.1. 许可原文随包发布在 `assets/fonts/LICENSE-OFL-1.1-LXGW.txt`。（历史注：早期版本用过 Source Han Sans / Smiley Sans，**这两个字体与它们的许可文件当前都不在仓库里**，不要再引用。）
-2. Procedurally generated WAV effects — reuse note retained at `assets/example-project/public/sfx/LICENSE.txt`.
+2. Procedurally generated WAV effects — reuse note retained at `assets/lecture-template/public/sfx/LICENSE.txt`.
 3. Remotion dependencies — governed by the proprietary Remotion License, not by the repository-level license. Generated projects include `REMOTION-LICENSE-NOTICE.md` and must retain its link to https://www.remotion.pro/license.
 4. TTS providers — no TTS client or generated narration is bundled. Provider services, SDKs and generated speech remain governed by their own terms.
-5. Official visual-director illustration — generated with OpenAI image generation at the user's request. Its SHA-256, purpose, crop policy and redistribution note are retained at `assets/example-project/manifests/visual-assets.json`. No image-generation client or credential is bundled.
+5. Theme background images (`assets/lecture-template/public/bg/*.jpg`, three per theme) — AI-generated for this project (flat variants additionally recomposed with scaled-down corner characters), upscaled to 2560×1440. SHA-256, prompt summary, purpose and crop policy are retained at `assets/lecture-template/manifests/visual-assets.json`. No image-generation client or credential is bundled.
+7. Theme colour values — hex values vendored from Radix Colors v3 (MIT License, Copyright (c) 2021 Radix, https://github.com/radix-ui/colors); no Radix Colors package is installed or redistributed. Source steps are annotated next to each token in `assets/lecture-template/src/theme/flat.tsx` and `cel.tsx`.
 6. Map data and its TopoJSON reader — `world-atlas` (Copyright 2013-2019 Michael Bostock, ISC) and `topojson-client` (Copyright 2012-2019 Michael Bostock, ISC), used by the template's `GeoView`/`data.tsx`. **本仓库不分发这两个包，也不在仓库里放地图数据副本**：它们由 `assets/lecture-template/package.json` 的依赖声明在 `npm install` 时安装，ISC 的版权与许可声明随包保留在 `node_modules/<包名>/LICENSE`。渲染期只取 `world-atlas` 的 `land-110m.json`（世界陆地轮廓，无国界/无城市点）。登记与选型理由见 `references/dependency-policy.md` §4.2。
 
 The repository-level license must not override these third-party license notices.

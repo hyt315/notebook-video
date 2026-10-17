@@ -1,18 +1,33 @@
 # Theme system: shared contract
 
-Status: LOCKED. Two themes ship with the skill (v4.0.0+): `flat` (default, modern flat geometric) and `cel` (anime cel-shading). Both are fully implemented in `assets/lecture-template/src/theme/`. A production selects its theme once at kickoff via `new-project ./dir [--style=flat|cel]` and then reads only its own contract:
+Status: LOCKED. Two themes ship with the skill (v4.0.0+, visual identity rebuilt in v4.1.0): `flat` (default, calm modern edu illustration) and `cel` (bold comic / manga). Both are fully implemented in `assets/lecture-template/src/theme/`. A production selects its theme once at kickoff via `new-project ./dir [--style=flat|cel]` and then reads only its own contract:
 
 - flat (default) → `theme-flat.md`
 - cel → `theme-cel.md`
 
-The former `paper` and `sticker` themes were removed in v4.0.0; projects created with them are not supported. The palette token names `paper` / `paperWarm` / `paperBase`, the `Paper` card component and `CoverPanel tone="paper"` are generic card-surface names kept by both remaining themes — they do not refer to the removed theme.
+The former `paper` and `sticker` themes were removed in v4.0.0, and the warm-ivory `--classic` example project in v4.1.0; projects created with them are not supported. The palette token names `paper` / `paperWarm` / `paperBase`, the `Paper` card component and `CoverPanel tone="paper"` are generic card-surface names kept by both remaining themes — they do not refer to the removed theme.
 
 ## Shared engine chrome (every theme)
 
 - Canvas: 16:9 only, 2560×1440 delivery / 1920×1080 design space, scale 4/3 (see `canvas-modes.md`).
 - Chapter card: left 92, top 74, width 392, height 90, z=150. Technical header: right 88, top 70, z=140.
 - Subtitle: one centered line, WenKai Lite 44px, letterSpacing 1.6, 1334px safe width; per-word reveal with 0.9-frame per-character stagger and a 180ms lead; trailing punctuation hidden. The theme's `SubtitleChrome` supplies only the container.
-- Fonts: LXGW WenKai Lite Regular/Medium for CJK; Clash Display / Space Grotesk for Latin accents. Avoid readable text below 17px.
+- Fonts: LXGW WenKai Lite Regular/Medium for CJK; Clash Display / Space Grotesk / Caveat for Latin accents. All faces are bundled in `public/` and declared once in `src/fonts.tsx` (used by the film and the showcase). Each Latin family also carries a `unicode-range`-limited WenKai face, so a stack such as `'Clash,Space'` renders Chinese with WenKai instead of a system font (no tofu on machines without CJK fonts, Windows included). Avoid readable text below 17px.
+- Backdrop: each theme ships three locked 2560×1440 backgrounds, `main` / `chapter` / `quiet`, all with a calm central ~70% safe area and decoration only at edges and corners. The engine picks one per shot (`bgVariantFor` in `index.tsx`): first shot of a chapter → `chapter`; `zones ≥ 4` → `quiet`; otherwise `main`; a shot-table `bg` field overrides the rule. Adjacent shots on different variants cross-fade over the 10-frame handoff. There is no full-frame translucent wash behind shots (v4.1 removed it: it ghosted the corner characters).
+- Header plate: a theme whose top-right corner carries high-contrast decoration supplies `headerPlate` (cel: a comic caption box); flat leaves it unset.
+
+## Palette source: Radix Colors (vendored)
+
+Both palettes are built on Radix Colors v3 (MIT, © 2021 Radix, <https://github.com/radix-ui/colors>). Only the hex values are copied into the theme files, each annotated with its Radix scale and step; there is no runtime dependency. The roles map onto the 12-step scales like this:
+
+| Role | Radix step | Use |
+|---|---|---|
+| accent fill (`blue`, `orange`, `green`, `gold`, `red`) | step 9 | solid fills, strokes, pills with white text |
+| `*Ink` | step 11, mixed 8–10% toward step 12 where needed | text in the accent hue; ≥ 4.6:1 on all three surfaces |
+| `navy` | blue 12 | dark fills, flat subtitle shadow |
+| `ink` / `muted` | slate (flat) or gray-dark-1 / sand (cel) 12 / 11 | body text / secondary text |
+| `paperWarm` / `paperBase` | amber 2 + sky 2 (flat), yellow 1 + yellow 2 (cel) | surfaces |
+| soft tokens (`skyTint`, `dotIdle`, `orangeSoft`, …) | steps 3 / 7 | washes, idle states, gradient ends |
 
 ## 文字安全色：每支强调色必须给**两个**值（`*Ink` 约定）
 
@@ -32,7 +47,7 @@ A theme swaps skin and decoration only:
 
 - palette tokens (`C.*`) and aesthetic constants;
 - card skin (border, radius, shadow signature);
-- background decoration (one locked 16:9 raster);
+- background decoration (three locked 16:9 rasters: main / chapter / quiet) and an optional header plate;
 - global grade layer;
 - subtitle container chrome.
 
@@ -49,7 +64,7 @@ The engine (`src/index.tsx`) reads `THEME` from `src/theme/active.ts` and perfor
 ## Adding a theme later (author-facing, not for productions)
 
 1. Implement the `Theme` interface from `theme/types.ts` in a new `theme/<id>.tsx`; optional locked decorative components go in `THEME.extras`.
-2. Supply one 2560×1440 background raster (`public/bg-<id>-169.jpg`) and declare its `backgroundDecorZones` in 1920×1080 design coordinates.
+2. Supply three 2560×1440 background rasters (`public/bg/bg-<id>-main.jpg`, `-chapter.jpg`, `-quiet.jpg`) with a calm central ~70%, register each in `manifests/visual-assets.json` (sha256, prompt summary, rights), map them in the theme's `backgrounds` table, and declare the union of their `backgroundDecorZones` in 1920×1080 design coordinates.
 3. 让新 id 能被选中：`theme/active.ts` 改成 import 新主题，并把它加进 `scripts/notebook-video.mjs` 的 `new-project --style=` 取值（v4.0.0 的取值是 flat / cel）。
 4. Write `references/theme-<id>.md` as a contract (locked tokens, extras usage, rejection flags).
-5. Render frames at 100/300/550/900 on 16:9, and register the contract in validate-skill before merging.
+5. Render stills of a chapter shot, a diagram shot and a dense shot (e.g. frames 150 / 780 / 400), and register the contract in validate-skill before merging.

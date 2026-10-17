@@ -312,7 +312,9 @@ export const ZoomStage: React.FC<{
         {/* 三段式：先平移到框心，再缩放，再把焦点平移回原点 —— 这样焦点一定落在框心 */}
         <div style={{position: 'absolute', inset: 0, transformOrigin: '0 0', transform: `translate(${w / 2}px, ${h / 2}px) scale(${k}) translate(${-fxp}px, ${-fyp}px)`, filter: dim > 0 ? `brightness(${1 + dim * 0.04})` : undefined}}>{children}</div>
         {/* 框内暗角：让聚焦读成「打光」而不是单纯放大 */}
-        {dim > 0.01 && <div style={{position: 'absolute', inset: 0, borderRadius: 14, boxShadow: `inset 0 0 0 9999px rgba(20,17,15,${0.1 * dim})`, pointerEvents: 'none'}} />}
+        {/* v4.1：由整框灰罩（rgba 墨色 10%，把白卡压成浑浊的灰）改为以焦点（= 框心）为圆心的
+            径向冷色暗角（海军蓝 ≤10%，不用墨黑以免发灰）：焦点保持纸白，只把边缘轻压下去，读成「打光」而不是「变灰」。 */}
+        {dim > 0.01 && <div style={{position: 'absolute', inset: 0, borderRadius: 14, background: `radial-gradient(ellipse at 50% 50%, ${C.navy}00 0%, ${C.navy}00 46%, ${C.navy}${Math.round(0x1a * dim).toString(16).padStart(2, '0')} 100%)`, pointerEvents: 'none'}} />}
         <div style={{position: 'absolute', inset: 0, boxShadow: `inset 0 0 0 2px ${C.line}`, borderRadius: 14, pointerEvents: 'none'}} />
       </div>
       {label && chip > 0.02 && (
