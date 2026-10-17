@@ -23,15 +23,24 @@
 //     其余模块 26 = kit 3 / fxkit 9 / media 3 / stagekit 2 / skeletons 3 / insert 1 /
 //     shotkit 2 / toolkit 3；渲染期门禁件 SlotGuard 不算件，与 references/fxkit.md 同口径）。
 //
-// 本版（v3.1.1）删除/变更：
+// 本版（v4.2，Phase 3「能用成熟开源件就不手写」）变更（组件数不变，仍 27 件）：
+//   · `Accordion` / `Tabs` / `ControlStack` / `OverlayFrame` 去掉 Radix（12 个包），改纯 div，
+//     状态与位置全部由帧号算出（无 Portal、无 floating-ui 异步定位、无 ResizeObserver）
+//   · `HighlightCode` 换 Shiki（同步核心 + JS 正则引擎；语法色由主题调色板生成，见 ./shiki.ts）
+//   · `TopicIcon` / `IconWall` 换 lucide-react（线条）+ simple-icons（品牌）；react-icons 移除
+//   · `MorphShape` 换 flubber 插值（任意两闭合形状），`engine="remotion"` 保留旧行为
+//   · `Chart` 的坐标轴/网格/线/面积/柱换 @visx/axis + @visx/grid + @visx/shape（d3 仍负责刻度与布局）
+//   · 模块外：kit `LineIcon` 字形换 lucide-react；fxkit `DiffView` 可用 before/after 由 jsdiff 自动算行
+//
+// 历史（v3.1.1）删除/变更：
 //   · 删 `PieDraw`（饼图）—— 被 `Chart variant="pie"`（有扇区百分比 + 图例）与
 //     `ProgressRing`（有中央数值）上下夹住，自己没标签/没图例/没数值；
 //   · 删 `CameraMotionBlur` / `Trail` 与依赖 `@remotion/motion-blur` —— 全仓库只有
 //     再导出行、从未进过任何画面；"甩镜"这个用途已从 Locked motion pack 删除。
 //
 // 本版（v3.1）新增/变更：
-//   · 新增 `ControlStack`（Radix 六个纯受控控件）—— 换掉 `TiltCard`
-//   · 新增 `OverlayFrame`（Radix 四个弹层，container 指到画面根）
+//   · 新增 `ControlStack`（当时用 Radix 六个受控控件；v4.2 改纯 div）—— 换掉 `TiltCard`
+//   · 新增 `OverlayFrame`（当时用 Radix 四个弹层；v4.2 改纯 div）
 //   · 新增 `NetworkGraph`（d3-force 关系网）
 //   · `Chart` 加 variant：area / stack / stackExpand / stream / radar / pie
 //   · `TreeView` 加 variant：treemap / pack / sunburst
@@ -43,7 +52,7 @@
 export {Accordion, Tabs, ControlStack, controlStateAt, HighlightCode, MathBlock, TopicIcon, IconWall, TOPIC_ICONS, TOPIC_ICON_TONE, prog} from './ui';
 export type {AccordionItem, TabItem, TopicIconName, ControlRow, ControlStep} from './ui';
 
-// ---- 拟真弹层（Radix dialog / popover / tooltip / dropdown-menu）----
+// ---- 拟真弹层（dialog / popover / tooltip / menu，纯 div，钉在给定坐标）----
 export {OverlayFrame, overlayStateAt} from './overlay';
 export type {OverlayKind} from './overlay';
 
@@ -51,7 +60,7 @@ export type {OverlayKind} from './overlay';
 export {NetworkGraph, layoutNetwork} from './network';
 export type {NetworkNode, NetworkLink} from './network';
 
-// ---- 图表（d3-scale / d3-shape / d3-dsv 只算，画还是我们画）----
+// ---- 图表（d3-scale / d3-shape / d3-dsv 只算；坐标轴与形状由 @visx/axis·grid·shape 画）----
 export {Chart, StatRow, csvToChartData, csvToChartSeries, CHART_BOX} from './chart';
 export type {ChartDatum, ChartSeries, ChartVariant} from './chart';
 
@@ -90,4 +99,4 @@ export type {PresentationName} from './pathfx';
 export {FitTextBox, fitChineseTextOnNLines, useFontsReady, assertFits, fitsWithin} from './fittext';
 
 /** 封装层版本：接触表页脚与门禁用它确认"看到的是这一版"。 */
-export const COMPONENTS_VERSION = 'components-v3.1.1 · 27 件 · 依赖见 package.json';
+export const COMPONENTS_VERSION = 'components-v4.2 · 27 件 · 依赖见 package.json';

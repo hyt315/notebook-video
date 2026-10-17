@@ -189,12 +189,12 @@ export const Showcase: React.FC = () => {
   const p1 = [
     {name: 'ProgressRing · 进度环', node: <div style={{display: 'flex', gap: 44}}><ProgressRing pct={0.92} label="Flash" color={C.green} start={0} frame={F} /><ProgressRing pct={0.62} label="Pro" color={C.blue} start={0} frame={F} /></div>},
     {name: 'StaggerList · 级联清单', node: <StaggerList x={0} y={50} w={760} frame={F} start={0} items={[{text: '性能更强', sub: '超过 Pro', color: C.greenInk}, {text: '费用更低', sub: '账单更省', color: C.greenInk}, {text: '速度更快', sub: '等待更短', color: C.greenInk}]} />},
-    {name: 'Chart · d3 图表（封装层）', node: <div style={{transform: 'scale(0.62)'}}><Chart f={F} startAt={0} width={1180} height={600} title="刻度由 d3 算，画还是我们画" data={[{label: 'A', value: 12}, {label: 'B', value: 34}, {label: 'C', value: 21}, {label: 'D', value: 48}]} /></div>},
+    {name: 'Chart · d3 + visx 图表（封装层）', node: <div style={{transform: 'scale(0.62)'}}><Chart f={F} startAt={0} width={1180} height={600} title="刻度由 d3 算，画还是我们画" data={[{label: 'A', value: 12}, {label: 'B', value: 34}, {label: 'C', value: 21}, {label: 'D', value: 48}]} /></div>},
   ];
   const p2 = [
     {name: 'ConsoleWindow · 控制台介质', node: <ConsoleWindow x={0} y={20} w={800} f={F} title="api.deepseek.com" rows={[{text: 'POST /v1/chat  model="v4-pro"', tone: 'cmd'}, {text: 'gateway: match rule #14', tone: 'info'}, {text: '→ routed to v4.1-flash', tone: 'info'}, {text: '✓ 200 OK  billing=v4.1-flash', tone: 'ok'}]} status={{text: 'ROUTED', tone: 'ok'}} />},
     {name: 'MetricGrid · 指标网格', node: <MetricGrid x={0} y={30} w={840} f={F} cols={4} cellH={150} items={[{label: '性能', before: '1.00×', after: '1.42×', win: true}, {label: '费用', before: '¥1.00', after: '¥0.31', win: true}, {label: '速度', before: '2.1s', after: '0.9s', win: true}, {label: '总用时', before: '3.4s', after: '1.6s', win: true}]} />},
-    {name: 'DiffView · 补丁介质', node: <DiffView x={0} y={30} w={780} frame={F} title="client.py" lines={[{k: ' ', text: 'client = OpenAI(base_url=...)', at: 0}, {k: '-', text: 'model = "v4-pro"', at: 0}, {k: '+', text: 'model = "v4.1-flash"', at: 8}, {k: ' ', text: '# 账单按 Flash 计费', at: 16}]} />},
+    {name: 'DiffView · 补丁介质（jsdiff 自动算行）', node: <DiffView x={0} y={30} w={780} frame={F} title="client.py" before={'client = OpenAI(base_url=...)\nmodel = "v4-pro"\n# 账单按 Flash 计费'} after={'client = OpenAI(base_url=...)\nmodel = "v4.1-flash"\n# 账单按 Flash 计费'} startAt={0} step={8} />},
     {name: 'Typewriter · 逐字介质', node: <div style={{width: 780}}><div style={{fontSize: 32, lineHeight: 1.5}}><Typewriter frame={F} start={0} cps={0.4} text="你调的还是 V4 Pro，实际跑的是 V4.1 Flash" /></div><div style={{marginTop: 22, fontSize: 24, color: C.muted}}><Typewriter frame={F} start={60} cps={0.5} cursor={false} text="按 Flash 单价计费，无需改代码" /></div></div>},
   ];
   const p3 = [
@@ -207,7 +207,7 @@ export const Showcase: React.FC = () => {
   const p4 = [
     {name: 'ChatThread · 对话气泡', node: <div style={{position: 'relative', width: 840, height: 380}}><ChatThread x={0} y={10} w={620} frame={F} msgs={[{side: 'l', text: '还在用旧版？', at: 0}, {side: 'r', text: '已升级 v3.1', at: 20}, {side: 'l', text: '账单呢？', at: 40}]} /></div>},
     {name: 'PhaseRail · 阶段状态轨', node: <div style={{position: 'relative', width: 840, height: 400}}><div style={{position: 'absolute', left: 10, top: 20}}><PhaseRail phases={PHASES} ctx={railCtx} /></div></div>},
-    {name: 'Tabs · Radix 标签页（封装层）', node: <div style={{transform: 'scale(0.6)'}}><Tabs f={F} startAt={0} step={30} width={1180} height={620} tabs={[{key: 'a', label: '标签一', title: '激活项由帧号决定', body: '内容随帧更替，不做 CSS 过渡。', points: [{mark: '01', text: '要点一'}, {mark: '02', text: '要点二'}], verdict: '验证通过', tone: 'green'}, {key: 'b', label: '标签二', title: '第二个面板', body: '面板下半用要点行填满。', points: [{mark: '01', text: '要点三'}, {mark: '02', text: '要点四'}], verdict: '验证通过', tone: 'gold'}]} /></div>},
+    {name: 'Tabs · 标签页（封装层，纯 div）', node: <div style={{transform: 'scale(0.6)'}}><Tabs f={F} startAt={0} step={30} width={1180} height={620} tabs={[{key: 'a', label: '标签一', title: '激活项由帧号决定', body: '内容随帧更替，不做 CSS 过渡。', points: [{mark: '01', text: '要点一'}, {mark: '02', text: '要点二'}], verdict: '验证通过', tone: 'green'}, {key: 'b', label: '标签二', title: '第二个面板', body: '面板下半用要点行填满。', points: [{mark: '01', text: '要点三'}, {mark: '02', text: '要点四'}], verdict: '验证通过', tone: 'gold'}]} /></div>},
   ];
 
   // ⑦⑧⑨ 修辞工具件（v3.0.1 从 index.tsx 迁出到 toolkit.tsx；此前接触表**一页都没有**，
@@ -223,7 +223,7 @@ export const Showcase: React.FC = () => {
         <Checklist items={['读懂项目规则', '找一个最小改动', '提交并等评审']} start={0} frame={F} stagger={8} done={2} rowH={64} fontSize={30} />
       </div>
     </div>},
-    {name: 'Accordion · Radix 手风琴（封装层）', node: <div style={{transform: 'scale(0.6)'}}><Accordion f={F} startAt={0} step={30} width={1180} rowH={96} bodyRows={2} items={[{title: '展开/收起由帧号驱动', body: '状态机与 ARIA 语义来自 Radix；高度用 fitH 算出。', tone: 'blue'}, {title: '皮肤只读 THEME', body: '边框、圆角、硬偏移投影与 cel 皮肤一致。', tone: 'orange'}, {title: '可复现', body: '展开进度是帧号的纯函数。', tone: 'green'}]} /></div>},
+    {name: 'Accordion · 手风琴（封装层，纯 div）', node: <div style={{transform: 'scale(0.6)'}}><Accordion f={F} startAt={0} step={30} width={1180} rowH={96} bodyRows={2} items={[{title: '展开/收起由帧号驱动', body: '展开由帧号累积决定；高度用 fitH 算出。', tone: 'blue'}, {title: '皮肤只读 THEME', body: '边框、圆角、硬偏移投影与 cel 皮肤一致。', tone: 'orange'}, {title: '可复现', body: '展开进度是帧号的纯函数。', tone: 'green'}]} /></div>},
   ];
   const p9 = [
     {name: 'JumpInText · 逐字跳入', node: <div style={{width: 820, textAlign: 'center'}}>
@@ -292,7 +292,7 @@ export const Showcase: React.FC = () => {
         <Series.Sequence durationInFrames={PAGE}>
           <Page title="⑨ 封装层 · 结构件（src/components）" note={`${COMPONENTS_VERSION} · 库提供结构，本层提供皮肤与帧驱动`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
-              <Tile name="Accordion · Radix 手风琴">
+              <Tile name="Accordion · 手风琴（纯 div，帧驱动）">
                 <div style={{transform: 'scale(0.6)'}}>
                   <Accordion
                     f={F}
@@ -302,7 +302,7 @@ export const Showcase: React.FC = () => {
                     rowH={96}
                     bodyRows={2}
                     items={[
-                      {title: '展开/收起由帧号驱动', body: '状态机、焦点管理、ARIA 语义来自 Radix；高度用 fitH 算出。', tone: 'blue'},
+                      {title: '展开/收起由帧号驱动', body: '展开由帧号累积决定；高度按真实折行用 fitH 算出。', tone: 'blue'},
                       {title: '皮肤只读 THEME', body: '边框、圆角、硬偏移投影与 cel 皮肤天然一致。', tone: 'orange'},
                       {title: '可复现', body: '展开进度是帧号的纯函数，同一帧渲染多次结果一致。', tone: 'green'},
                     ]}
@@ -311,7 +311,7 @@ export const Showcase: React.FC = () => {
               </Tile>
             </div>
             <div style={{position: 'absolute', left: 970, top: 76, width: 900, height: 470}}>
-              <Tile name="Tabs · Radix 标签页">
+              <Tile name="Tabs · 标签页（纯 div，帧驱动）">
                 <div style={{transform: 'scale(0.6)'}}>
                   <Tabs
                     f={F}
@@ -329,7 +329,7 @@ export const Showcase: React.FC = () => {
               </Tile>
             </div>
             <div style={{position: 'absolute', left: 20, top: 576, width: 900, height: 470}}>
-              <Tile name="Chart · d3-scale + d3-shape">
+              <Tile name="Chart · d3 计算 + visx 坐标轴/形状">
                 <div style={{transform: 'scale(0.72)'}}>
                   <Chart
                     f={F}
@@ -348,7 +348,7 @@ export const Showcase: React.FC = () => {
               </Tile>
             </div>
             <div style={{position: 'absolute', left: 970, top: 576, width: 900, height: 470}}>
-              <Tile name="HighlightCode · react-syntax-highlighter">
+              <Tile name="HighlightCode · Shiki（主题色由调色板生成）">
                 <div style={{transform: 'scale(0.62)'}}>
                   <HighlightCode
                     f={F}
@@ -397,7 +397,7 @@ export const Showcase: React.FC = () => {
               </Tile>
             </div>
             <div style={{position: 'absolute', left: 970, top: 576, width: 900, height: 470}}>
-              <Tile name="IconWall · react-icons（仅 fa + fi 两套）">
+              <Tile name="IconWall · lucide-react + simple-icons">
                 <IconWall f={F} startAt={0} step={2} names={['react', 'node', 'python', 'docker', 'git', 'github', 'terminal', 'cpu', 'database', 'cloud']} columns={5} tile={150} gap={16} />
               </Tile>
             </div>
@@ -411,7 +411,7 @@ export const Showcase: React.FC = () => {
               </Tile>
             </div>
             <div style={{position: 'absolute', left: 970, top: 76, width: 900, height: 470}}>
-              <Tile name="MorphShape · 形状连续变形（方 → 圆）">
+              <Tile name="MorphShape · 形状连续变形（flubber：方 → 圆）">
                 <MorphShape f={F} fromPath="M 120 90 L 400 90 L 400 330 L 120 330 Z" toPath="M 260 90 A 120 120 0 1 1 259.9 90 Z" startAt={0} durationInFrames={80} width={520} height={420} viewBox="80 50 360 320" tone={C.green} />
               </Tile>
             </div>
@@ -465,7 +465,7 @@ export const Showcase: React.FC = () => {
         <Series.Sequence durationInFrames={PAGE}>
           <Page title="⑫ 封装层 · 效果件" note={`${COMPONENTS_VERSION} · 控件状态 / 抖动 / 擦除 / 题材图标`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
-              <Tile name="ControlStack · 控件状态随旁白变化（Radix 六个纯受控 primitive）">
+              <Tile name="ControlStack · 控件状态随旁白变化（六种控件，纯 div）">
                 <div style={{transform: 'scale(0.64)', transformOrigin: 'center'}}>
                   <ControlStack
                     f={F}
@@ -513,7 +513,7 @@ export const Showcase: React.FC = () => {
               </Tile>
             </div>
             <div style={{position: 'absolute', left: 970, top: 576, width: 900, height: 470}}>
-              <Tile name="TopicIcon · 题材性图标（react-icons：fa 品牌 + fi/lu 线条）">
+              <Tile name="TopicIcon · 题材性图标（simple-icons 品牌 + lucide 线条）">
                 <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 34}}>
                   {(['react', 'node', 'python', 'github', 'terminal', 'database', 'brain', 'rocket'] as const).map((n) => (
                     <div key={n} style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12}}>
@@ -732,7 +732,7 @@ export const Showcase: React.FC = () => {
           </Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="⑰ 封装层 · 弹层与形状（Radix 弹层 + @remotion/shapes 余量）" note={`${COMPONENTS_VERSION} · Portal 的 container 指到画面根；引线朝向由 getTangentAtLength 给`}>
+          <Page title="⑰ 封装层 · 弹层与形状（纯 div 弹层 + @remotion/shapes 余量）" note={`${COMPONENTS_VERSION} · 弹层钉在给定坐标（无 Portal、无异步定位）；引线朝向由 getTangentAtLength 给`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
               <Tile name="OverlayFrame · Dialog 与 DropdownMenu">
                 <div style={{position: 'relative', width: 860, height: 430}}>

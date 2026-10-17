@@ -1,11 +1,14 @@
 import React from 'react';
 import {scaleBand, scaleLinear} from 'd3-scale';
+import type {ScaleLinear} from 'd3-scale';
+import {AxisBottom, AxisLeft} from '@visx/axis';
+import type {TickRendererProps} from '@visx/axis';
+import {GridRows} from '@visx/grid';
+import {AreaClosed, Area, Bar, LinePath} from '@visx/shape';
 import {csvParse} from 'd3-dsv';
 import {
   arc as d3arc,
-  area as d3area,
   curveMonotoneX,
-  line as d3line,
   lineRadial,
   pie as d3pie,
   stack as d3stack,
@@ -73,33 +76,68 @@ export const csvToChartSeries = (csv: string): {labels: string[]; series: ChartS
 
 const tickStyle = {fontFamily: 'Space,monospace', fontSize: TYPE.microS, fill: C.muted} as const;
 
-/** 左侧 Y 轴 + 横向网格：折线/面积/堆叠/河流共用。 */
-const YAxis: React.FC<{ticks: number[]; y: (v: number) => number; innerW: number; unit: string}> = ({ticks, y, innerW, unit}) => (
+type LinearScale = ScaleLinear<number, number>;
+
+/**
+ * 刻度字：visx 的 tickComponent。用一个普通 <text> 画，而不是 visx 默认的 @visx/text
+ * （后者会在 document.body 里挂一个隐藏 svg 去量字宽——渲染期 DOM 测量，能不用就不用）。
+ */
+const TickText = (props: TickRendererProps) => (
+  <text x={props.x} y={props.y} dx={props.dx} dy={props.dy} textAnchor={props.textAnchor as 'start' | 'middle' | 'end'} {...tickStyle}>
+    {props.formattedValue}
+  </text>
+);
+
+/**
+ * 左侧 Y 轴 + 横向网格：折线/面积/堆叠/河流共用。
+ * v4.2：网格 = @visx/grid GridRows，刻度字 = @visx/axis AxisLeft（MIT，纯 SVG、无动画、帧安全）。
+ */
+const YAxis: React.FC<{ticks: number[]; y: LinearScale; innerW: number; unit: string}> = ({ticks, y, innerW, unit}) => (
   <>
-    {ticks.map((t, i) => (
-      <g key={i}>
-        <line x1={0} x2={innerW} y1={y(t)} y2={y(t)} stroke={C.line} strokeWidth={1.5} strokeDasharray="6 8" />
-        <text x={-18} y={y(t) + 7} textAnchor="end" {...tickStyle}>
-          {t}
-          {unit}
-        </text>
-      </g>
-    ))}
+    <GridRows scale={y} width={innerW} tickValues={ticks} stroke={C.line} strokeWidth={1.5} strokeDasharray="6 8" />
+    <AxisLeft
+      scale={y}
+      tickValues={ticks}
+      hideAxisLine
+      hideTicks
+      hideZero={false}
+      tickLength={0}
+      tickFormat={(v) => `${Number(v)}${unit}`}
+      tickComponent={(tp) => <TickText {...tp} x={-18} y={(tp.y ?? 0) + 7} dy={0} textAnchor="end" />}
+    />
   </>
 );
 
-/** 坐标轴：Y 轴在 x=0、X 轴在 y=innerH（与折线变体完全一致的位置）。 */
-const Axes: React.FC<{innerW: number; innerH: number; labels: string[]; at: (i: number) => number}> = ({innerW, innerH, labels, at}) => (
-  <>
-    <line x1={0} x2={innerW} y1={innerH} y2={innerH} stroke={C.ink} strokeWidth={3} />
-    <line x1={0} x2={0} y1={0} y2={innerH} stroke={C.ink} strokeWidth={3} />
-    {labels.map((l, i) => (
-      <text key={l + i} x={at(i)} y={innerH + 46} textAnchor="middle" {...tickStyle}>
-        {l}
-      </text>
-    ))}
-  </>
-);
+/**
+ * 坐标轴：Y 轴线在 x=0、X 轴线在 y=innerH（与折线变体完全一致的位置）。
+ * v4.2：两条轴线与 X 轴标签都由 @visx/axis 画；X 刻度是「序号」，tickFormat 换回标签文字。
+ */
+const Axes: React.FC<{innerW: number; innerH: number; labels: string[]; at: (i: number) => number}> = ({innerW, innerH, labels, at}) => {
+  const n = labels.length;
+  // 序号 → 像素：Chart 的 X 位置总是序号的线性函数（band 中心或铺满整宽），两点定一条线。
+  const xs = scaleLinear()
+    .domain([0, Math.max(1, n - 1)])
+    .range([at(0), n > 1 ? at(n - 1) : at(0) + 1]);
+  const yAxisScale = scaleLinear().domain([0, 1]).range([innerH, 0]);
+  return (
+    <>
+      <AxisBottom
+        top={innerH}
+        scale={xs}
+        tickValues={labels.map((_, i) => i)}
+        tickFormat={(i) => labels[Number(i)] ?? ''}
+        hideTicks
+        tickLength={0}
+        stroke={C.ink}
+        strokeWidth={3}
+        // visx：轴线从 range[0] - start 画到 range[1] + end，这里把它撑回 0..innerW
+        rangePadding={{start: at(0), end: innerW - (n > 1 ? at(n - 1) : at(0) + 1)}}
+        tickComponent={(tp) => <TickText {...tp} y={46} dy={0} textAnchor="middle" />}
+      />
+      <AxisLeft scale={yAxisScale} tickValues={[]} hideTicks stroke={C.ink} strokeWidth={3} />
+    </>
+  );
+};
 
 export const Chart: React.FC<{
   f: number;
@@ -200,17 +238,25 @@ export const Chart: React.FC<{
 
     stackSvg = (
       <g transform={`translate(${padL},${padT})`}>
-        <YAxis ticks={variant === 'stackExpand' ? [0, 0.25, 0.5, 0.75, 1] : yStack.ticks(5)} y={(v) => yOf(v)} innerW={innerW} unit={variant === 'stackExpand' ? '' : unit} />
+        <YAxis ticks={variant === 'stackExpand' ? [0, 0.25, 0.5, 0.75, 1] : yStack.ticks(5)} y={variant === 'stackExpand' ? yExpand : yStack} innerW={innerW} unit={variant === 'stackExpand' ? '' : unit} />
         {multi.map((s, si) => {
           const pts = stackPoints.filter((p) => p.si === si);
-          const areaGen = d3area<StackPoint>()
-            .x((p) => xAt(p.xIndex))
-            .y0((p) => yOf(p.y0))
-            .y1((p) => yOf(p.y1))
-            .curve(curveMonotoneX);
           const q = prog(f, startAt + 6 + si * 7, 34);
           const toneS = s.tone ?? TONE[si % TONE.length];
-          return <path key={s.name} d={areaGen(pts) ?? ''} fill={`${toneS}99`} stroke={toneS} strokeWidth={3} opacity={q} />;
+          return (
+            <Area<StackPoint>
+              key={s.name}
+              data={pts}
+              x={(p) => xAt(p.xIndex)}
+              y0={(p) => yOf(p.y0)}
+              y1={(p) => yOf(p.y1)}
+              curve={curveMonotoneX}
+              fill={`${toneS}99`}
+              stroke={toneS}
+              strokeWidth={3}
+              opacity={q}
+            />
+          );
         })}
         <Axes innerW={innerW} innerH={innerH} labels={axisLabels} at={xAt} />
         {variant === 'stream'
@@ -380,15 +426,6 @@ export const Chart: React.FC<{
     .nice()
     .range([innerH, 0]);
 
-  const path = d3line<ChartDatum>()
-    .x((_, i) => xAt(i))
-    .y((d) => y(d.value))
-    .curve(curveMonotoneX)(rows);
-  const areaPath = d3area<ChartDatum>()
-    .x((_, i) => xAt(i))
-    .y0(innerH)
-    .y1((d) => y(d.value))
-    .curve(curveMonotoneX)(rows);
   const barW = band.bandwidth();
   const barGrow = prog(f, startAt + 10, 40);
   const dashLen = 6000;
@@ -403,7 +440,7 @@ export const Chart: React.FC<{
             const q = prog(f, startAt + 6 + i * 5, 26);
             const bw = band.bandwidth();
             return (
-              <rect
+              <Bar
                 key={d.label + i}
                 x={(band(`${d.label}#${i}`) ?? 0) + bw * 0.18}
                 y={innerH - hh * barGrow}
@@ -418,10 +455,24 @@ export const Chart: React.FC<{
             );
           })
         : null}
-      {isArea && areaPath ? <path d={areaPath} fill={`${accent}33`} stroke="none" opacity={grow} /> : null}
-      {path ? (
-        <path
-          d={path}
+      {isArea && rows.length > 0 ? (
+        <AreaClosed<ChartDatum>
+          data={rows}
+          x={(_, i) => xAt(i)}
+          y={(d) => y(d.value)}
+          yScale={y}
+          curve={curveMonotoneX}
+          fill={`${accent}33`}
+          stroke="none"
+          opacity={grow}
+        />
+      ) : null}
+      {rows.length > 0 ? (
+        <LinePath<ChartDatum>
+          data={rows}
+          x={(_, i) => xAt(i)}
+          y={(d) => y(d.value)}
+          curve={curveMonotoneX}
           fill="none"
           stroke={accent}
           strokeWidth={6}

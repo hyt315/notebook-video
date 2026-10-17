@@ -1,29 +1,21 @@
 import React from 'react';
-import * as RadixDialog from '@radix-ui/react-dialog';
-import * as RadixPopover from '@radix-ui/react-popover';
-import * as RadixTooltip from '@radix-ui/react-tooltip';
-import * as RadixDropdownMenu from '@radix-ui/react-dropdown-menu';
 import {THEME} from '../theme/active';
 import {TYPE} from '../kit';
 import {prog} from './ui';
 import {fitsWithin} from './fittext';
 
 // ============================================================================
-// overlay.tsx — 拟真弹层（Radix 的 dialog / popover / tooltip / dropdown-menu）
+// overlay.tsx — 拟真弹层（dialog / popover / tooltip / menu）
 //
-// 替换掉什么：此前所有「界面感」都压在 `ConsoleWindow` 一个件上——要表达
-// 「弹出一个确认框」「下拉里选一项」「气泡说明」只能画静态线框。
-// 这四件正是软件类讲解的高频语法，而 Radix 给的是**结构+状态机**，外观仍归我们。
-//
-// ⚠️ 本轮实测（diag-upgrade 页①）得到的两条硬结论：
-//   1. Portal 默认落 `document.body` —— 那是 Remotion 画布**之外**。
-//      必须 `container={本组件自己的宿主节点}`。实测指到画面根后四件全部完整可见，
-//      Dialog 的测量矩形与给定坐标逐像素一致（x=480 y=130 w=420 h=134）。
-//   2. Popover / Tooltip / DropdownMenu 走的是 floating-ui，**落位是异步的**
-//      （computePosition 在微任务里才 resolve；实测要 8 轮渲染才稳定在目标位）。
-//      所以本层不用它的「自动避让」，而是**把锚点钉在我们给的坐标上**
-//      （`Anchor` 就是一个 0×0 的定位点 + `side/align/sideOffset` 固定），
-//      落点因此是 f(帧号) 的确定值，而不是测量出来的。同一帧渲两次哈希一致（已实测）。
+// v4.2（Phase 3）：去掉 Radix（dialog / popover / tooltip / dropdown-menu 四个包）。
+// 以前的实测结论正是去掉它的理由：
+//   1. Portal 默认落到 document.body（画布之外），必须手动把 container 指回画面；
+//   2. popover / tooltip / menu 走 floating-ui，落位是**异步**测量出来的
+//      （实测要 8 轮渲染才稳定）——我们本来就把锚点钉死在给定坐标上，
+//      所以那层测量只剩风险、没有收益。
+// 现在弹层就是父容器里一个绝对定位的 <div>：dialog 的左上角 = (x, y)；
+// popover / tooltip / menu 的左上角 = (x, y + 间距)，与原来 side="bottom" align="start" 的落点一致。
+// 落点是 f(帧号) 的确定值，不测量、不 Portal、不异步。
 //
 // 纪律：只读 THEME；显隐与入场都是 f(帧号) 的纯函数；不用 CSS transition。
 // ============================================================================
@@ -147,10 +139,9 @@ export const OverlayFrame: React.FC<{
   tone?: string;
   /** 引线三角指向的点（相对弹层左上角） */
   pointer?: {dx: number; dy: number; side: 'top' | 'bottom' | 'left' | 'right'};
-  /** 用哪种 Radix primitive（默认由 kind 推出） */
+  /** 自定义弹层内容（给了就替代 body / items） */
   children?: React.ReactNode;
 }> = ({f, kind = 'dialog', x, y, width, steps, title, body, items, selected, confirm, cancel, tone, pointer, children}) => {
-  const [host, setHost] = React.useState<HTMLDivElement | null>(null);
   const {open, since} = overlayStateAt(steps, f);
   const p = open ? prog(f, since, 18) : 0;
   const accent = tone ?? C.blue;
@@ -214,68 +205,14 @@ export const OverlayFrame: React.FC<{
     </Box>
   );
 
-  // 引线三角已并入 Box（见上），这里不再单独渲染
-  const hostStyle: React.CSSProperties = {position: 'absolute', left: 0, top: 0, width: '100%', height: '100%'};
-
+  // 引线三角已并入 Box。弹层直接画在父容器里（父容器需要 position:relative）。
+  if (!open && p === 0) return <div style={{position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none'}} />;
+  const gap = kind === 'dialog' ? 0 : pointer ? 2 : 12;
   return (
-    <div ref={setHost as never} style={hostStyle}>
-      {kind === 'dialog' ? (
-        <RadixDialog.Root open={open} modal={false}>
-          <RadixDialog.Portal container={host}>
-            {/* Dialog 不走 floating：坐标由我们给，落点逐像素确定 */}
-            <RadixDialog.Content style={{position: 'absolute', left: x, top: y, outline: 'none'}} aria-describedby={undefined}>
-              {/* Title 只给读屏用：**必须视觉隐藏**，否则它会占掉文档流的一行，
-                  把弹层整体往下推（实测第一版就是这样，标题跑到了盒子外面）。
-                  这里用手写的 visually-hidden，免得为了一行样式再加一个 Radix 包。 */}
-              <RadixDialog.Title
-                style={{position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', margin: 0}}
-              >
-                {title ?? '弹窗'}
-              </RadixDialog.Title>
-              {inner}
-            </RadixDialog.Content>
-          </RadixDialog.Portal>
-        </RadixDialog.Root>
-      ) : null}
-      {kind === 'popover' ? (
-        <RadixPopover.Root open={open}>
-          <RadixPopover.Anchor asChild>
-            {/* 锚点就是坐标本身：0×0，钉死在 (x,y) */}
-            <div style={{position: 'absolute', left: x, top: y, width: 0, height: 0}} />
-          </RadixPopover.Anchor>
-          <RadixPopover.Portal container={host}>
-            <RadixPopover.Content side="bottom" align="start" sideOffset={pointer ? 2 : 12} style={{outline: 'none'}}>
-              {inner}
-            </RadixPopover.Content>
-          </RadixPopover.Portal>
-        </RadixPopover.Root>
-      ) : null}
-      {kind === 'menu' ? (
-        <RadixDropdownMenu.Root open={open} modal={false}>
-          <RadixDropdownMenu.Trigger asChild>
-            <div style={{position: 'absolute', left: x, top: y, width: 0, height: 0}} />
-          </RadixDropdownMenu.Trigger>
-          <RadixDropdownMenu.Portal container={host}>
-            <RadixDropdownMenu.Content align="start" side="bottom" sideOffset={pointer ? 2 : 12} style={{outline: 'none'}}>
-              {inner}
-            </RadixDropdownMenu.Content>
-          </RadixDropdownMenu.Portal>
-        </RadixDropdownMenu.Root>
-      ) : null}
-      {kind === 'tooltip' ? (
-        <RadixTooltip.Provider delayDuration={0} skipDelayDuration={0} disableHoverableContent>
-          <RadixTooltip.Root open={open}>
-            <RadixTooltip.Trigger asChild>
-              <div style={{position: 'absolute', left: x, top: y, width: 0, height: 0}} />
-            </RadixTooltip.Trigger>
-            <RadixTooltip.Portal container={host}>
-              <RadixTooltip.Content side="bottom" align="start" sideOffset={pointer ? 2 : 12} style={{outline: 'none'}}>
-                {inner}
-              </RadixTooltip.Content>
-            </RadixTooltip.Portal>
-          </RadixTooltip.Root>
-        </RadixTooltip.Provider>
-      ) : null}
+    <div style={{position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none'}}>
+      <div role={kind === 'dialog' ? 'dialog' : kind === 'tooltip' ? 'tooltip' : kind === 'menu' ? 'menu' : 'group'} aria-label={title} style={{position: 'absolute', left: x, top: y + gap}}>
+        {inner}
+      </div>
     </div>
   );
 };

@@ -69,7 +69,7 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 | `Funnel` | 尝试漏斗：宽进窄出 + 计数 + 滴落点 | `x,y,w,rows[{label,sub,count,color,ratio}]` |
 | `ChatThread` | 对话气泡：typing 三点 → 气泡 pop，左右交替 | `x,y,w,msgs[{side,text,at}]` |
 | `ProgressRing` | 进度环：dashoffset 填充 + 中央标签 | `size,pct,label,color` |
-| `DiffView` | 补丁 diff：红删绿加，逐行滑入 | `x,y,w,title,lines[{k,text,at}]` |
+| `DiffView` | 补丁 diff：红删绿加，逐行滑入。给 `before`/`after` 两段文本就由 jsdiff 自动算增删行（推荐）；也可手写 `lines` | `x,y,w,title,before,after,startAt,step` 或 `lines[{k,text,at}]` |
 | `SkeletonCard` | 骨架→内容：等待 beats 先占位 | `x,y,w,h,rows,revealAt` |
 | `StaggerList` | 级联列表：逐行滑入 + 微旋转，防 bullets 堆砌 | `x,y,w,items,start,stagger` |
 
@@ -79,22 +79,22 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 > [media-routing.md §5.1 组件权威索引](media-routing.md#51-组件权威索引53-件--选型只查这一处)。
 > 下面只留口径说明与参数要点。
 
-> **「件」的口径**（按 `src/components/index.ts` 的对外 `export` 逐项点算）：**大写 React 组件 27** = 本层实现 27（v3.1.1 起**无库再导出**：CameraMotionBlur / Trail 已随 `@remotion/motion-blur` 一起删除，PieDraw 已删）；大写常量 8（`TOPIC_ICONS` `TOPIC_ICON_TONE` `CHART_BOX` `MIN_LABEL_FONT` `FOCUS_MODES` `SHAPES` `PRESENTATIONS` `COMPONENTS_VERSION`）、小写函数/钩子 18、type-only 导出 22（`GeoMarker` / `GeoProjection` 是 v3.1 加的两个）都**不算件**。下表只列常用项 21 个（未列的 6 个：`MathBlock` `GeoView` `SankeyChart` `QrCode` `SketchFx` `FocusFx`），完整清单以 `index.ts` 为准；`index.ts` 里的 `COMPONENTS_VERSION` 串与本节已同步（`components-v3.1.1 · 27 件`）。
+> **「件」的口径**（按 `src/components/index.ts` 的对外 `export` 逐项点算）：**大写 React 组件 27** = 本层实现 27（v3.1.1 起**无库再导出**：CameraMotionBlur / Trail 已随 `@remotion/motion-blur` 一起删除，PieDraw 已删）；大写常量 8（`TOPIC_ICONS` `TOPIC_ICON_TONE` `CHART_BOX` `MIN_LABEL_FONT` `FOCUS_MODES` `SHAPES` `PRESENTATIONS` `COMPONENTS_VERSION`）、小写函数/钩子 18、type-only 导出 22（`GeoMarker` / `GeoProjection` 是 v3.1 加的两个）都**不算件**。下表只列常用项 21 个（未列的 6 个：`MathBlock` `GeoView` `SankeyChart` `QrCode` `SketchFx` `FocusFx`），完整清单以 `index.ts` 为准；`index.ts` 里的 `COMPONENTS_VERSION` 串与本节已同步（`components-v4.2 · 27 件`）。
 
 见 [dependency-policy.md](dependency-policy.md)。**场景从这里 import，不要直接 import 原始库。**
 帧参数名统一 `f`；颜色只读 `THEME`；登记在 [media-routing.md](media-routing.md) 两张路由表里。
 
 | 组件 | 做什么 | 参数要点 |
 |---|---|---|
-| `Accordion` | 手风琴（Radix）：展开项随帧累积 | `f,items[{title,body,tone}],startAt,step,width,rowH,bodyRows` |
-| `Tabs` | 标签页（Radix）：激活项由帧号决定 | `f,tabs[{key,label,title,body,points,verdict,tone}],startAt,step,width,height` |
-| `HighlightCode` | 语法高亮 + 行号 + 逐行聚焦（v3.1 起 toolkit 里已无同名件；与历史件同名不同物，导入时以 `src/components/` 的 `HighlightCode` 为准） | `f,code,language,startAt,lineStep,width,height,title` |
-| `TopicIcon` / `IconWall` | 题材性图标（react-icons：`fa` 品牌 + `fi`/`lu` 线条，笔画重量已对齐 LineIcon） | `name,size,color,strokeWidth` / `f,names,startAt,step,columns,tile` |
-| `Chart` | d3 图表：刻度与路径由 d3 算，画由 THEME 定；7 个 `variant`（line/area/stack/stackExpand/stream/radar/pie） | `f,data,csv,series,labels,variant,startAt,width,height,title,showBars,tone,innerRadius` |
+| `Accordion` | 手风琴（纯 div）：展开项随帧累积 | `f,items[{title,body,tone}],startAt,step,width,rowH,bodyRows` |
+| `Tabs` | 标签页（纯 div）：激活项由帧号决定 | `f,tabs[{key,label,title,body,points,verdict,tone}],startAt,step,width,height` |
+| `HighlightCode` | 语法高亮（Shiki，语法色由当前主题调色板生成）+ 行号 + 逐行聚焦（v3.1 起 toolkit 里已无同名件；与历史件同名不同物，导入时以 `src/components/` 的 `HighlightCode` 为准） | `f,code,language,startAt,lineStep,width,height,title` |
+| `TopicIcon` / `IconWall` | 题材性图标（simple-icons 品牌 + lucide-react 线条，笔画重量已对齐 LineIcon） | `name,size,color,strokeWidth` / `f,names,startAt,step,columns,tile` |
+| `Chart` | 图表：刻度与布局由 d3 算，坐标轴/网格/线/面积/柱由 @visx 画，颜色由 THEME 定；7 个 `variant`（line/area/stack/stackExpand/stream/radar/pie） | `f,data,csv,series,labels,variant,startAt,width,height,title,showBars,tone,innerRadius` |
 | `StatRow` | 指标卡一行，数字随帧滚动 | `f,startAt,items,width,height` |
 | `GlowFrame` | 流光边框（conic-gradient 绑帧号） | `f,width,height,thickness,tone` |
-| `ControlStack` | **控件状态随旁白变化**（Radix 六个纯受控 primitive：开关/复选/单选/滑块/分段/进度） | `f,items,width,rowH,gap,startAt,step,glide`；每行 `steps:[{at,value}]` 是帧→状态的显式表 |
-| `OverlayFrame` | **拟真弹层**（Radix dialog/popover/tooltip/dropdown-menu；Portal 已指到画面内） | `f,kind,x,y,width,steps,title,body,items,confirm,cancel,tone,pointer`；父容器需 `position:relative` |
+| `ControlStack` | **控件状态随旁白变化**（六种控件，纯 div：开关/复选/单选/滑块/分段/进度） | `f,items,width,rowH,gap,startAt,step,glide`；每行 `steps:[{at,value}]` 是帧→状态的显式表 |
+| `OverlayFrame` | **拟真弹层**（dialog/popover/tooltip/menu，纯 div，钉在给定坐标，无 Portal、无异步定位） | `f,kind,x,y,width,steps,title,body,items,confirm,cancel,tone,pointer`；父容器需 `position:relative` |
 | `NetworkGraph` | **关系网**（d3-force；固定迭代 + 显式初值 + 包围盒归一化） | `f,nodes,links,startAt,width,height,iterations,nodeR,showLabels` |
 | `TreeView` | 目录树 / 组织图 / **矩形树图 / 圆形打包 / 旭日图** | `f,data,startAt,width,height,variant,step,nodeW,nodeH,legend` |
 | `ShimmerText` | 文字闪过一道光 | `f,text,fontSize,periodInFrames,sweep` |

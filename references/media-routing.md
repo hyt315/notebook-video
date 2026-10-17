@@ -35,13 +35,13 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 | 内容类型 | 视觉介质 | 组件（模块） |
 |---|---|---|
 | 数据 / 对比 | 趋势 / 分布 / 多值对比 → **`Chart`（`components/`，d3 算刻度与路径）**，按语义选 `variant`：折线（默认）/ `area` 面积 / `stackExpand` 百分比堆叠 / `stream` 河流 / `radar` 多维 / `pie` 份额；只有一个百分比 → `ProgressRing`（fxkit）；只有前后两值成对 → `MetricGrid`（media） |
-| 软件流程 / 界面 | 窗口壳 + 内部线框 | `ConsoleWindow`（media）、`HighlightCode` 的窗口壳（components）；**要"弹出来的框"（确认框 / 下拉选择 / 说明气泡 / 提示）→ `OverlayFrame`（components，Radix 弹层）** |
+| 软件流程 / 界面 | 窗口壳 + 内部线框 | `ConsoleWindow`（media）、`HighlightCode` 的窗口壳（components）；**要"弹出来的框"（确认框 / 下拉选择 / 说明气泡 / 提示）→ `OverlayFrame`（components，纯 div 弹层）** |
 | 技术代码 | 有语法高亮的源码 → **`HighlightCode`（`components/`）**；讲一个字一个字敲出来 → `Typewriter`；讲改了什么 → `DiffView`（均 fxkit） |
 | 结构关系 | 两者有连线/路径 → **`PathDraw`（`components/`）**；**"谁连着谁"的网（没有层级也没有方向）→ `NetworkGraph`（components，d3-force）**；逐条列清单 → `Checklist`（toolkit）；只是逐行出现 → `StaggerList`（fxkit） |
-| 分步展开 / 折叠面板 | 手风琴 | **`Accordion`（components，Radix）** ← 技能此前**没有**这个形态，遇到只能"再堆一张卡片" |
-| 多方案 / 多标签切换 | 标签页 | **`Tabs`（components，Radix）** ← 同上，此前零覆盖 |
-| 配置 / 选项 / 参数 | **控件状态随旁白变化**（开关拨动、复选打勾、单选改选、滑块拖动、分段切换、进度推进） | **`ControlStack`（components，Radix 六个纯受控 primitive）** ← 此前完全没有"控件被改变"这个形态，只能写一张文字卡片假装「这个选项被打开了」。帧 → 状态是一张显式的表（`steps: [{at, value}]`），纯函数可复算 |
-| 技术栈 / 品牌标识 | 图标墙 | **`IconWall` / `TopicIcon`（components，react-icons：`fa` 品牌 + `fi`/`lu` 线条）** |
+| 分步展开 / 折叠面板 | 手风琴 | **`Accordion`（components）** ← 技能此前**没有**这个形态，遇到只能"再堆一张卡片" |
+| 多方案 / 多标签切换 | 标签页 | **`Tabs`（components）** ← 同上，此前零覆盖 |
+| 配置 / 选项 / 参数 | **控件状态随旁白变化**（开关拨动、复选打勾、单选改选、滑块拖动、分段切换、进度推进） | **`ControlStack`（components，六种控件，纯 div）** ← 此前完全没有"控件被改变"这个形态，只能写一张文字卡片假装「这个选项被打开了」。帧 → 状态是一张显式的表（`steps: [{at, value}]`），纯函数可复算 |
+| 技术栈 / 品牌标识 | 图标墙 | **`IconWall` / `TopicIcon`（components，simple-icons 品牌 + lucide-react 线条）** |
 | 抽象概念 | 概念图 + 主体 | `StageFrame`（stagekit）+ SVG |
 | 强调信息 | 让一句话发光 → **`ShimmerText`**；给整块卡加动效边框 → **`GlowFrame`**（均 `components/`）；逐字砸出来 → `JumpInText`（toolkit）；盖章定论 → `StampSeal`（fxkit） |
 | 几何 / 图形强调 | 参数化图形 | **`ShapeDraw` / `SHAPES`（components，@remotion/shapes）** ← 五角星/六边形/星芒/**标注框 callout**/**箭头 arrow**/**心形 heart** 都不用手画。**饼图/份额别找图形件**：有数据用 `Chart variant="pie"`（带扇区百分比 + 图例），只有一个百分比用 `ProgressRing` |
@@ -212,7 +212,7 @@ wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的�
 | `NetworkGraph`（components） | d3-force 关系网（固定迭代 + 显式初值） | "谁连着谁"——无层级、无方向的网 | 有层级时用 `TreeView`（树会凭空造出一个不存在的上下级） | ⑯ | 未使用 |
 | `HighlightCode`（components） | 语法高亮 + 行号 + 逐行聚焦 | 要"这是官方/真实代码"的窗口壳（页面形态） | 终端形态→`ConsoleWindow`；逐字敲→`Typewriter`；纯代码路线不做实拍框 | ⑨ | 未使用 |
 | `MathBlock`（components） | katex 公式块（静态、确定性） | 有公式/推导要展示（此前只能手写 HTML 硬排） | 无动画——别当装饰塞公式 | ⑭ | 未使用 |
-| `TopicIcon`（components） | 单个题材图标（react-icons：`fa` 品牌 + `fi`/`lu` 线条，笔画重量对齐 `LineIcon`） | 技术栈/品牌标识的**单点** | 成排→`IconWall`；图标与内容无关时别用 | ⑫ | 未使用 |
+| `TopicIcon`（components） | 单个题材图标（simple-icons 品牌 + lucide-react 线条，笔画重量对齐 `LineIcon`） | 技术栈/品牌标识的**单点** | 成排→`IconWall`；图标与内容无关时别用 | ⑫ | 未使用 |
 | `IconWall`（components） | 图标墙（弹簧错峰入场） | 技术栈/依赖清单要具象成一堵墙 | 图标不是内容时别用（纯装饰） | ⑩ | 未使用 |
 | `Chart`（components） | d3 算刻度与路径；7 个 `variant`（line/area/stack/stackExpand/stream/radar/pie），可直接喂 CSV | 数据/趋势/分布/多值对比；真实数据进图 | 只有一个百分比→`ProgressRing`；只有前后两值→`MetricGrid`；柱状用默认 line + `series` 驱动（未知 `variant` 直接抛错） | ①⑨⑭⑮ | 未使用 |
 | `StatRow`（components） | 指标卡一行，数字随帧滚动（字符串值直显） | 报一个大数字；等权指标并排 | 数值已在 `MetricGrid` 里滚动时别重复 | 未展示 | 参考片 S1 |
@@ -228,12 +228,12 @@ wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的�
 | `NoiseJitter`（components） | 有机抖动（noise2D 同种子同结果） | 让静止物"活一点"（手绘 / 贴纸感） | 别给**文字**用（抖动伤可读性） | ⑫ | 未使用 |
 | `VerdictBar`（components） | 全宽结论条（填满底部，收束场景） | 收束场景，且底部要填满 | 一镜一条；别与 `StampBanner` 同时砸（两条互压底线） | 未展示 | 参考片 S8 |
 | `PathDraw`（components） | 描线生长 + 沿线运动的点 / 沿线转向的箭头（`getTangentAtLength`） | 表现两者关系 / 因果；箭头沿路线跑 | 路径短于 200px 时箭头会盖住整条线；已有导轨/时间轴时别叠 | ⑪⑰ | 未使用 |
-| `MorphShape`（components） | 形状连续变形（`interpolatePath`） | 讲"同一个东西形态变了" | 没有"变形"语义时别用（纯装饰） | ⑪ | 未使用 |
+| `MorphShape`（components） | 形状连续变形（flubber：任意两闭合形状；`engine="remotion"` 用 `interpolatePath`） | 讲"同一个东西形态变了" | 没有"变形"语义时别用（纯装饰） | ⑪ | 未使用 |
 | `ShapeDraw` / `SHAPES`（components） | 参数化几何（星 / 六边形 / 三角 / 圆 / 星芒 / callout 标注框 / arrow 箭头 / heart / 椭圆 / 矩形） | 需要一个标注框 / 箭头 / 星标，不想手写 path | 图标→`TopicIcon`；形状要有语义，别撒装饰 | ⑩⑰ | 未使用 |
 | `SceneTransitions`（components） | 官方 20 种转场全部登记（几何式 9 + 着色器式 11） | 场景衔接要真的"换场"（不止硬切/淡出） | `flip` 在 50% 处正好侧对镜头（那一格看着像空的属正常，要看就截 25%/75%）；`none` 是硬切 | ⑪ | 未使用 |
 | `FitTextBox`（components） | 中文反推字号 + 断行（自带字体就绪门） | 固定宽 + 行数上限要定字号（治卡片文字被裁的正解） | 管"卡片多高"用 `FitCard` / `fitH()`（分工不同，见 [fxkit.md](fxkit.md)） | ③⑩⑭ | 未使用 |
 | `PillTag`（kit） | 胶囊贴标 | 页眉 kicker、标签行 | 别当正文（小字号） | 未展示 | 参考片 S1 S3 + 引擎页眉 |
-| `LineIcon`（kit） | 26 字形线条图标 | 卡片小标题旁的图标 | 大图 / 插图→`TopicIcon` | 未展示 | 参考片 S3 S7（`CardHead`） |
+| `LineIcon`（kit） | 26 字形线条图标（lucide-react） | 卡片小标题旁的图标 | 大图 / 插图→`TopicIcon` | 未展示 | 参考片 S3 S7（`CardHead`） |
 | `CheckBadge`（kit） | 对勾圆徽章 | "已完成"这类状态标记 | 要"盖章"的体量时→`StampSeal` | 未展示 | 参考片 S4 S7 |
 | `FitCard`（fxkit） | 防出格卡片（`h` 必须经 `fitH()` 算） | 任何文字卡片 | 禁止手写"看着差不多"的固定高度 | ③ | 参考片 S3 S4 |
 | `Typewriter`（fxkit） | 打字机（标点分级停顿、块光标） | "一个字一个字敲出来" | 讲"改了什么"→`DiffView`；整段代码→`HighlightCode` | ② | 参考片 S3 |
@@ -241,7 +241,7 @@ wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的�
 | `Funnel`（fxkit） | 尝试漏斗（宽进窄出 + 计数 + 滴落点） | 逐级递减的漏斗 / 收束 | 只有一个百分比→`ProgressRing` | ③ | 参考片 S5 |
 | `ChatThread`（fxkit） | 对话气泡（typing 三点→pop，左右交替） | 模拟 AI 对话 / Prompt 交互 | 条数建议 2–3 条（1 问 + 1~2 答），否则溢出窗口高度 | ④ | 参考片 S7 |
 | `ProgressRing`（fxkit） | 进度环（dashoffset 填充 + 中央标签） | **只有一个**百分比 | 多份额对比→`Chart`；有前后值→`MetricGrid` | ① | 参考片 S5 |
-| `DiffView`（fxkit） | 补丁 diff（红删绿加，逐行滑入） | 讲"改了什么" | 不是补丁语义（无增无删）时别用 | ② | 参考片 S3 |
+| `DiffView`（fxkit） | 补丁 diff（红删绿加，逐行滑入；`before`/`after` 由 jsdiff 算行） | 讲"改了什么" | 不是补丁语义（无增无删）时别用 | ② | 参考片 S3 |
 | `SkeletonCard`（fxkit） | 骨架→内容（等待 beats 先占位） | 已知要等（拉取 / 计算有过程） | 内容本来就该立刻出现时别用 | ③ | 参考片 S7 |
 | `StaggerList`（fxkit） | 级联列表（逐行滑入 + 微旋转） | 只是"逐行出现"、防 bullets 堆砌 | 同句内错峰 ≤8 帧（18–30 帧会读成"一个个淡出来"）；要完成态→`Checklist` | ① | 参考片 S4 |
 | `ConsoleWindow`（media） | 控制台 / 终端窗口介质 | 表现"正在跑"、命令行 | 必须给 `h`，否则高度由内容撑；带行号高亮的代码→`HighlightCode` | ② | 参考片 S1 |

@@ -55,8 +55,9 @@ Stable semantic IDs must remain separate from display labels. Changing visible c
 - Keep the grade static and restrained.
 - Never lay a full-frame translucent wash over the background: the three backgrounds per theme keep their central ~70% calm on purpose, and a wash turns the corner characters into ghosts.
 - Use the official line icons (`LineIcon`) as the primary icon language, instead of system glyphs or emoji.
-  Topic-specific marks (brand logos, technology identities) may use the pinned `react-icons` sets
-  (`fa` solid = brands; `fi`/`lu` = line icons; `si` = 品牌 logo 兜底 —— v3.1 起放开 `lu`，因为 `react-icons/lu` 与 `fi` **同源同款**、字节级相同；混排时按 `LineIcon` 的视觉重量压一档 `strokeWidth`。见 dependency-policy.md §7.5）
+  `LineIcon` glyphs come from `lucide-react` (v4.2). Topic-specific marks (brand logos, technology identities) use
+  `TopicIcon`: `simple-icons` for brands (single-colour paths, theme colour only) and `lucide-react` for line marks,
+  with `strokeWidth` matched to `LineIcon`'s visual weight. See dependency-policy.md §7.5.
 - Preserve the same persistent task-card, shared-track and physical-slot logic.
 
 ## Future updates

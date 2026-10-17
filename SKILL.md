@@ -1,6 +1,6 @@
 ---
 name: notebook-video
-version: 4.1.0
+version: 4.2.0
 description: Create complete Chinese 2K (2560×1440, 16:9 only) flat-geometric or anime-cel explainer and promotional videos with React, TypeScript and Remotion. Two locked skins — `flat` (default) and `cel`. The default visual route is pure code-drawn composition (SVG diagrams, mascots, progressive checklists, annotation tags) synchronized frame-accurately to Chinese TTS word timing, so production never depends on an image-generation model; image generation is an optional add-on offered to the user for concrete hero scenes. Includes a per-shot restricted camera with an out-of-bounds proof, four scene skeletons with a content-to-medium routing table, a cue-indexed shot table, native-30fps motion, active-scene mounting, complete exits, declarative audio, H.264/AAC rendering and fourteen automated quality gates (including a frame-prop-name gate that catches the highest-frequency silent failure in this codebase). Use when the user asks to 做科普视频, 扁平风或动漫风讲解视频, 定格动画, AI 视频, 产品宣传片, 介绍一个概念, 讲解产品或技能, 制作 30 秒到数分钟视频, 网站动画转 MP4, 加中文配音/字幕/音效, 快速生成 2K 视频, or combine animated text and diagrams without producing a moving slide deck.
 ---
 
@@ -192,7 +192,7 @@ stacking, unregistered rasters, or generated text baked into imagery.
 
 | 情况 | 纪律 |
 |---|---|
-| 模板**已内置**的依赖（`assets/lecture-template/package.json` 已声明的） | **随 `npm install` 一次装好，无需任何额外授权，直接 `import` 使用。** 含 Radix、react-icons、react-syntax-highlighter、d3-scale/d3-shape，以及五个 `@remotion/*` 官方扩展（transitions / paths / shapes / layout-utils / noise） |
+| 模板**已内置**的依赖（`assets/lecture-template/package.json` 已声明的） | **随 `npm install` 一次装好，无需任何额外授权，直接 `import` 使用。** 含 Shiki（代码高亮）、lucide-react + simple-icons（图标）、jsdiff（补丁）、flubber（形状变形）、@visx/axis·grid·shape（图表轴与形状）、d3-scale/d3-shape，以及五个 `@remotion/*` 官方扩展（transitions / paths / shapes / layout-utils / noise） |
 | 清单之外的**新**依赖 | 需用户明确授权后才能加进模板 |
 
 判断边界见 [dependency-policy.md](references/dependency-policy.md)：**禁的是"按次付费、结果不可复现"的生成式模型，不是开源库。**

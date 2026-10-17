@@ -12,6 +12,7 @@ import {
   makeStar,
   makeTriangle,
 } from '@remotion/shapes';
+import {interpolate as flubberInterpolate} from 'flubber';
 import {TransitionSeries, linearTiming} from '@remotion/transitions';
 import {fade} from '@remotion/transitions/fade';
 import {slide} from '@remotion/transitions/slide';
@@ -129,8 +130,15 @@ export const PathDraw: React.FC<{
 };
 
 /**
- * MorphShape — 形状连续变形（方变圆、圆变星）。
- * 用 interpolatePath 在两个 path 字符串之间插值。
+ * MorphShape — 形状连续变形（方变圆、圆变星、星变心……）。
+ *
+ * v4.2 起由 **flubber**（MIT）插值：它把两个形状重采样成同样多的点再一一配对，
+ * 所以**任意两个闭合形状**都能平滑变形（@remotion/paths 的 interpolatePath 要求两条
+ * path 指令结构一致，方→星这类就会乱跳或直接报错）。flubber 的插值器是纯函数
+ * t → path 字符串，与帧驱动天然相容：每个 (from, to) 只建一次插值器（useMemo），
+ * 每帧只是 interp(p)。
+ * engine="remotion" 保留旧行为（两条 path 结构兼容、想要精确控制点时用）。
+ * 视窗取起止两形状的**并集包围盒**，变形过程中画面不会跟着缩放抖动。
  */
 export const MorphShape: React.FC<{
   f: number;
@@ -143,12 +151,34 @@ export const MorphShape: React.FC<{
   viewBox?: string;
   strokeWidth?: number;
   tone?: string;
-}> = ({f, fromPath, toPath, startAt, durationInFrames = 60, width, height, viewBox, strokeWidth = 12, tone}) => {
+  /** 填充色（默认不填，只描边） */
+  fill?: string;
+  /** 插值引擎：flubber（默认，任意形状）或 remotion（interpolatePath，要求结构兼容） */
+  engine?: 'flubber' | 'remotion';
+  /** flubber 重采样的最大线段长度（越小越平滑，默认 6） */
+  maxSegmentLength?: number;
+}> = ({f, fromPath, toPath, startAt, durationInFrames = 60, width, height, viewBox, strokeWidth = 12, tone, fill, engine = 'flubber', maxSegmentLength = 6}) => {
   const p = prog(f, startAt, durationInFrames);
-  const d = interpolatePath(p, fromPath, toPath);
+  const interp = React.useMemo(() => {
+    if (engine === 'remotion') return (t: number) => interpolatePath(t, fromPath, toPath);
+    const i = flubberInterpolate(fromPath, toPath, {maxSegmentLength, string: true});
+    return (t: number) => (t <= 0 ? fromPath : t >= 1 ? toPath : i(t));
+  }, [fromPath, toPath, engine, maxSegmentLength]);
+  const vb = React.useMemo(() => {
+    if (viewBox) return viewBox;
+    const a = getBoundingBox(fromPath);
+    const b = getBoundingBox(toPath);
+    const pad = 40;
+    const x0 = Math.min(a.x1, b.x1) - pad;
+    const y0 = Math.min(a.y1, b.y1) - pad;
+    const x1 = Math.max(a.x2, b.x2) + pad;
+    const y1 = Math.max(a.y2, b.y2) + pad;
+    return `${x0} ${y0} ${x1 - x0} ${y1 - y0}`;
+  }, [viewBox, fromPath, toPath]);
+  const d = interp(p);
   return (
-    <svg width={width} height={height} viewBox={viewBox ?? viewBoxOf(d, 40)} style={{overflow: 'visible'}}>
-      <path d={d} fill="none" stroke={tone ?? C.green} strokeWidth={strokeWidth} strokeLinejoin="round" />
+    <svg width={width} height={height} viewBox={vb} style={{overflow: 'visible'}}>
+      <path d={d} fill={fill ?? 'none'} stroke={tone ?? C.green} strokeWidth={strokeWidth} strokeLinejoin="round" />
     </svg>
   );
 };

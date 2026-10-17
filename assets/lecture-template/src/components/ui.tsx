@@ -1,32 +1,19 @@
 import React from 'react';
-import * as RadixAccordion from '@radix-ui/react-accordion';
-import * as RadixTabs from '@radix-ui/react-tabs';
-import * as RadixSwitch from '@radix-ui/react-switch';
-import * as RadixCheckbox from '@radix-ui/react-checkbox';
-import * as RadixRadioGroup from '@radix-ui/react-radio-group';
-import * as RadixSlider from '@radix-ui/react-slider';
-import * as RadixToggleGroup from '@radix-ui/react-toggle-group';
-import * as RadixProgress from '@radix-ui/react-progress';
-// 2026-09-21：改用 **PrismLight + 按需注册语言**。原来用 `Prism` 全量入口，
-// 把 180+ 种语言的词法定义全打进包；实际只用到 6 种（tsx/ts-js/python/bash/json/diff）。
-// 功能不变、包体纯赚（见 dependency-policy §4.5 的"下一轮那一刀"）。
-import {PrismLight as SyntaxHighlighter} from 'react-syntax-highlighter';
-import langTsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx';
-import langTypescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
-import langJsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';
-import langJavascript from 'react-syntax-highlighter/dist/esm/languages/prism/javascript';
-import langPython from 'react-syntax-highlighter/dist/esm/languages/prism/python';
-import langBash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
-import langJson from 'react-syntax-highlighter/dist/esm/languages/prism/json';
-import langDiff from 'react-syntax-highlighter/dist/esm/languages/prism/diff';
+// 2026-10-17（v4.2 · Phase 3）：12 个 Radix 包全部移除。Accordion / Tabs / ControlStack 只需要
+// 结构 + 皮肤，渲染期没有交互，Radix 带来的只是 ARIA 外壳和 Slider 的 ResizeObserver 测量
+// （确定性风险）。现在全部是纯 <div>，状态 100% 来自帧号。
+// 代码高亮从 react-syntax-highlighter（Prism）换成 Shiki（同步核心 + JS 正则引擎，见 ./shiki.ts）。
+import {highlightTokens} from './shiki';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import {FaGithub, FaReact, FaPython, FaNodeJs, FaDocker, FaGitAlt, FaNpm, FaCodeBranch} from 'react-icons/fa';
-import {FiTerminal, FiLayers, FiPackage, FiCpu, FiDatabase, FiCloud} from 'react-icons/fi';
+// 图标：lucide-react（ISC，线条）+ simple-icons（CC0，品牌 logo）。react-icons 已移除。
 import {
-  LuBrain, LuRocket, LuSparkles, LuCircleCheck, LuBot, LuBug, LuRuler, LuGauge, LuGitBranch, LuWorkflow,
-  LuMilestone, LuWrench, LuZap, LuFileCode, LuServer, LuShieldCheck, LuChartLine, LuPuzzle, LuLightbulb, LuFlag,
-} from 'react-icons/lu';
+  Brain, Rocket, Sparkles, CircleCheck, Bot, Bug, Ruler, Gauge, GitBranch, Workflow, Milestone, Wrench, Zap,
+  FileCode, Server, ShieldCheck, ChartLine, Puzzle, Lightbulb, Flag, Terminal, Layers, Package, Cpu, Database, Cloud,
+  ChevronDown, Check,
+} from 'lucide-react';
+import type {LucideIcon} from 'lucide-react';
+import {siReact, siNodedotjs, siPython, siDocker, siGit, siNpm, siGithub} from 'simple-icons';
 import {Easing, interpolate, spring} from 'remotion';
 import {THEME} from '../theme/active';
 import {TYPE, PillTag} from '../kit';
@@ -46,27 +33,6 @@ import {fitChineseTextOnNLines, fitsWithin} from './fittext';
 //   4. 文字容器高度用 fitH() 或 fitTextOnNLines() 算出
 //   5. 正文纯墨色 C.ink；muted 只用于装饰性 kicker
 // ============================================================================
-
-// PrismLight 必须先注册语言，否则整段代码会退化成纯文本（不报错，只是没有高亮）。
-// 别名一并注册：场景里写 language="ts" / "js" / "sh" 都是合法的。
-const PRISM_LANGUAGES: Record<string, unknown> = {
-  tsx: langTsx,
-  typescript: langTypescript,
-  ts: langTypescript,
-  jsx: langJsx,
-  javascript: langJavascript,
-  js: langJavascript,
-  python: langPython,
-  py: langPython,
-  bash: langBash,
-  sh: langBash,
-  shell: langBash,
-  json: langJson,
-  diff: langDiff,
-};
-for (const [name, def] of Object.entries(PRISM_LANGUAGES)) {
-  (SyntaxHighlighter as unknown as {registerLanguage: (n: string, d: unknown) => void}).registerLanguage(name, def);
-}
 
 const C = THEME.palette;
 const RADIUS = THEME.aesthetic.paperRadius;
@@ -120,7 +86,7 @@ export const presence = (f: number, startAt: number, exitStart?: number, durIn =
 };
 
 // ---------------------------------------------------------------------------
-// Accordion — @radix-ui/react-accordion
+// Accordion — 纯 div（v4.2 起不再依赖 @radix-ui/react-accordion）
 // 用法：<Accordion f={f} items={[{title, body, tone}]} startAt={18} step={58} />
 // 展开项由帧号累积决定；**展开高度按真实文本折几行算出来**（不再猜行数）；支持 exitStart 让位。
 // ---------------------------------------------------------------------------
@@ -139,7 +105,6 @@ export const Accordion: React.FC<{
   exitStart?: number;
 }> = ({f, items, startAt, step, width, rowH = 96, bodyRows = 2, exitStart}) => {
   const openedCount = Math.max(0, Math.min(items.length, Math.floor((f - startAt) / step) + 1));
-  const value = items.slice(0, openedCount).map((_, i) => String(i));
   // 2026-09-21 修（实测）：展开高度原来是 `bodyRows` 行 × 行高**猜**出来的。
   // 正文短于 bodyRows 行时面板偏高（空白），长于 bodyRows 行时正文被 overflow:hidden
   // **裁掉尾巴**——接触表第 ⑭ 页实测过这件事（"Accordion 塞不进图表，是被裁剩一条"）。
@@ -169,15 +134,14 @@ export const Accordion: React.FC<{
   );
 
   return (
-    <RadixAccordion.Root type="multiple" value={value} style={{display: 'flex', flexDirection: 'column', gap: 22, width}}>
+    <div style={{display: 'flex', flexDirection: 'column', gap: 22, width}}>
       {items.map((item, i) => {
         const {p, op, dx} = presence(f, startAt + i * step, exitStart);
         const isOpen = i < openedCount;
         const accent = toneOf(item.tone);
         return (
-          <RadixAccordion.Item
+          <div
             key={i}
-            value={String(i)}
             style={{
               background: C.paper,
               border: `2.5px solid ${isOpen ? accent : C.ink}`,
@@ -188,13 +152,14 @@ export const Accordion: React.FC<{
               transform: `translateY(${dx}px)`,
             }}
           >
-            <RadixAccordion.Header style={{margin: 0}}>
-              <RadixAccordion.Trigger
+            <div style={{margin: 0}}>
+              <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 20,
                   width: '100%',
+                  boxSizing: 'border-box',
                   height: rowH,
                   padding: '0 32px',
                   background: 'transparent',
@@ -225,22 +190,16 @@ export const Accordion: React.FC<{
                 </span>
                 <span style={{flex: 1, fontSize: TYPE.titleS, fontWeight: 700}}>{item.title}</span>
                 {/* V 形箭头，展开时翻转；不要用「＋」转 45°，那会读成关闭按钮 */}
-                <svg width="30" height="30" viewBox="0 0 30 30" style={{flex: '0 0 auto'}}>
-                  <g
-                    transform={`rotate(${interpolate(p, [0, 1], [180, 0])} 15 15)`}
-                    fill="none"
-                    stroke={isOpen ? accent : C.muted}
-                    strokeWidth={3.4}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="7,12 15,20 23,12" />
-                  </g>
-                </svg>
-              </RadixAccordion.Trigger>
-            </RadixAccordion.Header>
+                <ChevronDown
+                  size={30}
+                  color={isOpen ? accent : C.muted}
+                  strokeWidth={2.6}
+                  style={{flex: '0 0 auto', transform: `rotate(${interpolate(p, [0, 1], [180, 0])}deg)`}}
+                />
+              </div>
+            </div>
             {/* forceMount：关闭态也留在树上，高度与透明度全按帧驱动 */}
-            <RadixAccordion.Content forceMount style={{overflow: 'hidden'}}>
+            <div style={{overflow: 'hidden'}}>
               <div style={{height: bodyH * p, opacity: p, overflow: 'hidden', padding: '0 32px'}}>
                 <div
                   style={{
@@ -255,16 +214,16 @@ export const Accordion: React.FC<{
                   {item.body}
                 </div>
               </div>
-            </RadixAccordion.Content>
-          </RadixAccordion.Item>
+            </div>
+          </div>
         );
       })}
-    </RadixAccordion.Root>
+    </div>
   );
 };
 
 // ---------------------------------------------------------------------------
-// Tabs — @radix-ui/react-tabs
+// Tabs — 纯 div（v4.2 起不再依赖 @radix-ui/react-tabs）
 // 用法：<Tabs f={f} tabs={[{key,label,title,body,points,verdict,tone}]} startAt={16} step={88} />
 // 激活项由帧号决定；内容淡入不用 CSS 过渡。
 // ---------------------------------------------------------------------------
@@ -293,8 +252,8 @@ export const Tabs: React.FC<{
   // 在 Trigger 与 Content 里各自按 `toneOf(t.tone)` 算（tsc TS6133 抓出来的死变量）。
 
   return (
-    <RadixTabs.Root value={active.key} style={{width, height, display: 'flex', flexDirection: 'column'}}>
-      <RadixTabs.List
+    <div style={{width, height, display: 'flex', flexDirection: 'column'}}>
+      <div
         style={{
           display: 'flex',
           gap: 14,
@@ -309,12 +268,14 @@ export const Tabs: React.FC<{
         {tabs.map((t, i) => {
           const on = i === idx;
           return (
-            <RadixTabs.Trigger
+            <div
               key={t.key}
-              value={t.key}
               style={{
                 flex: 1,
                 height: 78,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 border: 'none',
                 borderRadius: 8,
                 cursor: 'default',
@@ -327,16 +288,16 @@ export const Tabs: React.FC<{
               }}
             >
               {t.label}
-            </RadixTabs.Trigger>
+            </div>
           );
         })}
-      </RadixTabs.List>
+      </div>
 
       {tabs.map((t) => {
         const on = t.key === active.key;
         const a = toneOf(t.tone);
         return (
-          <RadixTabs.Content key={t.key} value={t.key} forceMount style={{display: on ? 'block' : 'none', flex: 1, minHeight: 0}}>
+          <div key={t.key} style={{display: on ? 'block' : 'none', flex: 1, minHeight: 0}}>
             <div
               style={{
                 marginTop: 24,
@@ -396,24 +357,23 @@ export const Tabs: React.FC<{
                 })}
               </div>
             </div>
-          </RadixTabs.Content>
+          </div>
         );
       })}
-    </RadixTabs.Root>
+    </div>
   );
 };
 
 // ---------------------------------------------------------------------------
-// ControlStack — 「控件状态随旁白变化」（Radix 六个纯受控 primitive）
+// ControlStack — 「控件状态随旁白变化」（六种控件，纯 div；v4.2 起不再依赖 Radix）
 //
 // 为什么需要它：技能此前**完全没有**「控件被拨动」这个形态——要讲"这个选项被打开了"
 // 只能写一张文字卡片假装。而 validate-composition.py 的硬门禁要求每个讲解场景
 // ≥1 个真的随旁白变状态的构件，「配置 / 选项 / 参数」类内容最自然的语法就是控件本身。
 //
-// 为什么 Radix 这六个是安全的（源码级核实，见调研报告 §2.3(8)）：
-//   switch / checkbox / radio-group / slider / toggle-group / progress
-//   产物里 **Portal 0 处、timer 0 处、Math.random 0 处** —— 纯受控 DOM 件。
-//   状态完全由我们传的 value/checked 决定，在无交互环境里长得和有人点时一模一样。
+// v4.2：六种控件（switch / checkbox / radio / segment / slider / progress）全部是纯 div。
+//   以前用 Radix 的受控 primitive，但渲染期没有交互，Radix 只贡献了 ARIA 外壳，
+//   而 Slider 的拇指靠 ResizeObserver 测量定位（确定性风险）。现在位置全是算出来的。
 //
 // 帧 → 状态是**一张显式的表**（`steps: [{at: 帧号, value}]`），纯函数、可复算：
 //   离散件（开关/复选/单选/分段）在 at 帧**瞬间**切换；
@@ -457,6 +417,7 @@ export const controlStateAt = (row: ControlRow, f: number, glide = 14): number |
 const ctrlTrack = (on: boolean, tone: string, w: number, h: number): React.CSSProperties => ({
   width: w,
   height: h,
+  boxSizing: 'border-box',
   borderRadius: 999,
   background: on ? tone : C.mutedFill,
   border: `2.5px solid ${C.ink}`,
@@ -465,8 +426,6 @@ const ctrlTrack = (on: boolean, tone: string, w: number, h: number): React.CSSPr
   flex: '0 0 auto',
   transition: 'none',
 });
-
-const CTRL_CHECK = 'M6 15.5l5.4 5.4L22 9.6';
 
 /**
  * ControlStack — 一叠控件，状态随帧号变化。
@@ -537,8 +496,8 @@ export const ControlStack: React.FC<{
             <div style={{flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16}}>
               {/* ---- switch ---- */}
               {row.kind === 'switch' ? (
-                <RadixSwitch.Root checked={state === true} style={ctrlTrack(on, accent, 104, 52)}>
-                  <RadixSwitch.Thumb
+                <div style={{...ctrlTrack(on, accent, 104, 52), display: 'flex', alignItems: 'center'}}>
+                  <span
                     style={{
                       display: 'block',
                       width: 38,
@@ -551,15 +510,15 @@ export const ControlStack: React.FC<{
                       transition: 'none',
                     }}
                   />
-                </RadixSwitch.Root>
+                </div>
               ) : null}
               {/* ---- checkbox ---- */}
               {row.kind === 'checkbox' ? (
-                <RadixCheckbox.Root
-                  checked={state === true}
+                <div
                   style={{
                     width: 50,
                     height: 50,
+                    boxSizing: 'border-box',
                     borderRadius: 8,
                     background: on ? accent : C.paper,
                     border: `2.5px solid ${C.ink}`,
@@ -570,22 +529,19 @@ export const ControlStack: React.FC<{
                     flex: '0 0 auto',
                   }}
                 >
-                  <RadixCheckbox.Indicator forceMount>
-                    <svg width={34} height={34} viewBox="0 0 28 28">
-                      <path d={CTRL_CHECK} fill="none" stroke={on ? C.white : 'transparent'} strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </RadixCheckbox.Indicator>
-                </RadixCheckbox.Root>
+                  
+                    <Check size={34} color={on ? C.white : 'transparent'} strokeWidth={3.4} />
+                  
+                </div>
               ) : null}
               {/* ---- radio ---- */}
               {row.kind === 'radio' ? (
-                <RadixRadioGroup.Root value={String(state)} style={{display: 'flex', gap: 18}}>
+                <div style={{display: 'flex', gap: 18}}>
                   {(row.options ?? []).map((opt, k) => {
                     const sel = k === Number(state);
                     return (
-                      <RadixRadioGroup.Item
+                      <div
                         key={k}
-                        value={String(k)}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -614,22 +570,24 @@ export const ControlStack: React.FC<{
                           <span style={{width: 18, height: 18, borderRadius: 999, background: sel ? accent : 'transparent'}} />
                         </span>
                         <span style={{fontWeight: sel ? 700 : 400}}>{opt}</span>
-                      </RadixRadioGroup.Item>
+                      </div>
                     );
                   })}
-                </RadixRadioGroup.Root>
+                </div>
               ) : null}
               {/* ---- segment（分段控件）---- */}
               {row.kind === 'segment' ? (
-                <RadixToggleGroup.Root type="single" value={String(state)} style={{display: 'flex', gap: 6, padding: 6, background: C.paperWarm, border: `2.5px solid ${C.ink}`, borderRadius: RADIUS}}>
+                <div style={{display: 'flex', gap: 6, padding: 6, background: C.paperWarm, border: `2.5px solid ${C.ink}`, borderRadius: RADIUS}}>
                   {(row.options ?? []).map((opt, k) => {
                     const sel = k === Number(state);
                     return (
-                      <RadixToggleGroup.Item
+                      <div
                         key={k}
-                        value={String(k)}
                         style={{
                           height: 46,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          boxSizing: 'border-box',
                           padding: '0 20px',
                           border: `2px solid ${sel ? C.ink : 'transparent'}`,
                           borderRadius: RADIUS - 4,
@@ -641,36 +599,38 @@ export const ControlStack: React.FC<{
                         }}
                       >
                         {opt}
-                      </RadixToggleGroup.Item>
+                      </div>
                     );
                   })}
-                </RadixToggleGroup.Root>
+                </div>
               ) : null}
               {/* ---- slider ---- */}
               {row.kind === 'slider' ? (
                 <>
-                  <RadixSlider.Root
-                    value={[Number(state)]}
-                    min={row.min}
-                    max={row.max}
-                    step={row.step ?? 0.01}
-                    style={{position: 'relative', display: 'flex', alignItems: 'center', width: ctrlW, height: 44, flex: '0 0 auto'}}
-                  >
-                    <RadixSlider.Track style={{position: 'relative', flex: 1, height: 18, borderRadius: 999, background: C.mutedFill, border: `2.5px solid ${C.ink}`}}>
-                      <RadixSlider.Range style={{position: 'absolute', height: '100%', borderRadius: 999, background: accent}} />
-                    </RadixSlider.Track>
-                    <RadixSlider.Thumb
-                      style={{
-                        display: 'block',
-                        width: 34,
-                        height: 34,
-                        borderRadius: 999,
-                        background: C.paper,
-                        border: `3px solid ${C.ink}`,
-                        boxShadow: THEME.paperShadow(0.4),
-                      }}
-                    />
-                  </RadixSlider.Root>
+                  {(() => {
+                    // 纯 div 滑块：轨道 + 已选区间 + 拇指，位置 = (值 - min) / (max - min)，不测量 DOM。
+                    const span = Math.max(1e-9, row.max - row.min);
+                    const t = Math.max(0, Math.min(1, (Number(state) - row.min) / span));
+                    const THUMB = 34;
+                    return (
+                      <div style={{position: 'relative', width: ctrlW, height: 44, flex: '0 0 auto'}}>
+                        <div
+                          style={{
+                            position: 'absolute', left: 0, right: 0, top: 13, height: 18, boxSizing: 'border-box',
+                            borderRadius: 999, background: C.mutedFill, border: `2.5px solid ${C.ink}`, overflow: 'hidden',
+                          }}
+                        >
+                          <div style={{width: `${t * 100}%`, height: '100%', borderRadius: 999, background: accent}} />
+                        </div>
+                        <span
+                          style={{
+                            position: 'absolute', top: 5, left: t * (ctrlW - THUMB), width: THUMB, height: THUMB, boxSizing: 'border-box',
+                            borderRadius: 999, background: C.paper, border: `3px solid ${C.ink}`, boxShadow: THEME.paperShadow(0.4),
+                          }}
+                        />
+                      </div>
+                    );
+                  })()}
                   <span style={{fontFamily: 'Space,monospace', fontSize: TYPE.bodyM, fontWeight: 700, color: accent, minWidth: 96, textAlign: 'right'}}>
                     {Number(state).toFixed(2)}
                     {row.unit ?? ''}
@@ -680,15 +640,11 @@ export const ControlStack: React.FC<{
               {/* ---- progress ---- */}
               {row.kind === 'progress' ? (
                 <>
-                  <RadixProgress.Root
-                    value={Number(state)}
-                    max={row.max ?? 100}
-                    style={{position: 'relative', width: ctrlW, height: 34, borderRadius: 999, background: C.mutedFill, border: `2.5px solid ${C.ink}`, overflow: 'hidden', flex: '0 0 auto'}}
+                  <div
+                    style={{position: 'relative', width: ctrlW, height: 34, boxSizing: 'border-box', borderRadius: 999, background: C.mutedFill, border: `2.5px solid ${C.ink}`, overflow: 'hidden', flex: '0 0 auto'}}
                   >
-                    <RadixProgress.Indicator
-                      style={{width: `${Math.max(0, Math.min(100, Number(state)))}%`, height: '100%', background: accent, transition: 'none'}}
-                    />
-                  </RadixProgress.Root>
+                    <div style={{width: `${Math.max(0, Math.min(100, (Number(state) / (row.max ?? 100)) * 100))}%`, height: '100%', background: accent}} />
+                  </div>
                   <span style={{fontFamily: 'Space,monospace', fontSize: TYPE.bodyM, fontWeight: 700, color: accent, minWidth: 96, textAlign: 'right'}}>
                     {Math.round(Number(state))}
                     {row.unit ?? '%'}
@@ -704,39 +660,11 @@ export const ControlStack: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// CodeBlock — react-syntax-highlighter（Prism）
-// 皮肤由 THEME 接管：关掉库自带配色，语法色映射到调色板。
+// HighlightCode — Shiki（v4.2 起替换 react-syntax-highlighter / Prism）
+// 语法色来自 ./shiki.ts 里由当前主题调色板生成的 TextMate 主题（flat / cel 各一套）。
+// token 是同步算出来的（无 WASM、无 Promise），所以不需要 delayRender。
 // 帧驱动逐行聚焦：讲哪一行，哪一行亮起来。
 // ---------------------------------------------------------------------------
-const syntaxSkin: Record<string, React.CSSProperties> = {
-  'code[class*="language-"]': {
-    color: C.ink,
-    background: 'none',
-    fontFamily: 'Space,Consolas,monospace',
-    fontSize: TYPE.labelM,
-    lineHeight: 1.95,
-    whiteSpace: 'pre',
-  },
-  'pre[class*="language-"]': {background: 'none', margin: 0, padding: 0, overflow: 'visible'},
-  comment: {color: C.muted, fontStyle: 'italic'},
-  prolog: {color: C.muted},
-  punctuation: {color: C.muted},
-  keyword: {color: C.blueInk, fontWeight: 700},
-  'class-name': {color: C.orangeInk, fontWeight: 700},
-  function: {color: C.orangeInk},
-  string: {color: C.greenInk},
-  // number/boolean 原来用 C.orangeDeep —— 那是**填充色**（章节序号渐变深色端），
-  // 当文字时 flat 只有 4.19:1（门禁 P1）。同一张表里其它槽位早就用 Ink 了，
-  // 这两行是漏改：按约定换成 orangeInk（文字安全色），orangeDeep 继续只做填充。
-  number: {color: C.orangeInk},
-  boolean: {color: C.orangeInk},
-  operator: {color: C.muted},
-  builtin: {color: C.blueInk},
-  'attr-name': {color: C.goldInk},
-  tag: {color: C.blueInk},
-  selector: {color: C.greenInk},
-};
-
 export const HighlightCode: React.FC<{
   f: number;
   code: string;
@@ -747,7 +675,8 @@ export const HighlightCode: React.FC<{
   width: number;
   title?: string;
 }> = ({f, code, language, startAt, lineStep, height, width, title}) => {
-  const lineCount = code.split('\n').length;
+  const lines = highlightTokens(code, language);
+  const lineCount = lines.length;
   const activeLine = Math.max(0, Math.min(lineCount - 1, Math.floor((f - startAt) / lineStep)));
   return (
     <div style={{width, height, display: 'flex', flexDirection: 'column'}}>
@@ -782,35 +711,50 @@ export const HighlightCode: React.FC<{
           overflow: 'hidden',
         }}
       >
-        <SyntaxHighlighter
-          language={language}
-          style={syntaxSkin as never}
-          showLineNumbers
-          wrapLines
-          lineNumberStyle={{
-            minWidth: '3.4em',
-            paddingRight: '1.5em',
-            color: C.muted,
-            fontFamily: 'Space,monospace',
-            fontSize: TYPE.microS,
-            opacity: 0.8,
-          }}
-          lineProps={(lineNumber: number) => {
-            const on = lineNumber - 1 === activeLine;
-            return {
-              style: {
-                display: 'block',
-                background: on ? `${C.blue}1f` : 'transparent',
-                borderLeft: `6px solid ${on ? C.blue : 'transparent'}`,
-                paddingLeft: 12,
-                marginLeft: -18,
-                transition: 'none',
-              },
-            };
-          }}
-        >
-          {code}
-        </SyntaxHighlighter>
+        <pre style={{margin: 0, padding: 0, background: 'none', overflow: 'visible'}}>
+          <code style={{display: 'block', fontFamily: 'Space,Consolas,monospace', fontSize: TYPE.labelM, lineHeight: 1.95, whiteSpace: 'pre', color: C.ink}}>
+            {lines.map((tokens, i) => {
+              const on = i === activeLine;
+              return (
+                <span
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    background: on ? `${C.blue}1f` : 'transparent',
+                    borderLeft: `6px solid ${on ? C.blue : 'transparent'}`,
+                    paddingLeft: 12,
+                    marginLeft: -18,
+                  }}
+                >
+                  <span
+                    style={{
+                      flex: '0 0 auto',
+                      minWidth: '3.4em',
+                      paddingRight: '1.5em',
+                      textAlign: 'right',
+                      color: C.muted,
+                      fontFamily: 'Space,monospace',
+                      fontSize: TYPE.microS,
+                      opacity: 0.8,
+                      userSelect: 'none',
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <span>
+                    {tokens.length === 0 || (tokens.length === 1 && tokens[0].content === '') ? ' ' : null}
+                    {tokens.map((t, k) => (
+                      <span key={k} style={{color: t.color, fontWeight: t.bold ? 700 : undefined, fontStyle: t.italic ? 'italic' : undefined}}>
+                        {t.content}
+                      </span>
+                    ))}
+                  </span>
+                </span>
+              );
+            })}
+          </code>
+        </pre>
       </div>
     </div>
   );
@@ -849,61 +793,60 @@ export const MathBlock: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// Icon / IconWall — react-icons（fa 品牌 + fi/lu 线条；见 dependency-policy §7.5）
+// Icon / IconWall — lucide-react（ISC，线条）+ simple-icons（CC0，品牌）
 //
-// **LineIcon 仍是主图标语言**（`kit.tsx` 的 26 字形）；这里只做**题材性标识**：
-// 品牌 logo、技术栈、单点概念的记号。三族的分工：
-//   fa — 品牌实心（React / Python / GitHub …，唯一有品牌 logo 的一族）
-//   fi — Feather 线条（287 字形，政策原有的那一套）
-//   lu — Lucide 线条（1541 字形，**已实测与 fi 同源同款**：同名图标的 attr 与子节点
-//        字节级相同；这次放开它是为了拿到 fi 里没有的 brain / rocket / sparkles /
-//        circle-check / bot / milestone 等增量字形，不需要另装 35 MB 的 lucide-react）
-//
-// 实测发现（见本轮 diag 页④）：fi 与 lu 并排**肉眼无法分辨**，无风格漂移；
-// 唯一可测的差异是 LineIcon（32 视窗 / strokeWidth 2.2）与 fi·lu（24 视窗 / 2）
-// 的**视觉重量**——同一 size 下后者笔画更粗。所以这里统一压一档：
-//   strokeWidth = 2.2 × 24/32 = 1.65，让混排时的笔画重量对齐 LineIcon。
-// 纪律：图标**只用 THEME 给的 color**，不许用自带 fill 或多色。
+// v4.2 起替换 react-icons（fa / fi / lu 三族）：
+//   · 线条图标直接用 lucide-react（以前的 fi / lu 本来就是 Feather / Lucide 的再打包）；
+//   · 品牌 logo 用 simple-icons 的单色 path（CC0，无署名义务；商标规则仍适用），
+//     替换掉 Font Awesome 品牌（CC BY 4.0，需署名）。
+// **LineIcon（kit.tsx）也改成了 lucide 字形**，两处同一套笔画语法。
+// 笔画重量：lucide 是 24 视窗 / strokeWidth 2；与 LineIcon 的 32 视窗 / 2.2 对齐
+//   → 2.2 × 24/32 = 1.65。
+// 纪律：图标**只用 THEME 给的 color**，不许用自带的品牌色或多色。
 // ---------------------------------------------------------------------------
 const ICON_WEIGHT_ALIGN = 1.65;
 
+/** simple-icons 的一个品牌：只取 path 与标题，颜色仍由皮肤决定（不用 si.hex 品牌色）。 */
+type BrandIcon = {title: string; path: string};
+
 export const TOPIC_ICONS = {
-  react: FaReact,
-  node: FaNodeJs,
-  python: FaPython,
-  docker: FaDocker,
-  git: FaGitAlt,
-  npm: FaNpm,
-  github: FaGithub,
-  branch: FaCodeBranch,
-  terminal: FiTerminal,
-  layers: FiLayers,
-  package: FiPackage,
-  cpu: FiCpu,
-  database: FiDatabase,
-  cloud: FiCloud,
-  // ---- lu（Lucide）增量字形：fi 里没有，正是这次放开这一族的理由 ----
-  brain: LuBrain,
-  bot: LuBot,
-  rocket: LuRocket,
-  sparkles: LuSparkles,
-  check: LuCircleCheck,
-  bug: LuBug,
-  ruler: LuRuler,
-  gauge: LuGauge,
-  workflow: LuWorkflow,
-  milestone: LuMilestone,
-  wrench: LuWrench,
-  zap: LuZap,
-  fileCode: LuFileCode,
-  server: LuServer,
-  shield: LuShieldCheck,
-  trend: LuChartLine,
-  puzzle: LuPuzzle,
-  idea: LuLightbulb,
-  flag: LuFlag,
-  refactor: LuGitBranch,
-} as const;
+  // ---- 品牌（simple-icons，实心单色）----
+  react: siReact,
+  node: siNodedotjs,
+  python: siPython,
+  docker: siDocker,
+  git: siGit,
+  npm: siNpm,
+  github: siGithub,
+  // ---- 线条（lucide-react）----
+  branch: GitBranch,
+  terminal: Terminal,
+  layers: Layers,
+  package: Package,
+  cpu: Cpu,
+  database: Database,
+  cloud: Cloud,
+  brain: Brain,
+  bot: Bot,
+  rocket: Rocket,
+  sparkles: Sparkles,
+  check: CircleCheck,
+  bug: Bug,
+  ruler: Ruler,
+  gauge: Gauge,
+  workflow: Workflow,
+  milestone: Milestone,
+  wrench: Wrench,
+  zap: Zap,
+  fileCode: FileCode,
+  server: Server,
+  shield: ShieldCheck,
+  trend: ChartLine,
+  puzzle: Puzzle,
+  idea: Lightbulb,
+  flag: Flag,
+  refactor: GitBranch,
+} as const satisfies Record<string, LucideIcon | BrandIcon>;
 
 export type TopicIconName = keyof typeof TOPIC_ICONS;
 
@@ -944,25 +887,35 @@ export const TOPIC_ICON_TONE: Record<TopicIconName, string> = {
   refactor: C.orange,
 };
 
-/** 单个题材图标：字形来自 react-icons，颜色/尺寸仍由皮肤决定。 */
+/** 单个题材图标：字形来自 lucide-react / simple-icons，颜色/尺寸仍由皮肤决定。 */
 export const TopicIcon: React.FC<{name: TopicIconName; size?: number; color?: string; strokeWidth?: number}> = ({
   name,
   size = 64,
   color,
   strokeWidth = ICON_WEIGHT_ALIGN,
 }) => {
-  const Glyph = TOPIC_ICONS[name];
-  // 2026-09-21 修（实测）：名字不在表里时 `TOPIC_ICONS[name]` 是 undefined，
-  // React 抛的是 minified `#130 Element type is invalid`——一句人话都没有，得拿帧号回查
-  // 才能定位到"是哪个图标名写错了"（S20 用 'chart' / 'map' 两个不存在的名字，整帧渲染直接挂）。
-  // 现在当场把合法名单报出来。
+  const Glyph = TOPIC_ICONS[name] as LucideIcon | BrandIcon | undefined;
+  // 名字不在表里时当场把合法名单报出来（否则 React 只会抛一句 minified #130）。
   if (!Glyph) {
     throw new Error(
       `[TopicIcon] 没有名为 "${String(name)}" 的图标。合法名字（${Object.keys(TOPIC_ICONS).length} 个）：` +
         Object.keys(TOPIC_ICONS).join(', ')
     );
   }
-  return <Glyph size={size} color={color ?? TOPIC_ICON_TONE[name]} strokeWidth={strokeWidth} />;
+  const tone = color ?? TOPIC_ICON_TONE[name];
+  if (typeof Glyph === 'object' && 'path' in Glyph) {
+    // 品牌 logo 是实心剪影，24 视窗；按 0.84 缩一档，让视觉面积与线条图标相当。
+    const s = size * 0.84;
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" role="img" aria-label={Glyph.title}>
+        <g transform={`translate(${(24 - 24 * (s / size)) / 2} ${(24 - 24 * (s / size)) / 2}) scale(${s / size})`}>
+          <path d={Glyph.path} fill={tone} />
+        </g>
+      </svg>
+    );
+  }
+  const Line = Glyph as LucideIcon;
+  return <Line size={size} color={tone} strokeWidth={strokeWidth} />;
 };
 
 /** 图标墙：弹簧错峰入场。等距排列，供「技术栈/依赖」类场景使用。 */

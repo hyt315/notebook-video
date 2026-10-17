@@ -4,6 +4,64 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+## [4.2.0] - 2026-10-17
+
+> 组件换成熟开源件（Phase 3）：能用成熟、帧安全的开源库就不再手写，库的配色一律重映射到 `flat` / `cel` 的主题 token。12 个 Radix 包移除；代码高亮换 Shiki；图标换 lucide-react + simple-icons；`DiffView` 用 jsdiff 算行；`MorphShape` 用 flubber；`Chart` 的轴与形状用 visx。组件数不变（`src/components/` 仍 27 件，全库 53 件），场景 API 向后兼容。
+
+### 删除
+
+- 依赖：12 个 `@radix-ui/react-*`（accordion / checkbox / dialog / dropdown-menu / popover / progress / radio-group / slider / switch / tabs / toggle-group / tooltip）、`react-syntax-highlighter`、`@types/react-syntax-highlighter`、`react-icons`。
+- `kit.tsx` 里 26 个手绘 `LineIcon` SVG 字形；`ControlStack` 的手绘对勾、`Accordion` 的手绘箭头。
+
+### 新增
+
+- 依赖：`shiki` + `@shikijs/langs`（MIT）、`lucide-react`（ISC）、`simple-icons`（CC0-1.0）、`diff`（BSD-3-Clause）、`flubber`（MIT）、`@visx/axis` / `@visx/grid` / `@visx/shape`（MIT）；`@types/react` 显式进 devDependencies（以前是 Radix 的传递依赖，删掉 Radix 后 `tsc` 会找不到 React 类型）。
+- `src/components/shiki.ts`：同步高亮核心（`createHighlighterCoreSync` + JS 正则引擎，无 WASM、无 Promise、无 `delayRender`），由当前主题调色板生成 TextMate 主题；不认识的语言按纯文本渲染。
+- `DiffView` 新增 `before` / `after` / `startAt` / `step`：由 jsdiff 自动算增删行；导出 `diffToLines()`。手写 `lines` 照旧可用（参考片 S3 未改）。
+- `MorphShape` 新增 `engine`（`flubber` 默认 / `remotion`）、`fill`、`maxSegmentLength`；视窗取起止两形状的并集包围盒，变形时不再跟着缩放。
+- `kit.tsx` 导出 `LINE_ICON_GLYPHS`（kind → lucide 组件）。
+- NOTICE 第 8 条登记新库的许可证。
+
+### 变更
+
+- `Accordion` / `Tabs` / `ControlStack` / `OverlayFrame` 改为纯 `<div>`：状态与位置全部由帧号算出。`OverlayFrame` 不再 Portal、不再用 floating-ui 异步定位（落点与以前 `side="bottom" align="start"` 一致）；滑块拇指位置由数值算出，不再靠 ResizeObserver。
+- `HighlightCode`：react-syntax-highlighter（Prism）→ Shiki，props 不变。
+- `LineIcon`：字形改用 lucide-react，API 不变（26 个 kind、`strokeWidth` 仍按 32 视窗口径传，内部 ×24/32）。`TopicIcon` / `IconWall`：品牌改用 simple-icons（只取 path，颜色来自 THEME），线条改用 lucide-react；34 个图标名不变。
+- `DiffView` 的硬编码色值（`#14110f` / `#ff7b72` / `#fdfdfb` …）改为主题 token（`ink` / `red` / `green` / `white`）。
+- `Chart`：Y 轴网格 = `@visx/grid` `GridRows`，刻度与轴线 = `@visx/axis`（刻度字用普通 `<text>`，不用 `@visx/text` 的 DOM 量字），折线/面积/柱/堆叠面积 = `@visx/shape`；d3 仍负责刻度、堆叠、雷达与饼。
+- 版本串：`COMPONENTS_VERSION` → `components-v4.2`，`KIT_VERSION` → `kit-v2`，`FXKIT_VERSION` → `fxkit-v4`。接触表 ② 页的 `DiffView` 改为 before/after 示例；⑨⑩⑫⑰ 页的件名去掉 Radix / react-icons 字样。
+- 文档：`references/dependency-policy.md`（§4.1、§4.4、§4.5 改写为 Shiki、§7.5 图标、§7.7 弹层、新增 §7.8 禁用时间驱动动画库）、`fxkit.md`、`media-routing.md`、`official-aesthetic-system.md`、`SKILL.md`。
+- **未采用 Code Hike**：它的 token 过渡依赖上一步代码的 DOM 快照（逐帧有状态、要测 DOM），与 Remotion 每帧独立渲染冲突，且自带另一套高亮器。
+
+## [4.2.0] - 2026-10-17 (English)
+
+> Mature open-source components (Phase 3): wherever a mature, frame-safe open-source library exists it replaces hand-written code, recoloured to the `flat` / `cel` theme tokens. The 12 Radix packages are gone; code highlighting moves to Shiki; icons to lucide-react + simple-icons; `DiffView` computes its lines with jsdiff; `MorphShape` uses flubber; `Chart` axes and shapes use visx. Component count unchanged (27 in `src/components/`, 53 overall); scene APIs stay backward compatible.
+
+### Removed
+
+- Dependencies: the 12 `@radix-ui/react-*` primitives, `react-syntax-highlighter`, `@types/react-syntax-highlighter`, `react-icons`.
+- The 26 hand-drawn `LineIcon` SVG glyphs in `kit.tsx`, plus the hand-drawn check in `ControlStack` and chevron in `Accordion`.
+
+### Added
+
+- Dependencies: `shiki` + `@shikijs/langs` (MIT), `lucide-react` (ISC), `simple-icons` (CC0-1.0), `diff` (BSD-3-Clause), `flubber` (MIT), `@visx/axis` / `@visx/grid` / `@visx/shape` (MIT); `@types/react` is now an explicit devDependency (it used to arrive transitively through Radix, so `tsc` lost the React types once Radix was removed).
+- `src/components/shiki.ts`: synchronous highlighter (`createHighlighterCoreSync` + the JavaScript regex engine: no WASM, no Promise, no `delayRender`) with a TextMate theme generated from the active palette; unknown languages render as plain text.
+- `DiffView` gains `before` / `after` / `startAt` / `step` (lines computed by jsdiff) and exports `diffToLines()`. Hand-written `lines` still work (reference film S3 unchanged).
+- `MorphShape` gains `engine` (`flubber` default / `remotion`), `fill` and `maxSegmentLength`; its viewBox is the union of both shapes' bounding boxes, so it no longer rescales mid-morph.
+- `kit.tsx` exports `LINE_ICON_GLYPHS` (kind → lucide component).
+- NOTICE item 8 records the new libraries' licences.
+
+### Changed
+
+- `Accordion` / `Tabs` / `ControlStack` / `OverlayFrame` are plain `<div>`s whose state and position come from the frame number. `OverlayFrame` no longer portals or uses floating-ui's asynchronous positioning (placement matches the old `side="bottom" align="start"`); the slider thumb is placed from its value instead of a ResizeObserver.
+- `HighlightCode`: react-syntax-highlighter (Prism) → Shiki, same props.
+- `LineIcon` glyphs come from lucide-react with the same API (26 kinds; `strokeWidth` still in the 32-viewBox scale, converted ×24/32). `TopicIcon` / `IconWall`: brands from simple-icons (path only, theme colour), line marks from lucide-react; the 34 icon names are unchanged.
+- `DiffView`'s hard-coded colours (`#14110f` / `#ff7b72` / `#fdfdfb` …) now come from theme tokens (`ink` / `red` / `green` / `white`).
+- `Chart`: Y grid = `@visx/grid` `GridRows`, ticks and axis lines = `@visx/axis` (tick labels are plain `<text>`, not `@visx/text`'s DOM measuring), line/area/bar/stacked areas = `@visx/shape`; d3 still computes scales, stacks, radar and pie.
+- Version strings: `COMPONENTS_VERSION` → `components-v4.2`, `KIT_VERSION` → `kit-v2`, `FXKIT_VERSION` → `fxkit-v4`. Showcase page ② shows `DiffView` in before/after mode; tile names on ⑨⑩⑫⑰ drop Radix / react-icons.
+- Docs: `references/dependency-policy.md` (§4.1, §4.4, §4.5 rewritten for Shiki, §7.5 icons, §7.7 overlays, new §7.8 banning wall-clock animation libraries), `fxkit.md`, `media-routing.md`, `official-aesthetic-system.md`, `SKILL.md`.
+- **Code Hike not adopted**: its token transitions rely on a DOM snapshot of the previous code step (stateful across frames, DOM measuring), which conflicts with Remotion's independent per-frame rendering, and it ships a second highlighter.
+
 ## [4.1.0] - 2026-10-17
 
 > 视觉识别重做（Phase 2）：`flat` / `cel` 两套皮肤换成基于 Radix Colors 的新调色板与每主题三张新背景；删除 `--classic` 暖象牙纸面示例工程。`new-project --classic` 现在直接报错（rc=2）并提示改用 `--style`。

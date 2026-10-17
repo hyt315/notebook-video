@@ -1,10 +1,11 @@
 import React from 'react';
 import {Easing, interpolate, spring, useCurrentFrame} from 'remotion';
+import {diffLines} from 'diff';
 import {THEME} from './theme/active';
 
 // ============================================================================
 // fxkit · 固定动效组件库 v1（反 PPT 专用）
-// 设计原则：零新依赖（只用 remotion 原生 spring/interpolate）、只做
+// 设计原则：动画只用 remotion 原生 spring/interpolate（v4.2 起 DiffView 用 jsdiff 只做「算行」）、只做
 // transform/opacity 位移动画、cel 皮肤（2.5px 墨线 + 硬偏移阴影 + 纯平填充，
 // 无渐变无模糊阴影）、30fps 确定性（无随机数，伪方差来自序号哈希）。
 // 防出格铁律：所有文字容器高度必须由 fitH() 显式算出，禁止手写"看着差不多"
@@ -234,19 +235,54 @@ export const StaggerList:React.FC<{
   </div>;
 };
 
-export const FXKIT_VERSION = 'fxkit-v3 · 9 components · multi-clock motion · scaleX bars';
+export const FXKIT_VERSION = 'fxkit-v4 · 9 components · multi-clock motion · scaleX bars · DiffView via jsdiff';
+
+// ---- DiffView：补丁 diff。v4.2 起由 jsdiff（`diff` 包，BSD-3-Clause）计算 +/- 行 ----
+// 两种喂法（二选一）：
+//   1. before/after 两段文本 → diffLines 自动算出增删行，按 startAt + i*step 依次入场；
+//   2. 旧的手写 lines[{k,text,at}]（向后兼容，参考片 S3 仍用这种）。
+// 颜色全部来自 THEME：面板底 = ink，文字/标题 = white，删 = red，加 = green（在深底上提亮 35%/25%）。
+export type DiffLine = {k:'-'|'+'|' ';text:string;at:number};
+
+/** jsdiff → DiffView 行。纯函数：同样的输入永远得到同样的行与入场帧。 */
+export const diffToLines = (before:string, after:string, startAt=0, step=14):DiffLine[] => {
+  const out:DiffLine[] = [];
+  for (const part of diffLines(before, after)) {
+    const k:DiffLine['k'] = part.added ? '+' : part.removed ? '-' : ' ';
+    const rows = part.value.replace(/\n$/, '').split('\n');
+    for (const text of rows) out.push({k, text, at: startAt + out.length * step});
+  }
+  return out;
+};
+
+const mixHex = (hex:string, toward:string, t:number) => {
+  const p = (h:string) => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+  const [a,b] = [p(hex), p(toward)];
+  return '#'+a.map((v,i)=>Math.round(v+(b[i]-v)*t).toString(16).padStart(2,'0')).join('');
+};
 
 export const DiffView:React.FC<{
-  x:number;y:number;w:number;title?:string;lines:{k:'-'|'+'|' ';text:string;at:number}[];frame?:number;exitStart?:number;
-}> = ({x,y,w,title='patch.diff',lines,frame,exitStart})=>{
+  x:number;y:number;w:number;title?:string;
+  /** 手写行（与 before/after 二选一） */
+  lines?:DiffLine[];
+  /** 改动前 / 改动后的文本：给了就用 jsdiff 自动算行 */
+  before?:string;after?:string;
+  /** before/after 模式下第一行入场帧与逐行间隔 */
+  startAt?:number;step?:number;
+  frame?:number;exitStart?:number;
+}> = ({x,y,w,title='patch.diff',lines,before,after,startAt=0,step=14,frame,exitStart})=>{
   const f = useF(frame);
-  return <div style={{position:'absolute',left:x,top:y,width:w,background:'#14110f',border:`2.5px solid ${C.ink}`,borderRadius:10,boxShadow:`3px 3px 0 ${C.ink}`,overflow:'hidden',...exitStyle(f,exitStart)}}>
-    <div style={{height:30,display:'flex',alignItems:'center',gap:7,paddingLeft:14,borderBottom:'1.5px solid #2d2621'}}>
+  const rows = React.useMemo(
+    ()=> lines ?? (before!==undefined && after!==undefined ? diffToLines(before, after, startAt, step) : []),
+    [lines, before, after, startAt, step]);
+  const delInk = mixHex(C.red, C.white, 0.35), addInk = mixHex(C.green, C.white, 0.25);
+  return <div style={{position:'absolute',left:x,top:y,width:w,background:C.ink,border:`2.5px solid ${C.ink}`,borderRadius:10,boxShadow:`3px 3px 0 ${C.ink}`,overflow:'hidden',...exitStyle(f,exitStart)}}>
+    <div style={{height:30,display:'flex',alignItems:'center',gap:7,paddingLeft:14,borderBottom:`1.5px solid ${C.white}1f`}}>
       {[C.red,C.gold,C.green].map((c,i)=><span key={i} style={{width:9,height:9,borderRadius:99,background:c}}/>)}
-      <span style={{marginLeft:6,fontFamily:'Space',fontWeight:600,fontSize: 13,letterSpacing:1,color:'#fdfdfb',opacity:.85}}>{title}</span>
+      <span style={{marginLeft:6,fontFamily:'Space',fontWeight:600,fontSize: 13,letterSpacing:1,color:C.white,opacity:.85}}>{title}</span>
     </div>
     <div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:7}}>
-      {lines.map((ln,i)=>{
+      {rows.map((ln,i)=>{
         if(f<ln.at) return null;
         const p = popS(f,ln.at,'snappy');
         // 删除行从**左**退出、更快（12 帧 ease-in）；新增行从**右**进入、更稳（16 帧 ease-out）。
@@ -254,8 +290,8 @@ export const DiffView:React.FC<{
         const dir = ln.k==='-'?-1:1;
         const mp = ln.k==='-'?easeInQuad(f,ln.at,ln.at+12):easeOutSoft(f,ln.at,ln.at+16);
         const sweep = pulse(f,ln.at,16);
-        const col = ln.k==='-'?'#ff7b72':ln.k==='+'?C.green:'#c9c2b8';
-        return <div key={i} style={{position:'relative',display:'flex',gap:10,fontFamily:'Space,monospace',fontWeight:600,fontSize:15,color:ln.k===' '?'#fdfdfb':col,background:ln.k===' '?'none':ln.k==='-'?'rgba(255,59,48,.12)':'rgba(36,188,110,.12)',borderRadius:6,padding:'3px 10px',opacity:p*mp,transform:`translateX(${dir*16*(1-mp)}px)`,whiteSpace:'nowrap',overflow:'hidden'}}>{sweep>0.02&&<span style={{position:'absolute',inset:0,background:`rgba(255,255,255,${0.18*sweep})`,pointerEvents:'none'}}/>}<span>{ln.k}</span><span>{ln.text}</span></div>;
+        const col = ln.k==='-'?delInk:ln.k==='+'?addInk:`${C.white}c4`;
+        return <div key={i} style={{position:'relative',display:'flex',gap:10,fontFamily:'Space,monospace',fontWeight:600,fontSize:15,color:ln.k===' '?C.white:col,background:ln.k===' '?'none':ln.k==='-'?`${C.red}26`:`${C.green}26`,borderRadius:6,padding:'3px 10px',opacity:p*mp,transform:`translateX(${dir*16*(1-mp)}px)`,whiteSpace:'pre',overflow:'hidden'}}>{sweep>0.02&&<span style={{position:'absolute',inset:0,background:`${C.white}${Math.round(0.18*sweep*255).toString(16).padStart(2,'0')}`,pointerEvents:'none'}}/>}<span>{ln.k}</span><span>{ln.text}</span></div>;
       })}
     </div>
   </div>;

@@ -53,6 +53,7 @@ DOC_IDENT_WHITELIST = {
     'FFmpeg', 'FFprobe', 'TrueType', 'Typekit', 'Tailwind', 'Emotion', 'Panda', 'Mantine', 'Chakra',
     'HeroUI', 'DaisyUI', 'Storybook', 'Lottie', 'GIF', 'WebP', 'LineBreaker', 'Fflate', 'Lucide',
     'Feather', 'Tabler', 'Simple', 'Icons', 'OpenSCAD',
+    'Shiki', 'CodeHike', 'LinePath', 'AreaClosed', 'Area', 'Bar', 'GridRows', 'AxisLeft', 'AxisBottom',  # v4.2 第三方库的 API 名
     # 规范 / 标准 / 许可
     'WCAG', 'OFL', 'MIT', 'ISC', 'Apache', 'MPL', 'UAX', 'CJK', 'SDH', 'TTS', 'ASR', 'LLM', 'AI',
     'BM25', 'EEG', 'ANN', 'SaaS', 'PDF', 'PDFs', 'PPT', 'VIP', 'IDE', 'LRU',

@@ -1,5 +1,5 @@
 // ============================================================================
-// external-types.d.ts — 两个「没有自带类型」的依赖的本地声明
+// external-types.d.ts — 「没有自带类型」的依赖的本地声明（world-atlas / topojson-client / flubber）
 //
 // 为什么手写而不是装 @types：
 //   · `world-atlas` 是纯数据包（只发 JSON，无 main / 无 types）；
@@ -37,4 +37,13 @@ declare module 'topojson-client' {
    * 传单个几何得 Feature。返回的是**新对象**，不修改入参。
    */
   export function feature(topology: Topology, object: TopoObject): Feature | FeatureCollection;
+}
+
+// flubber（MIT）没有自带类型。只声明本仓库用到的 `interpolate`（MorphShape）。
+declare module 'flubber' {
+  export function interpolate(
+    fromShape: string | [number, number][],
+    toShape: string | [number, number][],
+    options?: {maxSegmentLength?: number; string?: boolean}
+  ): (t: number) => string;
 }

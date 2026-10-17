@@ -12,4 +12,13 @@ and bundles the following third-party materials:
 7. Theme colour values — hex values vendored from Radix Colors v3 (MIT License, Copyright (c) 2021 Radix, https://github.com/radix-ui/colors); no Radix Colors package is installed or redistributed. Source steps are annotated next to each token in `assets/lecture-template/src/theme/flat.tsx` and `cel.tsx`.
 6. Map data and its TopoJSON reader — `world-atlas` (Copyright 2013-2019 Michael Bostock, ISC) and `topojson-client` (Copyright 2012-2019 Michael Bostock, ISC), used by the template's `GeoView`/`data.tsx`. **本仓库不分发这两个包，也不在仓库里放地图数据副本**：它们由 `assets/lecture-template/package.json` 的依赖声明在 `npm install` 时安装，ISC 的版权与许可声明随包保留在 `node_modules/<包名>/LICENSE`。渲染期只取 `world-atlas` 的 `land-110m.json`（世界陆地轮廓，无国界/无城市点）。登记与选型理由见 `references/dependency-policy.md` §4.2。
 
+8. Component libraries added in v4.2 (installed by `npm install` from `assets/lecture-template/package.json`; **not redistributed in this repository**, their licence files stay in `node_modules/<package>/`):
+   - `shiki`, `@shikijs/langs` (MIT, Copyright (c) Pine Wu / Anthony Fu) — code highlighting for `HighlightCode`. The TextMate grammars it ships keep their upstream licences (listed in each grammar file).
+   - `lucide-react` (ISC, Copyright (c) Lucide Contributors; portions derived from Feather, MIT, Copyright (c) 2013-2023 Cole Bemis) — line icons for `LineIcon` and `TopicIcon`.
+   - `simple-icons` (CC0-1.0) — brand logo paths for `TopicIcon`. The icon data is public domain, but the brands themselves are trademarks of their respective owners; they are used only to name the technology and imply no endorsement.
+   - `diff` / jsdiff (BSD-3-Clause, Copyright (c) 2009-2015 Kevin Decker) — line diffs for `DiffView`.
+   - `flubber` (MIT, Copyright (c) 2017 Noah Veltman) — shape interpolation for `MorphShape`; its dependency `d3-polygon` and its bundled `d3-array@1` are BSD-3-Clause (Copyright Mike Bostock).
+   - `@visx/axis`, `@visx/grid`, `@visx/shape` and their `@visx/*` dependencies (MIT, Copyright (c) 2017-2018 Harry Shoff / Airbnb) — chart axes, grid and shapes for `Chart`; `@visx/vendor` re-exports d3 modules (ISC) and pulls `robust-predicates` (Unlicense).
+   Removed in v4.2: the twelve `@radix-ui/react-*` primitives, `react-syntax-highlighter` and `react-icons` (and with it the Font Awesome brand icons, CC BY 4.0).
+
 The repository-level license must not override these third-party license notices.
