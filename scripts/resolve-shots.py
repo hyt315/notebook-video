@@ -70,6 +70,15 @@ def expand_cam(cam: dict, duration: int) -> list[dict]:
     if intent in ("establish", "push-in", "pull-back", "reveal"):
         return [head, {"f": at, "x": x, "y": y, "s": k1}, {"f": at + span, "x": x, "y": y, "s": to}, {"f": hold, "x": x, "y": y, "s": to}]
     if intent == "pan-follow":
+        # v4.4：平移想走多远，缩放就自动抬到能覆盖它（maxPan = 960*(1-1/s)），否则运行时会被静默削减
+        # 成几乎不动（v4.3 的 S6 只剩 ±37px）。显式写了更大的 from/to 照用。
+        need_dx = max(abs(fx - STAGE_CX), abs(x - STAGE_CX))
+        need_dy = max(abs(fy - STAGE_CY), abs(y - STAGE_CY))
+        need = max(STAGE_CX / max(1.0, STAGE_CX - need_dx), STAGE_CY / max(1.0, STAGE_CY - need_dy))
+        need = round(need + 0.005, 3) if need > 1.0 + 1e-9 else 1.0
+        frm = max(frm, need)
+        to = max(to, need)
+        head = {"f": 0, "x": fx, "y": fy, "s": frm}
         return [head, {"f": at, "x": fx, "y": fy, "s": frm}, {"f": at + span, "x": x, "y": y, "s": to}, {"f": hold, "x": x, "y": y, "s": to}]
     if intent == "micro-orbit":
         return [{**head, "rotY": 0}, {"f": at, "x": x, "y": y, "s": frm, "rotY": 0}, {"f": at + span, "x": x, "y": y, "s": to, "rotY": rot}, {"f": hold, "x": x, "y": y, "s": to, "rotY": rot}]
@@ -77,6 +86,84 @@ def expand_cam(cam: dict, duration: int) -> list[dict]:
     # 显式写了 to 的 still 以前在这里被**整枚丢掉**（PY 用 frm，TS 用 to），Δ 可达 0.20；
     # 现在 to 默认回落 frm，两者一致，只有"写了 to 却不动"的镜会按新行为真的推到 to。
     return [head, {"f": duration, "x": x, "y": y, "s": to}]
+
+
+REGIONS = ("left", "right", "top", "bottom", "center", "top-left", "top-right", "bottom-left", "bottom-right")
+TRANSITIONS = ("auto", "cut", "reveal", "handoff", "whip", "whip-left", "whip-right", "zoom", "fade", "hard")
+
+
+def region_rect(r: str, band: dict) -> dict:
+    """与 src/cinema.tsx 的 regionRect 同式。"""
+    x, y, w, h = band["x"], band["y"], band["w"], band["h"]
+    hw, hh = w / 2, h / 2
+    table = {
+        "left": (x, y, hw, h), "right": (x + hw, y, hw, h), "top": (x, y, w, hh), "bottom": (x, y + hh, w, hh),
+        "top-left": (x, y, hw, hh), "top-right": (x + hw, y, hw, hh), "bottom-left": (x, y + hh, hw, hh),
+        "bottom-right": (x + hw, y + hh, hw, hh),
+    }
+    rx, ry, rw, rh = table.get(r, (x + w * 0.2, y + h * 0.15, w * 0.6, h * 0.7))
+    return {"x": round(rx, 1), "y": round(ry, 1), "w": round(rw, 1), "h": round(rh, 1)}
+
+
+def resolve_cinema(s: dict, sid: str, frm: int, duration: int, cues: list, problems: list) -> dict:
+    """分镜表 `cinema` 块 → 引擎可直接消费的形式（焦点的 beat/cue 换成本镜本地帧）。
+
+    cinema: {
+      drift: "auto" | "none" | 0.0–0.08,
+      focus: [{beat: 1 | at: 40 | cue: 5, region: "right" | x,y,w,h, zoom?: 1.25, hold?: 60}],
+      pan: {worldW: 2800, beat?: 0, at?: 10, dur?: 90, dir?: "ltr" | "rtl"}
+    }"""
+    c = s.get("cinema") or {}
+    band = s.get("contentBand") or {"x": 160, "y": 130, "w": 1600, "h": 760}
+    beats = [(ms_frame(cues[int(bt["cue"])]["start_ms"]) + int(bt.get("offset", 0)) - frm) for bt in (s.get("beats") or [])]
+    drift = c.get("drift", "auto")
+    if not (drift in ("auto", "none") or isinstance(drift, (int, float))):
+        problems.append(f"{sid}: cinema.drift 必须是 auto / none / 数字")
+        drift = "auto"
+    out: dict = {"drift": drift}
+    focus = []
+    for i, fk in enumerate(c.get("focus") or []):
+        if "beat" in fk:
+            b = int(fk["beat"])
+            if b < 0 or b >= len(beats):
+                problems.append(f"{sid}: cinema.focus[{i}].beat={b} 越界（本镜 {len(beats)} 拍）")
+                continue
+            at = beats[b] + int(fk.get("offset", 0))
+        elif "cue" in fk:
+            at = ms_frame(cues[int(fk["cue"])]["start_ms"]) - frm + int(fk.get("offset", 0))
+        else:
+            at = int(fk.get("at", 0))
+        if "region" in fk:
+            if fk["region"] not in REGIONS:
+                problems.append(f"{sid}: cinema.focus[{i}].region={fk['region']!r} 不是 {REGIONS} 之一")
+                continue
+            rect = region_rect(fk["region"], band)
+        elif all(k in fk for k in ("x", "y", "w", "h")):
+            rect = {k: float(fk[k]) for k in ("x", "y", "w", "h")}
+        else:
+            problems.append(f"{sid}: cinema.focus[{i}] 需要 region 或 x/y/w/h")
+            continue
+        default_hold = 60
+        hold = int(fk.get("hold", default_hold))
+        hold = max(10, min(hold, duration - at - 4))
+        item = {"at": at, "hold": hold, "rect": rect}
+        if fk.get("zoom") is not None:
+            item["zoom"] = float(fk["zoom"])
+        focus.append(item)
+    if focus:
+        out["focus"] = focus
+    pan = c.get("pan")
+    if pan:
+        ww = int(pan.get("worldW", 0))
+        if ww <= 1920:
+            problems.append(f"{sid}: cinema.pan.worldW={ww} 必须 > 1920（宽画布才需要横摇）")
+        else:
+            at = beats[int(pan["beat"])] if "beat" in pan and int(pan["beat"]) < len(beats) else int(pan.get("at", 10))
+            dur = int(pan.get("dur", max(45, duration - at - 30)))
+            out["pan"] = {"worldW": ww, "at": at, "dur": dur, "dir": pan.get("dir", "ltr")}
+    if s.get("transition") is not None and s["transition"] not in TRANSITIONS:
+        problems.append(f"{sid}: transition={s['transition']!r} 不是 {TRANSITIONS} 之一")
+    return out
 
 
 def js(v) -> str:
@@ -167,9 +254,10 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
             "anchor": s.get("anchor"),
             "hero": s.get("hero"),
             "cover": s.get("cover"),
-            "transition": s.get("transition", "cut"),
+            # v4.4：缺省 auto（章节首镜 zoom 推穿、其余 whip 甩镜）；cut/reveal 是旧写法，引擎按 auto 处理，hard = 真硬切
+            "transition": s.get("transition", "auto"),
             # v3.0.1：由分镜表推导，场景层不再手写这个布尔（消除"表说 cut、代码写 reveal"的不一致）
-            "reveal": s.get("transition", "cut") == "reveal",
+            "reveal": s.get("transition", "auto") == "reveal",
             "entry": s.get("entry", "rise"),
             "explanation": bool(s.get("explanation", True)),
             "zones": s.get("zones"),
@@ -208,6 +296,8 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
                 rec["sfx"] = sfx
         if s.get("sfxAuto") is not None:
             rec["sfxAuto"] = bool(s["sfxAuto"])
+        # v4.4：引擎摄影机（src/cinema.tsx）。不写 cinema 也会输出缺省 {drift:'auto'}，引擎照样慢推/漂移。
+        rec["cinema"] = resolve_cinema(s, sid, frm, duration, cues, problems)
         out.append(rec)
         cursor = to
     total = cursor

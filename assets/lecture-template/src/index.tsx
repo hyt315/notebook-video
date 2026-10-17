@@ -45,6 +45,7 @@ import {FillGate} from './fill-gate';
 import {CanvasBoundsGate} from './canvas-bounds-gate';
 import {MascotGate} from './mascot-gate';
 import {planSfx, SFX_BED, BED_GAIN} from './sfx';
+import {CINEMA, cinemaCamAt, cinemaTransform, parallaxTransform, resolveTransition, transitionStyle, WhipBlur, whipOffset} from './cinema';
 import {SHOTS, SHOT_IDS, SHOT_TOTAL} from './shots';
 import {SCENES} from './scenes';
 import {FontFaces} from './fonts';
@@ -273,31 +274,49 @@ const Chrome=()=>{
   </>;
 };
 
-const HANDOFF=10; // 镜头边界的交接帧数：下一镜开始时把上一镜末帧叠上来淡出，避免出现空帧
+// v4.4 引擎级虚拟摄影机（src/cinema.tsx）：每镜自动慢推/漂移、按分镜表 `cinema.focus` 推近当前拍、
+// 宽画布横摇、镜间 whip/zoom 转场、背景视差。分镜表什么都不写也有默认运动。
+const TRANS=CINEMA.transition; // 镜间转场帧数（替代旧版 10 帧交叉淡化）
+const shotIndexAt=(f:number)=>{let idx=0;for(let i=0;i<SHOT_IDS.length;i++){ if(f>=SHOTS[SHOT_IDS[i]].from) idx=i; }return idx;};
+const camFor=(i:number,local:number)=>{const s:any=(SHOTS as any)[SHOT_IDS[i]];return cinemaCamAt(s.cinema,local,s.duration,i,s.keys);};
+const transFor=(i:number)=>{const s:any=(SHOTS as any)[SHOT_IDS[i]];return resolveTransition(s.transition,i,(CHAPTER_STARTS as readonly number[]).includes(s.from));};
 const FinalDemo=()=>{
-  // 只挂载活动镜头（性能契约）：由分镜表决定当前是哪一镜。
+  // 只挂载活动镜头（性能契约）：由分镜表决定当前是哪一镜；转场期间额外挂上一镜的末帧。
   const f=q(useCurrentFrame());
-  let idx=0;
-  for(let i=0;i<SHOT_IDS.length;i++){ if(f>=SHOTS[SHOT_IDS[i]].from) idx=i; }
+  const idx=shotIndexAt(f);
   const id=SHOT_IDS[idx];
   const s=SHOTS[id];
+  const local=f-s.from;
   const prevId=idx>0?SHOT_IDS[idx-1]:null;
   const Scene=SCENES[id];
   const PrevScene=prevId?SCENES[prevId]:null;
-  const handoffP=prevId?Math.max(0,1-(f-s.from)/HANDOFF):0;
+  const kind=transFor(idx);
+  const p=kind&&kind!=='hard'?local/TRANS:1;
+  const inTrans=p<1&&!!PrevScene;
+  const out=inTrans&&kind?transitionStyle(kind,p,'out'):null;
+  const inn=inTrans&&kind?transitionStyle(kind,p,'in'):{transform:'none',opacity:1,blur:0};
+  const cam=camFor(idx,local);
+  const world=(c:any,child:React.ReactNode)=><div data-cinema-world style={{position:'absolute',inset:0,transformOrigin:'0 0',transform:cinemaTransform(c)}}>{child}</div>;
   return <>
-    {PrevScene&&prevId&&handoffP>0.01&&(
-      <div data-gate-allow="handoff" style={{position:'absolute',inset:0,zIndex:130,opacity:handoffP}}><PrevScene f={SHOTS[prevId].duration-1}/></div>
+    {out&&<WhipBlur id="nv-whip-out" amount={out.blur}/>}
+    {inTrans&&<WhipBlur id="nv-whip-in" amount={inn.blur}/>}
+    {PrevScene&&prevId&&out&&out.opacity>0.01&&(
+      <div data-gate-allow="handoff" style={{position:'absolute',inset:0,zIndex:130,opacity:out.opacity,transform:out.transform,transformOrigin:'960px 540px',filter:out.blur>0.3?'url(#nv-whip-out)':undefined}}>
+        {world(camFor(idx-1,SHOTS[prevId].duration-1),<PrevScene f={SHOTS[prevId].duration-1}/>)}
+      </div>
     )}
-    {f<s.to&&<Scene f={f-s.from}/>}
+    {f<s.to&&<div {...(inTrans?{'data-gate-allow':'handoff'}:{})} style={{position:'absolute',inset:0,opacity:inn.opacity,transform:inn.transform,transformOrigin:'960px 540px',filter:inn.blur>0.3?'url(#nv-whip-in)':undefined}}>
+      {world(cam,<Scene f={local}/>)}
+    </div>}
   </>;
 };
 
 
-// 背景变体（v4.1）：每镜一张，由分镜表推导，镜头交接时与上一镜的背景交叉淡化 HANDOFF 帧。
+// 背景变体（v4.1）：每镜一张，由分镜表推导，镜头交接时与上一镜的背景交叉淡化 TRANS 帧。
 //   · 分镜表里写了 `bg: 'main' | 'chapter' | 'quiet'` → 照写的用；
 //   · 否则：章节首镜 → chapter；信息密集（zones ≥ 4）→ quiet；其余 → main。
 // 三张图的中央约 70% 都是安静的安全区，所以镜头内容直接压在背景上，不再铺整幅半透明底托。
+// v4.4：背景按 CINEMA.parallax 跟随摄影机（视差），转场时随甩镜一起移动。
 const bgVariantFor=(id:string):BgVariant=>{
   const s:any=(SHOTS as any)[id];
   if(s?.bg==='main'||s?.bg==='chapter'||s?.bg==='quiet') return s.bg;
@@ -307,15 +326,17 @@ const bgVariantFor=(id:string):BgVariant=>{
 };
 const Backdrop=()=>{
   const f=q(useCurrentFrame());
-  let idx=0;
-  for(let i=0;i<SHOT_IDS.length;i++){ if(f>=SHOTS[SHOT_IDS[i]].from) idx=i; }
+  const idx=shotIndexAt(f);
+  const local=f-SHOTS[SHOT_IDS[idx]].from;
   const cur=bgVariantFor(SHOT_IDS[idx]);
   const prev=idx>0?bgVariantFor(SHOT_IDS[idx-1]):cur;
-  const p=prev!==cur?Math.max(0,1-(f-SHOTS[SHOT_IDS[idx]].from)/HANDOFF):0;
-  return <>
+  const p=prev!==cur?Math.max(0,1-local/TRANS):0;
+  const kind=transFor(idx);
+  const tf=parallaxTransform(camFor(idx,local),whipOffset(kind,local/TRANS));
+  return <AbsoluteFill style={{transform:tf,transformOrigin:'960px 540px'}}>
     <Background variant={cur}/>
     {p>0.01&&<AbsoluteFill style={{opacity:p}}><Background variant={prev}/></AbsoluteFill>}
-  </>;
+  </AbsoluteFill>;
 };
 
 // 音效（v4.3）：预制语义音效库 + 按分镜表语义自动排（src/sfx.ts 的 planSfx）。
