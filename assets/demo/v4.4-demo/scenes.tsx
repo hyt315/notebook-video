@@ -6,7 +6,7 @@ import {DiffView, FitCard, ProgressRing} from './fxkit';
 import {ShotCamera} from './shotkit';
 import {ConsoleWindow} from './media';
 import {Corridor, SplitStage} from './skeletons';
-import {RevealMask} from './insert';
+import {RevealMask} from './insert'; // 本片 S1–S8 都用引擎转场；Shot 仍支持 reveal（镜内揭示）
 import {KineticNumber, popIn} from './cinema';
 import {Chart, HighlightCode, StatRow, TreeView, VerdictBar} from './components';
 import {SHOTS} from './shots';
@@ -119,7 +119,7 @@ const S3: React.FC<{f: number}> = ({f}) => {
 const S4: React.FC<{f: number}> = ({f}) => {
   const at = beatAt('S4');
   return (
-    <Shot id="S4" f={f} entry="zoom" reveal>
+    <Shot id="S4" f={f} entry="zoom">
       <div style={enterAt(f, at(0))}>
         <DiffView x={200} y={220} w={1060} frame={f} title="add-cache.diff" startAt={at(0, 10)} step={10} fontSize={28}
           before={'def handler(req):\n    rows = db.query(SQL_REPORT, req.day)\n    return aggregate(rows)'}
@@ -167,9 +167,9 @@ const S6: React.FC<{f: number}> = ({f}) => {
         <ProgressRing size={420} pct={0.8} label="命中率" color={C.green} start={at(0, 6)} duration={40} frame={f} />
         <div style={{marginTop: 20, fontSize: 44, fontWeight: 700, color: C.ink}}>缓存命中率</div>
       </div>
-      <div style={{position: 'absolute', left: 880, top: 230, width: 840, height: 560, background: C.paper, border: `2.5px solid ${C.line}`, borderRadius: 16, padding: 26, ...popIn(f, at(1), {from: 'right'})}}>
+      <div style={{position: 'absolute', left: 880, top: 230, width: 840, height: 560, background: C.paper, border: `2.5px solid ${C.line}`, borderRadius: 16, padding: 26, ...popIn(f, at(0, 8), {from: 'right'})}}>
         <div style={{fontSize: TYPE.titleS, fontWeight: 700, color: C.muted, marginBottom: 12}}>请求在哪一层被接住</div>
-        <TreeView f={f} startAt={at(1, 6)} width={780} height={460} nodeW={190} nodeH={52} step={10}
+        <TreeView f={f} startAt={at(0, 14)} width={780} height={460} nodeW={220} nodeH={64} step={9}
           data={{name: 'API 服务', children: [
             {name: '缓存层', children: [{name: '命中 80%'}, {name: '未命中 20%'}]},
             {name: '数据库', children: [{name: '只处理未命中'}]},

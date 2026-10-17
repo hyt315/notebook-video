@@ -37,6 +37,7 @@
 | 核心特性 | 功能说明 | 带来价值 |
 | --- | --- | --- |
 | **一句话成片** | 从主题到 2K MP4：写稿 → 配音 → 词级时间戳 → 语义断句字幕 → 分镜 → 场景 → 门禁 → 渲染 → 接触表验收 | 不用手工排帧、不用逐句对字幕 |
+| **引擎虚拟镜头（v4.4）** | 每镜缺省缓推；`cinema.focus` 讲到哪推到哪、镜头横摇；换镜用甩镜 / 推穿；背景视差；内容自动放大到安全区 60–80%；关键数字计数 + 弹出；字幕每行 ≤ 16 字；相邻镜头必须换布局 | 去掉「翻幻灯片」的观感，分镜表不写也有运动 |
 | **四种场景骨架** | `Stage`（一个主体演化）/ `Corridor`（对象沿轨道穿站）/ `Split`（双栏对比）/ `Zoom`（整体→聚焦→标注→回整体）；**相邻场景不得同款、全片 ≥3 种** | 从结构上消灭「四个 PPT 页」 |
 | **内容 → 视觉介质路由** | 控制台窗 / 图表 / 代码补丁 / 大字 / 指标网格 / 概念图；**每支片 ≥3 种介质**，每个讲解场景至少一个**会随旁白变状态**的组件 | 画面不再只有「卡片 + 文字」一种介质 |
 | **受限镜头语言** | 每镜 6 种意图 + `anchor` 出界证明 + 平移预算；**声明了运镜就必须真的动** | 有运镜但不失控：内容永远不会被推出画面 |
@@ -221,7 +222,7 @@ node scripts/notebook-video.mjs review-frames ./my-video r.mp4 0 570
 | **动手前** | [`locked-style-contract.json`](references/locked-style-contract.json) | 绑定令牌、坐标与禁用项（不可改） |
 | **写场景前** | [`scene-authoring.md`](references/scene-authoring.md) · [`scene-skeletons.md`](references/scene-skeletons.md) | 场景代码的标准形状、四种骨架、十个反复踩的坑 |
 | **选组件前** | [`media-routing.md`](references/media-routing.md) 的「修辞动作 → 组件」表 · [`fxkit.md`](references/fxkit.md) | 这个动作该用哪一件、**何时别用**、`frame` 与 `f` 的命名陷阱 |
-| **排分镜前** | [`media-routing.md`](references/media-routing.md) · [`shot-language.md`](references/shot-language.md) | 内容→介质路由、六个运镜意图（+ `still`）、缩放与平移预算 |
+| **排分镜前** | [`media-routing.md`](references/media-routing.md) · [`shot-language.md`](references/shot-language.md) · [`cinema-camera.md`](references/cinema-camera.md) | 内容→介质路由、六个运镜意图（+ `still`）、缩放与平移预算、引擎虚拟镜头（讲到哪推到哪、转场、内容自动放大） |
 | **写作前** | [`narrative-hook.md`](references/narrative-hook.md) · [`pacing-rhythm.md`](references/pacing-rhythm.md) | 前 3 秒怎么抓人、章节能量与呼吸 |
 | **做完对照** | [`composition-gate.md`](references/composition-gate.md) · [`quality-checklist.md`](references/quality-checklist.md) | 每道门禁的判据、失败怎么修、交付事实卡 |
 | **配音与字幕** | [`tts-audio.md`](references/tts-audio.md) · [`subtitle-timing.md`](references/subtitle-timing.md) | 多音字规避、定速、词级时间戳、音效词汇 |
@@ -236,7 +237,7 @@ notebook-video/
 ├── SKILL.md                          # 核心技能定义与制作工作流
 ├── manifest.json                     # 技能元数据（版本号在此）
 ├── README.md / README.en.md          # 中英文说明
-├── CHANGELOG.md                      # 版本发布记录（当前 v4.2.0）
+├── CHANGELOG.md                      # 版本发布记录（当前 v4.4.0）
 ├── assets/
 │   ├── demo/                         # 成片与动图预览
 │   └── lecture-template/             # 唯一官方模板（flat + cel 两套皮肤，含 8 镜示例片）
@@ -252,6 +253,7 @@ notebook-video/
 └── references/                       # 按需加载的规范与手册
     ├── scene-authoring.md            # ★ 场景编写说明书（照着抄）
     ├── shot-language.md              # 镜头意图、缩放预算、出界证明
+    ├── cinema-camera.md              # v4.4 引擎虚拟镜头、内容自动放大、KineticNumber
     ├── scene-skeletons.md            # 四种骨架与分镜表结构
     ├── media-routing.md              # 内容→介质路由、A/B 场景、背景契约
     ├── composition-gate.md           # 全部门禁的判据与修法

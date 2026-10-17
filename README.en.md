@@ -37,6 +37,7 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 | Feature | What it does | Why it matters |
 | --- | --- | --- |
 | **One sentence to a film** | Topic → 2K MP4: script → TTS → word timings → semantic captions → shot table → scenes → gates → render → contact sheet | No hand-placing frames, no sentence-by-sentence caption fiddling |
+| **Engine virtual camera (v4.4)** | Default push-in per shot; `cinema.focus` pushes to whatever the narration is talking about and pans between targets; whip / zoom-through transitions; background parallax; content auto-enlarged to 60–80 % of the safe area; kinetic numbers; ≤ 16-character subtitle lines; adjacent shots must change layout | Removes the slide-deck feel; motion even when the shot table says nothing |
 | **Four scene skeletons** | `Stage` (one subject evolves) / `Corridor` (an object travels a track) / `Split` (two-column contrast) / `Zoom` (wide → detail → annotation → wide); **no two adjacent scenes may share one, ≥3 per film** | Kills "four PowerPoint pages" structurally |
 | **Content → medium routing** | Console window / chart / code diff / display type / metric grid / concept diagram; **≥3 media per film**, and every explanation scene carries at least one component that **changes state as the narration proceeds** | The frame stops being "card + paragraph" forever |
 | **Restricted camera language** | Six intents per shot + an `anchor` out-of-bounds proof + a pan budget; **a declared move must actually move** | Real camera movement that can never push content off screen |
@@ -227,7 +228,7 @@ node scripts/notebook-video.mjs review-frames ./my-video r.mp4 0 570
 | **Before anything** | [`locked-style-contract.json`](references/locked-style-contract.json) | binding tokens, coordinates, rejection flags |
 | **Before writing scenes** | [`scene-authoring.md`](references/scene-authoring.md) · [`scene-skeletons.md`](references/scene-skeletons.md) | the canonical scene shape, four skeletons, ten recurring pitfalls |
 | **Before choosing a component** | the gesture→component table in [`media-routing.md`](references/media-routing.md) · [`fxkit.md`](references/fxkit.md) | which component fits this rhetorical move, **when not to use it**, and the `frame` vs `f` trap |
-| **Before the shot table** | [`media-routing.md`](references/media-routing.md) · [`shot-language.md`](references/shot-language.md) | content→medium routing, six camera intents, zoom and pan budgets |
+| **Before the shot table** | [`media-routing.md`](references/media-routing.md) · [`shot-language.md`](references/shot-language.md) · [`cinema-camera.md`](references/cinema-camera.md) | content→medium routing, six camera intents, zoom and pan budgets |
 | **Before writing** | [`narrative-hook.md`](references/narrative-hook.md) · [`pacing-rhythm.md`](references/pacing-rhythm.md) | the first three seconds, chapter energy and breathing |
 | **Before delivery** | [`composition-gate.md`](references/composition-gate.md) · [`quality-checklist.md`](references/quality-checklist.md) | every gate's criteria, the fix runbook, the delivery fact card |
 | **Audio and captions** | [`tts-audio.md`](references/tts-audio.md) · [`subtitle-timing.md`](references/subtitle-timing.md) | polyphones, pace, word timings, sound vocabulary |
@@ -242,7 +243,7 @@ notebook-video/
 ├── SKILL.md                          # Core skill definition and production workflow
 ├── manifest.json                     # Skill metadata (version lives here)
 ├── README.md / README.en.md          # Chinese / English documentation
-├── CHANGELOG.md                      # Version history (currently v4.2.0)
+├── CHANGELOG.md                      # Version history (currently v4.4.0)
 ├── LICENSE                           # Apache License 2.0
 ├── NOTICE                            # Third-party font / asset / dependency notices
 ├── CONTRIBUTING.md · CODE_OF_CONDUCT.md · SECURITY.md · SUPPORT.md
@@ -260,6 +261,7 @@ notebook-video/
 └── references/                       # Load-on-demand specs and manuals
     ├── scene-authoring.md            # ★ Scene authoring guide (copy this shape)
     ├── shot-language.md              # Camera intents, zoom budgets, out-of-bounds proof
+    ├── cinema-camera.md              # v4.4 engine virtual camera, content auto-fit, KineticNumber
     ├── scene-skeletons.md            # The four skeletons and the shot-table schema
     ├── media-routing.md              # Content→medium routing, A/B scenes, background contract
     ├── composition-gate.md           # Every gate's criteria and its fix

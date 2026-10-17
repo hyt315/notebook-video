@@ -47,7 +47,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 | 几何 / 图形强调 | 参数化图形 | **`ShapeDraw` / `SHAPES`（components，@remotion/shapes）** ← 五角星/六边形/星芒/**标注框 callout**/**箭头 arrow**/**心形 heart** 都不用手画。**饼图/份额别找图形件**：有数据用 `Chart variant="pie"`（带扇区百分比 + 图例），只有一个百分比用 `ProgressRing` |
 | 指向 / 沿线运动 | 箭头沿路径跑并自动转向 | **`PathDraw` 的 `showArrow`（components，`getTangentAtLength`）** ← 此前要自己差分算切线 |
 | 证据 / 细节 | 纯代码局部放大 | `ZoomStage`（skeletons） |
-| 指标结论 | 一排指标卡（数字随帧滚动）→ **`StatRow`**；全宽收束条 → **`VerdictBar`**（均在 `components/`）；前后值成对 → `MetricGrid`；吸底盖章 → `StampBanner`（media） |
+| 指标结论 | 一个主角数字 → **`KineticNumber`**（`cinema.tsx`）；一排指标卡（数字随帧滚动）→ **`StatRow`**；全宽收束条 → **`VerdictBar`**（均在 `components/`）；前后值成对 → `MetricGrid`；吸底盖章 → `StampBanner`（media） |
 | 对话 / 交互 / 提示词 | 拟真对话窗 / 气泡 | `ChatThread`（fxkit） |
 | 层级 / 树状结构 | 目录树 / 组织图 → `TreeView`；**占比与层级用"面积＝数值"表达 → `TreeView` 的 `variant`：`treemap` 矩形树图 / `pack` 圆形打包 / `sunburst` 旭日图**（均在 `components/`，d3-hierarchy） |
 | 地理 / 全球视野 | 地球 / 地图 | **`GeoView`（`components/`，d3-geo + `world-atlas` 陆地轮廓）** ← 画的是**真陆地轮廓**（`land-110m`，55 KB 进 bundle）并可叠经纬度标记点；`projection="flat"`（naturalEarth1）看全局、默认正交投影可 `spin` 自转。**不含国界与地名**（要国界得换 `countries-110m.json` 并另立一件，别偷偷扩 `GeoView` 的语义） |
@@ -216,6 +216,7 @@ wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的�
 | `IconWall`（components） | 图标墙（弹簧错峰入场） | 技术栈/依赖清单要具象成一堵墙 | 图标不是内容时别用（纯装饰） | ⑩ | 未使用 |
 | `Chart`（components） | d3 算刻度与路径；7 个 `variant`（line/area/stack/stackExpand/stream/radar/pie），可直接喂 CSV | 数据/趋势/分布/多值对比；真实数据进图 | 只有一个百分比→`ProgressRing`；只有前后两值→`MetricGrid`；柱状用默认 line + `series` 驱动（未知 `variant` 直接抛错） | ①⑨⑭⑮ | 未使用 |
 | `StatRow`（components） | 指标卡一行，数字随帧滚动（字符串值直显） | 报一个大数字；等权指标并排 | 数值已在 `MetricGrid` 里滚动时别重复 | 未展示 | 参考片 S1 |
+| `KineticNumber`（cinema，v4.4 引擎运动件，不计入 53 件） | 关键数字的动态排版：计数 + 落定弹出 + 下划线扫入，字号 170–380 | 一镜的主角就是一个数（耗时、倍数、降幅）；讲到这个数的那一拍 | 一镜里并排三个以上的数（用 `StatRow` / `MetricGrid`）；全片超过 35% 的镜都用它 | 未展示 | v4.4 演示片 S1 / S4 / S7 / S8 |
 | `TreeView`（components） | 目录树/组织图 + treemap/pack/sunburst（面积＝数值） | 有层级；或"占比 + 层级"用面积表达 | 无层级的网状关系→`NetworkGraph` | ⑬⑯ | 未使用 |
 | `GeoView`（components） | 地球 / 真陆地轮廓（d3-geo + world-atlas `land-110m`） | 地理 / 全球视野；叠经纬度标记点讲"节点/站点分布" | **不含国界与地名**（要国界得换 `countries-110m.json` 并另立一件）；`flat` 与正交两种投影别混用在同一组对比之外 | ⑬ | 未使用（接触表 ⑬ 已渲真地图 + 4 个标记点） |
 | `SankeyChart`（components） | 流量图（d3-sankey） | 流量在环节之间怎么分流 | 逐级递减的漏斗→`Funnel` | ⑬ | 未使用 |
