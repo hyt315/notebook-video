@@ -85,17 +85,17 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 
 ### 4.1 背景图是锁定的、好看的，不换
 
-四套皮肤里 `cel` / `sticker` / `flat` 三套用的是固定资产背景位图（`paper` 为纯代码绘制背景），**画幅级、高对比**的装饰（cel 的左下爆炸贴、
+两套皮肤 `flat` / `cel` 都用固定资产背景位图（16:9 一张），**画幅级、高对比**的装饰（cel 的左下爆炸贴、
 右下速度线；flat 的右下卡通角色）。它们很好看，**不要替换、不要重绘**。
 
 但**内容压到装饰上时，文字会被吃掉**。所以契约是：
 
-> **内容压在装饰区之上时，必须坐在 `CoverPanel` 上**（v3.0.1 起 `BackgroundMute` 已删除：它在 paper/sticker 皮肤下必然返回 null，是条死路）。
+> **内容压在装饰区之上时，必须坐在 `CoverPanel` 上**（v3.0.1 起 `BackgroundMute` 已删除）。
 
 ### 4.2 机制
 
 主题通过 `theme.backgroundDecorZones` 声明装饰区矩形（1920×1080 设计坐标）：
-`cel` 4 个、`flat` 2 个、`paper` / `sticker` 为空（本来就干净）。
+`cel` 4 个、`flat` 2 个。
 
 ```tsx
 // 局部兜底：给这一块内容一个底托（tone='paper' 走卡片皮肤，tone='wash' 只铺柔和底色）
@@ -171,7 +171,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 | `src/skeletons.tsx` | `Corridor` `SplitStage` `ZoomStage` | `f` |
 | `src/insert.tsx` | `RevealMask` `useHandoff` `TRANSITIONS` | `f` |
 | `src/shotkit.tsx` | `ShotCamera` `CoverPanel` `safeCheck` | `f` |
-| `src/index.tsx` | 引擎层，**对场景只导出两个 Composition（`Film4x3` / `Film3x4`）**：`Paper` / `Subtitle` / `Chrome` 是**模块私有 `const`**（未 `export`，场景文件 import 不到，只能用引擎自己的画面）；曾经那 6 件"反 PPT 交互件"定义在本文件内部、零 export 且零渲染，**已于 v3.1 删除**（见 [quality-checklist.md](quality-checklist.md) 的历史注） | 引擎层 |
+| `src/index.tsx` | 引擎层，**对场景不导出任何组件**（v4.0.0 起只有 16:9 一个 Composition `NotebookVideoFilm`，`Film4x3` / `Film3x4` 已删除）：`Paper` / `Subtitle` / `Chrome` 是**模块私有 `const`**（未 `export`，场景文件 import 不到，只能用引擎自己的画面）；曾经那 6 件"反 PPT 交互件"定义在本文件内部、零 export 且零渲染，**已于 v3.1 删除**（见 [quality-checklist.md](quality-checklist.md) 的历史注） | 引擎层 |
 | `src/toolkit.tsx` | 修辞工具件：`Callout` `Checklist` `JumpInText` | 工具层 |
 
 > **⚠️ 布局陷阱（实测踩过）**：同一容器里**不要混用"文档流内的标题"和"绝对定位组件"**。
@@ -193,7 +193,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 **口径**（逐件点算，可复现）：各模块**对外 `export` 的 React 组件** = `src/components/` 27 件（本层实现 27；v3.1.1 删掉 PieDraw 与两个库再导出后，这一层已无再导出）
 + 其余 8 个模块 26 件（`kit` 3 / `fxkit` 9 / `media` 3 / `stagekit` 2 / `skeletons` 3 / `insert` 1 / `shotkit` 2 / `toolkit` 3）。
 **不算件的**：渲染期门禁（`SlotGuard` 与四道 `*Gate`）、主题包件（`Paper` / `Background` / `Grade` / `SubtitleChrome`，
-以及 cel / sticker 皮肤导出的 `Burst` / `Tape`）、各模块的大写常量与 type-only 导出。
+以及 cel 皮肤导出的 `Burst`）、各模块的大写常量与 type-only 导出。
 **帧参数名**：`fxkit` 与 `toolkit` 传 `frame={f}`，其余全部传 `f={f}`（写错静默错位，见 §5 警告）。
 （复核命令：对上面 9 个模块文件抽 `^export const X: React.FC` 的 X 去重计数，再与 `src/components/index.ts` 的
 导出名单对齐；`SlotGuard` 与四道 Gate 按口径剔除。数出来必须是 **27 + 26 = 53**，不是就说明有件偷偷加了没登记。）

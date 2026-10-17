@@ -37,7 +37,7 @@
 
 ```json
 {
-  "duration": 1126, "theme": "paper", "canvas": "16:9",
+  "duration": 1126, "theme": "flat", "canvas": "16:9",
   "shots": [
     {
       "id": "S1",

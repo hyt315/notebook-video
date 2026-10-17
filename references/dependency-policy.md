@@ -61,7 +61,7 @@
 | `budoux` | **中文按词组断行** | Google 出品；`loadDefaultSimplifiedChineseParser().parse(text)` 返回词组数组。用于**标题**断行（正文中文可任意字断行） |
 | `@cto.af/linebreak` | **UAX #14 断行算法**（避头尾 + "拉丁/数字串内部不断"的正解） | `new Rules({string:true}).breaks(text)` → 每个断点带 `position`。MIT、60 KB、**UAX #14 / Unicode 17**、2026-03 发版、依赖树干净（`@cto.af/unicode-trie-runtime` → `fflate`，都是现代在维护的包）、纯函数无 timer/random。此前 `fittext.tsx` 手写两张字符表做避头尾，实测只是粗糙近似且**错在中英混排**：10 条真实文本里它允许 **36 个非法断点**（`在G\|itHub`、`hyt\|315`、`第三个A\|I技能`、`S\|1：`…），换 UAX #14 后 **36 → 0**（纯中文用例两者完全一致）。⚠️ **选包口径**（用户 2026-09-21 定的原则：依赖要通用、能用新的就不用旧的）：先用的是 foliojs 的 `linebreak@1.1.0`，但它**钉死 `base64-js@0.0.8`（2014 年）**、且 2022 年后没再发版 → 换成 `@cto.af/linebreak`（自述是前者那包的 refresh），实测两包在同一批文本上**断点逐一相同**，换包零行为变化（同名页面重渲逐字节一致）。另外：**不要回头试 `Intl.Segmenter({granularity:"line"})`**——`line` 粒度不在 ECMA-402 规范内，Node 24 直接抛 `RangeError` |
 
-> **实测**：这张表的 **10 个**依赖已在独立验证工程 `demo-video` 里逐个渲染验证（目录树 / 地球 / 流量图 / CSV / 手绘 / 二维码 / 公式 / 中文词组断行 / 关系网 / UAX #14 断行），全部能在四套皮肤下正确读 `THEME`。
+> **实测**：这张表的 **10 个**依赖已在独立验证工程 `demo-video` 里逐个渲染验证（目录树 / 地球 / 流量图 / CSV / 手绘 / 二维码 / 公式 / 中文词组断行 / 关系网 / UAX #14 断行），全部能在各皮肤下正确读 `THEME`（当时验证时为四套，v4.0.0 起保留 flat / cel 两套）。
 > **两个地图数据包（2026-09-22 加）的验证口径不同**：它们不是独立组件，而是 `GeoView` 的实现细节，所以不进 `demo-video`——验证落在**本模板自己的接触表 ⑬ 页**（`node scripts/notebook-video.mjs showcase <proj>`，然后 Read 那张接触表看图上的陆地轮廓与标记点）。
 > **体积**：10 个包 + 传递依赖合计约 **12 MB**（12 MB 是 2026-09-21 对当时表里 8 个包的实测值；后来补进 `d3-force` 与 `@cto.af/linebreak`——自述 60 KB——量级不变。其中 `katex` 4.6 MB 与 `budoux` 3.2 MB 是大头，且几乎全是字体与模型数据）。地图那两个再加 **8.2 MB**（`world-atlas` 整包；实际进 bundle 的只有 `land-110m.json` 的 55 KB）+ **68 KB**（`topojson-client`）。相比之下 `react-icons` 一个 85 MB、Chrome 无头浏览器 270 MB——**这点体积可以忽略**。
 
@@ -181,7 +181,7 @@
 |---|---|
 | **Tailwind 墙** | 它们的写法是 `className="relative flex h-[500px] overflow-hidden rounded-lg border"`。本技能不用 Tailwind，样式一律是 inline style + `THEME`。粘进来类名全部不生效，画面直接塌 |
 | **时间驱动墙** | 它们的动画是 `animation: 3s infinite` 或自动播放的 motion。视频按帧渲染，**同一帧可能被渲染多次**，时间驱动的动画每次结果都不同——这正是十四道门禁要防的事 |
-| **审美墙** | 它们绝大多数是暗色科技 SaaS 落地页风格（黑底极光、流星、光束）。本技能的皮肤是暖米纸手账 / 动漫赛璐璐，硬搬会打架 |
+| **审美墙** | 它们绝大多数是暗色科技 SaaS 落地页风格（黑底极光、流星、光束）。本技能的皮肤是扁平几何 / 动漫赛璐璐，硬搬会打架 |
 
 **正确用法：取"效果配方"，不取"实现"。** 把它拆成第五节的 CSS/SVG 数学，重新用 `THEME` 上色、用帧号驱动，
 然后做成**本技能自己的组件**。效果是别人的，皮肤和可复现性是我们的。

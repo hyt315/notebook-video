@@ -72,7 +72,8 @@ DOC_IDENT_WHITELIST = {
     'DeepSeek', 'Opus',                                       # 模型名
     # —— 以下名字在文档里**只允许以"已删除/历史对照"的身份出现**（写它们的用途是告诉读者"别再用"）——
     'BackgroundMute', 'CameraRig', 'SceneContribute', 'SceneShip', 'SceneSkills',
-    'ElderPhone', 'FamilyShield', 'Robot', 'Scammer', 'SrcIcon',   # portrait 示例题材的插画命名，从来不是模板组件
+    'Film4x3', 'Film3x4',                                        # v4.0.0 删除的 4:3 / 3:4 Composition
+    'ElderPhone', 'FamilyShield', 'Robot', 'Scammer', 'SrcIcon',   # 已删除的竖屏示例题材插画命名，从来不是模板组件
 }
 
 
@@ -339,22 +340,21 @@ def main() -> None:
         if not required.is_file():
             problems.append(f"missing cross-platform entry: {required.relative_to(SKILL)}")
 
-    # Theme pack integrity: four locked skins plus the engine contract and docs.
+    # Theme pack integrity: two locked skins (flat default, cel) plus the engine contract and docs.
     theme_dir = SKILL / 'assets' / 'lecture-template' / 'src' / 'theme'
-    for theme_file in ('types.ts', 'canvas.ts', 'paper.tsx', 'cel.tsx', 'sticker.tsx', 'flat.tsx', 'active.ts'):
+    for theme_file in ('types.ts', 'canvas.ts', 'cel.tsx', 'flat.tsx', 'active.ts'):
         if not (theme_dir / theme_file).is_file():
             problems.append(f"missing theme pack file: assets/lecture-template/src/theme/{theme_file}")
-    for theme_doc in ('theme-system.md', 'theme-cel.md', 'theme-sticker.md', 'theme-flat.md'):
+    for theme_doc in ('theme-system.md', 'theme-cel.md', 'theme-flat.md'):
         if not (SKILL / 'references' / theme_doc).is_file():
             problems.append(f"missing theme contract doc: references/{theme_doc}")
     if theme_dir.is_dir():
         active = (theme_dir / 'active.ts').read_text(encoding='utf-8', errors='ignore')
-        if "from './paper'" not in active:
-            problems.append("theme switch active.ts must ship defaulting to './paper'")
-        for theme_id in ('cel', 'sticker', 'flat'):
-            theme_src = (theme_dir / f'{theme_id}.tsx').read_text(encoding='utf-8', errors='ignore')
-            if not re.search(r"useCanvas\(\)", theme_src) and theme_id != 'flat':
-                problems.append(f"theme {theme_id}.tsx must anchor decoration via useCanvas()")
+        if "from './flat'" not in active:
+            problems.append("theme switch active.ts must ship defaulting to './flat'")
+        for removed in ('paper.tsx', 'sticker.tsx'):
+            if (theme_dir / removed).exists():
+                problems.append(f"removed theme file is back: assets/lecture-template/src/theme/{removed} (v4.0.0 ships flat + cel only)")
 
     with tempfile.TemporaryDirectory(prefix='notebook-video-package-test-') as temp:
         root = Path(temp)

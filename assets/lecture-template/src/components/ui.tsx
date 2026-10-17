@@ -726,7 +726,7 @@ const syntaxSkin: Record<string, React.CSSProperties> = {
   function: {color: C.orangeInk},
   string: {color: C.greenInk},
   // number/boolean 原来用 C.orangeDeep —— 那是**填充色**（章节序号渐变深色端），
-  // 当文字时 paper/flat 只有 2.83 / 4.19:1（门禁 P1）。同一张表里其它槽位早就用 Ink 了，
+  // 当文字时 flat 只有 4.19:1（门禁 P1）。同一张表里其它槽位早就用 Ink 了，
   // 这两行是漏改：按约定换成 orangeInk（文字安全色），orangeDeep 继续只做填充。
   number: {color: C.orangeInk},
   boolean: {color: C.orangeInk},

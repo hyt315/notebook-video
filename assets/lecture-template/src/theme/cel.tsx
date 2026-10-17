@@ -1,6 +1,5 @@
 import React from 'react';
 import {AbsoluteFill, Img, staticFile} from 'remotion';
-import {useCanvas} from './canvas';
 import type {Theme} from './types';
 
 // ============================================================================
@@ -77,15 +76,13 @@ const panelTilt = (style?: React.CSSProperties) => {
   return (((Math.round(left) + Math.round(top)) % 5) - 2) * 0.35;
 };
 
-// 背景（LOCKED）：固定资产图，每比例一张——16:9 2560×1440（与画布 1:1 逐像素）；
-// 4:3 2240×1680、3:4 1680×2240（画布的 7/6 超采样，比例同比）；渲染时 cover 等比缩放
+// 背景（LOCKED）：固定资产图，16:9 2560×1440（与画布 1:1 逐像素）；渲染时 cover 等比缩放
 // 不裁切不拉伸。含半调网点、速度线、爆炸贴。禁止改回代码自绘背景。
-const BG_BY_MODE = {'16:9': 'bg-cel-169.jpg', '4:3': 'bg-cel-43.jpg', '3:4': 'bg-cel-34.jpg'} as const;
+const BG_IMAGE = 'bg-cel-169.jpg';
 
 const Background: React.FC = () => {
-  const {canvas} = useCanvas();
   return <AbsoluteFill style={{background: palette.paperBase}}>
-    <Img src={staticFile(BG_BY_MODE[canvas])} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+    <Img src={staticFile(BG_IMAGE)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
   </AbsoluteFill>;
 };
 

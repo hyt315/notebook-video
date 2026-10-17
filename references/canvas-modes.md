@@ -1,52 +1,28 @@
-# Canvas modes: 16:9, 4:3 and 3:4 portrait
+# Canvas: 16:9 only
 
-Three delivery canvases coexist in this skill. Ask the user once at kickoff which one this production uses; the answer decides every layout coordinate for the film. **默认只注册 16:9**（`Root` 里只挂 `NotebookVideoFilm` 2560×1440；`Film4x3`/`Film3x4` 定义了但未注册）——切 4:3 / 3:4 要自己改 canvas 参数并重排版面，详见本文其余部分。
+v4.0.0 起本技能只有**一种**交付画布：16:9。4:3 与 3:4 竖屏（以及 `Film4x3` / `Film3x4`、对应背景图与门禁分支）已全部删除，不再支持。
 
-- **16:9** is the default for landscape platforms with a 16:9 player (for example Bilibili).
-- **4:3** trades side width for a taller mobile presence: on a phone feed the same fonts render about one third larger. Choose it for landscape films whose primary audience watches on phones.
-- **3:4 portrait** is the native shape for portrait feeds (for example Douyin). It shows near-fullscreen on a phone without the platform's bottom UI covering the frame, so the subtitle strip stays at the bottom as usual. Do not use 9:16: it is verified to leave a dead lower band under the platform UI and reads too long.
+## Spec
 
-## Parameter table
+| Parameter | Value |
+| --- | --- |
+| Composition (delivery) | 2560×1440, native 30fps |
+| Design coordinate space | 1920×1080 |
+| Delivery scale | 4/3 (`MODES['16:9'].scale`) |
+| Subtitle text `left/right` | 188 |
+| Subtitle text `bottom` (contract value) | 34 |
+| Subtitle font (WenKai Lite) | 44px |
+| Subtitle safe width (`safe` / `subtitleSafeWidth`) | 1334 |
+| Usable content width | ~1700 |
+| Column layout | two columns |
 
-| Parameter | 16:9 | 4:3 | 3:4 portrait |
-| --- | --- | --- | --- |
-| Composition (delivery) | 2560×1440 | 1920×1440 | 1440×1920 |
-| Design coordinate space | 1920×1080 | 1440×1080 | 1080×1440 |
-| Film wrapper `width`/`height` | 1920/1080 | 1440/1080 | 1080/1440 |
-| Delivery scale | 4/3 | 4/3 | 4/3 |
-| Subtitle text `left/right` | 188 | 60 | 50 |
-| Subtitle text `bottom` (no bar) | 34 | 34 | 40 |
-| `TYPE.subtitle` (WenKai Lite) | 44 | 44 | 40 |
-| `AESTHETIC.subtitleSafeWidth` | 1334 | 1060 | 900 |
-| Usable content width (after paper margins) | ~1700 | ~1250 | ~980 |
-| Column layout | two columns | two narrowed columns | single column, cards stacked |
+These are contract values. They live in `assets/lecture-template/src/theme/canvas.ts` (`MODES['16:9']`) and in `scripts/validate-visual-plan.py` (`CANVAS_MODES[2560]`); `validate-skill-consistency.py` cross-checks the two. Each skin's `SubtitleChrome` has its own render-time `bottom` (`cel` 44 / `flat` 40); the classic example project hard-codes `bottom:18`.
 
-The multi-zone style is preserved in every mode — never reduce the number of zones to fit a narrower canvas; shrink card widths and paddings (landscape) or stack the zones vertically (portrait) instead.
+`validate-visual-plan` rejects any `NotebookVideoFilm` Composition width other than 2560, and `validate-video` accepts only 2560×1440 containers.
 
-> **口径：这张表全是「契约值」（2026-09-22 复核）。** 每一行都对应 `assets/lecture-template/src/theme/canvas.ts` 的 `MODES[x]` 字段（`subMar` 188/60/50 · `subBottom` 34/34/40 · `subH` 112/112/104 · `safe` 1334/1060/900 · `subFont` 44/44/40），
-> 与 `scripts/validate-visual-plan.py` 的 `CANVAS_MODES[*]`（`subtitle_margin` / `subtitle_bottom` / `subtitle_safe_width`）**同值**——门禁核对的就是这一列。
-> **不要**把渲染时的值填进这张表：四套皮肤的 `SubtitleChrome` 各自另有渲染时的 `bottom`（`paper` 20 / `cel` 44 / `sticker` 42 / `flat` 40，按**皮肤**分、不按画布模式分），
-> 而自带示例工程 `assets/example-project/src/index.tsx` 的 `Subtitle` 是直接写死 `bottom:18` 的（只有 16:9 一种画布）。
-> 2026-09-02 那一版把这一格写成 `18 | 18 | 18`，用的就是示例工程那个值——口径错了，所以三个画布列全填了同一个数；现按契约值改回 34/34/40（3:4 的 40 与 §3 第 1 条本来一致）。
+## Mobile readability type floor
 
-## Authoring a 4:3 film
-
-1. Start from the lecture template, then set the four 4:3 values above in `src/index.tsx` (`Composition` width, Film wrapper width, subtitle margins, `subtitleSafeWidth`). All four must change together — a real production shipped a 4:3 film with 16:9 subtitle margins because one of the four was missed.
-2. Lay out scenes in the 1440-wide space. Convert a 16:9 two-column scene by narrowing both cards (not by dropping a zone); wide SVG diagrams may be wrapped in `transform:scale(0.85)` with `transformOrigin:'0 0'` instead of redrawing.
-3. Caption lines must pass the 1060px width gate; prefer splitting a long semantic line over shrinking the subtitle font.
-4. `validate-visual-plan` cross-checks the values against the `Composition` width and fails on any mixed-mode file, so run it before every render.
-
-## Authoring a 3:4 portrait film
-
-1. Set every 3:4 column value above together: `Composition` 1440×1920, wrapper 1080×1440, subtitle margins 50, bottom 40, height 104, `TYPE.subtitle` 40, `subtitleSafeWidth` 900. The caption width gate must measure at the same 40px WenKai setting.
-2. Chapter chrome moves to y≈80; content region runs y≈200–1290; the subtitle strip sits at the bottom as in landscape modes.
-3. Two-column scenes become stacked zones: full-width cards (~980 wide) laid top to bottom, each keeping its own bottom-anchored conclusion strip. Timeline SVGs stretch to ~900 wide — often larger than their landscape versions.
-4. Caption lines must pass the 900px gate at 40px; portrait lines break shorter (about 13 CJK characters).
-5. `validate-video` accepts 2560×1440, 1920×1440 and 1440×1920 containers; every other QA gate is unchanged.
-
-## Mobile readability type floor (all modes)
-
-Small text is the main reason films look blurry on phones. Titles and the subtitle are already large enough; the floor below raises only the small tiers. New projects must use:
+Small text is the main reason films look blurry on phones. Titles and the subtitle are already large enough; the floor below raises only the small tiers:
 
 ```text
 bodyL:26  bodyM:24  bodyS:23
@@ -54,8 +30,8 @@ labelL:22 labelM:21 labelS:20
 microL:18 microS:16
 ```
 
-Display/title tiers and the per-mode subtitle size stay as in the locked core. Never author content text below 16px design size; if a note only fits below that, cut it or move it into the narration.
+Never author content text below 16px design size; if a note only fits below that, cut it or move it into the narration.
 
 ## Full-canvas vertical budget
 
-Content must use the full height between the chapter chrome and the subtitle strip: in the landscape modes card tops start near y=190 and card bottoms reach about y=876 (40px of breathing room above the strip); in 3:4 portrait the same rule gives a content region of roughly y=200–1290. An empty lower quarter is a layout defect, not negative space: on a phone the area just above the subtitle is the largest, most-read region of the frame. Bottom-anchored conclusion strips inside each card are the standard way to consume that height.
+Content must use the full height between the chapter chrome and the subtitle strip: card tops start near y=190 and card bottoms reach about y=876 (40px of breathing room above the strip). An empty lower quarter is a layout defect, not negative space. Bottom-anchored conclusion strips inside each card are the standard way to consume that height.

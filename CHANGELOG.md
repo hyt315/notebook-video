@@ -4,6 +4,42 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+## [4.0.0] - 2026-10-17
+
+> **破坏性版本（BREAKING）**：只保留 16:9 画布与 `flat`（默认）/ `cel` 两套皮肤；用 v3.x 的 4:3、3:4 画布或 `paper` / `sticker` 皮肤建的旧工程**不再支持**，也不提供迁移脚本。
+
+### 删除
+
+- **4:3 与 3:4 画布**：`Film4x3` / `Film3x4` Composition、`canvas.ts` 里的 `'4:3'` / `'3:4'` 模式、`CanvasContext.isPortrait` 与章节条的竖屏分支、`validate-visual-plan.py` 的 1920 / 1440 宽档、`validate-video` 对 1920×1440 / 1440×1920 的放行、`locked-style-contract.json` 的 `canvas.modes["4:3"/"3:4"]`。删除 6 张背景图 `public/bg-{cel,flat,sticker}-{43,34}.jpg` 及其清单登记。`references/canvas-modes.md` 收为 16:9 单页规格；`references/portrait-illustration-system.md` 删除。
+- **`paper` 皮肤**：`src/theme/paper.tsx` 与其契约 `references/visual-system.md`（通用的章节条 / 字幕 / 字体条款并入 `references/theme-system.md`）。
+- **`sticker` 皮肤**：`src/theme/sticker.tsx`、`public/bg-sticker-169.jpg`、`references/theme-sticker.md`、`Tape` 构件。
+- `new-project --style=` 只接受 `flat` / `cel`；`.sh` / `.cmd` 包装器透传不变。
+
+### 变更
+
+- **默认皮肤改为 `flat`**：`src/theme/active.ts` 出厂指向 `./flat`；`selftest.py` 与 `validate-skill-consistency.py` 改查 `./flat`，并在 `paper.tsx` / `sticker.tsx` 重新出现时报错。示例分镜表 `theme` 字段改为 `flat`。
+- 主题背景改为每主题一张 16:9 位图（`BG_IMAGE`），不再按画幅三选一。
+- `negative-gate-check.py` 的 M / Y 夹具改在 `flat.tsx` 上制造缺陷；文档、README、SKILL.md 与 manifest 同步到 v4.0.0。
+- 保留的命名：调色板 token `paper` / `paperWarm` / `paperBase`、`Paper` 卡片组件、`CoverPanel tone="paper"` 与音效 `paper-*.wav` 是通用的「卡片面」命名，与已删除的 `paper` 皮肤无关，未改名。`--classic` 示例工程（`assets/example-project`）与 `warm-ivory-…-v9` 引擎标识保持不变。
+
+## [4.0.0] - 2026-10-17 (English)
+
+> **BREAKING**: only the 16:9 canvas and the `flat` (default) / `cel` skins remain. Projects created on v3.x with the 4:3 or 3:4 canvas or the `paper` / `sticker` skins are **not supported**; no migration script is provided.
+
+### Removed
+
+- **4:3 and 3:4 canvases**: the `Film4x3` / `Film3x4` compositions, the `'4:3'` / `'3:4'` entries in `canvas.ts`, `CanvasContext.isPortrait` and the chapter card's portrait branch, the 1920 / 1440 widths in `validate-visual-plan.py`, `validate-video` acceptance of 1920×1440 / 1440×1920, and `canvas.modes["4:3"/"3:4"]` in `locked-style-contract.json`. Six background rasters `public/bg-{cel,flat,sticker}-{43,34}.jpg` and their manifest entries are deleted. `references/canvas-modes.md` is reduced to a one-page 16:9 spec; `references/portrait-illustration-system.md` is deleted.
+- **`paper` skin**: `src/theme/paper.tsx` and its contract `references/visual-system.md` (the shared chapter / subtitle / font clauses move into `references/theme-system.md`).
+- **`sticker` skin**: `src/theme/sticker.tsx`, `public/bg-sticker-169.jpg`, `references/theme-sticker.md`, and the `Tape` extra.
+- `new-project --style=` accepts only `flat` / `cel`; the `.sh` / `.cmd` wrappers pass arguments through unchanged.
+
+### Changed
+
+- **`flat` is the default skin**: `src/theme/active.ts` ships pointing at `./flat`; `selftest.py` and `validate-skill-consistency.py` check for `./flat` and fail if `paper.tsx` / `sticker.tsx` reappear. The example shot table's `theme` field is now `flat`.
+- Theme backgrounds are a single 16:9 raster per theme (`BG_IMAGE`) instead of a per-ratio lookup.
+- `negative-gate-check.py` fixtures M / Y now inject their defects into `flat.tsx`; docs, READMEs, SKILL.md and the manifest are updated to v4.0.0.
+- Names kept on purpose: the palette tokens `paper` / `paperWarm` / `paperBase`, the `Paper` card component, `CoverPanel tone="paper"` and the `paper-*.wav` sound effects are generic card-surface names shared by the remaining skins and unrelated to the removed `paper` skin. The `--classic` example project (`assets/example-project`) and the `warm-ivory-…-v9` engine identifier are unchanged.
+
 ## [3.1.2] - 2026-09-22
 
 > 对照基线 `v3.1.1`：**35 个文件，+1 020 行，−145 行**。

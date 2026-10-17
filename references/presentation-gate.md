@@ -71,7 +71,7 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 > **遇到"强调色当文字色"该怎么做（本轮的处置，照做就行）**：① 这个词位本来就该是文字 → 换成对应的 `*Ink`；
 > ② 这个 token 同时还要当填充（如 `orangeDeep` 是章节序号渐变的深色端）→ **原值保留给填充，文字位改 `orangeInk`**；
 > ③ 这个 token 只当文字用（如 `headerAccent` / `headerSub`）→ 就地把它压到过线（同色相按 WCAG 反解）。
-> 实测这一步在模板上把 `flat/paper: orangeDeep`（4.19 / 2.83:1）与 `sticker: headerAccent / headerSub`（2.40 / 3.14:1）三条 P1 清掉了。
+> 实测这一步在模板上把 `flat: orangeDeep`（4.19:1）这条 P1 清掉了（同批另两条落在 v4.0.0 已删除的皮肤上）。
 
 > ⚠️ **这道对比度检查的能力边界（复核实测，别高估它）**：它只读 `theme/*.tsx` 里 `palette` 那个字面量，
 > 且只认**标准键名**。实测两条绕过路径都走得通：
@@ -151,9 +151,9 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 | J | 让 S2 的 beat 引用 S7 的 cue | `P0 S2: beat(cue13+0) 落在 803 帧，超出本镜 [213,286]` |
 | K | 把 cue1 写成 36 加权字 / 0.9s | `P0 cue1: 阅读速度 40.0 字/秒 > 9.0` |
 | L | 写一个 `fontSize: 9` 的场景文件 | `P0 src: src\tooSmall.tsx:1 fontSize:9 低于绝对地板 13` |
-| M | 把主题的 `ink` 改成近乎白色（压白底） | `P0 theme:paper: 正文色 ink on paper = 1.12:1 < 4.5` |
+| M | 把主题的 `ink` 改成近乎白色（压白底） | `P0 theme:flat: 正文色 ink on paper = 1.12:1 < 4.5` |
 | **X** | 删掉 S3 的 `move`（讲法字段 G-14） | `P0 S3: 缺 move（叙事动作）：讲法规范要求每镜声明它在这一章里干哪件事` |
-| **Y** | 把 `paper` 的 `blueInk` 改成 `#eeeeee`（文字安全色） | `P0 theme:paper: 文字安全色没过 4.5:1（它们是**专门**用来当文字色的）：blueInk 1.07:1(on paperWarm)` |
+| **Y** | 把 `flat` 的 `blueInk` 改成 `#eeeeee`（文字安全色） | `P0 theme:flat: 文字安全色没过 4.5:1（它们是**专门**用来当文字色的）：blueInk 1.07:1(on paperWarm)` |
 | **AC** | 把 S1–S3 三镜的 `move` 都写成同一个 `引入`（同一 `move` 连续 3 镜，G-14②） | `P0 S1–S3: 同一 move 连续 3 镜：S1→S2→S3 都是 «引入»（上限 2 镜，判据 = 文档的「同一个 move 不得连续 ≥3 镜」…）` |
 | **AD**（对照） | 同样的改法**只改 2 镜**（连续 2 镜，上限之内） | **rc=0**（放行）+ `结论：P0=0 P1=0 → PASS` —— 证明这条不是"见到重复就拦"，上限就是 2 镜 |
 | **AE** | S1/S2 与 S4 都是 `引入`、中间 S3 的 `move` 删掉（夹一镜缺 move） | `P0 S3: 缺 move（叙事动作）：讲法规范要求每镜声明它在这一章里干哪件事` **且不报**「同一 move 连续」（`must_absent`：缺 move 打断计数，不许把两侧拼成 S1→S2→S4 的假"连续 3 镜"） |
@@ -184,17 +184,17 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 
 跑一遍现有分镜，**P0 = 0**，但 P1 里有一条必须点名：
 
-> **四套皮肤的强调色当文字色时对比度不足**：gold 1.35–2.94:1、green 1.78–3.04:1、orange 2.03–3.54:1、
-> orangeDeep 2.49–2.83:1（大字档需 3.0、小字需 4.5）。彩色填充上的白字同样有问题（sticker 的 white on gold = 1.44:1）。
+> **皮肤的强调色当文字色时对比度不足**（当时四套皮肤合计口径，其中两套已于 v4.0.0 删除）：gold 1.35–2.94:1、green 1.78–3.04:1、orange 2.03–3.54:1、
+> orangeDeep 2.49–2.83:1（大字档需 3.0、小字需 4.5）。彩色填充上的白字同样有问题。
 > 这是**真实的可读性缺陷**（不是判据太严），但它属于**审美决定**：要么把这几支色值调深、要么约定
-> "这些色只用于图形填充、当文字时改用 `ink`"。**没有替用户改四个主题的配色**，只把数字与用到处报出来。
+> "这些色只用于图形填充、当文字时改用 `ink`"。**没有替用户改主题的配色**，只把数字与用到处报出来。
 >
 > ✅ **2026-09-21 的处置（部分落地）**：约定已经落成机制 —— 每支强调色补一个 `*Ink` 文字安全色
 > （同色相按 WCAG 反解压暗，见 `theme-system.md`），五个 Ink 现在都过 4.5:1；
 > 又把**残留的三个"用填充色当文字"的色名**按同一办法清掉：`number/boolean` 的语法高亮从 `orangeDeep`
-> 换成 `orangeInk`（原值继续留给章节序号渐变），sticker 的 `headerAccent` / `headerSub` 就地压暗。
-> 于是 `flat/paper: orangeDeep` 与 `sticker: headerAccent / headerSub` 三条 P1 消失。
-> **仍未处理的是另一半**：彩色填充上的白字（sticker 的 blue/orange/orangeDeep/green/gold 全在 1.44–2.66:1）
+> 换成 `orangeInk`（原值继续留给章节序号渐变）。
+> 于是 `flat: orangeDeep` 这条 P1 消失。
+> **仍未处理的是另一半**：彩色填充上的白字（在现存 flat / cel 上需逐色复测）
 > —— 那要么把填充色压深、要么给白字加描边，是纯审美取舍，**留给用户拍板**。
 
 ## 四、还没做的

@@ -43,7 +43,7 @@
 | **十四道质量门禁** | 构建期 6：分镜→帧号解析、镜头出界证明、构图与密度、**帧参数名核对**、**音效电平**、**呈现效果（讲与画对齐 / 字幕阅读预算 / 字号与对比度）**；渲染期 7：字幕宽度、卡片溢出、**文字重叠与遮挡**、**图形被裁**、**画布越界**、**下 1/4 实测密度**、**槽占用率**；成片后验 1：**画面到底动没动** | P0 不为 0 **拒绝渲染**；每次还打覆盖率，**「没报警」与「没运行」能区分开** |
 | **实拍素材框** | 真实截图 / 官方图表装进锁定皮肤的墨线框（2.5px 描边 + 硬阴影），可缓慢推近到关键处；素材按 `visual-assets.json` + `asset-manifest.json` **双清单登记**（来源 / 授权 / 是否含文字 / 校验和） | 需要「这确实是官方 / 真实」的论据时用它；能用代码讲清的仍用画的 |
 | **帧精确中文 TTS 同步** | 毫秒级词时间戳 → 语义断句 → 动画节拍；句末标点严格消除 | 告别字幕对不准、音画脱节 |
-| **四套锁定皮肤** | `paper`（暖白手账，默认）/ `cel`（动漫赛璐璐）/ `sticker`（贴纸）/ `flat`（扁平几何） | 一套内容，四种气质 |
+| **两套锁定皮肤** | `flat`（扁平几何，默认）/ `cel`（动漫赛璐璐） | 一套内容，两种气质 |
 | **背景可读性契约** | 锁定背景位图**保持原样不改**；压在装饰上的内容坐在**半透明**羽化底托上（面板 88%、底托中心 76%） | 不靠「纯白挡板」换可读性，画面才不会变成白底 PPT |
 
 ---
@@ -62,7 +62,7 @@
 > 想核对当前版本：在 `assets/lecture-template` 里 `npm install` 后跑 `npm run still`（抽帧）；**要出片请走交付链路** `node scripts/notebook-video.mjs render <工程> <输出>` —— 它会做色彩元数据回写与响度归一，而 `npm run render` **不做**这一步，产出的文件过不了 `validate-video` 的色彩断言。
 > 接触表同理：`node scripts/notebook-video.mjs showcase <工程目录>` 现在**直接出交付规格**（2560×1440 / 静音 AAC / 色彩四项回写，与 `assets/demo/` 里那份一致）。`--scale` 只吃十进制字面量 —— `--scale=4/3` 会被 CLI 拒绝，要写 `1.3333333333333333`。
 
-**画布**：锁定三种画布 —— 16:9（2560×1440）、4:3（1920×1440）、3:4 竖屏（1440×1920），均为原生 30fps。官方示例片按 **16:9 设计空间**编写；4:3 / 3:4 需要各自的版面重排（**不再用信箱化缩放冒充适配**），在做竖屏时按 [`references/canvas-modes.md`](references/canvas-modes.md) 与 [`references/portrait-illustration-system.md`](references/portrait-illustration-system.md) 单独编写场景。
+**画布**：只有一种锁定画布 —— 16:9（2560×1440，设计坐标 1920×1080），原生 30fps。v4.0.0 起 4:3 / 3:4 画布与 `paper` / `sticker` 皮肤已删除，旧工程不再支持。参数见 [`references/canvas-modes.md`](references/canvas-modes.md)。
 
 ***
 
@@ -172,7 +172,7 @@ node scripts/notebook-video.mjs render ./my-video out.mp4
 常用命令（完整列表见 `--help`）：
 
 ```text
-node scripts/notebook-video.mjs new-project   ./my-video --style=paper
+node scripts/notebook-video.mjs new-project   ./my-video --style=flat
 node scripts/notebook-video.mjs resolve-shots ./my-video
 python scripts/validate-frame-props.py        ./my-video
 python scripts/validate-shot-motion.py        ./my-video
@@ -236,7 +236,7 @@ notebook-video/
 ├── SKILL.md                          # 核心技能定义与制作工作流
 ├── manifest.json                     # 技能元数据（版本号在此）
 ├── README.md / README.en.md          # 中英文说明
-├── CHANGELOG.md                      # 版本发布记录（当前 v3.1.2）
+├── CHANGELOG.md                      # 版本发布记录（当前 v4.0.0）
 ├── assets/
 │   ├── demo/                         # 成片与动图预览
 │   ├── lecture-template/             # 官方模板（纯代码路线，含 8 镜示例片）
@@ -257,7 +257,7 @@ notebook-video/
     ├── media-routing.md              # 内容→介质路由、A/B 场景、背景契约
     ├── composition-gate.md           # 全部门禁的判据与修法
     ├── motion-design.md              # 多时钟动效六律
-    ├── theme-*.md / visual-system.md # 四套皮肤契约
+    ├── theme-*.md                    # 两套皮肤契约（flat / cel）
     └── …                             # TTS、字幕、画布、性能与跨平台手册
 ```
 

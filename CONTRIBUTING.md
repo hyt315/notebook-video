@@ -18,4 +18,4 @@ Open a pull request using the repository template. Include the commands actually
 
 ## Visual changes
 
-The warm-ivory notebook system, subtitle geometry, native 30fps delivery, Remotion renderer and source package workflow are intentional defaults. A proposal that changes any of them needs a rendered comparison and explicit approval before it replaces the official example.
+The locked skin system (`flat` default + `cel`), the single 16:9 canvas, subtitle geometry, native 30fps delivery, Remotion renderer and source package workflow are intentional defaults. A proposal that changes any of them needs a rendered comparison and explicit approval before it replaces the official example.

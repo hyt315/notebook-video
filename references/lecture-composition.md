@@ -65,7 +65,7 @@ A scene is not one hero object. Split the 1920×1080 design canvas into
 - left: explanation panel (`Paper` with a WenKai title + body copy);
 - right or center: the graphic demonstration area;
 - bottom or side: a progressive checklist or comparison cards;
-- floating: small annotation stickers that appear on cue.
+- floating: small annotation tags that appear on cue.
 
 Keep the locked density budget: **each zone runs one main action at a
 time**, unrelated cards stay ≥70px apart, and only one temporary transfer
@@ -76,7 +76,7 @@ zones, never parallel actions inside one zone.
 
 Text is not a caption garnish. Pair every graphic demonstration with
 readable text that carries the same knowledge: checklists that tick item
-by item, good/bad comparison cards, warning strips, step stickers. The
+by item, good/bad comparison cards, warning strips, step tags. The
 viewer should be able to learn from the text alone or the animation alone.
 
 ### 4. Frame-accurate speech sync

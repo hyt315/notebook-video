@@ -1,6 +1,5 @@
 import React from 'react';
 import {AbsoluteFill, Img, staticFile} from 'remotion';
-import {useCanvas} from './canvas';
 import type {Theme} from './types';
 
 // ============================================================================
@@ -72,16 +71,14 @@ const aesthetic: Theme['aesthetic'] = {
 const paperShadow = (lift: number) =>
   `${7 + 3 * lift}px ${7 + 3 * lift}px 0 ${palette.blue}`;
 
-// 背景（LOCKED）：固定资产图，每比例一张——16:9 2560×1440（与画布 1:1 逐像素）；
-// 4:3 2240×1680、3:4 1680×2240（画布的 7/6 超采样，比例同比）；渲染时 cover 等比缩放
+// 背景（LOCKED）：固定资产图，16:9 2560×1440（与画布 1:1 逐像素）；渲染时 cover 等比缩放
 // 不裁切不拉伸。探头式小怪兽（右下靛蓝圆怪从底边探出上半身+左下薄荷山丘
 // 珊瑚小怪探头）、浅灰蓝噪点纸面、85% 留白。禁止改回代码自绘背景。
-const BG_BY_MODE = {'16:9': 'bg-flat-169.jpg', '4:3': 'bg-flat-43.jpg', '3:4': 'bg-flat-34.jpg'} as const;
+const BG_IMAGE = 'bg-flat-169.jpg';
 
 const Background: React.FC = () => {
-  const {canvas} = useCanvas();
   return <AbsoluteFill style={{background: palette.paperBase}}>
-    <Img src={staticFile(BG_BY_MODE[canvas])} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+    <Img src={staticFile(BG_IMAGE)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
   </AbsoluteFill>;
 };
 

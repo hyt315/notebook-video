@@ -1,7 +1,7 @@
 {
   "$comment": "官方模板分镜表（GitHub 开源三部曲 EP0）。声明的帧号来自 caption-cues.json 的 cue 起始帧，由 scripts/resolve-shots.py 解析；不要手写帧号。",
   "duration": 1150,
-  "theme": "paper",
+  "theme": "flat",
   "canvas": "16:9",
   "shots": [
     {

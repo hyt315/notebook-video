@@ -78,9 +78,7 @@ def main() -> int:
         "assets/lecture-template/src/theme/active.ts",
         "assets/lecture-template/src/theme/canvas.ts",
         "assets/lecture-template/src/theme/types.ts",
-        "assets/lecture-template/src/theme/paper.tsx",
         "assets/lecture-template/src/theme/cel.tsx",
-        "assets/lecture-template/src/theme/sticker.tsx",
         "assets/lecture-template/src/theme/flat.tsx",
         "assets/lecture-template/scripts/tts-openai-compatible.py",
         "assets/lecture-template/manifests/asset-manifest.json",
@@ -91,11 +89,9 @@ def main() -> int:
         "references/scene-skeletons.md",
         "references/media-routing.md",
         "references/composition-gate.md",
-        "references/visual-system.md",
         "references/canvas-modes.md",
         "references/theme-system.md",
         "references/theme-cel.md",
-        "references/theme-sticker.md",
         "references/theme-flat.md",
     ]
     missing = [f for f in files if not (ROOT / f).is_file()]
@@ -110,13 +106,13 @@ def main() -> int:
             ast_errors.append(f"{py_script.name}: Syntax error: {exc}")
     check("脚本 AST 语法解析", not ast_errors, f"errors: {ast_errors}" if ast_errors else "all scripts/*.py valid syntax")
 
-    # ---- 好夹具 2：主题开关默认 paper（出厂状态） ----
+    # ---- 好夹具 2：主题开关默认 flat（出厂状态，v4.0.0 起） ----
     active = ROOT / "assets" / "lecture-template" / "src" / "theme" / "active.ts"
     if active.is_file():
-        ok = "from './paper'" in active.read_text(encoding="utf-8")
-        check("主题开关默认 paper", ok, "default" if ok else "active.ts 被改到非默认主题")
+        ok = "from './flat'" in active.read_text(encoding="utf-8")
+        check("主题开关默认 flat", ok, "default" if ok else "active.ts 被改到非默认主题")
     else:
-        check("主题开关默认 paper", False, "active.ts 缺失")
+        check("主题开关默认 flat", False, "active.ts 缺失")
 
     # ---- 好夹具 3：密钥防呆（被追踪文件里不许出现疑似 API Key）----
     import re as _re

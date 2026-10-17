@@ -115,15 +115,16 @@ const checkDeps = async () => {
   console.log(`Remotion production dependencies are ready on ${process.platform}.`);
 };
 
-const THEME_IDS = ['paper', 'cel', 'sticker', 'flat'];
+// v4.0.0：只保留两套皮肤，flat 为默认（paper / sticker 已删除）。
+const THEME_IDS = ['flat', 'cel'];
 
 const newProject = async (args) => {
   const classic = args.includes('--classic');
   const styleFlag = args.find((a) => a.startsWith('--style='));
-  const style = styleFlag ? styleFlag.slice('--style='.length) : 'paper';
+  const style = styleFlag ? styleFlag.slice('--style='.length) : 'flat';
   if (!THEME_IDS.includes(style)) fail(`Unknown style "${style}". Valid values: ${THEME_IDS.join(', ')}`, 2);
   const targetArg = args.find((a) => a !== '--classic' && !a.startsWith('--style='));
-  if (!targetArg) fail('Usage: notebook-video new-project PROJECT_DIRECTORY [--classic] [--style=paper|cel|sticker|flat]', 2);
+  if (!targetArg) fail('Usage: notebook-video new-project PROJECT_DIRECTORY [--classic] [--style=flat|cel]', 2);
   const target = resolvePath(targetArg);
   if (fs.existsSync(target)) {
     if (!fs.statSync(target).isDirectory()) fail(`Target exists and is not a directory: ${target}`);
@@ -136,7 +137,7 @@ const newProject = async (args) => {
   const templateDir = classic ? 'example-project' : 'lecture-template';
   fs.cpSync(path.join(SKILL_DIR, 'assets', templateDir), target, {recursive: true, force: true});
   // Theme selection rewrites the one-line theme switch in the copied project.
-  if (!classic && style !== 'paper') {
+  if (!classic && style !== 'flat') {
     const activePath = path.join(target, 'src', 'theme', 'active.ts');
     if (!fs.existsSync(activePath)) fail(`Theme switch is missing in the copied template: ${activePath}`);
     fs.writeFileSync(activePath, `import {THEME} from './${style}';\nexport {THEME};\n`);
@@ -154,7 +155,7 @@ const newProject = async (args) => {
     console.log(`Created official v9 visual-director Remotion notebook project: ${target}`);
   } else {
     console.log(`Created official lecture-template Remotion notebook project (pure code-drawn SVG default): ${target}`);
-    const themeDoc = style === 'paper' ? 'references/visual-system.md' : `references/theme-${style}.md`;
+    const themeDoc = `references/theme-${style}.md`;
     console.log(`Theme locked to "${style}". Style contract: ${themeDoc}.`);
     console.log('Multi-zone lecture composition rules: references/lecture-composition.md. Image generation stays an optional add-on offered separately.');
   }
@@ -427,9 +428,9 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   const audioStream = streams.find((s) => s.codec_type === 'audio');
   if (!videoStream || !audioStream) fail('Both video and audio streams are required.');
   if (videoStream.codec_name !== 'h264' || audioStream.codec_name !== 'aac') fail('Expected H.264 video and AAC audio.');
-  // Three locked delivery canvases: 2560x1440 (16:9), 1920x1440 (4:3), 1440x1920 (3:4 portrait).
-  const canvasOk = (videoStream.height === 1440 && (videoStream.width === 2560 || videoStream.width === 1920)) || (videoStream.width === 1440 && videoStream.height === 1920);
-  if (!canvasOk) fail(`Expected 2560x1440, 1920x1440 or 1440x1920, got ${videoStream.width}x${videoStream.height}.`);
+  // One locked delivery canvas (v4.0.0+): 2560x1440 (16:9).
+  const canvasOk = videoStream.width === 2560 && videoStream.height === 1440;
+  if (!canvasOk) fail(`Expected 2560x1440 (16:9), got ${videoStream.width}x${videoStream.height}.`);
   const expectedFps = Number(process.env.NOTEBOOK_VIDEO_FPS || 30);
   if (videoStream.r_frame_rate !== `${expectedFps}/1`) fail(`Expected ${expectedFps}fps, got ${videoStream.r_frame_rate}.`);
   if (String(audioStream.sample_rate) !== '48000' || Number(audioStream.channels) !== 2) fail('Expected 48kHz stereo audio.');
@@ -592,7 +593,7 @@ const showcase = async (args, sheetOnly = false) => {
 };
 
 const usage = () => {
-  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--classic] [--style=paper|cel|sticker|flat]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\nvalidate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
+  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--classic] [--style=flat|cel]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\nvalidate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };
 
 const main = async () => {

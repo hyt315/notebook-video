@@ -8,7 +8,7 @@ import cueData from './caption-cues.json';
 //
 // 本文件分三层，改写时只碰第三层：
 //   第一层 LOCKED：美学核心 + 字幕/背景/章节条/资产门，一律不改。
-//   第二层 组件库：Paper、LineIcon、CheckBadge、PillTag、StampBanner 等，
+//   第二层 组件库：Paper（卡片）、LineIcon、CheckBadge、PillTag、StampBanner 等，
 //            直接复用；需要新图形时仿照它们的写法新增组件。
 //   第三层 场景内容：COPY、SCENE 边界、各 Scene* 组件、Sound 音效表，
 //            换题材时重写这一层。
@@ -25,7 +25,7 @@ import cueData from './caption-cues.json';
 // ============================================================================
 
 // Keep authored scene time separate from delivery frames.
-import {MODES, CanvasMode, CanvasContext, useCanvas} from './theme/canvas';
+import {MODES, CanvasContext, useCanvas} from './theme/canvas';
 import {THEME} from './theme/active';
 import {JumpInText} from './toolkit';
 import {PillTag, TYPE} from './kit';
@@ -178,9 +178,8 @@ const CardFitGate=()=>{
 };
 
 // Non-visual QA gate: measure every full cue with the real loaded font.
-// 画幅感知（v2.10 修复）：字号 / 字重 / 字距 / 安全宽全部取自当前 canvas 与主题。
-// 旧版硬编码 16:9 的 44px/400/1334，导致 4:3 与 3:4 的字幕超宽静默通过、渲染后被裁切；
-// 同时没有计入主题字幕框的内边距（cel 64px / sticker 72px / flat 108px）。
+// 字号 / 字重 / 字距 / 安全宽全部取自 16:9 canvas（MODES['16:9']）与当前主题，
+// 并计入主题字幕框的内边距（cel 64px / flat 108px）。
 // 判定：> mode.safe 记 fail（真的会被裁切）；> mode.safe - subtitlePadX 只 warn（会顶到内边）。
 const CaptionFitGate=()=>{const {mode}=useCanvas();const safe=mode.safe,innerSafe=safe-(AESTHETIC.subtitlePadX??0),weight=AESTHETIC.subtitleWeight??400,ls=AESTHETIC.subtitleLetterSpacing??1.6;const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;let blocked=false;Promise.all([document.fonts.load(`${weight} ${mode.subFont}px Kai`),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){blocked=true;cancelRender(new Error('Subtitle measurement node is unavailable'));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const widths=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''}));const overflow=widths.filter(row=>row.width>safe+.5);const tight=widths.filter(row=>row.width>innerSafe+.5&&row.width<=safe+.5);if(tight.length&&typeof console!=='undefined')console.warn(`[CaptionFitGate] ${tight.length} 条字幕超过内边距安全宽 ${innerSafe}px（未裁切但会顶到字幕框内边）：${tight.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px`).join(' | ')}`);if(overflow.length){blocked=true;cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px>${safe}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live&&!blocked){blocked=true;cancelRender(error)}});return()=>{live=false}},[handle,mode.subFont,safe,innerSafe,weight,ls]);if(done)return null;return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:'Kai,sans-serif',fontSize:mode.subFont,fontWeight:weight,whiteSpace:'nowrap',letterSpacing:ls}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</div>};
 
@@ -246,12 +245,11 @@ const Subtitle=()=>{
 };
 
 const Chrome=()=>{
-  const {isPortrait}=useCanvas();
   const f=q(useCurrentFrame()),stage=Math.max(0,CHAPTER_STARTS.filter((x)=>f>=x).length-1),local=f-CHAPTER_STARTS[stage],p=pop(local,-8),titles=COPY.chapterTitles;
   return <>
-    <Paper lift={0.3} style={{left:isPortrait?40:92,top:isPortrait?80:74,width:isPortrait?330:392,height:isPortrait?84:90,zIndex:150,display:'flex',alignItems:'center',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${.96+.04*p})`,overflow:'hidden',padding:0}}>
-      <div style={{width:isPortrait?60:72,height:'100%',background:`linear-gradient(135deg,${C.orange},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:isPortrait?28:31,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
-      <div style={{padding:isPortrait?'6px 12px':'8px 16px',flex:1,minWidth:0}}>
+    <Paper lift={0.3} style={{left:92,top:74,width:392,height:90,zIndex:150,display:'flex',alignItems:'center',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${.96+.04*p})`,overflow:'hidden',padding:0}}>
+      <div style={{width:72,height:'100%',background:`linear-gradient(135deg,${C.orange},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:31,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
+      <div style={{padding:'8px 16px',flex:1,minWidth:0}}>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           <PillTag text={COPY.chromeKicker} color={C.blue} bg={C.blueLight} fontSize={TYPE.microS}/>
         </div>
@@ -262,7 +260,7 @@ const Chrome=()=>{
           // 这里按字数算字号：CJK 按 1 字宽、ASCII/空格/间隔号按 0.55 折算，并夹到 [19, TYPE.titleS]。
           const title = String(titles[stage] ?? '');
           const units = [...title].reduce((n, ch) => n + (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(ch) ? 1 : 0.55), 0) || 1;
-          const availW = isPortrait ? 214 : 286;
+          const availW = 286;
           const fitSize = Math.max(19, Math.min(TYPE.titleS, Math.floor(availW / units)));
           return <JumpInText key={stage} items={[{text:title}]} fontSize={fitSize}
             start={CHAPTER_STARTS[stage]+8} stagger={1.1}
@@ -270,7 +268,7 @@ const Chrome=()=>{
         })()}
       </div>
     </Paper>
-    <div style={{position:'absolute',right:isPortrait?40:88,top:isPortrait?76:70,zIndex:140,textAlign:'right',maxWidth:isPortrait?560:1180,overflow:'hidden'}}>
+    <div style={{position:'absolute',right:88,top:70,zIndex:140,textAlign:'right',maxWidth:1180,overflow:'hidden'}}>
       <div style={{fontSize:TYPE.labelM,fontWeight:700,letterSpacing:4,color:C.headerAccent,fontFamily:'Clash,Space'}}>{COPY.header}</div>
       <div style={{fontSize:TYPE.microL,marginTop:6,color:C.headerSub,fontFamily:'Space,Kai'}}>{COPY.headerSub}</div>
     </div>
@@ -343,10 +341,9 @@ const Sound=()=>{
 // **只有 1 张**落在抽样集合上，于是「对每一镜跑一遍门禁」等于什么都没量。
 // 处置：把每镜的落定帧显式加进 WATCH —— **你要看的那一帧，门禁必须先看过**。
 const WATCH=(()=>{const out:number[]=[];SHOT_IDS.forEach((id:string)=>{const s:any=(SHOTS as any)[id];out.push(s.from-1,s.from,s.from+1,s.to-1,s.to);out.push(s.to-12);(s.beats||[]).forEach((b:number)=>out.push(s.from+b));(s.keys||[]).forEach((k:any)=>out.push(s.from+k.f));});return out;})();
-const FilmLayout:React.FC<{canvas:CanvasMode}>=({canvas})=>{
-  const mode=MODES[canvas]||MODES['16:9'];
-  const isPortrait=canvas==='3:4';
-  return <CanvasContext.Provider value={{canvas,isPortrait,mode}}>
+const FilmLayout:React.FC=()=>{
+  const mode=MODES['16:9'];
+  return <CanvasContext.Provider value={{canvas:'16:9',mode}}>
     <AbsoluteFill style={{overflow:'hidden',background:C.paperBase}}>
       {/* data-design-root：FillGate 靠它把「输出像素」折回「设计像素」（ratio 实测，不假设 --scale）。
     缺了它 FillGate 会静默 return —— 门禁装了等于没装，所以这个属性是门禁契约的一部分。 */}
@@ -371,12 +368,8 @@ const FilmLayout:React.FC<{canvas:CanvasMode}>=({canvas})=>{
   </CanvasContext.Provider>;
 };
 
-const Film16x9=()=> <FilmLayout canvas="16:9"/>;
-// 4:3 / 3:4 两个交付画布**定义但默认不注册**（契约见 references/canvas-modes.md）：
-// 切换时自己改 canvas 参数并重排版面，不许用 scale(0.75) 信箱化冒充适配。
-// 导出是为了过 noUnusedLocals —— 它们的使用方式是「作者在下面 Root 里挂上去」，不是被 import。
-export const Film4x3=()=> <FilmLayout canvas="4:3"/>;
-export const Film3x4=()=> <FilmLayout canvas="3:4"/>;
+// v4.0.0：只有 16:9 一种交付画布（2560×1440，设计坐标 1920×1080）。
+const Film16x9=()=> <FilmLayout/>;
 
 // 接触表 composition 的渲染期门禁（v1）：
 // `NotebookVideoShowcase` 此前**一道门禁都没有** —— 第 ⑥ 页第三站的标签块越出画布右缘被裁
@@ -407,9 +400,7 @@ const ShowcaseComposition=()=> <>
 </>;
 
 const Root=()=> <>
-  {/* 官方模板示例片（8 镜 / 4 骨架）。本版场景按 1920×1080 设计空间编写：
-      4:3 与 3:4 需要各自的版面重排，不再用 scale(0.75) 信箱化冒充适配
-      （见 references/canvas-modes.md 与 portrait-illustration-system.md）。 */}
+  {/* 官方模板示例片（8 镜 / 4 骨架），按 1920×1080 设计空间编写，交付 2560×1440（见 references/canvas-modes.md）。 */}
   <Composition id="NotebookVideoFilm" component={Film16x9} durationInFrames={DURATION} fps={FPS} width={2560} height={1440}/>
   {/* 组件接触表：18 页 × 1 秒（`SHOWCASE_PAGES`）；抽帧用 select 滤镜按帧号取每页第 6/21 帧两张中段图，
       6×6=36 格一张 JPG，供 AI 看图选型（时长 = SHOWCASE_PAGES*30，加页自动跟随） */}

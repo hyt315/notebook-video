@@ -533,7 +533,7 @@ export const Showcase: React.FC = () => {
                 <TreeView f={F} startAt={0} width={800} height={380} nodeW={116} nodeH={34}
                   data={{name: 'notebook-video', children: [
                     {name: 'components', children: [{name: 'ui'}, {name: 'chart'}, {name: 'data'}]},
-                    {name: 'theme', children: [{name: 'paper'}, {name: 'cel'}]},
+                    {name: 'theme', children: [{name: 'flat'}, {name: 'cel'}]},
                     {name: 'references'},
                   ]}} />
               </Tile>
@@ -685,7 +685,7 @@ export const Showcase: React.FC = () => {
                     {name: '封装组件层', children: [{name: '界面结构件', value: 6}, {name: '图表与图形', value: 5}, {name: '手绘与公式', value: 3}]},
                     {name: '门禁脚本', children: [{name: '构图与活性', value: 4}, {name: '帧参数名', value: 3}, {name: '负向抽查', value: 2}]},
                     {name: '参考资料', children: [{name: '依赖政策', value: 3}, {name: '介质路由', value: 2}]},
-                    {name: '四套皮肤', children: [{name: '暖米纸', value: 2}, {name: '赛璐璐', value: 2}]},
+                    {name: '两套皮肤', children: [{name: '扁平几何', value: 2}, {name: '赛璐璐', value: 2}]},
                   ]}} />
               </Tile>
             </div>
@@ -696,7 +696,7 @@ export const Showcase: React.FC = () => {
                     {name: '封装组件层', children: [{name: '界面结构件', value: 6}, {name: '图表与图形', value: 5}]},
                     {name: '门禁脚本', children: [{name: '构图与活性', value: 4}, {name: '帧参数名', value: 3}, {name: '负向抽查', value: 2}]},
                     {name: '参考资料', children: [{name: '依赖政策', value: 3}, {name: '介质路由', value: 2}]},
-                    {name: '皮肤', children: [{name: '暖米纸', value: 2}]},
+                    {name: '皮肤', children: [{name: '扁平几何', value: 2}]},
                   ]}} />
               </Tile>
             </div>

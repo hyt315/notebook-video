@@ -73,7 +73,7 @@
 
 - Bottom-pinned pure caption text is present in every scene (no bar, no torn contour).
 - No dark border, black side mark, inner line, orange locator or blue ring.
-- One centered line, WenKai Lite 44px (40px on 3:4).
+- One centered line, WenKai Lite 44px.
 - `CaptionFitGate` measures every fully revealed cue with the loaded WenKai font in the real render browser; every cue fits within the canvas safe width.
 - Partial reveal does not shift horizontally (hidden full-width placeholder).
 - Internal punctuation remains; trailing punctuation (`，。！？；、,.!?;:`) is strictly stripped and hidden visually via `cleanFull` and gated character length. Trailing punctuation mark on screen is an immediate rejection flag.

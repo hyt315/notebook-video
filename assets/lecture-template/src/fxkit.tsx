@@ -17,8 +17,8 @@ import {THEME} from './theme/active';
 // ============================================================================
 
 const C = THEME.palette;
-// extras 是可选契约：paper/flat 没有 extras，sticker 只有 Tape。必须用可选链，
-// 否则默认 paper 主题在 import 本文件的瞬间就会崩（v2.10 引入 fxkit 后才暴露）。
+// extras 是可选契约：flat 没有 extras，cel 只有 Burst。必须用可选链，
+// 否则默认 flat 主题在 import 本文件的瞬间就会崩（v2.10 引入 fxkit 后才暴露）。
 // （这里原有一个读 `THEME.extras?.Burst` 的 const Burst，本文件从未用过 —— tsc TS6133。）
 
 // 与主模板一致的字阶镜像（只取本库用到的档位）

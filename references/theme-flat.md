@@ -1,6 +1,6 @@
 ﻿# Theme contract: flat (modern flat geometric monsters)
 
-Status: LOCKED. This theme ships fully implemented in `assets/lecture-template/src/theme/flat.tsx`. Production runs select it with `new-project ./dir --style=flat` and never edit the theme file. Read this document instead of the other theme docs; the three style contracts are mutually exclusive by design (progressive disclosure).
+Status: LOCKED. This theme ships fully implemented in `assets/lecture-template/src/theme/flat.tsx`. It is the **default** skin (v4.0.0+): `new-project ./dir` (or `--style=flat`) selects it; production runs never edit the theme file. Read this document instead of the other theme doc; the two style contracts are mutually exclusive by design (progressive disclosure).
 
 ## Design language
 
@@ -8,7 +8,7 @@ Modern flat geometric with playful character: gray-hairline white cards with col
 
 ## Locked tokens (do not invent alternatives)
 
-- Canvas: 16:9 (2560×1440) 是模板默认注册的画布；4:3 / 3:4 需要自己改 canvas 参数并重排版面（见 canvas-modes.md）。 Layout coordinates are unchanged from the default; only skin and decoration change.
+- Canvas: 16:9 only (2560×1440 delivery, 1920×1080 design space; see canvas-modes.md). Layout coordinates are unchanged from the default; only skin and decoration change.
 
 - Base surface: cool light gray-blue `#f2f4f7`; cards pure white. The cool tone is the point: it must never drift back toward a warm paper white.
 
@@ -18,7 +18,7 @@ Modern flat geometric with playful character: gray-hairline white cards with col
 
 - Card skin: pure white card with a `2px` neutral gray hairline (`rgba(25,25,25,0.30)`, defines the top/left edges on the pale surface — not an ink frame), `20px` radius, offset solid shadow `7px 7px 0` in indigo `#3b4ed8` by default — when a scene passes a semantic accent color the shadow takes that color, so each card reads as a color-blocked tile; lift extends the offset slightly. No ink border, no inset liner, no blur anywhere.
 
-- Background (LOCKED fixed raster): one AI-generated image per canvas ratio, selected automatically from `public/bg-flat-<169|43|34>.jpg` (`16:9` 2560×1440 pixel-exact 1:1 with the canvas; `4:3` 2240×1680 and `3:4` 1680×2240 exported at 7/6 supersampling of the canvas; every ratio is aspect-exact to its canvas and renders as a uniform 6/7 downscale — no crop, no stretch). The image carries the complete background language: pale gray-blue `#f2f4f7` grained paper, an indigo round blob monster peeking from the bottom edge bottom-right (gold antenna ball, big eyes, blush, smile — head and shoulders only), a mint hill bottom-left with a tiny coral square monster peeking out, ~85% clean whitespace, top corners and center reserved for content. The code-drawn SVG monster/props background is retired; never restore it and never draw extra elements on top of the image.
+- Background (LOCKED fixed raster): one AI-generated image, `public/bg-flat-169.jpg` (2560×1440, pixel-exact 1:1 with the 16:9 canvas — no crop, no stretch). The image carries the complete background language: pale gray-blue `#f2f4f7` grained paper, an indigo round blob monster peeking from the bottom edge bottom-right (gold antenna ball, big eyes, blush, smile — head and shoulders only), a mint hill bottom-left with a tiny coral square monster peeking out, ~85% clean whitespace, top corners and center reserved for content. The code-drawn SVG monster/props background is retired; never restore it and never draw extra elements on top of the image.
 
 - Grade: none by design. Color contrast carries the composition; do not add soft-light warmth or vignette.
 
@@ -40,11 +40,11 @@ Modern flat geometric with playful character: gray-hairline white cards with col
 
 - Restoring the code-drawn SVG monster/props background, or drawing any extra element on top of the locked background image.
 
-- Subtitle rendered as a full-width bar, or as a floating white chip (that belongs to cel/sticker).
+- Subtitle rendered as a full-width bar, or as a floating white chip (that belongs to cel).
 
 - Ink-bordered cards or white inset liners (that is the cel theme's language; flat cards carry only the 2px gray hairline plus colored shadows).
 
-- Replacing or regenerating the background images with off-palette colors, or stretching a wrong-ratio image onto a canvas.
+- Replacing or regenerating the background images with off-palette colors, or stretching a wrong-ratio image onto the canvas.
 
 ## Background decoration zones (v2.10)
 

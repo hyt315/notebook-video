@@ -43,7 +43,7 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 | **Fourteen quality gates** | 6 build-time: shot→frame resolution, out-of-bounds proof, composition & density, **frame-prop-name check**, **audio levels**, **presentation (beat↔cue alignment / caption reading budget / font size & contrast)**; 7 runtime: caption width, card overflow, **text-vs-text overlap and occlusion**, **clipped graphics**, **canvas bounds**, **measured lower-quarter density**, **main-slot occupancy**; 1 post-render: **whether the picture actually moves** | A non-zero P0 **blocks the render**; each gate also logs coverage so **"no warning" and "never ran" are distinguishable** |
 | **Material plates** | Real screenshots / official charts sit inside the locked cel frame (2.5px ink outline + hard shadow) with a caption and a source line, and can drift slowly toward the point that matters; assets are registered in **both** `visual-assets.json` and `asset-manifest.json` (source / rights / baked text / checksum) | For claims that need "this really is the official thing"; anything a diagram explains better stays drawn |
 | **Frame-accurate Chinese TTS sync** | Millisecond word timings → semantic sentence breaks → animation beats; trailing punctuation strictly stripped | No drifting captions, no audio-visual mismatch |
-| **Four locked skins** | `paper` (warm ivory notebook, default) / `cel` (anime cel) / `sticker` / `flat` | One script, four moods |
+| **Two locked skins** | `flat` (flat geometric, default) / `cel` (anime cel) | One script, two moods |
 | **Background readability contract** | The locked background bitmap is **never altered**; content that sits over decoration rides a **semi-transparent** feathered plate (panel 88%, plate centre 76%) | Readability without a solid white board — the film does not turn into a white slide |
 
 ---
@@ -62,7 +62,7 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 > To check the current version: `npm install` inside `assets/lecture-template`, then `npm run still` (single frame) or `npm run render` (full film). **For a delivery file, use `node scripts/notebook-video.mjs render <project> <output>`** — it rewrites the color metadata and normalizes loudness, which `npm run render` does not do (its output fails the `validate-video` color assertion).
 > The contact sheet is the same: `node scripts/notebook-video.mjs showcase <project-dir>` now renders at **delivery spec** (2560×1440 / silent AAC / color tags rewritten, matching the file in `assets/demo/`). `--scale` accepts a decimal literal only — `--scale=4/3` is rejected by the CLI, use `1.3333333333333333`.
 
-**Canvases**: three are locked — 16:9 (2560×1440), 4:3 (1920×1440) and 3:4 portrait (1440×1920), all native 30 fps. The bundled example film is authored in the **16:9 design space**; 4:3 / 3:4 need their own dedicated layout pass (**letterbox scaling is no longer presented as adaptation**).
+**Canvas**: one locked canvas — 16:9 (2560×1440, 1920×1080 design space), native 30 fps. v4.0.0 removed the 4:3 / 3:4 canvases and the `paper` / `sticker` skins; older projects are not supported. Parameters: [`references/canvas-modes.md`](references/canvas-modes.md).
 
 ### Default Canvas: 16:9 Landscape
 
@@ -178,7 +178,7 @@ Runtime gates additionally stop text overlap, clipped cards and over-wide captio
 Frequently used commands (full list in `--help`):
 
 ```text
-node scripts/notebook-video.mjs new-project   ./my-video --style=paper
+node scripts/notebook-video.mjs new-project   ./my-video --style=flat
 node scripts/notebook-video.mjs resolve-shots ./my-video
 python scripts/validate-frame-props.py        ./my-video
 python scripts/validate-shot-motion.py        ./my-video
@@ -242,7 +242,7 @@ notebook-video/
 ├── SKILL.md                          # Core skill definition and production workflow
 ├── manifest.json                     # Skill metadata (version lives here)
 ├── README.md / README.en.md          # Chinese / English documentation
-├── CHANGELOG.md                      # Version history (currently v3.1.2)
+├── CHANGELOG.md                      # Version history (currently v4.0.0)
 ├── LICENSE                           # Apache License 2.0
 ├── NOTICE                            # Third-party font / asset / dependency notices
 ├── CONTRIBUTING.md · CODE_OF_CONDUCT.md · SECURITY.md · SUPPORT.md
@@ -265,7 +265,7 @@ notebook-video/
     ├── media-routing.md              # Content→medium routing, A/B scenes, background contract
     ├── composition-gate.md           # Every gate's criteria and its fix
     ├── motion-design.md              # Multi-clock motion rules
-    └── theme-*.md / visual-system.md # The four skin contracts
+    └── theme-*.md                    # The two skin contracts (flat / cel)
 ```
 
 Source layers inside the template (`assets/lecture-template/src/`):

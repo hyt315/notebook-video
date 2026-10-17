@@ -15,7 +15,7 @@
     "frame_quantizer": "designStep = designTimelineFps / physicalMotionFps; Math.floor(designFrame / designStep) * designStep",
     "camera": "per-shot (restricted recipes; there is no film-wide camera track)",
     "global_motion": false,
-    "mode_selection": "asked once at kickoff; 16:9 is the default",
+    "mode_selection": "fixed: 16:9 is the only delivery canvas (v4.0.0+)",
     "modes": {
       "16:9": {
         "width": 2560,
@@ -29,33 +29,6 @@
           1046
         ],
         "subtitle_safe_width": 1334
-      },
-      "4:3": {
-        "width": 1920,
-        "height": 1440,
-        "design_width": 1440,
-        "design_height": 1080,
-        "subtitle_bounds": [
-          60,
-          934,
-          1380,
-          1046
-        ],
-        "subtitle_safe_width": 1060
-      },
-      "3:4": {
-        "width": 1440,
-        "height": 1920,
-        "design_width": 1080,
-        "design_height": 1440,
-        "subtitle_bounds": [
-          50,
-          1296,
-          1030,
-          1400
-        ],
-        "subtitle_safe_width": 900,
-        "subtitle_font_px": 40
       }
     },
     "_note_global_motion": "False = 没有全片级相机/运动轨道；镜头级的运镜由每镜的 camera 字段声明（motion_system.camera_is_per_shot）"

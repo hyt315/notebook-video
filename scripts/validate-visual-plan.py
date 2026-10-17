@@ -13,12 +13,10 @@ from pathlib import Path
 ALLOWED_MODES = {"image-text", "pure-text", "pure-graphic"}
 ALLOWED_SOURCES = {"ai-generated", "user-supplied", "licensed-third-party"}
 
-# Locked parameter sets per delivery canvas. A film that mixes values from two
-# modes ships a subtitle strip or design space sized for the other canvas.
+# Locked parameter set for the only delivery canvas (16:9, v4.0.0+). Any other
+# Composition width is rejected.
 CANVAS_MODES = {
     2560: {"label": "16:9", "design_width": 1920, "design_height": 1080, "subtitle_safe_width": 1334, "subtitle_margin": 188, "subtitle_bottom": 34},
-    1920: {"label": "4:3", "design_width": 1440, "design_height": 1080, "subtitle_safe_width": 1060, "subtitle_margin": 60, "subtitle_bottom": 34},
-    1440: {"label": "3:4 portrait", "design_width": 1080, "design_height": 1440, "subtitle_safe_width": 900, "subtitle_margin": 50, "subtitle_bottom": 40},
 }
 
 
@@ -49,7 +47,7 @@ def validate_canvas_mode(project: Path) -> list[str]:
     width = int(comp.group(1))
     mode = CANVAS_MODES.get(width)
     if mode is None:
-        return [f"canvas: Composition width {width} is not a locked canvas (2560, 1920 or 1440)"]
+        return [f"canvas: Composition width {width} is not the locked 16:9 canvas (2560; v4.0.0 dropped 4:3 / 3:4)"]
     errors: list[str] = []
     label = mode["label"]
 

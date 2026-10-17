@@ -32,7 +32,7 @@ The generated bitmap is an input layer, never the finished video.
 Every prompt should specify:
 
 1. subject and explanatory purpose;
-2. the official warm-ivory notebook/cut-paper/watercolor art direction;
+2. the active skin's art direction (`flat` geometric by default, or `cel` anime cel-shading);
 3. 16:9 or the exact target crop;
 4. the side or region that must remain visually quiet for overlays;
 5. separated subjects that can be highlighted independently;

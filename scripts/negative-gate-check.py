@@ -308,7 +308,7 @@ cleanup(td)
 # ── M · 呈现效果门禁 G-3：主题正文色对比度不足 → 必须拦 ──
 td, rc0, out0 = mkproj()
 os.makedirs(os.path.join(td, 'src/theme'), exist_ok=True)
-io.open(os.path.join(td, 'src/theme/paper.tsx'), 'w', encoding='utf-8', newline='').write(
+io.open(os.path.join(td, 'src/theme/flat.tsx'), 'w', encoding='utf-8', newline='').write(
     "const palette = {" + NL
     + "  ink: '#f2f2f2'," + NL          # 近乎白 → 压在白底上读不出来
     + "  muted: '#eeeeee'," + NL
@@ -563,13 +563,13 @@ cleanup(td)
 # 它们不过 4.5:1，"把强调色压暗到能当文字"这个约定就是空话。
 td, rc0, out0 = mkproj()
 os.makedirs(os.path.join(td, 'src/theme'), exist_ok=True)
-for name in ('types.ts', 'canvas.ts', 'active.ts', 'paper.tsx', 'cel.tsx', 'sticker.tsx', 'flat.tsx'):
+for name in ('types.ts', 'canvas.ts', 'active.ts', 'cel.tsx', 'flat.tsx'):
     src_p = os.path.join(TPL, 'src/theme', name)
     if os.path.exists(src_p):
         shutil.copy(src_p, os.path.join(td, 'src/theme', name))
-ink_path = os.path.join(td, 'src/theme/paper.tsx')
-ink_text = io.open(ink_path, encoding='utf-8').read().replace("blueInk: '#2563eb'", "blueInk: '#eeeeee'")
-assert "blueInk: '#eeeeee'" in ink_text, '夹具没改到 paper 的 blueInk（值变了？）'
+ink_path = os.path.join(td, 'src/theme/flat.tsx')
+ink_text = io.open(ink_path, encoding='utf-8').read().replace("blueInk: '#3b4ed8'", "blueInk: '#eeeeee'")
+assert "blueInk: '#eeeeee'" in ink_text, '夹具没改到 flat 的 blueInk（值变了？）'
 io.open(ink_path, 'w', encoding='utf-8', newline='').write(ink_text)
 case('Y 文字安全色 · *Ink 压不过 4.5:1', [
     ('must_pass', 'resolve-shots', (rc0, out0)),

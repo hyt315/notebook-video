@@ -68,11 +68,11 @@ Keep these official elements locked until the user approves a future rendered re
 
 - React + TypeScript + Remotion rendering core;
 - locked premium motion contracts shipped in the template: `JumpInText` per-glyph 3D flip titles, `ShimmerText` sweep on CTA strings, multi-keyframe figure roll-ins, per-word subtitle reveal, and the v2.9 shot layer (see [shot-language.md](shot-language.md));
-- fixed native 30fps motion, rendered and delivered on one of three locked canvases: 2560×1440 (16:9), 1920×1440 (4:3) or 1440×1920 (3:4 portrait), chosen once at kickoff;
+- fixed native 30fps motion, rendered and delivered on the single locked canvas: 2560×1440 (16:9);
 - no duplicate-frame upconversion; use 60fps only when motion is authored natively at 60fps;
 - mount only the active scene, with at most two scenes during a short handoff;
 - animate moving objects with transforms instead of per-frame layout properties (**progress bars animate `scaleX`, never `width`**);
-- bright layered warm-ivory notebook background;
+- the active skin's locked background raster (`flat` default, or `cel`);
 - stable top-left chapter card and top-right technical header, both **outside** the shot camera;
 - bottom-pinned pure caption text with per-word reveal, no decorative bar, no dark border or side artifacts;
 - pure bottom subtitle with soft text shadow, no dark border, side marks, locator or ring;

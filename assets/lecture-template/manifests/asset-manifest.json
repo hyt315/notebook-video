@@ -4,14 +4,7 @@
   "duration_frames": 1150,
   "visual_asset_ids": [
     "bg-cel-169",
-    "bg-cel-43",
-    "bg-cel-34",
-    "bg-sticker-169",
-    "bg-sticker-43",
-    "bg-sticker-34",
-    "bg-flat-169",
-    "bg-flat-43",
-    "bg-flat-34"
+    "bg-flat-169"
   ],
   "scenes": [
     {
@@ -21,14 +14,7 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
-        "bg-cel-43",
-        "bg-cel-34",
-        "bg-sticker-169",
-        "bg-sticker-43",
-        "bg-sticker-34",
-        "bg-flat-169",
-        "bg-flat-43",
-        "bg-flat-34"
+        "bg-flat-169"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -48,14 +34,7 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
-        "bg-cel-43",
-        "bg-cel-34",
-        "bg-sticker-169",
-        "bg-sticker-43",
-        "bg-sticker-34",
-        "bg-flat-169",
-        "bg-flat-43",
-        "bg-flat-34"
+        "bg-flat-169"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -75,14 +54,7 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
-        "bg-cel-43",
-        "bg-cel-34",
-        "bg-sticker-169",
-        "bg-sticker-43",
-        "bg-sticker-34",
-        "bg-flat-169",
-        "bg-flat-43",
-        "bg-flat-34"
+        "bg-flat-169"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -102,14 +74,7 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
-        "bg-cel-43",
-        "bg-cel-34",
-        "bg-sticker-169",
-        "bg-sticker-43",
-        "bg-sticker-34",
-        "bg-flat-169",
-        "bg-flat-43",
-        "bg-flat-34"
+        "bg-flat-169"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -129,14 +94,7 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
-        "bg-cel-43",
-        "bg-cel-34",
-        "bg-sticker-169",
-        "bg-sticker-43",
-        "bg-sticker-34",
-        "bg-flat-169",
-        "bg-flat-43",
-        "bg-flat-34"
+        "bg-flat-169"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -156,14 +114,7 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
-        "bg-cel-43",
-        "bg-cel-34",
-        "bg-sticker-169",
-        "bg-sticker-43",
-        "bg-sticker-34",
-        "bg-flat-169",
-        "bg-flat-43",
-        "bg-flat-34"
+        "bg-flat-169"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -183,14 +134,7 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
-        "bg-cel-43",
-        "bg-cel-34",
-        "bg-sticker-169",
-        "bg-sticker-43",
-        "bg-sticker-34",
-        "bg-flat-169",
-        "bg-flat-43",
-        "bg-flat-34"
+        "bg-flat-169"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -210,14 +154,7 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-cel-169",
-        "bg-cel-43",
-        "bg-cel-34",
-        "bg-sticker-169",
-        "bg-sticker-43",
-        "bg-sticker-34",
-        "bg-flat-169",
-        "bg-flat-43",
-        "bg-flat-34"
+        "bg-flat-169"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
