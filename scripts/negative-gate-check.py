@@ -1400,6 +1400,12 @@ td = media_proj(lambda e: e.update(source='web', url='https://example.com/x.png'
                 scene='<MediaFrame f={f} id="pr" x={200} y={200} w={1060} h={662} />\n<div data-media-credit="pr" />\n')
 case('M7 media · 场景里自己画 / 关署名徽章 → 拦', [('must_block:署名', 'validate-media', run([PY, VMEDIA, td]))])
 cleanup(td)
+td = media_proj(scene='const W = 900;\nconst BIG = W * 2;\n<MediaFrame f={f} id="pr" x={0} y={0} w={BIG} h={W * 1.1} focus="diff" focusZoom={2} />\n')
+case('M8 media · 尺寸写成同文件常量表达式，放大 >1.5 → 照样拦（v4.5c）', [('must_block:会糊', 'validate-media', run([PY, VMEDIA, td]))])
+cleanup(td)
+td = media_proj(scene='<MediaFrame f={f} id="pr" x={L.x} y={L.y} w={L.w} h={L.h} focus="diff" focusZoom={2.4} />\n')
+case('M9 media · 尺寸来自布局对象量不出 → 按占满画布估，可能糊 → 提醒（v4.5c）', [('must_warn:量不出', 'validate-media', run([PY, VMEDIA, td]))])
+cleanup(td)
 
 print()
 print('== 负向抽查明细 ==')

@@ -48,6 +48,39 @@ def img_size(p: Path) -> tuple[int, int] | None:
     return None
 
 
+_ARITH = re.compile(r"^[\d.+\-*/() ]+$")
+
+
+def file_consts(src: str) -> dict[str, float]:
+    """v4.5c：同文件里的数值常量（`const W = 1060`、`const MW = W * 0.6`，按出现顺序求值），给 w={W} 这类尺寸用。"""
+    out: dict[str, float] = {}
+    for m in re.finditer(r"\b(?:const|let)\s+([A-Za-z_]\w*)\s*(?::\s*number)?\s*=\s*([^;\n,]+)", src):
+        v = eval_arith(m.group(2), out)
+        if v is not None:
+            out[m.group(1)] = v
+    return out
+
+
+def eval_arith(expr: str, consts: dict[str, float]) -> float | None:
+    """只认数字 / 已知常量 / + - * / ( )；其它（函数调用、props.x、布局对象字段）返回 None = 量不出。"""
+    e = re.sub(r"\b[A-Za-z_]\w*\b", lambda m: repr(consts[m.group(0)]) if m.group(0) in consts else "\x00", expr.strip())
+    if "\x00" in e or not _ARITH.match(e):
+        return None
+    try:
+        return float(eval(e, {"__builtins__": {}}, {}))  # noqa: S307 — 只剩数字和运算符
+    except Exception:
+        return None
+
+
+def size_expr(m, consts: dict[str, float]):
+    """w= / h= 的值：字面量、{1060}、{W}、{W * 0.6}；量不出返回 "?"（不是 None：None = 没写这个属性）。"""
+    if not m:
+        return None
+    raw = m.group(1).strip("{}\"")
+    v = eval_arith(raw, consts)
+    return v if v is not None else "?"
+
+
 def usages(proj: Path) -> list[dict]:
     """场景源码里的 <MediaFrame …>（字面量 id / w / h / focus / focusZoom），以及 auto 草稿的 story.ts。"""
     out = []
@@ -55,13 +88,15 @@ def usages(proj: Path) -> list[dict]:
         if f.name == "media-frame.tsx":
             continue
         s = f.read_text(encoding="utf-8", errors="ignore")
+        consts = file_consts(s)
         for m in re.finditer(r"<MediaFrame\b(.*?)/>", s, re.S):
             t = m.group(1)
             g = lambda k, pat=r"\{?\"?([\w.-]+)\"?\}?": (re.search(rf"\b{k}=" + pat, t) or [None, None])[1]
+            ge = lambda k: size_expr(re.search(rf"\b{k}=(\{{[^{{}}]*\}}|\"[^\"]*\"|[\d.]+)", t), consts)
             lit = re.search(r"\bid=(?:\"([\w.-]+)\"|\{['\"]([\w.-]+)['\"]\})", t)
             if not lit:
                 continue  # 非字面量 id（例如 auto.tsx 里的 e.media）：由 story.ts 那一路检查
-            u = {"file": f.name, "id": lit.group(1) or lit.group(2), "w": g("w"), "h": g("h"), "focus": g("focus"), "focusZoom": g("focusZoom"),
+            u = {"file": f.name, "id": lit.group(1) or lit.group(2), "w": ge("w"), "h": ge("h"), "focus": g("focus"), "focusZoom": g("focusZoom"),
                  "regions": re.findall(r"region:\s*['\"]([\w-]+)['\"]", t) + re.findall(r"highlight=\{\[([^\]]*)\]\}", t)}
             out.append(u)
     st = proj / "src" / "story.ts"
@@ -138,12 +173,13 @@ def main(argv: list[str]) -> int:
         for rid in [u["focus"]] + [x.strip(" '\"") for x in ",".join(u["regions"]).split(",") if x.strip(" '\"")]:
             if rid and rid not in regs:
                 p0.append(f"{u['file']}: 素材 {mid} 没有区域「{rid}」（可用：{sorted(regs) or '无'}）")
-        try:
-            w, h = float(u["w"]), float(u["h"])
-        except (TypeError, ValueError):
-            continue
         if "_px" not in e:
             continue
+        unknown = [k for k in ("w", "h") if not isinstance(u[k], (int, float))]
+        # v4.5c：尺寸是布局对象 / props / 函数算出来的，静态量不出 —— 按最坏情况（占满 1920×1080 画布）估，
+        # 最坏情况也不糊就放行，否则降为 P1 提醒去看静帧（以前这里直接跳过，等于没查）。
+        w = 1920.0 if "w" in unknown else float(u["w"])
+        h = 1080.0 if "h" in unknown else float(u["h"])
         iw, ih = e["_px"]
         k = min(w / iw, h / ih)
         zoom = 1.0
@@ -154,7 +190,12 @@ def main(argv: list[str]) -> int:
             except ValueError:
                 zoom = 2.4
         up = k * zoom
-        if up > UPSCALE_MAX:
+        if up > UPSCALE_MAX and unknown:
+            p1.append(f"{u['file']}: <MediaFrame id=\"{mid}\"> 的 {'/'.join(unknown)} 不是字面量或同文件常量，量不出放大倍数；"
+                      f"按占满画布估最多放大 {up:.2f} 倍（推近 ×{zoom:.2f}）—— 写成数字 / const，或在 --stills 静帧里确认不糊")
+        elif unknown:
+            pass
+        elif up > UPSCALE_MAX:
             p0.append(f"{mid}: 原图 {iw}×{ih} 显示成 {w:.0f}×{h:.0f}（推近 ×{zoom:.2f}）= 放大 {up:.2f} 倍 > {UPSCALE_MAX} 会糊 —— 换更大的原图、缩小显示框或降低 focusZoom")
         elif up * 4 / 3 > UPSCALE_MAX:
             p1.append(f"{mid}: 2560×1440 交付时放大 {up * 4 / 3:.2f} 倍（1080p 交付没问题）")
