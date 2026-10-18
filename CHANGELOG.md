@@ -12,6 +12,17 @@ All notable changes are recorded here. The project follows semantic versioning.
 > 说明：先前的 v4.5 「文字优先」尝试（大字页、章节进度条、章节卡、底色带 / 下划线强调）观感不如 v4.4，已整体撤回，保存在分支 `v4.5-textfirst`。
 > Note: the earlier text-first v4.5 attempt (big text pages, chapter progress bar, chapter cards, tinted-band / underline emphasis) was rejected as worse than v4.4 and is preserved on branch `v4.5-textfirst`.
 
+### 4.5.0 打磨（4.5c，同版本号）/ 4.5.0 polish (4.5c, same version)
+
+- 音效：命中帧早于瞬态偏移时（片头第 2 帧的 chapter，偏移 8 帧）以前起播被夹到 0、瞬态晚 6 帧；现在从第 0 帧起播并 `trimBefore` 跳过文件开头，瞬态落在命中帧。riser 的命中点改为与 chapter 同帧（以前相隔 2 帧 / 67 ms 各响一下）。实测 v4.4 演示（仅渲染音频）：22 个 cue 全部在 ±1 帧内（之前 4 个超差：片头 chapter +5.6 帧、3 个章节点 −2 帧），cue 最小间隔 433 ms，音乐床闪避中位 −6.9 dB，无削波。新增 `scripts/dev/listen-check.py`（只渲染音频的客观试听：响度、真峰、削波、命中误差、间隔、闪避深度）。
+  SFX: `trimBefore` when the hit frame precedes the transient offset (opening chapter was 6 f late); riser hit now coincides with the chapter hit. Demo audio-only check: 22/22 cues within ±1 f (was 4 off), min gap 433 ms, bed duck −6.9 dB median, no clipping. New `scripts/dev/listen-check.py`.
+- 摄影机：`cinema.focus[].keep`——推近时也必须完整入画的矩形，引擎把推近倍数降到能装下「焦点 ∪ keep」（≥ focusMinZoom）；`hero-number` 版式缺省 keep = anchor + 8% 字形外溢余量（修 v4.4 演示 S1 推近终端时「1.2 秒」被切掉左半）。`resolve-shots` 透传 `slide` / `keep`。
+  Camera: `focus[].keep`; hero-number shots keep the hero number in frame by default (fixes demo S1 “1.2秒” cut). resolve-shots now passes `slide` / `keep` through.
+- MediaFrame 区域高亮：画在视口坐标（恒定 4 px 橙描边 + 白内圈 + 抬升阴影 + 区域外 0.16 淡暗幕，v4.4 描边 + 轻抬升的语汇），缩小看也清楚；区域推近后露出不足 90% 的框不画。
+  MediaFrame highlights: viewport-space stroke + inner ring + lift + soft veil; partially visible (< 90 %) boxes hidden.
+- validate-media：`w` / `h` 写成同文件常量 / 算式（`w={W * 0.6}`）也能量放大倍数；量不出（布局对象字段）时按占满画布估，可能糊则 P1 提醒（以前直接跳过）。负向抽查 86 例 / 140 断言（新增 M8 / M9）。
+  validate-media: measures const/arithmetic sizes; unknown sizes → full-canvas worst-case P1. Negative gate 86 cases / 140 assertions.
+
 ### 新增 / Added
 
 - 弱模型复刻辅助：5 个讲课蓝图 `blueprints/`（concept / code-change / data-compare / process / pitfall，同一弧线 钩子 → 先懂一个词 → 拆开看 → 举例 → 误区 → 回顾），每镜带 `$v44`：该用的骨架与 v4.4 组件；未填 `<<占位符>>` 直接报错。

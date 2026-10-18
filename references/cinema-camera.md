@@ -14,7 +14,7 @@ v4.4 在引擎里给每一镜套一台虚拟摄影机，并且把「内容太小
 |---|---|---|---|
 | **fit** 内容自动放大 | `auto` | `cinema.fit: "auto" \| "none"` | anchor 占内容带（安全区）面积 < 60% 时，整镜按 anchor 中心推近到 72%；上限：anchor 放大后仍在内容带内、≤ 1.30、与场景缩放相乘 ≤ 1.35。`resolve-shots.py` 预算成 `cinema.fit = {x, y, s, fill, fillAfter}`。 |
 | **drift** 缓推 / 漂移 | `auto`（4.5%） | `cinema.drift: "auto" \| "none" \| 0–0.08` | 每镜一次慢推，镜与镜之间轮换：正推 → 右移推 → 拉 → 左移推（不会全片同一种推）。 |
-| **focus** 讲到哪推到哪 | 无 | `cinema.focus: [{beat \| cue \| at, region \| x,y,w,h, zoom?, hold?}]` | 第 N 拍开始，弹簧曲线（20 帧）推近该区域，停 `hold` 帧（缺省 60）后 24 帧缓拉回；相邻焦点首尾相接时直接从一个**横摇**到下一个。`region` 简写：`left/right/top/bottom/center/top-left/…`（按本镜 `contentBand` 切）。 |
+| **focus** 讲到哪推到哪 | 无 | `cinema.focus: [{beat \| cue \| at, region \| x,y,w,h, zoom?, hold?}]` | 第 N 拍开始，弹簧曲线（20 帧）推近该区域，停 `hold` 帧（缺省 60）后 24 帧缓拉回；相邻焦点首尾相接时直接从一个**横摇**到下一个。`region` 简写：`left/right/top/bottom/center/top-left/…`（按本镜 `contentBand` 切）。<br>**不切字（v4.5c）**：`slide: false` 关掉横向滑回；`keep: {x,y,w,h} \| region` = 推近时也必须完整入画的矩形（例如推近右侧终端时左侧的大数字），引擎把推近倍数降到能装下「焦点 ∪ keep」（留 28 px 边距，不低于 1.1，装不下就忽略 keep）。`hero-number` 版式缺省 `keep` = anchor + 8% 字号的字形外溢余量；`keep: false` 关掉。镜头里有 MediaFrame 卡片又要推近别处时，给卡片写 `keep`，否则卡片会被推出画面一半。 |
 | **pan** 宽画布横摇 | 无 | `cinema.pan: {worldW: 2800, beat? \| at?, dur?, dir?: "ltr" \| "rtl"}` | 场景按更宽的世界排版，摄影机横摇扫过（时间线、长链路）。 |
 | **transition** 换镜 | `auto` | 镜级 `transition` | `auto` = 章节首镜 **zoom**（推穿：上一镜放大淡出、新镜从远处推来）、其余 **whip**（甩镜：水平方向模糊 + 位移，左右交替）；也可写 `whip / whip-left / whip-right / zoom / fade / hard`。`cut / handoff / reveal` 是旧写法，引擎按 `auto` 处理。转场 14 帧。 |
 | **parallax** 视差 | 开 | — | 背景按 0.3 的系数跟随摄影机（背景动得比内容少 → 纵深），预放大 1.06 保证不露边；甩镜时背景一起甩。 |

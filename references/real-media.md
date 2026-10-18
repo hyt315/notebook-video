@@ -62,3 +62,14 @@ import {MediaFrame} from './media-frame';
 P0：文件不存在 / 类型不符；放大超过 1.5 倍（含区域推近，按 1080p 交付）；视频不是 H.264 + 恒定 30fps + yuv420p；
 `source: web` 缺 url / license / credit 或许可不兼容；引用了不存在的区域；区域坐标出界；`src/media.json` 未同步；场景源码自己画或关掉署名徽章。
 P1：`muted: false`；登记了没用到；2K 交付时放大超过 1.5 倍。
+
+## 高亮与推近的注意事项（v4.5c）
+
+- `highlight` / `focus` 的区域框画在视口坐标里：4 px 橙色描边 + 白内圈 + 抬升阴影，区域外压一层 0.16 的淡暗幕，缩小看也一眼能找到；区域推近后露出不足 90% 的框不画（不会出现被切掉的半个框）。
+- 镜头表 `cinema.focus` 推近画面别处时，旁边的 MediaFrame 卡片可能被推出画面一半——给那条 focus 写 `keep: {x,y,w,h}`（卡片的矩形），引擎会降低推近倍数把两者都装下。
+- `w` / `h` 请写数字或同文件 `const`（`w={W}`、`w={W * 0.6}` 都能量）；写成布局对象字段时 validate-media 量不出放大倍数，只按占满画布估并给 P1 提醒。
+
+## Highlight & push-in notes (v4.5c)
+
+Region highlights are drawn in viewport space (4 px orange stroke, white inner ring, lift shadow, 0.16 veil outside); boxes < 90 % visible after a region zoom are hidden. When a shot-level `cinema.focus` pushes in elsewhere, add `keep: {x,y,w,h}` for the MediaFrame card. Write `w`/`h` as numbers or same-file consts so validate-media can measure upscaling.
+
