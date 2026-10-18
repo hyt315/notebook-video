@@ -1259,7 +1259,7 @@ cleanup(td_skill)
 
 # ============================ v4.5 · compose-story / 自动修 / 音效元数据 ============================
 COMPOSE = os.path.join(SKILL, 'scripts/compose-story.py')
-DEMO45 = os.path.join(SKILL, 'assets/demo/v4.5-demo/story.json')
+DEMO45 = os.path.join(SKILL, 'examples/code-change-cache.story.json')
 
 
 def story_case(mutate):

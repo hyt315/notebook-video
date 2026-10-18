@@ -1,0 +1,203 @@
+{
+ "$blueprint": "code-change",
+ "title": "一行缓存，五倍速度",
+ "header": "一行缓存 / CACHE",
+ "headerSub": "NOTEBOOK-VIDEO 4.5 · 60s",
+ "kicker": "代码改动讲解",
+ "theme": "flat",
+ "glossary": {
+  "p95": "最慢的 5% 请求的耗时"
+ },
+ "chapters": [
+  {
+   "title": "慢在哪里",
+   "shots": [
+    {
+     "layout": "number",
+     "lines": [
+      "这个接口，每次要等 {{1.2 秒}}。",
+      "{{p95}} 更是到了 2 秒。"
+     ],
+     "content": {
+      "value": 1.2,
+      "decimals": 1,
+      "unit": "秒",
+      "label": "每次请求的平均等待",
+      "notes": [
+       "p95：2.0 秒",
+       "每天 3 万次调用"
+      ]
+     }
+    },
+    {
+     "layout": "bars",
+     "lines": [
+      "先别怪数据库，把耗时画出来。",
+      "慢的只有 {{/report}} 一个。"
+     ],
+     "content": {
+      "title": "各接口平均耗时（毫秒）",
+      "unit": "",
+      "highlight": "/report",
+      "data": [
+       {
+        "label": "/login",
+        "value": 80
+       },
+       {
+        "label": "/list",
+        "value": 140
+       },
+       {
+        "label": "/report",
+        "value": 1210
+       },
+       {
+        "label": "/search",
+        "value": 190
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "先懂一个词",
+   "shots": [
+    {
+     "layout": "define",
+     "lines": [
+      "先认识一个词：{{缓存}}。",
+      "算过的结果存起来，{{下次直接给}}。"
+     ],
+     "content": {
+      "term": "缓存",
+      "reading": "cache",
+      "definition": "把算过的结果存起来，下次直接给答案。",
+      "example": "例：同一天的报表，只算一次。"
+     }
+    }
+   ]
+  },
+  {
+   "title": "改一行代码",
+   "shots": [
+    {
+     "layout": "code",
+     "lines": [
+      "每次请求，都会走一遍 {{db.query}}。",
+      "加一行 {{@lru_cache}}，结果就能复用。"
+     ],
+     "content": {
+      "title": "report.py",
+      "lang": "python",
+      "code": "from functools import lru_cache\n\n@lru_cache(maxsize=256)\ndef build_report(day):\n    rows = db.query(SQL, day)\n    return aggregate(rows)",
+      "note": "同一天的参数，直接返回上次的结果",
+      "noteAt": 1
+     }
+    },
+    {
+     "layout": "compare",
+     "lines": [
+      "改动只有三行。",
+      "{{改之后}}，平均只要 0.24 秒。"
+     ],
+     "content": {
+      "mode": "split",
+      "before": {
+       "title": "改之前",
+       "value": 1.2,
+       "decimals": 1,
+       "unit": "秒",
+       "items": [
+        "每次请求都查库"
+       ]
+      },
+      "after": {
+       "title": "改之后",
+       "value": 0.24,
+       "decimals": 2,
+       "unit": "秒",
+       "items": [
+        "八成请求在缓存命中"
+       ]
+      },
+      "afterLine": 1
+     }
+    },
+    {
+     "layout": "custom",
+     "lines": [
+      "请求先到{{缓存}}，算过的直接返回。",
+      "只有没命中，才去{{数据库}}。"
+     ],
+     "content": {
+      "component": "RequestLane",
+      "elements": [
+       {
+        "id": "app",
+        "label": "应用",
+        "x": 220,
+        "y": 380,
+        "w": 340,
+        "h": 240,
+        "appear": 0
+       },
+       {
+        "id": "cache",
+        "label": "缓存",
+        "x": 790,
+        "y": 380,
+        "w": 340,
+        "h": 240,
+        "appear": 0
+       },
+       {
+        "id": "db",
+        "label": "数据库",
+        "x": 1360,
+        "y": 380,
+        "w": 340,
+        "h": 240,
+        "appear": 1
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "误区与回顾",
+   "shots": [
+    {
+     "layout": "quiz",
+     "lines": [
+      "缓存加得越多，就越好吗？",
+      "不是，{{数据会过期}}，要设上限。"
+     ],
+     "content": {
+      "question": "缓存加得越多越好吗？",
+      "options": [
+       "是，越多越快",
+       "不是，数据会过期"
+      ],
+      "answer": 1,
+      "think": 3
+     }
+    },
+    {
+     "layout": "statement",
+     "lines": [
+      "记住这一句：{{一行缓存}}，五倍速度。",
+      "先量，再改，只改慢的那一个。"
+     ],
+     "content": {
+      "text": "一行缓存，五倍速度。",
+      "sub": "先量，再改，只改慢的那一个。",
+      "subAt": 1
+     }
+    }
+   ]
+  }
+ ]
+}
