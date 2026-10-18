@@ -1,4 +1,4 @@
-// v4.5 真实素材：截图 / 录屏 / 动图放进与 v4.4 同一套卡片语言里（THEME.Paper + 主题色），帧驱动。
+// 3.2.0 真实素材：截图 / 录屏 / 动图放进与默认组件风格同一套卡片语言里（THEME.Paper + 主题色），帧驱动。
 //
 //   素材登记在 manifests/media.json（prepare-media.py 会同步一份到 src/media.json），文件放 public/media/。
 //   <MediaFrame f={f} id="pr-page" x={200} y={200} w={1100} h={620} chrome="browser" focus="diff" focusAt={b[1]} />
@@ -99,7 +99,7 @@ export const MediaFrame: React.FC<MediaFrameProps> = ({f, id, x, y, w, h, chrome
           <div style={{position: 'absolute', left: 0, top: 0, width: vw, height: vh, transformOrigin: '0 0', transform: `translate(${tx}px, ${ty}px) scale(${s})`}}>
             <div style={{position: 'absolute', left: ox, top: oy}}>{media}</div>
           </div>
-          {/* v4.5c 区域高亮（v4.4 式描边 + 轻抬升，画在视口坐标里：线宽恒定 4px、不随区域推近变粗变细）：
+          {/* 3.2.0 区域高亮（默认组件风格的描边 + 轻抬升，画在视口坐标里：线宽恒定 4px、不随区域推近变粗变细）：
               ① 区域外压一层淡暗幕（0.16），让被点名的区域「亮出来」——以前只有一圈细框，缩小看几乎看不见；
               ② 橙色 4px 描边 + 2px 白内圈（任何截图底色上都看得清）+ 抬升阴影，并上移 3px；
               ③ 区域在视口里露出 < 90% 时（例如推近别的区域把它挤到边上）不画，免得出现被视口切掉的半个框。 */}

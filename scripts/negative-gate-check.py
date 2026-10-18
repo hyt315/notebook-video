@@ -51,7 +51,7 @@ def case(name, steps):
     detail = []
     for kind, label, (rc, out) in steps:
         # `must_block:<子串>` = 必须失败**且**输出里出现该子串 —— 否则"因为别的原因失败"
-        # 会被当成本夹具通过（第一版 P 用例就是这样假通过的：拷贝时跳过了 assets/demo 的大文件，
+        # 会被当成本夹具通过（第一版 P 用例就是这样假通过的：拷贝时跳过了大文件，
         # 于是它因为"链接断了"而失败，根本没测到"文档写了不存在的组件名"）。
         # `must_absent:<子串>` = 必须失败**且**输出里**没有**该子串，用来钉"不许误报"的那一侧。
         kind_base, _sep, arg = kind.partition(':')
@@ -359,7 +359,7 @@ case('O 帧参数名 · 同一夹具写对（阴性对照）', [
 cleanup(td)
 
 # ── P · 一致性检查必须拦住"文档写了不存在的组件名"（审计 A1/A6/A7/A8 那一整类）──
-# 夹具：把整份技能拷一份（跳过 assets/demo 的大文件），在 SKILL.md 里塞一个不存在的组件名，
+# 夹具：把整份技能拷一份（跳过大的二进制文件），在 SKILL.md 里塞一个不存在的组件名，
 # 然后让 validate-skill-consistency.py --root 指向这份副本 —— 它必须报出来。
 def mk_skill_copy():
     td = tempfile.mkdtemp(prefix='nv-skill-')
@@ -368,10 +368,8 @@ def mk_skill_copy():
     shutil.copytree(SKILL, td, dirs_exist_ok=True, ignore=ignore)
     # 大文件跳过拷贝，但**补占位空文件**：否则链接检查会先报"broken link"，
     # 夹具就变成"因为别的原因失败"了（第一版的假通过）。
-    for rel in ('assets/demo/notebook-video-demo.mp4', 'assets/demo/notebook-video-demo.webp',
-                'assets/demo/notebook-video-components-demo.mp4', 'assets/demo/hero.png',
-                'assets/demo/social-preview.png',
-                # v4.1：每主题三张背景（一致性检查只查 is_file，占位空文件即可）
+    for rel in ('examples/real-media/pr-placeholder.png', 'examples/weak-model-test/stills-before-fix.jpg',
+                # 每主题三张背景（一致性检查只查 is_file，占位空文件即可）
                 *[f'assets/lecture-template/public/bg/bg-{t}-{v}.jpg' for t in ('flat', 'cel') for v in ('main', 'chapter', 'quiet')]):
         q = os.path.join(td, rel)
         if not os.path.exists(q):
@@ -388,7 +386,7 @@ case('P 一致性 · 文档写了不存在的组件名', [
 ])
 cleanup(td_skill)
 
-# ── AL：v4.4 相邻两镜同 layout → validate-composition 必须拦 ──
+# ── AL：3.2.0 相邻两镜同 layout → validate-composition 必须拦 ──
 def mut_layout(d):
     for k, sh in enumerate(d['shots']):
         sh['layout'] = 'grid' if k in (2, 3) else f'L{k}'
@@ -400,7 +398,7 @@ case('AL 相邻镜头同布局（layout）', [
 ])
 cleanup(td)
 
-# ── AM：v4.4 字幕一行超过 16 字 → validate-caption-sync 必须拦；拆开的原样必须过 ──
+# ── AM：3.2.0 字幕一行超过 16 字 → validate-caption-sync 必须拦；拆开的原样必须过 ──
 def mk_long_caption():
     td_ = tempfile.mkdtemp(prefix='nv-gate-')
     doc = json.loads(io.open(os.path.join(TPL, 'manifests/caption-cues.json'), encoding='utf-8').read())
@@ -420,7 +418,7 @@ case('AM 字幕一行超过 16 字', [
 ])
 cleanup(td)
 
-# ── AN：v4.4 内容画得太小（anchor 只占安全区 20%）→ validate-shot-motion 必须拦 ──
+# ── AN：3.2.0 内容画得太小（anchor 只占安全区 20%）→ validate-shot-motion 必须拦 ──
 def mut_tiny(d):
     d['shots'][0]['anchor'] = {'x': 700, 'y': 400, 'w': 560, 'h': 300}
     d['shots'][0]['contentBand'] = {'x': 160, 'y': 130, 'w': 1600, 'h': 780}
@@ -615,7 +613,7 @@ for name in ('types.ts', 'canvas.ts', 'active.ts', 'cel.tsx', 'flat.tsx'):
     if os.path.exists(src_p):
         shutil.copy(src_p, os.path.join(td, 'src/theme', name))
 ink_path = os.path.join(td, 'src/theme/flat.tsx')
-# v4.1：按正则改值，不写死旧色值（调色板换成 Radix 后旧的 '#3b4ed8' 已不存在）。
+# 按正则改值，不写死旧色值（调色板换成 Radix 后旧的 '#3b4ed8' 已不存在）。
 ink_text = re.sub(r"blueInk: '#[0-9a-fA-F]{6}'", "blueInk: '#eeeeee'", io.open(ink_path, encoding='utf-8').read(), count=1)
 assert "blueInk: '#eeeeee'" in ink_text, '夹具没改到 flat 的 blueInk（值变了？）'
 io.open(ink_path, 'w', encoding='utf-8', newline='').write(ink_text)
@@ -871,7 +869,7 @@ cleanup(td)
 # BB–BG · 四道"零对抗夹具"门禁的补钉 + HEAD 里三条新硬拦行为的钉桩
 #
 # 审计结论：validate-layering / validate-visual-plan / validate-audio-levels /
-# （v4.1 前还有 validate-official-example）此前**只在 CI 与一致性检查里正向跑**，一条喂坏输入的
+# （3.2.0 前还有 validate-official-example）此前**只在 CI 与一致性检查里正向跑**，一条喂坏输入的
 # 实证都没有 —— "门在名义上存在、实际静默放行"正是本脚本存在的意义要防的病。
 # 每一道各补 must_block（定向 needle，不用宽松匹配）+ must_pass 阴性对照
 # （好输入必须过，防判据写反方向把什么都拦）。全部离线自包含：临时目录造、结束清理。
@@ -1014,7 +1012,7 @@ case('BD3 音效可听度 · 损坏素材读不到峰值 → rc=2 门禁自身�
 ])
 cleanup(td)
 
-# ── BE · （v4.1.0 删除）validate-official-example 随 example-project 一起移除；
+# ── BE · （3.2.0 删除）validate-official-example 随 example-project 一起移除；
 # 技能级一致性由 P 用例（validate-skill-consistency --root）覆盖，其中包括
 # "example-project 不得回来"与"主题背景三变体齐全"两条新判据（见 BE' 用例）。
 td_skill = mk_skill_copy()
@@ -1257,13 +1255,13 @@ case('CG 一致性 · MIN_LABEL_FONT 单独漂移（数值双真源交叉校验�
 ])
 cleanup(td_skill)
 
-# ============================ v4.5 · compose-story / 自动修 / 音效元数据 ============================
+# ============================ 3.2.0 · compose-story / 自动修 / 音效元数据 ============================
 COMPOSE = os.path.join(SKILL, 'scripts/compose-story.py')
 DEMO45 = os.path.join(SKILL, 'examples/code-change-cache.story.json')
 
 
 def story_case(mutate):
-    td_ = tempfile.mkdtemp(prefix='nv45-')
+    td_ = tempfile.mkdtemp(prefix='nv-compose-')
     d = json.load(io.open(DEMO45, encoding='utf-8'))
     mutate(d)
     sp = os.path.join(td_, 'story.json')
@@ -1327,8 +1325,8 @@ _r8 = json.load(io.open(os.path.join(td, 'manifests/shots.resolved.json'), encod
 _settle = [k for k in (_r8.get('cinema') or {}).get('focus', []) if k.get('settle')]
 case('V8 resolve · 镜尾 >1.5s 无事件 → 自动收束焦点', [('must_pass', f'settle 焦点 {len(_settle)} 个', (0 if _settle else 1, ''))])
 cleanup(td)
-# V9 音效增益与库元数据不一致 → 拦（v4.5 增益以 manifest 为准）
-td = tempfile.mkdtemp(prefix='nv45sfx-')
+# V9 音效增益与库元数据不一致 → 拦（3.2.0 增益以 manifest 为准）
+td = tempfile.mkdtemp(prefix='nv-sfx-')
 shutil.copytree(os.path.join(TPL, 'public'), os.path.join(td, 'public'))
 os.makedirs(os.path.join(td, 'src'))
 _sfx = io.open(os.path.join(TPL, 'src/sfx.ts'), encoding='utf-8').read()
@@ -1338,7 +1336,7 @@ io.open(os.path.join(td, 'src/sfx.ts'), 'w', encoding='utf-8').write(_sfx.replac
 case('V9 audio-levels · SFX_GAIN 与 manifest gain 漂移', [('must_block:不一致', 'validate-audio-levels', run([PY, os.path.join(SKILL, 'scripts/validate-audio-levels.py'), td]))])
 cleanup(td)
 
-# ---------------------------------------------------------------- v4.5 真实素材门禁（validate-media / prepare-media）
+# ---------------------------------------------------------------- 3.2.0 真实素材门禁（validate-media / prepare-media）
 VMEDIA = os.path.join(SKILL, 'scripts/validate-media.py')
 PMEDIA = os.path.join(SKILL, 'scripts/prepare-media.py')
 PNG = os.path.join(SKILL, 'examples/real-media/pr-placeholder.png')
@@ -1401,10 +1399,10 @@ td = media_proj(lambda e: e.update(source='web', url='https://example.com/x.png'
 case('M7 media · 场景里自己画 / 关署名徽章 → 拦', [('must_block:署名', 'validate-media', run([PY, VMEDIA, td]))])
 cleanup(td)
 td = media_proj(scene='const W = 900;\nconst BIG = W * 2;\n<MediaFrame f={f} id="pr" x={0} y={0} w={BIG} h={W * 1.1} focus="diff" focusZoom={2} />\n')
-case('M8 media · 尺寸写成同文件常量表达式，放大 >1.5 → 照样拦（v4.5c）', [('must_block:会糊', 'validate-media', run([PY, VMEDIA, td]))])
+case('M8 media · 尺寸写成同文件常量表达式，放大 >1.5 → 照样拦', [('must_block:会糊', 'validate-media', run([PY, VMEDIA, td]))])
 cleanup(td)
 td = media_proj(scene='<MediaFrame f={f} id="pr" x={L.x} y={L.y} w={L.w} h={L.h} focus="diff" focusZoom={2.4} />\n')
-case('M9 media · 尺寸来自布局对象量不出 → 按占满画布估，可能糊 → 提醒（v4.5c）', [('must_warn:量不出', 'validate-media', run([PY, VMEDIA, td]))])
+case('M9 media · 尺寸来自布局对象量不出 → 按占满画布估，可能糊 → 提醒', [('must_warn:量不出', 'validate-media', run([PY, VMEDIA, td]))])
 cleanup(td)
 
 print()

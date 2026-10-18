@@ -1,6 +1,6 @@
 # Theme contract: cel (bold comic / manga)
 
-Status: LOCKED. This theme ships fully implemented in `assets/lecture-template/src/theme/cel.tsx` (visual identity rebuilt in v4.1.0). Production runs select it with `new-project ./dir --style=cel` and never edit the theme file. Read this document instead of the other theme doc; the two style contracts are mutually exclusive by design (progressive disclosure).
+Status: LOCKED. This theme ships fully implemented in `assets/lecture-template/src/theme/cel.tsx` (visual identity rebuilt in 3.2.0). Production runs select it with `new-project ./dir --style=cel` and never edit the theme file. Read this document instead of the other theme doc; the two style contracts are mutually exclusive by design (progressive disclosure).
 
 ## Design language
 

@@ -1,5 +1,5 @@
 import React from 'react';
-// 2026-10-17（v4.2 · Phase 3）：12 个 Radix 包全部移除。Accordion / Tabs / ControlStack 只需要
+// 2026-10-17（3.2.0 · Phase 3）：12 个 Radix 包全部移除。Accordion / Tabs / ControlStack 只需要
 // 结构 + 皮肤，渲染期没有交互，Radix 带来的只是 ARIA 外壳和 Slider 的 ResizeObserver 测量
 // （确定性风险）。现在全部是纯 <div>，状态 100% 来自帧号。
 // 代码高亮从 react-syntax-highlighter（Prism）换成 Shiki（同步核心 + JS 正则引擎，见 ./shiki.ts）。
@@ -86,7 +86,7 @@ export const presence = (f: number, startAt: number, exitStart?: number, durIn =
 };
 
 // ---------------------------------------------------------------------------
-// Accordion — 纯 div（v4.2 起不再依赖 @radix-ui/react-accordion）
+// Accordion — 纯 div（3.2.0 起不再依赖 @radix-ui/react-accordion）
 // 用法：<Accordion f={f} items={[{title, body, tone}]} startAt={18} step={58} />
 // 展开项由帧号累积决定；**展开高度按真实文本折几行算出来**（不再猜行数）；支持 exitStart 让位。
 // ---------------------------------------------------------------------------
@@ -223,7 +223,7 @@ export const Accordion: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// Tabs — 纯 div（v4.2 起不再依赖 @radix-ui/react-tabs）
+// Tabs — 纯 div（3.2.0 起不再依赖 @radix-ui/react-tabs）
 // 用法：<Tabs f={f} tabs={[{key,label,title,body,points,verdict,tone}]} startAt={16} step={88} />
 // 激活项由帧号决定；内容淡入不用 CSS 过渡。
 // ---------------------------------------------------------------------------
@@ -365,13 +365,13 @@ export const Tabs: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// ControlStack — 「控件状态随旁白变化」（六种控件，纯 div；v4.2 起不再依赖 Radix）
+// ControlStack — 「控件状态随旁白变化」（六种控件，纯 div；3.2.0 起不再依赖 Radix）
 //
 // 为什么需要它：技能此前**完全没有**「控件被拨动」这个形态——要讲"这个选项被打开了"
 // 只能写一张文字卡片假装。而 validate-composition.py 的硬门禁要求每个讲解场景
 // ≥1 个真的随旁白变状态的构件，「配置 / 选项 / 参数」类内容最自然的语法就是控件本身。
 //
-// v4.2：六种控件（switch / checkbox / radio / segment / slider / progress）全部是纯 div。
+// 六种控件（switch / checkbox / radio / segment / slider / progress）全部是纯 div。
 //   以前用 Radix 的受控 primitive，但渲染期没有交互，Radix 只贡献了 ARIA 外壳，
 //   而 Slider 的拇指靠 ResizeObserver 测量定位（确定性风险）。现在位置全是算出来的。
 //
@@ -660,7 +660,7 @@ export const ControlStack: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// HighlightCode — Shiki（v4.2 起替换 react-syntax-highlighter / Prism）
+// HighlightCode — Shiki（3.2.0 起替换 react-syntax-highlighter / Prism）
 // 语法色来自 ./shiki.ts 里由当前主题调色板生成的 TextMate 主题（flat / cel 各一套）。
 // token 是同步算出来的（无 WASM、无 Promise），所以不需要 delayRender。
 // 帧驱动逐行聚焦：讲哪一行，哪一行亮起来。
@@ -674,9 +674,9 @@ export const HighlightCode: React.FC<{
   height: number;
   width: number;
   title?: string;
-  /** v4.4：代码字号（设计像素，缺省 TYPE.labelM=21）。成片的代码镜头请给 30–40：代码要大而清晰。 */
+  /** 代码字号（设计像素，缺省 TYPE.labelM=21）。成片的代码镜头请给 30–40：代码要大而清晰。 */
   fontSize?: number;
-  /** v4.4：把高亮钉在某一行（0 起），不再随 lineStep 走；配合引擎 cinema.focus 推近到这一行。 */
+  /** 把高亮钉在某一行（0 起），不再随 lineStep 走；配合引擎 cinema.focus 推近到这一行。 */
   active?: number;
 }> = ({f, code, language, startAt, lineStep, height, width, title, fontSize = TYPE.labelM, active}) => {
   const lines = highlightTokens(code, language);
@@ -799,7 +799,7 @@ export const MathBlock: React.FC<{
 // ---------------------------------------------------------------------------
 // Icon / IconWall — lucide-react（ISC，线条）+ simple-icons（CC0，品牌）
 //
-// v4.2 起替换 react-icons（fa / fi / lu 三族）：
+// 3.2.0 起替换 react-icons（fa / fi / lu 三族）：
 //   · 线条图标直接用 lucide-react（以前的 fi / lu 本来就是 Feather / Lucide 的再打包）；
 //   · 品牌 logo 用 simple-icons 的单色 path（CC0，无署名义务；商标规则仍适用），
 //     替换掉 Font Awesome 品牌（CC BY 4.0，需署名）。

@@ -145,7 +145,7 @@ export const FillGate: React.FC<{
         document.querySelectorAll<HTMLElement>('div,span,p,svg,text,tspan,circle,ellipse,rect,path,line,polyline,polygon').forEach((el) => {
           if (el.closest('[data-gate-skip]')) return;
           if (el.closest('[data-gate-allow]')) return;
-          if (el.closest('[data-cinema-focus]')) return; // v4.4：推近特写不量下 1/4 填充
+          if (el.closest('[data-cinema-focus]')) return; // 推近特写不量下 1/4 填充
           const b = infoBoxOf(el);
           if (!b) return;
           n++;

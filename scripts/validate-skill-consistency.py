@@ -53,7 +53,7 @@ DOC_IDENT_WHITELIST = {
     'FFmpeg', 'FFprobe', 'TrueType', 'Typekit', 'Tailwind', 'Emotion', 'Panda', 'Mantine', 'Chakra',
     'HeroUI', 'DaisyUI', 'Storybook', 'Lottie', 'GIF', 'WebP', 'LineBreaker', 'Fflate', 'Lucide',
     'Feather', 'Tabler', 'Simple', 'Icons', 'OpenSCAD',
-    'Shiki', 'CodeHike', 'LinePath', 'AreaClosed', 'Area', 'Bar', 'GridRows', 'AxisLeft', 'AxisBottom',  # v4.2 第三方库的 API 名
+    'Shiki', 'CodeHike', 'LinePath', 'AreaClosed', 'Area', 'Bar', 'GridRows', 'AxisLeft', 'AxisBottom',  # 3.2.0 第三方库的 API 名
     # 规范 / 标准 / 许可
     'WCAG', 'OFL', 'MIT', 'ISC', 'Apache', 'MPL', 'UAX', 'CJK', 'SDH', 'TTS', 'ASR', 'LLM', 'AI',
     'BM25', 'EEG', 'ANN', 'SaaS', 'PDF', 'PDFs', 'PPT', 'VIP', 'IDE', 'LRU',
@@ -73,7 +73,7 @@ DOC_IDENT_WHITELIST = {
     'DeepSeek', 'Opus',                                       # 模型名
     # —— 以下名字在文档里**只允许以"已删除/历史对照"的身份出现**（写它们的用途是告诉读者"别再用"）——
     'BackgroundMute', 'CameraRig', 'SceneContribute', 'SceneShip', 'SceneSkills',
-    'Film4x3', 'Film3x4',                                        # v4.0.0 删除的 4:3 / 3:4 Composition
+    'Film4x3', 'Film3x4',                                        # 3.2.0 删除的 4:3 / 3:4 Composition
     'ElderPhone', 'FamilyShield', 'Robot', 'Scammer', 'SrcIcon',   # 已删除的竖屏示例题材插画命名，从来不是模板组件
 }
 
@@ -315,10 +315,10 @@ def main() -> None:
         if forbidden_path.exists():
             problems.append(f"obsolete dual-track path remains: {forbidden_path.relative_to(SKILL)}")
 
-    # v4.1.0：暖象牙纸面示例工程（--classic）与它的一致性锁整体删除，不许回来。
+    # 暖象牙纸面示例工程（--classic）与它的一致性锁整体删除，不许回来。
     for removed in (SKILL / 'assets' / 'example-project', SKILL / 'scripts' / 'validate-official-example.py'):
         if removed.exists():
-            problems.append(f"removed example project is back: {removed.relative_to(SKILL)} (v4.1.0 ships the lecture template only)")
+            problems.append(f"removed example project is back: {removed.relative_to(SKILL)} (3.2.0 ships the lecture template only)")
 
     if (SKILL / 'CANDIDATE-VALIDATION.md').exists():
         problems.append('one-run environment validation report remains inside the reusable skill')
@@ -358,7 +358,7 @@ def main() -> None:
         active = (theme_dir / 'active.ts').read_text(encoding='utf-8', errors='ignore')
         if "from './flat'" not in active:
             problems.append("theme switch active.ts must ship defaulting to './flat'")
-        # v4.1：每个主题三张锁定背景（main / chapter / quiet），文件名与 theme/*.tsx 的 BACKGROUNDS 表一致。
+        # 每个主题三张锁定背景（main / chapter / quiet），文件名与 theme/*.tsx 的 BACKGROUNDS 表一致。
         for theme_id in ('flat', 'cel'):
             src_text = (theme_dir / f'{theme_id}.tsx').read_text(encoding='utf-8', errors='ignore') if (theme_dir / f'{theme_id}.tsx').is_file() else ''
             for variant in ('main', 'chapter', 'quiet'):
@@ -369,7 +369,7 @@ def main() -> None:
                     problems.append(f"theme {theme_id}.tsx does not map variant {variant} to '{rel}'")
         for removed in ('paper.tsx', 'sticker.tsx'):
             if (theme_dir / removed).exists():
-                problems.append(f"removed theme file is back: assets/lecture-template/src/theme/{removed} (v4.0.0 ships flat + cel only)")
+                problems.append(f"removed theme file is back: assets/lecture-template/src/theme/{removed} (3.2.0 ships flat + cel only)")
 
     with tempfile.TemporaryDirectory(prefix='notebook-video-package-test-') as temp:
         root = Path(temp)

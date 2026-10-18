@@ -199,7 +199,7 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
 
 
 # ---------------------------------------------------------------------------
-# v4.4 引擎摄影机（src/cinema.tsx，resolve-shots 预算的 cinema 块）
+# 3.2.0 引擎摄影机（src/cinema.tsx，resolve-shots 预算的 cinema 块）
 #   · 内容自动放大：anchor 占内容带（安全区）面积放大后应落在 60–80%。
 #     放大后仍 < 45% → P0（引擎已推到上限仍太小：内容本身画小了，PPT 感的头号来源）；
 #     45–60% → P1；> 90% → P1（太满、没有呼吸空间；80–90% 视作 anchor 外接框的正常余量）。
@@ -222,7 +222,7 @@ def check_cinema(shots: list[dict]) -> tuple[list[dict], list[dict]]:
         if isinstance(fa, (int, float)):
             text_first = str(s.get("layout") or "").split("-")[0] in ("statement", "define", "quiz", "list", "custom")
             if fa < FIT_P0 and text_first:
-                p1.append({"id": sid, "issue": f"内容占安全区 {fa:.0%}：卡片 / 定制版式，留白是有意的（v4.5 起只提示）—— 若显得空，加大字号或补一句副标题"})
+                p1.append({"id": sid, "issue": f"内容占安全区 {fa:.0%}：卡片 / 定制版式，留白是有意的（3.2.0 起只提示）—— 若显得空，加大字号或补一句副标题"})
             elif fa < FIT_P0:
                 p0.append({"id": sid, "issue": f"内容只占安全区 {fa:.0%}（自动放大已到上限）：把内容本身画大（代码/差异镜头尤其要大），目标 60–80%"})
             elif fa < FIT_LO:

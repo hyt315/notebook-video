@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""listen-check.py · DEV-ONLY (v4.5c): objective SFX listen-check without rendering video.
+"""listen-check.py · DEV-ONLY: objective SFX listen-check without rendering video.
 
 Inputs (all produced by an audio-only Remotion render — no video frames are encoded):
   mix.wav    full mix      npx remotion render src/index.tsx NotebookVideoFilm mix.wav --codec=wav

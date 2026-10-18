@@ -111,7 +111,7 @@ Reject word-stream mismatch, non-semantic segmentation, a break that is not a Bu
 
 The word-cut rule is the one that catches what the phrase list misses, so read the validator's last line: it ends with `phrase rule: enforced (BudouX from …)` when the rule ran. On the delivery path (the CLI) that line is mandatory — the CLI passes `--require-budoux`, so an unresolvable BudouX exits non-zero instead of degrading. The `SKIPPED — BudouX not found` tail only remains reachable via a deliberate `--no-budoux` or a direct script invocation on a bare fixture; there, only the mechanical checks and the phrase list were applied.
 
-## Line length: at most 16 characters (v4.4)
+## Line length: at most 16 characters
 
 Every subtitle line is at most **16 characters** after stripping the trailing punctuation and whitespace
 (ASCII counts as one character each, so GitHub costs 6). Long lines are the second-largest source of the

@@ -1,7 +1,7 @@
 {
  "$blueprint": "code-change",
  "$about": "代码改动讲解：为什么改、改了什么、效果如何",
- "$howto": "只改 <<…>> 里的内容（改完不许留下任何 <<）。不想要的镜可以删；想多讲一点可以复制一镜。版式名见 SKILL.md 的版式表。 ｜ v4.5b：推荐把每镜写成 v4.4 手写组件场景——每镜的 $v44 给出骨架和该用的 v4.4 组件（见 references/handwritten-scenes.md）；直接跑 compose-story 只是快速草稿。",
+ "$howto": "只改 <<…>> 里的内容（改完不许留下任何 <<）。不想要的镜可以删；想多讲一点可以复制一镜。版式名见 SKILL.md 的版式表。 ｜ 推荐把每镜写成 3.2.0 手写组件场景——每镜的 $components 给出骨架和该用的 3.2.0 组件（见 references/handwritten-scenes.md）；直接跑 compose-story 只是快速草稿。",
  "title": "<<片名>>",
  "theme": "flat",
  "kicker": "<<4–8 字栏目名>>",
@@ -30,7 +30,7 @@
        "<<事实 2>>"
       ]
      },
-     "$v44": {
+     "$components": {
       "skeleton": "Stage",
       "components": [
        "KineticNumber",
@@ -57,7 +57,7 @@
        }
       ]
      },
-     "$v44": {
+     "$components": {
       "skeleton": "Stage",
       "components": [
        "BarChart",
@@ -84,7 +84,7 @@
       "definition": "<<一句大白话定义>>",
       "example": "<<例：……>>"
      },
-     "$v44": {
+     "$components": {
       "skeleton": "Split",
       "components": [
        "FitTextBox",
@@ -114,7 +114,7 @@
       "note": "<<一句解释>>",
       "noteAt": 1
      },
-     "$v44": {
+     "$components": {
       "skeleton": "Zoom",
       "components": [
        "DiffView",
@@ -151,7 +151,7 @@
       },
       "afterLine": 1
      },
-     "$v44": {
+     "$components": {
       "skeleton": "Split",
       "components": [
        "SplitStage",
@@ -183,7 +183,7 @@
       "answer": 1,
       "think": 3
      },
-     "$v44": {
+     "$components": {
       "skeleton": "Zoom",
       "components": [
        "ChatThread",
@@ -204,7 +204,7 @@
       "sub": "<<行动建议>>",
       "subAt": 1
      },
-     "$v44": {
+     "$components": {
       "skeleton": "Stage",
       "components": [
        "Callout",
@@ -245,7 +245,7 @@
     "chrome": "browser",
     "caption": "<<可选旁注>>"
    },
-   "$v44": {
+   "$components": {
     "skeleton": "Zoom",
     "components": [
      "MediaFrame"

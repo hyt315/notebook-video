@@ -1,6 +1,6 @@
-# 手写场景路线（v4.4 及以前的完整作者手册）
+# 手写场景路线（完整作者手册）
 
-> v4.5 起，**默认路线是 story.json + `make-video.mjs`**（见 SKILL.md）。本页保留给要手写 `scenes.tsx` 的工程：
+> 3.2.0 起，**默认路线是 story.json + `make-video.mjs`**（见 SKILL.md）。本页保留给要手写 `scenes.tsx` 的工程：
 > 引擎、门禁、主题都通用；只是排版、关键词同步、相机路径要自己写。
 
 
@@ -38,7 +38,7 @@ Read only what the current production needs. **写任何场景之前，先读前
 **照抄** [references/scene-skeletons.md](scene-skeletons.md) — 四种骨架与分镜表结构（写分镜表前必读）。
 **先读** [references/media-routing.md](media-routing.md) — 内容→介质路由、**§5.1 组件权威索引（53 件逐件，选型只查这一处）**、A/B 场景、背景可读性契约。
 **先读** [references/shot-language.md](shot-language.md) — 六个运镜意图（+ `still` = 合法取值 7 个）、缩放预算、anchor 出界证明、平移预算。
-**先读** [references/cinema-camera.md](cinema-camera.md) — v4.4 引擎虚拟镜头：缺省缓推、`cinema.focus` 讲到哪推到哪、横摇、甩镜 / 推穿转场、视差、内容自动放大到安全区 60–80%、`KineticNumber` 关键数字、相邻 `layout` 不同。**这是「不像 PPT」的主开关。**
+**先读** [references/cinema-camera.md](cinema-camera.md) — 引擎虚拟镜头：缺省缓推、`cinema.focus` 讲到哪推到哪、横摇、甩镜 / 推穿转场、视差、内容自动放大到安全区 60–80%、`KineticNumber` 关键数字、相邻 `layout` 不同。**这是「不像 PPT」的主开关。**
 **必读** [references/lecture-composition.md](lecture-composition.md) 与 [references/motion-design.md](motion-design.md) — 构图规范与多时钟动效六律。
 **何时读**（选定皮肤后只读那一份）： [references/theme-flat.md](theme-flat.md) (flat, default) **or** [references/theme-cel.md](theme-cel.md); the shared boundary and engine chrome are in [references/theme-system.md](theme-system.md).
 **必读** [references/official-aesthetic-system.md](official-aesthetic-system.md) — 不许改的锁定元素清单。
@@ -72,7 +72,7 @@ Read only what the current production needs. **写任何场景之前，先读前
 > 12. 卡片高度必须用 `fitH()` 算，禁止手写"看着差不多"的固定高度（渲染期 `CardFitGate` 会拦下真裁切）。
 > 13. 给槽内组件传宽度前先算 `mainW = w − pad×2 − railW − 18`。
 > 14. 绝对定位构件的 `x/y` 相对**最近的定位祖先**，与文档流标题共用容器原点会精确重叠；**flex 子项若只含绝对定位子元素，必须显式给宽高**，否则宽度塌成 0、多张卡会叠在同一点。
-> 15. 不铺整幅底托（v4.1 删除：它把背景四角的吉祥物洗成幽灵）；局部 `tone='wash'` 底托必须 `z={-1}` 且径向羽化，正 z 会把整镜内容压成半透明。
+> 15. 不铺整幅底托（3.2.0 删除：它把背景四角的吉祥物洗成幽灵）；局部 `tone='wash'` 底托必须 `z={-1}` 且径向羽化，正 z 会把整镜内容压成半透明。
 > 16. 下 1/4 必须填满（底边接近 y=876）；面板下半空洞就是 PPT。**判据在渲染期 `FillGate`**（实测信息元素的最低边，不是读 `shots.json` 里那个声明字段——见 `references/composition-gate.md` 的 P0-4 降级说明）。
 > 17. 页眉 / 章节卡 / 字幕放在 `ShotCamera` **之外**。
 > 18. 写场景文件后按顺序跑 `resolve-shots.py` → 构建期门禁，**P0 必须 = 0** 才允许渲染。
@@ -92,8 +92,8 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./notebook-video-proje
 node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-project
 ```
 
-- `assets/lecture-template` is the only project template (the v4.0 `--classic` warm-ivory example was
-  removed in v4.1.0; the flag now fails with a pointer to `--style`).
+- `assets/lecture-template` is the only project template (the 3.1.x `--classic` warm-ivory example was
+  removed in 3.2.0; the flag now fails with a pointer to `--style`).
 - Two skins, chosen once at kickoff: `flat` (default) and `cel`. Themes swap palette,
   card skin, background decoration and subtitle chrome only — every coordinate, type scale, motion
   contract and gate is shared.
@@ -104,7 +104,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-p
   both halves (inks must pass, and any palette key used as `color:` is measured), and `headerAccent` /
   `headerSub` count as text positions too. Details: [references/theme-system.md](theme-system.md).
 - One locked canvas at native 30 fps: 2560×1440 (16:9), authored in the 1920×1080 design space.
-  4:3 / 3:4 canvases and the `paper` / `sticker` skins were removed in v4.0.0; projects made with
+  4:3 / 3:4 canvases and the `paper` / `sticker` skins were removed in 3.2.0; projects made with
   them are not supported.
 - Create the project in an empty directory so stale files from an earlier run cannot survive.
 

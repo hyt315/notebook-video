@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""tune-sfx.py · DEV-ONLY (v4.5): tighten the weak cues and write per-cue gain / offsetMs into the manifest.
+"""tune-sfx.py · DEV-ONLY: tighten the weak cues and write per-cue gain / offsetMs into the manifest.
 
 Ordinary users never run this — the tuned .ogg files and sfx-manifest.json are committed.
-Needs numpy + soundfile + pyloudnorm + ffmpeg. Idempotent: it always starts from the v4.4 originals
+Needs numpy + soundfile + pyloudnorm + ffmpeg. Idempotent: it always starts from the untuned originals
 kept in git (`git show 6c10ead:<file>` is NOT needed — the originals are read from --src, which defaults
 to the current files; run it once per library rebuild).
 
@@ -109,16 +109,16 @@ def main() -> int:
         x, sr = audit.load(src)
         assert sr == SR, sr
         t = TUNE[ev]
-        if any(t) and not e.get("tuned_v45"):
+        if any(t) and not e.get("tuned"):
             y = normalise(process(x.copy(), t))
             encode(y, src)
-            e["tuned_v45"] = {"start_ms": t[0], "keep_ms": t[1], "fade_out_ms": t[2], "highpass_hz": t[3], "lowpass_hz": t[4], "fade_in_ms": t[5]}
+            e["tuned"] = {"start_ms": t[0], "keep_ms": t[1], "fade_out_ms": t[2], "highpass_hz": t[3], "lowpass_hz": t[4], "fade_in_ms": t[5]}
         x, _ = audit.load(src)
         m = audit.measure(x, SR)
         gain = float(np.clip(10 ** ((audit.LADDER[ev] - m["lufs"]) / 20), 0.12, 0.9))
         e["gain"] = round(gain, 3)
         e["offsetMs"] = round(m["hit"], 1)
-        if e.get("tuned_v45"):
+        if e.get("tuned"):
             e["duration_s"] = round(m["dur"] / 1000, 3)
             e["loudness_lufs_100ms"] = -18.0
             e["peak_dbfs"] = round(20 * np.log10(np.max(np.abs(x)) + 1e-12), 1)
@@ -132,7 +132,7 @@ def main() -> int:
     man["mix"]["min_gap_ms"] = 150
     man["mix"]["max_hits_per_min"] = 24
     man["mix"]["duck"] = {"depth": 0.45, "attack_frames": 2, "release_frames": 12}
-    man["mix"]["note"] = ("v4.5: each cue carries `gain` (linear, puts it on its loudness-ladder rung after the engine mix) and "
+    man["mix"]["note"] = (" each cue carries `gain` (linear, puts it on its loudness-ladder rung after the engine mix) and "
                           "`offsetMs` (transient position; the engine starts the file that much earlier so the hit lands on the "
                           "visual frame). The bed ducks to 45% under every cue. Weak models never set volumes by hand.")
     MAN.write_text(json.dumps(man, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

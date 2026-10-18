@@ -1,4 +1,4 @@
-// 片级文案与章节（v4.5 从 index.tsx 抽出）。
+// 片级文案与章节（3.2.0 从 index.tsx 抽出）。
 // auto 流程（scripts/compose-story.py）会按 story.json 覆盖本文件；手写场景的工程直接改这里。
 export const COPY = {
   chapterTitles: ['代码不再孤独', '入场三步', '第二步 · 发布', '第三步 · 运营与三技能'],

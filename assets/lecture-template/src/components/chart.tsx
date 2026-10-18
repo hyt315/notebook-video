@@ -90,7 +90,7 @@ const TickText = (props: TickRendererProps) => (
 
 /**
  * 左侧 Y 轴 + 横向网格：折线/面积/堆叠/河流共用。
- * v4.2：网格 = @visx/grid GridRows，刻度字 = @visx/axis AxisLeft（MIT，纯 SVG、无动画、帧安全）。
+ * 网格 = @visx/grid GridRows，刻度字 = @visx/axis AxisLeft（MIT，纯 SVG、无动画、帧安全）。
  */
 const YAxis: React.FC<{ticks: number[]; y: LinearScale; innerW: number; unit: string}> = ({ticks, y, innerW, unit}) => (
   <>
@@ -110,7 +110,7 @@ const YAxis: React.FC<{ticks: number[]; y: LinearScale; innerW: number; unit: st
 
 /**
  * 坐标轴：Y 轴线在 x=0、X 轴线在 y=innerH（与折线变体完全一致的位置）。
- * v4.2：两条轴线与 X 轴标签都由 @visx/axis 画；X 刻度是「序号」，tickFormat 换回标签文字。
+ * 两条轴线与 X 轴标签都由 @visx/axis 画；X 刻度是「序号」，tickFormat 换回标签文字。
  */
 const Axes: React.FC<{innerW: number; innerH: number; labels: string[]; at: (i: number) => number}> = ({innerW, innerH, labels, at}) => {
   const n = labels.length;
@@ -158,7 +158,7 @@ export const Chart: React.FC<{
   tone?: string;
   /** 环形图的中心孔径（0 = 实心饼） */
   innerRadius?: number;
-  /** v4.4 bar 变体：要点名的那根柱（下标），用强调色实心填充，其余柱用主色浅填充 */
+  /** 3.2.0 bar 变体：要点名的那根柱（下标），用强调色实心填充，其余柱用主色浅填充 */
   highlight?: number;
 }> = ({
   f,
@@ -411,7 +411,7 @@ export const Chart: React.FC<{
     );
   }
 
-  // ---- 单序列：line（默认）/ bar（v4.4：分类对比用实心柱，不再用平滑折线把四个接口连成一条「钟形曲线」）/ area ----
+  // ---- 单序列：line（默认）/ bar（分类对比用实心柱，不再用平滑折线把四个接口连成一条「钟形曲线」）/ area ----
   const isArea = variant === 'area';
   const isBar = variant === 'bar';
   // scaleBand 取代原来手算的 barW：柱宽、柱心、X 轴刻度位置全部由刻度尺给出

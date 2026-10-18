@@ -1,4 +1,4 @@
-# SFX library (v4.3)
+# SFX library
 
 The template ships a small, finished sound-effect library so ordinary AI tools (Windows included) never have to
 generate, download or tune sounds. Files live in `assets/lecture-template/public/sfx/lib/`, described by
@@ -46,10 +46,10 @@ Rendered in code with **earshot** 0.2.0 (`earshot forge` recipes; https://github
 recorded samples — and quality-checked with `earshot rank` / `earshot match` (CLAP). License: CC0-1.0.
 Users never install earshot. To rebuild: `python scripts/dev/build-sfx-library.py` (needs torch CPU + earshot).
 
-## v4.4: layered pop and chart
+## Layered pop and chart
 
-`pop` and `chart` were the two weakest sounds of the v4.3 library (earshot CLAP match z 2.49 / 2.47, "weak"):
-under narration they read as a faint "plip" and a thin sweep. v4.4 rebuilds both as **layered** designs in
+`pop` and `chart` were the two weakest sounds of the first library build (earshot CLAP match z 2.49 / 2.47, "weak"):
+under narration they read as a faint "plip" and a thin sweep. The final build rebuilds both as **layered** designs in
 `scripts/dev/build-sfx-library.py` (its LAYERS table):
 
 | Event | Layers (earshot forge recipe #seed, gain) | Match z |
@@ -61,7 +61,7 @@ A rising four-note arpeggio for `chart` was tried and rejected (CLAP read it as 
 Rebuild only these two: `python scripts/dev/build-sfx-library.py --only pop,chart` (the other entries and
 files are kept byte-for-byte).
 
-## v4.5 调音：每个 cue 的 `gain` 与 `offsetMs`
+## 调音：每个 cue 的 `gain` 与 `offsetMs`
 
 - 每条 manifest 记录新增 `gain`（线性，把 cue 放到响度阶梯上：chapter −24 · success −25 · pop −25.5 · error / chart −26 · highlight −27 · whoosh −27.5 · riser −28 · click −28.5 · typing −30 LUFS，全部比音乐床高 11–17 LU）与 `offsetMs`（文件开头到瞬态的距离）。
 - 引擎（`src/sfx.ts`）按 `offsetMs` **提前**起播，瞬态落在视觉命中帧（±1 帧）；whoosh 的命中点是转场中点（+7 帧），riser 的命中点是章节首帧。

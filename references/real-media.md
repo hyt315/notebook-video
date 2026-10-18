@@ -1,7 +1,7 @@
-# 真实素材（截图 / 录屏 / 动图）· v4.5
+# 真实素材（截图 / 录屏 / 动图）
 
 把用户给的或合法找来的截图、短录屏放进片子里，和组件场景混排（例如 Git 协作课里放一张真实的 PR 页面截图）。
-外观沿用 v4.4 卡片语言：`MediaFrame` = 主题卡片（`THEME.Paper`）+ 可选外壳（browser 地址栏 / window 三圆点 / device 手机边框）+ 署名徽章。
+外观沿用默认组件风格的卡片语言：`MediaFrame` = 主题卡片（`THEME.Paper`）+ 可选外壳（browser 地址栏 / window 三圆点 / device 手机边框）+ 署名徽章。
 
 ## 什么时候用真实素材，什么时候用组件画
 
@@ -63,13 +63,13 @@ P0：文件不存在 / 类型不符；放大超过 1.5 倍（含区域推近，�
 `source: web` 缺 url / license / credit 或许可不兼容；引用了不存在的区域；区域坐标出界；`src/media.json` 未同步；场景源码自己画或关掉署名徽章。
 P1：`muted: false`；登记了没用到；2K 交付时放大超过 1.5 倍。
 
-## 高亮与推近的注意事项（v4.5c）
+## 高亮与推近的注意事项
 
 - `highlight` / `focus` 的区域框画在视口坐标里：4 px 橙色描边 + 白内圈 + 抬升阴影，区域外压一层 0.16 的淡暗幕，缩小看也一眼能找到；区域推近后露出不足 90% 的框不画（不会出现被切掉的半个框）。
 - 镜头表 `cinema.focus` 推近画面别处时，旁边的 MediaFrame 卡片可能被推出画面一半——给那条 focus 写 `keep: {x,y,w,h}`（卡片的矩形），引擎会降低推近倍数把两者都装下。
 - `w` / `h` 请写数字或同文件 `const`（`w={W}`、`w={W * 0.6}` 都能量）；写成布局对象字段时 validate-media 量不出放大倍数，只按占满画布估并给 P1 提醒。
 
-## Highlight & push-in notes (v4.5c)
+## Highlight & push-in notes
 
 Region highlights are drawn in viewport space (4 px orange stroke, white inner ring, lift shadow, 0.16 veil outside); boxes < 90 % visible after a region zoom are hidden. When a shot-level `cinema.focus` pushes in elsewhere, add `keep: {x,y,w,h}` for the MediaFrame card. Write `w`/`h` as numbers or same-file consts so validate-media can measure upscaling.
 

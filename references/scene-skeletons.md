@@ -15,7 +15,7 @@
 ## 1. 要解决的问题
 
 v2.8 的四个场景**结构同构**：`SceneContribute` / `SceneShip` / `SceneSkills` 三处近乎逐行相同
-（`Paper` + 涂鸦字 + 标题 + 编号列表 + 底部贴标），另有一整套 `*P` 竖屏复制品共 8 份（竖屏画布已于 v4.0.0 删除）。
+（`Paper` + 涂鸦字 + 标题 + 编号列表 + 底部贴标），另有一整套 `*P` 竖屏复制品共 8 份（竖屏画布已于 3.2.0 删除）。
 **换内容不换结构 = 四个 PPT 页。** 这不是 AI 偷懒，是模板只给了这一种结构。
 
 解法不是加 157 张镜头卡（维护债 >> 收益），而是**四种构图本来就不同的骨架**。
@@ -154,7 +154,7 @@ python scripts/resolve-shots.py PROJECT_DIR
 **好处**：改一句台词 → 改 `narration.txt` 与语义字幕行 → 重跑 `resolve-shots`，
 所有帧号（含音效钉帧）自动跟着走。**不再手改几十处 `ease(l,95,130)`。**
 
-## 4.5 版式 `layout`（v4.4）
+## 4.5 版式 `layout`
 
 骨架管「机制怎么演」，版式管「这一页长什么样」。分镜表每镜可写 `layout`（自由命名，如 `hero-number`、`chart-number`、
 `code-full`、`diff-split`、`rail`、`ring-tree`、`chart-metric`、`hero-verdict`）。相邻两镜都写了且相同 → `validate-composition.py` P0。

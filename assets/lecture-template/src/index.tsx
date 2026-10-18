@@ -178,7 +178,7 @@ const CardFitGate=()=>{
 // 字号 / 字重 / 字距 / 安全宽全部取自 16:9 canvas（MODES['16:9']）与当前主题，
 // 并计入主题字幕框的内边距（cel 64px / flat 108px）。
 // 判定：> mode.safe 记 fail（真的会被裁切）；> mode.safe - subtitlePadX 只 warn（会顶到内边）。
-// v4.4：字幕每行 ≤ CAPTION_MAX_CHARS 字（去掉句末标点与空白后逐字计，ASCII 也按 1 字计）。
+// 字幕每行 ≤ CAPTION_MAX_CHARS 字（去掉句末标点与空白后逐字计，ASCII 也按 1 字计）。
 // 与 build-semantic-captions.py --max-chars / validate-caption-sync.py --max-chars 同口径；超了直接拦。
 const CAPTION_MAX_CHARS=16;
 const captionChars=(t:string)=>[...String(t).replace(/[，。！？；：、,.!?;:\s]+$/g,'').replace(/\s+/g,'')].length;
@@ -212,7 +212,7 @@ const Subtitle=()=>{
   const full=cue?cleanTail(cue.text):'';
   const targetChars=full.length;
   const words=cue?cue.words.filter((w:any)=>w.startFrame<=f+lead):[];
-  // v4.1：占位层与可见层用**同一套**分词加空格规则渲染。旧版占位层只放 cue.text，而可见层会在
+  // 占位层与可见层用**同一套**分词加空格规则渲染。旧版占位层只放 cue.text，而可见层会在
   // 中英文词之间补 \u00a0 —— 于是「三个 AI 技能」这类句子可见宽度大于占位宽度，最后一个字
   // 顶进字幕框的右侧装饰点。现在两层字符完全一致，占位宽 = 最终宽。
   const allWords=cue?cue.words:[];
@@ -270,7 +270,7 @@ const Chrome=()=>{
   </>;
 };
 
-// v4.4 引擎级虚拟摄影机（src/cinema.tsx）：每镜自动慢推/漂移、按分镜表 `cinema.focus` 推近当前拍、
+// 3.2.0 引擎级虚拟摄影机（src/cinema.tsx）：每镜自动慢推/漂移、按分镜表 `cinema.focus` 推近当前拍、
 // 宽画布横摇、镜间 whip/zoom 转场、背景视差。分镜表什么都不写也有默认运动。
 const TRANS=CINEMA.transition; // 镜间转场帧数（替代旧版 10 帧交叉淡化）
 const shotIndexAt=(f:number)=>{let idx=0;for(let i=0;i<SHOT_IDS.length;i++){ if(f>=SHOTS[SHOT_IDS[i]].from) idx=i; }return idx;};
@@ -309,11 +309,11 @@ const FinalDemo=()=>{
 };
 
 
-// 背景变体（v4.1）：每镜一张，由分镜表推导，镜头交接时与上一镜的背景交叉淡化 TRANS 帧。
+// 背景变体：每镜一张，由分镜表推导，镜头交接时与上一镜的背景交叉淡化 TRANS 帧。
 //   · 分镜表里写了 `bg: 'main' | 'chapter' | 'quiet'` → 照写的用；
 //   · 否则：章节首镜 → chapter；信息密集（zones ≥ 4）→ quiet；其余 → main。
 // 三张图的中央约 70% 都是安静的安全区，所以镜头内容直接压在背景上，不再铺整幅半透明底托。
-// v4.4：背景按 CINEMA.parallax 跟随摄影机（视差），转场时随甩镜一起移动。
+// 背景按 CINEMA.parallax 跟随摄影机（视差），转场时随甩镜一起移动。
 const bgVariantFor=(id:string):BgVariant=>{
   const s:any=(SHOTS as any)[id];
   if(s?.bg==='main'||s?.bg==='chapter'||s?.bg==='quiet') return s.bg;
@@ -336,12 +336,12 @@ const Backdrop=()=>{
   </AbsoluteFill>;
 };
 
-// 音效（v4.3）：预制语义音效库 + 按分镜表语义自动排（src/sfx.ts 的 planSfx）。
+// 音效：预制语义音效库 + 按分镜表语义自动排（src/sfx.ts 的 planSfx）。
 // 一律相对所属镜头起点推导，改台词重跑 resolve-shots 后自动跟着走；每镜可用 `sfx` 字段覆盖。
 // 混音：音效库统一 -18 LUFS(100ms)，SFX_GAIN 把它们压到人声（-16 LUFS）下方 8–12 LU；音乐床 ≈ -36 LUFS。
 const SFX_PLAN=planSfx(SHOT_IDS.map((id)=>SHOTS[id] as any),CHAPTER_STARTS,DURATION);
 const Sound=()=>{
-  // v4.5：音乐床在每个音效下闪避（bedDuckAt），音量是帧的纯函数
+  // 音乐床在每个音效下闪避（bedDuckAt），音量是帧的纯函数
   const bedVol=(fr:number)=>interpolate(fr,[0,30,DURATION-45,DURATION],[0,BED_GAIN,BED_GAIN,0],{...clamp,easing:Easing.linear})*bedDuckAt(fr,SFX_PLAN);
   return <>
     <Audio src={staticFile('narration.mp3')} volume={1}/>
@@ -385,7 +385,7 @@ const FilmLayout:React.FC=()=>{
   </CanvasContext.Provider>;
 };
 
-// v4.0.0：只有 16:9 一种交付画布（2560×1440，设计坐标 1920×1080）。
+// 只有 16:9 一种交付画布（2560×1440，设计坐标 1920×1080）。
 const Film16x9=()=> <FilmLayout/>;
 
 // 接触表 composition 的渲染期门禁（v1）：

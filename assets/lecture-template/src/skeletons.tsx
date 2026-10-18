@@ -304,7 +304,7 @@ export const ZoomStage: React.FC<{
   const dim = easeIO(f, at.focus, at.annotate) * (1 - easeIO(f, at.back, at.back + 20));
   const fxp = focus.fx * w;
   const fyp = focus.fy * h;
-  // v4.3：只钳缩放倍数还不够 —— 焦点不在内容正中时，放大后的内容会从**一侧**被框裁掉
+  // 只钳缩放倍数还不够 —— 焦点不在内容正中时，放大后的内容会从**一侧**被框裁掉
   // （参考片 S3 帧 ~380：DiffView 右缘越出取景框 ~66px）。给了 contentW/H 就再钳平移：
   // 内容 [0,contentW]×[0,contentH] 放大后必须整体留在框内（k ≤ kMax 保证一定放得下）。
   const clampOff = (off: number, frame: number, content?: number) =>
@@ -319,7 +319,7 @@ export const ZoomStage: React.FC<{
         {/* 三段式：先平移到框心，再缩放，再把焦点平移回原点 —— 这样焦点一定落在框心 */}
         <div style={{position: 'absolute', inset: 0, transformOrigin: '0 0', transform: `translate(${offX}px, ${offY}px) scale(${k})`, filter: dim > 0 ? `brightness(${1 + dim * 0.04})` : undefined}}>{children}</div>
         {/* 框内暗角：让聚焦读成「打光」而不是单纯放大 */}
-        {/* v4.1：由整框灰罩（rgba 墨色 10%，把白卡压成浑浊的灰）改为以焦点（= 框心）为圆心的
+        {/* 由整框灰罩（rgba 墨色 10%，把白卡压成浑浊的灰）改为以焦点（= 框心）为圆心的
             径向冷色暗角（海军蓝 ≤10%，不用墨黑以免发灰）：焦点保持纸白，只把边缘轻压下去，读成「打光」而不是「变灰」。 */}
         {dim > 0.01 && <div style={{position: 'absolute', inset: 0, borderRadius: 14, background: `radial-gradient(ellipse at 50% 50%, ${C.navy}00 0%, ${C.navy}00 46%, ${C.navy}${Math.round(0x1a * dim).toString(16).padStart(2, '0')} 100%)`, pointerEvents: 'none'}} />}
         <div style={{position: 'absolute', inset: 0, boxShadow: `inset 0 0 0 2px ${C.line}`, borderRadius: 14, pointerEvents: 'none'}} />

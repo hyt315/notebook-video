@@ -1,7 +1,7 @@
 # Official aesthetic system
 
-This document defines the aesthetic layer preserved by `notebook-video-v4.1-flat-cel` (see `locked-style-contract.json`).
-This package contains one official aesthetic track, one canonical project template (`assets/lecture-template`) and two locked skins: `flat` (default) and `cel`. The v4.0 warm-ivory paper look and its `--classic` example project were removed in v4.1.0.
+This document defines the aesthetic layer preserved by `notebook-video-3.2.0-flat-cel` (see `locked-style-contract.json`).
+This package contains one official aesthetic track, one canonical project template (`assets/lecture-template`) and two locked skins: `flat` (default) and `cel`. The 3.1.x warm-ivory paper look and its `--classic` example project were removed in 3.2.0.
 
 ## Locked production grammar
 
@@ -55,7 +55,7 @@ Stable semantic IDs must remain separate from display labels. Changing visible c
 - Keep the grade static and restrained.
 - Never lay a full-frame translucent wash over the background: the three backgrounds per theme keep their central ~70% calm on purpose, and a wash turns the corner characters into ghosts.
 - Use the official line icons (`LineIcon`) as the primary icon language, instead of system glyphs or emoji.
-  `LineIcon` glyphs come from `lucide-react` (v4.2). Topic-specific marks (brand logos, technology identities) use
+  `LineIcon` glyphs come from `lucide-react`. Topic-specific marks (brand logos, technology identities) use
   `TopicIcon`: `simple-icons` for brands (single-colour paths, theme colour only) and `lucide-react` for line marks,
   with `strokeWidth` matched to `LineIcon`'s visual weight. See dependency-policy.md §7.5.
 - Preserve the same persistent task-card, shared-track and physical-slot logic.

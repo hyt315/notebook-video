@@ -11,7 +11,7 @@
   P0  `src/index.tsx` 里引用的 `sfx/xxx` 文件不存在
   P1  缺少 bgm
   P1  引用了 SFX 但 index.tsx 里查不到任何 `vol:` 设定（可能整段音效被删）
-  v4.3 预制音效库（public/sfx/lib + sfx-manifest.json）：
+  3.2.0 预制音效库（public/sfx/lib + sfx-manifest.json）：
   P0  manifest 缺失 / 损坏；manifest 里的文件不存在；sha256 与 manifest 不符（被替换或损坏）
   P0  src/sfx.ts 的 SFX_FILES 与 manifest 的事件/文件不一致；引用的 sfx/lib 文件不存在
   P0  库文件实测响度偏离 manifest 目标超过容差（一致性），或峰值 > -0.5 dBFS（削波风险）
@@ -131,7 +131,7 @@ def check_library(project: Path, p0: list[str], p1: list[str], checked: list[dic
                 p0.append(f"SFX_GAIN.{ev}={v} 越界（0.15–0.70）：太大会顶到人声，太小听不见")
             mg = events.get(ev, {}).get("gain")
             if mg is not None and abs(float(mg) - float(v)) > 0.01:
-                p0.append(f"SFX_GAIN.{ev}={v} 与 sfx-manifest.json gain={mg} 不一致（v4.5：增益以库元数据为准；改 src/sfx.ts 让它等于 manifest）")
+                p0.append(f"SFX_GAIN.{ev}={v} 与 sfx-manifest.json gain={mg} 不一致（增益以库元数据为准；改 src/sfx.ts 让它等于 manifest）")
         o = re.search(r"SFX_OFFSET_MS[^=]*=\s*\{([^}]*)\}", src)
         for ev, v in re.findall(r"([a-z]+):\s*([\d.]+)", o.group(1) if o else ""):
             mo = events.get(ev, {}).get("offsetMs")

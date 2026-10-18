@@ -7,7 +7,7 @@ import {fitsWithin} from './fittext';
 // ============================================================================
 // overlay.tsx — 拟真弹层（dialog / popover / tooltip / menu）
 //
-// v4.2（Phase 3）：去掉 Radix（dialog / popover / tooltip / dropdown-menu 四个包）。
+// 3.2.0（Phase 3）：去掉 Radix（dialog / popover / tooltip / dropdown-menu 四个包）。
 // 以前的实测结论正是去掉它的理由：
 //   1. Portal 默认落到 document.body（画布之外），必须手动把 container 指回画面；
 //   2. popover / tooltip / menu 走 floating-ui，落位是**异步**测量出来的

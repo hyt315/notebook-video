@@ -61,14 +61,14 @@
 | `budoux` | **中文按词组断行** | Google 出品；`loadDefaultSimplifiedChineseParser().parse(text)` 返回词组数组。用于**标题**断行（正文中文可任意字断行） |
 | `@cto.af/linebreak` | **UAX #14 断行算法**（避头尾 + "拉丁/数字串内部不断"的正解） | `new Rules({string:true}).breaks(text)` → 每个断点带 `position`。MIT、60 KB、**UAX #14 / Unicode 17**、2026-03 发版、依赖树干净（`@cto.af/unicode-trie-runtime` → `fflate`，都是现代在维护的包）、纯函数无 timer/random。此前 `fittext.tsx` 手写两张字符表做避头尾，实测只是粗糙近似且**错在中英混排**：10 条真实文本里它允许 **36 个非法断点**（`在G\|itHub`、`hyt\|315`、`第三个A\|I技能`、`S\|1：`…），换 UAX #14 后 **36 → 0**（纯中文用例两者完全一致）。⚠️ **选包口径**（用户 2026-09-21 定的原则：依赖要通用、能用新的就不用旧的）：先用的是 foliojs 的 `linebreak@1.1.0`，但它**钉死 `base64-js@0.0.8`（2014 年）**、且 2022 年后没再发版 → 换成 `@cto.af/linebreak`（自述是前者那包的 refresh），实测两包在同一批文本上**断点逐一相同**，换包零行为变化（同名页面重渲逐字节一致）。另外：**不要回头试 `Intl.Segmenter({granularity:"line"})`**——`line` 粒度不在 ECMA-402 规范内，Node 24 直接抛 `RangeError` |
 
-> **v4.2 移除**（Phase 3「能用成熟开源件就不手写」）：12 个 `@radix-ui/*` 包、`react-syntax-highlighter`（+ `@types/react-syntax-highlighter`）、`react-icons`。
+> **3.2.0 移除**（Phase 3「能用成熟开源件就不手写」）：12 个 `@radix-ui/*` 包、`react-syntax-highlighter`（+ `@types/react-syntax-highlighter`）、`react-icons`。
 > Radix 那四件（`Accordion` / `Tabs` / `ControlStack` / `OverlayFrame`）渲染期没有交互，Radix 只贡献 ARIA 外壳，
 > 却带来 Portal 落到画布外、floating-ui **异步**定位（实测 8 轮渲染才稳）、Slider 的 ResizeObserver 测量三个确定性风险 → 改成纯 `<div>`，位置与状态全部由帧号算出。
 > 随之显式声明了 `@types/react`（devDependency）：它以前是 Radix 的传递依赖，删掉 Radix 后 `tsc` 会找不到 React 类型。
 
-> **实测**：这张表的 **10 个**依赖已在独立验证工程 `demo-video` 里逐个渲染验证（目录树 / 地球 / 流量图 / CSV / 手绘 / 二维码 / 公式 / 中文词组断行 / 关系网 / UAX #14 断行），全部能在各皮肤下正确读 `THEME`（当时验证时为四套，v4.0.0 起保留 flat / cel 两套）。
+> **实测**：这张表的 **10 个**依赖已在独立验证工程 `demo-video` 里逐个渲染验证（目录树 / 地球 / 流量图 / CSV / 手绘 / 二维码 / 公式 / 中文词组断行 / 关系网 / UAX #14 断行），全部能在各皮肤下正确读 `THEME`（当时验证时为四套，3.2.0 起保留 flat / cel 两套）。
 > **两个地图数据包（2026-09-22 加）的验证口径不同**：它们不是独立组件，而是 `GeoView` 的实现细节，所以不进 `demo-video`——验证落在**本模板自己的接触表 ⑬ 页**（`node scripts/notebook-video.mjs showcase <proj>`，然后 Read 那张接触表看图上的陆地轮廓与标记点）。
-> **体积**：10 个包 + 传递依赖合计约 **12 MB**（12 MB 是 2026-09-21 对当时表里 8 个包的实测值；后来补进 `d3-force` 与 `@cto.af/linebreak`——自述 60 KB——量级不变。其中 `katex` 4.6 MB 与 `budoux` 3.2 MB 是大头，且几乎全是字体与模型数据）。地图那两个再加 **8.2 MB**（`world-atlas` 整包；实际进 bundle 的只有 `land-110m.json` 的 55 KB）+ **68 KB**（`topojson-client`）。相比之下 Chrome 无头浏览器 270 MB——**这点体积可以忽略**。（v4.2 的图标两包：`lucide-react` 约 36 MB、`simple-icons` 约 17 MB，都按命名导出 tree-shake，进 bundle 的只有用到的字形；比被换掉的 `react-icons` 85 MB 还小。）
+> **体积**：10 个包 + 传递依赖合计约 **12 MB**（12 MB 是 2026-09-21 对当时表里 8 个包的实测值；后来补进 `d3-force` 与 `@cto.af/linebreak`——自述 60 KB——量级不变。其中 `katex` 4.6 MB 与 `budoux` 3.2 MB 是大头，且几乎全是字体与模型数据）。地图那两个再加 **8.2 MB**（`world-atlas` 整包；实际进 bundle 的只有 `land-110m.json` 的 55 KB）+ **68 KB**（`topojson-client`）。相比之下 Chrome 无头浏览器 270 MB——**这点体积可以忽略**。（3.2.0 的图标两包：`lucide-react` 约 36 MB、`simple-icons` 约 17 MB，都按命名导出 tree-shake，进 bundle 的只有用到的字形；比被换掉的 `react-icons` 85 MB 还小。）
 
 > **这两个包给"新建工程"增加步骤吗？——不增加，一步都没有。**
 > `new-project` 复制模板时 `package.json` 里已经带着这两行，`npm install` / `npm ci` 一次到位；数据在**打包期**随 `import` 进 bundle，所以：
@@ -130,7 +130,7 @@
 | `lucide-react` + `simple-icons` | `LineIcon`（kit）、`TopicIcon` / `IconWall` | ✅ 接触表 ⑩⑫；参考片 S3 S7（`CardHead`） |
 | `diff` | `DiffView` 的 `before` / `after` 模式 + `diffToLines()` | ✅ 接触表 ② |
 | `flubber` | `MorphShape`（默认引擎） | ✅ 接触表 ⑪ |
-| （无依赖，v4.2 起） | `ControlStack`（六种控件，帧 → 状态的显式表）、`OverlayFrame`（dialog / popover / tooltip / menu，钉在给定坐标）、`Accordion`、`Tabs` | ✅ 接触表 ⑨⑫⑰ |
+| （无依赖，3.2.0 起） | `ControlStack`（六种控件，帧 → 状态的显式表）、`OverlayFrame`（dialog / popover / tooltip / menu，钉在给定坐标）、`Accordion`、`Tabs` | ✅ 接触表 ⑨⑫⑰ |
 | `@remotion/shapes` / `@remotion/paths` | `SHAPES`（含 callout / arrow / heart）+ `PathDraw showArrow`（`getTangentAtLength` 沿线朝向）；`@remotion/shapes` 的 Pie 不再封装（饼图/份额改走 `Chart variant="pie"` 与 `ProgressRing`） | ✅ 接触表 ⑩⑪⑰ |
 
 **全部封装完成、全部有渲染记录、全部登记进路由表**——「零引用」判据无一触发。
@@ -144,7 +144,7 @@
 > **教训留档**（这条清单本来是"待办"）：技能曾累积 23 件"从未出现在任何画面里"的组件，
 > 起因正是"装了/建了却没人用"。**引入依赖 ≠ 获得能力**——封装成组件 + 登记进路由表 + 真的渲染过，三件都做到才算。
 
-### 4.5 代码高亮：Shiki（v4.2 起；替换 `react-syntax-highlighter` / PrismLight）
+### 4.5 代码高亮：Shiki（3.2.0 起；替换 `react-syntax-highlighter` / PrismLight）
 
 `src/components/shiki.ts` 是唯一的高亮入口，`HighlightCode` 只消费它算出的 token：
 
@@ -210,7 +210,7 @@
 2. **只读皮肤**：颜色 / 边框 / 圆角 / 阴影只能从 `THEME` 取，不得硬编码。
 3. **帧驱动**：动画是 `f(帧号)` 的纯函数。禁止 CSS transition、`setTimeout`、`Math.random()`。
 4. **高度算出来**：文字容器高度用 `fitH()` 或 `fitTextOnNLines()` 得出，禁止手写"看着差不多"。
-5. **图标限定**（v4.2 起）：两个包，各管一段，**不许混着用同一个意思**：
+5. **图标限定**（3.2.0 起）：两个包，各管一段，**不许混着用同一个意思**：
    - `lucide-react` ＝ 线条图标。`LineIcon`（kit，26 个 kind）与 `TopicIcon` 的线条字形都来自它，
      同一套 24 视窗描边语法。`LineIcon` 的 `strokeWidth` 仍按旧的 32 视窗口径传（默认 2.2），内部换算为 ×24/32；
      `TopicIcon` 默认 1.65，两者混排笔画重量一致。
@@ -220,7 +220,7 @@
    图标**只用 THEME 给的 color**，不许用自带 fill 或多色。`react-icons` 已移除（Font Awesome 品牌是 CC BY 4.0，需署名）。
 6. **进路由表**：新组件必须同时登记进 [media-routing.md](media-routing.md) 的「内容→介质」与
    「修辞动作→组件」两张表，否则会重演"组件在仓库里吃灰"的老问题。
-7. **弹层不 Portal、不异步定位**（v4.2 起）：`OverlayFrame` 是父容器里的一个绝对定位 `<div>`，左上角 = 给定的 `(x, y)`
+7. **弹层不 Portal、不异步定位**（3.2.0 起）：`OverlayFrame` 是父容器里的一个绝对定位 `<div>`，左上角 = 给定的 `(x, y)`
    （popover / tooltip / menu 再向下留 12px，有引线时 2px）。以前用 Radix 时踩过的两个坑正是去掉它的理由：
    Portal 默认挂 `document.body`（画布之外），以及 floating-ui 的 `computePosition` 在微任务里才 resolve（实测 8 轮渲染才稳）。
    **不要再为弹层引入任何会测量或 Portal 的库**；需要锚点相对定位时，自己算坐标。

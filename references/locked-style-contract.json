@@ -1,5 +1,5 @@
 {
-  "version": "notebook-video-v4.1-flat-cel",
+  "version": "notebook-video-3.2.0-flat-cel",
   "status": "official-current",
   "canonical_entry": "assets/lecture-template/src/index.tsx",
   "canonical_composition": "NotebookVideoFilm",
@@ -15,7 +15,7 @@
     "frame_quantizer": "designStep = designTimelineFps / physicalMotionFps; Math.floor(designFrame / designStep) * designStep",
     "camera": "per-shot (restricted recipes; there is no film-wide camera track)",
     "global_motion": false,
-    "mode_selection": "fixed: 16:9 is the only delivery canvas (v4.0.0+)",
+    "mode_selection": "fixed: 16:9 is the only delivery canvas (3.2.0+)",
     "modes": {
       "16:9": {
         "width": 2560,
@@ -441,5 +441,5 @@
     "header_plate_required_when_top_right_decorated": true,
     "zoom_dim": "radial navy vignette <= 10% around the focus, never a flat black wash"
   },
-  "_note_v4_1": "v4.1.0: the warm-ivory --classic example project (assets/example-project) and validate-official-example.py were removed; the lecture template is the only canonical project. Theme values below mirror src/theme/flat.tsx and src/theme/cel.tsx (those files are the runtime source of truth)."
+  "_note_3_2_0": " the warm-ivory --classic example project (assets/example-project) and validate-official-example.py were removed; the lecture template is the only canonical project. Theme values below mirror src/theme/flat.tsx and src/theme/cel.tsx (those files are the runtime source of truth)."
 }

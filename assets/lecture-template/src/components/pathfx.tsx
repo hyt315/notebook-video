@@ -132,7 +132,7 @@ export const PathDraw: React.FC<{
 /**
  * MorphShape — 形状连续变形（方变圆、圆变星、星变心……）。
  *
- * v4.2 起由 **flubber**（MIT）插值：它把两个形状重采样成同样多的点再一一配对，
+ * 3.2.0 起由 **flubber**（MIT）插值：它把两个形状重采样成同样多的点再一一配对，
  * 所以**任意两个闭合形状**都能平滑变形（@remotion/paths 的 interpolatePath 要求两条
  * path 指令结构一致，方→星这类就会乱跳或直接报错）。flubber 的插值器是纯函数
  * t → path 字符串，与帧驱动天然相容：每个 (from, to) 只建一次插值器（useMemo），

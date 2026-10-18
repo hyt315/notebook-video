@@ -5,7 +5,7 @@ import {THEME} from './theme/active';
 
 // ============================================================================
 // fxkit · 固定动效组件库 v1（反 PPT 专用）
-// 设计原则：动画只用 remotion 原生 spring/interpolate（v4.2 起 DiffView 用 jsdiff 只做「算行」）、只做
+// 设计原则：动画只用 remotion 原生 spring/interpolate（3.2.0 起 DiffView 用 jsdiff 只做「算行」）、只做
 // transform/opacity 位移动画、cel 皮肤（2.5px 墨线 + 硬偏移阴影 + 纯平填充，
 // 无渐变无模糊阴影）、30fps 确定性（无随机数，伪方差来自序号哈希）。
 // 防出格铁律：所有文字容器高度必须由 fitH() 显式算出，禁止手写"看着差不多"
@@ -203,7 +203,7 @@ export const ProgressRing:React.FC<{
   const p = easeOutSoft(f,start,start+dur);
   const tp = easeOutSoft(f,start+2,start+2+Math.max(16,Math.round(dur*0.8)));
   const shown = Math.max(0,Math.min(1,pct));
-  // v4.4：描边、读数、标签随 size 等比（旧版写死 11px 描边 / 22px 读数 / 13px 标签，放大到 300+ 时读数缩成一个点）
+  // 描边、读数、标签随 size 等比（旧版写死 11px 描边 / 22px 读数 / 13px 标签，放大到 300+ 时读数缩成一个点）
   const sw = Math.max(11, Math.round(size*0.06)), numFs = Math.max(22, Math.round(size*0.23)), labFs = Math.max(16, Math.round(size*0.075));
   const R = (size-sw-3)/2, len = 2*Math.PI*R;
   const angD = -90 + 360*shown*p;
@@ -239,7 +239,7 @@ export const StaggerList:React.FC<{
 
 export const FXKIT_VERSION = 'fxkit-v4 · 9 components · multi-clock motion · scaleX bars · DiffView via jsdiff';
 
-// ---- DiffView：补丁 diff。v4.2 起由 jsdiff（`diff` 包，BSD-3-Clause）计算 +/- 行 ----
+// ---- DiffView：补丁 diff。3.2.0 起由 jsdiff（`diff` 包，BSD-3-Clause）计算 +/- 行 ----
 // 两种喂法（二选一）：
 //   1. before/after 两段文本 → diffLines 自动算出增删行，按 startAt + i*step 依次入场；
 //   2. 旧的手写 lines[{k,text,at}]（向后兼容，参考片 S3 仍用这种）。
@@ -272,7 +272,7 @@ export const DiffView:React.FC<{
   /** before/after 模式下第一行入场帧与逐行间隔 */
   startAt?:number;step?:number;
   frame?:number;exitStart?:number;
-  /** v4.4：代码字号（设计像素）。缺省 15 适合接触表小格；**成片里的差异镜头请给 26–34**，让补丁大而清晰。 */
+  /** 代码字号（设计像素）。缺省 15 适合接触表小格；**成片里的差异镜头请给 26–34**，让补丁大而清晰。 */
   fontSize?:number;
 }> = ({x,y,w,title='patch.diff',lines,before,after,startAt=0,step=14,frame,exitStart,fontSize=15})=>{
   const f = useF(frame);

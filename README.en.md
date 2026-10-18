@@ -1,337 +1,204 @@
-# 📦 Notebook Video / Hand-drawn explainer videos
+# Notebook Video · Chinese teaching-video skill
 
 <div align="center">
 
-**把一句话变成一支 2K 中文教学视频：纯代码绘制场景、帧精确对齐配音、镜头语言由门禁托底。**
+**Turn one idea into a 16:9 Chinese teaching video: component scenes, an engine-level virtual camera and on-the-beat sound effects. One command renders it; objective gates fix what they can.**
 
-**Turn one sentence into a 2K Chinese explainer video: code-drawn scenes, frame-accurate TTS sync, camera language enforced by automated gates.**
-
+[![Version](https://img.shields.io/badge/version-3.2.0-1f6feb)](CHANGELOG.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
+[![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel-ff7a59)](references/theme-system.md)
 [![Validate](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml/badge.svg)](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
-[![GitHub Stars](https://img.shields.io/github/stars/hyt315/notebook-video?style=social)](https://github.com/hyt315/notebook-video/stargazers)
 
-English | [中文](README.md)
+[中文](README.md) | English
 
 </div>
 
 ---
 
----
+## What it is
 
-## 📖 What is this?
+`notebook-video` is an **Agent Skill** (a folder with a `SKILL.md`). Install it into Claude Code, Codex, Cursor or another agent,
+ask for "a short explainer on hash tables", and the agent uses the blueprints, template and gates here to build a 30-second to
+multi-minute Chinese teaching video with **React + TypeScript + [Remotion](https://www.remotion.dev/)**. You get the MP4 and the
+full, editable source project.
 
-An AI-Agent **video production system**. Say "make me an explainer video about X" and it carries the job end to end: write the narration → synthesise Chinese TTS → read millisecond word timestamps → split into semantic subtitle lines → lay out a shot table → draw the scenes → run the gates → render a 2K film, and hand back an editable Remotion source tree alongside the MP4.
+- **Components, not slides**: every shot is a real code-drawn component — consoles, code diffs, checklists, stat rows, funnels,
+  progress rings, stamp seals, verdict bars… — or a real screenshot / short screen recording.
+- **The camera follows the narration**: an engine-level virtual camera pushes in by default, moves to whatever component the
+  narration names, and cuts with whip pans or zoom-throughs.
+- **Reproducible by weaker models**: five teaching blueprints name the skeleton and components for every shot, plus golden
+  examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
 
-The hard part was never drawing something. It is making the result **not look like a slide deck**, keeping **captions in sync with the voice**, and keeping **elements from covering each other**. This skill turns all three into **gates that refuse to render**: skeletons must differ, media must differ, the camera must really move, captions must be measured with the real font, and text may not overlap — **a non-zero P0 count blocks the render**.
+One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×1080 design space, native 30 fps). Two themes:
+`flat` (default, calm modern edu illustration) and `cel` (bold comic ink).
 
-Every frame is drawn in code (React + SVG + Remotion) with **no image-generation model required**; when the argument needs "this really is the official UI / the official chart", a real screenshot can be dropped into a material plate.
+## Key features
 
----
-
----
-
-## ✨ Features
-
-| Feature | What it does | Why it matters |
-| --- | --- | --- |
-| **One sentence to a film** | Topic → 2K MP4: script → TTS → word timings → semantic captions → shot table → scenes → gates → render → contact sheet | No hand-placing frames, no sentence-by-sentence caption fiddling |
-| **Engine virtual camera (v4.4)** | Default push-in per shot; `cinema.focus` pushes to whatever the narration is talking about and pans between targets; whip / zoom-through transitions; background parallax; content auto-enlarged to 60–80 % of the safe area; kinetic numbers; ≤ 16-character subtitle lines; adjacent shots must change layout | Removes the slide-deck feel; motion even when the shot table says nothing |
-| **Real media (v4.5)** | Screenshots / short screen recordings in `MediaFrame` (same card look, region zoom, highlight boxes, callouts, credit badge); `prepare-media` transcodes; `validate-media` blocks blurry upscales, wrong codecs and missing licenses | Show real UIs (e.g. a GitHub PR page) without redrawing them |
-| **Weak-model replication (v4.5)** | 5 teaching blueprints (each shot names its skeleton and v4.4 components), golden examples, a short 5-step SKILL.md, one command `node scripts/make-video.mjs ./project --stills / --render` (same on Windows, or `make-video.cmd`); objective auto-fixes + hard gates (no clipped titles, font floor, contrast, 4.5 chars/s captions split at legal breaks, no dead tails, A/V sync), subjective rules as hints only; `src/custom/` escape hatch | Same v4.4 look, reproducible by a weaker model |
-| **SFX optimisation (v4.5)** | Per-cue `gain` / `offsetMs` in the manifest; the engine pre-rolls each cue so its transient lands on the visual hit; ≥150 ms spacing, ≈24/min cap; music bed ducks under cues; re-trimmed whoosh / highlight / riser / error; −24 LUFS for silent-narration films | Sounds hit the picture without clutter |
-| **Four scene skeletons** | `Stage` (one subject evolves) / `Corridor` (an object travels a track) / `Split` (two-column contrast) / `Zoom` (wide → detail → annotation → wide); **no two adjacent scenes may share one, ≥3 per film** | Kills "four PowerPoint pages" structurally |
-| **Content → medium routing** | Console window / chart / code diff / display type / metric grid / concept diagram; **≥3 media per film**, and every explanation scene carries at least one component that **changes state as the narration proceeds** | The frame stops being "card + paragraph" forever |
-| **Restricted camera language** | Six intents per shot + an `anchor` out-of-bounds proof + a pan budget; **a declared move must actually move** | Real camera movement that can never push content off screen |
-| **Fourteen quality gates** | 6 build-time: shot→frame resolution, out-of-bounds proof, composition & density, **frame-prop-name check**, **audio levels**, **presentation (beat↔cue alignment / caption reading budget / font size & contrast)**; 7 runtime: caption width, card overflow, **text-vs-text overlap and occlusion**, **clipped graphics**, **canvas bounds**, **measured lower-quarter density**, **main-slot occupancy**; 1 post-render: **whether the picture actually moves** | A non-zero P0 **blocks the render**; each gate also logs coverage so **"no warning" and "never ran" are distinguishable** |
-| **Material plates** | Real screenshots / official charts sit inside the locked cel frame (2.5px ink outline + hard shadow) with a caption and a source line, and can drift slowly toward the point that matters; assets are registered in **both** `visual-assets.json` and `asset-manifest.json` (source / rights / baked text / checksum) | For claims that need "this really is the official thing"; anything a diagram explains better stays drawn |
-| **Frame-accurate Chinese TTS sync** | Millisecond word timings → semantic sentence breaks → animation beats; trailing punctuation strictly stripped | No drifting captions, no audio-visual mismatch |
-| **Two locked skins** | `flat` (calm, friendly flat edu illustration, default) / `cel` (bold comic / manga); colours from Radix Colors, three backgrounds each (main / chapter / quiet) | One script, two moods |
-| **Background readability contract** | The locked background bitmaps are **never altered**; their central ~70% is a calm safe area with decoration only at the edges, so there is no full-frame wash — only content that overlaps a decoration zone sits on a plate | Readability without a solid white board — the film does not turn into a white slide |
-
----
-
----
-
-## 🎨 Visual Demos & Aspect Ratios
-
-![Notebook Video Demo](assets/demo/notebook-video-demo.webp)
-
-▶️ [Watch full demo video (MP4)](assets/demo/notebook-video-demo.mp4) · Hero Asset: [hero.png](assets/demo/hero.png)
-
-▶️ [Component contact sheet (18 pages, 18s)](assets/demo/notebook-video-components-demo.mp4) — the `NotebookVideoShowcase` contact sheet: one page per second (a select filter grabs each page's frames 6 and 21 → two mid-page frames per page, tiled 6×6 = 36 cells) covering the data / console / card / dialogue media, the six camera intents, scene skeletons and type motion, plus ten wrapper-layer pages (chart variants, hierarchy and force layouts, overlays and shapes, sketch style and KaTeX, and the FocusFx attention page cycling all four modes).
-
-> The contact-sheet MP4 is **2560×1440** (the locked 16:9 delivery canvas): the composition's native canvas is 1920×1080, so the delivery render scales it by 4/3. Its audio track is **silent AAC** — that composition carries no audio of its own, and the delivery chain adds the track.
-> To check the current version: `npm install` inside `assets/lecture-template`, then `npm run still` (single frame) or `npm run render` (full film). **For a delivery file, use `node scripts/notebook-video.mjs render <project> <output>`** — it rewrites the color metadata and normalizes loudness, which `npm run render` does not do (its output fails the `validate-video` color assertion).
-> The contact sheet is the same: `node scripts/notebook-video.mjs showcase <project-dir>` now renders at **delivery spec** (2560×1440 / silent AAC / color tags rewritten, matching the file in `assets/demo/`). `--scale` accepts a decimal literal only — `--scale=4/3` is rejected by the CLI, use `1.3333333333333333`.
-
-**Canvas**: one locked canvas — 16:9 (2560×1440, 1920×1080 design space), native 30 fps. v4.0.0 removed the 4:3 / 3:4 canvases and the `paper` / `sticker` skins; older projects are not supported. Parameters: [`references/canvas-modes.md`](references/canvas-modes.md).
-
-### Default Canvas: 16:9 Landscape
-
-| Aspect Ratio | Resolution | Video Demo | Best For |
-|---|---|---|---|
-| **16:9 Landscape** (Default) | 2560×1440 (2K) | [![16:9](assets/demo/notebook-video-demo.webp)](assets/demo/notebook-video-demo.mp4) | YouTube / Desktop / Lecture Walkthroughs |
-
----
-
----
-
-## 📊 Production pipeline
-
-```
-[Input: topic / script]
-        │
-  ① Lock content ── narration.txt + semantic caption lines (one cue per line)
-        │
-  ② Write shot table ── manifests/shots.json
-        │   declares only "which cues this shot covers" + skeleton / media /
-        │   live components / camera intent / anchor
-        │
-  ③ Resolve ── resolve-shots.py → src/shots.ts (frame numbers and camera keyframes generated)
-        │
-  ④ Author scenes ── four skeletons + medium components; each shot wrapped in
-        │   ShotCamera(keys, anchor); elements appear on the cue that narrates them
-        │
-  ⑤ Build-time gates ── validate-shot-motion.py (P0 = 0)
-        │                validate-composition.py (P0 = 0)
-        │
-  ⑥ Render ── Remotion render + loudness normalisation (-16 LUFS / -1.5 dBTP)
-        │
-  ⑦ Runtime gates + delivery ── CaptionFitGate / CardFitGate / OverlapGate / ClippingGate / CanvasBoundsGate / FillGate / SlotGuard
-                                (then validate-motion-gaps on the MP4: "nothing actually moved" is only visible there)
-                                → 2K MP4 + contact sheet + editable source ZIP
-```
-
----
-
----
-
-## 🚀 Quick start
-
-This is a standard AI Agent Skill — install it into your assistant and use it directly.
-
-### Option A: paste one sentence (most portable)
-
-Paste this into any agent and it will clone the skill into the right directory:
-
-> Install the notebook-video skill: clone `https://github.com/hyt315/notebook-video` into your skills directory (e.g. `~/.claude/skills/notebook-video` or `~/.agents/skills/notebook-video`) and confirm it works. When I ask for an explainer video, a hand-drawn animation, a product promo or a concept walkthrough, follow SKILL.md and produce a 2K video.
-
-### Option B: GitHub CLI 2.90+
-
-```bash
-gh skill install hyt315/notebook-video notebook-video --agent claude-code --scope user
-```
-
-### Option C: manual install
-
-| Platform | User-level path | Project-level path |
-| --- | --- | --- |
-| **Claude Code** | `git clone https://github.com/hyt315/notebook-video.git ~/.claude/skills/notebook-video` | `.claude/skills/notebook-video` |
-| **Codex** | `git clone https://github.com/hyt315/notebook-video.git ~/.codex/skills/notebook-video` | `.codex/skills/notebook-video` |
-| **Cursor** | `git clone https://github.com/hyt315/notebook-video.git ~/.cursor/skills/notebook-video` | `.cursor/skills/notebook-video` |
-| **Any agent** | `git clone https://github.com/hyt315/notebook-video.git ~/.agents/skills/notebook-video` | `.agents/skills/notebook-video` |
-
-### Option D: local regression self-test (no render)
-
-```bash
-python scripts/selftest.py
-```
-
----
-
----
-
-## 📚 Worked example, end to end
-
-Say you want a three-minute explainer on whether a new model is worth switching to. Four commands, no hand-edited frame numbers:
-
-```text
-# 1. Create the project (copy the template, lock a skin)
-node scripts/notebook-video.mjs new-project ./my-video --style=cel
-
-# 2. Write the narration and the subtitle lines (the two files must reconstruct each other;
-#    write numbers the way they are spoken)
-python <template>/scripts/tts-openai-compatible.py ./my-video     # TTS + word timings
-python <template>/scripts/speed-post.py ./my-video 1.10           # deterministic pace fix
-node scripts/notebook-video.mjs build-semantic-captions audio/narration.mp3.json manifests/semantic-caption-lines.txt manifests/caption-cues.json
-
-# 3. Write the shot table — semantics only ("which sentences does this shot cover"), never frames
-#    manifests/shots.json -> resolve-shots.py derives frames and camera keyframes
-
-# 4. Gates, then render
-python scripts/validate-frame-props.py ./my-video     # frame-prop names (the most common silent failure)
-python scripts/validate-shot-motion.py ./my-video     # out-of-bounds proof / pan budget / move quotas
-python scripts/validate-composition.py ./my-video     # skeletons / media / enums / pacing
-python scripts/validate-audio-levels.py ./my-video    # sound effects may not be mastered too quietly
-node scripts/notebook-video.mjs render ./my-video out.mp4
-```
-
-Runtime gates additionally stop text overlap, clipped cards and over-wide captions —
-**a non-zero P0 count blocks the render** instead of surfacing when you watch the film frame by frame.
-
----
-
-## ⚙️ Requirements
-
-- **Node.js 18+** (Remotion render engine)
-- **ffmpeg** (frame extraction, contact sheet, loudness normalisation; needed for QA)
-- Before the first render, run `node scripts/notebook-video.mjs check-deps` to verify the environment and prepare the Chromium kernel
-
-Frequently used commands (full list in `--help`):
-
-```text
-node scripts/notebook-video.mjs new-project   ./my-video --style=flat
-node scripts/notebook-video.mjs resolve-shots ./my-video
-python scripts/validate-frame-props.py        ./my-video
-python scripts/validate-shot-motion.py        ./my-video
-python scripts/validate-composition.py        ./my-video
-node scripts/notebook-video.mjs showcase      ./my-video     # component contact sheet
-node scripts/notebook-video.mjs render        ./my-video out.mp4
-node scripts/notebook-video.mjs review-frames ./my-video r.mp4 0 570
-```
-
----
-
----
-
-## 🔒 Security and privacy
-
-- **Read-only inspection first**: dependency and pre-flight checks only measure; they never change system environment variables or system configuration.
-- **Zero-token local run**: rendering and all gates run on your machine with no online API quota; narration goes to your own TTS endpoint and the key is read from the environment only, never written to disk.
-- **Deterministic and reproducible**: everything is code-driven; every animation is a pure function of the frame number (no `Math.random`, no CSS animations or timers). Scope matters: **stills / PNGs are byte-reproducible** (the same frame rendered twice hashes identically — that is how the contact sheet is verified), while **long MP4 segments are not**: x264's threading/look-ahead decisions make two consecutive 900-frame renders differ in md5, with pixel differences confined to a few edge pixels (max 76, mean 0.12, 95.2% of bytes identical) — encoder-level noise, not a content change.
-- **Gates before prose**: whatever can be proved arithmetically at build time is checked there; only measurements that need real fonts and layout run in the browser.
-- **Complete source delivery**: the MP4 ships together with the full, clean Remotion React source tree.
-
----
-
----
-
-## 📥 Download
-
-| Method | Command / link |
+| Capability | Details |
 | --- | --- |
-| **HTTPS** | `git clone https://github.com/hyt315/notebook-video.git` |
-| **SSH** | `git clone git@github.com:hyt315/notebook-video.git` |
-| **ZIP** | [Download ZIP](https://github.com/hyt315/notebook-video/archive/refs/heads/main.zip) |
-| **Single file** | `curl -O https://raw.githubusercontent.com/hyt315/notebook-video/main/SKILL.md` |
-| **Version history** | [CHANGELOG.md](CHANGELOG.md) |
+| **Component scenes** | 4 skeletons (Stage / Split / Zoom / Corridor) and a component library (`ConsoleWindow`, `DiffView`, `HighlightCode`, `StatRow`, `Funnel`, `ProgressRing`, `KineticNumber`, `StampSeal`, `VerdictBar`, …), all coloured from theme tokens |
+| **Virtual camera** | Default slow push-in per shot; `cinema.focus` pushes to the component a keyword names and pans between targets; whip / zoom-through transitions; background parallax; small content is enlarged to 60–80 % of the safe area; push-ins keep margins so titles are never cut |
+| **On-the-beat SFX** | 10 code-synthesised semantic sounds (CC0) and an optional music bed; each cue carries `gain` / `offsetMs` and is pre-rolled so its transient lands on the visual hit (±1 frame); ≥150 ms spacing, ≈24/min cap; the bed ducks under each cue |
+| **Real media** | Screenshots, ≤10 s recordings and GIFs inside `MediaFrame` (same card look as the components, optional browser / window / device chrome, region zoom, highlight boxes, callouts, credit badge); `prepare-media` transcodes, `validate-media` blocks blurry or unlicensed media |
+| **Weak-model friendly** | 5 blueprints (concept / code-change / data-compare / process / pitfall) with a per-shot `$components` pick; golden examples in `examples/`; unfilled `<<placeholders>>` fail loudly |
+| **One command** | `make-video.mjs`: resolve-shots → gates → tsc → stills contact sheet or full render → `renders/report.md`; `make-video.cmd` on Windows |
+| **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤4.5 chars/s reading speed, frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
+| **Deterministic** | Every animation is a pure function of the frame (no `Math.random`, CSS animation or timers); no image-generation model, no online API required |
 
----
+## Quick start
 
----
+### 1. Install the skill
 
-## 📖 Where to read what
+Send this to your agent:
 
-`references/` loads on demand, not all at once. The order that matters most:
+> Please install the notebook-video skill: clone `https://github.com/hyt315/notebook-video` into your skills directory (e.g. `~/.claude/skills/notebook-video` or `~/.agents/skills/notebook-video`) and confirm it is installed.
 
-| When | File | Why |
-|---|---|---|
-| **Before anything** | [`locked-style-contract.json`](references/locked-style-contract.json) | binding tokens, coordinates, rejection flags |
-| **Before writing scenes** | [`scene-authoring.md`](references/scene-authoring.md) · [`scene-skeletons.md`](references/scene-skeletons.md) | the canonical scene shape, four skeletons, ten recurring pitfalls |
-| **Before choosing a component** | the gesture→component table in [`media-routing.md`](references/media-routing.md) · [`fxkit.md`](references/fxkit.md) | which component fits this rhetorical move, **when not to use it**, and the `frame` vs `f` trap |
-| **Before the shot table** | [`media-routing.md`](references/media-routing.md) · [`shot-language.md`](references/shot-language.md) · [`cinema-camera.md`](references/cinema-camera.md) | content→medium routing, six camera intents, zoom and pan budgets |
-| **Before writing** | [`narrative-hook.md`](references/narrative-hook.md) · [`pacing-rhythm.md`](references/pacing-rhythm.md) | the first three seconds, chapter energy and breathing |
-| **Before delivery** | [`composition-gate.md`](references/composition-gate.md) · [`quality-checklist.md`](references/quality-checklist.md) | every gate's criteria, the fix runbook, the delivery fact card |
-| **Audio and captions** | [`tts-audio.md`](references/tts-audio.md) · [`subtitle-timing.md`](references/subtitle-timing.md) | polyphones, pace, word timings, sound vocabulary |
-| **When something breaks** | [`windows-compatibility.md`](references/windows-compatibility.md) · [`cross-platform-compatibility.md`](references/cross-platform-compatibility.md) · [`performance-design.md`](references/performance-design.md) | platforms, paths, render performance |
+Or install by hand:
 
----
+| Platform | User level | Project level |
+| --- | --- | --- |
+| Claude Code | `git clone https://github.com/hyt315/notebook-video.git ~/.claude/skills/notebook-video` | `.claude/skills/notebook-video` |
+| Codex | `git clone https://github.com/hyt315/notebook-video.git ~/.codex/skills/notebook-video` | `.codex/skills/notebook-video` |
+| Cursor | `git clone https://github.com/hyt315/notebook-video.git ~/.cursor/skills/notebook-video` | `.cursor/skills/notebook-video` |
+| Generic agents | `git clone https://github.com/hyt315/notebook-video.git ~/.agents/skills/notebook-video` | `.agents/skills/notebook-video` |
 
-## 📁 File Structure
+With GitHub CLI 2.90+: `gh skill install hyt315/notebook-video notebook-video --agent claude-code --scope user`
 
+### 2. Prepare the environment
+
+- **Node.js 18+**, **Python 3**, **ffmpeg / ffprobe** (frame extraction, transcoding, loudness)
+- Before the first render, check dependencies and prepare the rendering Chromium:
+
+```bash
+node scripts/notebook-video.mjs check-deps
 ```
+
+### 3. Make a video
+
+```bash
+# Create a project (copies the template; --style=flat or cel)
+node scripts/notebook-video.mjs new-project ./my-video --style=flat
+
+# After editing manifests/shots.json, src/scenes.tsx, src/film.ts and the captions:
+node scripts/make-video.mjs ./my-video --stills                          # contact sheet of each shot's key moments
+node scripts/make-video.mjs ./my-video --render ./my-video/final.mp4     # full render once the stills look right
+```
+
+On **Windows** (cmd / PowerShell) use the same `node` commands, or:
+
+```bat
+scripts\new-project.cmd .\my-video --style=flat
+scripts\make-video.cmd .\my-video --stills
+scripts\make-video.cmd .\my-video --render .\my-video\final.mp4
+```
+
+Reading the output: `✓ 自动修` (auto-fixed) lists what the engine changed for you; `· 建议` (advice) never blocks; only `✗` needs a fix, and each one says how.
+
+## What a blueprint looks like
+
+All blueprints follow the same teaching arc: **hook → one key term → break it down → example → pitfall → recap**. Only the `<<…>>` parts are edited, and `$components` tells the model what to use:
+
+```json
+{
+  "role": "hook",
+  "layout": "statement",
+  "lines": ["<<一句反常识的现象，含 {{关键词}}>>", "<<一句追问>>"],
+  "content": {"text": "<<屏上那句话（≤16 字）>>", "sub": "<<可选副句>>"},
+  "$components": {"skeleton": "Stage", "components": ["Callout", "StampBanner", "FitTextBox"]}
+}
+```
+
+`{{keyword}}` marks a sync point: when the narration reaches that word, the camera push-in, the component highlight and the sound effect land on the same frame. Filled-in examples live in [`examples/`](examples/) (hash-table concept, a caching code change, SSD vs HDD, a Git PR with a real screenshot).
+
+Two routes:
+
+- **Hand-written component scenes (recommended for delivery)**: `shots.json` + `scenes.tsx` in the project directory, adapted from the template's 8-shot example film. Manual: [references/handwritten-scenes.md](references/handwritten-scenes.md).
+- **story.json draft (quick first cut)**: `node scripts/make-video.mjs examples/concept-hash-table.story.json ./draft --stills`; `compose-story.py` lays out, times and frames the shots. See [references/auto-engine.md](references/auto-engine.md).
+
+## Real media
+
+When viewers will later act on a real interface (say a GitHub PR page), a real screenshot beats a redraw:
+
+```bash
+python scripts/prepare-media.py ./my-video --add pr.png --id pr-page --region diff 0.01 0.31 0.69 0.17
+```
+
+```tsx
+<MediaFrame f={f} id="pr-page" x={200} y={200} w={1060} h={662} focus="diff" focusAt={b[1]} />
+```
+
+- Recordings are converted to H.264 at constant 30 fps with audio stripped by default; `--trim` picks a segment.
+- Source priority: the user's own files > your own captures of official pages > CC0 / CC-BY / Pexels / Unsplash. Web media must carry `url` / `license` / `credit`; the credit badge is drawn automatically. Without a compatible licence, redraw it with components.
+- `validate-media` blocks missing files, upscaling beyond 1.5× (blurry), wrong codec / frame rate, missing licence or credit, and references to undefined regions.
+
+Details: [references/real-media.md](references/real-media.md).
+
+## Themes
+
+| Theme | Look | Select with |
+| --- | --- | --- |
+| `flat` (default) | Sky / cream surfaces, rounded cards, soft hard shadows; calm modern edu illustration | `--style=flat` |
+| `cel` | Off-white comic paper, 3 px ink outlines, ink offset shadows, red / blue / yellow primaries | `--style=cel` |
+
+Each theme ships three locked backgrounds (main / chapter / quiet) with a calm central ~70 % safe area; the engine picks one per shot. Text uses dedicated `*Ink` colours so contrast always passes. Specs: [references/theme-system.md](references/theme-system.md), [theme-flat.md](references/theme-flat.md), [theme-cel.md](references/theme-cel.md).
+
+## Gates at a glance
+
+| Stage | Checks | Typical catches |
+| --- | --- | --- |
+| Build time (Python) | `resolve-shots`, `validate-composition`, `validate-shot-motion`, `validate-frame-props`, `validate-presentation`, `validate-caption-sync`, `validate-semantic-breaks`, `validate-layering`, `validate-visual-plan`, `validate-audio-levels`, `validate-media` | Same layout in adjacent shots, content too small, wrong frame-prop name, low contrast, caption lines over 16 characters or too fast to read, SFX gain out of sync with the library, blurry media |
+| Render time (in the browser) | `OverlapGate`, `ClippingGate`, `CanvasBoundsGate`, `FillGate`, `CaptionFitGate`, `MascotGate` | Overlapping text, clipped graphics, content off-canvas, caption overflow |
+| Final film | `validate-video`, `validate-motion-gaps` | Wrong size / codec / colour tags, frames frozen too long |
+| Skill self-checks | `validate-skill-consistency`, `selftest`, `negative-gate-check` | Docs naming components that do not exist, broken links; every gate must block a deliberately broken input |
+
+Details: [references/composition-gate.md](references/composition-gate.md), [references/presentation-gate.md](references/presentation-gate.md), [references/quality-checklist.md](references/quality-checklist.md).
+
+## Project structure
+
+```text
 notebook-video/
-├── SKILL.md                          # Core skill definition and production workflow
-├── manifest.json                     # Skill metadata (version lives here)
-├── README.md / README.en.md          # Chinese / English documentation
-├── CHANGELOG.md                      # Version history (currently v4.5.0)
-├── LICENSE                           # Apache License 2.0
-├── NOTICE                            # Third-party font / asset / dependency notices
-├── CONTRIBUTING.md · CODE_OF_CONDUCT.md · SECURITY.md · SUPPORT.md
+├── SKILL.md                     # Skill entry point: the 5-step workflow (what the agent reads)
+├── manifest.json                # Name, version, licence
+├── blueprints/                  # 5 teaching blueprints (concept / code-change / data-compare / process / pitfall)
+├── examples/                    # Golden story.json examples, a real-media example, the weak-model test
 ├── assets/
-│   ├── demo/                         # Finished films & previews
-│   └── lecture-template/             # The only official template (flat + cel skins, 8-shot example film)
-├── scripts/                          # Python 3 stdlib / Node only — zero third-party deps
-│   ├── notebook-video.mjs            # Cross-platform runner (incl. the showcase command)
-│   ├── resolve-shots.py              # Shot table → frame numbers and camera keyframes
-│   ├── validate-shot-motion.py       # Build-time: camera out-of-bounds proof + move quotas
-│   ├── validate-composition.py       # Build-time: skeletons / live components / media / density
-│   ├── validate-caption-sync.py      # Caption vs TTS word-boundary consistency
-│   ├── validate-semantic-breaks.py   # Protected phrases never split
-│   └── selftest.py                   # End-to-end regression suite
-└── references/                       # Load-on-demand specs and manuals
-    ├── scene-authoring.md            # ★ Scene authoring guide (copy this shape)
-    ├── shot-language.md              # Camera intents, zoom budgets, out-of-bounds proof
-    ├── cinema-camera.md              # v4.4 engine virtual camera, content auto-fit, KineticNumber
-    ├── scene-skeletons.md            # The four skeletons and the shot-table schema
-    ├── media-routing.md              # Content→medium routing, A/B scenes, background contract
-    ├── composition-gate.md           # Every gate's criteria and its fix
-    ├── motion-design.md              # Multi-clock motion rules
-    └── theme-*.md                    # The two skin contracts (flat / cel)
+│   ├── lecture-template/        # The only project template (Remotion + React + TS)
+│   │   ├── src/                 # Engine (index / cinema / sfx), components, themes, gates, custom/ escape hatch
+│   │   ├── manifests/           # shots.json, captions, media manifests
+│   │   ├── public/              # Fonts, backgrounds, SFX library sfx/, real media media/
+│   │   └── scripts/             # Optional TTS adapter, speed post-processing
+│   └── fonts/                   # LXGW WenKai Lite (OFL-1.1)
+├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; .cmd / .sh wrappers
+│   └── dev/                     # Maintainer tools (SFX library build and tuning)
+├── references/                  # Author manuals and specs (camera, layouts, themes, SFX, captions, gates, cross-platform)
+├── tests/                       # test_skill.py
+└── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 
-Source layers inside the template (`assets/lecture-template/src/`):
+## FAQ and limitations
 
+- **Is there built-in voice-over?** No. Narration defaults to a silent placeholder and captions are timed at 4.5 characters per second. For a real voice or TTS, bring your own audio or point the template's `scripts/tts-openai-compatible.py` at your own OpenAI-compatible TTS endpoint (keys are read from environment variables only), then re-align with `scripts/match-timing.py`.
+- **Does it use an image-generation model?** No, and image generation is not a default route. Scenes are drawn by components; use screenshots / recordings when a real interface matters.
+- **Portrait or 4:3?** No. Since 3.2.0 the only canvas is 16:9; the 3.1.x 4:3 / 3:4 canvases, the `paper` / `sticker` skins and the `--classic` example project are gone, and older projects are not supported.
+- **My topic needs a one-off diagram.** Copy `src/custom/RequestLane.tsx`, write your component and register it in `src/custom/index.ts`.
+- **Does the story.json draft look as good as hand-written scenes?** Close, but not identical: draft layouts are drawn by `auto.tsx`. Use hand-written component scenes for delivery.
+- **Is rendering slow?** Check with `--stills` first (key frames only). Full renders default to 1920×1080 delivery.
+- **Are demo videos included?** No. To keep the repository light, rendered demos are not committed; run `--stills` to see the look locally.
+
+## Contributing
+
+Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). Before submitting, run:
+
+```bash
+python scripts/validate-skill-consistency.py
+python scripts/selftest.py
+python scripts/negative-gate-check.py
 ```
-index.tsx           Engine: canvas / captions / chapter card / asset gate / runtime gates + shot handoff
-shotkit.tsx         Shot layer: ShotCamera / 6 intents / anchor proof / depth layers / backing plate
-stagekit.tsx        Skeleton "Stage": StageFrame + state machine + PhaseRail + SlotGuard（Attach 已删）
-skeletons.tsx       Skeletons "Corridor" / "Split" / "Zoom"
-media.tsx           Media: ConsoleWindow / MetricGrid / StampBanner
-fxkit.tsx          motion components (FitCard / Typewriter / StampSeal / Funnel / ChatThread / ProgressRing / StaggerList / DiffView / SkeletonCard) — frame-driven
-toolkit.tsx         rhetorical tools (Callout / Checklist / JumpInText)
-│   └── components/       wrapped component layer (Accordion / Tabs / HighlightCode / Chart / StatRow / GlowFrame / PathDraw / FitTextBox …)
-kit.tsx             Theme-agnostic atoms: PillTag / LineIcon / CheckBadge / TYPE
-insert.tsx          B-roll inserts + the three transitions (cut / handoff / reveal)
-overlap-gate.tsx    Runtime overlap / occlusion gate
-clipping-gate.tsx   Runtime clipped-graphics gate (SVG primitives crossing a clipping ancestor)
-canvas-bounds-gate.tsx Runtime canvas-bounds gate (text-bearing leaf elements whose ink rect leaves the canvas; blocks on the contact sheet, warns in a film)
-fill-gate.tsx       Runtime measured density of the lower quarter (lowest info-element edge vs y=876)
-showcase.tsx        Component contact sheet (18 pages, for AI to pick by sight)
-scenes.tsx          Scene layer (8-shot example film; rewrite this layer per topic)
-```
 
----
+History: [CHANGELOG.md](CHANGELOG.md). Security reports: [SECURITY.md](SECURITY.md).
 
----
+## Licence
 
-## ❓ FAQ
-
-- **Q: How do you keep the result from looking like a slide deck?**\
-  A: Four layers, all backed by gates — ① four structurally different skeletons with **no adjacent repeats**; ② **at least three visual media per film** and at least one live component per explanation scene; ③ at least three camera moves per chapter (budgeted by film length), so the framing really changes; ④ a gate blocks the render when P0 is non-zero.
-
-- **Q: How do you guarantee text never collides or gets covered?**\
-  A: At runtime **`OverlapGate`** samples every 15 frames and detects both text-vs-text overlap and paint-order occlusion (measuring real glyph rects with `Range.getClientRects()`), **`ClippingGate`** catches graphics clipped by an `overflow` ancestor or an `<svg>` viewport (the text gates cannot see a half-missing shape), **`CanvasBoundsGate`** catches **text-bearing leaf elements whose ink rect leaves the canvas** (a whole element cut off by the canvas edge; it blocks on the contact sheet and only warns in a film), **`FillGate`** measures whether the lower quarter is really filled (lowest edge of real information elements vs y=876 — the build-time check only reads whether the declared field exists), and **`SlotGuard`** reports how much of `StageFrame`'s main slot is actually used. Intentional overlaps (shot handoff, header swap, metric value replacement) must be declared with `data-gate-allow` — the allow-list may never hide two different pieces of information colliding. After the render, run **`validate-motion-gaps`** — a stretch where nothing moves is only visible there.
-
-- **Q: Do I need to re-time everything after editing the script?**\
-  A: No. The shot table only references cues; frame numbers, camera keyframes and SFX pinning are all derived from the TTS word timestamps by `resolve-shots.py`.
-
-
-
-- **Q: Do I need expensive image generation AI models?**  
-  A: No. The default Lecture Composition route uses 100% React + SVG code drawing with zero image generation costs.
-- **Q: How does it ensure subtitles never overflow?**  
-  A: The skill integrates `CaptionFitGate`, calculating exact pixel-level widths for every word before rendering.
-- **Q: What formats are supported?**  
-  A: Outputs standard 2K H.264/AAC MP4 videos compatible with YouTube, Bilibili, TikTok, and social platforms.
-
----
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md). If this skill helped you, please give it a [Star ⭐](https://github.com/hyt315/notebook-video/stargazers)!
-
----
-
----
-
-## 📄 License
-
-Released under the [Apache License 2.0](LICENSE). Licences and attribution for bundled third-party material (the LXGW WenKai typeface, sound effects, Remotion dependencies, TTS providers) are recorded in [NOTICE](NOTICE); the dependency inventory is in [DEPENDENCIES.md](DEPENDENCIES.md).
-
----
-
+[Apache License 2.0](LICENSE). Licences and attribution for the bundled font (LXGW WenKai Lite, OFL-1.1), the sound effects (CC0) and third-party dependencies are in [NOTICE](NOTICE) and [DEPENDENCIES.md](DEPENDENCIES.md).

@@ -74,7 +74,7 @@ export const ConsoleWindow: React.FC<{
   cursor?: boolean;
   /** 'log'：逐行写入（默认）；'typing'：逐字打出来 */
   variant?: 'log' | 'typing';
-  /** v4.4：行字号（设计像素，缺省 22）。成片里控制台是主角时给 28–34，标题栏/状态签随之等比。 */
+  /** 行字号（设计像素，缺省 22）。成片里控制台是主角时给 28–34，标题栏/状态签随之等比。 */
   fontSize?: number;
 }> = ({x, y, w, h, f, title = 'console', rows, start = 0, rowGap = 44, status, side, sideW = 260, z = 74, exitStart, cursor = true, variant = 'log', fontSize = 22}) => {
   const k = fontSize / 22; // 标题栏 / 圆点 / 光标与字号等比

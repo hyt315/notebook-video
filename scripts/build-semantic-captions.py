@@ -173,7 +173,7 @@ def main() -> None:
     parser.add_argument("--no-budoux", action="store_true",
                         help="skip phrase segmentation; only the mechanical half of the rule runs")
     parser.add_argument("--max-chars", type=int, default=16,
-                        help="v4.4: hard cap per subtitle line (characters after stripping the trailing "
+                        help=" hard cap per subtitle line (characters after stripping the trailing "
                              "punctuation; ASCII counts 1). A longer approved line is split at the legal break "
                              "nearest its middle; if no legal break exists the tool fails. 0 = off")
     parser.add_argument("--warn-chars", type=int, default=0,
@@ -271,7 +271,7 @@ def main() -> None:
             return ""
         return raw_stream[raw_index[start]:raw_index[end - 1] + 1].strip()
 
-    # ---- v4.4：每行 ≤ max_chars。超长的行在最靠近中点的合法断点处劈开（递归），绝不切词 ----
+    # ---- 每行 ≤ max_chars。超长的行在最靠近中点的合法断点处劈开（递归），绝不切词 ----
     def units(start: int, end: int) -> int:
         return len(re.sub(r"[，。！？；：、,.!?;:\s]+$", "", normalized(raw_slice(start, end))))
 

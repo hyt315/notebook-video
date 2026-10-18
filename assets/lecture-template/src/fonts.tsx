@@ -5,7 +5,7 @@ import {staticFile} from 'remotion';
 // 字体表（LOCKED）：全部字体都随工程打包在 public/ 下，渲染**从不**依赖系统字体
 // （Windows / macOS / Linux / CI 容器出图一致）。
 //
-// CJK 兜底（v4.1）：Clash / Space / Caveat 是只含拉丁字形的展示字体。旧版页眉
+// CJK 兜底：Clash / Space / Caveat 是只含拉丁字形的展示字体。旧版页眉
 // `fontFamily:'Clash,Space'` 遇到中文时落到系统字体，在没有中文字体的环境里渲成豆腐块。
 // 现在给这三个族各追加一条 **unicode-range 限定的 @font-face**，指向随包的 LXGW WenKai Lite
 // （OFL-1.1，public/LICENSE-OFL-1.1-LXGW.txt）：浏览器按字符挑字面，拉丁字符仍用原字体，

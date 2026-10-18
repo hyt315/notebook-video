@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""compose-story.py · v4.5 内容表 → 可渲染工程（自动排版 + 自动修复 + 讲解规则）
+"""compose-story.py · 3.2.0 内容表 → 可渲染工程（自动排版 + 自动修复 + 讲解规则）
 
 弱模型只写 story.json（纯内容：章节 / 每镜版式 / 台词 / 版式内容），本脚本负责全部"质量"：
 
   1. 字幕   每行 ≤16 字，超了在标点 / 语义边界自动劈开（绝不劈开 {{术语}}、英文单词或数字）；
             无 TTS：按 4.5 字/秒自动排时间（逗号 +150 ms、句末 +300 ms），读不完就延长镜头；
-            章节之间与镜间同样的间隔（v4.5b 去掉了章节卡 / 进度条）。
+            章节之间与镜间同样的间隔（3.2.0 去掉了章节卡 / 进度条）。
   2. 版式   10 种版式（statement / define / number / bars / compare / code / flow / list / quiz / custom）
             按设计坐标排好每个元素的矩形；三档字号（每镜 ≤3 种）；最小字号 32px（手机可读），
             放不下先换行、再降到地板、还不行才报错并说清楚要删到几个字。
@@ -38,7 +38,7 @@ CHAR_MS = 1000 / CPS           # ≈ 222 ms
 COMMA_MS, STOP_MS = 150, 300   # 句中逗号 / 句末停顿
 LINE_GAP_MS = 220              # 同镜两行之间
 SHOT_GAP_MS = 320              # 镜与镜之间
-CHAPTER_BREATH_MS = SHOT_GAP_MS  # v4.5b：不再有章节呼吸 / 章节卡（保持 v4.4 观感）
+CHAPTER_BREATH_MS = SHOT_GAP_MS  # 不再有章节呼吸 / 章节卡（保持默认组件风格）
 FIRST_LEAD_MS = 700            # 片头
 END_TAIL_F = 42                # 片尾
 MAX_CHARS = 16
@@ -297,7 +297,7 @@ def lay_statement(p, sid, c, variant):
     X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
     els = []
     maxw = 1360
-    big = TYPE["display"] - 12  # v4.5b：statement 渲染成 v4.4 式的卡片（Callout），不是满屏大字页
+    big = TYPE["display"] - 12  # statement 渲染成默认组件风格的卡片（Callout），不是满屏大字页
     ls, s, w, h = fit_text(p, f"{sid}.text", c["text"], big, maxw, 3, lh=1.32)
     kick = c.get("kicker")
     sub = c.get("sub")
@@ -571,7 +571,7 @@ STORY_MEDIA: dict = {}   # compose() 开头从 story["media"] 填入：id → �
 
 
 def lay_media(p, sid, c, variant):
-    """v4.5 真实素材：一张截图 / 一段录屏放进 MediaFrame；区域（0–1 相对坐标）变成可被 {{词|区域id}} 点名的元素。"""
+    """3.2.0 真实素材：一张截图 / 一段录屏放进 MediaFrame；区域（0–1 相对坐标）变成可被 {{词|区域id}} 点名的元素。"""
     mid = c.get("media")
     m = STORY_MEDIA.get(mid)
     if not m:

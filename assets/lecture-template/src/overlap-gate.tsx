@@ -236,7 +236,7 @@ export const OverlapGate: React.FC<{
               rect = new DOMRect(x0, y0, x1 - x0, y1 - y0);
             }
           }
-          // v4.4：引擎推近时世界层顶部有羽化遮罩（src/cinema.tsx cinemaMask），y < maskCut 的部分看不见 → 只量可见部分
+          // 引擎推近时世界层顶部有羽化遮罩（src/cinema.tsx cinemaMask），y < maskCut 的部分看不见 → 只量可见部分
           const focusWorld = el.closest('[data-cinema-focus]') as HTMLElement | null;
           if (focusWorld) {
             const wr = focusWorld.getBoundingClientRect();

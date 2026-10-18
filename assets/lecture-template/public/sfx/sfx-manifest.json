@@ -6,7 +6,7 @@
   "bed_lufs_100ms": -30.0,
   "mix": {
     "narration_target_lufs": -16,
-    "note": "v4.5: each cue carries `gain` (linear, puts it on its loudness-ladder rung after the engine mix) and `offsetMs` (transient position; the engine starts the file that much earlier so the hit lands on the visual frame). The bed ducks to 45% under every cue. Weak models never set volumes by hand.",
+    "note": " each cue carries `gain` (linear, puts it on its loudness-ladder rung after the engine mix) and `offsetMs` (transient position; the engine starts the file that much earlier so the hit lands on the visual frame). The bed ducks to 45% under every cue. Weak models never set volumes by hand.",
     "bed_gain": 0.28,
     "ladder_lufs": {
       "chapter": -24.0,
@@ -53,7 +53,7 @@
         "earshot_match_z": 5.78,
         "verdict": "strong"
       },
-      "tuned_v45": {
+      "tuned": {
         "start_ms": 60,
         "keep_ms": 260,
         "fade_out_ms": 90,
@@ -219,7 +219,7 @@
         "earshot_match_z": 2.79,
         "verdict": "plausible"
       },
-      "tuned_v45": {
+      "tuned": {
         "start_ms": 380,
         "keep_ms": 210,
         "fade_out_ms": 60,
@@ -301,7 +301,7 @@
         "earshot_match_z": 2.04,
         "verdict": "weak"
       },
-      "tuned_v45": {
+      "tuned": {
         "start_ms": 0,
         "keep_ms": 190,
         "fade_out_ms": 120,
@@ -335,7 +335,7 @@
         "earshot_match_z": 3.72,
         "verdict": "strong"
       },
-      "tuned_v45": {
+      "tuned": {
         "start_ms": 0,
         "keep_ms": 900,
         "fade_out_ms": 260,
@@ -369,7 +369,7 @@
         "earshot_match_z": 1.63,
         "verdict": "no match"
       },
-      "tuned_v45": {
+      "tuned": {
         "start_ms": 420,
         "keep_ms": 1080,
         "fade_out_ms": 12,

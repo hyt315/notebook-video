@@ -37,7 +37,7 @@ from pathlib import Path
 # 实测把 media 写成 ["FAKE_MEDIUM_A",...]、live 写成 ["NO_SUCH_COMPONENT"] 也能 P0=0 通过）
 SKELETONS = {"Stage", "Corridor", "Split", "Zoom"}
 INTENTS = {"establish", "push-in", "pull-back", "pan-follow", "reveal", "micro-orbit", "still"}
-TRANSITIONS = {"auto", "cut", "handoff", "reveal", "whip", "whip-left", "whip-right", "zoom", "fade", "hard"}   # v4.4：引擎级转场（src/cinema.tsx）回归；auto = 章节首镜 zoom、其余 whip
+TRANSITIONS = {"auto", "cut", "handoff", "reveal", "whip", "whip-left", "whip-right", "zoom", "fade", "hard"}   # 引擎级转场（src/cinema.tsx）回归；auto = 章节首镜 zoom、其余 whip
 ENTRIES = {"rise", "slide", "fade", "zoom"}
 MEDIA_KINDS = {"chart", "console", "code", "graphic", "text", "metric"}
 
@@ -372,7 +372,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     for (a_id, a), (b_id, b) in zip(seq, seq[1:]):
         if a == b:
             p0.append({"id": b_id, "issue": f"与上一镜同骨架（{a}）；相邻场景必须不同骨架"})
-    # v4.4：相邻镜头换不同布局（layout 是可选的版式名：hero-number / split / code-full / grid / rail…）。
+    # 相邻镜头换不同布局（layout 是可选的版式名：hero-number / split / code-full / grid / rail…）。
     # 同骨架已被上一条拦下；同骨架以外，两镜都声明了 layout 且相同 → 观众读作「同一页换了字」。
     lay = [(s.get("id", "?"), s.get("layout")) for s in shots]
     for (a_id, a), (b_id, b) in zip(lay, lay[1:]):

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================================
-// make-video.mjs · v4.5 一条命令出片（Windows / macOS / Linux 同一套 Node 实现）
+// make-video.mjs · 3.2.0 一条命令出片（Windows / macOS / Linux 同一套 Node 实现）
 //
 //   node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel] [--stills] [--render OUT.mp4]
 //                                         [--scale=0.75] [--no-gates]
@@ -28,7 +28,7 @@ if (!positional[0]) {
   console.error('用法：node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel] [--stills] [--render OUT.mp4] [--scale=0.75]');
   process.exit(2);
 }
-// v4.5b：两种入口。① 工程目录（推荐，v4.4 手写组件场景路线：shots.json + scenes.tsx 里用 v4.4 组件）；
+// 两种入口。① 工程目录（推荐，手写组件场景路线：shots.json + scenes.tsx 里用默认组件）；
 //        ② STORY.json（auto 草稿路线：compose-story 自动排版）。两条路线共用 resolve → 门禁 → tsc → 静帧/渲染。
 const HAND = fs.existsSync(path.join(path.resolve(positional[0]), 'src', 'index.tsx'));
 const storyPath = HAND ? null : path.resolve(positional[0]);

@@ -55,7 +55,7 @@ export interface ThemeAesthetic {
 }
 
 /**
- * 背景变体（v4.1）：每个主题三张锁定位图，中央约 70% 都是安静的内容安全区。
+ * 背景变体：每个主题三张锁定位图，中央约 70% 都是安静的内容安全区。
  *   main    常规镜头
  *   chapter 每章首镜（章节卡出现的那一镜），比 main 更有节庆感
  *   quiet   信息密集的镜头（zones ≥ 4），装饰最少
@@ -81,7 +81,7 @@ export interface Theme {
   /** 字幕容器：负责定位与外壳；内部的逐词浮现由引擎渲染为 children 传入。 */
   SubtitleChrome: React.FC<{mode: ModeSpec; children?: React.ReactNode}>;
   /**
-   * 页眉底板（可选，v4.1）：右上角技术页眉的外壳样式。背景右上角有高对比装饰的主题
+   * 页眉底板（可选，3.2.0）：右上角技术页眉的外壳样式。背景右上角有高对比装饰的主题
    * （cel 的速度线 / 爆炸星）必须给页眉垫一块底板，否则墨字会被装饰吃掉；flat 不需要。
    */
   headerPlate?: React.CSSProperties;
@@ -91,7 +91,7 @@ export interface Theme {
    * 背景装饰区（可选）：三张背景位图里「画幅级、高对比」的锁定装饰所占矩形的并集
    * （1920×1080 设计坐标）。这些区域会吃掉压在上面的文字，因此：
    *   1. 内容压到装饰区时，必须坐在 CoverPanel（tone='paper'）上；
-   *   2. 不要铺成片级整幅底托（v4.1 删除：它把四角装饰洗成幽灵）；背景中央本就是安全区。
+   *   2. 不要铺成片级整幅底托（3.2.0 删除：它把四角装饰洗成幽灵）；背景中央本就是安全区。
    * 背景图本身不改——它很好看；只解决可读性。
    */
   backgroundDecorZones?: {x: number; y: number; w: number; h: number}[];

@@ -104,7 +104,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 </CoverPanel>
 ```
 
-**v4.1 起没有成片级整幅底托。** 三张背景变体（main / chapter / quiet）的中央约 70% 都是安静的安全区，
+**3.2.0 起没有成片级整幅底托。** 三张背景变体（main / chapter / quiet）的中央约 70% 都是安静的安全区，
 装饰只在四边与四角；整幅半透明 wash 会把四角的吉祥物和装饰洗成"幽灵"，所以模板的 `Shot` 外壳已经删掉它。
 内容真压到装饰区时，只给**那一块**垫 `tone='paper'` 的底托。
 
@@ -115,9 +115,9 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
   而场景里的构件绝大多数就是 auto —— 实测把 wash 设到 `z=5` 时，整镜内容被压成 15% 不透明，
   全片看起来"大片空白"，排查了很久才发现。
 - 局部卡片 `tone='paper'` 用默认 `z={42}`（它是内容的**父节点**，所以不冲突）。
-- wash **不能是硬边矩形**（见下节），要去掉描边环并羽化四边；而且不要铺满整幅（v4.1 规则）。
+- wash **不能是硬边矩形**（见下节），要去掉描边环并羽化四边；而且不要铺满整幅（3.2.0 规则）。
 
-### 4.2.1 底托必须羽化，不能是硬边矩形（历史记录：v4.0 的整幅 wash，v4.1 已删除）
+### 4.2.1 底托必须羽化，不能是硬边矩形（历史记录：3.1.x 的整幅 wash，3.2.0 已删除）
 
 wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的接缝（实测：在 38 秒处
 底托下沿横切过爆炸贴，形成一条明显的水平分界线）。用径向渐变让四边柔化进背景装饰：
@@ -172,7 +172,7 @@ wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的�
 | `src/skeletons.tsx` | `Corridor` `SplitStage` `ZoomStage` | `f` |
 | `src/insert.tsx` | `RevealMask` `useHandoff` `TRANSITIONS` | `f` |
 | `src/shotkit.tsx` | `ShotCamera` `CoverPanel` `safeCheck` | `f` |
-| `src/index.tsx` | 引擎层，**对场景不导出任何组件**（v4.0.0 起只有 16:9 一个 Composition `NotebookVideoFilm`，`Film4x3` / `Film3x4` 已删除）：`Paper` / `Subtitle` / `Chrome` 是**模块私有 `const`**（未 `export`，场景文件 import 不到，只能用引擎自己的画面）；曾经那 6 件"反 PPT 交互件"定义在本文件内部、零 export 且零渲染，**已于 v3.1 删除**（见 [quality-checklist.md](quality-checklist.md) 的历史注） | 引擎层 |
+| `src/index.tsx` | 引擎层，**对场景不导出任何组件**（3.2.0 起只有 16:9 一个 Composition `NotebookVideoFilm`，`Film4x3` / `Film3x4` 已删除）：`Paper` / `Subtitle` / `Chrome` 是**模块私有 `const`**（未 `export`，场景文件 import 不到，只能用引擎自己的画面）；曾经那 6 件"反 PPT 交互件"定义在本文件内部、零 export 且零渲染，**已于 v3.1 删除**（见 [quality-checklist.md](quality-checklist.md) 的历史注） | 引擎层 |
 | `src/toolkit.tsx` | 修辞工具件：`Callout` `Checklist` `JumpInText` | 工具层 |
 
 > **⚠️ 布局陷阱（实测踩过）**：同一容器里**不要混用"文档流内的标题"和"绝对定位组件"**。
@@ -216,7 +216,7 @@ wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的�
 | `IconWall`（components） | 图标墙（弹簧错峰入场） | 技术栈/依赖清单要具象成一堵墙 | 图标不是内容时别用（纯装饰） | ⑩ | 未使用 |
 | `Chart`（components） | d3 算刻度与路径；7 个 `variant`（line/area/stack/stackExpand/stream/radar/pie），可直接喂 CSV | 数据/趋势/分布/多值对比；真实数据进图 | 只有一个百分比→`ProgressRing`；只有前后两值→`MetricGrid`；柱状用默认 line + `series` 驱动（未知 `variant` 直接抛错） | ①⑨⑭⑮ | 未使用 |
 | `StatRow`（components） | 指标卡一行，数字随帧滚动（字符串值直显） | 报一个大数字；等权指标并排 | 数值已在 `MetricGrid` 里滚动时别重复 | 未展示 | 参考片 S1 |
-| `KineticNumber`（cinema，v4.4 引擎运动件，不计入 53 件） | 关键数字的动态排版：计数 + 落定弹出 + 下划线扫入，字号 170–380 | 一镜的主角就是一个数（耗时、倍数、降幅）；讲到这个数的那一拍 | 一镜里并排三个以上的数（用 `StatRow` / `MetricGrid`）；全片超过 35% 的镜都用它 | 未展示 | v4.4 演示片 S1 / S4 / S7 / S8 |
+| `KineticNumber`（cinema，引擎运动件，不计入 53 件） | 关键数字的动态排版：计数 + 落定弹出 + 下划线扫入，字号 170–380 | 一镜的主角就是一个数（耗时、倍数、降幅）；讲到这个数的那一拍 | 一镜里并排三个以上的数（用 `StatRow` / `MetricGrid`）；全片超过 35% 的镜都用它 | 未展示 | 演示片片 S1 / S4 / S7 / S8 |
 | `TreeView`（components） | 目录树/组织图 + treemap/pack/sunburst（面积＝数值） | 有层级；或"占比 + 层级"用面积表达 | 无层级的网状关系→`NetworkGraph` | ⑬⑯ | 未使用 |
 | `GeoView`（components） | 地球 / 真陆地轮廓（d3-geo + world-atlas `land-110m`） | 地理 / 全球视野；叠经纬度标记点讲"节点/站点分布" | **不含国界与地名**（要国界得换 `countries-110m.json` 并另立一件）；`flat` 与正交两种投影别混用在同一组对比之外 | ⑬ | 未使用（接触表 ⑬ 已渲真地图 + 4 个标记点） |
 | `SankeyChart`（components） | 流量图（d3-sankey） | 流量在环节之间怎么分流 | 逐级递减的漏斗→`Funnel` | ⑬ | 未使用 |
@@ -255,7 +255,7 @@ wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的�
 | `ZoomStage`（skeletons） | 整体→聚焦→标注→回整体（B 段插入） | 要放大看局部（0.8–2s 取证） | 会缩放，静止元素别用 | ⑥ | 参考片 S3 S7 |
 | `RevealMask`（insert） | 镜头级遮罩揭示（ltr/rtl/ttb） | 镜头进场要"揭开" | 逐条揭示→`ClipReveal` | 未展示 | 参考片 8 镜共用的 `Shot` 外壳（实际只有 S3/S7 传了 `reveal`） |
 | `ShotCamera`（shotkit） | 受限相机外壳（只做 transform/opacity） | 每一镜都要（相机就是镜头语言） | 页眉 / 章节卡 / 字幕要放在它**之外**（否则被运镜带动） | 未展示 | 参考片 8 镜 |
-| `CoverPanel`（shotkit） | 局部底托 / 卡片底（`tone='wash'` 必须 `z={-1}` 且羽化） | 内容压到背景装饰区时 | 不铺整幅（v4.1）、不能用正 z、不能是硬边矩形 | 未展示 | 参考片 8 镜 |
+| `CoverPanel`（shotkit） | 局部底托 / 卡片底（`tone='wash'` 必须 `z={-1}` 且羽化） | 内容压到背景装饰区时 | 不铺整幅、不能用正 z、不能是硬边矩形 | 未展示 | 参考片 8 镜 |
 | `Callout`（toolkit） | 圈住一处 + 引线 + 手写标注 | 圈住 / 指出一处 | 画面已有高亮时别叠（重复编码） | ⑦ | 参考片 S1 |
 | `Checklist`（toolkit） | 带完成态的清单（`done` 后序号变对勾） | 列一份清单、要完成态 | 项 >6 会溢出；只是逐行出现→`StaggerList` | ⑦ | 参考片 S3 |
 | `JumpInText`（toolkit） | 逐字跳入（字色激活） | 念一句口号（钩子与收尾） | 全片最多 1–2 处；讲解中段用会显浮夸 | ⑧ | 引擎章节条（全片，`index.tsx`） |
@@ -300,7 +300,7 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR          # 渲染接触表 
 node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR    # 再抽接触表 jpg（select 按帧号取每页第 6/21 帧：两张中段图，6×6 共 36 格）
 ```
 
-> 交付规格说明：composition 原生画布是 1920×1080，那支 mp4 是**交付物**（`assets/demo/` 里那份），
+> 交付规格说明：composition 原生画布是 1920×1080，那支 mp4 是**交付物**（组件接触表成片），
 > 所以渲染时按 4/3 放大到 2560×1440、补一条静音 AAC 音轨、回写色彩四项（v3.1.1 之前这条命令按默认参数跑，
 > 出的是 1920×1080 / 无音轨 / 无色彩标记的调试版，会把交付文件静默换成调试版）。
 

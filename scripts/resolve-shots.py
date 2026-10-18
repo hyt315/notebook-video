@@ -70,8 +70,8 @@ def expand_cam(cam: dict, duration: int) -> list[dict]:
     if intent in ("establish", "push-in", "pull-back", "reveal"):
         return [head, {"f": at, "x": x, "y": y, "s": k1}, {"f": at + span, "x": x, "y": y, "s": to}, {"f": hold, "x": x, "y": y, "s": to}]
     if intent == "pan-follow":
-        # v4.4：平移想走多远，缩放就自动抬到能覆盖它（maxPan = 960*(1-1/s)），否则运行时会被静默削减
-        # 成几乎不动（v4.3 的 S6 只剩 ±37px）。显式写了更大的 from/to 照用。
+        # 平移想走多远，缩放就自动抬到能覆盖它（maxPan = 960*(1-1/s)），否则运行时会被静默削减
+        # 成几乎不动（旧版演示片 S6 只剩 ±37px）。显式写了更大的 from/to 照用。
         need_dx = max(abs(fx - STAGE_CX), abs(x - STAGE_CX))
         need_dy = max(abs(fy - STAGE_CY), abs(y - STAGE_CY))
         need = max(STAGE_CX / max(1.0, STAGE_CX - need_dx), STAGE_CY / max(1.0, STAGE_CY - need_dy))
@@ -88,7 +88,7 @@ def expand_cam(cam: dict, duration: int) -> list[dict]:
     return [head, {"f": duration, "x": x, "y": y, "s": to}]
 
 
-# v4.4 内容自动放大（与 src/cinema.tsx 的 CINEMA.fit* 同值）：anchor（本镜内容的外接矩形）占内容带
+# 3.2.0 内容自动放大（与 src/cinema.tsx 的 CINEMA.fit* 同值）：anchor（本镜内容的外接矩形）占内容带
 # （安全区）面积不足 FIT_MIN 时，引擎把整镜按 anchor 中心推近到 FIT_TARGET；推近受三条上限钳制：
 # anchor 放大后仍完整落在内容带内、TEXT_ZOOM_MAX（与场景 ShotCamera 相乘后）、FIT_MAX_S。
 FIT_MIN, FIT_TARGET, FIT_HI = 0.60, 0.72, 0.80
@@ -185,9 +185,9 @@ def resolve_cinema(s: dict, sid: str, frm: int, duration: int, cues: list, probl
             item["zoom"] = float(fk["zoom"])
         if fk.get("slide") is False:
             item["slide"] = False
-        # v4.5c：keep = 推近时也必须完整入画的矩形（引擎会把推近倍数降到能装下「焦点 ∪ keep」，但不低于 focusMinZoom）。
+        # keep = 推近时也必须完整入画的矩形（引擎会把推近倍数降到能装下「焦点 ∪ keep」，但不低于 focusMinZoom）。
         # 显式 keep:{x,y,w,h} / region；hero-number 版式缺省 keep = anchor（大数字在 anchor 里），左右各加 8% 字号的字形外溢余量；
-        # keep:false 关掉。修 v4.4 演示 S1：推近右侧终端时左侧「1.2 秒」被切掉半个字。
+        # keep:false 关掉。修演示片 S1：推近右侧终端时左侧「1.2 秒」被切掉半个字。
         kp = fk.get("keep")
         hero = s.get("hero") or {}
         if isinstance(kp, dict) and all(k in kp for k in ("x", "y", "w", "h")):
@@ -200,8 +200,8 @@ def resolve_cinema(s: dict, sid: str, frm: int, duration: int, cues: list, probl
         elif kp not in (None, False):
             problems.append(f"{sid}: cinema.focus[{i}].keep 必须是 {{x,y,w,h}} / region / false")
         focus.append(item)
-    # v4.5：镜尾收束。最后一个事件（拍点 / 焦点结束）到镜尾 > 45 帧（1.5 秒）时，画面只剩缓推，读起来是「卡住了」
-    # （v4.4 演示片 S6 / S8 的实测问题）。自动补一个轻推近到 anchor 的收束焦点；`cinema.settle: false` 关掉。
+    # 镜尾收束。最后一个事件（拍点 / 焦点结束）到镜尾 > 45 帧（1.5 秒）时，画面只剩缓推，读起来是「卡住了」
+    # （演示片 S6 / S8 的实测问题）。自动补一个轻推近到 anchor 的收束焦点；`cinema.settle: false` 关掉。
     last_evt = max([b for b in beats if b < duration] + [k["at"] + k["hold"] + 24 for k in focus] + [0])
     if c.get("settle", True) and not c.get("path") and duration - last_evt > 45:
         a = s.get("anchor") or band
@@ -219,7 +219,7 @@ def resolve_cinema(s: dict, sid: str, frm: int, duration: int, cues: list, probl
             at = beats[int(pan["beat"])] if "beat" in pan and int(pan["beat"]) < len(beats) else int(pan.get("at", 10))
             dur = int(pan.get("dur", max(45, duration - at - 30)))
             out["pan"] = {"worldW": ww, "at": at, "dur": dur, "dir": pan.get("dir", "ltr")}
-    # v4.5：compose-story 预算好的相机路径（关键词推近 / 视线连续 / 速度上限都已算好）。原样透传。
+    # compose-story 预算好的相机路径（关键词推近 / 视线连续 / 速度上限都已算好）。原样透传。
     path = c.get("path")
     if path:
         ok = isinstance(path, list) and all(isinstance(k, dict) and all(q in k for q in ("at", "x", "y", "s")) for k in path)
@@ -321,7 +321,7 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
             "anchor": s.get("anchor"),
             "hero": s.get("hero"),
             "cover": s.get("cover"),
-            # v4.4：缺省 auto（章节首镜 zoom 推穿、其余 whip 甩镜）；cut/reveal 是旧写法，引擎按 auto 处理，hard = 真硬切
+            # 缺省 auto（章节首镜 zoom 推穿、其余 whip 甩镜）；cut/reveal 是旧写法，引擎按 auto 处理，hard = 真硬切
             "transition": s.get("transition", "auto"),
             # v3.0.1：由分镜表推导，场景层不再手写这个布尔（消除"表说 cut、代码写 reveal"的不一致）
             "reveal": s.get("transition", "auto") == "reveal",
@@ -346,14 +346,14 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
             "noMisconception": s.get("noMisconception"),
             "why": s.get("why"),
         }
-        # v4.1：可选的背景变体覆盖（main / chapter / quiet）。不写就不出这个键，引擎按规则自动选
+        # 可选的背景变体覆盖（main / chapter / quiet）。不写就不出这个键，引擎按规则自动选
         # （章节首镜 → chapter；zones ≥ 4 → quiet；其余 → main），所以旧分镜表解析结果逐字节不变。
         if s.get("bg") is not None:
             if s["bg"] not in ("main", "chapter", "quiet"):
                 problems.append(f"{sid}: bg={s['bg']!r} 不是 main / chapter / quiet 之一")
             else:
                 rec["bg"] = s["bg"]
-        # v4.3：音效覆盖（见 src/sfx.ts）。不写就不出键，旧分镜表解析结果逐字节不变。
+        # 音效覆盖（见 src/sfx.ts）。不写就不出键，旧分镜表解析结果逐字节不变。
         if s.get("sfx") is not None:
             sfx = s["sfx"]
             events = {"whoosh", "pop", "click", "typing", "success", "error", "chart", "highlight", "chapter", "riser"}
@@ -361,14 +361,14 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
                 problems.append(f"{sid}: sfx 必须是 \"none\" 或 [{{event, beat|at, vol?}}]，event ∈ {sorted(events)}")
             else:
                 rec["sfx"] = sfx
-        # v4.4：可选版式名（validate-composition 要求相邻两镜不同）。不写就不出键。
+        # 可选版式名（validate-composition 要求相邻两镜不同）。不写就不出键。
         if s.get("layout") is not None:
             rec["layout"] = str(s["layout"])
         if s.get("sfxEvents") is not None:
             rec["sfxEvents"] = s["sfxEvents"]
         if s.get("sfxAuto") is not None:
             rec["sfxAuto"] = bool(s["sfxAuto"])
-        # v4.4：引擎摄影机（src/cinema.tsx）。不写 cinema 也会输出缺省 {drift:'auto'}，引擎照样慢推/漂移。
+        # 引擎摄影机（src/cinema.tsx）。不写 cinema 也会输出缺省 {drift:'auto'}，引擎照样慢推/漂移。
         rec["cinema"] = resolve_cinema(s, sid, frm, duration, cues, problems)
         out.append(rec)
         cursor = to

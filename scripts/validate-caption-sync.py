@@ -45,7 +45,7 @@ def main() -> None:
     parser.add_argument("caption_cues_json", type=Path)
     parser.add_argument("--max-lead-ms", type=int, default=80)
     parser.add_argument("--max-chars", type=int, default=16,
-                        help="v4.4: characters per subtitle line after stripping trailing punctuation (0 = off)")
+                        help=" characters per subtitle line after stripping trailing punctuation (0 = off)")
     args = parser.parse_args()
 
     source = json.loads(args.tts_words_json.read_text(encoding="utf-8"))

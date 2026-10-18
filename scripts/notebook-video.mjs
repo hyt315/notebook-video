@@ -115,12 +115,12 @@ const checkDeps = async () => {
   console.log(`Remotion production dependencies are ready on ${process.platform}.`);
 };
 
-// v4.0.0：只保留两套皮肤，flat 为默认（paper / sticker 已删除）。
+// 只保留两套皮肤，flat 为默认（paper / sticker 已删除）。
 const THEME_IDS = ['flat', 'cel'];
 
 const newProject = async (args) => {
-  // v4.1.0：--classic（暖象牙纸面示例工程 example-project）已整体删除，给出明确报错而不是静默忽略。
-  if (args.includes('--classic')) fail('--classic was removed in v4.1.0 (the warm-ivory example project is gone). Use --style=flat (default) or --style=cel.', 2);
+  // --classic（暖象牙纸面示例工程 example-project）已整体删除，给出明确报错而不是静默忽略。
+  if (args.includes('--classic')) fail('--classic was removed in 3.2.0 (the warm-ivory example project is gone). Use --style=flat (default) or --style=cel.', 2);
   const styleFlag = args.find((a) => a.startsWith('--style='));
   const style = styleFlag ? styleFlag.slice('--style='.length) : 'flat';
   if (!THEME_IDS.includes(style)) fail(`Unknown style "${style}". Valid values: ${THEME_IDS.join(', ')}`, 2);
@@ -263,8 +263,8 @@ const DELIVERY_COLOR_CONTRACT = {
 // remotionRender's `colorTagged` flag. The debug artifacts (`review-frames`, `benchmark-render`)
 // are not tagged: nobody asserts the color contract on them (that assertion lives in
 // `validate-video`, the delivery gate), and the extra ffmpeg pass per artifact is pure cost.
-// `showcase` **is** tagged since v3.1.1: its mp4 is the contact-sheet deliverable that
-// `assets/demo/` ships and README links to, so it has to meet the same contract as a film.
+// `showcase` **is** tagged since v3.1.1: its mp4 is the contact-sheet deliverable (the file you
+// share or publish next to a release), so it has to meet the same contract as a film.
 // Trade-off, written down because it is easy to forget: an untagged review clip reports
 // `color_transfer=unknown` in ffprobe and may look slightly more saturated when a player
 // falls back to BT.601 — measure color on the tagged delivery file, not on the review clip.
@@ -325,7 +325,7 @@ const render = async ([projectArg, outputArg, composition = 'NotebookVideoFilm']
   const project = resolvePath(projectArg);
   const output = resolvePath(outputArg);
   await syncProjectAssets([project]);
-  // v4.5：中间文件放系统临时目录。Remotion 的 faststart 第二遍要回写文件头，网络 / FUSE 盘（实测 JuiceFS）上会
+  // 中间文件放系统临时目录。Remotion 的 faststart 第二遍要回写文件头，网络 / FUSE 盘（实测 JuiceFS）上会
   // `Error writing trailer: Input/output error`，整片渲完却拿不到文件。
   const raw = path.join(os.tmpdir(), `nv-remotion-raw-${process.pid}.mp4`);
   fs.mkdirSync(path.dirname(raw), {recursive: true});
@@ -333,9 +333,9 @@ const render = async ([projectArg, outputArg, composition = 'NotebookVideoFilm']
   const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
   console.log(`Rendering at concurrency ${concurrency}. Override with REMOTION_CONCURRENCY after running benchmark-render.`);
   // 交付路径：这是"真正出交付物"的渲染，色彩元数据必须打全（见 applyColorTags）。
-  // v4.5：NOTEBOOK_VIDEO_SCALE=0.75 → 1920×1080 交付（缺省 2560×1440）
+  // NOTEBOOK_VIDEO_SCALE=0.75 → 1920×1080 交付（缺省 2560×1440）
   await remotionRender({project, composition, output: raw, concurrency, colorTagged: true, scale: process.env.NOTEBOOK_VIDEO_SCALE || undefined});
-  // v4.5：响度目标可调。有人声 −16 LUFS（缺省）；静音占位旁白（无 TTS）时 make-video 传 −24，免得把音效整体抬高 14 dB。
+  // 响度目标可调。有人声 −16 LUFS（缺省）；静音占位旁白（无 TTS）时 make-video 传 −24，免得把音效整体抬高 14 dB。
   const LUFS = process.env.NOTEBOOK_VIDEO_LUFS || '-16';
   // 两遍响度规范化：先测（linear 模式需要 measured_* 才能同时打准 LUFS 与真峰）
   const probe = await run('ffmpeg', ['-hide_banner', '-i', raw, '-af', `loudnorm=I=${LUFS}:LRA=11:TP=-1.5:print_format=json`, '-f', 'null', '-'], {capture: true, allowFailure: true});
@@ -431,8 +431,8 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   const audioStream = streams.find((s) => s.codec_type === 'audio');
   if (!videoStream || !audioStream) fail('Both video and audio streams are required.');
   if (videoStream.codec_name !== 'h264' || audioStream.codec_name !== 'aac') fail('Expected H.264 video and AAC audio.');
-  // One locked delivery canvas (v4.0.0+): 2560x1440 (16:9).
-  // v4.5：同一张 16:9 画布的 1080p 交付（NOTEBOOK_VIDEO_SCALE=0.75，make-video 的缺省）也接受；其他尺寸 / 比例一律拒。
+  // One locked delivery canvas (3.2.0+): 2560x1440 (16:9).
+  // 同一张 16:9 画布的 1080p 交付（NOTEBOOK_VIDEO_SCALE=0.75，make-video 的缺省）也接受；其他尺寸 / 比例一律拒。
   const canvasOk = (videoStream.width === 2560 && videoStream.height === 1440) || (videoStream.width === 1920 && videoStream.height === 1080);
   if (!canvasOk) fail(`Expected 2560x1440 or 1920x1080 (16:9), got ${videoStream.width}x${videoStream.height}.`);
   const expectedFps = Number(process.env.NOTEBOOK_VIDEO_FPS || 30);
@@ -531,8 +531,7 @@ const semanticBreaksArgs = (args) => {
     : [...args, '--require-budoux'];
 };
 
-// 接触表交付规格。`NotebookVideoShowcase` 的原生画布是 1920×1080，而交付文件（`assets/demo/`
-// 里那份、README 直接链过去的那份）是 **2560×1440** —— 也就是锁定画布 16:9 的交付尺寸，所以
+// 接触表交付规格。`NotebookVideoShowcase` 的原生画布是 1920×1080，而交付文件（接触表成片）是 **2560×1440** —— 也就是锁定画布 16:9 的交付尺寸，所以
 // 渲染时必须按 4/3 放大。⚠️ `--scale` 只吃十进制字面量：`--scale=4/3` 会被 CLI 判成非法参数
 // 而拒绝渲染（实测），必须写 1.3333333333333333（= 2560/1920，乘回去落回 2560×1440）。
 const SHOWCASE_DELIVERY_SCALE = '1.3333333333333333';
@@ -566,7 +565,7 @@ const addSilentAudioTrack = async (target) => {
 // 旧版 `fps=1` 只抽**页首帧**，转场这类"动作在页中段"的件（第 ⑪ 页 SceneTransitions）在抽图上根本看不见。
 // 作用：让执行 AI 看见库组件形态，而不是读文字描述（references/media-routing.md §6）。
 //
-// ⚠️ 这个 mp4 是**交付物**（`assets/demo/notebook-video-components-demo.mp4`，README 直接链它），
+// ⚠️ 这个 mp4 是**交付物**（组件接触表成片），
 // 所以它走的是交付规格，不是调试规格：2560×1440（`SHOWCASE_DELIVERY_SCALE`）+ 静音 AAC 音轨 +
 // 色彩四项回写。v3.1.1 之前这条命令按 Remotion 默认参数跑（1920×1080、无音轨、不回写色彩），
 // 于是"照文档跑一遍"会把交付文件**静默换成调试版** —— 规格漂了却没有任何门禁看得见。

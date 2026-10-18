@@ -1,5 +1,5 @@
 repository: hyt315/notebook-video
-description: Agent Skill for 2K Chinese explainer videos: code-drawn scenes or real screenshots, 4 scene skeletons, 14 automated gates.
+description: Agent Skill that turns a topic into a Chinese 16:9 teaching video — component scenes, virtual camera, tuned SFX, real screenshots, one-command pipeline with auto-fix gates (Remotion).
 topics:
   - agent-skills
   - ai-video
@@ -24,5 +24,5 @@ ruleset:
   block-force-push: true
   block-deletion: true
 release:
-  tag: v4.0.0
-  title: Notebook Video v4.0.0
+  tag: v3.2.0
+  title: Notebook Video v3.2.0

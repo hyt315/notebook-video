@@ -125,7 +125,7 @@ Action effects come from the **prebuilt SFX library** and are scheduled automati
 the automatic rules and the per-shot `sfx` override. Every cue is pinned to a shot start or a beat, so retiming the
 narration and re-running `resolve-shots` moves the sounds with the picture.
 
-## Sound vocabulary (v4.3 library events)
+## Sound vocabulary (SFX library events)
 
 `whoosh` transition · `pop` appear · `click` tap/step · `typing` code/console · `success` check/verdict ·
 `error` misconception refuted · `chart` bars/lines grow · `highlight` key word/number · `chapter` chapter sting ·

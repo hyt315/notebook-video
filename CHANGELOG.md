@@ -4,282 +4,96 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
-## [4.5.0] - 2026-10-18
+## [3.2.0] - 2026-10-18
 
-> 观感 = v4.4（组件场景 + 引擎虚拟摄影机，原样保留）；新增 = 弱模型复刻辅助 + 音效优化 + 客观自动修。
-> Look = v4.4 (component scenes + engine virtual camera, unchanged). Added: weak-model replication aids, SFX optimisation, objective auto-fixes.
->
-> 说明：先前的 v4.5 「文字优先」尝试（大字页、章节进度条、章节卡、底色带 / 下划线强调）观感不如 v4.4，已整体撤回，保存在分支 `v4.5-textfirst`。
-> Note: the earlier text-first v4.5 attempt (big text pages, chapter progress bar, chapter cards, tinted-band / underline emphasis) was rejected as worse than v4.4 and is preserved on branch `v4.5-textfirst`.
+> 自 3.1.2 以来的一次大版本整理：只保留 16:9 与 `flat` / `cel` 两套皮肤，画面换成组件场景 + 引擎虚拟镜头，新增预制音效库、真实素材、弱模型复刻辅助、一条命令出片与客观自动修。**破坏性**：3.1.x 的 4:3 / 3:4 画布、`paper` / `sticker` 皮肤与 `--classic` 示例工程已删除，旧工程不再支持，也不提供迁移脚本。
+> A major consolidation since 3.1.2: 16:9 only with the `flat` / `cel` themes, component scenes moved by an engine-level virtual camera, a prebuilt SFX library, real media, weak-model reproduction aids, a one-command pipeline and objective auto-fixes. **Breaking**: the 3.1.x 4:3 / 3:4 canvases, the `paper` / `sticker` skins and the `--classic` example project are removed; older projects are not supported and there is no migration script.
 
-### 4.5.0 打磨（4.5c，同版本号）/ 4.5.0 polish (4.5c, same version)
+### 观感与镜头 / Look & camera
 
-- 音效：命中帧早于瞬态偏移时（片头第 2 帧的 chapter，偏移 8 帧）以前起播被夹到 0、瞬态晚 6 帧；现在从第 0 帧起播并 `trimBefore` 跳过文件开头，瞬态落在命中帧。riser 的命中点改为与 chapter 同帧（以前相隔 2 帧 / 67 ms 各响一下）。实测 v4.4 演示（仅渲染音频）：22 个 cue 全部在 ±1 帧内（之前 4 个超差：片头 chapter +5.6 帧、3 个章节点 −2 帧），cue 最小间隔 433 ms，音乐床闪避中位 −6.9 dB，无削波。新增 `scripts/dev/listen-check.py`（只渲染音频的客观试听：响度、真峰、削波、命中误差、间隔、闪避深度）。
-  SFX: `trimBefore` when the hit frame precedes the transient offset (opening chapter was 6 f late); riser hit now coincides with the chapter hit. Demo audio-only check: 22/22 cues within ±1 f (was 4 off), min gap 433 ms, bed duck −6.9 dB median, no clipping. New `scripts/dev/listen-check.py`.
-- 摄影机：`cinema.focus[].keep`——推近时也必须完整入画的矩形，引擎把推近倍数降到能装下「焦点 ∪ keep」（≥ focusMinZoom）；`hero-number` 版式缺省 keep = anchor + 8% 字形外溢余量（修 v4.4 演示 S1 推近终端时「1.2 秒」被切掉左半）。`resolve-shots` 透传 `slide` / `keep`。
-  Camera: `focus[].keep`; hero-number shots keep the hero number in frame by default (fixes demo S1 “1.2秒” cut). resolve-shots now passes `slide` / `keep` through.
-- MediaFrame 区域高亮：画在视口坐标（恒定 4 px 橙描边 + 白内圈 + 抬升阴影 + 区域外 0.16 淡暗幕，v4.4 描边 + 轻抬升的语汇），缩小看也清楚；区域推近后露出不足 90% 的框不画。
-  MediaFrame highlights: viewport-space stroke + inner ring + lift + soft veil; partially visible (< 90 %) boxes hidden.
-- validate-media：`w` / `h` 写成同文件常量 / 算式（`w={W * 0.6}`）也能量放大倍数；量不出（布局对象字段）时按占满画布估，可能糊则 P1 提醒（以前直接跳过）。负向抽查 86 例 / 140 断言（新增 M8 / M9）。
-  validate-media: measures const/arithmetic sizes; unknown sizes → full-canvas worst-case P1. Negative gate 86 cases / 140 assertions.
+- 只有一种画布：16:9（交付 2560×1440，设计坐标 1920×1080，30 fps）；默认皮肤改为 `flat`，`new-project --style=` 只接受 `flat` / `cel`。
+  One canvas (16:9, 2560×1440 delivery); `flat` is the default; `--style` accepts `flat` / `cel` only.
+- 视觉识别重做：两套皮肤改用 Radix Colors v3 的色值（只抄值，无运行时依赖）；每主题三张锁定背景 `public/bg/bg-<theme>-{main,chapter,quiet}.jpg`，引擎按分镜自动选并交叉淡化；`*Ink` 文字安全色在所有表面上 ≥4.6:1；cel 页眉加漫画旁白框；去掉整幅羽化底托。
+  Rebuilt visual identity: Radix Colors v3 palettes, three locked backgrounds per theme chosen per shot, `*Ink` text colours ≥4.6:1, no full-frame wash.
+- 引擎虚拟摄影机 `src/cinema.tsx`：每镜缺省缓推 / 漂移；分镜表 `cinema: {fit, drift, focus, pan}` 讲到哪推到哪、横摇；`focus[].keep` 让推近时仍完整保留指定区域；新转场 `auto`（缺省）/ `whip` / `zoom` / `fade` / `hard`；背景视差；推近时页眉下羽化遮罩。
+  Engine virtual camera: default push-in, narration-following focus and pans, `keep` regions, whip / zoom-through transitions, parallax, header mask.
+- 内容自动放大：本镜内容占安全区 < 60% 时整镜推近到约 72%；`KineticNumber` 关键数字动态排版与 `popIn` / `countUp` / `landPop` / `drawOn` / `idleFloat` 运动助手。
+  Auto-fit of small content to ~72 % of the safe area; `KineticNumber` and motion helpers.
+- 组件换成熟开源件（配色重映射到主题 token，场景 API 不变）：代码高亮 Shiki、图标 lucide-react + simple-icons、`DiffView` 用 jsdiff、`MorphShape` 用 flubber、`Chart` 的轴与形状用 visx（新增实心 bar 变体）；`HighlightCode` / `DiffView` / `ConsoleWindow` 新增 `fontSize`，`HighlightCode` 新增 `active` 行。
+  Mature open-source building blocks (Shiki, lucide-react, simple-icons, jsdiff, flubber, visx) behind unchanged component APIs; new `fontSize` / `active` props.
+- 字体：`FontFaces` 为拉丁展示字体追加 LXGW 文楷的中文回退，页眉不再出现豆腐块；代码字体同样回退。
+  CJK fallback for Latin display and code fonts.
 
-### 新增 / Added
+### 音效 / Sound
 
-- 弱模型复刻辅助：5 个讲课蓝图 `blueprints/`（concept / code-change / data-compare / process / pitfall，同一弧线 钩子 → 先懂一个词 → 拆开看 → 举例 → 误区 → 回顾），每镜带 `$v44`：该用的骨架与 v4.4 组件；未填 `<<占位符>>` 直接报错。
-  Weak-model aids: 5 teaching blueprints, each shot carries `$v44` (skeleton + v4.4 components to use).
-- 黄金样例 `examples/*.story.json`（含 `code-change-cache.story.json`）与弱模型测试 `examples/weak-model-test/`。
-- `SKILL.md` 改为 5 步短页（选蓝图 → 建工程照抄示例片 → 写台词与镜头表 → 一条命令 → 需要时定制组件），描述的是 v4.4 组件场景；完整手册移到 `references/handwritten-scenes.md`。
-- `scripts/make-video.mjs` + `make-video.cmd`：一条命令。**工程目录**（v4.4 手写组件场景，推荐）或 **story.json**（auto 草稿）两种入口，共用 resolve → 门禁 → tsc → `--stills` 静帧接触表 / `--render` 成片 → `renders/report.md`。手写工程把 `validate-composition` 作为硬门禁。
-- 定制组件逃生口 `src/custom/`（`CUSTOM` 注册表 + `RequestLane` 示例）。
-- 可选 auto 草稿：`scripts/compose-story.py` + `src/auto.tsx`（字幕 4.5 字/秒自动定时、16 字在合法断点拆、不拆数字 / 英文、字号地板 32px、文字对比度、取景不切字、微漂移）。`statement` 不再是缺省，渲染成一张 v4.4 式卡片；强调改为 v4.4 式描边 + 轻抬升；无章节呼吸 / 章节卡 / 进度条。
-- 音效调校工具 `scripts/dev/audit-sfx.py`、`scripts/dev/tune-sfx.py`；`references/auto-engine.md`。
-- 真实素材：`src/media-frame.tsx` 的 `MediaFrame`（截图走 `<Img>`、录屏走 `<OffthreadVideo>`，按 trimStartSec / trimEndSec 推出起止帧、播完停最后一帧；browser / window / device 外壳；卡片内区域推近、描框、旁注；`source: web` 素材无条件显示署名徽章），`manifests/media.json` + `public/media/`；`scripts/prepare-media.py`（+ `.cmd`）登记 / 探测尺寸 / 转 H.264 恒定 30fps / 缺省去音轨 / 动图转 MP4；`scripts/validate-media.py` 门禁（文件、放大 >1.5 倍、编码帧率、许可与署名、区域引用；make-video 自动跑）；compose-story 新版式 `media`（区域可被 `{{词|区域id}}` 点名）；`references/real-media.md`（何时用真实素材、来源优先级、无兼容许可就用组件重画）；样例 `examples/real-media/`（脚本生成的占位 PR 截图）。
-  Real media: MediaFrame, prepare-media, validate-media gate, `media` layout, references/real-media.md.
-- 负向抽查 84 例 / 138 断言（含 V1–V9 自动修夹具、M0–M7 真实素材门禁）。
+- 预制语义音效库 `public/sfx/lib/`：10 个代码合成的一次性音效（whoosh / pop / click / typing / success / error / chart / highlight / chapter / riser）+ 可选音乐床；单声道 48 kHz Ogg、统一响度、CC0；`sfx-manifest.json` 登记 sha256、时长、响度、来源与许可。替换掉来源未登记的旧音效。
+  Prebuilt CC0 library of 10 semantic one-shots plus a bed, with a manifest of hashes, loudness, provenance and licence; unregistered legacy sounds removed.
+- `src/sfx.ts` 按分镜语义自动排音效（章节、转场、拍点、介质、结论、误解），每镜可用 `sfx` / `sfxAuto` 覆盖。
+  Automatic SFX planning from shot semantics, with per-shot overrides.
+- 对拍调校：manifest 每条 cue 带 `gain` 与 `offsetMs`，引擎提前起播让瞬态落在视觉命中帧（±1 帧，片头也成立）；riser 与 chapter 合成同一落点；间隔 ≥150 ms、任意 10 秒 ≤4 个；音乐床在每个音效下闪避；pop / chart 改为分层设计，whoosh / highlight / riser / error / chapter 重新修剪。
+  On-the-beat tuning: per-cue gain / offset pre-roll, merged riser + chapter hit, spacing and density caps, bed ducking, layered pop / chart.
 
-### 变更 / Changed
+### 弱模型复刻 / Weak-model reproduction
 
-- 音效：manifest 每条 cue 新增 `gain` 与 `offsetMs`；引擎按 `offsetMs` 提前起播，让瞬态落在视觉命中帧（±1 帧）；whoosh 对齐转场中点；间隔 ≥150 ms、任意 10 秒 ≤4 个（≈24/分钟）；音乐床在每个 cue 下闪避（`bedDuckAt`，帧驱动）；whoosh / highlight / riser / error / chapter 重新修剪。`validate-audio-levels.py` 要求 `SFX_GAIN` / `SFX_OFFSET_MS` 与 manifest 一致。
-- 摄影机「不切字」自动修：焦点推近时焦点矩形留 28 px 边距完整入画，注视点横向尽量滑回基准取景，少把非焦点标题推出画面（v4.4 演示 S1 / S7 实测改善）；`focus[].slide: false` 关闭。
-- `resolve-shots.py`：手写场景镜尾 >1.5 s 无事件自动补收束焦点（去「死尾巴」）；透传 `cinema.path` / `sfxEvents`。
-- `index.tsx`：`COPY` / `CHAPTER_SHOTS` 抽到 `src/film.ts`（观感不变）。
-- 观感无关的修复：渲染中间文件放系统临时目录（网络盘 faststart 回写失败）；`NOTEBOOK_VIDEO_LUFS`（静音旁白片 −24 LUFS）；`validate-video` 接受 1920×1080；`NOTEBOOK_VIDEO_SCALE`；`validate-motion-gaps` 参数；代码字体的中文字形回退；相机路径延迟修正。
-- `validate-shot-motion.py`：卡片 / 定制版式的低占比降为 P1 提示（主观规则不硬拦）。
+- 5 个讲课蓝图 `blueprints/`（concept / code-change / data-compare / process / pitfall），同一弧线：钩子 → 先懂一个词 → 拆开看 → 举例 → 误区 → 回顾；每镜的 `$components` 写明骨架与组件；未填 `<<占位符>>` 直接报错。
+  Five teaching blueprints with per-shot `$components`; unfilled placeholders fail.
+- 黄金样例 `examples/*.story.json` 与弱模型测试 `examples/weak-model-test/`。
+  Golden examples and a weak-model test.
+- `SKILL.md` 改为 5 步短流程（选蓝图 → 建工程照抄示例片 → 写台词与镜头表 → 一条命令 → 需要时定制组件）；完整手册移到 `references/handwritten-scenes.md`。
+  `SKILL.md` is now a five-step workflow; the full manual lives in `references/handwritten-scenes.md`.
+- 一条命令 `scripts/make-video.mjs`（+ `make-video.cmd`）：工程目录（手写组件场景，推荐）或 story.json（auto 草稿）两种入口，共用 resolve → 门禁 → tsc → `--stills` 静帧接触表 / `--render` 成片 → `renders/report.md`。
+  One command for both project directories and story.json drafts, ending in stills or a render plus a report.
+- 可选 auto 草稿：`scripts/compose-story.py` + `src/auto.tsx`（字幕自动定时、版式、关键词同步的相机路径）；定制组件逃生口 `src/custom/`（`CUSTOM` 注册表 + `RequestLane` 示例）；片级文案抽到 `src/film.ts`。
+  Optional auto draft engine, a `src/custom/` escape hatch and `src/film.ts` for film copy.
 
-### 撤回 / Dropped (vs. branch v4.5-textfirst)
+### 真实素材 / Real media
 
-- 章节进度条 `ChapterProgress`、章节引导卡 `ChapterIntro` 与 0.9 s 章节呼吸；文字优先 `statement` 缺省与满屏大字页；底色带 + 标记条 / 下划线强调；模板示例片的 v4.5 改动（S5 KineticNumber、额外 focus）——模板示例片与 v4.4 相同。
+- `MediaFrame`（`src/media-frame.tsx`）：截图走 `<Img>`、录屏走 `<OffthreadVideo>`（按裁剪起止推帧、播完停在末帧），browser / window / device 外壳，区域推近、视口坐标下恒定线宽的区域高亮与旁注，`source: web` 素材自动显示署名徽章；`media` 版式。
+  `MediaFrame` for screenshots, recordings and GIFs with chrome, region zoom, highlights, callouts and credit badges.
+- `scripts/prepare-media.py`（+ `.cmd`）：登记、探测尺寸、转 H.264 恒定 30 fps、缺省去音轨、动图转 MP4；`manifests/media.json` + `public/media/`；文档 `references/real-media.md`。
+  `prepare-media` registration and transcoding; media manifest; documentation.
 
-### 音效逐 cue 前后（`python scripts/dev/audit-sfx.py [--legacy]`）/ Per-cue SFX before → after
+### 门禁与自动修 / Gates & auto-fix
 
-| cue | v4.4 dur ms | hit ms | err f | mix LUFS | vs ladder | score | → v4.5 dur | offsetMs | err f | mix | vs ladder | gain | score |
-| whoosh | 359 | 132 | 3.95 | -25.6 | +1.9 | 53 | 260 | 72 | 0.0 | -27.5 | +0.0 | 0.338 | 100 |
-| pop | 170 | 6 | 0.17 | -24.9 | +0.6 | 100 | 170 | 6 | 0.0 | -25.5 | -0.0 | 0.419 | 100 |
-| click | 53 | 5 | 0.14 | -30.7 | -2.2 | 91 | 53 | 4 | 0.0 | -28.5 | -0.0 | 0.491 | 100 |
-| typing | 562 | 14 | 0.42 | -28.4 | +1.6 | 96 | 562 | 14 | 0.0 | -30.0 | +0.0 | 0.284 | 100 |
-| success | 400 | 6 | 0.18 | -24.3 | +0.7 | 90 | 400 | 6 | 0.0 | -25.0 | -0.0 | 0.459 | 90 |
-| error | 590 | 537 | 16.1 | -27.2 | -1.2 | 30 | 210 | 140 | 0.0 | -26.0 | +0.0 | 0.409 | 90 |
-| chart | 372 | 48 | 1.44 | -26.4 | -0.4 | 75 | 372 | 48 | 0.0 | -26.0 | -0.0 | 0.419 | 90 |
-| highlight | 380 | 4 | 0.12 | -26.0 | +1.0 | 100 | 190 | 58 | 0.0 | -27.0 | -0.0 | 0.356 | 90 |
-| chapter | 1150 | 280 | 8.41 | -23.4 | +0.6 | 60 | 900 | 254 | 0.0 | -24.0 | +0.0 | 0.522 | 100 |
-| riser | 1500 | 1492 | 44.76 | -27.2 | +0.8 | 60 | 1080 | 1067 | 0.0 | -28.0 | -0.0 | 0.331 | 100 |
+- 硬门禁只管客观问题：取景不切字（推近自动留边、横向滑回、回退倍数）、字号地板、文字对比度 ≥4.5:1、字幕每行 ≤16 字（`build-semantic-captions.py` 在合法断点自动拆，`validate-caption-sync.py` 与渲染期 `CaptionFitGate` 双重拦截）、读速 ≤4.5 字/秒、镜尾 >1.5 s 无事件自动补收束焦点、音画同步、音效增益 / 提前量与 manifest 一致；主观规则（如卡片留白）降为提示。
+  Hard gates for objective issues only, with auto-fixes (no clipped text, font floor, contrast, ≤16-char caption lines, reading speed, dead tails, A/V sync, SFX metadata); subjective checks only advise.
+- 新门禁：`validate-media`（文件、放大 >1.5 倍、编码帧率、许可与署名、区域引用；同文件常量 / 算式尺寸也能量，量不出时按最坏情况提示）、`MascotGate`（卡片压背景角色时提醒）、`validate-composition` 相邻两镜同 `layout` 即拦、`validate-shot-motion` 的 cinema 检查。
+  New gates: `validate-media`, `MascotGate`, adjacent-layout rule, cinema checks in `validate-shot-motion`.
+- 推近特写里「镜头有意裁掉的内容」不再被 CanvasBounds / Fill / Clipping / Mascot 门禁误报；OverlapGate 只量遮罩以下的可见部分。负向抽查扩到 86 例 / 140 断言。
+  Gates no longer misreport intentional close-up cropping; negative gate check at 86 cases / 140 assertions.
 
-均分 75.5 → 96.0。说明：v4.4 的 riser 本来就提前 45 帧起播，实际对位误差约 0.2 帧（表里 legacy 列按「不提前」计）；它的改进是死区 544 → 124 ms 与电平。highlight 的音色分按「峰值位置」略降（0.01 → 0.31），换来与 success 拉开的音色（高通 1.8 kHz、190 ms）。
+### Windows 与工具 / Windows & tooling
+
+- `make-video.cmd`、`prepare-media.cmd` 与同一套 Node / Python 实现，Windows / macOS / Linux 行为一致。
+  Windows wrappers over the same implementations.
+- 渲染中间文件放系统临时目录（网络盘上 faststart 回写失败）；`NOTEBOOK_VIDEO_SCALE`（`0.75` = 1920×1080 交付，make-video 缺省）；`NOTEBOOK_VIDEO_LUFS`（静音旁白片 −24 LUFS）；`validate-video` 接受 1920×1080；`validate-motion-gaps` 参数。
+  Temp-dir intermediates, scale and loudness overrides, 1080p delivery accepted.
+- 维护者工具 `scripts/dev/`：`build-sfx-library.py`（`--only`、分层合成）、`audit-sfx.py`、`tune-sfx.py`、`listen-check.py`（只渲染音频的客观试听）。
+  Maintainer tools for building, auditing, tuning and listen-checking the SFX library.
+- 依赖：移除 12 个 `@radix-ui/*`、`react-syntax-highlighter`、`react-icons`；新增 shiki、lucide-react、simple-icons、diff、flubber、@visx/*；许可登记见 NOTICE。
+  Dependencies: Radix, react-syntax-highlighter and react-icons removed; new libraries registered in NOTICE.
+- 仓库瘦身：演示视频与大动图不再入库（`assets/demo/` 删除），README 改写。
+  Repository slimmed: demo videos and the large animated preview are no longer committed; READMEs rewritten.
+
+### 修复 / Fixes
+
+- `ProgressRing` 的描边、读数、标签随 `size` 等比；`ConsoleWindow` 标题与状态签不再低于字号地板。
+  `ProgressRing` scales its stroke and labels; `ConsoleWindow` labels meet the font floor.
+- `ZoomStage` 给了 `contentW/H` 时也钳平移，放大后内容留在取景框内；聚焦暗角改为以焦点为圆心的径向暗角。
+  `ZoomStage` clamps pan as well as zoom; radial focus vignette.
+- `pan-follow` 平移超出缩放预算时自动抬缩放；相机路径延迟修正。
+  Pans no longer get silently cut; camera path latency fixed.
+- 字幕占位层与可见层用同一套分词规则，中英混排句末字不再顶进装饰点。
+  Caption placeholder and visible layers share tokenisation.
+- 推近时注视点只横向滑动，不再把顶部标题推进页眉遮罩。
+  Focus slides horizontally only, so titles are not pushed under the header.
 
 ### 已知限制 / Known limitations
 
-- 无 TTS：旁白是静音占位，字幕时间按 4.5 字/秒推算；接入真实配音后用 `match-timing.py` 重对齐。
-- 本版没有重新渲染演示片；观感核对用 Remotion 静帧与 v4.4 成片同帧对比完成。
-- v4.4 演示片 S1 的焦点推近仍会切到左侧大数字的边缘（焦点矩形本身就要占满取景窗；需要时缩小 `zoom`）。
-- auto 草稿（compose-story）的版式由 `auto.tsx` 绘制，风格接近但不等于手写 v4.4 组件场景；正式交付建议走手写路线。
-
-## [4.4.0] - 2026-10-18
-
-> 去 PPT 感（Phase 5）：引擎级虚拟镜头（缺省缓推、讲到哪推到哪、横摇、甩镜 / 推穿转场、视差）、内容自动放大到安全区 60–80%、关键数字动态排版、字幕每行 ≤ 16 字、相邻镜头换布局，pop / chart 音效用 earshot 重做。分镜表什么都不写也有缺省运动；所有动画仍是帧的纯函数。
-> Kill the slide-deck feel (Phase 5): an engine-level virtual camera (default push-in, focus-follow, pans, whip / zoom-through transitions, parallax), automatic content enlargement to 60–80 % of the safe area, kinetic numbers, ≤ 16-character subtitle lines, a layout-change rule for adjacent shots, and layered earshot pop / chart sounds. Every animation is still a pure function of the frame.
-
-### 新增 / Added
-
-- `src/cinema.tsx`：引擎虚拟摄影机（`cinemaCamAt` / `transitionStyle` / `parallaxTransform` / `cinemaMask`），挂在 `index.tsx` 的 `FinalDemo` 与 `Backdrop`；分镜表新字段 `cinema: {fit, drift, focus, pan}`，镜级 `transition` 新取值 `auto`（缺省）/ `whip` / `whip-left` / `whip-right` / `zoom` / `fade` / `hard`。
-  Engine virtual camera wired into `FinalDemo` / `Backdrop`; new shot-table block `cinema` and engine transitions.
-- 内容自动放大：anchor 占内容带面积 < 60% 时整镜推近到 72%（`resolve-shots.py` 预算成 `cinema.fit`）。
-- `KineticNumber`（计数 + 落定弹出 + 下划线扫入）与运动助手 `popIn` / `countUp` / `landPop` / `drawOn` / `idleFloat`。
-- 推近时世界层顶部羽化遮罩：非焦点内容不会被推到页眉 / 章节卡底下。
-- 分镜表可选 `layout` 字段；`references/cinema-camera.md`；`assets/demo/v4.4-demo/`（60 秒演示片的分镜、字幕、场景源码）。
-- `HighlightCode` 新增 `fontSize` / `active`（把高亮钉在讲到的那一行）；`DiffView` 新增 `fontSize`；`ConsoleWindow` 新增 `fontSize`（标题栏、圆点、光标等比）。
-- `build-sfx-library.py --only <events>`：只重建指定音效，其余文件与 manifest 条目逐字节保留；`LAYERS` 分层合成。
-
-### 变更 / Changed
-
-- 音效 `pop`：圆润低频体（popin #14）+ 明亮气泡音头（pop #7）+ 修剪的超低频冲击（impact #6）；earshot 匹配 z 2.49 → 3.01（strong）。`chart`：两条上扬音调扫频（zip #5 + zip #0）+ 落定闷响（popin #10）；z 2.47 → 3.15（strong）。
-- 字幕每行 ≤ 16 字：`build-semantic-captions.py --max-chars 16`（缺省）在最靠近中点的合法断点自动劈开；`validate-caption-sync.py --max-chars 16` 与渲染期 `CaptionFitGate` 双重拦截。
-- 转场：旧版 10 帧交叉淡化换成 14 帧引擎转场；`cut` / `handoff` / `reveal` 作为旧写法继续接受（引擎按 `auto` 处理）。`insert.tsx` 的 `TRANSITIONS` 与 `validate-composition.py` 同步扩到 10 个取值。
-- `validate-shot-motion.py`：新增 cinema 段——`fillAfter` < 45% P0、45–60% / > 90% P1；焦点缩放与焦点矩形检查；缺 cinema 块 P1。
-- `validate-composition.py`：相邻两镜同 `layout` → P0。
-- `SKILL.md` 授权契约补 20a / 20b；`shot-language.md`、`scene-skeletons.md`、`subtitle-timing.md`、`sfx-library.md` 同步。
-
-### 修复 / Fixed
-
-- `ProgressRing`：描边、读数、标签随 `size` 等比（旧版写死 11px / 22px / 13px，放大到 300+ 时读数缩成一个点；13px 标签低于字号地板）。
-- `ConsoleWindow` 标题与状态签 13px → ≥ 16px（低于字号地板）。
-- 门禁误报：引擎推近（`data-cinema-focus`）的特写帧里，CanvasBoundsGate / FillGate / ClippingGate / MascotGate 不再把「镜头有意裁掉的内容」当版面缺陷；OverlapGate 只量遮罩以下的可见部分。
-- `pan-follow` 平移超出缩放预算时自动抬缩放（v4.3 的 S6 横摇只剩 ±37px）。
-
-## [4.3.0] - 2026-10-17
-
-> 预制语义音效库（Phase 4）+ 遗留问题修复 + 60 秒组件演示片。音效由 earshot（开发期工具）在代码里合成并质检后提交进仓库，普通用户不需要安装 earshot；引擎按分镜表语义自动排音效，每镜可覆盖。
-> Prebuilt semantic SFX library (Phase 4), leftover fixes and a 60-second component demo. Sounds are rendered in code and QC'd with earshot (dev-time only) and committed; users never install earshot. The engine schedules SFX from shot-table semantics, with a per-shot override.
-
-### 新增 / Added
-
-- `public/sfx/lib/`：10 个语义音效（whoosh / pop / click / typing / success / error / chart / highlight / chapter / riser）+ 可选音乐床 `bed.ogg`；单声道 48 kHz Ogg Vorbis，一次性音效每个 4–15 KB，统一 -18 LUFS（100 ms 块）、峰值 ≤ -1 dBFS；CC0（代码合成，无采样）。
-  10 semantic one-shots + optional `bed.ogg`; mono 48 kHz Ogg Vorbis, 4–15 KB each, all at -18 LUFS (100 ms blocks), peak ≤ -1 dBFS; CC0 (synthesized, no samples).
-- `public/sfx/sfx-manifest.json`：每个文件的 sha256、时长、响度、峰值、来源配方、许可、用途、earshot 匹配分。
-- `src/sfx.ts`：`SFX_EVENTS` / `SFX_FILES` / `SFX_GAIN` / `planSfx()`——按章节、转场、节拍、介质（code→typing、chart→chart）、结论件（→success）、误解（→error）自动排；6 帧内去重按优先级保留。
-- 分镜表 `sfx` / `sfxAuto` 覆盖字段（`resolve-shots.py` 校验并透传）。
-- `scripts/dev/build-sfx-library.py`（维护者专用，需要 earshot）：渲染 earshot forge 配方 → 修剪/混单声道 → 响度归一 → 编码 → `earshot match` 质检 → 写 manifest。
-- `src/mascot-gate.tsx`（MascotGate，warn）：卡片与背景下方两角的角色/装饰相交 > 24px 时在渲染日志里给出修法。
-- `references/sfx-library.md`；`assets/demo/v4.3-demo/`（演示片分镜、字幕、场景源码）。
-
-### 删除 / Removed
-
-- 来源未登记的旧音效 `bgm.mp3`、`click.ogg`、`drop.ogg`、`toggle.ogg` 与四个旧 WAV（`chime` / `data-whoosh` / `paper-rustle` / `paper-tap`）；`index.tsx` 里手写的音效轮换表与运镜咔哒声。
-
-### 修复 / Fixed
-
-- `ZoomStage`：给了 `contentW/H` 时不但钳缩放倍数，也钳平移，放大后内容整体留在取景框内（参考片 S3 帧 ~380 的 `DiffView` 右缘越出取景框）；引线终点跟随真实焦点。参考片 S3 的 DiffView 宽度 944 → 780。
-- 大卡片压住 flat 背景角色：新增 MascotGate 实测提醒（见上）。
-
-### 变更 / Changed
-
-- `validate-audio-levels.py`：新增音效库口径（manifest 存在且可解析、文件 sha256、峰值 ≤ -0.5、库内响度容差、`src/sfx.ts` 事件/文件与 manifest 一致、`SFX_GAIN` 在 0.15–0.70）。
-- `references/tts-audio.md` 音效章节改为指向音效库；NOTICE 第 2 条更新。
-
-## [4.2.0] - 2026-10-17
-
-> 组件换成熟开源件（Phase 3）：能用成熟、帧安全的开源库就不再手写，库的配色一律重映射到 `flat` / `cel` 的主题 token。12 个 Radix 包移除；代码高亮换 Shiki；图标换 lucide-react + simple-icons；`DiffView` 用 jsdiff 算行；`MorphShape` 用 flubber；`Chart` 的轴与形状用 visx。组件数不变（`src/components/` 仍 27 件，全库 53 件），场景 API 向后兼容。
-
-### 删除
-
-- 依赖：12 个 `@radix-ui/react-*`（accordion / checkbox / dialog / dropdown-menu / popover / progress / radio-group / slider / switch / tabs / toggle-group / tooltip）、`react-syntax-highlighter`、`@types/react-syntax-highlighter`、`react-icons`。
-- `kit.tsx` 里 26 个手绘 `LineIcon` SVG 字形；`ControlStack` 的手绘对勾、`Accordion` 的手绘箭头。
-
-### 新增
-
-- 依赖：`shiki` + `@shikijs/langs`（MIT）、`lucide-react`（ISC）、`simple-icons`（CC0-1.0）、`diff`（BSD-3-Clause）、`flubber`（MIT）、`@visx/axis` / `@visx/grid` / `@visx/shape`（MIT）；`@types/react` 显式进 devDependencies（以前是 Radix 的传递依赖，删掉 Radix 后 `tsc` 会找不到 React 类型）。
-- `src/components/shiki.ts`：同步高亮核心（`createHighlighterCoreSync` + JS 正则引擎，无 WASM、无 Promise、无 `delayRender`），由当前主题调色板生成 TextMate 主题；不认识的语言按纯文本渲染。
-- `DiffView` 新增 `before` / `after` / `startAt` / `step`：由 jsdiff 自动算增删行；导出 `diffToLines()`。手写 `lines` 照旧可用（参考片 S3 未改）。
-- `MorphShape` 新增 `engine`（`flubber` 默认 / `remotion`）、`fill`、`maxSegmentLength`；视窗取起止两形状的并集包围盒，变形时不再跟着缩放。
-- `kit.tsx` 导出 `LINE_ICON_GLYPHS`（kind → lucide 组件）。
-- NOTICE 第 8 条登记新库的许可证。
-
-### 变更
-
-- `Accordion` / `Tabs` / `ControlStack` / `OverlayFrame` 改为纯 `<div>`：状态与位置全部由帧号算出。`OverlayFrame` 不再 Portal、不再用 floating-ui 异步定位（落点与以前 `side="bottom" align="start"` 一致）；滑块拇指位置由数值算出，不再靠 ResizeObserver。
-- `HighlightCode`：react-syntax-highlighter（Prism）→ Shiki，props 不变。
-- `LineIcon`：字形改用 lucide-react，API 不变（26 个 kind、`strokeWidth` 仍按 32 视窗口径传，内部 ×24/32）。`TopicIcon` / `IconWall`：品牌改用 simple-icons（只取 path，颜色来自 THEME），线条改用 lucide-react；34 个图标名不变。
-- `DiffView` 的硬编码色值（`#14110f` / `#ff7b72` / `#fdfdfb` …）改为主题 token（`ink` / `red` / `green` / `white`）。
-- `Chart`：Y 轴网格 = `@visx/grid` `GridRows`，刻度与轴线 = `@visx/axis`（刻度字用普通 `<text>`，不用 `@visx/text` 的 DOM 量字），折线/面积/柱/堆叠面积 = `@visx/shape`；d3 仍负责刻度、堆叠、雷达与饼。
-- 版本串：`COMPONENTS_VERSION` → `components-v4.2`，`KIT_VERSION` → `kit-v2`，`FXKIT_VERSION` → `fxkit-v4`。接触表 ② 页的 `DiffView` 改为 before/after 示例；⑨⑩⑫⑰ 页的件名去掉 Radix / react-icons 字样。
-- 文档：`references/dependency-policy.md`（§4.1、§4.4、§4.5 改写为 Shiki、§7.5 图标、§7.7 弹层、新增 §7.8 禁用时间驱动动画库）、`fxkit.md`、`media-routing.md`、`official-aesthetic-system.md`、`SKILL.md`。
-- **未采用 Code Hike**：它的 token 过渡依赖上一步代码的 DOM 快照（逐帧有状态、要测 DOM），与 Remotion 每帧独立渲染冲突，且自带另一套高亮器。
-
-## [4.2.0] - 2026-10-17 (English)
-
-> Mature open-source components (Phase 3): wherever a mature, frame-safe open-source library exists it replaces hand-written code, recoloured to the `flat` / `cel` theme tokens. The 12 Radix packages are gone; code highlighting moves to Shiki; icons to lucide-react + simple-icons; `DiffView` computes its lines with jsdiff; `MorphShape` uses flubber; `Chart` axes and shapes use visx. Component count unchanged (27 in `src/components/`, 53 overall); scene APIs stay backward compatible.
-
-### Removed
-
-- Dependencies: the 12 `@radix-ui/react-*` primitives, `react-syntax-highlighter`, `@types/react-syntax-highlighter`, `react-icons`.
-- The 26 hand-drawn `LineIcon` SVG glyphs in `kit.tsx`, plus the hand-drawn check in `ControlStack` and chevron in `Accordion`.
-
-### Added
-
-- Dependencies: `shiki` + `@shikijs/langs` (MIT), `lucide-react` (ISC), `simple-icons` (CC0-1.0), `diff` (BSD-3-Clause), `flubber` (MIT), `@visx/axis` / `@visx/grid` / `@visx/shape` (MIT); `@types/react` is now an explicit devDependency (it used to arrive transitively through Radix, so `tsc` lost the React types once Radix was removed).
-- `src/components/shiki.ts`: synchronous highlighter (`createHighlighterCoreSync` + the JavaScript regex engine: no WASM, no Promise, no `delayRender`) with a TextMate theme generated from the active palette; unknown languages render as plain text.
-- `DiffView` gains `before` / `after` / `startAt` / `step` (lines computed by jsdiff) and exports `diffToLines()`. Hand-written `lines` still work (reference film S3 unchanged).
-- `MorphShape` gains `engine` (`flubber` default / `remotion`), `fill` and `maxSegmentLength`; its viewBox is the union of both shapes' bounding boxes, so it no longer rescales mid-morph.
-- `kit.tsx` exports `LINE_ICON_GLYPHS` (kind → lucide component).
-- NOTICE item 8 records the new libraries' licences.
-
-### Changed
-
-- `Accordion` / `Tabs` / `ControlStack` / `OverlayFrame` are plain `<div>`s whose state and position come from the frame number. `OverlayFrame` no longer portals or uses floating-ui's asynchronous positioning (placement matches the old `side="bottom" align="start"`); the slider thumb is placed from its value instead of a ResizeObserver.
-- `HighlightCode`: react-syntax-highlighter (Prism) → Shiki, same props.
-- `LineIcon` glyphs come from lucide-react with the same API (26 kinds; `strokeWidth` still in the 32-viewBox scale, converted ×24/32). `TopicIcon` / `IconWall`: brands from simple-icons (path only, theme colour), line marks from lucide-react; the 34 icon names are unchanged.
-- `DiffView`'s hard-coded colours (`#14110f` / `#ff7b72` / `#fdfdfb` …) now come from theme tokens (`ink` / `red` / `green` / `white`).
-- `Chart`: Y grid = `@visx/grid` `GridRows`, ticks and axis lines = `@visx/axis` (tick labels are plain `<text>`, not `@visx/text`'s DOM measuring), line/area/bar/stacked areas = `@visx/shape`; d3 still computes scales, stacks, radar and pie.
-- Version strings: `COMPONENTS_VERSION` → `components-v4.2`, `KIT_VERSION` → `kit-v2`, `FXKIT_VERSION` → `fxkit-v4`. Showcase page ② shows `DiffView` in before/after mode; tile names on ⑨⑩⑫⑰ drop Radix / react-icons.
-- Docs: `references/dependency-policy.md` (§4.1, §4.4, §4.5 rewritten for Shiki, §7.5 icons, §7.7 overlays, new §7.8 banning wall-clock animation libraries), `fxkit.md`, `media-routing.md`, `official-aesthetic-system.md`, `SKILL.md`.
-- **Code Hike not adopted**: its token transitions rely on a DOM snapshot of the previous code step (stateful across frames, DOM measuring), which conflicts with Remotion's independent per-frame rendering, and it ships a second highlighter.
-
-## [4.1.0] - 2026-10-17
-
-> 视觉识别重做（Phase 2）：`flat` / `cel` 两套皮肤换成基于 Radix Colors 的新调色板与每主题三张新背景；删除 `--classic` 暖象牙纸面示例工程。`new-project --classic` 现在直接报错（rc=2）并提示改用 `--style`。
-
-### 删除
-
-- **`assets/example-project/`**（`--classic` 视觉导演示例工程、暖象牙纸面）与它的一致性锁 `scripts/validate-official-example.py`、CLI 命令 `validate-official-example`、负向夹具 BE1/BE2、CI 冒烟里的 classic 分支、dependabot 与 npm audit 对它的引用。
-- 旧背景 `public/bg-flat-169.jpg` / `public/bg-cel-169.jpg`。
-- 场景外壳 `Shot` 里的整幅半透明羽化底托（它盖住背景四角，把吉祥物洗成"幽灵"）。
-
-### 新增
-
-- **每主题三张锁定背景** `public/bg/bg-<theme>-{main,chapter,quiet}.jpg`（2560×1440，JPEG q85，中央约 70% 为安全区）；引擎按分镜表自动选（章节首镜 → chapter，zones ≥ 4 → quiet，其余 → main），`shots.json` 可写 `bg` 覆盖，变体之间按 10 帧交接交叉淡化。`Theme` 接口新增 `backgrounds` 表、`Background` 接受 `variant`。
-- **`src/fonts.tsx`**：字体表抽成共享组件 `FontFaces`，成片与接触表都挂；Clash / Space / Caveat 各追加 `unicode-range` 限定的 LXGW WenKai 字面，中文永不落到系统字体（修右上页眉豆腐块，Windows 同样有效）。
-- `Theme.headerPlate`：cel 的右上页眉坐在漫画旁白框里（背景右上角有速度线 / 爆炸星）。
-- `validate-skill-consistency.py`：example-project 回归即报错；每主题三张背景必须存在且被主题文件映射。负向夹具 BE' 钉住前一条。
-
-### 变更
-
-- **调色板**：两套皮肤改用 Radix Colors v3（MIT）的十六进制值（只抄值，无运行时依赖），保留全部 token 名。原色 = step 9；`*Ink` = step 11（必要时向 step 12 混 8–10%），在三个表面上都 ≥ 4.6:1。flat：天空 / 奶油底面、主蓝 blue 9、珊瑚 tomato 9、薄荷 jade 9、阳光黄 amber 9。cel：米白漫画纸、近黑墨、红 / 蓝 / 黄三原色。
-- **flat 皮肤**：卡片圆角 22、硬影 6px；字幕胶囊改用 `blueInk`（白字 ≥ 4.6:1）+ 海军蓝硬影。**cel 皮肤**：3px 墨边、4–8px 墨影、字幕框加墨边黄色偏移块。
-- 字幕占位层改为与可见层同一套分词加空格规则渲染，修"三个 AI 技能"这类中英混排句的最后一个字顶进字幕框右侧装饰点。（帧 260 的"想入场，其实只要三"是逐词浮现的中间帧，不是截断。）
-- `ZoomStage` 聚焦暗角由整框墨色 10% 灰罩改为以焦点为圆心的海军蓝径向暗角（≤10%），白卡不再发灰。
-- `resolve-shots.py` 透传可选的 `bg` 字段（不写则输出逐字节不变）。
-- `locked-style-contract.json` 改为 `notebook-video-v4.1-flat-cel`，canonical entry 指向模板；主题文档、README、SKILL.md、NOTICE 同步。
-
-## [4.1.0] - 2026-10-17 (English)
-
-> Visual identity rebuild (Phase 2): the `flat` / `cel` skins get Radix-based palettes and three new backgrounds each; the `--classic` warm-ivory example project is removed. `new-project --classic` now fails (rc=2) and points to `--style`.
-
-### Removed
-
-- **`assets/example-project/`** (the `--classic` warm-ivory visual-director example) with `scripts/validate-official-example.py`, the `validate-official-example` CLI command, negative fixtures BE1/BE2, the classic CI smoke branch and its dependabot / npm audit entries.
-- The old backgrounds `public/bg-flat-169.jpg` / `public/bg-cel-169.jpg`.
-- The full-frame translucent wash inside the scene `Shot` wrapper (it covered the background corners and ghosted the mascot).
-
-### Added
-
-- **Three locked backgrounds per theme**, `public/bg/bg-<theme>-{main,chapter,quiet}.jpg` (2560×1440, JPEG q85, calm central ~70%). The engine picks one per shot (chapter's first shot → chapter, zones ≥ 4 → quiet, else main), `shots.json` may override with `bg`, and variants cross-fade over the 10-frame handoff. `Theme` gains a `backgrounds` table; `Background` takes `variant`.
-- **`src/fonts.tsx`**: the font table becomes the shared `FontFaces` component (film and showcase); Clash / Space / Caveat each get a `unicode-range`-limited LXGW WenKai face, so CJK never falls back to a system font (fixes the tofu in the top-right header, Windows included).
-- `Theme.headerPlate`: cel puts the top-right header in a comic caption box.
-- `validate-skill-consistency.py` fails if the example project comes back and requires the three mapped backgrounds per theme; negative fixture BE' pins the former.
-
-### Changed
-
-- **Palettes** rebuilt on vendored Radix Colors v3 hex values (MIT, no runtime dependency), all token names kept. Fill = step 9; `*Ink` = step 11 (mixed 8–10% toward step 12 where needed), ≥ 4.6:1 on all three surfaces.
-- **flat**: 22px radius, 6px hard shadow, subtitle pill in `blueInk` with a navy offset. **cel**: 3px ink borders, 4–8px ink shadows, subtitle box with an ink-outlined yellow offset block.
-- The subtitle's reserved-width layer now renders the same words with the same spacing rule as the visible layer, fixing mixed CJK/Latin lines whose last glyph ran into the pill's end dot. (Frame 260's "想入场，其实只要三" was a mid-reveal frame, not a truncation.)
-- `ZoomStage` focus dim: a radial navy vignette (≤10%) around the focus instead of a flat 10% black wash.
-- `resolve-shots.py` passes an optional `bg` field through (output is byte-identical when absent).
-- `locked-style-contract.json` becomes `notebook-video-v4.1-flat-cel` with the template as canonical entry; theme docs, READMEs, SKILL.md and NOTICE updated.
-
-## [4.0.0] - 2026-10-17
-
-> **破坏性版本（BREAKING）**：只保留 16:9 画布与 `flat`（默认）/ `cel` 两套皮肤；用 v3.x 的 4:3、3:4 画布或 `paper` / `sticker` 皮肤建的旧工程**不再支持**，也不提供迁移脚本。
-
-### 删除
-
-- **4:3 与 3:4 画布**：`Film4x3` / `Film3x4` Composition、`canvas.ts` 里的 `'4:3'` / `'3:4'` 模式、`CanvasContext.isPortrait` 与章节条的竖屏分支、`validate-visual-plan.py` 的 1920 / 1440 宽档、`validate-video` 对 1920×1440 / 1440×1920 的放行、`locked-style-contract.json` 的 `canvas.modes["4:3"/"3:4"]`。删除 6 张背景图 `public/bg-{cel,flat,sticker}-{43,34}.jpg` 及其清单登记。`references/canvas-modes.md` 收为 16:9 单页规格；`references/portrait-illustration-system.md` 删除。
-- **`paper` 皮肤**：`src/theme/paper.tsx` 与其契约 `references/visual-system.md`（通用的章节条 / 字幕 / 字体条款并入 `references/theme-system.md`）。
-- **`sticker` 皮肤**：`src/theme/sticker.tsx`、`public/bg-sticker-169.jpg`、`references/theme-sticker.md`、`Tape` 构件。
-- `new-project --style=` 只接受 `flat` / `cel`；`.sh` / `.cmd` 包装器透传不变。
-
-### 变更
-
-- **默认皮肤改为 `flat`**：`src/theme/active.ts` 出厂指向 `./flat`；`selftest.py` 与 `validate-skill-consistency.py` 改查 `./flat`，并在 `paper.tsx` / `sticker.tsx` 重新出现时报错。示例分镜表 `theme` 字段改为 `flat`。
-- 主题背景改为每主题一张 16:9 位图（`BG_IMAGE`），不再按画幅三选一。
-- `negative-gate-check.py` 的 M / Y 夹具改在 `flat.tsx` 上制造缺陷；文档、README、SKILL.md 与 manifest 同步到 v4.0.0。
-- 保留的命名：调色板 token `paper` / `paperWarm` / `paperBase`、`Paper` 卡片组件、`CoverPanel tone="paper"` 与音效 `paper-*.wav` 是通用的「卡片面」命名，与已删除的 `paper` 皮肤无关，未改名。`--classic` 示例工程（`assets/example-project`）与 `warm-ivory-…-v9` 引擎标识保持不变。
-
-## [4.0.0] - 2026-10-17 (English)
-
-> **BREAKING**: only the 16:9 canvas and the `flat` (default) / `cel` skins remain. Projects created on v3.x with the 4:3 or 3:4 canvas or the `paper` / `sticker` skins are **not supported**; no migration script is provided.
-
-### Removed
-
-- **4:3 and 3:4 canvases**: the `Film4x3` / `Film3x4` compositions, the `'4:3'` / `'3:4'` entries in `canvas.ts`, `CanvasContext.isPortrait` and the chapter card's portrait branch, the 1920 / 1440 widths in `validate-visual-plan.py`, `validate-video` acceptance of 1920×1440 / 1440×1920, and `canvas.modes["4:3"/"3:4"]` in `locked-style-contract.json`. Six background rasters `public/bg-{cel,flat,sticker}-{43,34}.jpg` and their manifest entries are deleted. `references/canvas-modes.md` is reduced to a one-page 16:9 spec; `references/portrait-illustration-system.md` is deleted.
-- **`paper` skin**: `src/theme/paper.tsx` and its contract `references/visual-system.md` (the shared chapter / subtitle / font clauses move into `references/theme-system.md`).
-- **`sticker` skin**: `src/theme/sticker.tsx`, `public/bg-sticker-169.jpg`, `references/theme-sticker.md`, and the `Tape` extra.
-- `new-project --style=` accepts only `flat` / `cel`; the `.sh` / `.cmd` wrappers pass arguments through unchanged.
-
-### Changed
-
-- **`flat` is the default skin**: `src/theme/active.ts` ships pointing at `./flat`; `selftest.py` and `validate-skill-consistency.py` check for `./flat` and fail if `paper.tsx` / `sticker.tsx` reappear. The example shot table's `theme` field is now `flat`.
-- Theme backgrounds are a single 16:9 raster per theme (`BG_IMAGE`) instead of a per-ratio lookup.
-- `negative-gate-check.py` fixtures M / Y now inject their defects into `flat.tsx`; docs, READMEs, SKILL.md and the manifest are updated to v4.0.0.
-- Names kept on purpose: the palette tokens `paper` / `paperWarm` / `paperBase`, the `Paper` card component, `CoverPanel tone="paper"` and the `paper-*.wav` sound effects are generic card-surface names shared by the remaining skins and unrelated to the removed `paper` skin. The `--classic` example project (`assets/example-project`) and the `warm-ivory-…-v9` engine identifier are unchanged.
+- 无内置 TTS：旁白是静音占位，字幕按 4.5 字/秒推算；接入真实配音后用 `match-timing.py` 重对齐。
+  No built-in TTS; re-align with `match-timing.py` after adding real narration.
+- auto 草稿（compose-story）的版式接近但不等于手写组件场景；正式交付建议走手写路线。
+  Auto-draft layouts approximate hand-written component scenes.
 
 ## [3.1.2] - 2026-09-22
 

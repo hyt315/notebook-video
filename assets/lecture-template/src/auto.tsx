@@ -7,12 +7,12 @@ import {CUSTOM} from './custom';
 import {MediaFrame} from './media-frame';
 
 // ============================================================================
-// auto.tsx · v4.5 内容驱动的镜头渲染器（AutoShot）
+// auto.tsx · 3.2.0 内容驱动的镜头渲染器（AutoShot）
 //
 // story.json（纯内容）→ scripts/compose-story.py（排版 / 关键词 / 相机 / 自动修）→ src/story.ts → 这里画。
 // 本层只负责「画」，几何全部在 compose-story 里算好（门禁也在那里跑），所以弱模型写不坏版面。
 //
-// 克制原则（v4.5）：
+// 克制原则：
 //   · 入场只有「淡入 + 14px 上浮」一种，不回弹、不旋转、不闪；statement 版式只淡入。
 //   · 强调 = 底色带 + 左侧标记条 + 加粗（不只靠颜色，色弱观众也看得出）；同时只强调一个元素，其余略暗。
 //   · 文字色一律走主题的 *Ink 变体（WCAG AA ≥4.5:1），原色只做填充 / 描边。
@@ -71,7 +71,7 @@ const Lines: React.FC<{lines?: string[]; text: string; size: number; lh?: number
   </div>
 );
 
-/** 强调：沿用 v4.4 的强调语言 —— 强调色描边 + 轻微抬升阴影（配合镜头推近），不用底色带 / 标记条。 */
+/** 强调：沿用默认组件风格的强调语言 —— 强调色描边 + 轻微抬升阴影（配合镜头推近），不用底色带 / 标记条。 */
 const HiBox: React.FC<{w: number; t?: string; pad?: number; radius?: number}> = ({w, t, pad = 10, radius = 14}) => {
   if (w <= 0.01) return null;
   const tt = tone(t);
@@ -215,7 +215,7 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
       </div>;
     }
     case 'media':
-      // v4.5 真实素材：MediaFrame 自带卡片外壳 / 署名徽章；区域推近由 content.region 指定
+      // 3.2.0 真实素材：MediaFrame 自带卡片外壳 / 署名徽章；区域推近由 content.region 指定
       return <Box e={e} f={f} dim={dim}><MediaFrame f={f} id={e.media} x={0} y={0} w={e.w} h={e.h} chrome={e.chrome} at={e.at} focus={e.region ?? undefined} focusAt={e.at + 24} highlight={shot.focus.filter((k) => f >= k.at && f <= k.until + 12 && shot.elements.some((x) => x.id === k.id && x.kind === 'region')).map((k) => k.id)} highlightAt={e.at} /></Box>;
     case 'region':
       return null; // 区域的高亮框由 MediaFrame 画（随区域推近一起缩放）；这里只提供被点名 / 推近的矩形

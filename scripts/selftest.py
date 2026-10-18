@@ -114,7 +114,7 @@ def main() -> int:
             ast_errors.append(f"{py_script.name}: Syntax error: {exc}")
     check("脚本 AST 语法解析", not ast_errors, f"errors: {ast_errors}" if ast_errors else "all scripts/*.py valid syntax")
 
-    # ---- 好夹具 2：主题开关默认 flat（出厂状态，v4.0.0 起） ----
+    # ---- 好夹具 2：主题开关默认 flat（出厂状态，3.2.0 起） ----
     active = ROOT / "assets" / "lecture-template" / "src" / "theme" / "active.ts"
     if active.is_file():
         ok = "from './flat'" in active.read_text(encoding="utf-8")
@@ -214,7 +214,7 @@ def main() -> int:
                 str(NODE), str(ROOT / "scripts" / "notebook-video.mjs"),
                 "validate-video", str(__file__), "30"])
 
-    # ---- v4.3 音效库：好夹具必须通过；篡改文件 / 增益越界必须被拦 ----
+    # ---- 3.2.0 音效库：好夹具必须通过；篡改文件 / 增益越界必须被拦 ----
     if shutil.which("ffmpeg"):
         tpl = ROOT / "assets" / "lecture-template"
         good = run(sys.executable, str(ROOT / "scripts" / "validate-audio-levels.py"), str(tpl))
@@ -231,7 +231,7 @@ def main() -> int:
             shutil.copy(tpl / "public" / "sfx" / "lib" / "pop.ogg", proj / "public" / "sfx" / "lib" / "pop.ogg")
             ts = (proj / "src" / "sfx.ts").read_text(encoding="utf-8").replace("success: 0.459,", "success: 0.9,")
             if "success: 0.9," not in ts:
-                raise SystemExit("selftest 夹具锚点没找到：src/sfx.ts 的 SFX_GAIN.success 写法变了（v4.5 增益来自 manifest）")
+                raise SystemExit("selftest 夹具锚点没找到：src/sfx.ts 的 SFX_GAIN.success 写法变了（3.2.0 增益来自 manifest）")
             (proj / "src" / "sfx.ts").write_text(ts, encoding="utf-8")
             r2 = run(sys.executable, str(ROOT / "scripts" / "validate-audio-levels.py"), str(proj))
             check("负向：音效增益越界被拦", r2.returncode == 1 and "SFX_GAIN" in r2.stdout, f"rc={r2.returncode}")

@@ -23,7 +23,7 @@
 //     其余模块 26 = kit 3 / fxkit 9 / media 3 / stagekit 2 / skeletons 3 / insert 1 /
 //     shotkit 2 / toolkit 3；渲染期门禁件 SlotGuard 不算件，与 references/fxkit.md 同口径）。
 //
-// 本版（v4.2，Phase 3「能用成熟开源件就不手写」）变更（组件数不变，仍 27 件）：
+// 本版（3.2.0，Phase 3「能用成熟开源件就不手写」）变更（组件数不变，仍 27 件）：
 //   · `Accordion` / `Tabs` / `ControlStack` / `OverlayFrame` 去掉 Radix（12 个包），改纯 div，
 //     状态与位置全部由帧号算出（无 Portal、无 floating-ui 异步定位、无 ResizeObserver）
 //   · `HighlightCode` 换 Shiki（同步核心 + JS 正则引擎；语法色由主题调色板生成，见 ./shiki.ts）
@@ -39,8 +39,8 @@
 //     再导出行、从未进过任何画面；"甩镜"这个用途已从 Locked motion pack 删除。
 //
 // 本版（v3.1）新增/变更：
-//   · 新增 `ControlStack`（当时用 Radix 六个受控控件；v4.2 改纯 div）—— 换掉 `TiltCard`
-//   · 新增 `OverlayFrame`（当时用 Radix 四个弹层；v4.2 改纯 div）
+//   · 新增 `ControlStack`（当时用 Radix 六个受控控件；3.2.0 改纯 div）—— 换掉 `TiltCard`
+//   · 新增 `OverlayFrame`（当时用 Radix 四个弹层；3.2.0 改纯 div）
 //   · 新增 `NetworkGraph`（d3-force 关系网）
 //   · `Chart` 加 variant：area / stack / stackExpand / stream / radar / pie
 //   · `TreeView` 加 variant：treemap / pack / sunburst
@@ -99,4 +99,4 @@ export type {PresentationName} from './pathfx';
 export {FitTextBox, fitChineseTextOnNLines, useFontsReady, assertFits, fitsWithin} from './fittext';
 
 /** 封装层版本：接触表页脚与门禁用它确认"看到的是这一版"。 */
-export const COMPONENTS_VERSION = 'components-v4.2 · 27 件 · 依赖见 package.json';
+export const COMPONENTS_VERSION = 'components-3.2.0 · 27 件 · 依赖见 package.json';

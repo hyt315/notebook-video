@@ -1,6 +1,6 @@
 # Theme contract: flat (calm modern edu illustration)
 
-Status: LOCKED. This theme ships fully implemented in `assets/lecture-template/src/theme/flat.tsx`. It is the **default** skin (v4.0.0+; visual identity rebuilt in v4.1.0): `new-project ./dir` (or `--style=flat`) selects it; production runs never edit the theme file. Read this document instead of the other theme doc; the two style contracts are mutually exclusive by design (progressive disclosure).
+Status: LOCKED. This theme ships fully implemented in `assets/lecture-template/src/theme/flat.tsx`. It is the **default** skin (3.2.0+; visual identity rebuilt in 3.2.0): `new-project ./dir` (or `--style=flat`) selects it; production runs never edit the theme file. Read this document instead of the other theme doc; the two style contracts are mutually exclusive by design (progressive disclosure).
 
 ## Design language
 

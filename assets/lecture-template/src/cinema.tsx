@@ -3,9 +3,9 @@ import {Easing, interpolate, spring} from 'remotion';
 import {camAt, STAGE, TEXT_ZOOM_MAX} from './shotkit';
 
 // ============================================================================
-// cinema.tsx · 引擎级虚拟摄影机（v4.4）
+// cinema.tsx · 引擎级虚拟摄影机
 //
-// 为什么有这一层：v4.3 之前每一镜都是「静止舞台 + 卡片依次出现」，即使 ShotCamera 推了 3%，
+// 为什么有这一层：早期版本每一镜都是「静止舞台 + 卡片依次出现」，即使 ShotCamera 推了 3%，
 // 观众感受仍是翻 PPT。本层在**引擎**里（index.tsx 的 FinalDemo / Backdrop）给每一镜套一台
 // 虚拟摄影机，分镜表什么都不写也有：
 //   0. fit     内容自动放大：anchor 占安全区（内容带）不足 60% 时，整镜按 anchor 中心推近到 72%
@@ -27,7 +27,7 @@ import {camAt, STAGE, TEXT_ZOOM_MAX} from './shotkit';
 export type Rect = {x: number; y: number; w: number; h: number};
 export type FocusRegion = 'left' | 'right' | 'top' | 'bottom' | 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 /** 已解析的焦点（resolve-shots 把 beat 换成本镜本地帧 at）。 */
-export type FocusKey = {at: number; hold: number; zoom?: number; rect: Rect; settle?: boolean; /** v4.5：false = 不做「不切字」滑动，注视点固定在矩形中心 */ slide?: boolean; /** v4.5c：推近时也必须完整入画的矩形（例如旁边的大数字）；引擎降低推近倍数（不低于 focusMinZoom）装下「焦点 ∪ keep」 */ keep?: Rect};
+export type FocusKey = {at: number; hold: number; zoom?: number; rect: Rect; settle?: boolean; /** false = 不做「不切字」滑动，注视点固定在矩形中心 */ slide?: boolean; /** 推近时也必须完整入画的矩形（例如旁边的大数字）；引擎降低推近倍数（不低于 focusMinZoom）装下「焦点 ∪ keep」 */ keep?: Rect};
 /** resolve-shots 预算好的基准取景（内容自动放大）：注视点 + 缩放；fill = anchor 占内容带面积比。 */
 export type FitSpec = {x: number; y: number; s: number; fill?: number; fillAfter?: number};
 export type CinemaSpec = {
@@ -35,7 +35,7 @@ export type CinemaSpec = {
   fit?: FitSpec;
   focus?: readonly FocusKey[];
   pan?: {worldW: number; at: number; dur: number; dir?: 'ltr' | 'rtl'} | null;
-  /** v4.5：compose-story 预算的相机路径（关键词推近 / 视线连续 / 限速）。有它就不用 fit/drift/focus。 */
+  /** compose-story 预算的相机路径（关键词推近 / 视线连续 / 限速）。有它就不用 fit/drift/focus。 */
   path?: readonly PathKey[];
 };
 export type PathKey = {at: number; x: number; y: number; s: number};
@@ -135,7 +135,7 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
     const rw = r.w * sc.s, rh = r.h * sc.s;
     const fit = CINEMA.focusFill * Math.min(STAGE.w / rw, STAGE.h / rh);
     let fs = Math.min(capS, Math.max(CINEMA.focusMinZoom, k.zoom ?? fit), Math.min(STAGE.w / rw, STAGE.h / rh));
-    // v4.5c keep：「焦点 ∪ keep」留 FOCUS_PAD 边距能装下所需的倍数 ≥ focusMinZoom 时，用它（只降不升）并以并集为取景范围；否则忽略 keep。
+    // 3.2.0 keep：「焦点 ∪ keep」留 FOCUS_PAD 边距能装下所需的倍数 ≥ focusMinZoom 时，用它（只降不升）并以并集为取景范围；否则忽略 keep。
     let ux0 = mx(r.x), ux1 = mx(r.x) + rw, uy0 = my(r.y), uy1 = my(r.y) + rh, useKeep = false;
     if (k.keep) {
       const kx0 = Math.min(ux0, mx(k.keep.x)), kx1 = Math.max(ux1, mx(k.keep.x + k.keep.w));
@@ -143,7 +143,7 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
       const need = Math.min((STAGE.w - 2 * FOCUS_PAD) / (kx1 - kx0), (STAGE.h - 2 * FOCUS_PAD) / (ky1 - ky0));
       if (need >= CINEMA.focusMinZoom) { fs = Math.min(fs, need); ux0 = kx0; ux1 = kx1; uy0 = ky0; uy1 = ky1; useKeep = true; }
     }
-    // v4.5 自动修（不切字）：焦点矩形留 FOCUS_PAD 屏幕边距完整入画的前提下，注视点横向尽量滑回基准取景中心，
+    // 3.2.0 自动修（不切字）：焦点矩形留 FOCUS_PAD 屏幕边距完整入画的前提下，注视点横向尽量滑回基准取景中心，
     // 让非焦点内容（例如左侧大标题）少被推出画面；矩形比取景窗还宽时退回矩形中心。`slide: false` 关掉。
     const slide = (lo: number, hi: number, half: number, base: number) => {
       const a = hi - half + FOCUS_PAD / fs, b = lo + half - FOCUS_PAD / fs;
@@ -154,7 +154,7 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
       ? clampLook(rx0 + rw / 2, ry0 + rh / 2, fs)
       : useKeep
         ? clampLook(slide(ux0, ux1, STAGE.cx / fs, look0.x), slide(uy0, uy1, STAGE.cy / fs, ry0 + rh / 2), fs)
-        : clampLook(slide(rx0, rx0 + rw, STAGE.cx / fs, look0.x), ry0 + rh / 2, fs); // 只横向滑：纵向下滑会把顶部标题推进页眉遮罩（实测 v4.4 演示 S5）
+        : clampLook(slide(rx0, rx0 + rw, STAGE.cx / fs, look0.x), ry0 + rh / 2, fs); // 只横向滑：纵向下滑会把顶部标题推进页眉遮罩（实测演示片 S5）
     x = x + (fl.x - x) * w;
     y = y + (fl.y - y) * w;
     s = s + (fs - s) * w;
@@ -171,7 +171,7 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
 };
 
 /**
- * v4.5 路径摄影机：在 compose-story 预算的关键帧之间用 easeIO 插值（速度上限已在预算时保证），
+ * 3.2.0 路径摄影机：在 compose-story 预算的关键帧之间用 easeIO 插值（速度上限已在预算时保证），
  * 叠加一层**永不停止的微漂移**（缩放 ±0.5%、位移 ±5px，周期 4–5 秒）+ 全镜 1.5% 慢推：
  * 推近后不会冻结，任何静止段都不超过 1 秒。fw（遮罩权重）随推近倍数上升。
  */

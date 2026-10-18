@@ -52,7 +52,7 @@ _ARITH = re.compile(r"^[\d.+\-*/() ]+$")
 
 
 def file_consts(src: str) -> dict[str, float]:
-    """v4.5c：同文件里的数值常量（`const W = 1060`、`const MW = W * 0.6`，按出现顺序求值），给 w={W} 这类尺寸用。"""
+    """同文件里的数值常量（`const W = 1060`、`const MW = W * 0.6`，按出现顺序求值），给 w={W} 这类尺寸用。"""
     out: dict[str, float] = {}
     for m in re.finditer(r"\b(?:const|let)\s+([A-Za-z_]\w*)\s*(?::\s*number)?\s*=\s*([^;\n,]+)", src):
         v = eval_arith(m.group(2), out)
@@ -176,7 +176,7 @@ def main(argv: list[str]) -> int:
         if "_px" not in e:
             continue
         unknown = [k for k in ("w", "h") if not isinstance(u[k], (int, float))]
-        # v4.5c：尺寸是布局对象 / props / 函数算出来的，静态量不出 —— 按最坏情况（占满 1920×1080 画布）估，
+        # 尺寸是布局对象 / props / 函数算出来的，静态量不出 —— 按最坏情况（占满 1920×1080 画布）估，
         # 最坏情况也不糊就放行，否则降为 P1 提醒去看静帧（以前这里直接跳过，等于没查）。
         w = 1920.0 if "w" in unknown else float(u["w"])
         h = 1080.0 if "h" in unknown else float(u["h"])

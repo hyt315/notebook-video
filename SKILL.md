@@ -1,12 +1,12 @@
 ---
 name: notebook-video
-version: 4.5.0
-description: Create Chinese 16:9 explainer and lecture videos (flat or cel skin) with React, TypeScript and Remotion. The look is v4.4's rich component scenes — code-drawn consoles, diffs, checklists, stat rows, funnels, progress rings, kinetic numbers, stamp seals and verdict bars, moved by an engine-level virtual camera (push-in, narration-following focus, pans, whip / zoom-through transitions, parallax). v4.5 adds weak-model replication aids (5 teaching blueprints with per-shot component picks, golden examples, a short 5-step workflow, one command `node scripts/make-video.mjs <project>` on Windows / macOS / Linux) and objective auto-fixes with hard gates (no clipped titles, readable font floor, text contrast, ≤16-char captions split at word boundaries, 4.5 chars/s caption timing, no dead tails, A/V sync), plus re-tuned event sound effects (per-cue gain / pre-roll offset so hits land on the visual frame, ≥150 ms spacing, ≈24/min cap, music-bed ducking). No TTS, no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
+version: 3.2.0
+description: Turn a topic into a Chinese 16:9 teaching video (flat or cel theme) with React, TypeScript and Remotion. Every shot is a code-drawn component scene — consoles, diffs, checklists, stat rows, funnels, progress rings, kinetic numbers, stamp seals, verdict bars, or a real screenshot / screen recording in a MediaFrame — moved by an engine-level virtual camera that pushes in on whatever the narration names. Weak-model friendly: five teaching blueprints with per-shot component picks, golden examples, a five-step workflow and one cross-platform command (`node scripts/make-video.mjs <project>`, `make-video.cmd` on Windows) that resolves shots, runs hard gates with objective auto-fixes (no clipped titles, font floor, text contrast, ≤16-character captions at 4.5 chars/s, no dead tails, blurry-media check) and renders stills or the MP4. Tuned semantic sound effects land on the visual hit and duck the music bed. No built-in TTS and no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
 ---
 
-# notebook-video · 用 v4.4 组件场景讲清一件事
+# notebook-video · 用组件场景讲清一件事
 
-画面 = **v4.4 的组件场景**：每一镜都是真组件（控制台、代码差异、清单、数字行、漏斗、进度环、印章、结论条……），
+画面 = **组件场景**：每一镜都是真组件（控制台、代码差异、清单、数字行、漏斗、进度环、印章、结论条……），
 由引擎虚拟摄影机推近 / 跟随 / 横摇。**不要做满屏大字的「文字页」**——一句话也要放进卡片（`Callout` / `StampBanner`）里。
 只有 16:9；两个皮肤：`flat`（默认）和 `cel`。没有 TTS：旁白是静音占位，字幕按 4.5 字/秒定时。
 
@@ -21,15 +21,15 @@ description: Create Chinese 16:9 explainer and lecture videos (flat or cel skin)
 | 一个常见错误 | `blueprints/pitfall.json` |
 
 每个蓝图是同一条讲课弧线：**钩子 → 先懂一个词 → 拆开看 → 举例 → 误区 → 回顾**。
-每一镜都写了 `$v44`：该用的**骨架**（Stage / Split / Zoom / Corridor）和 **v4.4 组件**。照它选，别自己发明版式。
+每一镜都写了 `$components`：该用的**骨架**（Stage / Split / Zoom / Corridor）和**组件**。照它选，别自己发明版式。
 
-## 第 2 步 · 建工程，照抄演示片的结构
+## 第 2 步 · 建工程，照抄示例片的结构
 
 ```text
 node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=flat
 ```
 
-工程里已有一部完整的 v4.4 示例片（8 镜）。**照着改，不要从零写**：
+工程里已有一部完整的示例片（8 镜）。**照着改，不要从零写**：
 - `manifests/shots.json`：每镜一行（`skeleton` / `live` 组件 / `cameraIntent` / `beats` / `transition`）——镜头表是唯一真相；
 - `src/scenes.tsx`：每镜一个 React 组件，用 `live` 里列的组件画出来，动画只用帧号 `f`；
 - `src/film.ts`：片名、章节标题；

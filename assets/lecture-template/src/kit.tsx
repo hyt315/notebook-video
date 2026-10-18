@@ -25,7 +25,7 @@ export const PillTag: React.FC<{text: string; color?: string; bg?: string; fontS
 );
 
 /**
- * LineIcon：锁定线性图标集。v4.2 起字形来自 lucide-react（ISC），不再手绘 SVG。
+ * LineIcon：锁定线性图标集。3.2.0 起字形来自 lucide-react（ISC），不再手绘 SVG。
  * API 不变：26 个 kind 名、size、color、strokeWidth（仍按 32 视窗的笔画粗细传，
  * 内部换算到 lucide 的 24 视窗：w × 24/32，所以默认 2.2 落在 1.65）。
  * 换题材从这里挑，不要新造风格；需要更多字形时直接从 lucide-react 加映射。

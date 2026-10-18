@@ -60,7 +60,7 @@ const aesthetic: Theme['aesthetic'] = {
   subtitleWeight: 700, subtitleLetterSpacing: 1.6, subtitlePadX: 78,
 };
 
-// 硬偏移墨影：比 v4.0 更有冲击力（4px 起步，举起时加到 8px），仍然无模糊。
+// 硬偏移墨影：比旧版更有冲击力（4px 起步，举起时加到 8px），仍然无模糊。
 const paperShadow = (lift: number) =>
   `${4 + 4 * lift}px ${4 + 4 * lift}px 0 ${palette.ink}`;
 

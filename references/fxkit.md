@@ -79,7 +79,7 @@ node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
 > [media-routing.md §5.1 组件权威索引](media-routing.md#51-组件权威索引53-件--选型只查这一处)。
 > 下面只留口径说明与参数要点。
 
-> **「件」的口径**（按 `src/components/index.ts` 的对外 `export` 逐项点算）：**大写 React 组件 27** = 本层实现 27（v3.1.1 起**无库再导出**：CameraMotionBlur / Trail 已随 `@remotion/motion-blur` 一起删除，PieDraw 已删）；大写常量 8（`TOPIC_ICONS` `TOPIC_ICON_TONE` `CHART_BOX` `MIN_LABEL_FONT` `FOCUS_MODES` `SHAPES` `PRESENTATIONS` `COMPONENTS_VERSION`）、小写函数/钩子 18、type-only 导出 22（`GeoMarker` / `GeoProjection` 是 v3.1 加的两个）都**不算件**。下表只列常用项 21 个（未列的 6 个：`MathBlock` `GeoView` `SankeyChart` `QrCode` `SketchFx` `FocusFx`），完整清单以 `index.ts` 为准；`index.ts` 里的 `COMPONENTS_VERSION` 串与本节已同步（`components-v4.2 · 27 件`）。
+> **「件」的口径**（按 `src/components/index.ts` 的对外 `export` 逐项点算）：**大写 React 组件 27** = 本层实现 27（v3.1.1 起**无库再导出**：CameraMotionBlur / Trail 已随 `@remotion/motion-blur` 一起删除，PieDraw 已删）；大写常量 8（`TOPIC_ICONS` `TOPIC_ICON_TONE` `CHART_BOX` `MIN_LABEL_FONT` `FOCUS_MODES` `SHAPES` `PRESENTATIONS` `COMPONENTS_VERSION`）、小写函数/钩子 18、type-only 导出 22（`GeoMarker` / `GeoProjection` 是 v3.1 加的两个）都**不算件**。下表只列常用项 21 个（未列的 6 个：`MathBlock` `GeoView` `SankeyChart` `QrCode` `SketchFx` `FocusFx`），完整清单以 `index.ts` 为准；`index.ts` 里的 `COMPONENTS_VERSION` 串与本节已同步（`components-3.2.0 · 27 件`）。
 
 见 [dependency-policy.md](dependency-policy.md)。**场景从这里 import，不要直接 import 原始库。**
 帧参数名统一 `f`；颜色只读 `THEME`；登记在 [media-routing.md](media-routing.md) 两张路由表里。

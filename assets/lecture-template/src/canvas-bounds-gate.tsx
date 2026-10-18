@@ -147,7 +147,7 @@ export const CanvasBoundsGate: React.FC<{
         let scanned = 0;
         document.querySelectorAll<Element>(TEXT_SEL).forEach((el) => {
           if (el.closest('[data-gate-skip]') || el.closest('[data-gate-allow]')) return;
-          // v4.4：引擎推近（data-cinema-focus）时画面是**有意**裁切的特写，版面是否越界在未推近的帧上量
+          // 引擎推近（data-cinema-focus）时画面是**有意**裁切的特写，版面是否越界在未推近的帧上量
           if (el.closest('[data-cinema-focus]')) return;
           if (!(el.textContent || '').trim()) return;    // 只看**含文字**的（装饰块/底托天然出局）
           if (el.children.length) return;                // 只看**叶元素**（容器整块宽不是墨迹）

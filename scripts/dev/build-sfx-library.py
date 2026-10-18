@@ -39,7 +39,7 @@ SR = 48000
 # event -> (recipe, seed-bank index, description, intended use, options)
 PICKS = {
     "whoosh":    ("whoosh", 25, "a fast clean air whoosh for a slide transition", "shot transition / camera move / handoff", {}),
-    # v4.4: pop and chart are LAYERED designs (see LAYERS below) - the single-recipe v4.3 versions read weak
+    #  pop and chart are LAYERED designs (see LAYERS below) - the earlier single-recipe versions read weak
     # under narration (earshot match z 2.49 / 2.47, "weak").
     "pop":       ("layers", "pop", "a punchy round pop with a low thump as an element pops onto the screen", "an element appears (first beat of a shot) / a key number lands", {}),
     "click":     ("click", 4, "a clean crisp user interface click tap", "a list item, step or toggle lands", {}),
@@ -53,11 +53,11 @@ PICKS = {
 }
 
 
-# v4.4 layered designs: (recipe, seed-bank index, gain dB, offset s, pitch ratio, keep s or None).
+# 3.2.0 layered designs: (recipe, seed-bank index, gain dB, offset s, pitch ratio, keep s or None).
 # pop   = round low body (popin #14, 107 Hz + sub) + bright bubble tick (pop #7) + a trimmed sub hit (impact #6)
-#         for weight: a pop you feel, not a faint "plip". earshot match z 3.10 (strong) vs 2.82 for v4.3.
+#         for weight: a pop you feel, not a faint "plip". earshot match z 3.10 (strong) vs 2.82 for the earlier single-recipe build.
 # chart = two upward tonal zips (zip #5 + zip #0, 10 ms apart: a thicker, wider sweep) that land on a soft
-#         round thump (popin #10) as the bars reach their value. z 3.08 (strong) vs 2.47 (weak) for v4.3.
+#         round thump (popin #10) as the bars reach their value. z 3.08 (strong) vs 2.47 (weak) for the earlier single-recipe build.
 #         (A rising four-note arpeggio was tried and rejected: CLAP read it as "no match", z 0.95.)
 LAYERS = {
     "pop": [("popin", 14, -3.0, 0.000, 1.0, None), ("pop", 7, 0.0, 0.002, 1.0, None), ("impact", 6, -18.0, 0.000, 1.0, 0.12)],

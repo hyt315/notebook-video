@@ -1,4 +1,4 @@
 interface:
   display_name: "Notebook Video"
-  short_description: "用 Remotion、原创配图和动态图文制作 2K 中文视频"
-  default_prompt: "Use $notebook-video to create a complete Chinese 2K Remotion video that chooses image-plus-text, pure-text, or pure-graphic scenes from meaning, uses available image generation for original support art, synchronizes narration and semantic subtitles, clears outgoing layers completely, and validates the final MP4."
+  short_description: "用 Remotion 组件场景 + 虚拟镜头做 16:9 中文讲解视频"
+  default_prompt: "Use $notebook-video to turn a topic into a Chinese 16:9 teaching video: pick a blueprint, adapt the example project (component scenes, optional real screenshots), write narration and the shot table, then run make-video to pass the gates and render stills or the final MP4."

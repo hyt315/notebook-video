@@ -2,7 +2,7 @@
 
 The binding exemplar is the lecture template itself: an 8-shot, 1150-frame Remotion film configured at native 2560×1440 and 30fps (design space 1920×1080), skinned by one of two locked themes, `flat` (default) and `cel`. It demonstrates the four scene skeletons, five camera intents and the full gate stack on one topic (an open-source onboarding explainer).
 
-The v4.0 `--classic` warm-ivory example project (`example-project`, the old visual-director exemplar) was removed in v4.1.0. Its paper look is gone; nothing in the skill copies or validates it any more.
+The 3.1.x `--classic` warm-ivory example project (`example-project`, the old visual-director exemplar) was removed in 3.2.0. Its paper look is gone; nothing in the skill copies or validates it any more.
 
 ## Required starting point
 

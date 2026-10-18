@@ -13,7 +13,7 @@ from pathlib import Path
 ALLOWED_MODES = {"image-text", "pure-text", "pure-graphic"}
 ALLOWED_SOURCES = {"ai-generated", "user-supplied", "licensed-third-party"}
 
-# Locked parameter set for the only delivery canvas (16:9, v4.0.0+). Any other
+# Locked parameter set for the only delivery canvas (16:9, 3.2.0+). Any other
 # Composition width is rejected.
 CANVAS_MODES = {
     2560: {"label": "16:9", "design_width": 1920, "design_height": 1080, "subtitle_safe_width": 1334, "subtitle_margin": 188, "subtitle_bottom": 34},
@@ -47,7 +47,7 @@ def validate_canvas_mode(project: Path) -> list[str]:
     width = int(comp.group(1))
     mode = CANVAS_MODES.get(width)
     if mode is None:
-        return [f"canvas: Composition width {width} is not the locked 16:9 canvas (2560; v4.0.0 dropped 4:3 / 3:4)"]
+        return [f"canvas: Composition width {width} is not the locked 16:9 canvas (2560; 3.2.0 dropped 4:3 / 3:4)"]
     errors: list[str] = []
     label = mode["label"]
 

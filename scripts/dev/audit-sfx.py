@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""audit-sfx.py · DEV-ONLY: score every cue in the prebuilt SFX library (v4.5).
+"""audit-sfx.py · DEV-ONLY: score every cue in the prebuilt SFX library.
 
 Ordinary users never run this (it needs numpy + soundfile + pyloudnorm). It reads
 assets/lecture-template/public/sfx/lib/*.ogg + sfx-manifest.json and prints, per cue:
@@ -17,7 +17,7 @@ assets/lecture-template/public/sfx/lib/*.ogg + sfx-manifest.json and prints, per
   score    0-100 = timing 40 + level 30 + timbre 30
 
 Usage:
-    python scripts/dev/audit-sfx.py [--json out.json] [--legacy]   # --legacy ignores gain/offsetMs (v4.4 behaviour)
+    python scripts/dev/audit-sfx.py [--json out.json] [--legacy]   # --legacy ignores gain/offsetMs (pre-tuning behaviour)
 """
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ import pyloudnorm as pyln
 ROOT = Path(__file__).resolve().parents[2]
 SFX = ROOT / "assets" / "lecture-template" / "public" / "sfx"
 FPS = 30
-# v4.4 engine gains (legacy) — used with --legacy to reproduce the "before" column
+# pre-tuning engine gains (legacy) — used with --legacy to reproduce the "before" column
 LEGACY_GAIN = {"whoosh": 0.42, "pop": 0.45, "click": 0.38, "typing": 0.34, "success": 0.5,
                "error": 0.36, "chart": 0.4, "highlight": 0.4, "chapter": 0.55, "riser": 0.36}
 LEGACY_BED = 0.28
@@ -101,7 +101,7 @@ def score(ev: str, m: dict, gain: float, offset_ms: float, bed_mix: float) -> di
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json")
-    ap.add_argument("--legacy", action="store_true", help="ignore manifest gain/offsetMs (v4.4 engine)")
+    ap.add_argument("--legacy", action="store_true", help="ignore manifest gain/offsetMs (pre-tuning engine)")
     a = ap.parse_args()
     man = json.loads((SFX / "sfx-manifest.json").read_text(encoding="utf-8"))
     bed_x, bed_sr = load(SFX / "lib" / "bed.ogg")

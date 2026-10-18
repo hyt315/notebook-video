@@ -3,7 +3,7 @@ import {continueRender, delayRender, useCurrentFrame} from 'remotion';
 import {THEME} from './theme/active';
 
 // ============================================================================
-// MascotGate · 卡片压吉祥物 / 角落装饰（v4.3，warn）
+// MascotGate · 卡片压吉祥物 / 角落装饰（3.2.0，warn）
 //
 // flat 的三张背景都在下方两角画了角色（蓝色机器人、珊瑚小方块 + 薄荷山丘），
 // 大卡片（贴着 contentBand 底边 910、左右顶到 160/1760）会把它们**切掉半个头**——
