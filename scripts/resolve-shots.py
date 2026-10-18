@@ -184,6 +184,14 @@ def resolve_cinema(s: dict, sid: str, frm: int, duration: int, cues: list, probl
         if fk.get("zoom") is not None:
             item["zoom"] = float(fk["zoom"])
         focus.append(item)
+    # v4.5：镜尾收束。最后一个事件（拍点 / 焦点结束）到镜尾 > 45 帧（1.5 秒）时，画面只剩缓推，读起来是「卡住了」
+    # （v4.4 演示片 S6 / S8 的实测问题）。自动补一个轻推近到 anchor 的收束焦点；`cinema.settle: false` 关掉。
+    last_evt = max([b for b in beats if b < duration] + [k["at"] + k["hold"] + 24 for k in focus] + [0])
+    if c.get("settle", True) and not c.get("path") and duration - last_evt > 45:
+        a = s.get("anchor") or band
+        rect = {k: float(a[k]) for k in ("x", "y", "w", "h")}
+        st = last_evt + 10
+        focus.append({"at": st, "hold": max(10, duration - st - 6), "rect": rect, "zoom": 1.1, "settle": True})
     if focus:
         out["focus"] = focus
     pan = c.get("pan")
@@ -195,6 +203,15 @@ def resolve_cinema(s: dict, sid: str, frm: int, duration: int, cues: list, probl
             at = beats[int(pan["beat"])] if "beat" in pan and int(pan["beat"]) < len(beats) else int(pan.get("at", 10))
             dur = int(pan.get("dur", max(45, duration - at - 30)))
             out["pan"] = {"worldW": ww, "at": at, "dur": dur, "dir": pan.get("dir", "ltr")}
+    # v4.5：compose-story 预算好的相机路径（关键词推近 / 视线连续 / 速度上限都已算好）。原样透传。
+    path = c.get("path")
+    if path:
+        ok = isinstance(path, list) and all(isinstance(k, dict) and all(q in k for q in ("at", "x", "y", "s")) for k in path)
+        if not ok:
+            problems.append(f"{sid}: cinema.path 必须是 [{{at,x,y,s}}] 列表")
+        else:
+            out["path"] = [{"at": int(k["at"]), "x": float(k["x"]), "y": float(k["y"]), "s": float(k["s"])} for k in path]
+            out["fit"] = {"x": 960.0, "y": 540.0, "s": 1.0, "fill": out["fit"].get("fill", 1.0), "fillAfter": out["fit"].get("fillAfter", 1.0)}
     if s.get("transition") is not None and s["transition"] not in TRANSITIONS:
         problems.append(f"{sid}: transition={s['transition']!r} 不是 {TRANSITIONS} 之一")
     return out
@@ -331,6 +348,8 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
         # v4.4：可选版式名（validate-composition 要求相邻两镜不同）。不写就不出键。
         if s.get("layout") is not None:
             rec["layout"] = str(s["layout"])
+        if s.get("sfxEvents") is not None:
+            rec["sfxEvents"] = s["sfxEvents"]
         if s.get("sfxAuto") is not None:
             rec["sfxAuto"] = bool(s["sfxAuto"])
         # v4.4：引擎摄影机（src/cinema.tsx）。不写 cinema 也会输出缺省 {drift:'auto'}，引擎照样慢推/漂移。

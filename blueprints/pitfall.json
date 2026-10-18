@@ -1,0 +1,184 @@
+{
+ "$blueprint": "pitfall",
+ "$about": "踩坑提醒：一个常见错误、为什么错、怎么避免",
+ "$howto": "只改 <<…>> 里的内容（改完不许留下任何 <<）。不想要的镜可以删；想多讲一点可以复制一镜。版式名见 SKILL.md 的版式表。 ｜ v4.5b：推荐把每镜写成 v4.4 手写组件场景——每镜的 $v44 给出骨架和该用的 v4.4 组件（见 references/handwritten-scenes.md）；直接跑 compose-story 只是快速草稿。",
+ "title": "<<片名>>",
+ "theme": "flat",
+ "kicker": "<<4–8 字栏目名>>",
+ "header": "<<短标题 / ENGLISH>>",
+ "headerSub": "<<副标题>>",
+ "glossary": {},
+ "chapters": [
+  {
+   "title": "<<章 1：翻车现场>>",
+   "role": "hook",
+   "shots": [
+    {
+     "role": "hook",
+     "layout": "code",
+     "$why": "钩子：先给出翻车的代码",
+     "lines": [
+      "<<这段代码看起来没问题>>",
+      "<<但 {{出问题的那一段}} 会……>>"
+     ],
+     "content": {
+      "title": "<<文件名>>",
+      "lang": "<<语言>>",
+      "code": "<<≤8 行有坑的代码>>"
+     },
+     "$v44": {
+      "skeleton": "Zoom",
+      "components": [
+       "DiffView",
+       "Typewriter",
+       "ConsoleWindow"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 2：先懂一个词>>",
+   "role": "pre",
+   "shots": [
+    {
+     "role": "pre",
+     "layout": "define",
+     "$why": "预训练",
+     "lines": [
+      "<<先认识一个词：{{术语}}>>",
+      "<<一句解释>>"
+     ],
+     "content": {
+      "term": "<<术语>>",
+      "definition": "<<定义>>",
+      "example": "<<例：……>>"
+     },
+     "$v44": {
+      "skeleton": "Split",
+      "components": [
+       "FitTextBox",
+       "Callout",
+       "PillTag"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 3：为什么>>",
+   "role": "breakdown",
+   "shots": [
+    {
+     "role": "breakdown",
+     "layout": "statement",
+     "$why": "用字说清原因——这一镜通常不需要图",
+     "lines": [
+      "<<原因只有一句话：{{短语}}>>",
+      "<<补充一句>>"
+     ],
+     "content": {
+      "text": "<<原因（≤16 字）>>",
+      "sub": "<<补充>>"
+     },
+     "$v44": {
+      "skeleton": "Stage",
+      "components": [
+       "Callout",
+       "StampBanner",
+       "FitTextBox"
+      ]
+     }
+    },
+    {
+     "role": "example",
+     "layout": "compare",
+     "$why": "对照",
+     "lines": [
+      "<<错误写法>>",
+      "<<{{正确写法}}……>>"
+     ],
+     "content": {
+      "mode": "split",
+      "before": {
+       "title": "错误写法",
+       "items": [
+        "<<一句>>"
+       ]
+      },
+      "after": {
+       "title": "正确写法",
+       "items": [
+        "<<一句>>"
+       ]
+      },
+      "afterLine": 1
+     },
+     "$v44": {
+      "skeleton": "Split",
+      "components": [
+       "SplitStage",
+       "VerdictBar",
+       "Checklist"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 4：避坑>>",
+   "role": "recap",
+   "shots": [
+    {
+     "role": "misconception",
+     "layout": "quiz",
+     "$why": "可选",
+     "lines": [
+      "<<考考你：……？>>",
+      "<<答案是 {{正确选项里的短语}}>>"
+     ],
+     "content": {
+      "question": "<<问题？>>",
+      "options": [
+       "<<选项 A>>",
+       "<<选项 B>>"
+      ],
+      "answer": 1,
+      "think": 3
+     },
+     "$v44": {
+      "skeleton": "Zoom",
+      "components": [
+       "ChatThread",
+       "SkeletonCard"
+      ]
+     }
+    },
+    {
+     "role": "recap",
+     "layout": "list",
+     "$why": "收束",
+     "lines": [
+      "<<避坑清单：{{第一条}}>>",
+      "<<{{第二条}}>>"
+     ],
+     "content": {
+      "title": "避坑清单",
+      "items": [
+       "<<第一条>>",
+       "<<第二条>>"
+      ],
+      "style": "check"
+     },
+     "$v44": {
+      "skeleton": "Split",
+      "components": [
+       "Checklist",
+       "StaggerList"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

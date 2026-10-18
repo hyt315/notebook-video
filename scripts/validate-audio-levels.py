@@ -129,6 +129,14 @@ def check_library(project: Path, p0: list[str], p1: list[str], checked: list[dic
         for ev, v in re.findall(r"([a-z]+):\s*([\d.]+)", g.group(1) if g else ""):
             if float(v) > 0.7 or float(v) < 0.15:
                 p0.append(f"SFX_GAIN.{ev}={v} 越界（0.15–0.70）：太大会顶到人声，太小听不见")
+            mg = events.get(ev, {}).get("gain")
+            if mg is not None and abs(float(mg) - float(v)) > 0.01:
+                p0.append(f"SFX_GAIN.{ev}={v} 与 sfx-manifest.json gain={mg} 不一致（v4.5：增益以库元数据为准；改 src/sfx.ts 让它等于 manifest）")
+        o = re.search(r"SFX_OFFSET_MS[^=]*=\s*\{([^}]*)\}", src)
+        for ev, v in re.findall(r"([a-z]+):\s*([\d.]+)", o.group(1) if o else ""):
+            mo = events.get(ev, {}).get("offsetMs")
+            if mo is not None and abs(float(mo) - float(v)) > 2:
+                p0.append(f"SFX_OFFSET_MS.{ev}={v} 与 sfx-manifest.json offsetMs={mo} 不一致（瞬态会偏离视觉命中帧）")
 
 
 def main() -> int:

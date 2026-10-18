@@ -1,0 +1,211 @@
+{
+ "$blueprint": "process",
+ "$about": "流程 / 机制：一件事分几步发生",
+ "$howto": "只改 <<…>> 里的内容（改完不许留下任何 <<）。不想要的镜可以删；想多讲一点可以复制一镜。版式名见 SKILL.md 的版式表。 ｜ v4.5b：推荐把每镜写成 v4.4 手写组件场景——每镜的 $v44 给出骨架和该用的 v4.4 组件（见 references/handwritten-scenes.md）；直接跑 compose-story 只是快速草稿。",
+ "title": "<<片名>>",
+ "theme": "flat",
+ "kicker": "<<4–8 字栏目名>>",
+ "header": "<<短标题 / ENGLISH>>",
+ "headerSub": "<<副标题>>",
+ "glossary": {},
+ "chapters": [
+  {
+   "title": "<<章 1：现象>>",
+   "role": "hook",
+   "shots": [
+    {
+     "role": "hook",
+     "layout": "statement",
+     "$why": "钩子",
+     "lines": [
+      "<<每天都在发生的一件事，含 {{关键词}}>>",
+      "<<背后其实有几步>>"
+     ],
+     "content": {
+      "text": "<<屏上的话>>"
+     },
+     "$v44": {
+      "skeleton": "Stage",
+      "components": [
+       "Callout",
+       "StampBanner",
+       "FitTextBox"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 2：角色>>",
+   "role": "pre",
+   "shots": [
+    {
+     "role": "pre",
+     "layout": "list",
+     "$why": "预训练：先认识角色",
+     "lines": [
+      "<<先认识参与者：{{角色一}}>>",
+      "<<和 {{角色二}}>>"
+     ],
+     "content": {
+      "title": "<<参与者>>",
+      "items": [
+       "<<角色一：一句话>>",
+       "<<角色二：一句话>>"
+      ]
+     },
+     "$v44": {
+      "skeleton": "Split",
+      "components": [
+       "Checklist",
+       "StaggerList"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 3：一步步>>",
+   "role": "breakdown",
+   "shots": [
+    {
+     "role": "breakdown",
+     "layout": "flow",
+     "$why": "2–5 步",
+     "lines": [
+      "<<{{步骤一}}……>>",
+      "<<接着 {{步骤二}}……>>",
+      "<<最后 {{步骤三}}……>>"
+     ],
+     "content": {
+      "steps": [
+       {
+        "label": "<<步骤一>>"
+       },
+       {
+        "label": "<<步骤二>>"
+       },
+       {
+        "label": "<<步骤三>>",
+        "hot": true
+       }
+      ]
+     },
+     "$v44": {
+      "skeleton": "Corridor",
+      "components": [
+       "StampSeal",
+       "Funnel"
+      ]
+     }
+    },
+    {
+     "role": "example",
+     "layout": "custom",
+     "$why": "需要专门的图就写定制组件（见 SKILL.md 第 5 步）；不需要就删掉这一镜",
+     "lines": [
+      "<<具体走一遍：先到 {{部件一}}>>",
+      "<<再到 {{部件二}}>>"
+     ],
+     "content": {
+      "component": "RequestLane",
+      "elements": [
+       {
+        "id": "app",
+        "x": 220,
+        "y": 380,
+        "w": 340,
+        "h": 240
+       },
+       {
+        "id": "cache",
+        "x": 790,
+        "y": 380,
+        "w": 340,
+        "h": 240
+       },
+       {
+        "id": "db",
+        "x": 1360,
+        "y": 380,
+        "w": 340,
+        "h": 240,
+        "appear": 1
+       }
+      ]
+     },
+     "$v44": {
+      "skeleton": "Stage",
+      "components": [
+       "src/custom/*"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 4：误区与回顾>>",
+   "role": "recap",
+   "shots": [
+    {
+     "role": "misconception",
+     "layout": "compare",
+     "$why": "误区",
+     "lines": [
+      "<<以为……>>",
+      "<<其实 {{实际}}……>>"
+     ],
+     "content": {
+      "mode": "split",
+      "before": {
+       "title": "以为",
+       "items": [
+        "<<误解>>"
+       ]
+      },
+      "after": {
+       "title": "实际",
+       "items": [
+        "<<正解>>"
+       ]
+      }
+     },
+     "$v44": {
+      "skeleton": "Split",
+      "components": [
+       "SplitStage",
+       "VerdictBar",
+       "Checklist"
+      ]
+     }
+    },
+    {
+     "role": "recap",
+     "layout": "list",
+     "$why": "回顾：把步骤再念一遍",
+     "lines": [
+      "<<回顾一下：{{第一步}}>>",
+      "<<{{第二步}}>>",
+      "<<{{第三步}}>>"
+     ],
+     "content": {
+      "title": "回顾",
+      "items": [
+       "<<第一步>>",
+       "<<第二步>>",
+       "<<第三步>>"
+      ],
+      "style": "number"
+     },
+     "$v44": {
+      "skeleton": "Split",
+      "components": [
+       "Checklist",
+       "StaggerList"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

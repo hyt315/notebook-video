@@ -1,0 +1,195 @@
+{
+ "$blueprint": "concept",
+ "$about": "概念讲解：一个词 / 一个原理讲明白",
+ "$howto": "只改 <<…>> 里的内容（改完不许留下任何 <<）。不想要的镜可以删；想多讲一点可以复制一镜。版式名见 SKILL.md 的版式表。 ｜ v4.5b：推荐把每镜写成 v4.4 手写组件场景——每镜的 $v44 给出骨架和该用的 v4.4 组件（见 references/handwritten-scenes.md）；直接跑 compose-story 只是快速草稿。",
+ "title": "<<片名>>",
+ "theme": "flat",
+ "kicker": "<<4–8 字栏目名>>",
+ "header": "<<短标题 / ENGLISH>>",
+ "headerSub": "<<副标题>>",
+ "glossary": {},
+ "chapters": [
+  {
+   "title": "<<章 1：现象>>",
+   "role": "hook",
+   "shots": [
+    {
+     "role": "hook",
+     "layout": "statement",
+     "$why": "开场用一句话立问题；用一张 v4.4 卡片（Callout / StampBanner）立住这句话，别做满屏大字页",
+     "lines": [
+      "<<一句反常识的现象，含 {{关键词}}>>",
+      "<<一句追问>>"
+     ],
+     "content": {
+      "text": "<<屏上那句话（≤16 字）>>",
+      "sub": "<<可选副句>>"
+     },
+     "$v44": {
+      "skeleton": "Stage",
+      "components": [
+       "Callout",
+       "StampBanner",
+       "FitTextBox"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 2：先懂一个词>>",
+   "role": "pre",
+   "shots": [
+    {
+     "role": "pre",
+     "layout": "define",
+     "$why": "预训练：先给词，再讲机制",
+     "lines": [
+      "<<先认识一个词：{{术语}}。>>",
+      "<<用大白话解释，含 {{释义里的短语}}>>"
+     ],
+     "content": {
+      "term": "<<术语>>",
+      "definition": "<<一句大白话定义（≤30 字）>>",
+      "example": "<<例：一个日常例子>>"
+     },
+     "$v44": {
+      "skeleton": "Split",
+      "components": [
+       "FitTextBox",
+       "Callout",
+       "PillTag"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 3：拆开看>>",
+   "role": "breakdown",
+   "shots": [
+    {
+     "role": "breakdown",
+     "layout": "flow",
+     "$why": "机制拆成 2–5 步；台词点到哪一步，镜头就推到哪一步",
+     "lines": [
+      "<<第一步做什么，点名 {{步骤一}}>>",
+      "<<然后 {{步骤二}}>>",
+      "<<最后 {{步骤三}}>>"
+     ],
+     "content": {
+      "title": "<<可选标题>>",
+      "steps": [
+       {
+        "label": "<<步骤一>>",
+        "note": "<<一句说明>>"
+       },
+       {
+        "label": "<<步骤二>>",
+        "note": "<<一句说明>>"
+       },
+       {
+        "label": "<<步骤三>>",
+        "note": "<<一句说明>>",
+        "hot": true
+       }
+      ]
+     },
+     "$v44": {
+      "skeleton": "Corridor",
+      "components": [
+       "StampSeal",
+       "Funnel"
+      ]
+     }
+    },
+    {
+     "role": "example",
+     "layout": "number",
+     "$why": "例子：一个具体数字",
+     "lines": [
+      "<<举个例子，关键数字 {{数字+单位}}>>",
+      "<<这个数字意味着什么>>"
+     ],
+     "content": {
+      "value": 0,
+      "unit": "<<单位>>",
+      "label": "<<数字下面的一句话>>",
+      "notes": [
+       "<<补充事实 1>>",
+       "<<补充事实 2>>"
+      ]
+     },
+     "$v44": {
+      "skeleton": "Stage",
+      "components": [
+       "KineticNumber",
+       "StatRow",
+       "ProgressRing"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 4：误区与回顾>>",
+   "role": "recap",
+   "shots": [
+    {
+     "role": "misconception",
+     "layout": "compare",
+     "$why": "误区：左右对照，不只用红绿区分（引擎自带标记条）",
+     "lines": [
+      "<<很多人以为……>>",
+      "<<其实 {{之后的标题}}……>>"
+     ],
+     "content": {
+      "mode": "split",
+      "before": {
+       "title": "<<常见误解>>",
+       "items": [
+        "<<误解的说法>>"
+       ]
+      },
+      "after": {
+       "title": "<<实际情况>>",
+       "items": [
+        "<<正确说法>>"
+       ]
+      }
+     },
+     "$v44": {
+      "skeleton": "Split",
+      "components": [
+       "SplitStage",
+       "VerdictBar",
+       "Checklist"
+      ]
+     }
+    },
+    {
+     "role": "recap",
+     "layout": "statement",
+     "$why": "回顾：一句话收束，组件优先",
+     "lines": [
+      "<<记住这一句：{{核心句里的短语}}……>>",
+      "<<一句行动建议>>"
+     ],
+     "content": {
+      "text": "<<核心句（≤16 字）>>",
+      "sub": "<<行动建议>>",
+      "subAt": 1
+     },
+     "$v44": {
+      "skeleton": "Stage",
+      "components": [
+       "Callout",
+       "StampBanner",
+       "FitTextBox"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

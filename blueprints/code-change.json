@@ -1,0 +1,219 @@
+{
+ "$blueprint": "code-change",
+ "$about": "代码改动讲解：为什么改、改了什么、效果如何",
+ "$howto": "只改 <<…>> 里的内容（改完不许留下任何 <<）。不想要的镜可以删；想多讲一点可以复制一镜。版式名见 SKILL.md 的版式表。 ｜ v4.5b：推荐把每镜写成 v4.4 手写组件场景——每镜的 $v44 给出骨架和该用的 v4.4 组件（见 references/handwritten-scenes.md）；直接跑 compose-story 只是快速草稿。",
+ "title": "<<片名>>",
+ "theme": "flat",
+ "kicker": "<<4–8 字栏目名>>",
+ "header": "<<短标题 / ENGLISH>>",
+ "headerSub": "<<副标题>>",
+ "glossary": {},
+ "chapters": [
+  {
+   "title": "<<章 1：问题>>",
+   "role": "hook",
+   "shots": [
+    {
+     "role": "hook",
+     "layout": "number",
+     "$why": "钩子：一个让人皱眉的数字",
+     "lines": [
+      "<<问题的关键数字 {{数字+单位}}>>",
+      "<<用户感受到了什么>>"
+     ],
+     "content": {
+      "value": 0,
+      "unit": "<<单位>>",
+      "label": "<<这个数字是什么>>",
+      "notes": [
+       "<<事实 1>>",
+       "<<事实 2>>"
+      ]
+     },
+     "$v44": {
+      "skeleton": "Stage",
+      "components": [
+       "KineticNumber",
+       "StatRow",
+       "ProgressRing"
+      ]
+     }
+    },
+    {
+     "role": "breakdown",
+     "layout": "bars",
+     "$why": "定位：用数据指出真正的问题",
+     "lines": [
+      "<<先量一下>>",
+      "<<慢的 / 多的只有 {{柱名}}>>"
+     ],
+     "content": {
+      "title": "<<图表标题（单位）>>",
+      "highlight": "<<要强调的柱名>>",
+      "data": [
+       {
+        "label": "<<柱名>>",
+        "value": 0
+       }
+      ]
+     },
+     "$v44": {
+      "skeleton": "Stage",
+      "components": [
+       "BarChart",
+       "StatRow"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 2：先懂一个词>>",
+   "role": "pre",
+   "shots": [
+    {
+     "role": "pre",
+     "layout": "define",
+     "$why": "预训练",
+     "lines": [
+      "<<先认识一个词：{{术语}}。>>",
+      "<<一句解释>>"
+     ],
+     "content": {
+      "term": "<<术语>>",
+      "definition": "<<一句大白话定义>>",
+      "example": "<<例：……>>"
+     },
+     "$v44": {
+      "skeleton": "Split",
+      "components": [
+       "FitTextBox",
+       "Callout",
+       "PillTag"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 3：改动>>",
+   "role": "example",
+   "shots": [
+    {
+     "role": "example",
+     "layout": "code",
+     "$why": "台词点名的代码片段必须真的出现在代码里",
+     "lines": [
+      "<<问题在 {{代码里的一段}}>>",
+      "<<加上 {{新代码里的一段}}，就……>>"
+     ],
+     "content": {
+      "title": "<<文件名>>",
+      "lang": "<<语言>>",
+      "code": "<<≤10 行代码，每行 ≤40 字符>>",
+      "note": "<<一句解释>>",
+      "noteAt": 1
+     },
+     "$v44": {
+      "skeleton": "Zoom",
+      "components": [
+       "DiffView",
+       "Typewriter",
+       "ConsoleWindow"
+      ]
+     }
+    },
+    {
+     "role": "example",
+     "layout": "compare",
+     "$why": "前后对比",
+     "lines": [
+      "<<改动有多大>>",
+      "<<{{改之后}}……>>"
+     ],
+     "content": {
+      "mode": "split",
+      "before": {
+       "title": "改之前",
+       "value": 0,
+       "unit": "<<单位>>",
+       "items": [
+        "<<一句>>"
+       ]
+      },
+      "after": {
+       "title": "改之后",
+       "value": 0,
+       "unit": "<<单位>>",
+       "items": [
+        "<<一句>>"
+       ]
+      },
+      "afterLine": 1
+     },
+     "$v44": {
+      "skeleton": "Split",
+      "components": [
+       "SplitStage",
+       "VerdictBar",
+       "Checklist"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 4：误区与回顾>>",
+   "role": "recap",
+   "shots": [
+    {
+     "role": "misconception",
+     "layout": "quiz",
+     "$why": "可选：暂停想一想；不需要就换成 statement",
+     "lines": [
+      "<<一个常见误解的问题？>>",
+      "<<答案，含 {{正确选项里的短语}}>>"
+     ],
+     "content": {
+      "question": "<<问题？>>",
+      "options": [
+       "<<错误选项>>",
+       "<<正确选项>>"
+      ],
+      "answer": 1,
+      "think": 3
+     },
+     "$v44": {
+      "skeleton": "Zoom",
+      "components": [
+       "ChatThread",
+       "SkeletonCard"
+      ]
+     }
+    },
+    {
+     "role": "recap",
+     "layout": "statement",
+     "$why": "收束",
+     "lines": [
+      "<<记住这一句：{{短语}}>>",
+      "<<行动建议>>"
+     ],
+     "content": {
+      "text": "<<核心句>>",
+      "sub": "<<行动建议>>",
+      "subAt": 1
+     },
+     "$v44": {
+      "skeleton": "Stage",
+      "components": [
+       "Callout",
+       "StampBanner",
+       "FitTextBox"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

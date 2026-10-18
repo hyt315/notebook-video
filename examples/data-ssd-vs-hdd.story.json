@@ -1,0 +1,37 @@
+{
+ "$blueprint": "data-compare",
+ "title": "固态硬盘到底快多少",
+ "theme": "flat",
+ "kicker": "数据对比",
+ "header": "SSD vs HDD",
+ "headerSub": "GOLDEN EXAMPLE · DATA",
+ "glossary": {"随机读": "跳着读很多个小文件"},
+ "chapters": [
+  {"title": "问题", "shots": [
+   {"role": "hook", "layout": "statement",
+    "lines": ["换了{{固态硬盘}}，开机快了好几倍。", "到底快在哪里？"],
+    "content": {"text": "换了固态硬盘，快在哪？"}}
+  ]},
+  {"title": "怎么读图", "shots": [
+   {"role": "pre", "layout": "list",
+    "lines": ["先说怎么看：{{柱子越高越快}}。", "我们比的是{{随机读}}。"],
+    "content": {"title": "读图要点", "items": ["柱子越高越快", "单位：每秒能读多少次", "比的是随机读"], "style": "check"}}
+  ]},
+  {"title": "数据", "shots": [
+   {"role": "breakdown", "layout": "bars",
+    "lines": ["机械硬盘，每秒一百多次。", "固态硬盘，{{SSD}} 高出一大截。"],
+    "content": {"title": "随机读（千次 / 秒）", "highlight": "SSD", "data": [{"label": "HDD", "value": 0.15}, {"label": "SATA", "value": 90}, {"label": "SSD", "value": 500}]}},
+   {"role": "example", "layout": "number",
+    "lines": ["差距大约是 {{3000 倍}}。", "开机要读成千上万个小文件。"],
+    "content": {"value": 3000, "unit": "倍", "label": "随机读的差距", "notes": ["顺序读只差 3–5 倍", "开机主要是随机读"]}}
+  ]},
+  {"title": "误区与回顾", "shots": [
+   {"role": "misconception", "layout": "compare",
+    "lines": ["容易误读成：什么都快三千倍。", "{{实际情况}}：拷大文件只快几倍。"],
+    "content": {"mode": "split", "before": {"title": "容易误读", "items": ["什么操作都快三千倍"]}, "after": {"title": "实际情况", "items": ["跳着读：快几千倍", "拷大文件：快几倍"]}}},
+   {"role": "recap", "layout": "statement",
+    "lines": ["结论：快在{{跳着读}}。", "所以开机和打开软件提升最大。"],
+    "content": {"text": "固态硬盘，快在跳着读", "sub": "开机、打开软件提升最大", "subAt": 1}}
+  ]}
+ ]
+}

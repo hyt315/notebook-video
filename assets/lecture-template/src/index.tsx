@@ -44,7 +44,7 @@ import {ClippingGate} from './clipping-gate';
 import {FillGate} from './fill-gate';
 import {CanvasBoundsGate} from './canvas-bounds-gate';
 import {MascotGate} from './mascot-gate';
-import {planSfx, SFX_BED, BED_GAIN} from './sfx';
+import {planSfx, bedDuckAt, SFX_BED, BED_GAIN} from './sfx';
 import {CINEMA, cinemaCamAt, cinemaMask, cinemaTransform, parallaxTransform, resolveTransition, transitionStyle, WhipBlur, whipOffset} from './cinema';
 import {SHOTS, SHOT_IDS, SHOT_TOTAL} from './shots';
 import {SCENES} from './scenes';
@@ -61,16 +61,8 @@ const AESTHETIC=THEME.aesthetic;
 const Background=THEME.Background;
 const Grade=THEME.Grade;
 
-// EDITABLE CONTENT SURFACE — 换题材时从这里开始改
-const COPY={
-  chapterTitles:['代码不再孤独','入场三步','第二步 · 发布','第三步 · 运营与三技能'],
-  chromeKicker:'GITHUB 新手三部曲',
-  header:'开源之路 / OPEN SOURCE',
-  headerSub:'CONTRIBUTE · PREP · OPS / EP0',
-} as const;
-
-// 章节 = 分镜表里各章首镜。章节卡与页眉由此驱动，不手写帧号。
-const CHAPTER_SHOTS=['S1','S2','S4','S5'] as const;
+// EDITABLE CONTENT SURFACE — 换题材时改 src/film.ts（auto 流程会自动生成它）
+import {COPY, CHAPTER_SHOTS} from './film';
 const CHAPTER_STARTS=CHAPTER_SHOTS.map((id)=>SHOTS[id].from);
 
 const clamp={extrapolateLeft:'clamp' as const,extrapolateRight:'clamp' as const};
@@ -349,11 +341,11 @@ const Backdrop=()=>{
 // 混音：音效库统一 -18 LUFS(100ms)，SFX_GAIN 把它们压到人声（-16 LUFS）下方 8–12 LU；音乐床 ≈ -36 LUFS。
 const SFX_PLAN=planSfx(SHOT_IDS.map((id)=>SHOTS[id] as any),CHAPTER_STARTS,DURATION);
 const Sound=()=>{
-  const f=useCurrentFrame();
-  const bedVol=interpolate(f,[0,30,DURATION-45,DURATION],[0,BED_GAIN,BED_GAIN,0],{...clamp,easing:Easing.linear});
+  // v4.5：音乐床在每个音效下闪避（bedDuckAt），音量是帧的纯函数
+  const bedVol=(fr:number)=>interpolate(fr,[0,30,DURATION-45,DURATION],[0,BED_GAIN,BED_GAIN,0],{...clamp,easing:Easing.linear})*bedDuckAt(fr,SFX_PLAN);
   return <>
     <Audio src={staticFile('narration.mp3')} volume={1}/>
-    <Audio src={staticFile(SFX_BED)} volume={bedVol} loop/>
+    <Audio src={staticFile(SFX_BED)} volume={(fr:number)=>bedVol(fr)} loop/>
     {SFX_PLAN.map((x,i)=><Sequence key={`${x.event}-${i}`} from={deliveryFrame(x.at)} layout="none"><Audio src={staticFile(x.src)} volume={x.vol}/></Sequence>)}
   </>;
 };

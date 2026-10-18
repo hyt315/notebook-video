@@ -60,3 +60,11 @@ under narration they read as a faint "plip" and a thin sweep. v4.4 rebuilds both
 A rising four-note arpeggio for `chart` was tried and rejected (CLAP read it as "no match", z 0.95).
 Rebuild only these two: `python scripts/dev/build-sfx-library.py --only pop,chart` (the other entries and
 files are kept byte-for-byte).
+
+## v4.5 调音：每个 cue 的 `gain` 与 `offsetMs`
+
+- 每条 manifest 记录新增 `gain`（线性，把 cue 放到响度阶梯上：chapter −24 · success −25 · pop −25.5 · error / chart −26 · highlight −27 · whoosh −27.5 · riser −28 · click −28.5 · typing −30 LUFS，全部比音乐床高 11–17 LU）与 `offsetMs`（文件开头到瞬态的距离）。
+- 引擎（`src/sfx.ts`）按 `offsetMs` **提前**起播，瞬态落在视觉命中帧（±1 帧）；whoosh 的命中点是转场中点（+7 帧），riser 的命中点是章节首帧。
+- 去拥挤：两个 cue 间隔 ≥150 ms（5 帧，优先级高的留下）；任意 10 秒最多 4 个（≈24 次/分钟）。音乐床在每个 cue 命中前 2 帧到后 14 帧闪避到 45%。
+- auto 片（story.json）只在真事件上出声：数字落定 `pop`、图表生长 `chart`、代码出现 `typing`、关键词第一次推近 `highlight`、答案揭晓 / 改之后出现 `success` / `pop`；章节 `chapter` + `riser`、镜间 `whoosh`。
+- 维护者：`python scripts/dev/audit-sfx.py [--legacy]` 打分（时序 40 + 电平 30 + 音色 30），`python scripts/dev/tune-sfx.py` 修剪 + 写回 manifest（需 numpy / soundfile / pyloudnorm；普通用户不用跑）。`validate-audio-levels.py` 核对 `SFX_GAIN` / `SFX_OFFSET_MS` 与 manifest 一致。

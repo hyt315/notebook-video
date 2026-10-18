@@ -1,0 +1,37 @@
+{
+ "$blueprint": "concept",
+ "title": "哈希表为什么快",
+ "theme": "flat",
+ "kicker": "概念讲解",
+ "header": "哈希表 / HASH TABLE",
+ "headerSub": "GOLDEN EXAMPLE · CONCEPT",
+ "glossary": {"桶": "存放数据的格子，按编号排好"},
+ "chapters": [
+  {"title": "一个现象", "shots": [
+   {"role": "hook", "layout": "statement",
+    "lines": ["一百万个名字里找一个，{{只要一步}}。", "它是怎么做到的？"],
+    "content": {"text": "一百万个名字，只要一步", "sub": "不是一个个比，是直接算出位置", "subAt": 1}}
+  ]},
+  {"title": "先懂一个词", "shots": [
+   {"role": "pre", "layout": "define",
+    "lines": ["先认识一个词：{{哈希}}。", "它把名字变成一个{{编号}}。"],
+    "content": {"term": "哈希", "reading": "hash", "definition": "把任意内容算成一个固定范围的编号。", "example": "例：「小明」→ 7 号"}}
+  ]},
+  {"title": "拆开看", "shots": [
+   {"role": "breakdown", "layout": "flow",
+    "lines": ["存的时候，先{{算编号}}。", "再放进对应的{{桶}}。", "找的时候，{{直接去那个桶}}。"],
+    "content": {"steps": [{"label": "算编号", "note": "名字 → 7"}, {"label": "放进桶", "note": "7 号桶"}, {"label": "直接去那个桶", "note": "不用挨个比", "hot": true}]}},
+   {"role": "example", "layout": "number",
+    "lines": ["挨个比，最坏要比 {{100 万}} 次。", "哈希表平均只要一次。"],
+    "content": {"value": 100, "unit": "万次", "label": "挨个比的最坏情况", "notes": ["哈希表：平均 1 次", "代价：多用一些内存"]}}
+  ]},
+  {"title": "误区与回顾", "shots": [
+   {"role": "misconception", "layout": "compare",
+    "lines": ["很多人以为，哈希表永远是一步。", "其实{{编号撞车}}时，要多找几步。"],
+    "content": {"mode": "split", "before": {"title": "常见误解", "items": ["永远一步就找到"]}, "after": {"title": "编号撞车", "items": ["同一个桶里要再找几步", "桶够多，撞车就少"]}}},
+   {"role": "recap", "layout": "statement",
+    "lines": ["记住这一句：{{算出位置}}，不用挨个找。", "这就是哈希表快的原因。"],
+    "content": {"text": "算出位置，不用挨个找", "sub": "哈希表 = 编号 + 桶", "subAt": 1}}
+  ]}
+ ]
+}

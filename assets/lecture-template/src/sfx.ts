@@ -33,24 +33,40 @@ export const SFX_FILES: Record<SfxEvent, string> = {
 export const SFX_BED = 'sfx/lib/bed.ogg';
 
 /**
- * 混音增益（线性）。库里每个文件都已归一到同一响度（-18 LUFS/100ms），
- * 这里的 0.30–0.55（约 -5…-10 dB）把它们压到约 -24…-28 LUFS，比人声目标 -16 LUFS 低 8–12 LU：
- * 听得见、但永远在人声下面（ducked）。不要在场景里再乘一层小音量（双重衰减曾让音效完全听不见）。
+ * 混音增益（线性）— v4.5 起与 public/sfx/sfx-manifest.json 的每条 `gain` **同值**（validate-audio-levels 核对）。
+ * 每个 cue 由 scripts/dev/tune-sfx.py 放到「响度阶梯」上（chapter −24 … typing −30 LUFS），
+ * 全部比音乐床高 11–17 LU、比人声 −16 LUFS 低 8–14 LU。不要在场景里再乘一层小音量。
  */
 export const SFX_GAIN: Record<SfxEvent, number> = {
-  whoosh: 0.42, pop: 0.45, click: 0.38, typing: 0.34, success: 0.5,
-  error: 0.36, chart: 0.4, highlight: 0.4, chapter: 0.55, riser: 0.36,
+  whoosh: 0.338, pop: 0.419, click: 0.491, typing: 0.284, success: 0.459,
+  error: 0.409, chart: 0.419, highlight: 0.356, chapter: 0.522, riser: 0.331,
 };
-/** 音乐床（-30 LUFS 源）播放增益：0.28 ≈ -41 LUFS，远在人声与音效之下（0.5 时实测把音效只托高 6–12 dB，偏闷）。 */
+/**
+ * 瞬态位置（毫秒，= manifest `offsetMs`）：文件开头到听感「命中点」的距离。引擎把文件**提前**这么多开始播，
+ * 命中点就正好落在视觉事件那一帧（±1 帧）。v4.4 没有这一步：error 晚 16 帧、chapter 晚 8 帧、whoosh 晚 4 帧。
+ */
+export const SFX_OFFSET_MS: Record<SfxEvent, number> = {
+  whoosh: 71.6, pop: 5.8, click: 4.5, typing: 13.9, success: 6.1,
+  error: 139.6, chart: 48, highlight: 58, chapter: 253.5, riser: 1066.7,
+};
+/** 音乐床（-30 LUFS 源）播放增益：0.28 ≈ -41 LUFS；每个 cue 期间再闪避到 BED_DUCK 倍。 */
 export const BED_GAIN = 0.28;
-/** riser 文件时长（帧，30fps）：riser 排在「命中帧 − 这么多帧」开始，正好在命中帧到顶。 */
-export const RISER_FRAMES = 45;
-/** 两个音效之间的最小间隔（帧）：更近的后来者被丢掉（优先级高的先排）。 */
-const MIN_GAP = 6;
+export const BED_DUCK = 0.45;
+/** riser 文件时长（帧，30fps）——v4.5 起由 offsetMs 推：命中点落在章节首帧。 */
+export const RISER_FRAMES = Math.round((SFX_OFFSET_MS.riser * 30) / 1000);
+/** 两个音效之间的最小间隔：150 ms（5 帧）。更近的后来者被丢掉（优先级高的先排）。 */
+const MIN_GAP = 5;
+/** 密度上限：任意 10 秒窗口最多 4 个（≈ 24 次/分钟）；超出的丢低优先级的。 */
+const WINDOW = 300, WINDOW_MAX = 4;
+/** 转场音效的视觉命中点：转场中点（CINEMA.transition = 14 帧 → 7）。 */
+const WHOOSH_HIT = 7;
+const offF = (e: SfxEvent) => Math.round((SFX_OFFSET_MS[e] * 30) / 1000);
 
-export type SfxCue = {event: SfxEvent; at: number; vol: number; src: string};
+export type SfxCue = {event: SfxEvent; at: number; hit: number; vol: number; src: string};
 type Override = {event: string; beat?: number; at?: number; vol?: number};
 type ShotLike = {
+  /** v4.5 auto 层：真实视觉事件（元素出现 / 关键词高亮 / 数字落定），本镜本地帧。有它就不用 beats 猜。 */
+  sfxEvents?: readonly {event: string; at: number}[];
   id: string; from: number; to: number; duration: number; beats: readonly number[];
   media?: readonly string[]; live?: readonly string[]; move?: string | null; misconception?: string | null;
   transition?: string; sfx?: unknown; sfxAuto?: boolean;
@@ -73,9 +89,13 @@ export const autoSfxForShot = (s: ShotLike, isChapter: boolean, isFirst: boolean
   const out: {event: SfxEvent; at: number; beat?: number}[] = [];
   if (isChapter) {
     out.push({event: 'chapter', at: 2});
-    if (!isFirst) out.push({event: 'riser', at: -RISER_FRAMES});
+    if (!isFirst) out.push({event: 'riser', at: 0});
   } else if (!isFirst) {
-    out.push({event: 'whoosh', at: 0});
+    out.push({event: 'whoosh', at: WHOOSH_HIT});
+  }
+  if (s.sfxEvents && s.sfxEvents.length) {
+    s.sfxEvents.forEach((e) => { if (isEvent(e.event)) out.push({event: e.event, at: e.at}); });
+    return out;
   }
   const n = s.beats.length;
   s.beats.forEach((b, i) => {
@@ -112,13 +132,27 @@ export const planSfx = (shots: readonly ShotLike[], chapterStarts: readonly numb
     auto.forEach((a) => raw.push({event: a.event, at: s.from + a.at}));
   });
   // 优先级高的先占位；与已占位的同类/异类音效相距 < MIN_GAP 帧的丢掉（riser 是铺底，不参与互斥）
+  // r.at = 视觉命中帧；开始播放帧 = 命中帧 − 瞬态偏移（v4.5）
   const sorted = raw.filter((r) => r.at >= 0 && r.at < total)
     .sort((a, b) => PRIORITY.indexOf(a.event) - PRIORITY.indexOf(b.event) || a.at - b.at);
   const kept: typeof raw = [];
   for (const r of sorted) {
     if (r.event !== 'riser' && kept.some((k) => k.event !== 'riser' && Math.abs(k.at - r.at) < MIN_GAP)) continue;
+    if (r.event !== 'riser' && kept.filter((k) => k.event !== 'riser' && Math.abs(k.at - r.at) < WINDOW / 2).length >= WINDOW_MAX) continue;
     kept.push(r);
   }
   return kept.sort((a, b) => a.at - b.at)
-    .map((r) => ({event: r.event, at: r.at, vol: r.vol ?? SFX_GAIN[r.event], src: SFX_FILES[r.event]}));
+    .map((r) => ({event: r.event, at: Math.max(0, r.at - offF(r.event)), hit: r.at, vol: r.vol ?? SFX_GAIN[r.event], src: SFX_FILES[r.event]}));
+};
+
+/** 音乐床闪避：每个 cue 命中前 2 帧到命中后 12 帧，床降到 BED_DUCK 倍（帧的纯函数）。 */
+export const bedDuckAt = (f: number, plan: readonly SfxCue[]): number => {
+  let k = 1;
+  for (const c of plan) {
+    const d = f - c.hit;
+    if (d < -2 || d > 14) continue;
+    const w = d < 0 ? (d + 2) / 2 : d <= 4 ? 1 : 1 - (d - 4) / 10;
+    k = Math.min(k, 1 - (1 - BED_DUCK) * Math.max(0, Math.min(1, w)));
+  }
+  return k;
 };

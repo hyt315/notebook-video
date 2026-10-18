@@ -1257,6 +1257,87 @@ case('CG 一致性 · MIN_LABEL_FONT 单独漂移（数值双真源交叉校验�
 ])
 cleanup(td_skill)
 
+# ============================ v4.5 · compose-story / 自动修 / 音效元数据 ============================
+COMPOSE = os.path.join(SKILL, 'scripts/compose-story.py')
+DEMO45 = os.path.join(SKILL, 'assets/demo/v4.5-demo/story.json')
+
+
+def story_case(mutate):
+    td_ = tempfile.mkdtemp(prefix='nv45-')
+    d = json.load(io.open(DEMO45, encoding='utf-8'))
+    mutate(d)
+    sp = os.path.join(td_, 'story.json')
+    io.open(sp, 'w', encoding='utf-8').write(json.dumps(d, ensure_ascii=False))
+    return td_, sp
+
+
+def _shot(d, i):
+    return [s for ch in d['chapters'] for s in ch['shots']][i]
+
+
+# V1 蓝图占位符没填 → 拦
+td_, sp = story_case(lambda d: _shot(d, 0)['lines'].__setitem__(0, '<<一句钩子>>'))
+case('V1 compose · 蓝图占位符没填', [('must_block:占位符', 'compose-story', run([PY, COMPOSE, sp, os.path.join(td_, 'p')]))])
+cleanup(td_)
+# V2 台词关键词在画面上找不到 → 拦，且列出可用 id
+td_, sp = story_case(lambda d: _shot(d, 1)['lines'].__setitem__(1, '慢的只有 {{/nowhere}} 一个。'))
+case('V2 compose · {{关键词}} 在画面上找不到', [('must_block:可用 id', 'compose-story', run([PY, COMPOSE, sp, os.path.join(td_, 'p')]))])
+cleanup(td_)
+# V3 超长字幕 → 自动拆行（放行），且拆出来的每行都 ≤16 加权字
+td_, sp = story_case(lambda d: _shot(d, 0)['lines'].__setitem__(0, '这个接口在高峰时段每一次请求都要等待 {{1.2 秒}} 才能返回结果。'))
+r3 = run([PY, COMPOSE, sp, os.path.join(td_, 'p')])
+cues3 = json.load(io.open(os.path.join(td_, 'p/manifests/caption-cues.json'), encoding='utf-8'))['cues'] if r3[0] == 0 else []
+w3 = max([sum(1.0 if ord(ch) > 0x2E80 else 0.5 for ch in re.sub(r'\s+', '', c['text'])) for c in cues3] or [99])
+case('V3 compose · 超长字幕自动拆行（不拦）且每行 ≤16', [('must_warn:自动拆成', 'compose-story', r3),
+     ('must_pass', f'最长一行 {w3:g} 加权字', (0 if w3 <= 16 else 1, ''))])
+cleanup(td_)
+# V4 代码行太长（32px 地板也放不下）→ 拦，并写明每行上限
+td_, sp = story_case(lambda d: _shot(d, 3)['content'].__setitem__('code', 'x = ' + 'a_very_long_identifier + ' * 6 + '1'))
+case('V4 compose · 代码行放不下', [('must_block:每行请', 'compose-story', run([PY, COMPOSE, sp, os.path.join(td_, 'p')]))])
+cleanup(td_)
+# V5 相邻同版式 statement → 自动换变体（不拦）
+def _v5(d):
+    d['chapters'][-1]['shots'].append({"layout": "statement", "lines": ["再说一遍：先量再改。"], "content": {"text": "先量，再改"}})
+td_, sp = story_case(_v5)
+case('V5 compose · 相邻同版式自动换变体', [('must_warn:自动换成变体', 'compose-story', run([PY, COMPOSE, sp, os.path.join(td_, 'p')]))])
+cleanup(td_)
+# V6 取景不切字：demo 每一个相机关键帧都不许把任何文字元素切成两半（自动回退推近倍数的结果）
+td_, sp = story_case(lambda d: None)
+r6 = run([PY, COMPOSE, sp, os.path.join(td_, 'p')])
+import importlib.util as _ilu
+_spc = _ilu.spec_from_file_location('_cs', COMPOSE); _cs = _ilu.module_from_spec(_spc); _spc.loader.exec_module(_cs)
+_st = io.open(os.path.join(td_, 'p/src/story.ts'), encoding='utf-8').read()
+_story = json.loads(_st[_st.index('= {') + 2:_st.rindex(';')])
+_shots = json.load(io.open(os.path.join(td_, 'p/manifests/shots.json'), encoding='utf-8'))['shots']
+_bad = [(s['id'], k['at']) for s in _shots for k in s['cinema']['path'] if _cs.partial_clips((k['x'], k['y']), k['s'], _story[s['id']]['elements'])]
+case('V6 compose · 相机路径不切字（全部关键帧）', [('must_pass', f'{sum(len(s["cinema"]["path"]) for s in _shots)} 个关键帧，切字 {len(_bad)} 处 {_bad[:3]}', (0 if r6[0] == 0 and not _bad else 1, ''))])
+cleanup(td_)
+# V7 文字优先版式的留白只提示、不拦（主观规则不许硬拦）
+td_, sp = story_case(lambda d: None)
+run([PY, COMPOSE, sp, os.path.join(td_, 'p')])
+run([PY, os.path.join(SKILL, 'scripts/resolve-shots.py'), os.path.join(td_, 'p')])
+case('V7 shot-motion · statement 留白只提示（P1）', [('must_warn:留白是有意的', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), os.path.join(td_, 'p')]))])
+cleanup(td_)
+# V8 手写场景的「死尾巴」→ resolve 自动补收束焦点
+def _v8(d):
+    d['shots'][-1]['beats'] = d['shots'][-1]['beats'][:1]
+    return d
+td, _rc8, _out8 = mkproj(_v8)
+_r8 = json.load(io.open(os.path.join(td, 'manifests/shots.resolved.json'), encoding='utf-8'))['shots'][-1]
+_settle = [k for k in (_r8.get('cinema') or {}).get('focus', []) if k.get('settle')]
+case('V8 resolve · 镜尾 >1.5s 无事件 → 自动收束焦点', [('must_pass', f'settle 焦点 {len(_settle)} 个', (0 if _settle else 1, ''))])
+cleanup(td)
+# V9 音效增益与库元数据不一致 → 拦（v4.5 增益以 manifest 为准）
+td = tempfile.mkdtemp(prefix='nv45sfx-')
+shutil.copytree(os.path.join(TPL, 'public'), os.path.join(td, 'public'))
+os.makedirs(os.path.join(td, 'src'))
+_sfx = io.open(os.path.join(TPL, 'src/sfx.ts'), encoding='utf-8').read()
+if 'highlight: 0.356' not in _sfx:
+    raise SystemExit('V9 夹具锚点没找到：sfx.ts 的 SFX_GAIN.highlight 写法变了')
+io.open(os.path.join(td, 'src/sfx.ts'), 'w', encoding='utf-8').write(_sfx.replace('highlight: 0.356', 'highlight: 0.6', 1))
+case('V9 audio-levels · SFX_GAIN 与 manifest gain 漂移', [('must_block:不一致', 'validate-audio-levels', run([PY, os.path.join(SKILL, 'scripts/validate-audio-levels.py'), td]))])
+cleanup(td)
+
 print()
 print('== 负向抽查明细 ==')
 _steps = 0

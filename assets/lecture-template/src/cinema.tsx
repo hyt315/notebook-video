@@ -35,7 +35,10 @@ export type CinemaSpec = {
   fit?: FitSpec;
   focus?: readonly FocusKey[];
   pan?: {worldW: number; at: number; dur: number; dir?: 'ltr' | 'rtl'} | null;
+  /** v4.5：compose-story 预算的相机路径（关键词推近 / 视线连续 / 限速）。有它就不用 fit/drift/focus。 */
+  path?: readonly PathKey[];
 };
+export type PathKey = {at: number; x: number; y: number; s: number};
 export type TransitionKind = 'whip' | 'whip-left' | 'whip-right' | 'zoom' | 'fade' | 'hard';
 
 /** 默认值：观感调好的常数，普通作者不需要改。 */
@@ -100,6 +103,7 @@ export type CamState = {x: number; y: number; s: number; tx: number; fw?: number
  */
 export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: number, idx: number, sceneKeys?: readonly any[], zoomMax = TEXT_ZOOM_MAX): CamState => {
   const sp = spec ?? {};
+  if (sp.path && sp.path.length) return pathCamAt(sp.path, f, duration, sceneKeys, zoomMax);
   const sc = sceneKeys && sceneKeys.length ? camAt(sceneKeys as any, f) : {x: STAGE.cx, y: STAGE.cy, s: 1, rotY: 0};
   const capS = Math.max(1, zoomMax / Math.max(1, sc.s)); // 引擎缩放上限（与场景缩放相乘后 ≤ zoomMax）
   // ---- 0. fit（基准取景）+ 1. drift（围绕基准取景慢推/横移）----
@@ -142,6 +146,34 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
   }
   const c = clampLook(x, y, s);
   return {x: c.x, y: c.y, s, tx, fw: sp.pan && tx > 0 ? Math.max(fw, 1) : fw};
+};
+
+/**
+ * v4.5 路径摄影机：在 compose-story 预算的关键帧之间用 easeIO 插值（速度上限已在预算时保证），
+ * 叠加一层**永不停止的微漂移**（缩放 ±0.5%、位移 ±5px，周期 4–5 秒）+ 全镜 1.5% 慢推：
+ * 推近后不会冻结，任何静止段都不超过 1 秒。fw（遮罩权重）随推近倍数上升。
+ */
+export const pathCamAt = (path: readonly PathKey[], f: number, duration: number, sceneKeys?: readonly any[], zoomMax = TEXT_ZOOM_MAX): CamState => {
+  const sc = sceneKeys && sceneKeys.length ? camAt(sceneKeys as any, f) : {s: 1};
+  const capS = Math.max(1, zoomMax / Math.max(1, sc.s));
+  let k = path[0];
+  let x = k.x, y = k.y, s = k.s;
+  for (let i = 0; i < path.length; i++) {
+    const a = path[i], b = path[i + 1];
+    if (!b) { x = a.x; y = a.y; s = a.s; break; }
+    if (f <= a.at) { x = a.x; y = a.y; s = a.s; break; }
+    if (f < b.at) {
+      const t = smooth(f, a.at, b.at);
+      x = a.x + (b.x - a.x) * t; y = a.y + (b.y - a.y) * t; s = a.s + (b.s - a.s) * t;
+      break;
+    }
+  }
+  const push = 1 + 0.015 * Math.min(1, Math.max(0, f / Math.max(30, duration)));
+  const ms = 1 + 0.005 * Math.sin((f / 140) * Math.PI * 2);
+  const ss = Math.min(capS, Math.max(1, s * push * ms));
+  const dx = 5 * Math.sin((f / 150) * Math.PI * 2 + 0.7) / ss, dy = 3.5 * Math.cos((f / 125) * Math.PI * 2) / ss;
+  const c = clampLook(x + dx, y + dy, ss);
+  return {x: c.x, y: c.y, s: ss, tx: 0, fw: Math.max(0, Math.min(1, (ss - 1.02) / 0.04))};
 };
 
 /**

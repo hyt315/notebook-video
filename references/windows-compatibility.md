@@ -144,3 +144,8 @@ Move the skill and project closer to the drive root. Avoid deeply nested cloud f
 ### Antivirus blocks Chromium or FFmpeg
 
 Allow the installed Node, Remotion browser and FFmpeg executables, or render in a trusted local working directory. Do not disable asset validation or switch renderers to bypass the block.
+
+## v4.5 · make-video
+
+`node scripts\make-video.mjs story.json .\my-video --stills`（或 `scripts\make-video.cmd`）。全程只用 Node 的 `spawn(shell:false)` + `path.join`，
+Python 按 `py -3` → `python` → `python3` 顺序查找，ffmpeg 需在 PATH 上；不依赖 bash / sed / 符号链接。`npm` 在 Windows 上调用 `npm.cmd`。

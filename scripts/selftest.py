@@ -229,7 +229,9 @@ def main() -> int:
             r1 = run(sys.executable, str(ROOT / "scripts" / "validate-audio-levels.py"), str(proj))
             check("负向：音效文件被篡改（sha256）被拦", r1.returncode == 1 and "sha256" in r1.stdout, f"rc={r1.returncode}")
             shutil.copy(tpl / "public" / "sfx" / "lib" / "pop.ogg", proj / "public" / "sfx" / "lib" / "pop.ogg")
-            ts = (proj / "src" / "sfx.ts").read_text(encoding="utf-8").replace("success: 0.5,", "success: 0.9,")
+            ts = (proj / "src" / "sfx.ts").read_text(encoding="utf-8").replace("success: 0.459,", "success: 0.9,")
+            if "success: 0.9," not in ts:
+                raise SystemExit("selftest 夹具锚点没找到：src/sfx.ts 的 SFX_GAIN.success 写法变了（v4.5 增益来自 manifest）")
             (proj / "src" / "sfx.ts").write_text(ts, encoding="utf-8")
             r2 = run(sys.executable, str(ROOT / "scripts" / "validate-audio-levels.py"), str(proj))
             check("负向：音效增益越界被拦", r2.returncode == 1 and "SFX_GAIN" in r2.stdout, f"rc={r2.returncode}")

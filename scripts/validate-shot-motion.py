@@ -220,7 +220,10 @@ def check_cinema(shots: list[dict]) -> tuple[list[dict], list[dict]]:
         fit = cin.get("fit") or {}
         fa = fit.get("fillAfter")
         if isinstance(fa, (int, float)):
-            if fa < FIT_P0:
+            text_first = str(s.get("layout") or "").split("-")[0] in ("statement", "define", "quiz", "list", "custom")
+            if fa < FIT_P0 and text_first:
+                p1.append({"id": sid, "issue": f"内容占安全区 {fa:.0%}：卡片 / 定制版式，留白是有意的（v4.5 起只提示）—— 若显得空，加大字号或补一句副标题"})
+            elif fa < FIT_P0:
                 p0.append({"id": sid, "issue": f"内容只占安全区 {fa:.0%}（自动放大已到上限）：把内容本身画大（代码/差异镜头尤其要大），目标 60–80%"})
             elif fa < FIT_LO:
                 p1.append({"id": sid, "issue": f"内容占安全区 {fa:.0%} < 60%：偏小，建议放大内容或收紧 anchor"})

@@ -325,22 +325,27 @@ const render = async ([projectArg, outputArg, composition = 'NotebookVideoFilm']
   const project = resolvePath(projectArg);
   const output = resolvePath(outputArg);
   await syncProjectAssets([project]);
-  const raw = path.join(project, 'renders', '.remotion-raw.mp4');
+  // v4.5：中间文件放系统临时目录。Remotion 的 faststart 第二遍要回写文件头，网络 / FUSE 盘（实测 JuiceFS）上会
+  // `Error writing trailer: Input/output error`，整片渲完却拿不到文件。
+  const raw = path.join(os.tmpdir(), `nv-remotion-raw-${process.pid}.mp4`);
   fs.mkdirSync(path.dirname(raw), {recursive: true});
   ensureParent(output);
   const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
   console.log(`Rendering at concurrency ${concurrency}. Override with REMOTION_CONCURRENCY after running benchmark-render.`);
   // 交付路径：这是"真正出交付物"的渲染，色彩元数据必须打全（见 applyColorTags）。
-  await remotionRender({project, composition, output: raw, concurrency, colorTagged: true});
+  // v4.5：NOTEBOOK_VIDEO_SCALE=0.75 → 1920×1080 交付（缺省 2560×1440）
+  await remotionRender({project, composition, output: raw, concurrency, colorTagged: true, scale: process.env.NOTEBOOK_VIDEO_SCALE || undefined});
+  // v4.5：响度目标可调。有人声 −16 LUFS（缺省）；静音占位旁白（无 TTS）时 make-video 传 −24，免得把音效整体抬高 14 dB。
+  const LUFS = process.env.NOTEBOOK_VIDEO_LUFS || '-16';
   // 两遍响度规范化：先测（linear 模式需要 measured_* 才能同时打准 LUFS 与真峰）
-  const probe = await run('ffmpeg', ['-hide_banner', '-i', raw, '-af', 'loudnorm=I=-16:LRA=11:TP=-1.5:print_format=json', '-f', 'null', '-'], {capture: true, allowFailure: true});
-  let loudFilter = 'loudnorm=I=-16:LRA=11:TP=-1.5';
+  const probe = await run('ffmpeg', ['-hide_banner', '-i', raw, '-af', `loudnorm=I=${LUFS}:LRA=11:TP=-1.5:print_format=json`, '-f', 'null', '-'], {capture: true, allowFailure: true});
+  let loudFilter = `loudnorm=I=${LUFS}:LRA=11:TP=-1.5`;
   const probeJson = `${probe.stdout || ''}
 ${probe.stderr || ''}`.match(/\{[\s\S]*\}/);
   if (probeJson) {
     try {
       const m = JSON.parse(probeJson[0]);
-      loudFilter = `loudnorm=I=-16:LRA=11:TP=-1.5:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true`;
+      loudFilter = `loudnorm=I=${LUFS}:LRA=11:TP=-1.5:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true`;
     } catch { console.warn('loudnorm 测量解析失败，退回单遍模式'); }
   }
   // 末尾只是换封装：视频流已经是 bt709/limited 的 yuv420p 并带齐四项标记（见 applyColorTags），
@@ -427,8 +432,9 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   if (!videoStream || !audioStream) fail('Both video and audio streams are required.');
   if (videoStream.codec_name !== 'h264' || audioStream.codec_name !== 'aac') fail('Expected H.264 video and AAC audio.');
   // One locked delivery canvas (v4.0.0+): 2560x1440 (16:9).
-  const canvasOk = videoStream.width === 2560 && videoStream.height === 1440;
-  if (!canvasOk) fail(`Expected 2560x1440 (16:9), got ${videoStream.width}x${videoStream.height}.`);
+  // v4.5：同一张 16:9 画布的 1080p 交付（NOTEBOOK_VIDEO_SCALE=0.75，make-video 的缺省）也接受；其他尺寸 / 比例一律拒。
+  const canvasOk = (videoStream.width === 2560 && videoStream.height === 1440) || (videoStream.width === 1920 && videoStream.height === 1080);
+  if (!canvasOk) fail(`Expected 2560x1440 or 1920x1080 (16:9), got ${videoStream.width}x${videoStream.height}.`);
   const expectedFps = Number(process.env.NOTEBOOK_VIDEO_FPS || 30);
   if (videoStream.r_frame_rate !== `${expectedFps}/1`) fail(`Expected ${expectedFps}fps, got ${videoStream.r_frame_rate}.`);
   if (String(audioStream.sample_rate) !== '48000' || Number(audioStream.channels) !== 2) fail('Expected 48kHz stereo audio.');
@@ -458,7 +464,8 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   const integrated = Number(loudLog.match(/Input Integrated:\s*([-0-9.]+) LUFS/)?.[1]);
   const peak = Number(loudLog.match(/Input True Peak:\s*([-0-9.]+) dBTP/)?.[1]);
   if (!Number.isFinite(integrated) || !Number.isFinite(peak)) fail('Unable to parse loudness analysis from FFmpeg output.');
-  if (integrated < -18 || integrated > -14) fail(`Integrated loudness outside target range: ${integrated} LUFS`);
+  const lufsTarget = Number(process.env.NOTEBOOK_VIDEO_LUFS || -16);
+  if (integrated < lufsTarget - 2 || integrated > lufsTarget + 2) fail(`Integrated loudness outside target range: ${integrated} LUFS (target ${lufsTarget}; silent-narration films use NOTEBOOK_VIDEO_LUFS=-24)`);
   if (peak > -1.5) fail(`True peak above the documented -1.5 dBTP ceiling: ${peak} dBTP`);
   console.log(`audio valid: ${integrated.toFixed(1)} LUFS, ${peak.toFixed(1)} dBTP`);
 

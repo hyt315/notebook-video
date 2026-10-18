@@ -1,0 +1,190 @@
+{
+ "$blueprint": "data-compare",
+ "$about": "数据对比：两组 / 多组数字说明一个结论",
+ "$howto": "只改 <<…>> 里的内容（改完不许留下任何 <<）。不想要的镜可以删；想多讲一点可以复制一镜。版式名见 SKILL.md 的版式表。 ｜ v4.5b：推荐把每镜写成 v4.4 手写组件场景——每镜的 $v44 给出骨架和该用的 v4.4 组件（见 references/handwritten-scenes.md）；直接跑 compose-story 只是快速草稿。",
+ "title": "<<片名>>",
+ "theme": "flat",
+ "kicker": "<<4–8 字栏目名>>",
+ "header": "<<短标题 / ENGLISH>>",
+ "headerSub": "<<副标题>>",
+ "glossary": {},
+ "chapters": [
+  {
+   "title": "<<章 1：问题>>",
+   "role": "hook",
+   "shots": [
+    {
+     "role": "hook",
+     "layout": "statement",
+     "$why": "钩子",
+     "lines": [
+      "<<一个问题，含 {{关键词}}>>",
+      "<<我们拿数据说话>>"
+     ],
+     "content": {
+      "text": "<<屏上的问题（≤16 字）>>"
+     },
+     "$v44": {
+      "skeleton": "Stage",
+      "components": [
+       "Callout",
+       "StampBanner",
+       "FitTextBox"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 2：怎么读图>>",
+   "role": "pre",
+   "shots": [
+    {
+     "role": "pre",
+     "layout": "list",
+     "$why": "预训练：先教观众怎么读这张图",
+     "lines": [
+      "<<先说怎么看：{{第一条}}>>",
+      "<<{{第二条}}>>"
+     ],
+     "content": {
+      "title": "<<读图要点>>",
+      "items": [
+       "<<第一条>>",
+       "<<第二条>>"
+      ],
+      "style": "check"
+     },
+     "$v44": {
+      "skeleton": "Split",
+      "components": [
+       "Checklist",
+       "StaggerList"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 3：数据>>",
+   "role": "breakdown",
+   "shots": [
+    {
+     "role": "breakdown",
+     "layout": "bars",
+     "$why": "一张图只讲一个结论",
+     "lines": [
+      "<<整体情况>>",
+      "<<最突出的是 {{柱名}}>>"
+     ],
+     "content": {
+      "title": "<<图表标题（单位）>>",
+      "highlight": "<<柱名>>",
+      "data": [
+       {
+        "label": "<<A>>",
+        "value": 0
+       },
+       {
+        "label": "<<B>>",
+        "value": 0
+       }
+      ]
+     },
+     "$v44": {
+      "skeleton": "Stage",
+      "components": [
+       "BarChart",
+       "StatRow"
+      ]
+     }
+    },
+    {
+     "role": "example",
+     "layout": "number",
+     "$why": "把结论落成一个数字",
+     "lines": [
+      "<<关键差距 {{数字+单位}}>>",
+      "<<这意味着……>>"
+     ],
+     "content": {
+      "value": 0,
+      "unit": "<<单位>>",
+      "label": "<<一句话>>",
+      "notes": [
+       "<<补充>>"
+      ]
+     },
+     "$v44": {
+      "skeleton": "Stage",
+      "components": [
+       "KineticNumber",
+       "StatRow",
+       "ProgressRing"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "<<章 4：误区与回顾>>",
+   "role": "recap",
+   "shots": [
+    {
+     "role": "misconception",
+     "layout": "compare",
+     "$why": "误区",
+     "lines": [
+      "<<容易误读成……>>",
+      "<<{{实际情况}}……>>"
+     ],
+     "content": {
+      "mode": "split",
+      "before": {
+       "title": "容易误读",
+       "items": [
+        "<<误读>>"
+       ]
+      },
+      "after": {
+       "title": "实际情况",
+       "items": [
+        "<<正解>>"
+       ]
+      }
+     },
+     "$v44": {
+      "skeleton": "Split",
+      "components": [
+       "SplitStage",
+       "VerdictBar",
+       "Checklist"
+      ]
+     }
+    },
+    {
+     "role": "recap",
+     "layout": "statement",
+     "$why": "收束",
+     "lines": [
+      "<<结论：{{短语}}>>",
+      "<<一句建议>>"
+     ],
+     "content": {
+      "text": "<<结论句>>",
+      "sub": "<<建议>>",
+      "subAt": 1
+     },
+     "$v44": {
+      "skeleton": "Stage",
+      "components": [
+       "Callout",
+       "StampBanner",
+       "FitTextBox"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

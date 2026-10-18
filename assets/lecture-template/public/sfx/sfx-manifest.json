@@ -1,23 +1,43 @@
 {
-  "version": 1,
+  "version": 2,
   "target_lufs_100ms": -18.0,
   "tolerance_lu": 1.5,
   "peak_ceiling_dbfs": -1.0,
   "bed_lufs_100ms": -30.0,
   "mix": {
     "narration_target_lufs": -16,
-    "note": "one-shots play at the engine's per-event gain (0.30-0.55, about -5..-10 dB), so they sit roughly 8-12 LU under narration; the bed plays at 0.28 (about -41 LUFS)."
+    "note": "v4.5: each cue carries `gain` (linear, puts it on its loudness-ladder rung after the engine mix) and `offsetMs` (transient position; the engine starts the file that much earlier so the hit lands on the visual frame). The bed ducks to 45% under every cue. Weak models never set volumes by hand.",
+    "bed_gain": 0.28,
+    "ladder_lufs": {
+      "chapter": -24.0,
+      "success": -25.0,
+      "error": -26.0,
+      "pop": -25.5,
+      "chart": -26.0,
+      "highlight": -27.0,
+      "whoosh": -27.5,
+      "riser": -28.0,
+      "click": -28.5,
+      "typing": -30.0
+    },
+    "min_gap_ms": 150,
+    "max_hits_per_min": 24,
+    "duck": {
+      "depth": 0.45,
+      "attack_frames": 2,
+      "release_frames": 12
+    }
   },
   "built_with": "earshot 0.2.0 (github.com/Leonxlnx/earshot, MIT) — dev-time only",
   "events": [
     {
       "event": "whoosh",
       "file": "sfx/lib/whoosh.ogg",
-      "sha256": "fe72cd053bdaabfea28833ab7a25a40388f65e92ea08a68cc380916475a46ad2",
-      "bytes": 6297,
-      "duration_s": 0.356,
+      "sha256": "bb3636404c24c81dd2d12adbefe51e55fc774cf27b9cfaf2468683016ca01a39",
+      "bytes": 5888,
+      "duration_s": 0.26,
       "loudness_lufs_100ms": -18.0,
-      "peak_dbfs": -2.1,
+      "peak_dbfs": -1.7,
       "channels": 1,
       "sample_rate": 48000,
       "codec": "vorbis",
@@ -32,7 +52,18 @@
       "qc": {
         "earshot_match_z": 5.78,
         "verdict": "strong"
-      }
+      },
+      "tuned_v45": {
+        "start_ms": 60,
+        "keep_ms": 260,
+        "fade_out_ms": 90,
+        "highpass_hz": 250,
+        "lowpass_hz": 0,
+        "fade_in_ms": 4
+      },
+      "gain": 0.338,
+      "offsetMs": 71.6,
+      "timing_note": "scheduled at the transition midpoint (shot boundary + 7 f); offsetMs pulls the file earlier so the air peak lands there"
     },
     {
       "event": "pop",
@@ -78,7 +109,9 @@
       "qc": {
         "earshot_match_z": 3.01,
         "verdict": "strong"
-      }
+      },
+      "gain": 0.419,
+      "offsetMs": 5.8
     },
     {
       "event": "click",
@@ -102,7 +135,9 @@
       "qc": {
         "earshot_match_z": 2.77,
         "verdict": "plausible"
-      }
+      },
+      "gain": 0.491,
+      "offsetMs": 4.5
     },
     {
       "event": "typing",
@@ -131,7 +166,9 @@
       "qc": {
         "earshot_match_z": 4.19,
         "verdict": "strong"
-      }
+      },
+      "gain": 0.284,
+      "offsetMs": 13.9
     },
     {
       "event": "success",
@@ -155,16 +192,18 @@
       "qc": {
         "earshot_match_z": 3.88,
         "verdict": "strong"
-      }
+      },
+      "gain": 0.459,
+      "offsetMs": 6.1
     },
     {
       "event": "error",
       "file": "sfx/lib/error.ogg",
-      "sha256": "c2c271ef4649e005fc347d757a062ad5a71c7723e3e2a5910825247f25733bcd",
-      "bytes": 9846,
-      "duration_s": 0.609,
-      "loudness_lufs_100ms": -18.3,
-      "peak_dbfs": -2.7,
+      "sha256": "7297fe89c10aef83187ca14851a64f5b789648473cd4142065e894402d6188b9",
+      "bytes": 5408,
+      "duration_s": 0.21,
+      "loudness_lufs_100ms": -18.0,
+      "peak_dbfs": -3.8,
       "channels": 1,
       "sample_rate": 48000,
       "codec": "vorbis",
@@ -179,7 +218,17 @@
       "qc": {
         "earshot_match_z": 2.79,
         "verdict": "plausible"
-      }
+      },
+      "tuned_v45": {
+        "start_ms": 380,
+        "keep_ms": 210,
+        "fade_out_ms": 60,
+        "highpass_hz": 0,
+        "lowpass_hz": 3200,
+        "fade_in_ms": 3
+      },
+      "gain": 0.409,
+      "offsetMs": 139.6
     },
     {
       "event": "chart",
@@ -225,16 +274,18 @@
       "qc": {
         "earshot_match_z": 3.15,
         "verdict": "strong"
-      }
+      },
+      "gain": 0.419,
+      "offsetMs": 48.0
     },
     {
       "event": "highlight",
       "file": "sfx/lib/highlight.ogg",
-      "sha256": "d2decc8c39f8da860aecea352f39ec73db491248ba4d0169c781efe8a6d1d2d3",
-      "bytes": 5601,
-      "duration_s": 0.377,
-      "loudness_lufs_100ms": -18.1,
-      "peak_dbfs": -8.4,
+      "sha256": "5f2c4cf037846c83cfed4dc387f7351d3849e4474f521ade04d01d7e9f0db2f5",
+      "bytes": 5291,
+      "duration_s": 0.19,
+      "loudness_lufs_100ms": -18.0,
+      "peak_dbfs": -7.7,
       "channels": 1,
       "sample_rate": 48000,
       "codec": "vorbis",
@@ -249,16 +300,26 @@
       "qc": {
         "earshot_match_z": 2.04,
         "verdict": "weak"
-      }
+      },
+      "tuned_v45": {
+        "start_ms": 0,
+        "keep_ms": 190,
+        "fade_out_ms": 120,
+        "highpass_hz": 1800,
+        "lowpass_hz": 0,
+        "fade_in_ms": 0
+      },
+      "gain": 0.356,
+      "offsetMs": 58.0
     },
     {
       "event": "chapter",
       "file": "sfx/lib/chapter.ogg",
-      "sha256": "f1233f0df3bbea40ae842187551b07b803741cd6234ebbce3c6c10467d96629d",
-      "bytes": 14326,
-      "duration_s": 1.15,
-      "loudness_lufs_100ms": -18.2,
-      "peak_dbfs": -7.0,
+      "sha256": "85c155d9cc1729cca58d88b3ab79ca28ac952c7e990dd84a0fa3eb0f8088f904",
+      "bytes": 12421,
+      "duration_s": 0.9,
+      "loudness_lufs_100ms": -18.0,
+      "peak_dbfs": -7.2,
       "channels": 1,
       "sample_rate": 48000,
       "codec": "vorbis",
@@ -273,16 +334,26 @@
       "qc": {
         "earshot_match_z": 3.72,
         "verdict": "strong"
-      }
+      },
+      "tuned_v45": {
+        "start_ms": 0,
+        "keep_ms": 900,
+        "fade_out_ms": 260,
+        "highpass_hz": 0,
+        "lowpass_hz": 0,
+        "fade_in_ms": 0
+      },
+      "gain": 0.522,
+      "offsetMs": 253.5
     },
     {
       "event": "riser",
       "file": "sfx/lib/riser.ogg",
-      "sha256": "082d386158a4e95ac661098f14c789aee0d02dfcabd90d3c1f82e894e7e04737",
-      "bytes": 14523,
-      "duration_s": 1.5,
-      "loudness_lufs_100ms": -18.4,
-      "peak_dbfs": -3.4,
+      "sha256": "2e7c5566f6d69510c09d0ed57e391ec83daec34710144cbaeb6f6abc65070cfa",
+      "bytes": 12665,
+      "duration_s": 1.08,
+      "loudness_lufs_100ms": -18.0,
+      "peak_dbfs": -3.5,
       "channels": 1,
       "sample_rate": 48000,
       "codec": "vorbis",
@@ -297,7 +368,18 @@
       "qc": {
         "earshot_match_z": 1.63,
         "verdict": "no match"
-      }
+      },
+      "tuned_v45": {
+        "start_ms": 420,
+        "keep_ms": 1080,
+        "fade_out_ms": 12,
+        "highpass_hz": 120,
+        "lowpass_hz": 0,
+        "fade_in_ms": 60
+      },
+      "gain": 0.331,
+      "offsetMs": 1066.7,
+      "timing_note": "ends on the hit: scheduled so its peak (offsetMs) lands on the chapter's first frame"
     },
     {
       "event": "bed",
