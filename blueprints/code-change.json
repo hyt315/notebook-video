@@ -215,5 +215,42 @@
     }
    ]
   }
- ]
+ ],
+ "$mediaSlot": {
+  "$why": "可选：观众以后要在真实界面上操作时，把某一镜换成真实截图 / 录屏（见 references/real-media.md）。没有兼容许可就删掉这一项。",
+  "media": [
+   {
+    "id": "<<素材id>>",
+    "file": "<<截图文件，相对本 story.json>>",
+    "source": "user",
+    "focusRegions": [
+     {
+      "id": "<<区域id>>",
+      "label": "<<屏上叫什么>>",
+      "x": 0.1,
+      "y": 0.3,
+      "w": 0.5,
+      "h": 0.2
+     }
+    ]
+   }
+  ],
+  "shot": {
+   "layout": "media",
+   "lines": [
+    "<<一句台词，含 {{屏上叫什么|区域id}}>>"
+   ],
+   "content": {
+    "media": "<<素材id>>",
+    "chrome": "browser",
+    "caption": "<<可选旁注>>"
+   },
+   "$v44": {
+    "skeleton": "Zoom",
+    "components": [
+     "MediaFrame"
+    ]
+   }
+  }
+ }
 }

@@ -22,7 +22,9 @@ All notable changes are recorded here. The project follows semantic versioning.
 - 定制组件逃生口 `src/custom/`（`CUSTOM` 注册表 + `RequestLane` 示例）。
 - 可选 auto 草稿：`scripts/compose-story.py` + `src/auto.tsx`（字幕 4.5 字/秒自动定时、16 字在合法断点拆、不拆数字 / 英文、字号地板 32px、文字对比度、取景不切字、微漂移）。`statement` 不再是缺省，渲染成一张 v4.4 式卡片；强调改为 v4.4 式描边 + 轻抬升；无章节呼吸 / 章节卡 / 进度条。
 - 音效调校工具 `scripts/dev/audit-sfx.py`、`scripts/dev/tune-sfx.py`；`references/auto-engine.md`。
-- 负向抽查 76 例 / 127 断言（含 V1–V9 自动修夹具）。
+- 真实素材：`src/media-frame.tsx` 的 `MediaFrame`（截图走 `<Img>`、录屏走 `<OffthreadVideo>`，按 trimStartSec / trimEndSec 推出起止帧、播完停最后一帧；browser / window / device 外壳；卡片内区域推近、描框、旁注；`source: web` 素材无条件显示署名徽章），`manifests/media.json` + `public/media/`；`scripts/prepare-media.py`（+ `.cmd`）登记 / 探测尺寸 / 转 H.264 恒定 30fps / 缺省去音轨 / 动图转 MP4；`scripts/validate-media.py` 门禁（文件、放大 >1.5 倍、编码帧率、许可与署名、区域引用；make-video 自动跑）；compose-story 新版式 `media`（区域可被 `{{词|区域id}}` 点名）；`references/real-media.md`（何时用真实素材、来源优先级、无兼容许可就用组件重画）；样例 `examples/real-media/`（脚本生成的占位 PR 截图）。
+  Real media: MediaFrame, prepare-media, validate-media gate, `media` layout, references/real-media.md.
+- 负向抽查 84 例 / 138 断言（含 V1–V9 自动修夹具、M0–M7 真实素材门禁）。
 
 ### 变更 / Changed
 

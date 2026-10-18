@@ -62,6 +62,14 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 题目需要一张只属于它的图（比如「请求怎么穿过缓存」）时，照抄 `src/custom/RequestLane.tsx` 写一个组件，在 `src/custom/index.ts` 注册，
 然后在 `scenes.tsx` 里像其他组件一样用。纪律：只用 `f` 驱动动画；文字 ≥32px；文字色用 `C.ink` / `C.muted` / `C.*Ink`。
 
+## （需要时）真实截图 / 录屏
+
+观众以后要在那个界面上操作（例如 GitHub 的 PR 页）时，可以把真实截图或 ≤10 秒的录屏放进 `MediaFrame`（同一套卡片外观）：
+`python scripts/prepare-media.py ./my-video --add pr.png --id pr-page --region diff 0.01 0.31 0.69 0.17`，然后在场景里
+`<MediaFrame f={f} id="pr-page" x={200} y={200} w={1060} h={662} focus="diff" focusAt={b[1]} />`。
+来源优先级：用户文件 > 自己截的官方页面 > CC0 / CC-BY / Pexels / Unsplash（写清 url / license / credit，署名自动上屏）。
+**没有兼容许可就用组件重画。** 细节与门禁：[references/real-media.md](references/real-media.md)。
+
 ## 引擎替你保证的
 
 **硬门禁（客观）**：取景不切断标题 / 标签（推近自动留边、回退倍数）；字号地板；文字对比度 ≥4.5:1；字幕每行 ≤16 字、读速 ≤4.5 字/秒；
@@ -72,7 +80,7 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 ## 可选 · auto 草稿（story.json）
 
 赶时间时可以先用 `node scripts/make-video.mjs my-story.json ./draft --stills` 从蓝图直接出草稿（`compose-story.py` 自动排版、关键词同步、字幕定时）。
-它用组件式版式（define / number / bars / compare / code / flow / list / quiz / custom）；`statement` 只渲染成一张卡片，不是缺省版式。
+它用组件式版式（define / number / bars / compare / code / flow / list / quiz / custom / media）；`statement` 只渲染成一张卡片，不是缺省版式。
 正式交付仍建议改写成第 2–3 步的组件场景。细节见 [references/auto-engine.md](references/auto-engine.md)；示例 `examples/*.story.json`。
 
 ## 更多
