@@ -98,8 +98,27 @@ export const MediaFrame: React.FC<MediaFrameProps> = ({f, id, x, y, w, h, chrome
         <div style={{position: 'absolute', left: pad, top: ch + pad, width: vw, height: vh, overflow: 'hidden', borderRadius: chrome === 'device' ? 30 : 0, background: C.paperBase}}>
           <div style={{position: 'absolute', left: 0, top: 0, width: vw, height: vh, transformOrigin: '0 0', transform: `translate(${tx}px, ${ty}px) scale(${s})`}}>
             <div style={{position: 'absolute', left: ox, top: oy}}>{media}</div>
-            {hiBoxes.map((rid) => { const r = R(rid); return <div key={rid} style={{position: 'absolute', left: r.x - 6, top: r.y - 6, width: r.w + 12, height: r.h + 12, border: `${4 / s}px solid ${C.orange}`, borderRadius: 10, opacity: hiW, boxShadow: `0 8px 22px rgba(0,0,0,${0.12 * hiW})`}} />; })}
           </div>
+          {/* v4.5c 区域高亮（v4.4 式描边 + 轻抬升，画在视口坐标里：线宽恒定 4px、不随区域推近变粗变细）：
+              ① 区域外压一层淡暗幕（0.16），让被点名的区域「亮出来」——以前只有一圈细框，缩小看几乎看不见；
+              ② 橙色 4px 描边 + 2px 白内圈（任何截图底色上都看得清）+ 抬升阴影，并上移 3px；
+              ③ 区域在视口里露出 < 90% 时（例如推近别的区域把它挤到边上）不画，免得出现被视口切掉的半个框。 */}
+          {(() => {
+            const vis = hiBoxes.map((rid) => {
+              const r = R(rid), x0 = tx + r.x * s - 8, y0 = ty + r.y * s - 8, x1 = tx + (r.x + r.w) * s + 8, y1 = ty + (r.y + r.h) * s + 8;
+              const iw2 = Math.max(0, Math.min(vw, x1) - Math.max(0, x0)), ih2 = Math.max(0, Math.min(vh, y1) - Math.max(0, y0));
+              return {rid, x0, y0, w: x1 - x0, h: y1 - y0, ok: (iw2 * ih2) / ((x1 - x0) * (y1 - y0)) >= 0.9};
+            }).filter((b) => b.ok);
+            if (!vis.length || hiW <= 0.01) return null;
+            const mid = `mf-hi-${id}`;
+            return <>
+              <svg width={vw} height={vh} style={{position: 'absolute', left: 0, top: 0, opacity: hiW}}>
+                <defs><mask id={mid}><rect width={vw} height={vh} fill="#fff" />{vis.map((b) => <rect key={b.rid} x={b.x0} y={b.y0} width={b.w} height={b.h} rx={12} fill="#000" />)}</mask></defs>
+                <rect width={vw} height={vh} fill="rgba(28,32,36,0.16)" mask={`url(#${mid})`} />
+              </svg>
+              {vis.map((b) => <div key={b.rid} data-media-highlight={b.rid} style={{position: 'absolute', left: b.x0, top: b.y0, width: b.w, height: b.h, boxSizing: 'border-box', borderRadius: 12, border: `4px solid ${C.orange}`, boxShadow: `inset 0 0 0 2px rgba(255,255,255,0.9), 0 10px 28px rgba(0,0,0,${0.18 * hiW})`, opacity: hiW, transform: `translateY(${-3 * hiW}px)`}} />)}
+            </>;
+          })()}
           {callouts.map((c, i) => {
             const r = R(c.region); const p = interpolate(f, [c.at, c.at + 14], [0, 1], {...clamp, easing: ease});
             const cx = tx + r.x * s, cy = ty + (c.side === 'top' ? r.y * s - 64 : (r.y + r.h) * s + 14);
