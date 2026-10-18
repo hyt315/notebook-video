@@ -38,6 +38,8 @@ Every frame is drawn in code (React + SVG + Remotion) with **no image-generation
 | --- | --- | --- |
 | **One sentence to a film** | Topic → 2K MP4: script → TTS → word timings → semantic captions → shot table → scenes → gates → render → contact sheet | No hand-placing frames, no sentence-by-sentence caption fiddling |
 | **Engine virtual camera (v4.4)** | Default push-in per shot; `cinema.focus` pushes to whatever the narration is talking about and pans between targets; whip / zoom-through transitions; background parallax; content auto-enlarged to 60–80 % of the safe area; kinetic numbers; ≤ 16-character subtitle lines; adjacent shots must change layout | Removes the slide-deck feel; motion even when the shot table says nothing |
+| **Weak-model replication (v4.5)** | 5 teaching blueprints (each shot names its skeleton and v4.4 components), golden examples, a short 5-step SKILL.md, one command `node scripts/make-video.mjs ./project --stills / --render` (same on Windows, or `make-video.cmd`); objective auto-fixes + hard gates (no clipped titles, font floor, contrast, 4.5 chars/s captions split at legal breaks, no dead tails, A/V sync), subjective rules as hints only; `src/custom/` escape hatch | Same v4.4 look, reproducible by a weaker model |
+| **SFX optimisation (v4.5)** | Per-cue `gain` / `offsetMs` in the manifest; the engine pre-rolls each cue so its transient lands on the visual hit; ≥150 ms spacing, ≈24/min cap; music bed ducks under cues; re-trimmed whoosh / highlight / riser / error; −24 LUFS for silent-narration films | Sounds hit the picture without clutter |
 | **Four scene skeletons** | `Stage` (one subject evolves) / `Corridor` (an object travels a track) / `Split` (two-column contrast) / `Zoom` (wide → detail → annotation → wide); **no two adjacent scenes may share one, ≥3 per film** | Kills "four PowerPoint pages" structurally |
 | **Content → medium routing** | Console window / chart / code diff / display type / metric grid / concept diagram; **≥3 media per film**, and every explanation scene carries at least one component that **changes state as the narration proceeds** | The frame stops being "card + paragraph" forever |
 | **Restricted camera language** | Six intents per shot + an `anchor` out-of-bounds proof + a pan budget; **a declared move must actually move** | Real camera movement that can never push content off screen |
@@ -243,7 +245,7 @@ notebook-video/
 ├── SKILL.md                          # Core skill definition and production workflow
 ├── manifest.json                     # Skill metadata (version lives here)
 ├── README.md / README.en.md          # Chinese / English documentation
-├── CHANGELOG.md                      # Version history (currently v4.4.0)
+├── CHANGELOG.md                      # Version history (currently v4.5.0)
 ├── LICENSE                           # Apache License 2.0
 ├── NOTICE                            # Third-party font / asset / dependency notices
 ├── CONTRIBUTING.md · CODE_OF_CONDUCT.md · SECURITY.md · SUPPORT.md

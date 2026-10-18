@@ -4,6 +4,62 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+## [4.5.0] - 2026-10-18
+
+> 观感 = v4.4（组件场景 + 引擎虚拟摄影机，原样保留）；新增 = 弱模型复刻辅助 + 音效优化 + 客观自动修。
+> Look = v4.4 (component scenes + engine virtual camera, unchanged). Added: weak-model replication aids, SFX optimisation, objective auto-fixes.
+>
+> 说明：先前的 v4.5 「文字优先」尝试（大字页、章节进度条、章节卡、底色带 / 下划线强调）观感不如 v4.4，已整体撤回，保存在分支 `v4.5-textfirst`。
+> Note: the earlier text-first v4.5 attempt (big text pages, chapter progress bar, chapter cards, tinted-band / underline emphasis) was rejected as worse than v4.4 and is preserved on branch `v4.5-textfirst`.
+
+### 新增 / Added
+
+- 弱模型复刻辅助：5 个讲课蓝图 `blueprints/`（concept / code-change / data-compare / process / pitfall，同一弧线 钩子 → 先懂一个词 → 拆开看 → 举例 → 误区 → 回顾），每镜带 `$v44`：该用的骨架与 v4.4 组件；未填 `<<占位符>>` 直接报错。
+  Weak-model aids: 5 teaching blueprints, each shot carries `$v44` (skeleton + v4.4 components to use).
+- 黄金样例 `examples/*.story.json`（含 `code-change-cache.story.json`）与弱模型测试 `examples/weak-model-test/`。
+- `SKILL.md` 改为 5 步短页（选蓝图 → 建工程照抄示例片 → 写台词与镜头表 → 一条命令 → 需要时定制组件），描述的是 v4.4 组件场景；完整手册移到 `references/handwritten-scenes.md`。
+- `scripts/make-video.mjs` + `make-video.cmd`：一条命令。**工程目录**（v4.4 手写组件场景，推荐）或 **story.json**（auto 草稿）两种入口，共用 resolve → 门禁 → tsc → `--stills` 静帧接触表 / `--render` 成片 → `renders/report.md`。手写工程把 `validate-composition` 作为硬门禁。
+- 定制组件逃生口 `src/custom/`（`CUSTOM` 注册表 + `RequestLane` 示例）。
+- 可选 auto 草稿：`scripts/compose-story.py` + `src/auto.tsx`（字幕 4.5 字/秒自动定时、16 字在合法断点拆、不拆数字 / 英文、字号地板 32px、文字对比度、取景不切字、微漂移）。`statement` 不再是缺省，渲染成一张 v4.4 式卡片；强调改为 v4.4 式描边 + 轻抬升；无章节呼吸 / 章节卡 / 进度条。
+- 音效调校工具 `scripts/dev/audit-sfx.py`、`scripts/dev/tune-sfx.py`；`references/auto-engine.md`。
+- 负向抽查 76 例 / 127 断言（含 V1–V9 自动修夹具）。
+
+### 变更 / Changed
+
+- 音效：manifest 每条 cue 新增 `gain` 与 `offsetMs`；引擎按 `offsetMs` 提前起播，让瞬态落在视觉命中帧（±1 帧）；whoosh 对齐转场中点；间隔 ≥150 ms、任意 10 秒 ≤4 个（≈24/分钟）；音乐床在每个 cue 下闪避（`bedDuckAt`，帧驱动）；whoosh / highlight / riser / error / chapter 重新修剪。`validate-audio-levels.py` 要求 `SFX_GAIN` / `SFX_OFFSET_MS` 与 manifest 一致。
+- 摄影机「不切字」自动修：焦点推近时焦点矩形留 28 px 边距完整入画，注视点横向尽量滑回基准取景，少把非焦点标题推出画面（v4.4 演示 S1 / S7 实测改善）；`focus[].slide: false` 关闭。
+- `resolve-shots.py`：手写场景镜尾 >1.5 s 无事件自动补收束焦点（去「死尾巴」）；透传 `cinema.path` / `sfxEvents`。
+- `index.tsx`：`COPY` / `CHAPTER_SHOTS` 抽到 `src/film.ts`（观感不变）。
+- 观感无关的修复：渲染中间文件放系统临时目录（网络盘 faststart 回写失败）；`NOTEBOOK_VIDEO_LUFS`（静音旁白片 −24 LUFS）；`validate-video` 接受 1920×1080；`NOTEBOOK_VIDEO_SCALE`；`validate-motion-gaps` 参数；代码字体的中文字形回退；相机路径延迟修正。
+- `validate-shot-motion.py`：卡片 / 定制版式的低占比降为 P1 提示（主观规则不硬拦）。
+
+### 撤回 / Dropped (vs. branch v4.5-textfirst)
+
+- 章节进度条 `ChapterProgress`、章节引导卡 `ChapterIntro` 与 0.9 s 章节呼吸；文字优先 `statement` 缺省与满屏大字页；底色带 + 标记条 / 下划线强调；模板示例片的 v4.5 改动（S5 KineticNumber、额外 focus）——模板示例片与 v4.4 相同。
+
+### 音效逐 cue 前后（`python scripts/dev/audit-sfx.py [--legacy]`）/ Per-cue SFX before → after
+
+| cue | v4.4 dur ms | hit ms | err f | mix LUFS | vs ladder | score | → v4.5 dur | offsetMs | err f | mix | vs ladder | gain | score |
+| whoosh | 359 | 132 | 3.95 | -25.6 | +1.9 | 53 | 260 | 72 | 0.0 | -27.5 | +0.0 | 0.338 | 100 |
+| pop | 170 | 6 | 0.17 | -24.9 | +0.6 | 100 | 170 | 6 | 0.0 | -25.5 | -0.0 | 0.419 | 100 |
+| click | 53 | 5 | 0.14 | -30.7 | -2.2 | 91 | 53 | 4 | 0.0 | -28.5 | -0.0 | 0.491 | 100 |
+| typing | 562 | 14 | 0.42 | -28.4 | +1.6 | 96 | 562 | 14 | 0.0 | -30.0 | +0.0 | 0.284 | 100 |
+| success | 400 | 6 | 0.18 | -24.3 | +0.7 | 90 | 400 | 6 | 0.0 | -25.0 | -0.0 | 0.459 | 90 |
+| error | 590 | 537 | 16.1 | -27.2 | -1.2 | 30 | 210 | 140 | 0.0 | -26.0 | +0.0 | 0.409 | 90 |
+| chart | 372 | 48 | 1.44 | -26.4 | -0.4 | 75 | 372 | 48 | 0.0 | -26.0 | -0.0 | 0.419 | 90 |
+| highlight | 380 | 4 | 0.12 | -26.0 | +1.0 | 100 | 190 | 58 | 0.0 | -27.0 | -0.0 | 0.356 | 90 |
+| chapter | 1150 | 280 | 8.41 | -23.4 | +0.6 | 60 | 900 | 254 | 0.0 | -24.0 | +0.0 | 0.522 | 100 |
+| riser | 1500 | 1492 | 44.76 | -27.2 | +0.8 | 60 | 1080 | 1067 | 0.0 | -28.0 | -0.0 | 0.331 | 100 |
+
+均分 75.5 → 96.0。说明：v4.4 的 riser 本来就提前 45 帧起播，实际对位误差约 0.2 帧（表里 legacy 列按「不提前」计）；它的改进是死区 544 → 124 ms 与电平。highlight 的音色分按「峰值位置」略降（0.01 → 0.31），换来与 success 拉开的音色（高通 1.8 kHz、190 ms）。
+
+### 已知限制 / Known limitations
+
+- 无 TTS：旁白是静音占位，字幕时间按 4.5 字/秒推算；接入真实配音后用 `match-timing.py` 重对齐。
+- 本版没有重新渲染演示片；观感核对用 Remotion 静帧与 v4.4 成片同帧对比完成。
+- v4.4 演示片 S1 的焦点推近仍会切到左侧大数字的边缘（焦点矩形本身就要占满取景窗；需要时缩小 `zoom`）。
+- auto 草稿（compose-story）的版式由 `auto.tsx` 绘制，风格接近但不等于手写 v4.4 组件场景；正式交付建议走手写路线。
+
 ## [4.4.0] - 2026-10-18
 
 > 去 PPT 感（Phase 5）：引擎级虚拟镜头（缺省缓推、讲到哪推到哪、横摇、甩镜 / 推穿转场、视差）、内容自动放大到安全区 60–80%、关键数字动态排版、字幕每行 ≤ 16 字、相邻镜头换布局，pop / chart 音效用 earshot 重做。分镜表什么都不写也有缺省运动；所有动画仍是帧的纯函数。
