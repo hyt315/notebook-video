@@ -58,6 +58,6 @@
     "@types/d3-shape": "^3.1.7",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   }
 }
