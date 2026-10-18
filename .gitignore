@@ -24,3 +24,7 @@ Thumbs.db
 *.env
 audit-report.txt
 .doctor/
+
+# Fonts are downloaded on demand (node scripts/notebook-video.mjs fonts)
+assets/fonts/*.ttf
+assets/lecture-template/public/LXGWWenKaiLite-*.ttf

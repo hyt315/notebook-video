@@ -118,6 +118,35 @@ const checkDeps = async () => {
 // 只保留两套皮肤，flat 为默认（paper / sticker 已删除）。
 const THEME_IDS = ['flat', 'cel'];
 
+// LXGW WenKai Lite (OFL-1.1) is not stored in the repo (~28 MB). It is downloaded once
+// from the official GitHub release, pinned by version and sha256, into assets/fonts/.
+// Mirror: set NOTEBOOK_VIDEO_FONT_BASE_URL to a folder URL holding the same two files,
+// or copy the two .ttf files into assets/fonts/ by hand.
+const FONT_RELEASE = 'v1.522';
+const FONT_FILES = {
+  'LXGWWenKaiLite-Regular.ttf': '140c99ba4e28e817cec49bf82a0c5fcdc4fe633fb9dfda16d0ee8d59a8545f15',
+  'LXGWWenKaiLite-Medium.ttf': '02eb0f8deed11b00481393f5720630ae1a44424f37f4157ea160a69a1c72a0b6',
+};
+const ensureFonts = async () => {
+  const fontDir = path.join(SKILL_DIR, 'assets', 'fonts');
+  fs.mkdirSync(fontDir, {recursive: true});
+  const base = (process.env.NOTEBOOK_VIDEO_FONT_BASE_URL || `https://github.com/lxgw/LxgwWenKai-Lite/releases/download/${FONT_RELEASE}`).replace(/\/+$/, '');
+  for (const [name, sha] of Object.entries(FONT_FILES)) {
+    const file = path.join(fontDir, name);
+    if (fs.existsSync(file) && hashFile(file) === sha) continue;
+    const url = `${base}/${name}`;
+    console.log(`Downloading font ${name} (LXGW WenKai Lite ${FONT_RELEASE}, OFL-1.1) from ${url}`);
+    let res;
+    try { res = await fetch(url, {redirect: 'follow'}); } catch (error) { res = null; }
+    if (!res || !res.ok) fail(`Font download failed: ${url}\nDownload ${name} (${FONT_RELEASE}) manually from https://github.com/lxgw/LxgwWenKai-Lite/releases and put it in ${fontDir}, or set NOTEBOOK_VIDEO_FONT_BASE_URL to a mirror.`);
+    const tmp = `${file}.part`;
+    fs.writeFileSync(tmp, Buffer.from(await res.arrayBuffer()));
+    if (hashFile(tmp) !== sha) { fs.rmSync(tmp, {force: true}); fail(`Font checksum mismatch for ${name}; expected ${FONT_RELEASE} sha256 ${sha}.`); }
+    fs.renameSync(tmp, file);
+  }
+  return fontDir;
+};
+
 const newProject = async (args) => {
   // --classic（暖象牙纸面示例工程 example-project）已整体删除，给出明确报错而不是静默忽略。
   if (args.includes('--classic')) fail('--classic was removed in 3.2.0 (the warm-ivory example project is gone). Use --style=flat (default) or --style=cel.', 2);
@@ -145,7 +174,7 @@ const newProject = async (args) => {
     if (!fs.existsSync(activePath)) fail(`Theme switch is missing in the copied template: ${activePath}`);
     fs.writeFileSync(activePath, `import {THEME} from './${style}';\nexport {THEME};\n`);
   }
-  const fontDir = path.join(SKILL_DIR, 'assets', 'fonts');
+  const fontDir = await ensureFonts();
   const publicDir = path.join(target, 'public');
   fs.mkdirSync(publicDir, {recursive: true});
   for (const name of [
@@ -596,7 +625,7 @@ const showcase = async (args, sheetOnly = false) => {
 };
 
 const usage = () => {
-  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\nvalidate-official-example\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
+  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  fonts   (download the pinned LXGW WenKai Lite fonts once; new-project does this automatically)\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };
 
 const main = async () => {
@@ -609,6 +638,7 @@ const main = async () => {
   }
   switch (command) {
     case 'check-deps': return checkDeps();
+    case 'fonts': return ensureFonts().then((d) => console.log(`Fonts ready: ${d}`));
     case 'new-project': return newProject(args);
     case 'sync': return syncProjectAssets(args);
     case 'prepare-browser': return prepareBrowser(args);

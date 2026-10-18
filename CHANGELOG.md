@@ -6,6 +6,9 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 ## [3.2.0] - 2026-10-18
 
+> 字体不再入库：LXGW 文楷 Lite v1.522 由 `notebook-video.mjs fonts`（new-project 自动调用）从官方 Release 下载并校验 sha256，仓库减少约 55 MB；移除 Dependabot 配置，仓库只保留 main 分支。
+> Fonts are no longer committed: LXGW WenKai Lite v1.522 is downloaded and sha256-verified by `notebook-video.mjs fonts` (called by new-project), saving ~55 MB; Dependabot config removed so only `main` exists.
+
 > 自 3.1.2 以来的一次大版本整理：只保留 16:9 与 `flat` / `cel` 两套皮肤，画面换成组件场景 + 引擎虚拟镜头，新增预制音效库、真实素材、弱模型复刻辅助、一条命令出片与客观自动修。**破坏性**：3.1.x 的 4:3 / 3:4 画布、`paper` / `sticker` 皮肤与 `--classic` 示例工程已删除，旧工程不再支持，也不提供迁移脚本。
 > A major consolidation since 3.1.2: 16:9 only with the `flat` / `cel` themes, component scenes moved by an engine-level virtual camera, a prebuilt SFX library, real media, weak-model reproduction aids, a one-command pipeline and objective auto-fixes. **Breaking**: the 3.1.x 4:3 / 3:4 canvases, the `paper` / `sticker` skins and the `--classic` example project are removed; older projects are not supported and there is no migration script.
 

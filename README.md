@@ -69,6 +69,7 @@ GitHub CLI 2.90+ 也可以：`gh skill install hyt315/notebook-video notebook-vi
 
 ```bash
 node scripts/notebook-video.mjs check-deps
+node scripts/notebook-video.mjs fonts   # 首次自动下载 LXGW 文楷 Lite（约 28 MB，固定版本 + sha256 校验；new-project 也会自动调用）
 ```
 
 ### 3. 出片
@@ -165,7 +166,7 @@ notebook-video/
 │   │   ├── manifests/           # shots.json、字幕、素材清单
 │   │   ├── public/              # 字体、背景、音效库 sfx/、真实素材 media/
 │   │   └── scripts/             # 可选 TTS 适配、变速后处理
-│   └── fonts/                   # LXGW 文楷 Lite（OFL-1.1）
+│   └── fonts/                   # LXGW 文楷 Lite（OFL-1.1，不入库，首次使用时自动下载）
 ├── scripts/                     # make-video、notebook-video CLI、compose / resolve、各门禁、自检；.cmd / .sh 包装
 │   └── dev/                     # 维护者工具（音效库构建与调校）
 ├── references/                  # 作者手册与规格（镜头、版式、主题、音效、字幕、门禁、跨平台）
@@ -197,4 +198,4 @@ python scripts/negative-gate-check.py
 
 ## 开源协议
 
-[Apache License 2.0](LICENSE)。随包字体（LXGW 文楷 Lite，OFL-1.1）、音效（CC0）与第三方依赖的授权与归属见 [NOTICE](NOTICE) 与 [DEPENDENCIES.md](DEPENDENCIES.md)。
+[Apache License 2.0](LICENSE)。所用字体（LXGW 文楷 Lite，OFL-1.1，从官方 Release 自动下载；可用 `NOTEBOOK_VIDEO_FONT_BASE_URL` 指定镜像，或手动放进 `assets/fonts/`）、音效（CC0）与第三方依赖的授权与归属见 [NOTICE](NOTICE) 与 [DEPENDENCIES.md](DEPENDENCIES.md)。

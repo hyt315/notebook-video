@@ -73,6 +73,7 @@ With GitHub CLI 2.90+: `gh skill install hyt315/notebook-video notebook-video --
 
 ```bash
 node scripts/notebook-video.mjs check-deps
+node scripts/notebook-video.mjs fonts   # first run downloads LXGW WenKai Lite (~28 MB, pinned version + sha256; new-project calls this automatically)
 ```
 
 ### 3. Make a video
@@ -169,7 +170,7 @@ notebook-video/
 │   │   ├── manifests/           # shots.json, captions, media manifests
 │   │   ├── public/              # Fonts, backgrounds, SFX library sfx/, real media media/
 │   │   └── scripts/             # Optional TTS adapter, speed post-processing
-│   └── fonts/                   # LXGW WenKai Lite (OFL-1.1)
+│   └── fonts/                   # LXGW WenKai Lite (OFL-1.1, not committed; downloaded on first use)
 ├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; .cmd / .sh wrappers
 │   └── dev/                     # Maintainer tools (SFX library build and tuning)
 ├── references/                  # Author manuals and specs (camera, layouts, themes, SFX, captions, gates, cross-platform)
@@ -201,4 +202,4 @@ History: [CHANGELOG.md](CHANGELOG.md). Security reports: [SECURITY.md](SECURITY.
 
 ## Licence
 
-[Apache License 2.0](LICENSE). Licences and attribution for the bundled font (LXGW WenKai Lite, OFL-1.1), the sound effects (CC0) and third-party dependencies are in [NOTICE](NOTICE) and [DEPENDENCIES.md](DEPENDENCIES.md).
+[Apache License 2.0](LICENSE). Licences and attribution for the font (LXGW WenKai Lite, OFL-1.1, downloaded from the official release; set `NOTEBOOK_VIDEO_FONT_BASE_URL` for a mirror or drop the files into `assets/fonts/`), the sound effects (CC0) and third-party dependencies are in [NOTICE](NOTICE) and [DEPENDENCIES.md](DEPENDENCIES.md).
