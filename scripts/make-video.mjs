@@ -97,6 +97,7 @@ if (!flag('no-gates')) {
     ['validate-presentation.py', [project], true],
     ['validate-frame-props.py', [project], true],
     ['validate-audio-levels.py', [project], true],
+    ['validate-media.py', [project], true],
     ['validate-caption-sync.py', [path.join(project, 'audio', 'narration.mp3.json'), path.join(project, 'manifests', 'caption-cues.json')], true],
     ['validate-semantic-breaks.py', [path.join(project, 'manifests', 'caption-cues.json'), path.join(project, 'manifests', 'protected-caption-phrases.txt')], true],
     // 手写场景的结构门禁（骨架 / 组件多样性）：auto 版式由引擎保证结构，这里只作参考
