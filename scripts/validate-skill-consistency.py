@@ -42,6 +42,7 @@ def reusable_file(path: Path) -> bool:
 # ---------------------------------------------------------------------------
 DOC_IDENT_SKIP_FILES = {'CHANGELOG.md'}
 DOC_IDENT_WHITELIST = {
+    "NOTEBOOK_VIDEO_FONT_BASE_URL",  # env var read in scripts/notebook-video.mjs (ensureFonts)
     # 平台 / 框架 API（Remotion、React、Web）
     'Composition', 'Sequence', 'Series', 'AbsoluteFill', 'Audio', 'Video', 'Img', 'Still', 'Player',
     'DelayRender', 'ContinueRender', 'CancelRender', 'Interpolate', 'Spring', 'Easing', 'Random',
