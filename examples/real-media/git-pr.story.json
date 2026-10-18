@@ -1,0 +1,23 @@
+{
+ "$about": "v4.5 真实素材样例：一张（脚本生成的）PR 页面占位截图 + 组件场景。换成真截图时只改 media[].file 与区域坐标。",
+ "title": "一次 PR 怎么被合并",
+ "theme": "flat",
+ "kicker": "GIT 协作",
+ "header": "PULL REQUEST",
+ "headerSub": "REAL MEDIA DEMO",
+ "media": [
+  {"id": "pr-page", "file": "pr-placeholder.png", "source": "user", "credit": "脚本生成的占位图",
+   "focusRegions": [{"id": "diff", "label": "改动", "x": 0.0125, "y": 0.31, "w": 0.6875, "h": 0.17},
+                    {"id": "merge", "label": "合并按钮", "x": 0.725, "y": 0.5, "w": 0.15, "h": 0.08}]}
+ ],
+ "chapters": [
+  {"title": "看懂一个 PR", "shots": [
+   {"role": "hook", "layout": "media", "lines": ["这是一个真实的 PR 页面。", "先看中间的 {{改动|diff}}。"],
+    "content": {"media": "pr-page", "chrome": "browser", "caption": "绿色是新增，红色是删除"}},
+   {"role": "example", "layout": "list", "lines": ["合并之前，先过三关。"],
+    "content": {"title": "合并前检查", "items": ["测试全部通过", "至少一人审过", "没有冲突"], "style": "check"}},
+   {"role": "recap", "layout": "media", "variant": "mirror", "lines": ["都通过了，再点 {{合并按钮|merge}}。"],
+    "content": {"media": "pr-page", "chrome": "browser", "caption": "合并是最后一步"}}
+  ]}
+ ]
+}

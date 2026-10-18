@@ -4,6 +4,7 @@ import {THEME} from './theme/active';
 import {KineticNumber, drawOn} from './cinema';
 import {STORY} from './story';
 import {CUSTOM} from './custom';
+import {MediaFrame} from './media-frame';
 
 // ============================================================================
 // auto.tsx · v4.5 内容驱动的镜头渲染器（AutoShot）
@@ -100,7 +101,7 @@ const codeTokens = (line: string) => {
 const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = ({e, f, shot}) => {
   const w = hiWeight(shot, e.id, f);
   const others = anyHi(shot, f);
-  const dim = e.kind === 'codebox' ? 1 : 1 - 0.32 * Math.max(0, others - w);
+  const dim = e.kind === 'codebox' || e.kind === 'media' ? 1 : 1 - 0.32 * Math.max(0, others - w);
   const tt = tone(e.tone);
   const bold = w > 0.5 ? 700 : undefined;
   switch (e.kind) {
@@ -213,6 +214,11 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
         <div style={{position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: e.size, fontWeight: 700, color: C.blueInk}}>{e.text}</div>
       </div>;
     }
+    case 'media':
+      // v4.5 真实素材：MediaFrame 自带卡片外壳 / 署名徽章；区域推近由 content.region 指定
+      return <Box e={e} f={f} dim={dim}><MediaFrame f={f} id={e.media} x={0} y={0} w={e.w} h={e.h} chrome={e.chrome} at={e.at} focus={e.region ?? undefined} focusAt={e.at + 24} highlight={shot.focus.filter((k) => f >= k.at && f <= k.until + 12 && shot.elements.some((x) => x.id === k.id && x.kind === 'region')).map((k) => k.id)} highlightAt={e.at} /></Box>;
+    case 'region':
+      return null; // 区域的高亮框由 MediaFrame 画（随区域推近一起缩放）；这里只提供被点名 / 推近的矩形
     default:
       return null;
   }

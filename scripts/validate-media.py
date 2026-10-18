@@ -58,13 +58,16 @@ def usages(proj: Path) -> list[dict]:
         for m in re.finditer(r"<MediaFrame\b(.*?)/>", s, re.S):
             t = m.group(1)
             g = lambda k, pat=r"\{?\"?([\w.-]+)\"?\}?": (re.search(rf"\b{k}=" + pat, t) or [None, None])[1]
-            u = {"file": f.name, "id": g("id"), "w": g("w"), "h": g("h"), "focus": g("focus"), "focusZoom": g("focusZoom"),
+            lit = re.search(r"\bid=(?:\"([\w.-]+)\"|\{['\"]([\w.-]+)['\"]\})", t)
+            if not lit:
+                continue  # 非字面量 id（例如 auto.tsx 里的 e.media）：由 story.ts 那一路检查
+            u = {"file": f.name, "id": lit.group(1) or lit.group(2), "w": g("w"), "h": g("h"), "focus": g("focus"), "focusZoom": g("focusZoom"),
                  "regions": re.findall(r"region:\s*['\"]([\w-]+)['\"]", t) + re.findall(r"highlight=\{\[([^\]]*)\]\}", t)}
             out.append(u)
     st = proj / "src" / "story.ts"
     if st.is_file():
         s = st.read_text(encoding="utf-8")
-        for m in re.finditer(r"\{[^{}]*\"kind\": \"media\"[^{}]*\}", s):
+        for m in re.finditer(r"\{[^{}]*\"kind\":\s*\"media\"[^{}]*\}", s):
             try:
                 e = json.loads(m.group(0))
                 out.append({"file": "story.ts", "id": e.get("media"), "w": e.get("w"), "h": e.get("h"), "focus": e.get("region"), "focusZoom": None, "regions": []})

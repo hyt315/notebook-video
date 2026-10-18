@@ -50,16 +50,16 @@ ZOOM_MAX, ZOOM_MIN_FOCUS = 1.32, 1.08
 PUNCT = "，。！？；：、,.!?;:"
 TAIL_PUNCT_RE = re.compile(r"[，。！？；：、,.!?;:\s]+$")
 TERM_RE = re.compile(r"\{\{([^}|]+)(?:\|([^}]+))?\}\}")
-LAYOUTS = ("statement", "define", "number", "bars", "compare", "code", "flow", "list", "quiz", "custom")
+LAYOUTS = ("statement", "define", "number", "bars", "compare", "code", "flow", "list", "quiz", "custom", "media")
 # 每种版式可以贴的骨架标签（validate-composition 要求相邻不同）：首选在前
 SKELETONS = {"statement": ["Stage", "Zoom"], "define": ["Split", "Stage"], "number": ["Stage", "Zoom"],
              "bars": ["Zoom", "Stage"], "compare": ["Split", "Stage"], "code": ["Zoom", "Stage"],
-             "flow": ["Corridor", "Stage"], "list": ["Stage", "Corridor"], "quiz": ["Split", "Stage"], "custom": ["Stage", "Zoom"]}
+             "flow": ["Corridor", "Stage"], "list": ["Stage", "Corridor"], "quiz": ["Split", "Stage"], "custom": ["Stage", "Zoom"], "media": ["Zoom", "Stage"]}
 MEDIA = {"statement": ["text"], "define": ["text"], "number": ["metric", "text"], "bars": ["chart", "metric"],
          "compare": ["metric", "text"], "code": ["code", "text"], "flow": ["graphic", "text"], "list": ["text"],
-         "quiz": ["text", "graphic"], "custom": ["graphic", "text"]}
+         "quiz": ["text", "graphic"], "custom": ["graphic", "text"], "media": ["graphic", "console"]}
 INTENTS = {"statement": "establish", "define": "push-in", "number": "push-in", "bars": "reveal", "compare": "pull-back",
-           "code": "push-in", "flow": "reveal", "list": "establish", "quiz": "push-in", "custom": "reveal"}
+           "code": "push-in", "flow": "reveal", "list": "establish", "quiz": "push-in", "custom": "reveal", "media": "push-in"}
 ICON_BUDGET_SHOT, ICON_BUDGET_MIN = 1, 4
 
 
@@ -567,7 +567,41 @@ def lay_custom(p, sid, c, variant):
     return els
 
 
-LAY = {"statement": lay_statement, "define": lay_define, "number": lay_number, "bars": lay_bars, "compare": lay_compare,
+STORY_MEDIA: dict = {}   # compose() 开头从 story["media"] 填入：id → 条目（含 width/height）
+
+
+def lay_media(p, sid, c, variant):
+    """v4.5 真实素材：一张截图 / 一段录屏放进 MediaFrame；区域（0–1 相对坐标）变成可被 {{词|区域id}} 点名的元素。"""
+    mid = c.get("media")
+    m = STORY_MEDIA.get(mid)
+    if not m:
+        p.err(f"{sid}: media 版式需要 content.media = 顶层 media 列表里的 id（现有：{sorted(STORY_MEDIA) or '无'}）")
+        return []
+    X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
+    chrome = c.get("chrome", "browser")
+    ch = {"browser": 46, "window": 40}.get(chrome, 0)
+    cap = c.get("caption")
+    fw = W - 380 if cap else W - 120
+    fx = X + (60 if variant != "mirror" else W - fw - 60)
+    fy, fh = Y, H
+    iw, ih = m.get("width") or 16, m.get("height") or 9
+    vw, vh = fw, fh - ch
+    k = min(vw / iw, vh / ih)
+    dw, dh = iw * k, ih * k
+    ox, oy = fx + (vw - dw) / 2, fy + ch + (vh - dh) / 2
+    els = [el("media", "media", fx, fy, fw, fh, mid, 0, "body", 0, media=mid, chrome=chrome,
+              region=c.get("region"), isText=False)]
+    for r in m.get("focusRegions") or []:
+        els.append(el(r["id"], "region", ox + r["x"] * dw, oy + r["y"] * dh, r["w"] * dw, r["h"] * dh, r.get("label", r["id"]), 0, "body",
+                      0, isText=False))
+    if cap:
+        ls, s_, w_, h_ = fit_text(p, f"{sid}.caption", cap, TYPE["title"], 280, 5, lh=1.4)
+        cx = fx + fw + 40 if variant != "mirror" else X + 20
+        els.append(el("caption", "card", cx, fy + 60, 300, h_ + 60, cap, s_, "body", c.get("captionAt", 0), lines=ls, lh=1.4, pad=24))
+    return els
+
+
+LAY = {"media": lay_media, "statement": lay_statement, "define": lay_define, "number": lay_number, "bars": lay_bars, "compare": lay_compare,
        "code": lay_code, "flow": lay_flow, "list": lay_list, "quiz": lay_quiz, "custom": lay_custom}
 
 
@@ -680,6 +714,18 @@ def move_frames(a, b):
 # ---------------------------------------------------------------- main compose
 def compose(story: dict, p: Problems):
     glossary = story.get("glossary") or {}
+    STORY_MEDIA.clear()
+    for m in story.get("media") or []:
+        STORY_MEDIA[m.get("id")] = dict(m)
+        if not m.get("width"):
+            try:
+                import subprocess as _sp
+                src = Path(story.get("_dir", ".")) / m.get("file", "")
+                r = _sp.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", str(src)], capture_output=True, text=True)
+                w_, h_ = r.stdout.strip().split(",")[:2]
+                STORY_MEDIA[m["id"]].update(width=int(w_), height=int(h_))
+            except Exception:
+                p.hint(f"media {m.get('id')}: 读不出尺寸（文件不存在或没装 ffprobe）—— 按 16:9 排版")
     protected = sorted(set(list(glossary.keys()) + list(story.get("protect") or [])), key=len, reverse=True)
     chapters = story.get("chapters") or []
     if not chapters:
@@ -781,7 +827,7 @@ def build(story, comp, p: Problems):
     # 叙事动作（validate-presentation 要求同一 move 不连续 ≥3 镜）：按蓝图角色 / 版式取，撞了就换近义动作
     ROLE_MOVE = {"hook": "引入", "pre": "定位", "breakdown": "拆分/合并", "example": "传递", "misconception": "反证", "recap": "收束"}
     LAY_MOVE = {"statement": "收束", "define": "定位", "number": "引入", "bars": "反证", "compare": "对比", "code": "定位",
-                "flow": "拆分/合并", "list": "累积", "quiz": "反证", "custom": "传递"}
+                "flow": "拆分/合并", "list": "累积", "quiz": "反证", "custom": "传递", "media": "定位"}
     moves = []
     for k, sh in enumerate(shots):
         m = ROLE_MOVE.get(sh.get("role") or "", LAY_MOVE[sh["layout"]])
@@ -1055,6 +1101,26 @@ def write_project(story, comp, out_shots, story_ts, total, proj: Path):
     (proj / "src" / "scenes.tsx").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def write_media(story, proj: Path) -> None:
+    """story.json 顶层 media → public/media/ + manifests/media.json，再交给 prepare-media.py 探测 / 转码 / 同步 src/media.json。"""
+    import shutil
+    import subprocess
+    mdir = proj / "public" / "media"
+    mdir.mkdir(parents=True, exist_ok=True)
+    items = []
+    for m in story["media"]:
+        src = Path(story["_dir"]) / m["file"]
+        ext = src.suffix.lower()
+        kind = "image" if ext in (".png", ".jpg", ".jpeg", ".webp") else "gif" if ext == ".gif" else "video"
+        if src.is_file():
+            shutil.copyfile(src, mdir / f"{m['id']}{ext}")
+        e = {k: v for k, v in m.items() if k not in ("file", "width", "height")}
+        e.update(file=f"{m['id']}{ext}", kind=m.get("kind", kind), source=m.get("source", "user"), muted=m.get("muted", True))
+        items.append(e)
+    (proj / "manifests" / "media.json").write_text(json.dumps({"items": items}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    subprocess.run([sys.executable, str(Path(__file__).with_name("prepare-media.py")), str(proj)])
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("story")
@@ -1071,6 +1137,7 @@ def main() -> int:
     except json.JSONDecodeError as e:
         print(f"story.json 不是合法 JSON：第 {e.lineno} 行第 {e.colno} 列 —— {e.msg}", file=sys.stderr)
         return 1
+    story["_dir"] = str(sp.parent.resolve())
     setup_break_rule(Path(a.project))
     p = Problems()
     left = sorted(set(re.findall(r"<<([^>]*)>>", json.dumps(story, ensure_ascii=False))))
@@ -1100,6 +1167,8 @@ def main() -> int:
         return 1
     if not a.check:
         write_project(story, comp, out_shots, story_ts, total, Path(a.project))
+        if story.get("media"):
+            write_media(story, Path(a.project))
     return 0
 
 

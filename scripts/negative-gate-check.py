@@ -1338,6 +1338,69 @@ io.open(os.path.join(td, 'src/sfx.ts'), 'w', encoding='utf-8').write(_sfx.replac
 case('V9 audio-levels · SFX_GAIN 与 manifest gain 漂移', [('must_block:不一致', 'validate-audio-levels', run([PY, os.path.join(SKILL, 'scripts/validate-audio-levels.py'), td]))])
 cleanup(td)
 
+# ---------------------------------------------------------------- v4.5 真实素材门禁（validate-media / prepare-media）
+VMEDIA = os.path.join(SKILL, 'scripts/validate-media.py')
+PMEDIA = os.path.join(SKILL, 'scripts/prepare-media.py')
+PNG = os.path.join(SKILL, 'examples/real-media/pr-placeholder.png')
+def media_proj(entry_mut=None, scene=None, add=True):
+    td = tempfile.mkdtemp(prefix='nv-media-')
+    for d in ('manifests', 'src', 'public/media'):
+        os.makedirs(os.path.join(td, d), exist_ok=True)
+    io.open(os.path.join(td, 'manifests/media.json'), 'w', encoding='utf-8').write('{"items": []}')
+    if add:
+        run([PY, PMEDIA, td, '--add', PNG, '--id', 'pr', '--region', 'diff', '0.0125', '0.31', '0.6875', '0.17'])
+    if entry_mut:
+        mp = os.path.join(td, 'manifests/media.json')
+        d = json.load(io.open(mp, encoding='utf-8'))
+        entry_mut(d['items'][0])
+        txt = json.dumps(d, ensure_ascii=False, indent=1) + '\n'
+        io.open(mp, 'w', encoding='utf-8').write(txt)
+        io.open(os.path.join(td, 'src/media.json'), 'w', encoding='utf-8').write(txt)
+    io.open(os.path.join(td, 'src/scenes.tsx'), 'w', encoding='utf-8').write(
+        scene or '<MediaFrame f={f} id="pr" x={200} y={200} w={1060} h={662} focus="diff" />\n')
+    return td
+td = media_proj()
+case('M0 media · 合规素材通过', [('must_pass', 'validate-media', run([PY, VMEDIA, td]))])
+cleanup(td)
+td = media_proj(lambda e: e.update(file='missing.png'))
+case('M1 media · 文件不存在 → 拦', [('must_block:不存在', 'validate-media', run([PY, VMEDIA, td]))])
+cleanup(td)
+td = media_proj(scene='<MediaFrame f={f} id="pr" x={0} y={0} w={1800} h={1000} focus="diff" focusZoom={2.4} />\n')
+case('M2 media · 放大 >1.5 倍会糊 → 拦', [('must_block:会糊', 'validate-media', run([PY, VMEDIA, td]))])
+cleanup(td)
+td = media_proj(lambda e: e.update(source='web', url='https://example.com/x.png'))
+case('M3 media · 网上素材缺 license / credit → 拦', [('must_block:license', 'validate-media', run([PY, VMEDIA, td]))])
+cleanup(td)
+td = media_proj(lambda e: e.update(source='web', url='https://example.com/x.png', license='CC-BY-NC-4.0', credit='someone'))
+case('M4 media · 不兼容许可（NC）→ 拦', [('must_block:不能用于本片', 'validate-media', run([PY, VMEDIA, td]))])
+cleanup(td)
+td = media_proj(scene='<MediaFrame f={f} id="pr" x={200} y={200} w={1060} h={662} focus="nope" />\n')
+case('M5 media · 引用不存在的区域 → 拦', [('must_block:没有区域', 'validate-media', run([PY, VMEDIA, td]))])
+cleanup(td)
+td = media_proj()
+_mv = os.path.join(td, 'public/media/clip.mp4')
+run(['ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc=s=320x180:r=25', '-f', 'lavfi', '-i', 'sine', '-t', '1', '-c:v', 'mpeg4', '-c:a', 'aac', _mv])
+_md = json.load(io.open(os.path.join(td, 'manifests/media.json'), encoding='utf-8'))
+_md['items'].append({'id': 'clip', 'file': 'clip.mp4', 'kind': 'video', 'source': 'user'})
+_t = json.dumps(_md, ensure_ascii=False, indent=1) + '\n'
+io.open(os.path.join(td, 'manifests/media.json'), 'w', encoding='utf-8').write(_t)
+io.open(os.path.join(td, 'src/media.json'), 'w', encoding='utf-8').write(_t)
+_bad = run([PY, VMEDIA, td])
+_prep = run([PY, PMEDIA, td])
+_good = run([PY, VMEDIA, td])
+_mj = json.load(io.open(os.path.join(td, 'manifests/media.json'), encoding='utf-8'))
+_clip = [x for x in _mj['items'] if x['id'] == 'clip'][0]
+case('M6 media · 25fps mpeg4 → 拦；prepare-media 转成 H.264 CFR 30fps 静音 → 通过', [
+    ('must_block:H.264', 'validate-media（转码前）', _bad),
+    ('must_pass', 'prepare-media', _prep),
+    ('must_warn', 'validate-media（转码后）', _good),
+    ('must_pass', f'muted={_clip.get("muted", True)} 无 muted:false', (0 if _clip.get('muted', True) is not False else 1, ''))])
+cleanup(td)
+td = media_proj(lambda e: e.update(source='web', url='https://example.com/x.png', license='CC0', credit='x'),
+                scene='<MediaFrame f={f} id="pr" x={200} y={200} w={1060} h={662} />\n<div data-media-credit="pr" />\n')
+case('M7 media · 场景里自己画 / 关署名徽章 → 拦', [('must_block:署名', 'validate-media', run([PY, VMEDIA, td]))])
+cleanup(td)
+
 print()
 print('== 负向抽查明细 ==')
 _steps = 0
