@@ -346,7 +346,7 @@ const Sound=()=>{
   return <>
     <Audio src={staticFile('narration.mp3')} volume={1}/>
     <Audio src={staticFile(SFX_BED)} volume={(fr:number)=>bedVol(fr)} loop/>
-    {SFX_PLAN.map((x,i)=><Sequence key={`${x.event}-${i}`} from={deliveryFrame(x.at)} layout="none"><Audio src={staticFile(x.src)} volume={x.vol}/></Sequence>)}
+    {SFX_PLAN.map((x,i)=><Sequence key={`${x.event}-${i}`} from={deliveryFrame(x.at)} layout="none"><Audio src={staticFile(x.src)} volume={x.vol} trimBefore={x.trim||undefined}/></Sequence>)}
   </>;
 };
 

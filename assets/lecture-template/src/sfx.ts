@@ -62,7 +62,8 @@ const WINDOW = 300, WINDOW_MAX = 4;
 const WHOOSH_HIT = 7;
 const offF = (e: SfxEvent) => Math.round((SFX_OFFSET_MS[e] * 30) / 1000);
 
-export type SfxCue = {event: SfxEvent; at: number; hit: number; vol: number; src: string};
+/** at = 开始播放帧；hit = 视觉命中帧；trim = 从文件开头跳过的帧数（命中帧早于瞬态偏移时，比如片头第 2 帧的 chapter）。 */
+export type SfxCue = {event: SfxEvent; at: number; hit: number; vol: number; src: string; trim: number};
 type Override = {event: string; beat?: number; at?: number; vol?: number};
 type ShotLike = {
   /** v4.5 auto 层：真实视觉事件（元素出现 / 关键词高亮 / 数字落定），本镜本地帧。有它就不用 beats 猜。 */
@@ -89,7 +90,8 @@ export const autoSfxForShot = (s: ShotLike, isChapter: boolean, isFirst: boolean
   const out: {event: SfxEvent; at: number; beat?: number}[] = [];
   if (isChapter) {
     out.push({event: 'chapter', at: 2});
-    if (!isFirst) out.push({event: 'riser', at: 0});
+    // v4.5c：riser 的命中点（文件末尾）与 chapter 的命中点同帧——两者合成一个「落点」，不再相隔 2 帧（67 ms）各响一下。
+    if (!isFirst) out.push({event: 'riser', at: 2});
   } else if (!isFirst) {
     out.push({event: 'whoosh', at: WHOOSH_HIT});
   }
@@ -142,7 +144,12 @@ export const planSfx = (shots: readonly ShotLike[], chapterStarts: readonly numb
     kept.push(r);
   }
   return kept.sort((a, b) => a.at - b.at)
-    .map((r) => ({event: r.event, at: Math.max(0, r.at - offF(r.event)), hit: r.at, vol: r.vol ?? SFX_GAIN[r.event], src: SFX_FILES[r.event]}));
+        // v4.5c：命中帧 < 瞬态偏移时（片头 chapter：命中第 2 帧、偏移 8 帧），以前起播被夹到 0、瞬态晚 6 帧；
+    // 现在改为从第 0 帧起播并跳过文件开头 trim 帧，瞬态仍落在命中帧。
+    .map((r) => {
+      const start = r.at - offF(r.event);
+      return {event: r.event, at: Math.max(0, start), hit: r.at, vol: r.vol ?? SFX_GAIN[r.event], src: SFX_FILES[r.event], trim: Math.max(0, -start)};
+    });
 };
 
 /** 音乐床闪避：每个 cue 命中前 2 帧到命中后 12 帧，床降到 BED_DUCK 倍（帧的纯函数）。 */
