@@ -27,7 +27,7 @@ import {camAt, STAGE, TEXT_ZOOM_MAX} from './shotkit';
 export type Rect = {x: number; y: number; w: number; h: number};
 export type FocusRegion = 'left' | 'right' | 'top' | 'bottom' | 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 /** 已解析的焦点（resolve-shots 把 beat 换成本镜本地帧 at）。 */
-export type FocusKey = {at: number; hold: number; zoom?: number; rect: Rect};
+export type FocusKey = {at: number; hold: number; zoom?: number; rect: Rect; settle?: boolean; /** v4.5：false = 不做「不切字」滑动，注视点固定在矩形中心 */ slide?: boolean};
 /** resolve-shots 预算好的基准取景（内容自动放大）：注视点 + 缩放；fill = anchor 占内容带面积比。 */
 export type FitSpec = {x: number; y: number; s: number; fill?: number; fillAfter?: number};
 export type CinemaSpec = {
@@ -79,6 +79,9 @@ export const regionRect = (r: FocusRegion, band: Rect = {x: 160, y: 130, w: 1600
     default: return {x: x + w * 0.2, y: y + h * 0.15, w: w * 0.6, h: h * 0.7};
   }
 };
+
+/** 焦点推近时焦点矩形到画面边缘的最小屏幕边距（px，设计坐标）。 */
+export const FOCUS_PAD = 28;
 
 /** 取景窗钳制：缩放 s 时注视点只能在 [lo+half, hi-half] 内（世界宽 worldW）。 */
 const clampLook = (x: number, y: number, s: number, worldW = STAGE.w) => {
@@ -132,7 +135,16 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
     const rw = r.w * sc.s, rh = r.h * sc.s;
     const fit = CINEMA.focusFill * Math.min(STAGE.w / rw, STAGE.h / rh);
     const fs = Math.min(capS, Math.max(CINEMA.focusMinZoom, k.zoom ?? fit), Math.min(STAGE.w / rw, STAGE.h / rh));
-    const fl = clampLook(mx(r.x) + rw / 2, my(r.y) + rh / 2, fs);
+    // v4.5 自动修（不切字）：焦点矩形留 FOCUS_PAD 屏幕边距完整入画的前提下，注视点横向尽量滑回基准取景中心，
+    // 让非焦点内容（例如左侧大标题）少被推出画面；矩形比取景窗还宽时退回矩形中心。`slide: false` 关掉。
+    const slide = (lo: number, hi: number, half: number, base: number) => {
+      const a = hi - half + FOCUS_PAD / fs, b = lo + half - FOCUS_PAD / fs;
+      return a <= b ? Math.min(b, Math.max(a, base)) : (lo + hi) / 2;
+    };
+    const rx0 = mx(r.x), ry0 = my(r.y);
+    const fl = k.slide === false
+      ? clampLook(rx0 + rw / 2, ry0 + rh / 2, fs)
+      : clampLook(slide(rx0, rx0 + rw, STAGE.cx / fs, look0.x), ry0 + rh / 2, fs); // 只横向滑：纵向下滑会把顶部标题推进页眉遮罩（实测 v4.4 演示 S5）
     x = x + (fl.x - x) * w;
     y = y + (fl.y - y) * w;
     s = s + (fs - s) * w;
