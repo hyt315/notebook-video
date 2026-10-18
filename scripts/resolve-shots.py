@@ -183,6 +183,22 @@ def resolve_cinema(s: dict, sid: str, frm: int, duration: int, cues: list, probl
         item = {"at": at, "hold": hold, "rect": rect}
         if fk.get("zoom") is not None:
             item["zoom"] = float(fk["zoom"])
+        if fk.get("slide") is False:
+            item["slide"] = False
+        # v4.5c：keep = 推近时也必须完整入画的矩形（引擎会把推近倍数降到能装下「焦点 ∪ keep」，但不低于 focusMinZoom）。
+        # 显式 keep:{x,y,w,h} / region；hero-number 版式缺省 keep = anchor（大数字在 anchor 里），左右各加 8% 字号的字形外溢余量；
+        # keep:false 关掉。修 v4.4 演示 S1：推近右侧终端时左侧「1.2 秒」被切掉半个字。
+        kp = fk.get("keep")
+        hero = s.get("hero") or {}
+        if isinstance(kp, dict) and all(k in kp for k in ("x", "y", "w", "h")):
+            item["keep"] = {k: float(kp[k]) for k in ("x", "y", "w", "h")}
+        elif isinstance(kp, str) and kp in REGIONS:
+            item["keep"] = region_rect(kp, band)
+        elif kp is None and s.get("layout") == "hero-number" and hero.get("kind", "text") == "text" and s.get("anchor"):
+            a = s["anchor"]; ov = round(0.08 * float(hero.get("size", 200)))
+            item["keep"] = {"x": float(a["x"] - ov), "y": float(a["y"]), "w": float(a["w"] + 2 * ov), "h": float(a["h"])}
+        elif kp not in (None, False):
+            problems.append(f"{sid}: cinema.focus[{i}].keep 必须是 {{x,y,w,h}} / region / false")
         focus.append(item)
     # v4.5：镜尾收束。最后一个事件（拍点 / 焦点结束）到镜尾 > 45 帧（1.5 秒）时，画面只剩缓推，读起来是「卡住了」
     # （v4.4 演示片 S6 / S8 的实测问题）。自动补一个轻推近到 anchor 的收束焦点；`cinema.settle: false` 关掉。

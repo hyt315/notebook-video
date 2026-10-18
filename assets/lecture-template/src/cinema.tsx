@@ -27,7 +27,7 @@ import {camAt, STAGE, TEXT_ZOOM_MAX} from './shotkit';
 export type Rect = {x: number; y: number; w: number; h: number};
 export type FocusRegion = 'left' | 'right' | 'top' | 'bottom' | 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 /** 已解析的焦点（resolve-shots 把 beat 换成本镜本地帧 at）。 */
-export type FocusKey = {at: number; hold: number; zoom?: number; rect: Rect; settle?: boolean; /** v4.5：false = 不做「不切字」滑动，注视点固定在矩形中心 */ slide?: boolean};
+export type FocusKey = {at: number; hold: number; zoom?: number; rect: Rect; settle?: boolean; /** v4.5：false = 不做「不切字」滑动，注视点固定在矩形中心 */ slide?: boolean; /** v4.5c：推近时也必须完整入画的矩形（例如旁边的大数字）；引擎降低推近倍数（不低于 focusMinZoom）装下「焦点 ∪ keep」 */ keep?: Rect};
 /** resolve-shots 预算好的基准取景（内容自动放大）：注视点 + 缩放；fill = anchor 占内容带面积比。 */
 export type FitSpec = {x: number; y: number; s: number; fill?: number; fillAfter?: number};
 export type CinemaSpec = {
@@ -134,7 +134,15 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
     const my = (py: number) => STAGE.cy - sc.y * sc.s + py * sc.s;
     const rw = r.w * sc.s, rh = r.h * sc.s;
     const fit = CINEMA.focusFill * Math.min(STAGE.w / rw, STAGE.h / rh);
-    const fs = Math.min(capS, Math.max(CINEMA.focusMinZoom, k.zoom ?? fit), Math.min(STAGE.w / rw, STAGE.h / rh));
+    let fs = Math.min(capS, Math.max(CINEMA.focusMinZoom, k.zoom ?? fit), Math.min(STAGE.w / rw, STAGE.h / rh));
+    // v4.5c keep：「焦点 ∪ keep」留 FOCUS_PAD 边距能装下所需的倍数 ≥ focusMinZoom 时，用它（只降不升）并以并集为取景范围；否则忽略 keep。
+    let ux0 = mx(r.x), ux1 = mx(r.x) + rw, uy0 = my(r.y), uy1 = my(r.y) + rh, useKeep = false;
+    if (k.keep) {
+      const kx0 = Math.min(ux0, mx(k.keep.x)), kx1 = Math.max(ux1, mx(k.keep.x + k.keep.w));
+      const ky0 = Math.min(uy0, my(k.keep.y)), ky1 = Math.max(uy1, my(k.keep.y + k.keep.h));
+      const need = Math.min((STAGE.w - 2 * FOCUS_PAD) / (kx1 - kx0), (STAGE.h - 2 * FOCUS_PAD) / (ky1 - ky0));
+      if (need >= CINEMA.focusMinZoom) { fs = Math.min(fs, need); ux0 = kx0; ux1 = kx1; uy0 = ky0; uy1 = ky1; useKeep = true; }
+    }
     // v4.5 自动修（不切字）：焦点矩形留 FOCUS_PAD 屏幕边距完整入画的前提下，注视点横向尽量滑回基准取景中心，
     // 让非焦点内容（例如左侧大标题）少被推出画面；矩形比取景窗还宽时退回矩形中心。`slide: false` 关掉。
     const slide = (lo: number, hi: number, half: number, base: number) => {
@@ -144,7 +152,9 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
     const rx0 = mx(r.x), ry0 = my(r.y);
     const fl = k.slide === false
       ? clampLook(rx0 + rw / 2, ry0 + rh / 2, fs)
-      : clampLook(slide(rx0, rx0 + rw, STAGE.cx / fs, look0.x), ry0 + rh / 2, fs); // 只横向滑：纵向下滑会把顶部标题推进页眉遮罩（实测 v4.4 演示 S5）
+      : useKeep
+        ? clampLook(slide(ux0, ux1, STAGE.cx / fs, look0.x), slide(uy0, uy1, STAGE.cy / fs, ry0 + rh / 2), fs)
+        : clampLook(slide(rx0, rx0 + rw, STAGE.cx / fs, look0.x), ry0 + rh / 2, fs); // 只横向滑：纵向下滑会把顶部标题推进页眉遮罩（实测 v4.4 演示 S5）
     x = x + (fl.x - x) * w;
     y = y + (fl.y - y) * w;
     s = s + (fs - s) * w;
