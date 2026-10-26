@@ -11,10 +11,12 @@
 //   "sfx": [{"event": "success", "beat": 2}]        替换第 2 拍的自动音效
 //   "sfx": [{"event": "error", "at": 40, "vol": 0.3}] 在本镜本地帧 40 额外加一个
 //   "sfxAuto": false                               关掉本镜自动规则，只用显式条目
-// 事件名只能是 SFX_EVENTS 里的十个；音量缺省取 SFX_GAIN（已按「人声下方 8–12 LU」调好）。
+// 事件名只能是 SFX_EVENTS 里的十六个（3.3.0 起含 6 个手作拟音：page / place / snip / stamp / rustle / latch）；音量缺省取 SFX_GAIN（已按「人声下方 8–12 LU」调好）。
 // ============================================================================
 
-export const SFX_EVENTS = ['whoosh', 'pop', 'click', 'typing', 'success', 'error', 'chart', 'highlight', 'chapter', 'riser'] as const;
+import {THEME} from './theme/active';
+
+export const SFX_EVENTS = ['whoosh', 'pop', 'click', 'typing', 'success', 'error', 'chart', 'highlight', 'chapter', 'riser', 'page', 'place', 'snip', 'stamp', 'rustle', 'latch'] as const;
 export type SfxEvent = (typeof SFX_EVENTS)[number];
 
 /** 事件 → 文件（与 sfx-manifest.json 一一对应；validate-audio-levels.py 会核对）。 */
@@ -29,6 +31,13 @@ export const SFX_FILES: Record<SfxEvent, string> = {
   highlight: 'sfx/lib/highlight.ogg',
   chapter: 'sfx/lib/chapter.ogg',
   riser: 'sfx/lib/riser.ogg',
+  // 3.3.0 手作拟音（Kenney RPG Audio，CC0 真录音；scripts/dev/import-craft-sfx.py 入库）
+  page: 'sfx/lib/page.ogg',
+  place: 'sfx/lib/place.ogg',
+  snip: 'sfx/lib/snip.ogg',
+  stamp: 'sfx/lib/stamp.ogg',
+  rustle: 'sfx/lib/rustle.ogg',
+  latch: 'sfx/lib/latch.ogg',
 };
 export const SFX_BED = 'sfx/lib/bed.ogg';
 
@@ -40,6 +49,7 @@ export const SFX_BED = 'sfx/lib/bed.ogg';
 export const SFX_GAIN: Record<SfxEvent, number> = {
   whoosh: 0.338, pop: 0.419, click: 0.491, typing: 0.284, success: 0.459,
   error: 0.409, chart: 0.419, highlight: 0.356, chapter: 0.522, riser: 0.331,
+  page: 0.398, place: 0.376, snip: 0.398, stamp: 0.447, rustle: 0.299, latch: 0.335,
 };
 /**
  * 瞬态位置（毫秒，= manifest `offsetMs`）：文件开头到听感「命中点」的距离。引擎把文件**提前**这么多开始播，
@@ -48,6 +58,7 @@ export const SFX_GAIN: Record<SfxEvent, number> = {
 export const SFX_OFFSET_MS: Record<SfxEvent, number> = {
   whoosh: 71.6, pop: 5.8, click: 4.5, typing: 13.9, success: 6.1,
   error: 139.6, chart: 48, highlight: 58, chapter: 253.5, riser: 1066.7,
+  page: 39.8, place: 71.0, snip: 198.8, stamp: 74.7, rustle: 80.5, latch: 103.3,
 };
 /** 音乐床（-30 LUFS 源）播放增益：0.28 ≈ -41 LUFS；每个 cue 期间再闪避到 BED_DUCK 倍。 */
 export const BED_GAIN = 0.28;
@@ -74,7 +85,15 @@ type ShotLike = {
 };
 
 const CONCLUSIVE = ['Checklist', 'StampSeal', 'VerdictBar', 'StampBanner', 'MetricGrid', 'CheckBadge'];
-const PRIORITY: SfxEvent[] = ['chapter', 'success', 'error', 'riser', 'whoosh', 'chart', 'typing', 'highlight', 'pop', 'click'];
+const PRIORITY: SfxEvent[] = ['chapter', 'success', 'stamp', 'error', 'snip', 'riser', 'whoosh', 'page', 'chart', 'typing', 'highlight', 'latch', 'pop', 'place', 'click', 'rustle'];
+
+/**
+ * 3.3.0 媒介化音效：手作皮肤（THEME.craft）把自动规则里的 UI 音换成纸与手的声音——
+ * 转场 whoosh → 翻页 page；元素出现 pop → 纸片放下 place；中间拍 click → 纸声 rustle；结论 success → 盖章 stamp。
+ * 只换**自动**排的音效；分镜表 sfx 字段里显式写的事件原样保留。flat / cel 不受影响。
+ */
+const CRAFT_SFX: Partial<Record<SfxEvent, SfxEvent>> = {whoosh: 'page', pop: 'place', click: 'rustle', success: 'stamp'};
+const mediaSound = (e: SfxEvent): SfxEvent => (THEME.craft ? CRAFT_SFX[e] ?? e : e);
 const isEvent = (e: string): e is SfxEvent => (SFX_EVENTS as readonly string[]).includes(e);
 
 /** 中间拍按介质选音：代码/控制台 → typing；图表/指标 → chart；其余 click / highlight 交替。 */
@@ -131,7 +150,7 @@ export const planSfx = (shots: readonly ShotLike[], chapterStarts: readonly numb
         raw.push({event: o.event, at: s.from + o.at, vol: o.vol});
       }
     }
-    auto.forEach((a) => raw.push({event: a.event, at: s.from + a.at}));
+    auto.forEach((a) => raw.push({event: mediaSound(a.event), at: s.from + a.at}));
   });
   // 优先级高的先占位；与已占位的同类/异类音效相距 < MIN_GAP 帧的丢掉（riser 是铺底，不参与互斥）
   // r.at = 视觉命中帧；开始播放帧 = 命中帧 − 瞬态偏移

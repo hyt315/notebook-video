@@ -356,7 +356,7 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
         # 音效覆盖（见 src/sfx.ts）。不写就不出键，旧分镜表解析结果逐字节不变。
         if s.get("sfx") is not None:
             sfx = s["sfx"]
-            events = {"whoosh", "pop", "click", "typing", "success", "error", "chart", "highlight", "chapter", "riser"}
+            events = {"whoosh", "pop", "click", "typing", "success", "error", "chart", "highlight", "chapter", "riser", "page", "place", "snip", "stamp", "rustle", "latch"}
             if sfx != "none" and not (isinstance(sfx, list) and all(isinstance(o, dict) and o.get("event") in events and ("beat" in o or "at" in o) for o in sfx)):
                 problems.append(f"{sid}: sfx 必须是 \"none\" 或 [{{event, beat|at, vol?}}]，event ∈ {sorted(events)}")
             else:

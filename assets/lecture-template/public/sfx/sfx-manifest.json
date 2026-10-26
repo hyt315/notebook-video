@@ -18,7 +18,13 @@
       "whoosh": -27.5,
       "riser": -28.0,
       "click": -28.5,
-      "typing": -30.0
+      "typing": -30.0,
+      "page": -26.0,
+      "place": -26.5,
+      "snip": -26.0,
+      "stamp": -25.0,
+      "rustle": -28.5,
+      "latch": -27.5
     },
     "min_gap_ms": 150,
     "max_hits_per_min": 24,
@@ -399,6 +405,174 @@
       "description": "quiet ambient pad, seamless 32 s loop",
       "intended_use": "optional music bed (loop)",
       "license": "CC0-1.0 (generated in code)"
+    },
+    {
+      "event": "page",
+      "file": "sfx/lib/page.ogg",
+      "sha256": "3d7e24121b0a5b9a78cc09c34e29e23606da1af6435ed032d84413c2d92346c2",
+      "bytes": 9740,
+      "duration_s": 0.449,
+      "loudness_lufs_100ms": -18.5,
+      "peak_dbfs": -3.3,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "pack": "Kenney RPG Audio",
+        "url": "https://kenney.nl/assets/rpg-audio",
+        "file": "Audio/bookFlip2.ogg",
+        "author": "Kenney Vleugels (kenney.nl)"
+      },
+      "description": "a real paper page flip",
+      "intended_use": "craft skins: a new sheet / page turn (replaces whoosh on transitions)",
+      "license": "CC0-1.0 (Kenney RPG Audio, recorded samples)",
+      "tuned": {
+        "keep_ms": 520,
+        "fade_out_ms": 160
+      },
+      "gain": 0.398,
+      "offsetMs": 39.8,
+      "timing_note": "offsetMs = transient position; the engine starts the file that much earlier so the hit lands on the visual frame"
+    },
+    {
+      "event": "place",
+      "file": "sfx/lib/place.ogg",
+      "sha256": "a9c2fb9be1c6074fc4938f8266a8ab5d126582af7aff695a041310cfd03ec093",
+      "bytes": 6810,
+      "duration_s": 0.274,
+      "loudness_lufs_100ms": -18.1,
+      "peak_dbfs": -2.7,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "pack": "Kenney RPG Audio",
+        "url": "https://kenney.nl/assets/rpg-audio",
+        "file": "Audio/bookPlace1.ogg",
+        "author": "Kenney Vleugels (kenney.nl)"
+      },
+      "description": "a sheet or card laid down on paper",
+      "intended_use": "craft skins: a paper piece / photo lands (replaces pop)",
+      "license": "CC0-1.0 (Kenney RPG Audio, recorded samples)",
+      "tuned": {
+        "keep_ms": 300,
+        "fade_out_ms": 120
+      },
+      "gain": 0.376,
+      "offsetMs": 71.0,
+      "timing_note": "offsetMs = transient position; the engine starts the file that much earlier so the hit lands on the visual frame"
+    },
+    {
+      "event": "snip",
+      "file": "sfx/lib/snip.ogg",
+      "sha256": "075cee26cf7773f04b6bfb983760a0d0148e8569db80d3704deecfa43e34ab20",
+      "bytes": 7944,
+      "duration_s": 0.357,
+      "loudness_lufs_100ms": -18.4,
+      "peak_dbfs": -6.4,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "pack": "Kenney RPG Audio",
+        "url": "https://kenney.nl/assets/rpg-audio",
+        "file": "Audio/knifeSlice.ogg",
+        "author": "Kenney Vleugels (kenney.nl)"
+      },
+      "description": "a quick blade cut",
+      "intended_use": "papercut: a cut / a piece removed",
+      "license": "CC0-1.0 (Kenney RPG Audio, recorded samples)",
+      "tuned": {
+        "keep_ms": 360,
+        "fade_out_ms": 120
+      },
+      "gain": 0.398,
+      "offsetMs": 198.8,
+      "timing_note": "offsetMs = transient position; the engine starts the file that much earlier so the hit lands on the visual frame"
+    },
+    {
+      "event": "stamp",
+      "file": "sfx/lib/stamp.ogg",
+      "sha256": "24a76396c5e77487eb084e5c4f676ea4b9d90322de541cc490fa881b3b017241",
+      "bytes": 6438,
+      "duration_s": 0.224,
+      "loudness_lufs_100ms": -18.0,
+      "peak_dbfs": -1.8,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "pack": "Kenney RPG Audio",
+        "url": "https://kenney.nl/assets/rpg-audio",
+        "file": "Audio/bookClose.ogg",
+        "author": "Kenney Vleugels (kenney.nl)"
+      },
+      "description": "a soft heavy thump",
+      "intended_use": "a seal is pressed / a verdict lands (replaces success in craft skins)",
+      "license": "CC0-1.0 (Kenney RPG Audio, recorded samples)",
+      "tuned": {
+        "keep_ms": 380,
+        "fade_out_ms": 140
+      },
+      "gain": 0.447,
+      "offsetMs": 74.7,
+      "timing_note": "offsetMs = transient position; the engine starts the file that much earlier so the hit lands on the visual frame"
+    },
+    {
+      "event": "rustle",
+      "file": "sfx/lib/rustle.ogg",
+      "sha256": "d0f8d165cc38a2b804ded3d0d956d383f1e2035c49c94ec08b01bffece7b55a8",
+      "bytes": 7833,
+      "duration_s": 0.401,
+      "loudness_lufs_100ms": -18.1,
+      "peak_dbfs": -2.9,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "pack": "Kenney RPG Audio",
+        "url": "https://kenney.nl/assets/rpg-audio",
+        "file": "Audio/cloth2.ogg",
+        "author": "Kenney Vleugels (kenney.nl)"
+      },
+      "description": "a dry paper-like rustle",
+      "intended_use": "craft skins: small paper handling / tick (replaces click)",
+      "license": "CC0-1.0 (Kenney RPG Audio, recorded samples)",
+      "tuned": {
+        "keep_ms": 420,
+        "fade_out_ms": 160
+      },
+      "gain": 0.299,
+      "offsetMs": 80.5,
+      "timing_note": "offsetMs = transient position; the engine starts the file that much earlier so the hit lands on the visual frame"
+    },
+    {
+      "event": "latch",
+      "file": "sfx/lib/latch.ogg",
+      "sha256": "3158344a6c7581bd221f491526989dd49832909eebc09e90d221774217e9b2fb",
+      "bytes": 6619,
+      "duration_s": 0.217,
+      "loudness_lufs_100ms": -18.2,
+      "peak_dbfs": -2.0,
+      "channels": 1,
+      "sample_rate": 48000,
+      "codec": "vorbis",
+      "source": {
+        "pack": "Kenney RPG Audio",
+        "url": "https://kenney.nl/assets/rpg-audio",
+        "file": "Audio/metalClick.ogg",
+        "author": "Kenney Vleugels (kenney.nl)"
+      },
+      "description": "a small metal click",
+      "intended_use": "a loupe lands / an instrument clicks into place",
+      "license": "CC0-1.0 (Kenney RPG Audio, recorded samples)",
+      "tuned": {
+        "keep_ms": 220,
+        "fade_out_ms": 80
+      },
+      "gain": 0.335,
+      "offsetMs": 103.3,
+      "timing_note": "offsetMs = transient position; the engine starts the file that much earlier so the hit lands on the visual frame"
     }
   ]
 }
