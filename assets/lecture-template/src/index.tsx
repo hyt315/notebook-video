@@ -39,6 +39,7 @@ import {PillTag, TYPE} from './kit';
 //   media      ConsoleWindow / MetricGrid / StampBanner
 //   skeletons  Corridor / SplitStage / ZoomStage
 import {Showcase, SHOWCASE_PAGES} from './showcase';
+import {CraftSheet, CRAFT_SHEET_FRAMES} from './craft-sheet';
 import {OverlapGate} from './overlap-gate';
 import {ClippingGate} from './clipping-gate';
 import {FillGate} from './fill-gate';
@@ -419,12 +420,21 @@ const ShowcaseComposition=()=> <>
   <CanvasBoundsGate mode="block"/>
 </>;
 
+// craft 组件样张（3.3.0）：一页 12 格，当前皮肤下的全部 craft 组件；渲染期只挂越界闸门（与接触表同理）。
+const CraftSheetComposition=()=> <>
+  <FontFaces bg={C.paperBase}/><AssetGate/>
+  <CraftSheet/>
+  <CanvasBoundsGate mode="block"/>
+</>;
+
 const Root=()=> <>
   {/* 官方模板示例片（8 镜 / 4 骨架），按 1920×1080 设计空间编写，交付 2560×1440（见 references/canvas-modes.md）。 */}
   <Composition id="NotebookVideoFilm" component={Film16x9} durationInFrames={DURATION} fps={FPS} width={2560} height={1440}/>
   {/* 组件接触表：18 页 × 1 秒（`SHOWCASE_PAGES`）；抽帧用 select 滤镜按帧号取每页第 6/21 帧两张中段图，
       6×6=36 格一张 JPG，供 AI 看图选型（时长 = SHOWCASE_PAGES*30，加页自动跟随） */}
   <Composition id="NotebookVideoShowcase" component={ShowcaseComposition} durationInFrames={SHOWCASE_PAGES*30} fps={FPS} width={1920} height={1080}/>
+  {/* craft 组件样张（`notebook-video.mjs craft-sheet`），设计坐标 1920×1080 */}
+  <Composition id="NotebookVideoCraftSheet" component={CraftSheetComposition} durationInFrames={CRAFT_SHEET_FRAMES} fps={FPS} width={1920} height={1080}/>
 </>;
 
 registerRoot(Root);

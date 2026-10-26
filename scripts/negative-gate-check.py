@@ -114,8 +114,9 @@ def canvas_bounds_wiring(project_dir):
     if "from './canvas-bounds-gate'" not in t:
         problems.append('接线：index.tsx 没有 import CanvasBoundsGate')
     mounts = t.count('<CanvasBoundsGate')
-    if mounts < 2:
-        problems.append(f'接线：index.tsx 没有挂载 CanvasBoundsGate（找到 {mounts} 处；片子与接触表各要一处）')
+    # 3.3.0 起三处：片子（warn）、组件接触表（block）、craft 样张（block）
+    if mounts < 3:
+        problems.append(f'接线：index.tsx 没有挂载 CanvasBoundsGate（找到 {mounts} 处；片子、接触表与 craft 样张各要一处）')
     # 两条挂载**故意不同档**（2026-09-22）：片子 warn（它的硬拦发生在交付渲染最后一刻，
     # 判据误报的代价 = 整片不出）、接触表 block（件看不见 = 目录页缺件，必须中断）。
     # 谁把它们"统一"成同一档，都会被这条夹具抓住 —— 这是刻意的，别来放宽。
