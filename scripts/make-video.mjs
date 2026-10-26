@@ -69,6 +69,17 @@ if (HAND) {
   step('手写场景工程：跳过 compose-story，沿用工程自己的旁白与字幕');
   const sj = JSON.parse(fs.readFileSync(path.join(project, 'manifests', 'shots.json'), 'utf8'));
   rep = {frames: sj.duration ?? sj.total ?? Math.max(...(sj.shots ?? []).map((x) => x.to ?? 0)), fixes: [], hints: []};
+  // 3.3.0 修：手写工程没有 audio/narration.mp3 时（新建工程直接 --stills 的常见情形），
+  // 以前会在「同步渲染输入」处 ENOENT 崩溃。现在与 auto 路线一致：补一条静音旁白占位（不覆盖已有旁白）。
+  const narr = path.join(project, 'audio', 'narration.mp3');
+  if (!fs.existsSync(narr)) {
+    step('没有 audio/narration.mp3：生成静音旁白占位（不做 TTS）');
+    const cues = JSON.parse(fs.readFileSync(path.join(project, 'manifests', 'caption-cues.json'), 'utf8')).cues ?? [];
+    const lastMs = Math.max(0, ...cues.map((c) => c.end_ms ?? c.speech_end_ms ?? 0));
+    const secs = (Math.max(rep.frames / 30, lastMs / 1000) + 0.5).toFixed(2);
+    const a = await run('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=mono', '-t', secs, '-c:a', 'libmp3lame', '-b:a', '64k', narr]);
+    if (a.code) die('ffmpeg 不可用：请安装 ffmpeg 并放进 PATH');
+  }
 } else {
 // 2. compose
 step('compose-story：排版 / 字幕定时 / 关键词同步 / 相机 / 自动修');
