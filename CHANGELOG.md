@@ -57,6 +57,8 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 - 手写工程（HAND 路线）缺 `audio/narration.mp3` 时自动生成静音占位，`--stills` 不再崩。
   Hand-written projects get a silent narration placeholder instead of crashing.
+- `validate-frame-props`：组件 props 写成具名类型（`React.FC<WashBlobProps>`）或交叉类型（`Base & {…}`）时解析成空集——每个 craft 组件传 `f={f}` 都被误报"传了帧参数但该组件不使用"，而真把 `frame={f}` 传给 craft 组件反而拦不住。现在解析同文件的 `type` 别名与交叉类型，箭头函数类型里的 `=>` 不再被当成闭合括号。新测试 `tests/test_frame_props.py`。
+  `validate-frame-props` resolves named and intersection prop types (craft components were all mis-reported, and a wrong `frame=` on them slipped through).
 
 ### 许可说明 / Licensing
 

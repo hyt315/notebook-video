@@ -78,10 +78,10 @@ def match_braces(text, i):
 def split_top(text):
     """按顶层逗号/分号切分，返回每段的前导标识符。"""
     names, depth, cur = [], 0, ""
-    for ch in text:
+    for k, ch in enumerate(text):
         if ch in "{[<(":
             depth += 1
-        elif ch in "}]>)":
+        elif ch in "}]>)" and not (ch == ">" and k and text[k - 1] == "="):   # 箭头类型 `=>` 不是闭合
             depth -= 1
         if ch in ",;" and depth == 0:
             names.append(cur)
@@ -97,24 +97,84 @@ def split_top(text):
     return out
 
 
+def _strip_comments(s):
+    s = re.sub(r"/\*.*?\*/", " ", s, flags=re.S)
+    return re.sub(r"//[^\n]*", " ", s)
+
+
+def type_expr_names(text, expr, depth=0):
+    """把一个 props 类型表达式解析成参数名集合。
+
+    认三种写法（3.3.0 起 craft 组件用的就是后两种）：
+      · 类型字面量  `{f: number; at: number}`
+      · 同文件具名类型  `WashBlobProps`（`type WashBlobProps = {...}` / `export type …`）
+      · 交叉类型  `Base & {catalogue?: string}`（逐段并集）
+    第一版只认字面量：`React.FC<WashBlobProps>` 解析成空集，于是每个 craft 组件传 `f={f}`
+    都被报成"传了帧参数但该组件不使用"（cell 演示片实测 30+ 条假 P1），而真把 `frame={f}`
+    传给 craft 组件的错误反而**拦不住**（组件被当成"两种都不收"）。
+    解析不了的段（泛型、外部导入的类型）贡献空集——宁可少认，不编造。"""
+    names = set()
+    if depth > 4:
+        return names
+    expr = _strip_comments(expr).strip()
+    i, parts, buf, d = 0, [], "", 0
+    while i < len(expr):
+        ch = expr[i]
+        if ch in "{<([":
+            d += 1
+        elif ch in "}>)]" and not (ch == ">" and i and expr[i - 1] == "="):   # `=>` 不是闭合
+            d -= 1
+        if ch == "&" and d == 0:
+            parts.append(buf)
+            buf = ""
+        else:
+            buf += ch
+        i += 1
+    parts.append(buf)
+    for part in (p.strip() for p in parts):
+        if part.startswith("{"):
+            inner = part[1:match_braces(part, 0)] if part.endswith("}") else part[1:]
+            names |= set(split_top(_strip_comments(inner)))
+        else:
+            m = re.match(r"([A-Za-z_]\w*)$", part)
+            if not m:
+                continue
+            tm = re.search(r"(?:export\s+)?type\s+" + re.escape(m.group(1)) + r"\s*=\s*", text)
+            if not tm:
+                continue
+            k = tm.end()
+            # 读到本条 type 声明结束（顶层分号）
+            d2, e = 0, k
+            while e < len(text):
+                c = text[e]
+                if c in "{<([":
+                    d2 += 1
+                elif c in "}>)]" and not (c == ">" and text[e - 1] == "="):   # `=>` 不是闭合
+                    d2 -= 1
+                elif c == ";" and d2 == 0:
+                    break
+                e += 1
+            names |= type_expr_names(text, text[k:e], depth + 1)
+    return names
+
+
 def prop_names(text, start):
     """从 export 声明处提取该组件接收的参数名集合。"""
     # 搜索窗不得越到下一个 export const（否则常量会继承下一个组件的签名）
     nxt = text.find("export const", start + 1)
     limit = nxt if nxt != -1 else len(text)
-    # 1) 优先取 React.FC<{...}> 的类型字面量（最可靠）
+    # 1) 优先取 React.FC<…> 的类型（字面量 / 同文件具名类型 / 交叉类型）
     m = re.compile(r"React\.FC\s*<").search(text, start, min(start + 2000, limit))
     if m:
         open_i = text.index("<", m.start())
         end_i = match_braces(text, open_i)
         inner = text[open_i + 1:end_i]
-        if inner.lstrip().startswith("{"):
+        if inner.lstrip().startswith("{") and inner.strip().endswith("}"):
             brace_i = open_i + 1 + inner.index("{")
             inner = text[brace_i + 1:match_braces(text, brace_i)]
-        # 类型块里允许写注释；注释会遮住它后面那个参数名，必须先剥掉
-        inner = re.sub(r"/\*.*?\*/", " ", inner, flags=re.S)
-        inner = re.sub(r"//[^\n]*", " ", inner)
-        return set(split_top(inner))
+            # 类型块里允许写注释；注释会遮住它后面那个参数名，必须先剥掉
+            return set(split_top(_strip_comments(inner)))
+        return type_expr_names(text, inner)
     # 2) 退回解构参数 = ({a,b,c}) =>
     d = re.compile(r"=\s*\(\{").search(text, start, min(start + 2000, limit))
     if d:
