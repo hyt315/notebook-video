@@ -220,6 +220,12 @@ if (renderOut) {
   }
   const sheets = [];
   for (let i = 0; i < pngs.length; i += 12) { const out = path.join(project, 'renders', `frames-${i / 12 + 1}.jpg`); await sheet(pngs.slice(i, i + 12), out); sheets.push(out); }
+  // 3.3.0：字幕真的读得出吗？（RapidOCR 可选；没装 → SKIPPED，不阻断；P0 记进报告并提示，不自动拦）
+  step('字幕 OCR 复核（validate-ocr，可选）');
+  const ocr = await py('validate-ocr.py', [project, '--video', renderOut, '--json', path.join(project, 'renders', 'ocr.json')], {capture: true});
+  const ocrVerdict = /SKIPPED/.test(ocr.out) ? 'SKIPPED（未装 RapidOCR）' : (ocr.out.match(/结论[^\n]*/) ?? [ocr.code ? 'FAIL' : 'PASS'])[0];
+  results.push({gate: 'validate-ocr.py', code: ocr.code, hard: false, verdict: ocrVerdict});
+  console.log(ocr.out.split('\n').filter((l) => /validate-ocr|✗|·|结论/.test(l)).slice(0, 12).map((l) => `  ${l}`).join('\n'));
   writeReport(frames, sheets, `\n成片：${renderOut}`);
   if (mg.code) die('validate-motion-gaps 未通过（画面有超长静止段）');
   console.log(`✓ 成片 ${renderOut}；抽帧接触表 ${sheets.join(', ')}；报告 renders/report.md`);
