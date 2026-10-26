@@ -408,8 +408,17 @@ ${probe.stderr || ''}`.match(/\{[\s\S]*\}/);
   }
   // 末尾只是换封装：视频流已经是 bt709/limited 的 yuv420p 并带齐四项标记（见 applyColorTags），
   // 这里 `-c:v copy` 会原样带走；音频重新编码为 AAC 并做一次响度规范化。
-  await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', raw, '-map', '0:v:0', '-map', '0:a:0', '-c:v', 'copy', '-af', loudFilter, '-ar', '48000', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', output]);
-  fs.rmSync(raw, {force: true});
+  // 最后这一步的 `+faststart` 同样要回写文件头：直接写到 FUSE 盘（JuiceFS）上的交付路径会在收尾时
+  // `Error writing trailer: Input/output error`（cell 演示片实测：2020 帧渲完、成片拿不到）。
+  // 所以成品也先落在临时目录，写完再整文件拷到交付路径（顺序写，FUSE 盘没问题）。
+  const finalTmp = path.join(os.tmpdir(), `nv-final-${process.pid}.mp4`);
+  try {
+    await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', raw, '-map', '0:v:0', '-map', '0:a:0', '-c:v', 'copy', '-af', loudFilter, '-ar', '48000', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', finalTmp]);
+    fs.copyFileSync(finalTmp, output);
+    fs.rmSync(raw, {force: true});   // 只在成功后删：失败时留着 raw，可以只重跑这一步而不必重渲
+  } finally {
+    fs.rmSync(finalTmp, {force: true});
+  }
   console.log(`Rendered and normalized: ${output}`);
 };
 
