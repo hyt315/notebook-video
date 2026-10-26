@@ -32,7 +32,7 @@ const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 0, paperOutline: 0,
   textureOpacity: 0.45, gridOpacity: 0, gradeWarmth: 0, gradeVignette: 0.08,
   subtitleWeight: 700, subtitleLetterSpacing: 3, subtitlePadX: 120,
-  subtitleSize: 72, subtitleFamily: 'Serif',
+  subtitleSize: 72, subtitleFamily: 'NotoSerifSC',
 };
 
 // 纸片的厚度：紧贴的软影 + 右下 1px 切口暗边（不是 UI 悬浮影）。
@@ -71,9 +71,9 @@ const Chrome: Theme['Chrome'] = (p) => {
   const s = 0.9 + 0.1 * Math.min(1, k * 1.4);
   return <div style={{position: 'absolute', left: 92, top: 66, zIndex: 150, display: 'flex', alignItems: 'center', gap: 18, opacity: k}}>
     <div style={{width: 64, height: 64, background: palette.orange, color: '#fff6e6', display: 'grid', placeItems: 'center',
-      fontFamily: 'Serif,Kai', fontWeight: 700, fontSize: 32, transform: `scale(${s}) rotate(-3deg)`, boxShadow: '1px 2px 3px rgba(60,10,5,0.3)'}}>
+      fontFamily: 'NotoSerifSC,Kai', fontWeight: 700, fontSize: 32, transform: `scale(${s}) rotate(-3deg)`, boxShadow: '1px 2px 3px rgba(60,10,5,0.3)'}}>
       {String(p.stage + 1).padStart(2, '0')}</div>
-    <div style={{fontFamily: 'Serif,Kai', fontWeight: 700, fontSize: 34, color: palette.ink, letterSpacing: 4, whiteSpace: 'nowrap'}}>{p.title}</div>
+    <div style={{fontFamily: 'NotoSerifSC,Kai', fontWeight: 700, fontSize: 34, color: palette.ink, letterSpacing: 4, whiteSpace: 'nowrap'}}>{p.title}</div>
   </div>;
 };
 
@@ -83,6 +83,6 @@ const backgroundDecorZones = [{x: 0, y: 0, w: 1920, h: 72}];
 export const THEME: Theme = {
   id: 'papercut', palette, aesthetic, paperShadow, backgrounds: BACKGROUNDS, Background, Paper, Grade, SubtitleChrome, Chrome,
   backgroundDecorZones,
-  craft: {medium: 'papercut', fibre: 0.45, inkLine: palette.orange, handFamily: 'Kai', bodyFamily: 'Serif,Kai', accent: palette.orange,
-    transition: 'drop', fonts: ['700 40px Serif']},
+  craft: {medium: 'papercut', fibre: 0.45, inkLine: palette.orange, handFamily: 'Kai', bodyFamily: 'NotoSerifSC,Kai', accent: palette.orange,
+    transition: 'drop', fonts: ['700 40px NotoSerifSC']},
 };

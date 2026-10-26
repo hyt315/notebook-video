@@ -1,7 +1,6 @@
 {
   "tiles": {
-    "fibre-tile.png": "7dce74f0b06e13fe9666e979151871f3439b9d354b99cadf610589b4f5f13cbf",
-    "granulation-tile.png": "6e8fd1aeff421c276d16acabff25448ee9953aa236c61b97b6be1319e0c3e629"
+    "fibre-tile.png": "7dce74f0b06e13fe9666e979151871f3439b9d354b99cadf610589b4f5f13cbf"
   },
   "generator": "scripts/dev/make-craft-textures.py"
 }

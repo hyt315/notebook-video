@@ -11,7 +11,7 @@ import {staticFile} from 'remotion';
 // （OFL-1.1，public/LICENSE-OFL-1.1-LXGW.txt）：浏览器按字符挑字面，拉丁字符仍用原字体，
 // 中日韩字符与全角标点自动落到 WenKai。于是任何 `fontFamily:'Space'` / `'Clash,Space'`
 // 的写法都不会再出豆腐，调用处不用记得补 Kai。
-// 3.3.0：Serif = Noto Serif SC Bold（OFL-1.1，notofonts/noto-cjk Serif2.003，按需下载，不入库）。
+// 3.3.0：NotoSerifSC = Noto Serif SC Bold（OFL-1.1，notofonts/noto-cjk Serif2.003，按需下载，不入库）。
 // 只有手作皮肤（journal / papercut / archive）用它，皮肤在 THEME.craft.fonts 里声明，AssetGate 校验；
 // flat / cel 工程里这个 @font-face 指向的文件不存在也没关系（浏览器只在用到时才下载字体）。
 // ============================================================================
@@ -43,7 +43,7 @@ export const FontFaces: React.FC<{bg: string}> = ({bg}) => <style>{`
 @font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:600}
 @font-face{font-family:Space;src:url(${staticFile('fonts/SpaceGrotesk-Latin.woff2')}) format('woff2');font-weight:700}
 @font-face{font-family:Caveat;src:url(${staticFile('fonts/Caveat-Latin.woff2')}) format('woff2');font-weight:400 700}
-@font-face{font-family:Serif;src:url(${staticFile('NotoSerifSC-Bold.otf')}) format('opentype');font-weight:400 900}
+@font-face{font-family:NotoSerifSC;src:url(${staticFile('NotoSerifSC-Bold.otf')}) format('opentype');font-weight:400 900}
 ${cjkFallbackFaces('Clash', ['500', '600', '700'])}
 ${cjkFallbackFaces('Space', ['400', '500', '600', '700'])}
 ${cjkFallbackFaces('Caveat', ['400 700'])}

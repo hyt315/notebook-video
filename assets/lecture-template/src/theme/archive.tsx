@@ -32,7 +32,7 @@ const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 2, paperOutline: 0,
   textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: 0.06,
   subtitleWeight: 700, subtitleLetterSpacing: 2, subtitlePadX: 88,
-  subtitleSize: 72, subtitleFamily: 'Serif',
+  subtitleSize: 72, subtitleFamily: 'NotoSerifSC',
 };
 
 // 物件躺在发光台面上：极浅、偏冷、贴面的影。
@@ -68,7 +68,7 @@ const Chrome: Theme['Chrome'] = (p) => {
   const k = chromeIn(p);
   return <div style={{position: 'absolute', left: 92, top: 64, zIndex: 150, opacity: k, transform: `translateX(${(1 - k) * -10}px)`}}>
     <div style={{fontFamily: 'Space,Kai', fontWeight: 600, fontSize: 24, letterSpacing: 5, color: palette.orangeInk}}>No. {String(p.stage + 1).padStart(3, '0')}</div>
-    <div style={{fontFamily: 'Serif,Kai', fontWeight: 700, fontSize: 36, color: palette.ink, letterSpacing: 2, marginTop: 2, whiteSpace: 'nowrap'}}>{p.title}</div>
+    <div style={{fontFamily: 'NotoSerifSC,Kai', fontWeight: 700, fontSize: 36, color: palette.ink, letterSpacing: 2, marginTop: 2, whiteSpace: 'nowrap'}}>{p.title}</div>
   </div>;
 };
 
@@ -78,6 +78,6 @@ const backgroundDecorZones = [{x: 0, y: 0, w: 1920, h: 28}, {x: 0, y: 0, w: 28, 
 export const THEME: Theme = {
   id: 'archive', palette, aesthetic, paperShadow, backgrounds: BACKGROUNDS, Background, Paper, Grade, SubtitleChrome, Chrome,
   backgroundDecorZones,
-  craft: {medium: 'archive', fibre: 0, inkLine: palette.orange, handFamily: 'Kai', bodyFamily: 'Serif,Kai', accent: palette.orange,
-    transition: 'slide', fonts: ['700 40px Serif']},
+  craft: {medium: 'archive', fibre: 0, inkLine: palette.orange, handFamily: 'Kai', bodyFamily: 'NotoSerifSC,Kai', accent: palette.orange,
+    transition: 'slide', fonts: ['700 40px NotoSerifSC']},
 };

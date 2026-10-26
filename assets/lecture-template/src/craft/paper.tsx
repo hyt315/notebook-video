@@ -10,7 +10,6 @@
 // 手法参考：lemo-opuscar styles/watercolor 与 styles/papercut-red 的 STYLE.md（MIT，© 2026 LemoLab）——重写，无代码复制。
 // ============================================================================
 import React from 'react';
-import {staticFile} from 'remotion';
 import {noise2D} from '@remotion/noise';
 import {THEME} from '../theme/active';
 import {FibreOverlay, TapeStrip} from '../theme/craft-common';
@@ -26,6 +25,16 @@ const noisyRing = (cx: number, cy: number, rx: number, ry: number, amp: number, 
     return [cx + rx * k * Math.cos(a), cy + ry * k * Math.sin(a)];
   });
   return 'M ' + pts.map((q) => q.map((v) => v.toFixed(1)).join(' ')).join(' L ') + ' Z';
+};
+
+/** 字符串 seed → 正整数（feTurbulence 的 seed）。 */
+const seedNum = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 9973;
+/** 颗粒颜色：颜料色压暗一档（0..1 RGB），只接受 #rrggbb；其他写法退回墨色。 */
+const grainRGB = (hex: string): [number, number, number] => {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return [0.17, 0.14, 0.12];
+  const v = parseInt(m[1], 16);
+  return [((v >> 16) & 255) / 255 * 0.55, ((v >> 8) & 255) / 255 * 0.55, (v & 255) / 255 * 0.55];
 };
 
 /** 毛边矩形（手撕 / 毛边纸）的 clip-path polygon（百分比）。 */
@@ -83,7 +92,11 @@ export const WashBlob: React.FC<WashBlobProps> = ({f, at, dur = 26, cx, cy, rx, 
   return <svg style={{position: 'absolute', left: ox, top: oy, overflow: 'visible', clipPath: sweepClip}} width={W} height={H} aria-hidden>
     <defs>
       <filter id={`${id}-soft`} x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation={1.4} /></filter>
-      <pattern id={`${id}-gran`} width={512} height={512} patternUnits="userSpaceOnUse"><image href={staticFile('craft/granulation-tile.png')} width={512} height={512} /></pattern>
+      {/* 颜料颗粒：SVG feTurbulence（分辨率无关、确定性 seed），只取暗部当颗粒——位图平铺在 2560 上会出马赛克块（样张实测） */}
+      <filter id={`${id}-gran`} x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency={0.75} numOctaves={2} seed={seedNum(seed)} result="n" />
+        <feColorMatrix in="n" type="matrix" values={`0 0 0 0 ${grainRGB(color)[0]}  0 0 0 0 ${grainRGB(color)[1]}  0 0 0 0 ${grainRGB(color)[2]}  0 0 0 -2.4 1.45`} />
+      </filter>
       <clipPath id={`${id}-clip`}><path d={passes[0]} /></clipPath>
     </defs>
     <g filter={`url(#${id}-soft)`}>
@@ -91,7 +104,7 @@ export const WashBlob: React.FC<WashBlobProps> = ({f, at, dur = 26, cx, cy, rx, 
       {/* 积水深边：外轮廓描一道更浓的细边 */}
       <path d={passes[0]} fill="none" stroke={color} strokeWidth={3} opacity={opacity * 0.9} />
     </g>
-    <rect width={W} height={H} fill={`url(#${id}-gran)`} clipPath={`url(#${id}-clip)`} opacity={0.5 * p} />
+    <rect width={W} height={H} filter={`url(#${id}-gran)`} clipPath={`url(#${id}-clip)`} opacity={0.32 * p} />
   </svg>;
 };
 
@@ -141,7 +154,7 @@ export const Seal: React.FC<{f: number; at: number; x: number; y: number; size?:
     const fs = chars.length <= 1 ? size * 0.62 : chars.length === 2 ? size * 0.4 : size * 0.36;
     return <div style={{position: 'absolute', left: x, top: y, width: size, height: size, transform: `rotate(${rot}deg) scale(${s})`, opacity: 0.5 + 0.45 * t,
       border: `${Math.max(4, size / 20)}px solid ${color}`, borderRadius: size * 0.06, color, display: 'grid', placeItems: 'center',
-      gridTemplateColumns: chars.length > 2 ? '1fr 1fr' : '1fr', fontFamily: 'Serif,Kai', fontWeight: 900, fontSize: fs, lineHeight: 1, padding: size * 0.08,
+      gridTemplateColumns: chars.length > 2 ? '1fr 1fr' : '1fr', fontFamily: 'NotoSerifSC,Kai', fontWeight: 900, fontSize: fs, lineHeight: 1, padding: size * 0.08,
       maskImage: `radial-gradient(circle at 30% 70%, rgba(0,0,0,0.75), #000 60%)`}}>
       {chars.map((c, i) => <span key={i}>{c}</span>)}
     </div>;

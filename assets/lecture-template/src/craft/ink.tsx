@@ -30,7 +30,13 @@ export const prog = (f: number, at: number, dur: number) => interpolate(f, [at, 
 /** 把 SVG 路径采样成点列（等弧长），给 InkPath 用。 */
 export const samplePath = (d: string, n = 64): [number, number][] => {
   const L = getLength(d);
-  return Array.from({length: n + 1}, (_, i) => {const p = getPointAtLength(d, (L * i) / n) ?? {x: 0, y: 0}; return [p.x, p.y];});
+  // getPointAtLength 在终点（length === L）偶尔返回 null；不能退回 (0,0)——那会从画布左上角拉出一条线（样张实测）。
+  const out: [number, number][] = [];
+  for (let i = 0; i <= n; i++) {
+    const q = getPointAtLength(d, Math.min(L * 0.99999, (L * i) / n));
+    if (q) out.push([q.x, q.y]); else if (out.length) out.push(out[out.length - 1]);
+  }
+  return out;
 };
 
 /** 手的抖动：沿法线方向的低频噪声位移（确定性）。 */

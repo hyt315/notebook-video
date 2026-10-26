@@ -32,7 +32,7 @@ const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 3, paperOutline: 0,
   textureOpacity: 0.55, gridOpacity: 0, gradeWarmth: 0.04, gradeVignette: 0.10,
   subtitleWeight: 700, subtitleLetterSpacing: 2, subtitlePadX: 68,
-  subtitleSize: 72, subtitleFamily: 'Serif',
+  subtitleSize: 72, subtitleFamily: 'NotoSerifSC',
 };
 
 // 纸在纸上：极短、偏暖、贴面的投影（不是 UI 卡片的悬浮影）。
@@ -86,6 +86,6 @@ const backgroundDecorZones = [
 export const THEME: Theme = {
   id: 'journal', palette, aesthetic, paperShadow, backgrounds: BACKGROUNDS, Background, Paper, Grade, SubtitleChrome, Chrome,
   backgroundDecorZones,
-  craft: {medium: 'journal', fibre: 0.55, inkLine: palette.ink, handFamily: 'Kai', bodyFamily: 'Serif,Kai', accent: palette.orange,
-    transition: 'slide', fonts: ['700 40px Serif']},
+  craft: {medium: 'journal', fibre: 0.55, inkLine: palette.ink, handFamily: 'Kai', bodyFamily: 'NotoSerifSC,Kai', accent: palette.orange,
+    transition: 'slide', fonts: ['700 40px NotoSerifSC']},
 };

@@ -54,7 +54,7 @@ export interface ThemeAesthetic {
   subtitlePadX?: number;
   /**
    * 3.3.0 新增（可选）：皮肤自己的字幕字号（设计 px）与字族。缺省 = mode.subFont（44）+ 'Kai'。
-   * 手作皮肤用 72（= 交付 2560×1440 上的 96 px，用户字幕规范）+ 'Serif'（Noto Serif SC Bold）。
+   * 手作皮肤用 72（= 交付 2560×1440 上的 96 px，用户字幕规范）+ 'NotoSerifSC'（Noto Serif SC Bold）。
    * CaptionFitGate 按这里的真实字号 / 字族量宽度，所以皮肤与门禁永远一致。
    */
   subtitleSize?: number;

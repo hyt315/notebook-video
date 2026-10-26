@@ -39,7 +39,7 @@ export const TapeStrip: React.FC<{x: number; y: number; w?: number; rot?: number
 
 /**
  * 字幕：没有胶囊、没有色块——墨字直接写在纸上，下面垫一层纸色柔光晕（任何底上都 ≥7:1）。
- * size = 设计 px（72 = 交付 96 px）。family 缺省 'Serif'（Noto Serif SC Bold）。
+ * size = 设计 px（72 = 交付 96 px）。family 缺省 'NotoSerifSC'（Noto Serif SC Bold；别叫 'Serif'——那是 CSS 通用族名关键字，会被解析成系统衬线体）。
  */
 export const PaperSubtitle = (o: {ink: string; halo: string; family?: string; size: number; bottom?: number; letterSpacing?: number; plate?: React.CSSProperties}):
   Theme['SubtitleChrome'] => ({mode, children}) =>
@@ -47,7 +47,7 @@ export const PaperSubtitle = (o: {ink: string; halo: string; family?: string; si
     <div style={{position: 'relative', padding: '4px 34px 8px', maxWidth: mode.safe, ...o.plate}}>
       {!o.plate && <div aria-hidden style={{position: 'absolute', inset: '-10px -30px', borderRadius: 60,
         background: `radial-gradient(ellipse at center, ${o.halo} 0%, ${o.halo} 52%, transparent 76%)`, filter: 'blur(6px)'}} />}
-      <div style={{position: 'relative', fontFamily: o.family ?? 'Serif,Kai', fontSize: o.size, fontWeight: 700, lineHeight: 1.16,
+      <div style={{position: 'relative', fontFamily: o.family ?? 'NotoSerifSC,Kai', fontSize: o.size, fontWeight: 700, lineHeight: 1.16,
         letterSpacing: o.letterSpacing ?? 2, color: o.ink, whiteSpace: 'nowrap',
         textShadow: o.plate ? undefined : `0 0 10px ${o.halo}, 0 0 4px ${o.halo}`}}>
         {children}

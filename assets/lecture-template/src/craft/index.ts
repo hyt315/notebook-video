@@ -3,5 +3,5 @@
 export {InkPath, Underline, InkCircle, HandNote, HandLettering, CRAFT_TYPE, prog, samplePath, easeInk} from './ink';
 export {PaperSheet, WashBlob, CutPaper, Seal} from './paper';
 export {Loupe} from './lens';
-export {ArchivePhoto, PinnedPhoto, LoupeMedia, MediaAudio, creditOf} from './media';
+export {ArchivePhoto, PinnedPhoto, LoupeMedia, MediaAudio, creditOf, archiveLayout} from './media';
 export {TapeStrip, FibreOverlay} from '../theme/craft-common';
