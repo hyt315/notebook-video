@@ -109,7 +109,10 @@ export const PinnedPhoto: React.FC<Base & {caption?: string; fix?: 'tape' | 'pin
   // 文字区宽度不随图缩小而塌（否则署名越换行图越小、图越小署名越窄——样张实测会塌成一条竖缝）：
   // 至少 280，或照片框宽的 70%；照片卡片宽 = max(图宽, 文字区宽)。
   const textW = Math.min(w - border * 2, Math.max(280, (w - border * 2) * 0.7));
-  const bottom = 14 + (caption ? 40 : 0) + (credit ? 23 * Math.ceil((credit.length * 10) / textW) : 0);
+  // 说明与署名之间留 20px：卡片是斜贴的（rot），渲染期 OverlapGate 量的是旋转后的外接矩形，
+  // 紧贴的两行在 -2° 下外接框会互相压住（cell 演示片 S7 实测「今天的软木切片」压「Giovanna Canu et」被硬拦）
+  const CAPTION_GAP = 20;
+  const bottom = 14 + (caption ? 40 + CAPTION_GAP : 0) + (credit ? 23 * Math.ceil((credit.length * 10) / textW) : 0);
   const {dw, dh} = fitBox(id, w - border * 2, h - border - bottom);
   const cardW = Math.max(dw, textW) + border * 2;
   const top = y + Math.max(0, (h - (dh + border + bottom)) / 2);
@@ -117,8 +120,8 @@ export const PinnedPhoto: React.FC<Base & {caption?: string; fix?: 'tape' | 'pin
     transform: `rotate(${rot + 2 * (1 - p)}deg)`, background: '#fffdf8', padding: `${border}px ${border}px 0`, boxShadow: `0 ${2 + 12 * (1 - p)}px ${6 + 16 * (1 - p)}px rgba(60,40,15,0.25)`}}>
     <Img src={staticFile(`media/${m.file}`)} style={{display: 'block', width: dw, height: dh, margin: '0 auto', filter: filterOf(treatment)}} />
     <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '6px 0 8px'}}>
-      {caption && <div style={{fontFamily: THEME.craft?.handFamily ?? 'Kai', fontWeight: 700, fontSize: 32, color: C.ink, whiteSpace: 'nowrap'}}>{caption}</div>}
-      {credit && <div style={{fontFamily: 'Space,Kai', fontSize: 18, color: C.muted, lineHeight: 1.25, overflowWrap: 'anywhere'}}>{credit}</div>}
+      {caption && <div style={{fontFamily: THEME.craft?.handFamily ?? 'Kai', fontWeight: 700, fontSize: 32, lineHeight: 1.2, color: C.ink, whiteSpace: 'nowrap'}}>{caption}</div>}
+      {credit && <div style={{fontFamily: 'Space,Kai', fontSize: 18, color: C.muted, lineHeight: 1.25, overflowWrap: 'anywhere', marginTop: caption ? CAPTION_GAP : 0}}>{credit}</div>}
     </div>
     {fix === 'tape' ? <TapeStrip x={cardW / 2 - 70} y={-16} w={140} rot={-4} />
       : <div style={{position: 'absolute', left: cardW / 2 - 13, top: -8, width: 26, height: 26, borderRadius: 13, background: THEME.craft?.accent ?? C.red,

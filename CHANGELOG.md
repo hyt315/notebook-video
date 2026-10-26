@@ -59,6 +59,10 @@ All notable changes are recorded here. The project follows semantic versioning.
   Hand-written projects get a silent narration placeholder instead of crashing.
 - `validate-frame-props`：组件 props 写成具名类型（`React.FC<WashBlobProps>`）或交叉类型（`Base & {…}`）时解析成空集——每个 craft 组件传 `f={f}` 都被误报"传了帧参数但该组件不使用"，而真把 `frame={f}` 传给 craft 组件反而拦不住。现在解析同文件的 `type` 别名与交叉类型，箭头函数类型里的 `=>` 不再被当成闭合括号。新测试 `tests/test_frame_props.py`。
   `validate-frame-props` resolves named and intersection prop types (craft components were all mis-reported, and a wrong `frame=` on them slipped through).
+- `HandLettering`：不再用 opentype.js 2.0.0 的 `Path.toPathData()`——它的取整在浮点残差（如 1e-14）上会产出 `NaN`，字的后半截轮廓整段丢失（「细」的「田」变成楔形、第二个「胞」只剩一撇，且随横向位置时好时坏）。改为自己按 2 位小数拼 SVG 路径并补齐闭合。
+  `HandLettering` builds glyph paths itself: opentype.js 2.0.0 `toPathData()` emits `NaN` on float residues and drops half a glyph.
+- `PinnedPhoto`：说明与署名之间留 20 px。斜贴的卡片在旋转后外接框会互相压住，渲染期 `OverlapGate` 硬拦（演示片实测）。
+  `PinnedPhoto` leaves a gap between caption and credit so the rotated card does not trip `OverlapGate`.
 
 ### 许可说明 / Licensing
 

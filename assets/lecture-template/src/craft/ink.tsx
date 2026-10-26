@@ -114,6 +114,26 @@ export const HandNote: React.FC<HandNoteProps> = ({f, at, x, y, text, to, size =
 };
 
 // ---- HandLettering：字形轮廓 → 「写」出来 -------------------------------------------------
+/**
+ * opentype.js 的 Path 命令 → SVG d（自己拼，不用 `path.toPathData()`）。
+ * opentype.js 2.0.0 的 roundDecimal 把小数部分拼成字符串再 `+(… + "e+2")`：小数部分是 1e-14 这类
+ * 浮点残差时会拼出 "1.42e-14e+2" → NaN，于是 d 里出现 `LNaN 95.26`，该字后半截轮廓整段丢失
+ * （cell 演示片实测：「细」的「田」变成一块楔形、第二个「胞」的「月」只剩一撇；同一个字放在不同 x 上
+ * 时好时坏，因为残差取决于横向偏移）。这里按 2 位小数自己格式化，结果与位置无关。
+ */
+const num = (v: number) => String(Math.round(v * 100) / 100);
+export const glyphPathD = (cmds: ReadonlyArray<{type: string; x?: number; y?: number; x1?: number; y1?: number; x2?: number; y2?: number}>) => cmds.map((c) => {
+  switch (c.type) {
+    case 'M': case 'L': return `${c.type}${num(c.x!)} ${num(c.y!)}`;
+    case 'Q': return `Q${num(c.x1!)} ${num(c.y1!)} ${num(c.x!)} ${num(c.y!)}`;
+    case 'C': return `C${num(c.x1!)} ${num(c.y1!)} ${num(c.x2!)} ${num(c.y2!)} ${num(c.x!)} ${num(c.y!)}`;
+    case 'Z': return 'Z';
+    default: return '';
+  }
+}).join('')
+  // 字形轮廓都是闭合的，但 opentype.js 对 TrueType 不一定发 Z；描边（stroke-dash）会在接缝留缺口，补上
+  .replace(/([^Z])M/g, '$1ZM').replace(/([^Z])$/, '$1Z');
+
 let FONT_CACHE: Promise<Font> | null = null;
 const loadKai = () => FONT_CACHE ??= fetch(staticFile('LXGWWenKaiLite-Medium.ttf')).then((r) => r.arrayBuffer()).then((b) => parseFont(b));
 
@@ -132,7 +152,7 @@ export const HandLettering: React.FC<{f: number; at: number; text: string; x: nu
       const path = font.getPath(ch, cursor, size, size);
       const adv = font.getAdvanceWidth(ch, size);
       cursor += adv;
-      const d = path.toPathData(2);
+      const d = glyphPathD(path.commands);
       const t0 = at + i * perChar;
       const outline = prog(f, t0, perChar * 1.4);
       const fill = prog(f, t0 + perChar * 0.9, perChar * 0.8);

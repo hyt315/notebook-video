@@ -50,7 +50,9 @@ declare module 'flubber' {
 
 // 3.3.0：opentype.js 2.x（MIT）不自带类型。只声明 craft/ink.tsx 的 HandLettering 用到的符号。
 declare module 'opentype.js' {
-  export interface Path {toPathData(decimalPlaces?: number): string}
+  export interface PathCommand {type: 'M' | 'L' | 'Q' | 'C' | 'Z'; x?: number; y?: number; x1?: number; y1?: number; x2?: number; y2?: number}
+  // toPathData 不再使用（2.0.0 的取整在浮点残差上会产出 NaN，见 craft/ink.tsx 的 glyphPathD）
+  export interface Path {commands: PathCommand[]; toPathData(decimalPlaces?: number): string}
   export interface Font {
     getPath(text: string, x: number, y: number, fontSize: number): Path;
     getAdvanceWidth(text: string, fontSize: number): number;
