@@ -86,6 +86,11 @@ class FixtureTests(unittest.TestCase):
         url2, _ = cs.pick_download(r, 2560)   # 2697 ≤ 3200 → original
         self.assertEqual(url2, r["url"])
 
+    def test_short_author_on_screen(self):
+        self.assertEqual(cs.short_author("Giovanna Canu, Michela E. Pedretti, Lucia Conzatti, Eva Santini"), "Giovanna Canu et al.")
+        self.assertEqual(cs.short_author("Ann Lee, Bo Chen"), "Ann Lee, Bo Chen")
+        self.assertEqual(cs.short_author("Robert Hooke (1635-1703)"), "Robert Hooke (1635-1703)")
+
     def test_credits_markdown(self):
         items = []
         for i, r in enumerate(self.recs.values()):

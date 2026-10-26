@@ -170,12 +170,18 @@ def describe(page: dict) -> dict:
     return rec
 
 
+def short_author(author: str) -> str:
+    """上屏署名里的作者：≥3 位作者写成「第一作者 et al.」（画面上放得下、读得完）；完整名单留在 CREDITS.md。"""
+    names = [n.strip() for n in re.split(r",|;|、| and | & ", author or "") if n.strip()]
+    return f"{names[0]} et al." if len(names) >= 3 else (author or "").strip()
+
+
 def credit_line(rec: dict) -> str:
     """上屏 / CREDITS 用的一行署名（TASL：Title-Author-Source-License）。"""
     name = re.sub(r"^File:", "", rec["title"])
     name = re.sub(r"\.[A-Za-z0-9]{2,5}$", "", name)
     lic = rec.get("licenseShort") or rec.get("license")
-    author = rec.get("artist") or "Unknown author"
+    author = short_author(rec.get("artist") or "Unknown author")
     if author.lower() in ("unknown author", "unknown", "anonymous"):
         author = "佚名"
     return f"{author} · {lic} · Wikimedia Commons"[:120] if rec.get("license") != "public-domain" else f"{author} · 公有领域 · Wikimedia Commons"[:120]
@@ -317,7 +323,7 @@ def ov_describe(r: dict, kind: str) -> dict:
         **{k: lic[k] for k in ("verdict", "license", "attribution", "reason")},
         "displayTitle": r.get("title") or "", "provider": r.get("provider", ""),
     }
-    rec["credit"] = f"{rec['artist']} · {short} · {rec['provider'] or 'Openverse'}"[:120] if rec["license"] != "public-domain" else f"{rec['artist']} · 公有领域 · {rec['provider'] or 'Openverse'}"[:120]
+    rec["credit"] = f"{short_author(rec['artist'])} · {short} · {rec['provider'] or 'Openverse'}"[:120] if rec["license"] != "public-domain" else f"{short_author(rec['artist'])} · 公有领域 · {rec['provider'] or 'Openverse'}"[:120]
     return rec
 
 
