@@ -6,11 +6,16 @@
 用法
   # 1. 搜（每个选题先搜一次；带 --project 会把这次搜索记进 manifests/commons-log.json，导演层门禁看它）
   python scripts/commons-search.py search "Hooke cork" [--type image|video|audio] [--category "Micrographia"]
-         [--min-px 1200] [--limit 12] [--allow-by-sa] [--project ./my-video] [--json out.json]
+         [--min-px 1200] [--limit 12] [--allow-by-sa] [--project ./my-video] [--json out.json] [--source commons|openverse]
 
   # 2. 选中一条，下载进工程（自动查许可、写 url / license / credit、生成上屏署名，走 prepare-media 入库与转码）
   python scripts/commons-search.py add ./my-video "File:Micrographia Schem 11.jpg" --id cork-plate
          [--width 2560] [--region cells 0.1 0.2 0.3 0.3] [--allow-by-sa] [--trim 0 8]
+
+  # 第二个源：Openverse（https://api.openverse.org，MIT，免 key）——聚合 Flickr / 博物馆图片与 Freesound / Jamendo 声音，
+  # 请求时只要 cc0 / pdm / by。add 时把标题写成 "openverse:image:<id>" 或 "openverse:audio:<id>"（search 结果里原样给出）。
+  python scripts/commons-search.py search "paper rustle" --type audio --source openverse --project ./my-video
+  python scripts/commons-search.py add ./my-video "openverse:audio:30d3f72b-…" --id rustle
 
   # 3. 交付前生成 CREDITS.md（成片署名清单，也给发布简介用）
   python scripts/commons-search.py credits ./my-video
@@ -47,6 +52,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 API = "https://commons.wikimedia.org/w/api.php"
+OPENVERSE = "https://api.openverse.org/v1"
 UA = os.environ.get("NOTEBOOK_VIDEO_UA") or "notebook-video-commons/1.0 (https://github.com/hyt315/notebook-video; commons-search.py)"
 SCRIPT_DIR = Path(__file__).resolve().parent
 MIN_INTERVAL = 1.0
@@ -230,7 +236,7 @@ def opt(args: list[str], name: str, n: int = 1, default=None):
 
 
 ARITY = {"--type": 1, "--category": 1, "--limit": 1, "--min-px": 1, "--project": 1, "--json": 1, "--id": 1,
-         "--width": 1, "--region": 5, "--trim": 2, "--allow-by-sa": 0, "--keep-pronunciations": 0}
+         "--width": 1, "--region": 5, "--trim": 2, "--allow-by-sa": 0, "--keep-pronunciations": 0, "--source": 1}
 
 
 def positionals(args: list[str]) -> list[str]:
@@ -278,16 +284,70 @@ def fileinfo(title: str, thumb_w: int, cache_dir: Path | None) -> dict:
     return describe(pages[0])
 
 
-def log_search(proj: Path, query: str, kind: str, category: str | None, recs: list[dict]) -> None:
+def log_search(proj: Path, query: str, kind: str, category: str | None, recs: list[dict], source: str = "commons") -> None:
     lf = proj / "manifests" / "commons-log.json"
     doc = json.loads(lf.read_text(encoding="utf-8")) if lf.is_file() else {"searches": []}
     doc.setdefault("searches", []).append({
-        "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "query": query, "type": kind, "category": category,
+        "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "source": source, "query": query, "type": kind, "category": category,
         "results": len(recs), "usable": sum(1 for r in recs if r["verdict"] == "ok"),
         "top": [{"title": r["title"], "license": r["license"], "verdict": r["verdict"]} for r in recs[:8]],
     })
     lf.parent.mkdir(parents=True, exist_ok=True)
     lf.write_text(json.dumps(doc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+
+
+# ---------------------------------------------------------------- Openverse（第二个源）
+OV_LICENSE = {"cc0": "CC0", "pdm": "Public domain", "by": "CC BY"}
+
+
+def ov_describe(r: dict, kind: str) -> dict:
+    """Openverse 结果 → 与 Commons 相同的候选记录。"""
+    short = OV_LICENSE.get(r.get("license", ""), r.get("license", "")).strip()
+    if r.get("license") == "by" and r.get("license_version"):
+        short = f"CC BY {r['license_version']}"
+    lic = classify_license(short, "", r.get("license_url") or "")
+    rec = {
+        "title": f"openverse:{kind}:{r.get('id')}", "pageUrl": r.get("foreign_landing_url") or r.get("detail_url", ""),
+        "mime": f"{'audio' if kind == 'audio' else 'image'}/{r.get('filetype') or ''}".rstrip("/"),
+        "width": r.get("width") or 0, "height": r.get("height") or 0,
+        "durationSec": (r.get("duration") or 0) / 1000 if kind == "audio" else None,
+        "bytes": r.get("filesize") or 0, "url": r.get("url", ""), "thumbUrl": r.get("thumbnail") or "",
+        "artist": (r.get("creator") or "Unknown author")[:160], "creditSource": f"{r.get('provider', '')} via Openverse",
+        "licenseShort": short, "licenseUrl": r.get("license_url") or "", "description": (r.get("title") or "")[:240],
+        **{k: lic[k] for k in ("verdict", "license", "attribution", "reason")},
+        "displayTitle": r.get("title") or "", "provider": r.get("provider", ""),
+    }
+    rec["credit"] = f"{rec['artist']} · {short} · {rec['provider'] or 'Openverse'}"[:120] if rec["license"] != "public-domain" else f"{rec['artist']} · 公有领域 · {rec['provider'] or 'Openverse'}"[:120]
+    return rec
+
+
+def ov_search(query: str, kind: str, limit: int, cache_dir: Path | None) -> list[dict]:
+    if kind not in ("image", "audio"):
+        raise SystemExit("✗ Openverse 只有图片和声音（--type image|audio）")
+    url = f"{OPENVERSE}/{'audio' if kind == 'audio' else 'images'}/?" + urllib.parse.urlencode(
+        {"q": query, "license": "cc0,pdm,by", "page_size": str(min(max(limit, 1), 20)), "mature": "false"})
+    data = cached_json(url, cache_dir)
+    return [ov_describe(r, kind) for r in data.get("results", [])]
+
+
+def ov_fileinfo(title: str, cache_dir: Path | None) -> dict:
+    m = re.fullmatch(r"openverse:(image|audio):([\w-]+)", title)
+    if not m:
+        raise SystemExit(f"✗ Openverse 标题格式是 openverse:image:<id> 或 openverse:audio:<id>（收到 {title}）")
+    kind, oid = m.groups()
+    data = cached_json(f"{OPENVERSE}/{'audio' if kind == 'audio' else 'images'}/{oid}/", cache_dir)
+    return ov_describe(data, kind)
+
+
+def cached_json(url: str, cache_dir: Path | None) -> dict:
+    key = hashlib.sha1(url.encode()).hexdigest()
+    if cache_dir and (cache_dir / f"{key}.json").is_file():
+        return json.loads((cache_dir / f"{key}.json").read_text(encoding="utf-8"))
+    data = json.loads(http_get(url))
+    if cache_dir:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        (cache_dir / f"{key}.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    return data
 
 
 def cmd_search(args: list[str]) -> int:
@@ -306,11 +366,18 @@ def cmd_search(args: list[str]) -> int:
     allow_sa = "--allow-by-sa" in args
     proj = Path(opt(args, "--project")).resolve() if opt(args, "--project") else None
     cache = proj / ".cache" / "commons" if proj else None
-    recs = search(query, kind, category, limit, cache_dir=cache, keep_pron="--keep-pronunciations" in args)
+    source = opt(args, "--source", default="commons")
+    if source == "openverse":
+        recs = ov_search(query, kind, limit, cache)
+    elif source == "commons":
+        recs = search(query, kind, category, limit, cache_dir=cache, keep_pron="--keep-pronunciations" in args)
+    else:
+        print("✗ --source 只能是 commons 或 openverse")
+        return 2
     if proj:
-        log_search(proj, query, kind, category, recs)
+        log_search(proj, query, kind, category, recs, source)
     shown = 0
-    print(f"Commons · 「{query}」{f' · 分类 {category}' if category else ''} · {kind} · {len(recs)} 条")
+    print(f"{'Openverse' if source == 'openverse' else 'Commons'} · 「{query}」{f' · 分类 {category}' if category else ''} · {kind} · {len(recs)} 条")
     for r in recs:
         long_edge = max(r["width"], r["height"])
         usable = r["verdict"] == "ok" or (r["verdict"] == "sa" and allow_sa)
@@ -318,7 +385,8 @@ def cmd_search(args: list[str]) -> int:
         mark = "✓" if usable and not small else "✗"
         why = r["reason"] if not usable else (f"太小（长边 {long_edge}px < {min_px}）" if small else r["reason"])
         dims = f"{r['width']}×{r['height']}" if r["width"] else (f"{r['durationSec']:.1f}s" if r.get("durationSec") else "")
-        print(f"  {mark} {r['title'][:78]}\n      {dims} {r['mime']} · {r['licenseShort']} · {r['artist'][:40]} — {why}")
+        shown_title = r['title'] + (f"  「{r['displayTitle'][:40]}」" if r.get('displayTitle') else "")
+        print(f"  {mark} {shown_title[:110]}\n      {dims} {r['mime']} · {r['licenseShort']} · {r['artist'][:40]} — {why}")
         shown += mark == "✓"
     print(f"可用 {shown} 条。下一步：python scripts/commons-search.py add <工程> \"File:…\" --id <素材id>")
     jo = opt(args, "--json")
@@ -355,7 +423,7 @@ def cmd_add(args: list[str]) -> int:
         print("✗ --id 只用小写字母 / 数字 / 连字符，例如 cork-plate")
         return 2
     width = int(opt(args, "--width", default="2560"))
-    rec = fileinfo(pos[1], width, proj / ".cache" / "commons")
+    rec = ov_fileinfo(pos[1], proj / ".cache" / "commons") if pos[1].startswith("openverse:") else fileinfo(pos[1], width, proj / ".cache" / "commons")
     allow_sa = "--allow-by-sa" in args
     if rec["verdict"] == "reject" or (rec["verdict"] == "sa" and not allow_sa):
         print(f"✗ {rec['title']}：{rec['reason']}\n  换一条（search 结果里打 ✓ 的），或用组件重画。")
@@ -386,6 +454,9 @@ def cmd_add(args: list[str]) -> int:
         doc = json.loads(f.read_text(encoding="utf-8"))
         e = next(x for x in doc["items"] if x["id"] == mid)
         e["commons"] = {k: rec[k] for k in ("title", "pageUrl", "artist", "licenseShort", "licenseUrl", "attribution", "creditSource")}
+        if rec["title"].startswith("openverse:"):
+            e["commons"]["source"] = "openverse"
+            e["commons"]["displayTitle"] = rec.get("displayTitle", "")
         e["commons"]["fetched"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         e["commons"]["original"] = {"width": rec["width"], "height": rec["height"], "mime": rec["mime"]}
         if rec["verdict"] == "sa":
@@ -408,7 +479,7 @@ def build_credits(items: list[dict]) -> str:
     sa = False
     for e in web:
         c = e.get("commons") or {}
-        title = re.sub(r"^File:", "", c.get("title", "")) or e.get("id")
+        title = c.get("displayTitle") or re.sub(r"^File:", "", c.get("title", "")) or e.get("id")
         lic = c.get("licenseShort") or e.get("license")
         lic_url = c.get("licenseUrl") or ""
         author = c.get("artist") or e.get("credit", "")

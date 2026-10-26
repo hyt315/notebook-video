@@ -99,6 +99,21 @@ class FixtureTests(unittest.TestCase):
         self.assertEqual(len(re.findall(r"^- \*\*", txt, re.M)), 3)
 
 
+class OpenverseTests(unittest.TestCase):
+    def test_openverse_records(self):
+        res = json.loads((ROOT / "tests" / "fixtures" / "openverse-audio.json").read_text(encoding="utf-8"))["results"]
+        for r in res:
+            rec = cs.ov_describe(r, "audio")
+            self.assertTrue(rec["title"].startswith("openverse:audio:"))
+            self.assertIn(rec["verdict"], ("ok",))  # request filters cc0 / pdm / by
+            self.assertTrue(vm.LICENSE_OK.match(rec["license"]), rec["license"])
+            self.assertIn(rec["provider"] or "Openverse", rec["credit"])
+
+    def test_openverse_title_format(self):
+        with self.assertRaises(SystemExit):
+            cs.ov_fileinfo("openverse:video:abc", None)
+
+
 class ParseTests(unittest.TestCase):
     def test_positionals_skip_option_values(self):
         args = ["./p", "File:A b.jpg", "--id", "a", "--region", "r", "0.1", "0.2", "0.3", "0.4", "--allow-by-sa", "--width", "1920"]

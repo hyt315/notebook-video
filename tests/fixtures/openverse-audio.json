@@ -1,0 +1,226 @@
+{
+ "results": [
+  {
+   "id": "30d3f72b-0328-4eb4-96f9-472e9b0bb39c",
+   "title": "Papers Rustling",
+   "indexed_on": "2024-05-21T15:00:07.873258Z",
+   "foreign_landing_url": "https://freesound.org/people/f4ngy/sounds/240789",
+   "url": "https://cdn.freesound.org/previews/240/240789_4107740-hq.mp3",
+   "creator": "f4ngy",
+   "creator_url": "https://freesound.org/people/f4ngy",
+   "license": "by",
+   "license_version": "4.0",
+   "license_url": "https://creativecommons.org/licenses/by/4.0/",
+   "provider": "freesound",
+   "source": "freesound",
+   "category": null,
+   "genres": null,
+   "filesize": 98307,
+   "filetype": "mp3",
+   "tags": [
+    {
+     "name": "home-recording",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "pages",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "paper",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "rustle",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "rustling",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    }
+   ],
+   "alt_files": [
+    {
+     "url": "https://freesound.org/apiv2/sounds/240789/download/",
+     "bit_rate": 0,
+     "filesize": 700460,
+     "filetype": "wav",
+     "sample_rate": 44100
+    }
+   ],
+   "attribution": "\"Papers Rustling\" by f4ngy is licensed under CC BY 4.0. To view a copy of this license, visit https://creativecommons.org/licenses/by/4.0/.",
+   "fields_matched": [
+    "description",
+    "title",
+    "tags.name"
+   ],
+   "mature": false,
+   "audio_set": null,
+   "duration": 3970,
+   "bit_rate": 128000,
+   "sample_rate": null,
+   "thumbnail": null,
+   "detail_url": "https://api.openverse.org/v1/audio/30d3f72b-0328-4eb4-96f9-472e9b0bb39c/",
+   "related_url": "https://api.openverse.org/v1/audio/30d3f72b-0328-4eb4-96f9-472e9b0bb39c/related/",
+   "unstable__sensitivity": []
+  },
+  {
+   "id": "0199bc54-a7b6-48da-a80b-84957d2d0b4f",
+   "title": "Wrapping Paper Rustle",
+   "indexed_on": "2024-05-21T15:00:07.873258Z",
+   "foreign_landing_url": "https://freesound.org/people/Eipeiknip/sounds/344433",
+   "url": "https://cdn.freesound.org/previews/344/344433_3278936-hq.mp3",
+   "creator": "Eipeiknip",
+   "creator_url": "https://freesound.org/people/Eipeiknip",
+   "license": "cc0",
+   "license_version": "1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "provider": "freesound",
+   "source": "freesound",
+   "category": null,
+   "genres": null,
+   "filesize": 509837,
+   "filetype": "mp3",
+   "tags": [
+    {
+     "name": "Crinkle",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "Crumple",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "Frantic",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "Paper",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "Present",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "Quick",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "Rip",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "Rustle",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "Unwrap",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "Wrapping",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    }
+   ],
+   "alt_files": [
+    {
+     "url": "https://freesound.org/apiv2/sounds/344433/download/",
+     "bit_rate": 192000,
+     "filesize": 472710,
+     "filetype": "mp3",
+     "sample_rate": 44100
+    }
+   ],
+   "attribution": "\"Wrapping Paper Rustle\" by Eipeiknip is marked with CC0 1.0. To view the terms, visit https://creativecommons.org/publicdomain/zero/1.0/.",
+   "fields_matched": [
+    "description",
+    "title",
+    "tags.name"
+   ],
+   "mature": false,
+   "audio_set": null,
+   "duration": 19628,
+   "bit_rate": 128000,
+   "sample_rate": null,
+   "thumbnail": null,
+   "detail_url": "https://api.openverse.org/v1/audio/0199bc54-a7b6-48da-a80b-84957d2d0b4f/",
+   "related_url": "https://api.openverse.org/v1/audio/0199bc54-a7b6-48da-a80b-84957d2d0b4f/related/",
+   "unstable__sensitivity": []
+  },
+  {
+   "id": "ebb7fa8b-b886-42ca-abe9-d2172bfce500",
+   "title": "Paper Rustling 02.wav",
+   "indexed_on": "2024-05-21T15:00:07.873258Z",
+   "foreign_landing_url": "https://freesound.org/people/swidmark/sounds/171325",
+   "url": "https://cdn.freesound.org/previews/171/171325_962819-hq.mp3",
+   "creator": "swidmark",
+   "creator_url": "https://freesound.org/people/swidmark",
+   "license": "cc0",
+   "license_version": "1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "provider": "freesound",
+   "source": "freesound",
+   "category": null,
+   "genres": null,
+   "filesize": 940518,
+   "filetype": "mp3",
+   "tags": [
+    {
+     "name": "flipping",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "paper",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    },
+    {
+     "name": "rustling",
+     "accuracy": null,
+     "unstable__provider": "freesound"
+    }
+   ],
+   "alt_files": [
+    {
+     "url": "https://freesound.org/apiv2/sounds/171325/download/",
+     "bit_rate": 0,
+     "filesize": 6993944,
+     "filetype": "wav",
+     "sample_rate": 44100
+    }
+   ],
+   "attribution": "\"Paper Rustling 02.wav\" by swidmark is marked with CC0 1.0. To view the terms, visit https://creativecommons.org/publicdomain/zero/1.0/.",
+   "fields_matched": [
+    "description",
+    "title",
+    "tags.name"
+   ],
+   "mature": false,
+   "audio_set": null,
+   "duration": 39625,
+   "bit_rate": 128000,
+   "sample_rate": null,
+   "thumbnail": null,
+   "detail_url": "https://api.openverse.org/v1/audio/ebb7fa8b-b886-42ca-abe9-d2172bfce500/",
+   "related_url": "https://api.openverse.org/v1/audio/ebb7fa8b-b886-42ca-abe9-d2172bfce500/related/",
+   "unstable__sensitivity": []
+  }
+ ]
+}
