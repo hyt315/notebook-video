@@ -19,7 +19,7 @@ const ease = Easing.bezier(0.16, 1, 0.3, 1);
 
 export type MediaRegion = {id: string; x: number; y: number; w: number; h: number};
 export type MediaEntry = {
-  id: string; file: string; kind: 'image' | 'video' | 'gif'; source: 'user' | 'web';
+  id: string; file: string; kind: 'image' | 'video' | 'gif' | 'audio'; source: 'user' | 'web';
   url?: string; license?: string; credit?: string; width?: number; height?: number;
   trimStartSec?: number; trimEndSec?: number; durationSec?: number; focusRegions?: MediaRegion[]; muted?: boolean;
 };

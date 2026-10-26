@@ -47,3 +47,13 @@ declare module 'flubber' {
     options?: {maxSegmentLength?: number; string?: boolean}
   ): (t: number) => string;
 }
+
+// 3.3.0：opentype.js 2.x（MIT）不自带类型。只声明 craft/ink.tsx 的 HandLettering 用到的符号。
+declare module 'opentype.js' {
+  export interface Path {toPathData(decimalPlaces?: number): string}
+  export interface Font {
+    getPath(text: string, x: number, y: number, fontSize: number): Path;
+    getAdvanceWidth(text: string, fontSize: number): number;
+  }
+  export function parse(buffer: ArrayBuffer): Font;
+}
