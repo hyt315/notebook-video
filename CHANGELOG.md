@@ -4,6 +4,65 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+## [3.3.0] - 2026-10-26
+
+> 从"讲课 PPT"到"一个媒介在演一件事"：新增导演层（隐喻先行 + 门禁）、三套亮底手作皮肤、craft 材质组件、Wikimedia Commons / Openverse 素材管线、媒介化拟音与可选 OCR 复核。flat / cel 的行为与全部原有门禁结果不变；`Theme` 只新增可选字段。
+> From "lecture slides" to "a medium acting the idea out": a director layer with a gate, three light hand-made skins, craft components, a Wikimedia Commons / Openverse media pipeline, medium-native foley and an optional OCR check. flat / cel and every existing gate behave as before; `Theme` only gains optional fields.
+
+### 导演层 / Director layer
+
+- `references/director-method.md`：一个生活问题 → 只属于这个题的隐喻 → 媒介即隐喻 → 顿悟点的原生动作 → 三个候选结构 → 对标学 / 不学 → 镜头要写理由；每个选题先搜 Commons；事实带原文引文；风格帧先行；独立评审七项打分。
+  Metaphor-first method, Commons search first, sourced facts, style frames first, independent seven-score review.
+- `manifests/treatment.json` + `scripts/validate-treatment.py`：手作皮肤缺项为 P0，flat / cel 为 P1（老工程照常通过）；`make-video` 与 CLI 已接入。新蓝图 `blueprints/medium-metaphor.json`。
+  Treatment gate (P0 for craft skins, P1 for flat / cel) wired into make-video and the CLI; new `medium-metaphor` blueprint.
+- `references/style-recipes.md`：把一种观感拆成八个轴（材料、颜色分工、字、运动质感、镜头语法、换场、声音、原生动作）+ "不是什么" + "坑"；三个已实现、五个只写配方。
+  Style recipes on eight axes; three implemented as skins, five documented.
+
+### 皮肤 / Skins
+
+- 新皮肤 `journal`（博物学家手账）、`papercut`（红色窗花剪纸）、`archive`（档案灯台）：`new-project --style=journal|papercut|archive`。纸面卡片、媒介化字幕（72 设计 px = 96 px@1440，Noto Serif SC Bold，按需下载并校验 sha256）、`Theme.Chrome` 取代技术页眉、新转场 `slide` / `drop`。
+  Three craft skins with paper cards, medium-native 96 px@1440 subtitles (Noto Serif SC Bold, downloaded on demand), `Theme.Chrome` and in-medium transitions `slide` / `drop`.
+- 契约文档：`references/theme-journal.md`、`theme-papercut.md`、`theme-archive.md`。
+  Contract docs for each skin.
+
+### craft 组件 / Craft components
+
+- `src/craft/`：`InkPath` / `Underline` / `InkCircle` / `HandNote`（perfect-freehand 压感墨线）、`HandLettering`（opentype.js 取霞鹜文楷字形，"写"出中文）、`PaperSheet` / `WashBlob` / `CutPaper` / `Seal`、`Loupe` 放大镜、`ArchivePhoto` / `PinnedPhoto` / `LoupeMedia` / `MediaAudio`（真实素材强制署名）。只用帧号驱动、确定性。文档 `references/craft-kit.md`；样张合成 `CraftSheet`。
+  Frame-driven craft components built on perfect-freehand and opentype.js; documented in `craft-kit.md`; a `CraftSheet` composition shows them all.
+- 新 npm 依赖：`perfect-freehand` 1.2.3、`opentype.js` 2.0.0（均 MIT）。
+  New npm dependencies (both MIT).
+
+### 真实素材 / Real media
+
+- `scripts/commons-search.py search|add|credits`：Wikimedia Commons（首选）与 Openverse（`--source openverse`，图片 + 声音）；许可白名单（PD / CC0 / CC BY；BY-SA 默认排除，`--allow-by-sa` 时记 `shareAlike` 并写明义务）；自动署名、搜索日志、API 缓存与礼仪（UA、≥1 s 间隔、maxlag、退避）。文档 `references/commons-media.md`。
+  Commons / Openverse search, licence whitelist, automatic credits, search log and API etiquette.
+- `validate-media`：CC BY-SA 素材由静默通过改为 P1 提示。
+  BY-SA media now raise a P1 notice.
+
+### 声音 / Sound
+
+- 6 条手作拟音（page / place / snip / stamp / rustle / latch），取自 Kenney "RPG Audio"（CC0），按音效库合同归一化；手作皮肤的自动音效计划把 UI 声换成纸声，显式 sfx 与 flat / cel 不变。
+  Six CC0 Kenney foley one-shots; craft skins swap UI sounds for paper sounds automatically.
+
+### 门禁与测试 / Gates and tests
+
+- 新增 `scripts/validate-ocr.py`（可选，RapidOCR）：从成片 / 静帧抽字幕帧 OCR，核对文本与字幕 cue 一致、识别置信度够高；`make-video --render` 后自动跑并写进 `renders/report.md`，未安装 RapidOCR 时跳过并提示。
+  Optional RapidOCR check that captions are actually legible in rendered frames, reported by make-video.
+- 新测试 `tests/test_commons.py`、`tests/test_treatment.py`、`tests/test_ocr.py`（离线，标准库 unittest），已接入 CI。
+  New offline unit tests, run in CI.
+- 一致性检查、selftest、负向夹具的主题 / 背景 / 文档清单扩到五套皮肤；`TRANSITIONS` 两侧同步 `slide` / `drop`。
+  Consistency checks, selftest and negative fixtures cover all five skins.
+
+### 修复 / Fixes
+
+- 手写工程（HAND 路线）缺 `audio/narration.mp3` 时自动生成静音占位，`--stills` 不再崩。
+  Hand-written projects get a silent narration placeholder instead of crashing.
+
+### 许可说明 / Licensing
+
+- NOTICE 增补 lemo-opuscar（MIT，方法借鉴、无代码复制）、perfect-freehand、opentype.js、Noto Serif SC（OFL）、Kenney（CC0）、RapidOCR（可选）；README / DEPENDENCIES 注明 Remotion 为 source-available 许可（个人与 ≤3 人公司免费，4 人及以上的营利公司需购买公司许可）。
+  NOTICE and DEPENDENCIES updated; Remotion's source-available licence is spelled out.
+
 ## [3.2.0] - 2026-10-18
 
 > 字体不再入库：LXGW 文楷 Lite v1.522 由 `notebook-video.mjs fonts`（new-project 自动调用）从官方 Release 下载并校验 sha256，仓库减少约 55 MB；移除 Dependabot 配置，仓库只保留 main 分支。
