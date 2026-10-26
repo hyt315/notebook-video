@@ -111,6 +111,9 @@ def doc_defined_names() -> set[str]:
                     m2 = re.match(r'\s*([A-Za-z_$][\w$]*)\s*=', part)
                     if m2:
                         names.add(m2.group(1))
+            # Remotion 合成 id（`<Composition id="NotebookVideoCraftSheet" …/>`）也是文档会引用的真名字：
+            # 3.3.0 的 craft-kit.md 写了 `NotebookVideoCraftSheet`，旧版只认 TS 声明，于是报"文档编出来的名字"。
+            names |= set(re.findall(r'<Composition\s+id="([A-Za-z_$][\w$]*)"', t))
             for m in re.finditer(r'export\s*\{([^}]*)\}', t):
                 for part in m.group(1).split(','):
                     tok = part.strip().split(' as ')[-1].strip()
