@@ -37,7 +37,7 @@ from pathlib import Path
 # 实测把 media 写成 ["FAKE_MEDIUM_A",...]、live 写成 ["NO_SUCH_COMPONENT"] 也能 P0=0 通过）
 SKELETONS = {"Stage", "Corridor", "Split", "Zoom"}
 INTENTS = {"establish", "push-in", "pull-back", "pan-follow", "reveal", "micro-orbit", "still"}
-TRANSITIONS = {"auto", "cut", "handoff", "reveal", "whip", "whip-left", "whip-right", "zoom", "fade", "hard"}   # 引擎级转场（src/cinema.tsx）回归；auto = 章节首镜 zoom、其余 whip
+TRANSITIONS = {"auto", "cut", "handoff", "reveal", "whip", "whip-left", "whip-right", "zoom", "fade", "hard", "slide", "drop"}   # 引擎级转场（src/cinema.tsx）回归；auto = 章节首镜 zoom、其余 whip
 ENTRIES = {"rise", "slide", "fade", "zoom"}
 MEDIA_KINDS = {"chart", "console", "code", "graphic", "text", "metric"}
 

@@ -52,6 +52,41 @@ export interface ThemeAesthetic {
   subtitleWeight?: number;
   subtitleLetterSpacing?: number;
   subtitlePadX?: number;
+  /**
+   * 3.3.0 新增（可选）：皮肤自己的字幕字号（设计 px）与字族。缺省 = mode.subFont（44）+ 'Kai'。
+   * 手作皮肤用 72（= 交付 2560×1440 上的 96 px，用户字幕规范）+ 'Serif'（Noto Serif SC Bold）。
+   * CaptionFitGate 按这里的真实字号 / 字族量宽度，所以皮肤与门禁永远一致。
+   */
+  subtitleSize?: number;
+  subtitleFamily?: string;
+}
+
+/** 3.3.0：皮肤可选的章节标识（替代引擎缺省的「章节卡 + 右上技术页眉」）。 */
+export interface ChromeProps {
+  /** 章节序号（0 起）与本章标题；kicker / header / headerSub 来自 film.ts 的 COPY */
+  stage: number; title: string; kicker: string; header: string; headerSub: string;
+  /** 本章起始帧之后的本地帧（用于入场动画） */
+  local: number;
+}
+
+/** 3.3.0：皮肤的「材质」声明 —— 给 craft 组件（src/craft/）读，旧皮肤不用写。 */
+export interface ThemeCraft {
+  /** 媒介名（写进 treatment.json 的 medium 应与之对应） */
+  medium: 'journal' | 'papercut' | 'archive' | string;
+  /** 卡片上叠的纸纤维纹理强度 0–1（public/craft/fibre-tile.png） */
+  fibre: number;
+  /** 墨线颜色（InkPath / HandNote 缺省色） */
+  inkLine: string;
+  /** 手写批注字族 */
+  handFamily: string;
+  /** 正文 / 标题字族（衬线 or 楷体） */
+  bodyFamily: string;
+  /** 唯一强调色（lemo 配方「一个强调色」纪律） */
+  accent: string;
+  /** 缺省转场（分镜表写 auto 时用） */
+  transition: 'slide' | 'drop' | 'ink' | 'whip' | 'zoom' | 'fade';
+  /** 需要额外加载的字体（AssetGate 会 load 并校验；缺字体则拒绝渲染并提示 `fonts --serif`） */
+  fonts?: string[];
 }
 
 /**
@@ -65,7 +100,7 @@ export type BgVariant = 'main' | 'chapter' | 'quiet';
 export const BG_VARIANTS: readonly BgVariant[] = ['main', 'chapter', 'quiet'];
 
 export interface Theme {
-  id: 'flat' | 'cel';
+  id: 'flat' | 'cel' | 'journal' | 'papercut' | 'archive';
   palette: ThemePalette;
   aesthetic: ThemeAesthetic;
   /** 卡片阴影：lift 0=静止贴面，1=完全举起。签名与语义所有主题一致。 */
@@ -85,6 +120,10 @@ export interface Theme {
    * （cel 的速度线 / 爆炸星）必须给页眉垫一块底板，否则墨字会被装饰吃掉；flat 不需要。
    */
   headerPlate?: React.CSSProperties;
+  /** 3.3.0（可选）：皮肤自己的章节标识。给了就替换引擎缺省 chrome（章节卡 + 技术页眉）。 */
+  Chrome?: React.FC<ChromeProps>;
+  /** 3.3.0（可选）：手作材质参数，src/craft/ 组件读取。 */
+  craft?: ThemeCraft;
   /** 主题专属锁定构件（如赛璐璐爆炸贴 Burst），场景层只传内容参数。 */
   extras?: Record<string, React.FC<any>>;
   /**

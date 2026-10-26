@@ -8,7 +8,16 @@
     "bg-flat-quiet",
     "bg-cel-main",
     "bg-cel-chapter",
-    "bg-cel-quiet"
+    "bg-cel-quiet",
+    "bg-journal-main",
+    "bg-journal-chapter",
+    "bg-journal-quiet",
+    "bg-papercut-main",
+    "bg-papercut-chapter",
+    "bg-papercut-quiet",
+    "bg-archive-main",
+    "bg-archive-chapter",
+    "bg-archive-quiet"
   ],
   "scenes": [
     {
@@ -18,7 +27,10 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-flat-chapter",
-        "bg-cel-chapter"
+        "bg-cel-chapter",
+        "bg-journal-chapter",
+        "bg-papercut-chapter",
+        "bg-archive-chapter"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -38,7 +50,10 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-flat-chapter",
-        "bg-cel-chapter"
+        "bg-cel-chapter",
+        "bg-journal-chapter",
+        "bg-papercut-chapter",
+        "bg-archive-chapter"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -58,7 +73,10 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-flat-quiet",
-        "bg-cel-quiet"
+        "bg-cel-quiet",
+        "bg-journal-quiet",
+        "bg-papercut-quiet",
+        "bg-archive-quiet"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -78,7 +96,10 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-flat-chapter",
-        "bg-cel-chapter"
+        "bg-cel-chapter",
+        "bg-journal-chapter",
+        "bg-papercut-chapter",
+        "bg-archive-chapter"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -98,7 +119,10 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-flat-chapter",
-        "bg-cel-chapter"
+        "bg-cel-chapter",
+        "bg-journal-chapter",
+        "bg-papercut-chapter",
+        "bg-archive-chapter"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -118,7 +142,10 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-flat-main",
-        "bg-cel-main"
+        "bg-cel-main",
+        "bg-journal-main",
+        "bg-papercut-main",
+        "bg-archive-main"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -138,7 +165,10 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-flat-main",
-        "bg-cel-main"
+        "bg-cel-main",
+        "bg-journal-main",
+        "bg-papercut-main",
+        "bg-archive-main"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",
@@ -158,7 +188,10 @@
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-flat-main",
-        "bg-cel-main"
+        "bg-cel-main",
+        "bg-journal-main",
+        "bg-papercut-main",
+        "bg-archive-main"
       ],
       "mount_contract": "start-inclusive-end-exclusive",
       "exit_contract": "complete-exit",

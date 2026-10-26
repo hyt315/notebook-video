@@ -28,3 +28,7 @@ audit-report.txt
 # Fonts are downloaded on demand (node scripts/notebook-video.mjs fonts)
 assets/fonts/*.ttf
 assets/lecture-template/public/LXGWWenKaiLite-*.ttf
+
+# Noto Serif SC (OFL) is downloaded on demand (fonts --serif / new-project --style=journal|papercut|archive)
+assets/fonts/*.otf
+assets/lecture-template/public/NotoSerifSC-*.otf

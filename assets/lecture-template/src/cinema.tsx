@@ -1,3 +1,4 @@
+import {THEME} from './theme/active';
 import React from 'react';
 import {Easing, interpolate, spring} from 'remotion';
 import {camAt, STAGE, TEXT_ZOOM_MAX} from './shotkit';
@@ -39,7 +40,7 @@ export type CinemaSpec = {
   path?: readonly PathKey[];
 };
 export type PathKey = {at: number; x: number; y: number; s: number};
-export type TransitionKind = 'whip' | 'whip-left' | 'whip-right' | 'zoom' | 'fade' | 'hard';
+export type TransitionKind = 'whip' | 'whip-left' | 'whip-right' | 'zoom' | 'fade' | 'hard' | 'slide' | 'drop';
 
 /** 默认值：观感调好的常数，普通作者不需要改。 */
 export const CINEMA = {
@@ -228,8 +229,12 @@ export const resolveTransition = (declared: string | undefined, idx: number, isC
   if (idx === 0) return null;
   const d = declared ?? 'auto';
   if (d === 'hard') return 'hard';
-  if (d === 'fade' || d === 'zoom' || d === 'whip-left' || d === 'whip-right') return d;
+  if (d === 'fade' || d === 'zoom' || d === 'whip-left' || d === 'whip-right' || d === 'slide' || d === 'drop') return d;
   if (d === 'whip') return idx % 2 ? 'whip-left' : 'whip-right';
+  // 3.3.0：手作皮肤的媒介内转场（纸在本子上横移 = 一张长卷上的横移镜头；新纸放下来 = drop）。
+  // 皮肤声明了 craft.transition 时，auto 用它；章节首镜一律 drop（换一张纸）。
+  const craft = THEME.craft?.transition;
+  if (craft === 'slide' || craft === 'drop') return isChapter ? 'drop' : craft;
   if (isChapter) return 'zoom';
   return idx % 2 ? 'whip-left' : 'whip-right';
 };
@@ -244,6 +249,14 @@ export const transitionStyle = (kind: TransitionKind, p: number, role: 'in' | 'o
   const e = easeIO(Math.max(0, Math.min(1, p)));
   if (kind === 'hard') return role === 'out' ? {transform: 'none', opacity: 0, blur: 0} : {transform: 'none', opacity: 1, blur: 0};
   if (kind === 'fade') return role === 'out' ? {transform: 'none', opacity: 1 - e, blur: 0} : {transform: 'none', opacity: 1, blur: 0};
+  // slide：上一镜与本镜像同一张长纸上的两段，一起向左横移（镜头沿纸面平移，不模糊、不淡出）。
+  if (kind === 'slide') return role === 'out' ? {transform: `translateX(${-1500 * e}px)`, opacity: 1, blur: 0} : {transform: `translateX(${1500 * (1 - e)}px)`, opacity: 1, blur: 0};
+  // drop：一张新纸从上方落下盖住旧纸（旧内容压暗淡出，新内容带一点落定过冲）。
+  if (kind === 'drop') {
+    if (role === 'out') return {transform: `translateY(${18 * e}px) scale(${1 - 0.02 * e})`, opacity: 1 - Math.min(1, e * 1.25), blur: 0};
+    const o = 1 - Math.pow(1 - e, 3);
+    return {transform: `translateY(${-70 * (1 - o)}px) scale(${1.025 - 0.025 * o})`, opacity: Math.min(1, e * 2.2), blur: 0};
+  }
   if (kind === 'zoom') {
     if (role === 'out') return {transform: `scale(${1 + 0.55 * e})`, opacity: 1 - Math.min(1, e * 1.6), blur: 14 * Math.sin(Math.PI * Math.min(1, e))};
     return {transform: `scale(${0.82 + 0.18 * e})`, opacity: Math.min(1, e * 1.8), blur: 10 * (1 - e)};

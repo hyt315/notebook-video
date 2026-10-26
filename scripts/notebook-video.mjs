@@ -115,8 +115,10 @@ const checkDeps = async () => {
   console.log(`Remotion production dependencies are ready on ${process.platform}.`);
 };
 
-// 只保留两套皮肤，flat 为默认（paper / sticker 已删除）。
-const THEME_IDS = ['flat', 'cel'];
+// flat 为默认；cel 漫画；3.3.0 新增三套手作皮肤（亮底纸张）：journal 手账水彩 / papercut 红色剪纸 / archive 档案灯台。
+const THEME_IDS = ['flat', 'cel', 'journal', 'papercut', 'archive'];
+// 手作皮肤的字幕与正文用 Noto Serif SC Bold（用户字幕规范：96 px@1440 衬线粗体），需要额外字体。
+const SERIF_THEMES = ['journal', 'papercut', 'archive'];
 
 // LXGW WenKai Lite (OFL-1.1) is not stored in the repo (~28 MB). It is downloaded once
 // from the official GitHub release, pinned by version and sha256, into assets/fonts/.
@@ -147,6 +149,28 @@ const ensureFonts = async () => {
   return fontDir;
 };
 
+// Noto Serif SC Bold（OFL-1.1，~12 MB，SC 子集 OTF）同样按需下载、按版本与 sha256 锁定，不入库。
+// 镜像：NOTEBOOK_VIDEO_SERIF_URL 指向同一个文件。
+const SERIF_RELEASE = 'Serif2.003';
+const SERIF_FILE = 'NotoSerifSC-Bold.otf';
+const SERIF_SHA = '24693d48bdb9152f0a06b02af625638a1097abd6de4010ebba027f6e82710527';
+const ensureSerif = async () => {
+  const fontDir = path.join(SKILL_DIR, 'assets', 'fonts');
+  fs.mkdirSync(fontDir, {recursive: true});
+  const file = path.join(fontDir, SERIF_FILE);
+  if (fs.existsSync(file) && hashFile(file) === SERIF_SHA) return fontDir;
+  const url = process.env.NOTEBOOK_VIDEO_SERIF_URL || `https://github.com/notofonts/noto-cjk/raw/${SERIF_RELEASE}/Serif/SubsetOTF/SC/${SERIF_FILE}`;
+  console.log(`Downloading font ${SERIF_FILE} (Noto Serif CJK ${SERIF_RELEASE}, OFL-1.1) from ${url}`);
+  let res;
+  try { res = await fetch(url, {redirect: 'follow'}); } catch (error) { res = null; }
+  if (!res || !res.ok) fail(`Font download failed: ${url}\nDownload ${SERIF_FILE} from https://github.com/notofonts/noto-cjk (tag ${SERIF_RELEASE}, Serif/SubsetOTF/SC/) and put it in ${fontDir}, or set NOTEBOOK_VIDEO_SERIF_URL to a mirror.`);
+  const tmp = `${file}.part`;
+  fs.writeFileSync(tmp, Buffer.from(await res.arrayBuffer()));
+  if (hashFile(tmp) !== SERIF_SHA) { fs.rmSync(tmp, {force: true}); fail(`Font checksum mismatch for ${SERIF_FILE}; expected ${SERIF_RELEASE} sha256 ${SERIF_SHA}.`); }
+  fs.renameSync(tmp, file);
+  return fontDir;
+};
+
 const newProject = async (args) => {
   // --classic（暖象牙纸面示例工程 example-project）已整体删除，给出明确报错而不是静默忽略。
   if (args.includes('--classic')) fail('--classic was removed in 3.2.0 (the warm-ivory example project is gone). Use --style=flat (default) or --style=cel.', 2);
@@ -154,7 +178,7 @@ const newProject = async (args) => {
   const style = styleFlag ? styleFlag.slice('--style='.length) : 'flat';
   if (!THEME_IDS.includes(style)) fail(`Unknown style "${style}". Valid values: ${THEME_IDS.join(', ')}`, 2);
   const targetArg = args.find((a) => !a.startsWith('--style='));
-  if (!targetArg) fail('Usage: notebook-video new-project PROJECT_DIRECTORY [--style=flat|cel]', 2);
+  if (!targetArg) fail('Usage: notebook-video new-project PROJECT_DIRECTORY [--style=flat|cel|journal|papercut|archive]', 2);
   const target = resolvePath(targetArg);
   if (fs.existsSync(target)) {
     if (!fs.statSync(target).isDirectory()) fail(`Target exists and is not a directory: ${target}`);
@@ -182,6 +206,11 @@ const newProject = async (args) => {
     'LXGWWenKaiLite-Medium.ttf',
     'LICENSE-OFL-1.1-LXGW.txt',
   ]) fs.copyFileSync(path.join(fontDir, name), path.join(publicDir, name));
+  if (SERIF_THEMES.includes(style)) {
+    const serifDir = await ensureSerif();
+    fs.copyFileSync(path.join(serifDir, SERIF_FILE), path.join(publicDir, SERIF_FILE));
+    fs.copyFileSync(path.join(serifDir, 'LICENSE-OFL-1.1-NotoSerifSC.txt'), path.join(publicDir, 'LICENSE-OFL-1.1-NotoSerifSC.txt'));
+  }
   fs.mkdirSync(path.join(target, 'renders'), {recursive: true});
   console.log(`Created official lecture-template Remotion notebook project (pure code-drawn SVG default): ${target}`);
   console.log(`Theme locked to "${style}". Style contract: references/theme-${style}.md.`);
@@ -625,7 +654,7 @@ const showcase = async (args, sheetOnly = false) => {
 };
 
 const usage = () => {
-  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  fonts   (download the pinned LXGW WenKai Lite fonts once; new-project does this automatically)\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
+  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  fonts [--serif]   (download the pinned LXGW WenKai Lite fonts once — plus Noto Serif SC with --serif; new-project does this automatically)\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel|journal|papercut|archive]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };
 
 const main = async () => {
@@ -638,7 +667,7 @@ const main = async () => {
   }
   switch (command) {
     case 'check-deps': return checkDeps();
-    case 'fonts': return ensureFonts().then((d) => console.log(`Fonts ready: ${d}`));
+    case 'fonts': return ensureFonts().then(async (d) => { if (args.includes('--serif')) await ensureSerif(); console.log(`Fonts ready: ${d}`); });
     case 'new-project': return newProject(args);
     case 'sync': return syncProjectAssets(args);
     case 'prepare-browser': return prepareBrowser(args);
