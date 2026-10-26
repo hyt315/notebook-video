@@ -20,6 +20,10 @@ IGNORED_PARTS = {"node_modules", ".git", ".cache", ".tools", "renders", "__pycac
 TEXT_SUFFIXES = {'.md', '.py', '.sh', '.cmd', '.mjs', '.json', '.yaml', '.yml', '.tsx', '.cjs'}
 
 
+# 出厂皮肤（与 scripts/notebook-video.mjs 的 THEME_IDS 一致）。
+THEME_IDS = ('flat', 'cel', 'journal', 'papercut', 'archive')
+
+
 def reusable_file(path: Path) -> bool:
     rel = path.relative_to(SKILL)
     return path.is_file() and not any(part in IGNORED_PARTS for part in rel.parts)
@@ -300,11 +304,15 @@ def main() -> None:
         if reusable_file(p) and p.suffix.lower() in TEXT_SUFFIXES and not p.name.startswith('validate-')
     ]
     joined = '\n'.join(p.read_text(encoding='utf-8', errors='ignore') for p in text_files)
+    # 3.3.0：维护者专用的开发期工具（scripts/dev/，不随运行时调用）可以用 Pillow 生成入库位图；
+    # 「旧渲染器残留」检查只针对运行时代码与文档，所以把 PIL 系 token 的扫描范围排除 scripts/dev/。
+    runtime_joined = '\n'.join(p.read_text(encoding='utf-8', errors='ignore') for p in text_files
+                                if p.relative_to(SKILL).parts[:2] != ('scripts', 'dev'))
     for token in ('from PIL', 'import PIL', 'Pillow', 'build-caption-timing.py', 'aesthetic-candidate-project',
                   'candidate-awaiting-render-approval', 'new-aesthetic-candidate.sh',
                   'validate-aesthetic-candidate.py', 'locked-style-contract-v7-candidate.json',
                   'warm-ivory-remotion-2k30-v8-performance'):
-        if token in joined:
+        if token in (runtime_joined if 'PIL' in token or token == 'Pillow' else joined):
             problems.append(f"obsolete token remains: {token}")
 
     for forbidden_path in (
@@ -347,12 +355,15 @@ def main() -> None:
         if not required.is_file():
             problems.append(f"missing cross-platform entry: {required.relative_to(SKILL)}")
 
-    # Theme pack integrity: two locked skins (flat default, cel) plus the engine contract and docs.
+    # Theme pack integrity: five locked skins (flat default, cel, and the 3.3.0 craft skins
+    # journal / papercut / archive) plus the engine contract and docs.
     theme_dir = SKILL / 'assets' / 'lecture-template' / 'src' / 'theme'
-    for theme_file in ('types.ts', 'canvas.ts', 'cel.tsx', 'flat.tsx', 'active.ts'):
+    for theme_file in ('types.ts', 'canvas.ts', 'cel.tsx', 'flat.tsx', 'active.ts',
+                       'craft-common.tsx', 'journal.tsx', 'papercut.tsx', 'archive.tsx'):
         if not (theme_dir / theme_file).is_file():
             problems.append(f"missing theme pack file: assets/lecture-template/src/theme/{theme_file}")
-    for theme_doc in ('theme-system.md', 'theme-cel.md', 'theme-flat.md'):
+    for theme_doc in ('theme-system.md', 'theme-cel.md', 'theme-flat.md',
+                      'theme-journal.md', 'theme-papercut.md', 'theme-archive.md'):
         if not (SKILL / 'references' / theme_doc).is_file():
             problems.append(f"missing theme contract doc: references/{theme_doc}")
     if theme_dir.is_dir():
@@ -360,7 +371,7 @@ def main() -> None:
         if "from './flat'" not in active:
             problems.append("theme switch active.ts must ship defaulting to './flat'")
         # 每个主题三张锁定背景（main / chapter / quiet），文件名与 theme/*.tsx 的 BACKGROUNDS 表一致。
-        for theme_id in ('flat', 'cel'):
+        for theme_id in THEME_IDS:
             src_text = (theme_dir / f'{theme_id}.tsx').read_text(encoding='utf-8', errors='ignore') if (theme_dir / f'{theme_id}.tsx').is_file() else ''
             for variant in ('main', 'chapter', 'quiet'):
                 rel = f'bg/bg-{theme_id}-{variant}.jpg'
@@ -370,7 +381,7 @@ def main() -> None:
                     problems.append(f"theme {theme_id}.tsx does not map variant {variant} to '{rel}'")
         for removed in ('paper.tsx', 'sticker.tsx'):
             if (theme_dir / removed).exists():
-                problems.append(f"removed theme file is back: assets/lecture-template/src/theme/{removed} (3.2.0 ships flat + cel only)")
+                problems.append(f"removed theme file is back: assets/lecture-template/src/theme/{removed} (paper / sticker were removed in 3.2.0)")
 
     with tempfile.TemporaryDirectory(prefix='notebook-video-package-test-') as temp:
         root = Path(temp)
@@ -441,7 +452,7 @@ def main() -> None:
             "templates_validated": ["lecture-template"],
         }, indent=2))
     else:
-        print('Skill-wide consistency validation passed: lecture template valid (flat + cel, 3 backgrounds each), no obsolete renderer residue, removed example project, stale render inputs or contract mismatch')
+        print('Skill-wide consistency validation passed: lecture template valid (flat + cel + journal/papercut/archive, 3 backgrounds each), no obsolete renderer residue, removed example project, stale render inputs or contract mismatch')
 
 
 if __name__ == '__main__':

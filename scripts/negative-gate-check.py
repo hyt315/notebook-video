@@ -370,7 +370,7 @@ def mk_skill_copy():
     # 夹具就变成"因为别的原因失败"了（第一版的假通过）。
     for rel in ('examples/real-media/pr-placeholder.png', 'examples/weak-model-test/stills-before-fix.jpg',
                 # 每主题三张背景（一致性检查只查 is_file，占位空文件即可）
-                *[f'assets/lecture-template/public/bg/bg-{t}-{v}.jpg' for t in ('flat', 'cel') for v in ('main', 'chapter', 'quiet')]):
+                *[f'assets/lecture-template/public/bg/bg-{t}-{v}.jpg' for t in ('flat', 'cel', 'journal', 'papercut', 'archive') for v in ('main', 'chapter', 'quiet')]):
         q = os.path.join(td, rel)
         if not os.path.exists(q):
             os.makedirs(os.path.dirname(q), exist_ok=True)
