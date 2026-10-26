@@ -47,6 +47,11 @@ MIN_INTENTS = 3
 MIN_TRANSITIONS = 2
 MIN_ENTRIES = 3
 ZONE_RANGE = (3, 5)
+# 3.3.0 手作皮肤（journal / papercut / archive）：一镜常常只有一个主体（一张真铜版画 + 放大镜、一枚墨线画的瓶塞）
+# 加字幕与一两处批注。硬要 3–5 个"功能分区"会逼作者往空白里塞清单 / 指标条 / 卡片——
+# 正是 3.3.0 要去掉的"满屏卡片"。手作皮肤放宽到 1–5（上限不变：一帧仍不许超过 5 区）；组件皮肤不变。
+CRAFT_SKINS = {"journal", "papercut", "archive"}
+CRAFT_ZONE_RANGE = (1, 5)
 MAX_EXPLANATION_FALSE = 1     # 一部片最多 1 镜可以不走"讲解场景"的活性要求（章节卡）
 MAX_SHOT_FRAMES = 300         # 单镜上限 10s
 MIN_LENGTH_RATIO = 2.0        # 最长/最短 倍数下限（测出来是节拍器）
@@ -392,6 +397,8 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     if len(non_expl) > MAX_EXPLANATION_FALSE:
         p0.append({"id": "-", "issue": f"{len(non_expl)} 镜标了 explanation:false（{non_expl}），最多允许 {MAX_EXPLANATION_FALSE} 镜"})
     live_names: set[str] = set()
+    skin = str(data.get("theme") or "")
+    zone_range = CRAFT_ZONE_RANGE if skin in CRAFT_SKINS else ZONE_RANGE
     for s in shots:
         sid = s.get("id", "?")
         if s.get("explanation", True) is not False:
@@ -405,8 +412,9 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
         zones = s.get("zones")
         if zones is None:
             p0.append({"id": sid, "issue": "缺少 zones（本镜功能分区数）"})
-        elif not isinstance(zones, int) or not (ZONE_RANGE[0] <= zones <= ZONE_RANGE[1]):
-            p0.append({"id": sid, "issue": f"功能分区 {zones!r}，契约要求 {ZONE_RANGE[0]}–{ZONE_RANGE[1]} 个整数"})
+        elif not isinstance(zones, int) or not (zone_range[0] <= zones <= zone_range[1]):
+            p0.append({"id": sid, "issue": f"功能分区 {zones!r}，契约要求 {zone_range[0]}–{zone_range[1]} 个整数"
+                       + ("（手作皮肤已放宽下限到 1）" if skin in CRAFT_SKINS else "")})
         # 逐镜取函数体，再去注释后扫描（两件都是实测踩出来的）：
         #   · 整份文件一起扫会把"某镜用了 b[9]"算到每一镜头上（夹具只改 S19 却报了 21 条）；
         #   · 不去注释会把解释性注释里写到的 `b[3]` 当成真代码（实测第一次跑误报两镜）。
@@ -584,6 +592,8 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
             p1.append({"id": s.get("id", "?"), "issue": f"本镜 {dur} 帧（{dur / 30:.1f}s）只有 {nb} 个节拍；画面会在台词中途静止，建议补节拍或锯开"})
 
     # 覆盖率自述：让"没报"和"没跑"可区分
+    if skin in CRAFT_SKINS:
+        notes.append(f"手作皮肤 {skin}：功能分区按 {CRAFT_ZONE_RANGE[0]}–{CRAFT_ZONE_RANGE[1]} 校验（组件皮肤 {ZONE_RANGE[0]}–{ZONE_RANGE[1]}）")
     notes.append(f"已校验：枚举 5 类 / live {len(live_names)} 个名字 / hero {len(shots)} 镜 / 时长 {len(durs)} 镜")
     return p0, p1, notes
 
@@ -599,6 +609,11 @@ def main() -> int:
         print(f"项目目录不存在：{project}", file=sys.stderr)
         return 2
     data = load(project)
+    # 皮肤以 src/theme/active.ts 为准（渲染真正用的那套）；没有时退回分镜表的 theme 字段
+    active = project / "src" / "theme" / "active.ts"
+    m = re.search(r"from\s+'\./(\w+)'", active.read_text(encoding="utf-8")) if active.is_file() else None
+    if m:
+        data["theme"] = m.group(1)
     p0, p1, notes = check(data, scene_source(project))
     ii_p0, ii_note = import_integrity(project)
     p0 += ii_p0

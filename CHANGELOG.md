@@ -52,6 +52,8 @@ All notable changes are recorded here. The project follows semantic versioning.
   New offline unit tests, run in CI.
 - 一致性检查、selftest、负向夹具的主题 / 背景 / 文档清单扩到五套皮肤；`TRANSITIONS` 两侧同步 `slide` / `drop`。
   Consistency checks, selftest and negative fixtures cover all five skins.
+- `validate-composition`：手作皮肤（journal / papercut / archive）的"功能分区"放宽到 1–5（组件皮肤仍 3–5）。一镜一个主体（一张真铜版画 + 放大镜）是手作片的常态，硬凑 3 区会逼出满屏卡片。皮肤以 `src/theme/active.ts` 为准。新测试 `tests/test_composition_craft.py`。
+  Hand-made skins may declare 1–5 zones (component skins keep 3–5); the skin is read from `src/theme/active.ts`.
 
 ### 修复 / Fixes
 
