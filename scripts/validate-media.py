@@ -25,7 +25,10 @@ from pathlib import Path
 
 UPSCALE_MAX = 1.5
 LICENSE_OK = re.compile(r"^(cc0|cc-by(-sa)?(-[0-9.]+)?|public[- ]domain|pd|pexels|unsplash|pixabay|mit|apache-2\.0|own|user|official-docs)$", re.I)
-EXT = {"image": {".png", ".jpg", ".jpeg", ".webp"}, "video": {".mp4"}, "gif": {".gif"}}
+EXT = {"image": {".png", ".jpg", ".jpeg", ".webp"}, "video": {".mp4"}, "gif": {".gif"}, "audio": {".wav"}}
+# 用到素材的组件（字面量 id / w / h 能被静态量出）：MediaFrame + 手作材质组件（src/craft/media.tsx）
+MEDIA_TAGS = ("MediaFrame", "ArchivePhoto", "PinnedPhoto", "LoupeMedia", "MediaAudio")
+MEDIA_IMPL = {"media-frame.tsx", "media.tsx"}
 
 
 def img_size(p: Path) -> tuple[int, int] | None:
@@ -85,11 +88,11 @@ def usages(proj: Path) -> list[dict]:
     """场景源码里的 <MediaFrame …>（字面量 id / w / h / focus / focusZoom），以及 auto 草稿的 story.ts。"""
     out = []
     for f in (proj / "src").rglob("*.tsx"):
-        if f.name == "media-frame.tsx":
+        if f.name == "media-frame.tsx" or (f.parent.name == "craft" and f.name in MEDIA_IMPL):
             continue
         s = f.read_text(encoding="utf-8", errors="ignore")
         consts = file_consts(s)
-        for m in re.finditer(r"<MediaFrame\b(.*?)/>", s, re.S):
+        for m in re.finditer(r"<(?:" + "|".join(MEDIA_TAGS) + r")\b(.*?)/>", s, re.S):
             t = m.group(1)
             g = lambda k, pat=r"\{?\"?([\w.-]+)\"?\}?": (re.search(rf"\b{k}=" + pat, t) or [None, None])[1]
             ge = lambda k: size_expr(re.search(rf"\b{k}=(\{{[^{{}}]*\}}|\"[^\"]*\"|[\d.]+)", t), consts)
@@ -143,6 +146,13 @@ def main(argv: list[str]) -> int:
                 p0.append(f"{mid}: 网上来的素材必须写 {' / '.join(miss)}（署名会显示在画面上）")
             elif not LICENSE_OK.match(str(e["license"]).strip()):
                 p0.append(f"{mid}: 许可「{e['license']}」不能用于本片（NC / ND / 全部权利保留 / 未知）—— 换 CC0 / CC-BY / Pexels / Unsplash 素材，或用组件重画")
+            elif re.match(r"cc-by-sa", str(e["license"]).strip(), re.I):
+                p1.append(f"{mid}: CC BY-SA（相同方式共享）——成片作为改编作品可能须以 CC BY-SA 发布；"
+                          f"{'已在 manifest 记 shareAlike:true，CREDITS.md 会写明义务' if e.get('shareAlike') else '确认接受后用 commons-search.py add --allow-by-sa 重新登记（或换 PD / CC0 / CC BY 素材）'}")
+        if kind == "audio":
+            if f.suffix.lower() != ".wav":
+                p0.append(f"{mid}: 声音素材要先跑 prepare-media.py 转成 WAV")
+            continue
         if e.get("muted") is False:
             p1.append(f"{mid}: muted:false —— 素材原声会进成片，确认是有意的")
         if kind == "video":
@@ -203,7 +213,7 @@ def main(argv: list[str]) -> int:
         if mid not in used:
             p1.append(f"{mid}: 登记了但没有场景用到")
     for f in (proj / "src").rglob("*.tsx"):
-        if f.name != "media-frame.tsx" and re.search(r"data-media-credit|hideCredit", f.read_text(encoding="utf-8", errors="ignore")):
+        if f.name != "media-frame.tsx" and not (f.parent.name == "craft" and f.name in MEDIA_IMPL) and re.search(r"data-media-credit|hideCredit", f.read_text(encoding="utf-8", errors="ignore")):
             p0.append(f"{f.name}: 不许自己画 / 关掉署名徽章（MediaFrame 会自动显示）")
     print(f"validate-media · {len(items)} 条素材")
     for x in p0:

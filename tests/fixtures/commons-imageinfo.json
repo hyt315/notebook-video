@@ -1,0 +1,177 @@
+{
+ "pages": [
+  {
+   "ns": 6,
+   "title": "File:Robert Hooke, Micrographia, cork. Wellcome M0010579.jpg",
+   "imagerepository": "local",
+   "imageinfo": [
+    {
+     "size": 5058653,
+     "width": 2697,
+     "height": 3947,
+     "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/Robert_Hooke%2C_Micrographia%2C_cork._Wellcome_M0010579.jpg/1280px-Robert_Hooke%2C_Micrographia%2C_cork._Wellcome_M0010579.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+     "thumbwidth": 1280,
+     "thumbheight": 1873,
+     "responsiveUrls": {
+      "2": "https://upload.wikimedia.org/wikipedia/commons/4/41/Robert_Hooke%2C_Micrographia%2C_cork._Wellcome_M0010579.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+     },
+     "thumbattribs": {
+      "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/Robert_Hooke%2C_Micrographia%2C_cork._Wellcome_M0010579.jpg/1280px-Robert_Hooke%2C_Micrographia%2C_cork._Wellcome_M0010579.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "decoding": "async",
+      "loading": "lazy",
+      "width": 1280,
+      "height": 1873,
+      "srcset": "https://upload.wikimedia.org/wikipedia/commons/4/41/Robert_Hooke%2C_Micrographia%2C_cork._Wellcome_M0010579.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+     },
+     "url": "https://upload.wikimedia.org/wikipedia/commons/4/41/Robert_Hooke%2C_Micrographia%2C_cork._Wellcome_M0010579.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "descriptionurl": "https://commons.wikimedia.org/wiki/File:Robert_Hooke,_Micrographia,_cork._Wellcome_M0010579.jpg",
+     "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=36346510",
+     "extmetadata": {
+      "Credit": {
+       "value": "<p><a rel=\"nofollow\" class=\"external free\" href=\"https://wellcomeimages.org/indexplus/obf_images/12/76/76fba5673e907d651ba1003672f4.jpg\">https://wellcomeimages.org/indexplus/obf_images/12/76/76fba5673e907d651ba1003672f4.jpg</a>\n</p>\n<ul><li>Gallery: <a rel=\"nofollow\" class=\"external free\" href=\"https://wellcomeimages.org/indexplus/image/M0010579.html\">https://wellcomeimages.org/indexplus/image/M0010579.html</a></li>\n<li>Wellcome Collection gallery (2018-04-02): <a rel=\"nofollow\" class=\"external free\" href=\"https://wellcomecollection.org/works/jcm8kb66\">https://wellcomecollection.org/works/jcm8kb66</a> <a rel=\"nofollow\" class=\"external text\" href=\"https://creativecommons.org/licenses/by/4.0/\">CC-BY-4.0</a></li></ul>",
+       "source": "commons-desc-page"
+      },
+      "LicenseShortName": {
+       "value": "CC BY 4.0",
+       "source": "commons-desc-page",
+       "hidden": ""
+      },
+      "UsageTerms": {
+       "value": "Creative Commons Attribution 4.0",
+       "source": "commons-desc-page"
+      },
+      "AttributionRequired": {
+       "value": "true",
+       "source": "commons-desc-page",
+       "hidden": ""
+      },
+      "LicenseUrl": {
+       "value": "https://creativecommons.org/licenses/by/4.0",
+       "source": "commons-desc-page"
+      },
+      "Restrictions": {
+       "value": "",
+       "source": "commons-desc-page",
+       "hidden": ""
+      }
+     },
+     "mime": "image/jpeg"
+    }
+   ]
+  },
+  {
+   "ns": 6,
+   "title": "File:Coffee Ring Effect using Coffee Image.png",
+   "imagerepository": "local",
+   "imageinfo": [
+    {
+     "size": 568491,
+     "width": 626,
+     "height": 689,
+     "thumburl": "https://upload.wikimedia.org/wikipedia/commons/4/48/Coffee_Ring_Effect_using_Coffee_Image.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+     "thumbwidth": 1280,
+     "thumbheight": 1409,
+     "thumbattribs": {
+      "src": "https://upload.wikimedia.org/wikipedia/commons/4/48/Coffee_Ring_Effect_using_Coffee_Image.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "decoding": "async",
+      "loading": "lazy",
+      "width": 1280,
+      "height": 1409
+     },
+     "url": "https://upload.wikimedia.org/wikipedia/commons/4/48/Coffee_Ring_Effect_using_Coffee_Image.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "descriptionurl": "https://commons.wikimedia.org/wiki/File:Coffee_Ring_Effect_using_Coffee_Image.png",
+     "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=38236126",
+     "extmetadata": {
+      "Credit": {
+       "value": "I used my iPhone to take a picture of a dried coffee stain of my own creation.",
+       "source": "commons-desc-page"
+      },
+      "Artist": {
+       "value": "<a href=\"//commons.wikimedia.org/wiki/User:Billclawson\" title=\"User:Billclawson\">Billclawson</a>",
+       "source": "commons-desc-page"
+      },
+      "LicenseShortName": {
+       "value": "CC BY-SA 3.0",
+       "source": "commons-desc-page",
+       "hidden": ""
+      },
+      "UsageTerms": {
+       "value": "Creative Commons Attribution-Share Alike 3.0",
+       "source": "commons-desc-page"
+      },
+      "AttributionRequired": {
+       "value": "true",
+       "source": "commons-desc-page",
+       "hidden": ""
+      },
+      "LicenseUrl": {
+       "value": "https://creativecommons.org/licenses/by-sa/3.0",
+       "source": "commons-desc-page"
+      },
+      "Restrictions": {
+       "value": "",
+       "source": "commons-desc-page",
+       "hidden": ""
+      }
+     },
+     "mime": "image/png"
+    }
+   ]
+  },
+  {
+   "ns": 6,
+   "title": "File:Micrographia Schem 11.jpg",
+   "imagerepository": "local",
+   "imageinfo": [
+    {
+     "size": 1757557,
+     "width": 1213,
+     "height": 1769,
+     "thumburl": "https://upload.wikimedia.org/wikipedia/commons/0/0d/Micrographia_Schem_11.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+     "thumbwidth": 1280,
+     "thumbheight": 1867,
+     "thumbattribs": {
+      "src": "https://upload.wikimedia.org/wikipedia/commons/0/0d/Micrographia_Schem_11.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "decoding": "async",
+      "loading": "lazy",
+      "width": 1280,
+      "height": 1867
+     },
+     "url": "https://upload.wikimedia.org/wikipedia/commons/0/0d/Micrographia_Schem_11.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+     "descriptionurl": "https://commons.wikimedia.org/wiki/File:Micrographia_Schem_11.jpg",
+     "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=43072286",
+     "extmetadata": {
+      "Artist": {
+       "value": "<div class=\"fn value\">\n<a href=\"//commons.wikimedia.org/wiki/Robert_Hooke\" title=\"Robert Hooke\">Robert Hooke</a> (1635-1703)</div>",
+       "source": "commons-desc-page"
+      },
+      "Credit": {
+       "value": "<table style=\"width:100%;border:1px red solid; background:#f6f6f4; padding:0; margin:auto;\">\n\n<tbody><tr>\n<td align=\"left\"><span typeof=\"mw:File\"><span><img src=\"https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fd/National_Library_of_Wales_logo.svg/500px-National_Library_of_Wales_logo.svg.png?utm_source=commons.wikimedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail\" decoding=\"async\" loading=\"lazy\" width=\"400\" height=\"61\" class=\"mw-file-element\" srcset=\"https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fd/National_Library_of_Wales_logo.svg/960px-National_Library_of_Wales_logo.svg.png?utm_source=commons.wikimedia.org&amp;utm_campaign=parser&amp;utm_content=thumbnail 2x\" data-file-width=\"512\" data-file-height=\"78\"></span></span>\n</td>\n<td>This image is available from the <big><b><a rel=\"nofollow\" class=\"external text\" href=\"https://www.library.wales/\">National Library of Wales</a></b></big><br>\n</td></tr></tbody></table>",
+       "source": "commons-desc-page"
+      },
+      "LicenseShortName": {
+       "value": "Public domain",
+       "source": "commons-desc-page",
+       "hidden": ""
+      },
+      "UsageTerms": {
+       "value": "Public domain",
+       "source": "commons-desc-page"
+      },
+      "AttributionRequired": {
+       "value": "false",
+       "source": "commons-desc-page",
+       "hidden": ""
+      },
+      "Restrictions": {
+       "value": "",
+       "source": "commons-desc-page",
+       "hidden": ""
+      }
+     },
+     "mime": "image/jpeg"
+    }
+   ]
+  }
+ ]
+}

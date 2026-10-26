@@ -3,7 +3,7 @@
 
 用法
   python prepare-media.py PROJECT                         # 重新探测 manifests/media.json 里全部素材、按需转码、同步 src/media.json
-  python prepare-media.py PROJECT --add FILE --id pr-page [--source user|web] [--url URL] [--license CC-BY-4.0]
+  python prepare-media.py PROJECT --add FILE --id pr-page   # FILE 可以是图片 / 视频 / 动图 / 声音 [--source user|web] [--url URL] [--license CC-BY-4.0]
                           [--credit "作者 / 站点"] [--trim 2.0 9.5] [--keep-audio] [--region diff 0.1 0.3 0.6 0.25]
 
 做的事
@@ -23,7 +23,8 @@ import sys
 from pathlib import Path
 
 IMG_EXT = {".png", ".jpg", ".jpeg", ".webp"}
-VID_EXT = {".mp4", ".mov", ".webm", ".mkv", ".m4v"}
+VID_EXT = {".mp4", ".mov", ".webm", ".mkv", ".m4v", ".ogv"}
+AUD_EXT = {".wav", ".mp3", ".ogg", ".oga", ".opus", ".flac", ".m4a"}
 
 
 def probe(path: Path) -> dict:
@@ -97,9 +98,11 @@ def main(argv: list[str]) -> int:
             print("✗ --add 需要一个存在的文件和 --id")
             return 1
         ext = src.suffix.lower()
-        kind = "image" if ext in IMG_EXT else "gif" if ext == ".gif" else "video" if ext in VID_EXT else None
+        kind = "image" if ext in IMG_EXT else "gif" if ext == ".gif" else "video" if ext in VID_EXT else "audio" if ext in AUD_EXT else None
+        if ext in (".ogg", ".oga") and kind == "audio" and vstream(probe(src)):
+            kind = "video"  # Ogg 容器里有视频流（Commons 的 .ogv 有时叫 .ogg）
         if not kind:
-            print(f"✗ 不认识的素材类型 {ext}（图片 png/jpg/webp，视频 mp4/mov/webm，动图 gif）")
+            print(f"✗ 不认识的素材类型 {ext}（图片 png/jpg/webp，视频 mp4/mov/webm，动图 gif，声音 wav/mp3/ogg/opus/flac）")
             return 1
         dst = mdir / f"{mid}{ext}"
         if src != dst:
@@ -133,6 +136,26 @@ def main(argv: list[str]) -> int:
             continue
         info = probe(f)
         v = vstream(info)
+        if e.get("kind") == "audio":
+            # 声音：统一转成 48 kHz 立体声 WAV（Remotion 解码最稳）；--trim 只记播放区间，不改文件
+            if f.suffix.lower() != ".wav":
+                out = f.with_suffix(".wav")
+                tmp = out.with_name(out.stem + ".tmp.wav")
+                cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(f), "-vn", "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", str(tmp)]
+                r = subprocess.run(cmd, capture_output=True, text=True)
+                if r.returncode:
+                    print(f"✗ {e['id']}: 声音转码失败：{r.stderr.strip()[:200]}")
+                    bad += 1
+                    continue
+                tmp.replace(out)
+                if out != f:
+                    f.unlink()
+                e["file"] = out.name
+                info = probe(out)
+            e["durationSec"] = round(float(info.get("format", {}).get("duration", 0) or 0), 3)
+            e["muted"] = False
+            print(f"✓ {e['id']}: audio {e['durationSec']}s ({e['file']})")
+            continue
         if e.get("kind") in ("video", "gif"):
             why = needs_transcode(info, e.get("muted") is False)
             if e.get("kind") == "gif" or why:
