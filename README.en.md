@@ -31,8 +31,14 @@ full, editable source project.
 - **Reproducible by weaker models**: five teaching blueprints name the skeleton and components for every shot, plus golden
   examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
 
-One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×1080 design space, native 30 fps). Two themes:
-`flat` (default, calm modern edu illustration) and `cel` (bold comic ink).
+- **New in 3.3.0 — decide what the idea is made of first**: a director layer (metaphor first → the medium is the metaphor → one
+  native move at the turn → three candidate structures; `treatment.json` is gated), three light hand-made skins (`journal`
+  field notebook / `papercut` red paper-cut / `archive` light table) with craft components (pressure ink, Chinese lettering
+  that writes itself, watercolour washes, paper cuts, a loupe), and a **Wikimedia Commons / Openverse** search for every topic
+  with licence filtering and on-screen credits.
+
+One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×1080 design space, native 30 fps). Five themes:
+`flat` (default, calm modern edu illustration), `cel` (bold comic ink) and the 3.3.0 craft skins `journal` / `papercut` / `archive`.
 
 ## Key features
 
@@ -136,14 +142,33 @@ python scripts/prepare-media.py ./my-video --add pr.png --id pr-page --region di
 
 Details: [references/real-media.md](references/real-media.md).
 
+### Search Wikimedia Commons / Openverse first (3.3.0)
+
+```bash
+python scripts/commons-search.py search "Hooke Micrographia cork" --project ./my-video
+python scripts/commons-search.py add ./my-video "File:Micrographia Schem 11.jpg" --id hooke-plate
+python scripts/commons-search.py credits ./my-video   # → CREDITS.md
+```
+
+No API key, standard library only; public domain / CC0 / CC BY are accepted (CC BY-SA is excluded by default because share-alike
+would reach the whole film), and `ArchivePhoto` / `PinnedPhoto` / `LoupeMedia` always draw the credit.
+Details: [references/commons-media.md](references/commons-media.md).
+
 ## Themes
 
 | Theme | Look | Select with |
 | --- | --- | --- |
 | `flat` (default) | Sky / cream surfaces, rounded cards, soft hard shadows; calm modern edu illustration | `--style=flat` |
 | `cel` | Off-white comic paper, 3 px ink outlines, ink offset shadows, red / blue / yellow primaries | `--style=cel` |
+| `journal` | Naturalist's field journal: warm cotton paper, taped sheets, pen notes, watercolour washes, vermilion as the only accent | `--style=journal` |
+| `papercut` | Red window paper-cut: rice paper, red cut-outs with double contours, a deep-red banner subtitle | `--style=papercut` |
+| `archive` | Archive light table: real archival objects on a cool backlit surface, one signal colour, a loupe | `--style=archive` |
 
-Each theme ships three locked backgrounds (main / chapter / quiet) with a calm central ~70 % safe area; the engine picks one per shot. Text uses dedicated `*Ink` colours so contrast always passes. Specs: [references/theme-system.md](references/theme-system.md), [theme-flat.md](references/theme-flat.md), [theme-cel.md](references/theme-cel.md).
+Craft skins use 96 px@1440 Noto Serif SC Bold subtitles (downloaded on demand, sha256-checked) with no UI pill, and require a director
+treatment `manifests/treatment.json` ([references/director-method.md](references/director-method.md)); components in
+[references/craft-kit.md](references/craft-kit.md), style recipes in [references/style-recipes.md](references/style-recipes.md).
+
+Each theme ships three locked backgrounds (main / chapter / quiet) with a calm central ~70 % safe area; the engine picks one per shot. Text uses dedicated `*Ink` colours so contrast always passes. Specs: [references/theme-system.md](references/theme-system.md), [theme-flat.md](references/theme-flat.md), [theme-cel.md](references/theme-cel.md), [theme-journal.md](references/theme-journal.md), [theme-papercut.md](references/theme-papercut.md), [theme-archive.md](references/theme-archive.md).
 
 ## Gates at a glance
 
@@ -203,3 +228,8 @@ History: [CHANGELOG.md](CHANGELOG.md). Security reports: [SECURITY.md](SECURITY.
 ## Licence
 
 [Apache License 2.0](LICENSE). Licences and attribution for the font (LXGW WenKai Lite, OFL-1.1, downloaded from the official release; set `NOTEBOOK_VIDEO_FONT_BASE_URL` for a mirror or drop the files into `assets/fonts/`), the sound effects (CC0) and third-party dependencies are in [NOTICE](NOTICE) and [DEPENDENCIES.md](DEPENDENCIES.md).
+
+> **About Remotion's licence**: Apache-2.0 covers this repository's code only. The rendering engine [Remotion](https://www.remotion.dev/license) is
+> **source-available, not open source**: individuals, non-profits and for-profit companies with **up to 3 employees** use it for free (including
+> commercially); **for-profit companies with 4 or more employees need a Remotion Company License**. Generated projects include
+> `REMOTION-LICENSE-NOTICE.md`. Media downloaded from Commons / Openverse keep their own licences; see the project's `CREDITS.md`.

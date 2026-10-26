@@ -28,7 +28,11 @@
 - **镜头会跟着讲**：引擎级虚拟摄影机缺省缓推，讲到哪个词就推近到哪个组件，换镜用甩镜 / 推穿。
 - **弱模型也能复刻**：5 个讲课蓝图逐镜写好该用的骨架与组件，加上黄金样例、5 步短流程和一条命令；能客观判断的问题，引擎直接自动修。
 
-只有一种画布：**16:9**（交付 2560×1440，缺省按 1920×1080 渲染；设计坐标 1920×1080，原生 30 fps）。两套皮肤：`flat`（默认，安静的现代教育插画风）与 `cel`（粗描边漫画风）。
+- **3.3.0 新增：先想"用什么东西演"**：导演层（隐喻先行 → 媒介即隐喻 → 顿悟点的原生动作 → 三候选结构，`treatment.json` 有门禁）；
+  三套亮底手作皮肤（`journal` 手账水彩 / `papercut` 红色剪纸 / `archive` 档案灯台）和 craft 材质组件（压感墨线、"写出来"的中文、水彩晕染、剪纸、放大镜）；
+  每个选题先搜 **Wikimedia Commons / Openverse** 的真实素材，许可自动过滤、署名自动上屏。
+
+只有一种画布：**16:9**（交付 2560×1440，缺省按 1920×1080 渲染；设计坐标 1920×1080，原生 30 fps）。五套皮肤：`flat`（默认，安静的现代教育插画风）、`cel`（粗描边漫画风），以及 3.3.0 的手作皮肤 `journal` / `papercut` / `archive`。
 
 ## 核心特性
 
@@ -132,14 +136,31 @@ python scripts/prepare-media.py ./my-video --add pr.png --id pr-page --region di
 
 详见 [references/real-media.md](references/real-media.md)。
 
+### 先搜 Wikimedia Commons / Openverse（3.3.0）
+
+```bash
+python scripts/commons-search.py search "Hooke Micrographia cork" --project ./my-video
+python scripts/commons-search.py add ./my-video "File:Micrographia Schem 11.jpg" --id hooke-plate
+python scripts/commons-search.py credits ./my-video   # → CREDITS.md
+```
+
+免 key、只用标准库；只收公有领域 / CC0 / CC BY（CC BY-SA 默认排除——"相同方式共享"会波及整条片子），署名由 `ArchivePhoto` / `PinnedPhoto` / `LoupeMedia` 强制上屏。
+详见 [references/commons-media.md](references/commons-media.md)。
+
 ## 主题
 
 | 皮肤 | 风格 | 选法 |
 | --- | --- | --- |
 | `flat`（默认） | 天空 / 奶油底面、圆角卡片、柔和硬影，安静的现代教育插画 | `--style=flat` |
 | `cel` | 米白漫画纸、3px 墨边、墨色偏移影、红蓝黄三原色 | `--style=cel` |
+| `journal` | 博物学家手账：暖白棉纸、胶带贴纸、钢笔批注、水彩淡彩，朱砂唯一强调 | `--style=journal` |
+| `papercut` | 红色窗花剪纸：米色宣纸、红纸剪片、双轮廓、深红横批字幕 | `--style=papercut` |
+| `archive` | 档案灯台：冷白背光台面上的真实档案物件，一个信号色，放大镜 | `--style=archive` |
 
-每套皮肤有三张锁定背景（main / chapter / quiet），中央约 70% 是内容安全区，引擎按分镜自动选择。文字色有专门的 `*Ink` 安全色，保证对比度。规格：[references/theme-system.md](references/theme-system.md)、[theme-flat.md](references/theme-flat.md)、[theme-cel.md](references/theme-cel.md)。
+手作皮肤的字幕是 96 px@1440 的 Noto Serif SC Bold（按需下载、校验 sha256），没有 UI 胶囊；它们要求先写导演层 `manifests/treatment.json`
+（[references/director-method.md](references/director-method.md)），组件见 [references/craft-kit.md](references/craft-kit.md)，风格配方见 [references/style-recipes.md](references/style-recipes.md)。
+
+每套皮肤有三张锁定背景（main / chapter / quiet），中央约 70% 是内容安全区，引擎按分镜自动选择。文字色有专门的 `*Ink` 安全色，保证对比度。规格：[references/theme-system.md](references/theme-system.md)、[theme-flat.md](references/theme-flat.md)、[theme-cel.md](references/theme-cel.md)、[theme-journal.md](references/theme-journal.md)、[theme-papercut.md](references/theme-papercut.md)、[theme-archive.md](references/theme-archive.md)。
 
 ## 门禁一览
 
@@ -199,3 +220,7 @@ python scripts/negative-gate-check.py
 ## 开源协议
 
 [Apache License 2.0](LICENSE)。所用字体（LXGW 文楷 Lite，OFL-1.1，从官方 Release 自动下载；可用 `NOTEBOOK_VIDEO_FONT_BASE_URL` 指定镜像，或手动放进 `assets/fonts/`）、音效（CC0）与第三方依赖的授权与归属见 [NOTICE](NOTICE) 与 [DEPENDENCIES.md](DEPENDENCIES.md)。
+
+> **关于 Remotion 的许可**：本仓库的 Apache-2.0 只覆盖本仓库的代码。渲染引擎 [Remotion](https://www.remotion.dev/license) 是 **source-available（源码可见）而非开源**许可：
+> 个人、非营利组织与 **不超过 3 名员工**的营利公司可免费使用（含商用）；**4 人及以上的营利公司需购买 Remotion 公司许可**。
+> 生成的工程里带有 `REMOTION-LICENSE-NOTICE.md`。用 Commons / Openverse 下载的素材各自保留原许可，见工程的 `CREDITS.md`。

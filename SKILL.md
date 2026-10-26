@@ -1,14 +1,35 @@
 ---
 name: notebook-video
-version: 3.2.0
-description: Turn a topic into a Chinese 16:9 teaching video (flat or cel theme) with React, TypeScript and Remotion. Every shot is a code-drawn component scene — consoles, diffs, checklists, stat rows, funnels, progress rings, kinetic numbers, stamp seals, verdict bars, or a real screenshot / screen recording in a MediaFrame — moved by an engine-level virtual camera that pushes in on whatever the narration names. Weak-model friendly: five teaching blueprints with per-shot component picks, golden examples, a five-step workflow and one cross-platform command (`node scripts/make-video.mjs <project>`, `make-video.cmd` on Windows) that resolves shots, runs hard gates with objective auto-fixes (no clipped titles, font floor, text contrast, ≤16-character captions at 4.5 chars/s, no dead tails, blurry-media check) and renders stills or the MP4. Tuned semantic sound effects land on the visual hit and duck the music bed. No built-in TTS and no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
+version: 3.3.0
+description: Turn a topic into a Chinese 16:9 teaching video (flat / cel component themes, or the journal / papercut / archive hand-made skins driven by a metaphor-first director layer) with React, TypeScript and Remotion. Every shot is a code-drawn component scene — consoles, diffs, checklists, stat rows, funnels, progress rings, kinetic numbers, stamp seals, verdict bars, or a real screenshot / screen recording in a MediaFrame — moved by an engine-level virtual camera that pushes in on whatever the narration names. Weak-model friendly: five teaching blueprints with per-shot component picks, golden examples, a five-step workflow and one cross-platform command (`node scripts/make-video.mjs <project>`, `make-video.cmd` on Windows) that resolves shots, runs hard gates with objective auto-fixes (no clipped titles, font floor, text contrast, ≤16-character captions at 4.5 chars/s, no dead tails, blurry-media check) and renders stills or the MP4. Tuned semantic sound effects land on the visual hit and duck the music bed. Every topic first searches Wikimedia Commons / Openverse for licence-filtered real media with automatic on-screen credits. No built-in TTS and no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
 ---
 
 # notebook-video · 用组件场景讲清一件事
 
 画面 = **组件场景**：每一镜都是真组件（控制台、代码差异、清单、数字行、漏斗、进度环、印章、结论条……），
 由引擎虚拟摄影机推近 / 跟随 / 横摇。**不要做满屏大字的「文字页」**——一句话也要放进卡片（`Callout` / `StampBanner`）里。
-只有 16:9；两个皮肤：`flat`（默认）和 `cel`。没有 TTS：旁白是静音占位，字幕按 4.5 字/秒定时。
+只有 16:9；五个皮肤：`flat`（默认）、`cel`，以及 3.3.0 的手作皮肤 `journal`（手账水彩）/ `papercut`（红色剪纸）/ `archive`（档案灯台）。
+没有 TTS：旁白是静音占位，字幕按 4.5 字/秒定时。
+
+## 先选路线
+
+| 题目 | 路线 |
+|---|---|
+| 软件、产品、代码、操作教程 | **组件路线**：`flat` / `cel` + 下面第 1–5 步 |
+| 科普、自然、历史、"为什么"类问题 | **手作路线**：先走第 0 步导演层，皮肤选 `journal` / `papercut` / `archive`，画面用 `src/craft/` 组件，再接第 2–4 步 |
+
+**不论哪条路线，每个选题都先搜一次 Commons / Openverse**（真东西几乎总能让片子更好）：
+`python scripts/commons-search.py search "<英文关键词>" --project ./my-video`，能用的 `add` 进来，交付前 `credits` 生成 `CREDITS.md`。
+许可只收公有领域 / CC0 / CC BY，署名自动上屏。见 [references/commons-media.md](references/commons-media.md)。
+
+## 第 0 步 · 导演层（手作路线必做）
+
+照 [references/director-method.md](references/director-method.md) 写 `manifests/treatment.json`（模板 `manifests/treatment.example.json`）：
+一个生活问题 → 只属于这个题的隐喻 → 媒介（皮肤）为什么是它 → 顿悟点的**原生动作** → 三个候选结构选一个 → 对标学 / 不学 → 镜头表每镜写理由。
+蓝图用 `blueprints/medium-metaphor.json`。`validate-treatment.py` 在手作皮肤下把缺项记 P0（`make-video` 自动跑）。
+媒介的八个轴与"不是什么"见 [references/style-recipes.md](references/style-recipes.md)；组件见 [references/craft-kit.md](references/craft-kit.md)
+（`InkPath` / `HandNote` / `HandLettering` / `WashBlob` / `CutPaper` / `Loupe` / `PinnedPhoto` / `ArchivePhoto` …）。
+先做 3 张风格帧（`--stills`），像了再做全片；渲染后由新会话只看联系表做七项独立评审。
 
 ## 第 1 步 · 选一个蓝图
 
@@ -28,6 +49,8 @@ description: Turn a topic into a Chinese 16:9 teaching video (flat or cel theme)
 ```text
 node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=flat
 ```
+
+手作路线换成 `--style=journal`（或 `papercut` / `archive`），会按需下载 Noto Serif SC Bold（字幕字体，OFL）。
 
 工程里已有一部完整的示例片（8 镜）。**照着改，不要从零写**：
 - `manifests/shots.json`：每镜一行（`skeleton` / `live` 组件 / `cameraIntent` / `beats` / `transition`）——镜头表是唯一真相；
@@ -52,7 +75,7 @@ node "<SKILL_DIR>/scripts/make-video.mjs" ./my-video --stills
 node "<SKILL_DIR>/scripts/make-video.mjs" ./my-video --render ./my-video/final.mp4
 ```
 
-Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做：resolve-shots（自动修）→ 门禁 → tsc → 静帧接触表 / 渲染 → 抽帧报告 `renders/report.md`。
+Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做：resolve-shots（自动修）→ 门禁 → tsc → 静帧接触表 / 渲染 → 抽帧报告 `renders/report.md`；`--render` 后若装了 RapidOCR，会用 `validate-ocr.py` 抽字幕帧 OCR，核对字幕真的读得出（没装就跳过并提示）。
 **先看 `--stills` 静帧，再渲整片**（整片渲染要先征得用户同意）。`--render` 默认 1920×1080；静音旁白片的响度目标是 −24 LUFS（有真人声时 −16）。
 
 **读输出**：`✓ 自动修` = 引擎替你改了什么；`· 建议` 不拦；`✗` 才要改——每条都写了怎么改。同一个 ✗ 连续两次没改过来，停下来把报错原文告诉用户。
@@ -86,7 +109,9 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 ## 更多
 
 - 音效库与调音：[references/sfx-library.md](references/sfx-library.md)
-- 主题：[references/theme-flat.md](references/theme-flat.md)、[references/theme-cel.md](references/theme-cel.md)
+- 主题：[references/theme-flat.md](references/theme-flat.md)、[references/theme-cel.md](references/theme-cel.md)、[references/theme-journal.md](references/theme-journal.md)、[references/theme-papercut.md](references/theme-papercut.md)、[references/theme-archive.md](references/theme-archive.md)
+- 导演层与手作：[references/director-method.md](references/director-method.md)、[references/style-recipes.md](references/style-recipes.md)、[references/craft-kit.md](references/craft-kit.md)
+- 真实素材：[references/commons-media.md](references/commons-media.md)、[references/real-media.md](references/real-media.md)
 - Windows：[references/windows-compatibility.md](references/windows-compatibility.md)
 - 自检：`node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-skill`、`python scripts/selftest.py`、`python scripts/negative-gate-check.py`
 
