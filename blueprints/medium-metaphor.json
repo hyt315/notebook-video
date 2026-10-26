@@ -1,0 +1,58 @@
+{
+  "$blueprint": "medium-metaphor",
+  "$route": "handwritten-craft",
+  "$about": "媒介即隐喻（3.3.0）：用一种物质把一件事演出来——生活问题 → 错误直觉被演出 → 原生动作推翻 → 数得出来的证据 → 转向你 → 首尾呼应。配手作皮肤（journal / papercut / archive）与 src/craft/ 组件。",
+  "$howto": "这是手写组件路线的分镜蓝图，不走 compose-story。先按 references/director-method.md 写 manifests/treatment.json（隐喻 / 媒介 / 原生动作 / 三候选），再照下面每拍的 $components 写 scenes.tsx。把 <<…>> 换成内容；秒数是 70–90 秒片子的建议位置，按台词长度伸缩。字幕每行 ≤14 字（硬上限 16），约 1/3 时长无字幕。",
+  "theme": "<<journal | papercut | archive>>",
+  "beats": [
+    {
+      "id": "B1", "role": "hook", "at": "0–6 s",
+      "$why": "第 0 帧动作已经在发生（剪刀在剪 / 笔在画 / 放大镜在落）。生活问题配一个画面，不配标题卡。",
+      "caption": ["<<生活问题（≤14 字）>>"],
+      "$components": {"skeleton": "Stage", "craft": ["PaperSheet", "InkPath", "HandNote"], "camera": "push-in（缓推，跟着动作）"}
+    },
+    {
+      "id": "B2", "role": "title", "at": "6–10 s",
+      "$why": "片名在媒介里出现：写出来（HandLettering）、剪出来（CutPaper）、贴上编目签（ArchivePhoto catalogue）。",
+      "caption": [],
+      "$components": {"skeleton": "Stage", "craft": ["HandLettering", "Seal"], "camera": "pull-back（让出片名的位置）"}
+    },
+    {
+      "id": "B3", "role": "wrong-intuition", "at": "10–28 s",
+      "$why": "把观众真有的那个错误直觉『演出来』，让它看起来很对。",
+      "caption": ["<<多数人以为……>>", "<<看起来确实如此>>"],
+      "$components": {"skeleton": "Split", "craft": ["PinnedPhoto | ArchivePhoto（Commons 真素材）", "WashBlob", "HandNote"], "camera": "pan-follow（在两样东西之间横移）"}
+    },
+    {
+      "id": "B4", "role": "native-move", "at": "28–40 s",
+      "$why": "原生动作推翻它：只有这个媒介做得出的那一下。动作之前留 0.5–1 s 安静，第一声是全片最重要的声音。",
+      "caption": ["<<可是……>>"],
+      "$components": {"skeleton": "Zoom", "craft": ["Loupe | LoupeMedia | CutPaper(backlit) | WashBlob(sweep)"], "camera": "招牌镜头：推近 + 慢，主体 ≥ 1/3 画高"}
+    },
+    {
+      "id": "B5", "role": "evidence", "at": "40–55 s",
+      "$why": "数得出来的证据：大数字画成『数得出来的多』（格子、点、刻度），不是一个滚动数字。",
+      "caption": ["<<一个能核对的数字>>"],
+      "$components": {"skeleton": "Corridor", "craft": ["InkPath（刻度 / 计数线）", "HandNote", "Seal"], "camera": "pull-back 或 pan-follow"}
+    },
+    {
+      "id": "B6", "role": "turn-to-you", "at": "片长 40–45%",
+      "$why": "转向『你』：观众手边 / 身上的那个同样的东西。",
+      "caption": ["<<你……>>"],
+      "$components": {"skeleton": "Stage", "craft": ["PaperSheet", "InkCircle"], "camera": "push-in"}
+    },
+    {
+      "id": "B7", "role": "echo", "at": "最后 10–14 s",
+      "$why": "回到开头画面，但有一处变化，并回答开头的问题；最后一句之后留 2–3 s 呼吸。",
+      "caption": ["<<回答开头的问题（≤14 字）>>"],
+      "$components": {"skeleton": "Stage", "craft": ["同 B1 的构图", "一处变化"], "camera": "still → 极缓推"}
+    }
+  ],
+  "$rules": [
+    "相邻两镜换骨架；每个构图 ≤ 12–15 s；全片 ≥ 4 种运镜 + 一个招牌镜头",
+    "转场在媒介里：分镜表 transition 用 slide（同一张纸上横移）/ drop（放下一张新纸），或 auto（皮肤缺省）",
+    "画内必读标签 ≥ 48 设计 px（CRAFT_TYPE.label），每帧 ≤ 3 个",
+    "每个选题先 commons-search；真素材进 ArchivePhoto / PinnedPhoto / LoupeMedia，署名自动上屏",
+    "避免：暗底发光线、粒子、金色/冰蓝科技风、电子 BGM、名词→定义→升华"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "$about": "导演层产物（references/director-method.md）。复制成 manifests/treatment.json 再填；把所有 <<…>> 换成内容。手作皮肤（journal / papercut / archive）必填，validate-treatment.py 会检查。",
+  "topic": "<<题目（一句话）>>",
+  "question": "<<第一秒的生活问题，观众自己遇到过>>",
+  "metaphor": {
+    "idea": "<<只属于这个题的隐喻：换一个邻近的题就不成立>>",
+    "why_unique": "<<为什么换题就不成立>>"
+  },
+  "medium": {
+    "skin": "<<journal | papercut | archive | flat | cel>>",
+    "why": "<<媒介即隐喻：这个物质本身怎么在讲这个道理>>"
+  },
+  "native_move": {
+    "what": "<<只有这个媒介做得出的动作>>",
+    "at_sec": 0,
+    "why_only_this_medium": "<<换成别的媒介为什么做不出>>"
+  },
+  "candidates": [
+    {"id": "A", "shape": "<<结构形状 + 开头画面 + 结尾>>"},
+    {"id": "B", "shape": "<<…>>"},
+    {"id": "C", "shape": "<<…>>"}
+  ],
+  "chosen": "A",
+  "chosen_why": "<<为什么选它（观众真有的错误直觉？首尾呼应？）>>",
+  "logline": "<<一句话>>",
+  "arc": {"setup": "<<…>>", "turn": "<<…>>", "ending": "<<…>>"},
+  "turn_to_you_sec": 0,
+  "ending_echo": {"opening_image": "<<开头画面>>", "one_change": "<<结尾回到它时变了哪一处>>"},
+  "benchmark": {
+    "works": ["<<对标作品>>"],
+    "learn": ["<<学：构图 / 节奏 / 镜头语法 / 配色逻辑>>"],
+    "not_learn": ["<<不学：角色 / 具体镜头 / 旋律 / 字体>>"]
+  },
+  "avoid": ["暗底发光线", "粒子", "金色/冰蓝科技风", "电子 BGM", "名词→定义→升华模板"],
+  "shots": [
+    {"id": "S1", "framing": "<<全 | 中 | 近 | 特写 | 插入>>", "move": "<<push-in | pull-back | pan-follow | still | …>>", "why": "<<为什么这样拍>>"}
+  ],
+  "signature_shot": "<<镜头 id + 一句话>>",
+  "commons": {
+    "queries": ["<<搜过的关键词>>"],
+    "used": ["<<media.json 里的素材 id>>"]
+  },
+  "facts": [
+    {"claim": "<<片中说的一个事实>>", "url": "https://<<原始出处>>", "quote": "<<原文引文>>"}
+  ],
+  "sound": {
+    "bed": "<<底噪 / 环境>>",
+    "foley": ["<<哪些动作配什么材料声>>"],
+    "silence": "<<顿悟前的那次安静在第几秒>>"
+  },
+  "review": {
+    "rounds": []
+  }
+}
