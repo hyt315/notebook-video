@@ -46,7 +46,11 @@
   "sound": {
     "bed": "<<底噪 / 环境>>",
     "foley": ["<<哪些动作配什么材料声>>"],
-    "silence": "<<顿悟前的那次安静在第几秒>>"
+    "silence": "<<顿悟前的那次安静在第几秒>>",
+    "silence_before_native_move_sec": 0.8,
+    "most_important_sound": "<<全片最重要的一声：什么声音、第几秒>>",
+    "music": {"use": false, "why": "<<用不用配乐，为什么（用就写 mood_curve）>>", "mood_curve": []},
+    "foley_per_medium": ["<<画线：铅笔划纸>>", "<<晕染：湿笔刷>>"]
   },
   "review": {
     "rounds": []
