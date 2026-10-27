@@ -100,8 +100,25 @@
           "s": 1.0,
           "fill": 0.865,
           "fillAfter": 0.865
-        }
-      }
+        },
+        "focus": [
+          {
+            "at": 176,
+            "hold": 31,
+            "rect": {
+              "x": 200.0,
+              "y": 170.0,
+              "w": 1520.0,
+              "h": 710.0
+            },
+            "zoom": 1.1,
+            "settle": true
+          }
+        ]
+      },
+      "bgAuto": true,
+      "bg": "flat/sunrise",
+      "bgFile": "bg/lib/flat-sunrise.webp"
     },
     {
       "id": "S2",
@@ -192,8 +209,25 @@
           "s": 1.0,
           "fill": 0.83,
           "fillAfter": 0.83
-        }
-      }
+        },
+        "focus": [
+          {
+            "at": 10,
+            "hold": 57,
+            "rect": {
+              "x": 220.0,
+              "y": 180.0,
+              "w": 1480.0,
+              "h": 700.0
+            },
+            "zoom": 1.1,
+            "settle": true
+          }
+        ]
+      },
+      "bgAuto": true,
+      "bg": "flat/chapter",
+      "bgFile": "bg/bg-flat-chapter.jpg"
     },
     {
       "id": "S3",
@@ -288,8 +322,25 @@
           "s": 1.0,
           "fill": 0.865,
           "fillAfter": 0.865
-        }
-      }
+        },
+        "focus": [
+          {
+            "at": 82,
+            "hold": 42,
+            "rect": {
+              "x": 200.0,
+              "y": 170.0,
+              "w": 1520.0,
+              "h": 710.0
+            },
+            "zoom": 1.1,
+            "settle": true
+          }
+        ]
+      },
+      "bgAuto": true,
+      "bg": "flat/mesh-dawn",
+      "bgFile": "bg/lib/flat-mesh-dawn.webp"
     },
     {
       "id": "S4",
@@ -383,8 +434,25 @@
           "s": 1.0,
           "fill": 0.865,
           "fillAfter": 0.865
-        }
-      }
+        },
+        "focus": [
+          {
+            "at": 69,
+            "hold": 41,
+            "rect": {
+              "x": 200.0,
+              "y": 170.0,
+              "w": 1520.0,
+              "h": 710.0
+            },
+            "zoom": 1.1,
+            "settle": true
+          }
+        ]
+      },
+      "bgAuto": true,
+      "bg": "flat/shapes",
+      "bgFile": "bg/lib/flat-shapes.webp"
     },
     {
       "id": "S5",
@@ -478,8 +546,25 @@
           "s": 1.0,
           "fill": 0.865,
           "fillAfter": 0.865
-        }
-      }
+        },
+        "focus": [
+          {
+            "at": 84,
+            "hold": 60,
+            "rect": {
+              "x": 200.0,
+              "y": 170.0,
+              "w": 1520.0,
+              "h": 710.0
+            },
+            "zoom": 1.1,
+            "settle": true
+          }
+        ]
+      },
+      "bgAuto": true,
+      "bg": "flat/sunrise",
+      "bgFile": "bg/lib/flat-sunrise.webp"
     },
     {
       "id": "S6",
@@ -572,8 +657,25 @@
           "s": 1.0,
           "fill": 0.83,
           "fillAfter": 0.83
-        }
-      }
+        },
+        "focus": [
+          {
+            "at": 69,
+            "hold": 46,
+            "rect": {
+              "x": 220.0,
+              "y": 180.0,
+              "w": 1480.0,
+              "h": 700.0
+            },
+            "zoom": 1.1,
+            "settle": true
+          }
+        ]
+      },
+      "bgAuto": true,
+      "bg": "flat/mesh-mint",
+      "bgFile": "bg/lib/flat-mesh-mint.webp"
     },
     {
       "id": "S7",
@@ -668,7 +770,10 @@
           "fill": 0.865,
           "fillAfter": 0.865
         }
-      }
+      },
+      "bgAuto": true,
+      "bg": "flat/main",
+      "bgFile": "bg/bg-flat-main.jpg"
     },
     {
       "id": "S8",
@@ -766,7 +871,10 @@
           "fill": 0.865,
           "fillAfter": 0.865
         }
-      }
+      },
+      "bgAuto": true,
+      "bg": "flat/dotgrid",
+      "bgFile": "bg/lib/flat-dotgrid.webp"
     }
   ]
 }

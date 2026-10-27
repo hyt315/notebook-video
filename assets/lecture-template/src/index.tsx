@@ -1,5 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {AbsoluteFill,Composition,Easing,Sequence,cancelRender,continueRender,delayRender,interpolate,registerRoot,spring,staticFile,useCurrentFrame as useRawCurrentFrame} from 'remotion';
+import {AbsoluteFill,Composition,Easing,Img,Sequence,cancelRender,continueRender,delayRender,interpolate,registerRoot,spring,staticFile,useCurrentFrame as useRawCurrentFrame} from 'remotion';
 import {Audio} from '@remotion/media';
 import cueData from './caption-cues.json';
 
@@ -312,10 +312,12 @@ const FinalDemo=()=>{
 };
 
 
-// 背景变体：每镜一张，由分镜表推导，镜头交接时与上一镜的背景交叉淡化 TRANS 帧。
-//   · 分镜表里写了 `bg: 'main' | 'chapter' | 'quiet'` → 照写的用；
-//   · 否则：章节首镜 → chapter；信息密集（zones ≥ 4）→ quiet；其余 → main。
-// 三张图的中央约 70% 都是安静的安全区，所以镜头内容直接压在背景上，不再铺整幅半透明底托。
+// 背景：每镜一张，由分镜表推导，镜头交接时与上一镜的背景交叉淡化 TRANS 帧。
+//   · 3.4.0 背景库：resolve-shots 已给每镜定好 `bgFile`（manifests/backgrounds.json 里的一张，显式 `bg` 或按角色自动轮换、
+//     相邻不重复）→ 直接画这张图；
+//   · 否则（旧工程 / `bgRotate:false`）：分镜表写了 `bg: 'main' | 'chapter' | 'quiet'` → 照写的用；
+//     不写：章节首镜 → chapter；信息密集（zones ≥ 4）→ quiet；其余 → main。
+// 所有背景的中央约 70% 都是安静的安全区，所以镜头内容直接压在背景上，不再铺整幅半透明底托。
 // 背景按 CINEMA.parallax 跟随摄影机（视差），转场时随甩镜一起移动。
 const bgVariantFor=(id:string):BgVariant=>{
   const s:any=(SHOTS as any)[id];
@@ -324,18 +326,27 @@ const bgVariantFor=(id:string):BgVariant=>{
   if((s.zones??0)>=4) return 'quiet';
   return 'main';
 };
+const bgFileFor=(id:string):string|null=>{const s:any=(SHOTS as any)[id];return typeof s?.bgFile==='string'?s.bgFile:null;};
+const bgKeyFor=(id:string)=>bgFileFor(id)??`variant:${bgVariantFor(id)}`;
+const ShotBackground:React.FC<{id:string}>=({id})=>{
+  const file=bgFileFor(id);
+  if(!file) return <Background variant={bgVariantFor(id)}/>;
+  return <AbsoluteFill style={{background:THEME.palette.paperBase}}>
+    <Img src={staticFile(file)} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+  </AbsoluteFill>;
+};
 const Backdrop=()=>{
   const f=q(useCurrentFrame());
   const idx=shotIndexAt(f);
   const local=f-SHOTS[SHOT_IDS[idx]].from;
-  const cur=bgVariantFor(SHOT_IDS[idx]);
-  const prev=idx>0?bgVariantFor(SHOT_IDS[idx-1]):cur;
-  const p=prev!==cur?Math.max(0,1-local/TRANS):0;
+  const curId=SHOT_IDS[idx];
+  const prevId=idx>0?SHOT_IDS[idx-1]:curId;
+  const p=bgKeyFor(prevId)!==bgKeyFor(curId)?Math.max(0,1-local/TRANS):0;
   const kind=transFor(idx);
   const tf=parallaxTransform(camFor(idx,local),whipOffset(kind,local/TRANS));
   return <AbsoluteFill style={{transform:tf,transformOrigin:'960px 540px'}}>
-    <Background variant={cur}/>
-    {p>0.01&&<AbsoluteFill style={{opacity:p}}><Background variant={prev}/></AbsoluteFill>}
+    <ShotBackground id={curId}/>
+    {p>0.01&&<AbsoluteFill style={{opacity:p}}><ShotBackground id={prevId}/></AbsoluteFill>}
   </AbsoluteFill>;
 };
 

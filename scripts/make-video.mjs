@@ -111,6 +111,9 @@ if (!flag('no-gates')) {
     ['validate-media.py', [project], true],
     // 3.3.0 导演层：手作皮肤缺 treatment.json / 没搜过 Commons 即停；flat / cel 只提示
     ['validate-treatment.py', [project], true],
+    // 3.4.0 背景库：库本身（来源 / 许可 / sha256 / 对比度）硬拦；分镜里相邻镜同一张背景只提示
+    ['validate-backgrounds.py', [project], true],
+    ['validate-backgrounds.py', [project, '--shots'], true],
     ['validate-caption-sync.py', [path.join(project, 'audio', 'narration.mp3.json'), path.join(project, 'manifests', 'caption-cues.json')], true],
     ['validate-semantic-breaks.py', [path.join(project, 'manifests', 'caption-cues.json'), path.join(project, 'manifests', 'protected-caption-phrases.txt')], true],
     // 手写场景的结构门禁（骨架 / 组件多样性）：auto 版式由引擎保证结构，这里只作参考

@@ -21,8 +21,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -255,6 +257,87 @@ def ts_key(ident: str) -> str:
     return ident if ident.replace("_", "").isalnum() and not ident[0].isdigit() else "'" + ident + "'"
 
 
+BG_ROLES = ("main", "chapter", "quiet")
+
+
+def chapter_starts(project: Path, out: list[dict]) -> set[str]:
+    """章节首镜：优先读 src/film.ts 的 CHAPTER_SHOTS（引擎用的同一份），没有就按 chapter 名变化推。"""
+    film = project / "src" / "film.ts"
+    if film.is_file():
+        m = re.search(r"CHAPTER_SHOTS\s*=\s*\[([^\]]*)\]", film.read_text(encoding="utf-8"))
+        if m:
+            ids = set(re.findall(r"['\"]([^'\"]+)['\"]", m.group(1)))
+            if ids:
+                return ids
+    starts, prev = set(), object()
+    for r in out:
+        if r.get("chapter") != prev:
+            starts.add(r["id"])
+        prev = r.get("chapter")
+    return starts
+
+
+def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems: list[str]) -> None:
+    """3.4.0 背景库：给每镜定一张背景，写进 rec["bg"]（库 id）+ rec["bgFile"]（public/ 下相对路径）。
+
+    · 显式 `bg`：库 id（'journal/ruled' 或简写 'ruled'）→ 用它；main / chapter / quiet → 用本皮肤的 legacy 那张。
+    · 未写 `bg`：按镜头角色（章节首镜 chapter / zones ≥ 4 quiet / 其余 main）从「roles 含该角色」的库背景里轮换：
+      先挑最久没用过的（从没用过的最优先），同分按 sha1(bgSeed:镜号:id) 定序；永不与上一镜同一张（候选只剩一张时除外）。
+      纯函数：同一分镜表 + 同一 bgSeed → 同一结果。
+    · 没有 manifests/backgrounds.json，或 shots.json 写了 "bgRotate": false → 不轮换（3.3.0 行为：
+      引擎按 main / chapter / quiet 三张图自动选）；此时不出 bgFile 键，旧工程解析结果逐字节不变。
+    """
+    lib_p = project / "manifests" / "backgrounds.json"
+    if not lib_p.is_file():
+        for r in out:
+            if r.get("bg") is not None and r["bg"] not in BG_ROLES:
+                problems.append(f"{r['id']}: bg={r['bg']!r} 不是 main / chapter / quiet（本工程没有背景库 manifests/backgrounds.json）")
+        return
+    theme = shots_doc.get("theme", "cel")
+    lib = json.loads(lib_p.read_text(encoding="utf-8")).get("backgrounds", [])
+    every = {e["id"]: e for e in lib}
+    mine = [e for e in lib if e.get("skin") == theme]
+    rotate = bool(mine) and shots_doc.get("bgRotate", True) is not False
+    seed = str(shots_doc.get("bgSeed", 0))
+    chapters = chapter_starts(project, out)
+    last_used: dict[str, int] = {}
+    prev_file = None
+
+    def file_of(e: dict) -> str:
+        f = str(e["file"])
+        return f[len("public/"):] if f.startswith("public/") else f
+
+    for i, r in enumerate(out):
+        bg = r.get("bg")
+        choice = None
+        if bg is not None:
+            if bg in BG_ROLES:
+                choice = every.get(f"{theme}/{bg}")       # legacy 那张；库里没有就交给引擎按变体名画
+            else:
+                bid = bg if "/" in bg else f"{theme}/{bg}"
+                e = every.get(bid)
+                if e is None:
+                    names = ", ".join(sorted(x["id"].split("/", 1)[1] for x in mine)) or "（本皮肤没有库背景）"
+                    problems.append(f"{r['id']}: bg={bg!r} 不在背景库；{theme} 皮肤可选：{names}")
+                elif e.get("skin") != theme:
+                    problems.append(f"{r['id']}: bg={bg!r} 属于 {e.get('skin')} 皮肤，当前皮肤是 {theme}")
+                else:
+                    choice = e
+        elif rotate:
+            role = "chapter" if r["id"] in chapters else ("quiet" if (r.get("zones") or 0) >= 4 else "main")
+            cands = [e for e in mine if role in (e.get("roles") or [])] or mine
+            fresh = [e for e in cands if file_of(e) != prev_file] or cands
+            choice = min(fresh, key=lambda e: (last_used.get(e["id"], -1), hashlib.sha1(f"{seed}:{i}:{e['id']}".encode()).hexdigest()))
+            r["bgAuto"] = True
+        if choice is not None:
+            r["bg"] = choice["id"]
+            r["bgFile"] = file_of(choice)
+            last_used[choice["id"]] = i
+            prev_file = r["bgFile"]
+        else:
+            prev_file = None
+
+
 def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
     shots_doc = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8"))
     cues_doc = json.loads((project / "manifests" / "caption-cues.json").read_text(encoding="utf-8"))
@@ -346,13 +429,14 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
             "noMisconception": s.get("noMisconception"),
             "why": s.get("why"),
         }
-        # 可选的背景变体覆盖（main / chapter / quiet）。不写就不出这个键，引擎按规则自动选
-        # （章节首镜 → chapter；zones ≥ 4 → quiet；其余 → main），所以旧分镜表解析结果逐字节不变。
+        # 可选的背景覆盖：main / chapter / quiet（3.3.0 起的三张锁定图），或背景库里的一张（3.4.0：
+        # 'journal/ruled' 或简写 'ruled'）。合法性与库背景的文件路径在 assign_backgrounds() 里统一解析。
+        # 不写就不出这个键；没有 manifests/backgrounds.json 的旧工程解析结果逐字节不变。
         if s.get("bg") is not None:
-            if s["bg"] not in ("main", "chapter", "quiet"):
-                problems.append(f"{sid}: bg={s['bg']!r} 不是 main / chapter / quiet 之一")
+            if not isinstance(s["bg"], str) or not s["bg"].strip():
+                problems.append(f"{sid}: bg 必须是字符串（main / chapter / quiet 或背景库 id）")
             else:
-                rec["bg"] = s["bg"]
+                rec["bg"] = s["bg"].strip()
         # 音效覆盖（见 src/sfx.ts）。不写就不出键，旧分镜表解析结果逐字节不变。
         if s.get("sfx") is not None:
             sfx = s["sfx"]
@@ -372,6 +456,7 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
         rec["cinema"] = resolve_cinema(s, sid, frm, duration, cues, problems)
         out.append(rec)
         cursor = to
+    assign_backgrounds(project, shots_doc, out, problems)
     total = cursor
     declared = shots_doc.get("duration")
     if declared and int(declared) != total:
