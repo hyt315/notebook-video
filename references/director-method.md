@@ -55,6 +55,9 @@
 每镜：景别（全 / 中 / 近 / 特写 / 插入）、运镜（推 / 拉 / 横移 / 跟 / 静）、**理由**。全片 ≥4 种运镜，一个招牌镜头。
 转场在媒介内部完成（翻页、换一张纸、剪刀剪过、墨晕开），不用缺省的淡入淡出 / 甩镜。
 关键时刻主体 ≥1/3 画高；每个构图 ≤12–15 秒；关键揭示后留 2–3 秒呼吸。
+**景别写了就要兑现**（3.6.0）：`validate-treatment` 拿 treatment 的 `move` / `framing` 对照镜头表的 `cameraIntent` 和实际缩放；
+招牌镜头至少真推 12%（keys 缩放或 `cinema.focus` 的 zoom），否则手作皮肤 P0。动机、景别阶梯、视线连续、什么时候不动、镜长：
+见 [camera-language.md](camera-language.md)。
 "节拍边界要有东西活下来"：上一拍的某个物件变成下一拍的起点，片子才连成一条线而不是幻灯片。
 
 ## 素材：每个选题先搜 Commons（`commons`）
@@ -94,3 +97,5 @@ python scripts/commons-search.py search "<关键词>" --source openverse --proje
 | `turn_to_you_sec` 落在片长 35–55% | P1 | P1 |
 | 镜头表每镜有理由；运镜 ≥4 种；有 `signature_shot` | P1 | P1 |
 | `review.rounds` 最后一轮七项都 ≥8 | P1 | P1 |
+| 招牌镜头实推 ≥ 12%（对照 shots.resolved.json，3.6.0） | P0 | P1 |
+| `move` = 镜头表 `cameraIntent`；`framing` 与实际缩放 / 主体占比相符（3.6.0） | P1 | P1 |

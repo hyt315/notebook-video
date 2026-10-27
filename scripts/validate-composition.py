@@ -15,7 +15,8 @@
   P0-6  枚举闭合           转场 / 入场 / 介质 / 骨架 / 意图 全是闭合集合，写错名字即 fail
   P1-7  单镜过长           单镜 > 300 帧（10s）提示锯开（基准 4–6s、最长 ≤9s）
   P1-8  骨架指纹重复       同一 (骨架,意图,转场,入场) 组合每出现一次就提示
-  P1-9  镜长分布           最长/最短 < 2 倍、或 >80% 镜头集中在同一档 → 读起来是节拍器
+  P1-7b 一个构图撑太久     单镜 > 12s 且没有镜内焦点（cinema.focus）或插入镜（3.6.0）
+  P1-9  镜长分布           最长/最短 < 2 倍、变异系数 < 0.35、或 >80% 镜头集中在同一档 → 读起来是节拍器
   P1-10 主角尺寸           hero 必须声明，且 size 是"主体短边设计像素"（图形 ≥255 / 大字 ≥144）
   P1-11 转场 / 入场多样性  ≥2 种 / ≥3 种
   P1-12 状态变化间隔       汇总报告（带帧区间与所涉台词），不再每镜刷 1 条
@@ -55,6 +56,8 @@ CRAFT_ZONE_RANGE = (1, 5)
 MAX_EXPLANATION_FALSE = 1     # 一部片最多 1 镜可以不走"讲解场景"的活性要求（章节卡）
 MAX_SHOT_FRAMES = 300         # 单镜上限 10s
 MIN_LENGTH_RATIO = 2.0        # 最长/最短 倍数下限（测出来是节拍器）
+MIN_LENGTH_CV = 0.35          # 3.6.0 镜长变异系数（标准差/平均）下限：低于它 = 节拍器（references/camera-language.md §5）
+LONG_HOLD_FRAMES = 360        # 3.6.0 单个构图 > 12 s 必须镜内换焦点（cinema.focus）或接插入镜
 MAX_BAND_SHARE = 0.8          # 同一时长档最多占 80%
 MAX_BEAT_GAP = 120            # 文档的慢章节上限（3–4s）；超过它才算越界
 SLOW_GAP = 90                 # 汇总时把 >3s 的间隔也列出来（供评审，不判缺陷）
@@ -491,6 +494,13 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
             # 注意：f-string 里不要复用同种引号（PEP 701 只在 Python 3.12+ 合法，本脚本声明支持 3.10+）
             p1.append({"id": s.get("id", "?"), "issue": "单镜 %d 帧（%.1fs）超过 %d 帧参考上限；基准是单镜 4–6s、最长 ≤9s" % (dur, dur / 30, MAX_SHOT_FRAMES)})
 
+    # ---- P1-7b 一个构图撑太久（3.6.0）：> 12 s 必须有镜内焦点或插入镜 ----
+    for s in shots:
+        dur = int(s.get("duration") or 0)
+        focus = [f for f in ((s.get("cinema") or {}).get("focus") or []) if not f.get("settle")]
+        if dur > LONG_HOLD_FRAMES and not focus and not s.get("insert"):
+            p1.append({"id": s.get("id", "?"), "issue": "单镜 %.1fs 一个构图到底：> 12s 要在镜内换焦点（cinema.focus）或接插入镜（references/camera-language.md §5）" % (dur / 30)})
+
     # ---- P1-8 骨架指纹重复 ----
     fp: dict[tuple, list[str]] = {}
     for s in shots:
@@ -507,6 +517,10 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
         ratio = hi / max(1, lo)
         if ratio < MIN_LENGTH_RATIO:
             p1.append({"id": "-", "issue": f"最长/最短镜头仅 {ratio:.2f} 倍（{hi}/{lo}），全片一个速度=节拍器；建议 2.5–3 倍以上"})
+        mean = sum(durs) / len(durs)
+        cv = (sum((d - mean) ** 2 for d in durs) / len(durs)) ** 0.5 / max(mean, 1)
+        if cv < MIN_LENGTH_CV:
+            p1.append({"id": "-", "issue": f"镜长变异系数 {cv:.2f} < {MIN_LENGTH_CV}（平均 {mean / 30:.1f}s）：镜长太整齐，读起来是节拍器；长短镜交替（references/camera-language.md §5）"})
         share = {}
         for d in durs:
             for a, b, name in BANDS:

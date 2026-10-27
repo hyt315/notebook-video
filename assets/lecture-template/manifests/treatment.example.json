@@ -1,5 +1,5 @@
 {
-  "$about": "导演层产物（references/director-method.md）。复制成 manifests/treatment.json 再填；把所有 <<…>> 换成内容。手作皮肤（journal / papercut / archive）必填，validate-treatment.py 会检查。",
+  "$about": "导演层产物（references/director-method.md）。复制成 manifests/treatment.json 再填；把所有 <<…>> 换成内容。手作皮肤（journal / papercut / archive）必填，validate-treatment.py 会检查（3.6.0 起 shots 的 framing / move 对照 shots.resolved.json，candidates 写 family，sound 写全）。",
   "topic": "<<题目（一句话）>>",
   "question": "<<第一秒的生活问题，观众自己遇到过>>",
   "metaphor": {
@@ -33,9 +33,9 @@
   },
   "avoid": ["暗底发光线", "粒子", "金色/冰蓝科技风", "电子 BGM", "名词→定义→升华模板"],
   "shots": [
-    {"id": "S1", "framing": "<<全 | 中 | 近 | 特写 | 插入>>", "move": "<<push-in | pull-back | pan-follow | still | …>>", "why": "<<为什么这样拍>>"}
+    {"id": "S1", "framing": "<<全 | 中 | 近 | 特写 | 插入>>", "move": "<<establish | push-in | pull-back | pan-follow | reveal | micro-orbit | still>>", "why": "<<为什么这样拍（动机见 references/camera-language.md）>>"}
   ],
-  "signature_shot": "<<镜头 id + 一句话>>",
+  "signature_shot": "<<镜头 id + 一句话；这一镜要真推 ≥ 12%（keys 缩放或 cinema.focus 的 zoom），validate-treatment 会对照镜头表>>",
   "commons": {
     "queries": ["<<搜过的关键词>>"],
     "used": ["<<media.json 里的素材 id>>"]

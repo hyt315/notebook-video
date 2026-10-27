@@ -448,6 +448,14 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
         # 可选版式名（validate-composition 要求相邻两镜不同）。不写就不出键。
         if s.get("layout") is not None:
             rec["layout"] = str(s["layout"])
+        # 3.6.0 插入镜标记：{"of": "S3"} = 这一镜是对 S3 某处的硬切特写（场景按特写尺寸重新排版，不靠放大）。
+        # 门禁据此认景别（validate-treatment 的「特写」、validate-composition 的 >12s 构图）。不写就不出键。
+        if s.get("insert") is not None:
+            ins = s["insert"]
+            if not (isinstance(ins, dict) and isinstance(ins.get("of"), str) and ins["of"].strip()):
+                problems.append(f"{sid}: insert 必须是 {{\"of\": \"<镜头 id>\"}}（这一镜是对哪一镜的特写）")
+            else:
+                rec["insert"] = {"of": ins["of"].strip()}
         if s.get("sfxEvents") is not None:
             rec["sfxEvents"] = s["sfxEvents"]
         if s.get("sfxAuto") is not None:
