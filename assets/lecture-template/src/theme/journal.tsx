@@ -87,5 +87,5 @@ export const THEME: Theme = {
   id: 'journal', palette, aesthetic, paperShadow, backgrounds: BACKGROUNDS, Background, Paper, Grade, SubtitleChrome, Chrome,
   backgroundDecorZones,
   craft: {medium: 'journal', fibre: 0.55, inkLine: palette.ink, handFamily: 'Kai', bodyFamily: 'NotoSerifSC,Kai', accent: palette.orange,
-    transition: 'slide', fonts: ['700 40px NotoSerifSC']},
+    transition: 'pageturn', fonts: ['700 40px NotoSerifSC']},
 };

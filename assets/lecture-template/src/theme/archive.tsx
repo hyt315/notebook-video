@@ -79,5 +79,5 @@ export const THEME: Theme = {
   id: 'archive', palette, aesthetic, paperShadow, backgrounds: BACKGROUNDS, Background, Paper, Grade, SubtitleChrome, Chrome,
   backgroundDecorZones,
   craft: {medium: 'archive', fibre: 0, inkLine: palette.orange, handFamily: 'Kai', bodyFamily: 'NotoSerifSC,Kai', accent: palette.orange,
-    transition: 'slide', fonts: ['700 40px NotoSerifSC']},
+    transition: 'pageturn', fonts: ['700 40px NotoSerifSC']},
 };

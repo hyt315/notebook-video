@@ -84,5 +84,5 @@ export const THEME: Theme = {
   id: 'papercut', palette, aesthetic, paperShadow, backgrounds: BACKGROUNDS, Background, Paper, Grade, SubtitleChrome, Chrome,
   backgroundDecorZones,
   craft: {medium: 'papercut', fibre: 0.45, inkLine: palette.orange, handFamily: 'Kai', bodyFamily: 'NotoSerifSC,Kai', accent: palette.orange,
-    transition: 'drop', fonts: ['700 40px NotoSerifSC']},
+    transition: 'peel', fonts: ['700 40px NotoSerifSC']},
 };
