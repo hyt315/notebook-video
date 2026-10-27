@@ -51,6 +51,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 ```
 
 手作路线换成 `--style=journal`（或 `papercut` / `archive`），会按需下载 Noto Serif SC Bold（字幕字体，OFL）。
+手作皮肤的镜间转场缺省是**真翻页**（journal / archive `pageturn`、papercut `peel`，WebGPU）：渲染器先画一张探针验收，机器画不了就自动退回 `slide` / `drop` 并在报告里记 P1，不会渲染失败（[references/fx-effects.md](references/fx-effects.md)）。
 
 工程里已有一部完整的示例片（8 镜）。**照着改，不要从零写**：
 - `manifests/shots.json`：每镜一行（`skeleton` / `live` 组件 / `cameraIntent` / `beats` / `transition`）——镜头表是唯一真相；
@@ -114,6 +115,7 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 - 导演层与手作：[references/director-method.md](references/director-method.md)、[references/style-recipes.md](references/style-recipes.md)、[references/craft-kit.md](references/craft-kit.md)
 - 真实素材：[references/commons-media.md](references/commons-media.md)、[references/real-media.md](references/real-media.md)
 - 背景库：[references/background-library.md](references/background-library.md)
+- 真翻页 / 揭纸转场：[references/fx-effects.md](references/fx-effects.md)
 - Windows：[references/windows-compatibility.md](references/windows-compatibility.md)
 - 自检：`node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-skill`、`python scripts/selftest.py`、`python scripts/negative-gate-check.py`
 

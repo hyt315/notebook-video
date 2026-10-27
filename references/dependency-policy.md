@@ -85,6 +85,7 @@
 | `@remotion/shapes` | 参数化几何图形：圆 / 椭圆 / 矩形 / 三角 / 多边形 / 星 / Pie / 心形 / 箭头 / 对话气泡 / 星芒，`make*()` 直接给出 path 字符串 |
 | `@remotion/layout-utils` | `measureText`（实测文字宽高，**准确且严格线性**：已验证 46px 时 44 字 = 2024px）、`fillTextBox`。**治卡片裁切的正解**。⚠️ **不要用 `fitTextOnNLines` 处理中文**，见第 5.1 节 |
 | `@remotion/noise` | `noise2D/3D`：给同一 seed 得到同一结果，可做有机抖动、自然呼吸而不破坏可复现性 |
+| `@remotion/effects`（3.5.0） | 画布特效（WebGL2 / WebGPU）。本模板只用 `pageTurn()` 做手作皮肤的真翻页 / 揭纸转场（`src/fx.tsx`）；它要 WebGPU，缺省 Headless Shell 画不了，所以由渲染器探针决定开不开，详见 [fx-effects.md](fx-effects.md)。`fractalNoise()` 评估过，不进渲染期（同文件 §4） |
 
 > 选型理由：这五个与渲染引擎同厂，**按帧驱动设计**，不存在"库自带时间动画"的冲突，是引入成本最低、
 > 风险最小的一类扩展。加依赖时优先考虑这一族。

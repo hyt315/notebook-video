@@ -54,4 +54,13 @@ and bundles the following third-party materials:
    - Optional OCR check `scripts/validate-ocr.py` uses RapidOCR (Apache-2.0, https://github.com/RapidAI/RapidOCR) when the user has
      installed it; it is not bundled.
 
+10. Added in 3.5.0:
+   - `@remotion/effects` (Remotion License, like item 3; https://github.com/remotion-dev/remotion/tree/main/packages/effects) — `pageTurn()`
+     draws the `pageturn` / `peel` transitions in `src/fx.tsx`. Its page-turn geometry references EffectCraft's CC Page Turn, and its
+     Fractal Noise / Turbulent Displace / Lens Blur / Bevel Alpha / Shatter shaders are adapted from EffectCraft
+     (https://github.com/storytold/effectcraft), MIT License, Copyright (c) 2026 ArtCraft Team and the EffectCraft contributors —
+     reproduced in the package's `THIRD_PARTY_LICENSES.md`. Installed by `npm install`, **not redistributed in this repository**.
+   - The optional full Chromium used for WebGPU rendering (Chrome for Testing / Playwright Chromium, BSD-3-Clause and bundled
+     third-party licences) is found on the user's machine or installed by the user; it is not bundled.
+
 The repository-level license must not override these third-party license notices.

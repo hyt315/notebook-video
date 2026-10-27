@@ -17,7 +17,7 @@
 - 章节标识：左上编目号 + 宋体章名；无技术页眉。
 - 调色：冷灰暗角。背景：`bg-archive-{main,chapter,quiet}.jpg`（背光台面的明暗与网格痕）。
 - 背景库（3.4.0）：再加 8 张——`archive/envelope` 档案袋、`newsprint` 旧报纸、`map` 古地图、`catalog` 卡片目录、`filmstrip` 胶片灯箱、`linen` 展柜布面、`ledger` 登记簿、`vellum` 描图纸；不写 `bg` 时按镜头角色自动轮换、相邻不重复，见 [background-library.md](background-library.md)。
-- 转场缺省：`slide`（台面横移到下一件）；章节首镜 `drop`。
+- 转场缺省：`pageturn`（3.5.0，档案册翻到下一页，见 [fx-effects.md](fx-effects.md)）；画不了 WebGPU 时自动退回 `slide`（台面横移到下一件）。章节首镜 `drop`。
 
 ## 原生动作
 1. **镜片里负片转正**：`LoupeMedia` 的 `treatment="negative"` + `insideTreatment="none"`。
