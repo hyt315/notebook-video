@@ -1,0 +1,45 @@
+{
+  "$comment": "Paper Shaders (@paper-design/shaders 0.0.82, Apache-2.0) uniforms for the background library. Rendered once by prerender-paper-shaders.py, composed by make-bg-library.py.",
+  "shaders": {
+    "ps-coldpress": {"shader": "paperTexture", "params": {
+      "u_colorBack": "#f6f0e2", "u_colorPaper": "#f8f2e4", "u_colorShadow": "#6f604a", "u_isImage": false, "u_blending": 0, "u_distortion": 0, "u_clip": false,
+      "u_angle": 120, "u_seed": 17, "u_roughness": 0.55, "u_roughnessSize": 0.32, "u_roughnessRows": 0, "u_fiber": 0.25, "u_fiberSize": 0.25,
+      "u_folds": 0, "u_foldSizeX": 0.5, "u_foldSizeY": 0.5, "u_foldOffsetX": 0.5, "u_foldOffsetY": 0.5, "u_wrinkles": 0, "u_wrinkleSize": 0.5,
+      "u_crumples": 0, "u_crumpleCount": 4, "u_drops": 0.06, "u_imageAspectRatio": 1}},
+    "ps-oldpage": {"shader": "paperTexture", "params": {
+      "u_colorBack": "#efe2c3", "u_colorPaper": "#f2e6c9", "u_colorShadow": "#8a6a3a", "u_isImage": false, "u_blending": 0, "u_distortion": 0, "u_clip": false,
+      "u_angle": 45, "u_seed": 311, "u_roughness": 0.25, "u_roughnessSize": 0.4, "u_roughnessRows": 0, "u_fiber": 0.45, "u_fiberSize": 0.35,
+      "u_folds": 0, "u_foldSizeX": 0.52, "u_foldSizeY": 0.3, "u_foldOffsetX": 0.5, "u_foldOffsetY": 0.5, "u_wrinkles": 0, "u_wrinkleSize": 0.5,
+      "u_crumples": 0, "u_crumpleCount": 4, "u_drops": 0.55, "u_imageAspectRatio": 1}},
+    "ps-origami": {"shader": "paperTexture", "params": {
+      "u_colorBack": "#f7ebe4", "u_colorPaper": "#f8ede6", "u_colorShadow": "#9a5a4a", "u_isImage": false, "u_blending": 0, "u_distortion": 0, "u_clip": false,
+      "u_angle": 60, "u_seed": 503, "u_roughness": 0.15, "u_roughnessSize": 0.3, "u_roughnessRows": 0, "u_fiber": 0.2, "u_fiberSize": 0.3,
+      "u_folds": 0.0, "u_foldSizeX": 0.6, "u_foldSizeY": 0.6, "u_foldOffsetX": 0.5, "u_foldOffsetY": 0.5, "u_wrinkles": 0, "u_wrinkleSize": 0.5,
+      "u_crumples": 0.55, "u_crumpleCount": 5, "u_drops": 0, "u_imageAspectRatio": 1}},
+    "ps-xuan": {"shader": "paperTexture", "params": {
+      "u_colorBack": "#f8f4ea", "u_colorPaper": "#faf6ec", "u_colorShadow": "#8c7a5a", "u_isImage": false, "u_blending": 0, "u_distortion": 0, "u_clip": false,
+      "u_angle": 90, "u_seed": 707, "u_roughness": 0.12, "u_roughnessSize": 0.5, "u_roughnessRows": 0, "u_fiber": 0.85, "u_fiberSize": 0.55,
+      "u_folds": 0, "u_foldSizeX": 0.5, "u_foldSizeY": 0.5, "u_foldOffsetX": 0.5, "u_foldOffsetY": 0.5, "u_wrinkles": 0, "u_wrinkleSize": 0.5,
+      "u_crumples": 0, "u_crumpleCount": 4, "u_drops": 0, "u_imageAspectRatio": 1}},
+    "ps-laid": {"shader": "paperTexture", "params": {
+      "u_colorBack": "#f5f1e6", "u_colorPaper": "#f6f2e8", "u_colorShadow": "#6d6656", "u_isImage": false, "u_blending": 0, "u_distortion": 0, "u_clip": false,
+      "u_angle": 0, "u_seed": 909, "u_roughness": 0.35, "u_roughnessSize": 0.25, "u_roughnessRows": 1, "u_fiber": 0.2, "u_fiberSize": 0.2,
+      "u_folds": 0, "u_foldSizeX": 0.5, "u_foldSizeY": 0.5, "u_foldOffsetX": 0.5, "u_foldOffsetY": 0.5, "u_wrinkles": 0, "u_wrinkleSize": 0.5,
+      "u_crumples": 0, "u_crumpleCount": 4, "u_drops": 0.05, "u_imageAspectRatio": 1}},
+    "ps-mesh-dawn": {"shader": "staticMeshGradient", "params": {
+      "u_colors": ["#fff1e2", "#ddeefe", "#fde3ee", "#fff8e6", "#e6f6ec"], "u_colorsCount": 5, "u_positions": 20, "u_waveX": 0.12, "u_waveXShift": 0.2,
+      "u_waveY": 0.1, "u_waveYShift": 0.7, "u_mixing": 0.6, "u_grainMixer": 0.0, "u_grainOverlay": 0.0, "u_fit": 2, "u_scale": 1}},
+    "ps-mesh-mint": {"shader": "staticMeshGradient", "params": {
+      "u_colors": ["#eef8f3", "#dff1f6", "#f7f8e6", "#e9ecfb"], "u_colorsCount": 4, "u_positions": 7, "u_waveX": 0.3, "u_waveXShift": 0.5,
+      "u_waveY": 0.6, "u_waveYShift": 0.1, "u_mixing": 0.9, "u_grainMixer": 0.0, "u_grainOverlay": 0.0, "u_fit": 2, "u_scale": 1}},
+    "ps-dotgrid": {"shader": "dotGrid", "params": {
+      "u_colorBack": "#f6f9fd", "u_colorFill": "#c9daf0", "u_colorStroke": "#00000000", "u_dotSize": 5, "u_gapX": 48, "u_gapY": 48, "u_strokeWidth": 0,
+      "u_sizeRange": 0, "u_opacityRange": 0, "u_shape": 0}},
+    "ps-halftone-corners": {"shader": "halftoneDots", "image": {"blobs": [[0.0, 0.0, 0.32], [1.0, 1.0, 0.28], [1.0, 0.0, 0.16], [0.0, 1.0, 0.14]], "peak": 0.9},
+      "params": {"u_colorFront": "#2a3b8f", "u_colorBack": "#fbf8f1", "u_originalColors": false, "u_type": 0, "u_inverted": false, "u_grid": 1,
+      "u_size": 0.55, "u_radius": 1.0, "u_contrast": 0.6, "u_grainMixer": 0, "u_grainOverlay": 0, "u_grainSize": 0.5, "u_fit": 2, "u_scale": 1}},
+    "ps-grain-sun": {"shader": "grainGradient", "params": {
+      "u_colorBack": "#fbf5ea", "u_colors": ["#ffe3b8", "#ffd0c2", "#fbf5ea"], "u_colorsCount": 3, "u_softness": 0.9, "u_intensity": 0.2, "u_noise": 0.12,
+      "u_shape": 4, "u_time": 0, "u_fit": 2, "u_scale": 1}}
+  }
+}
