@@ -4,6 +4,46 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+## [3.5.0] - 2026-10-27
+
+> 手作皮肤的「翻到下一页」不再是镜头横移：上一页真的卷起来翻走，有折痕高光、纸背透出上一页的墨迹。需要 WebGPU；渲染器先画一张探针验收，画不了就自动退回 3.4.0 的 slide / drop，片子照出。
+> The hand-made skins now turn a real page: the old page curls away with a shaded fold and its back showing through. It needs WebGPU; the renderer verifies it with a pixel probe first and falls back to the 3.4.0 slide / drop otherwise, so a film always renders.
+
+### 转场 / Transitions
+
+- 新转场 `pageturn`（近乎竖直的折线，整页从右往左翻走）与 `peel`（对角折线，从右下角揭起），由 `@remotion/effects` 的 `pageTurn()`（WebGPU + HTML-in-canvas）绘制，`src/fx.tsx`。卷走的是上一镜的整页（背景 + 内容），22 帧；几何是进度的纯函数，同一帧渲两次结果相同。
+  New `pageturn` and `peel` transitions drawn with `@remotion/effects` `pageTurn()`; the whole previous page curls away over 22 frames; deterministic.
+- 皮肤缺省：journal / archive → `pageturn`，papercut → `peel`；章节首镜仍是 `drop`；flat / cel 不变。分镜表也可以对任何皮肤显式写 `pageturn` / `peel`。
+  Skin defaults: journal / archive `pageturn`, papercut `peel`; chapter openers stay `drop`; flat / cel unchanged.
+
+### 渲染器 / Renderer
+
+- `scripts/fx-browser.mjs` + 新命令 `fx-probe`：找完整版 Chromium（`NOTEBOOK_VIDEO_FX_BROWSER` 或本机 Playwright 缓存），Linux 上用包装脚本换成软件 Vulkan（SwiftShader，并把 `VK_ICD_FILENAMES` 指向浏览器自带的 ICD），渲一帧 320×180 探针读像素；结论缓存在 `renders/.fx-probe.json`。不通过 → 不开，`make-video` 报告记 **P1 真卷页未开启** 并写明原因。`NOTEBOOK_VIDEO_FX=off` 手动关闭。
+  Pixel-verified WebGPU probe with a software-Vulkan wrapper; result cached; P1 in the report when the film wants page turns but the machine cannot draw them.
+- 「快速整片 + 卷页片段拼接」：完整版 Chrome + SwiftShader 每帧约 3.1 s（Headless Shell 约 0.25 s），且并发 > 1 会花屏。所以整片仍用 Headless Shell 近无损渲（crf 8），每个 22 帧卷页窗口用完整版 Chrome 单独渲（并发 1），ffmpeg 按帧号 split / trim / concat 拼回，只在这一遍编码到交付质量（crf 16）。
+  Whole film with Headless Shell, each curl window with full Chrome, spliced by frame number and encoded once.
+- 修：`prepare-browser` 引用了一个未定义的变量（设了 `REMOTION_BROWSER_EXECUTABLE` 时会崩）。
+  Fix: `prepare-browser` referenced an undefined variable.
+
+### 依赖 / Dependencies
+
+- 新增 `@remotion/effects`；Remotion 全家（`remotion` / `@remotion/*`）统一精确锁定 4.0.539（Remotion 要求同版本，`^4.0.0` 会让它们各自漂移）。许可同 `@remotion/transitions`（Remotion License）；EffectCraft（MIT）署名见包内 `THIRD_PARTY_LICENSES.md`，已登记在 `NOTICE` / `DEPENDENCIES.md`。完整版 Chromium 是可选的、本机安装，不随仓库分发。
+  Adds `@remotion/effects`; the whole Remotion family pinned to exactly 4.0.539. Licences recorded in NOTICE / DEPENDENCIES.
+- 评估过 `fractalNoise()`（动态纸纹）：全分辨率 ≈ 3.2 s/帧、与 pageTurn 的浏览器配置互斥、观感像「沸腾的纸」，不进渲染期（`references/fx-effects.md` §4）。
+  `fractalNoise()` evaluated and not adopted at render time.
+
+### 测试 / Tests
+
+- `tests/test_fx.py`（9 项）+ `node scripts/fx-browser.mjs --self-test`（探针判据、卷页窗口、拼接滤镜、包装脚本参数与 ICD 导出）；`validate-skill-consistency` 交叉校验 `CURL_FRAMES`，并开始认 `scripts/*.mjs` 的导出常量与环境变量；CI 接入。
+  New unit tests and renderer self-test; consistency check for `CURL_FRAMES`; CI wired.
+- 回归（Remotion 4.0.539）：selftest 18/18、negative-gate-check 97 例 / 154 断言、unittest 70 项、tsc、coords-lint 全部通过。
+  Regression on Remotion 4.0.539: all green.
+
+### 兼容性 / Compatibility
+
+- 没有 WebGPU 的机器（含缺省 Headless Shell）：输出与 3.4.0 相同（pageturn → slide、peel → drop），只多一条 P1。Studio 预览缺省看到的也是退回后的转场。
+  Without WebGPU the output equals 3.4.0 plus one P1 note.
+
 ## [3.4.0] - 2026-10-27
 
 > 背景不再只有三张：每个手作皮肤新增 8 张、flat / cel 各新增 5 张风格各异的亮底背景，按镜头角色自动轮换、相邻不重复；每张都登记来源与许可，门禁核对亮底与字幕区对比度。
