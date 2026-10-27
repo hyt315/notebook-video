@@ -1,0 +1,89 @@
+{
+  "$blueprint": "kishotenketsu",
+  "$route": "handwritten-craft",
+  "family": "kishotenketsu",
+  "$about": "起承转合（3.6.0）：没有冲突也能讲好——起：一个画面；承：把它讲深一层；转：插入一个看似无关的画面；合：两者合拢，观众自己看出联系。来自东亚四格漫画 / 绝句的公开结构，只借结构。",
+  "fits": "名字的来历、两件看似无关的东西其实同源、温和的“原来如此”（不需要推翻谁）",
+  "$howto": "手写组件路线的分镜蓝图（不走 compose-story）。先按 references/director-method.md 写 manifests/treatment.json，candidates 里写 family；再照每拍的 $components 写 scenes.tsx。秒数按 60–90 秒片子给出，括号里是占片长的比例，按台词伸缩。字幕每行 ≤14 字。 关键是“转”：它必须看起来和前面无关，但又在“合”里只靠一个视觉动作（同形、同色、同位置）就接上。",
+  "theme": "<<journal | papercut | archive>>",
+  "beats": [
+    {
+      "id": "K1",
+      "role": "ki",
+      "at": "0–12 s（≈15%）",
+      "$why": "起：第 0 帧就是主角物件（真素材或已在画的墨线），一句陈述，不提问。",
+      "caption": [
+        "<<关于主角的一个已核事实>>"
+      ],
+      "$components": {
+        "skeleton": "Stage",
+        "craft": [
+          "ArchivePhoto | PinnedPhoto | InkPath",
+          "HandNote"
+        ],
+        "camera": "establish → 极缓推"
+      }
+    },
+    {
+      "id": "K2",
+      "role": "sho",
+      "at": "12–35 s（≈30%）",
+      "$why": "承：把起的画面讲深一层（局部、细节、数字），同一张纸上延续，不换世界。",
+      "caption": [
+        "<<更深一层的细节>>",
+        "<<一个能核对的数字>>"
+      ],
+      "$components": {
+        "skeleton": "Zoom",
+        "craft": [
+          "Loupe | LoupeMedia",
+          "WashBlob",
+          "HandNote"
+        ],
+        "camera": "push-in 或 cinema.focus（≥ 12%）"
+      }
+    },
+    {
+      "id": "K3",
+      "role": "ten",
+      "at": "35–52 s（≈25%）",
+      "$why": "转：硬切到一个看似无关的画面（另一个时代 / 另一个尺度 / 另一种东西），形状或位置与 K2 的主体相同——为“合”埋下视觉韵脚。",
+      "caption": [
+        "<<看似无关的另一件事>>"
+      ],
+      "$components": {
+        "skeleton": "Split",
+        "craft": [
+          "PinnedPhoto | CutPaper",
+          "InkCircle"
+        ],
+        "camera": "still（让观众自己找联系）"
+      }
+    },
+    {
+      "id": "K4",
+      "role": "ketsu",
+      "at": "52–70 s（≈30%）",
+      "$why": "合：一个原生动作把两幅画面合拢（墨线连起来 / 两张剪纸叠在一起透光 / 放大镜从一张移到另一张），一句话点破，然后留 2–3 s 呼吸。",
+      "caption": [
+        "<<点破联系的一句（≤14 字）>>"
+      ],
+      "$components": {
+        "skeleton": "Stage",
+        "craft": [
+          "InkPath（连接线）| CutPaper(backlit) | Loupe",
+          "Seal"
+        ],
+        "camera": "pull-back（把两者放进同一画面）"
+      }
+    }
+  ],
+  "$rules": [
+    "“转”不能是“但是”：它是一个新画面，不是一句反驳",
+    "开场照 references/narrative-hook.md 的冷开合约（第 0 帧有主体、首条字幕 ≤ 1 s、第一句不用“X 这个词 / 你知道吗”），validate-opening 会查",
+    "镜头动机、景别阶梯、镜长见 references/camera-language.md；招牌镜头真推 ≥ 12%",
+    "相邻两镜换骨架；每个构图 ≤ 12 s（更长就镜内换焦点）；镜长长短错开",
+    "每个选题先 commons-search；真素材进 ArchivePhoto / PinnedPhoto / LoupeMedia，署名自动上屏",
+    "避免：暗底发光线、粒子、金色/冰蓝科技风、电子 BGM、名词→定义→升华"
+  ]
+}

@@ -1,19 +1,27 @@
 {
   "$blueprint": "medium-metaphor",
   "$route": "handwritten-craft",
-  "$about": "媒介即隐喻（3.3.0）：用一种物质把一件事演出来——生活问题 → 错误直觉被演出 → 原生动作推翻 → 数得出来的证据 → 转向你 → 首尾呼应。配手作皮肤（journal / papercut / archive）与 src/craft/ 组件。",
+  "family": "medium-metaphor",
+  "fits": "一个东西的“本义 / 来历 / 为什么叫这个名字”，观众有一个真实的错误直觉可以推翻",
+  "$about": "媒介即隐喻（3.3.0）：用一种物质把一件事演出来——冷开（最怪的画面 / 数字）→ 反差 → 错误直觉被演出 → 原生动作推翻 → 数得出来的证据 → 转向你 → 首尾呼应。配手作皮肤（journal / papercut / archive）与 src/craft/ 组件。",
   "$howto": "这是手写组件路线的分镜蓝图，不走 compose-story。先按 references/director-method.md 写 manifests/treatment.json（隐喻 / 媒介 / 原生动作 / 三候选），再照下面每拍的 $components 写 scenes.tsx。把 <<…>> 换成内容；秒数是 70–90 秒片子的建议位置，按台词长度伸缩。字幕每行 ≤14 字（硬上限 16），约 1/3 时长无字幕。",
   "theme": "<<journal | papercut | archive>>",
   "beats": [
     {
-      "id": "B1", "role": "hook", "at": "0–6 s",
-      "$why": "第 0 帧动作已经在发生（剪刀在剪 / 笔在画 / 放大镜在落）。生活问题配一个画面，不配标题卡。",
-      "caption": ["<<生活问题（≤14 字）>>"],
-      "$components": {"skeleton": "Stage", "craft": ["PaperSheet", "InkPath", "HandNote"], "camera": "push-in（缓推，跟着动作）"}
+      "id": "B1", "role": "cold-open", "at": "0–1.5 s",
+      "$why": "冷开：第 0 帧就给全片最怪的那个画面或数字（真铜版画上的格子 / “一立方英寸软木里有十二亿间屋子”），主体 ≥ 1/3 画高、动作已经在发生。不配片名、不寒暄、第一句不用“X 这个词 / 你知道吗”。validate-opening 会查。",
+      "caption": ["<<最怪的那个已核事实（≤14 字），0.3–1.0 s 内出现>>"],
+      "$components": {"skeleton": "Stage", "craft": ["ArchivePhoto | LoupeMedia（Commons 真素材）| InkPath（已画到一半）", "HandNote"], "camera": "push-in（第 0 帧就在推）"}
     },
     {
-      "id": "B2", "role": "title", "at": "6–10 s",
-      "$why": "片名在媒介里出现：写出来（HandLettering）、剪出来（CutPaper）、贴上编目签（ArchivePhoto catalogue）。",
+      "id": "B2", "role": "tension", "at": "1.5–4 s",
+      "$why": "反差：为什么这件事怪——把开头那个画面和观众的常识并排（大 vs 小、活 vs 空、旧 vs 新）。前 3 秒至少 3 个节拍（主体落定、两个元素入场或变化）。",
+      "caption": ["<<一句反差 / 张力（≤14 字）>>"],
+      "$components": {"skeleton": "Split", "craft": ["WashBlob", "InkCircle", "HandNote"], "camera": "pan-follow 或 cinema.focus（在两样东西之间）"}
+    },
+    {
+      "id": "B2b", "role": "title", "at": "≥ 10 s，可省",
+      "$why": "片名推迟：要有就放在开放问题抛出之后，在媒介里出现（写出来 HandLettering / 剪出来 CutPaper / 贴编目签）。短片可以不要片名。",
       "caption": [],
       "$components": {"skeleton": "Stage", "craft": ["HandLettering", "Seal"], "camera": "pull-back（让出片名的位置）"}
     },
@@ -50,7 +58,8 @@
   ],
   "$rules": [
     "相邻两镜换骨架；每个构图 ≤ 12–15 s；全片 ≥ 4 种运镜 + 一个招牌镜头",
-    "转场在媒介里：分镜表 transition 用 slide（同一张纸上横移）/ drop（放下一张新纸），或 auto（皮肤缺省）",
+    "转场在媒介里：分镜表 transition 写 auto（皮肤缺省：journal / archive 真翻页 pageturn、papercut 揭纸 peel，画不了 WebGPU 时退回 slide / drop），或显式 slide / drop",
+    "开场照 references/narrative-hook.md 的冷开合约；节奏照 references/pacing-rhythm.md；镜头动机与景别见 references/camera-language.md",
     "画内必读标签 ≥ 48 设计 px（CRAFT_TYPE.label），每帧 ≤ 3 个",
     "每个选题先 commons-search；真素材进 ArchivePhoto / PinnedPhoto / LoupeMedia，署名自动上屏",
     "避免：暗底发光线、粒子、金色/冰蓝科技风、电子 BGM、名词→定义→升华"

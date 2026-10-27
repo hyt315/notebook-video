@@ -1,0 +1,106 @@
+{
+  "$blueprint": "mystery",
+  "$route": "handwritten-craft",
+  "family": "mystery",
+  "$about": "悬案式（3.6.0）：先给怪现象 / 结果 → 三条线索逐条摆上桌 → 排除一个“看起来很像”的错误嫌疑 → 揭晓。像侦探故事的公开结构，只借结构。",
+  "fits": "“为什么…”类问题：现象人人见过，原因反直觉（咖啡渍为什么一圈深边、天为什么是蓝的）",
+  "$howto": "手写组件路线的分镜蓝图（不走 compose-story）。先按 references/director-method.md 写 manifests/treatment.json，candidates 里写 family；再照每拍的 $components 写 scenes.tsx。秒数按 60–90 秒片子给出，括号里是占片长的比例，按台词伸缩。字幕每行 ≤14 字。 线索要可视化成桌面上的物件（照片、样本、笔记），每条线索一镜；揭晓时让线索自己连起来。",
+  "theme": "<<journal | papercut | archive>>",
+  "beats": [
+    {
+      "id": "M1",
+      "role": "phenomenon",
+      "at": "0–8 s（≈10%）",
+      "$why": "冷开：怪现象的特写，第 0 帧就在发生（咖啡渍正在干、圈正在变深）。一句话说“这很奇怪”的具体处，不问泛问题。",
+      "caption": [
+        "<<怪现象的具体描述>>"
+      ],
+      "$components": {
+        "skeleton": "Zoom",
+        "craft": [
+          "WashBlob(sweep) | PinnedPhoto（Commons 真素材）"
+        ],
+        "camera": "push-in（第 0 帧就在推）"
+      }
+    },
+    {
+      "id": "M2",
+      "role": "suspect",
+      "at": "8–20 s（≈15%）",
+      "$why": "嫌疑：观众心里的那个解释，演得很像真的（同样画在桌上，贴上“嫌疑 1”）。",
+      "caption": [
+        "<<多数人的解释>>"
+      ],
+      "$components": {
+        "skeleton": "Split",
+        "craft": [
+          "HandNote",
+          "InkCircle"
+        ],
+        "camera": "pan-follow"
+      }
+    },
+    {
+      "id": "M3",
+      "role": "clues",
+      "at": "20–45 s（≈35%）",
+      "$why": "三条线索，每条一镜、一个物件、一个数字；第二条线索开始和嫌疑矛盾。镜长 4–8 s，比前后都短（加速）。",
+      "caption": [
+        "<<线索一>>",
+        "<<线索二>>",
+        "<<线索三>>"
+      ],
+      "$components": {
+        "skeleton": "Corridor",
+        "craft": [
+          "ArchivePhoto | PinnedPhoto",
+          "HandNote（编号 1 / 2 / 3）"
+        ],
+        "camera": "cut 之间换景别：全 → 近 → 特写"
+      }
+    },
+    {
+      "id": "M4",
+      "role": "eliminate",
+      "at": "45–52 s（≈10%）",
+      "$why": "排除嫌疑：一个原生动作把错误解释划掉（墨线划叉 / 剪刀剪掉 / 盖“排除”章），前面留 0.5–1 s 安静。",
+      "caption": [
+        "<<为什么不是它>>"
+      ],
+      "$components": {
+        "skeleton": "Stage",
+        "craft": [
+          "InkPath（划掉）| CutPaper | Seal"
+        ],
+        "camera": "still → 落章时轻推"
+      }
+    },
+    {
+      "id": "M5",
+      "role": "reveal",
+      "at": "52–70 s（≈30%）",
+      "$why": "揭晓：线索被引线连到真正的原因；招牌镜头推近原因本身（≥ 12%）；回到 M1 的现象，这次观众看懂了。",
+      "caption": [
+        "<<真正的原因（≤14 字）>>",
+        "<<回到开头的现象>>"
+      ],
+      "$components": {
+        "skeleton": "Zoom",
+        "craft": [
+          "InkPath（引线把三条线索连起来）",
+          "Loupe | WashBlob"
+        ],
+        "camera": "招牌镜头：push-in ≥ 12%，然后锁定呼吸"
+      }
+    }
+  ],
+  "$rules": [
+    "线索必须都是已核事实（facts 带 url + 引文）；不能为了悬念编线索",
+    "揭晓要在片长 80% 之前，留出回扣的时间",
+    "开场照 references/narrative-hook.md 的冷开合约（第 0 帧有主体、首条字幕 ≤ 1 s、第一句不用“X 这个词 / 你知道吗”），validate-opening 会查",
+    "镜头动机、景别阶梯、镜长见 references/camera-language.md；招牌镜头真推 ≥ 12%",
+    "相邻两镜换骨架；每个构图 ≤ 12 s（更长就镜内换焦点）；镜长长短错开",
+    "每个选题先 commons-search；真素材进 ArchivePhoto / PinnedPhoto / LoupeMedia，署名自动上屏",
+    "避免：暗底发光线、粒子、金色/冰蓝科技风、电子 BGM、名词→定义→升华"
+  ]
+}

@@ -16,9 +16,9 @@
     "why_only_this_medium": "<<换成别的媒介为什么做不出>>"
   },
   "candidates": [
-    {"id": "A", "shape": "<<结构形状 + 开头画面 + 结尾>>"},
-    {"id": "B", "shape": "<<…>>"},
-    {"id": "C", "shape": "<<…>>"}
+    {"id": "A", "family": "<<medium-metaphor | kishotenketsu | mystery | scale-ladder | experiment | one-take-journey | myth-flip | lecture-arc>>", "shape": "<<结构形状 + 开头画面 + 结尾>>"},
+    {"id": "B", "family": "<<换一族：三个候选至少 2 族>>", "shape": "<<…>>"},
+    {"id": "C", "family": "<<…>>", "shape": "<<…>>"}
   ],
   "chosen": "A",
   "chosen_why": "<<为什么选它（观众真有的错误直觉？首尾呼应？）>>",

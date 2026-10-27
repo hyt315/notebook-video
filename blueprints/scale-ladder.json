@@ -1,0 +1,105 @@
+{
+  "$blueprint": "scale-ladder",
+  "$route": "handwritten-craft",
+  "family": "scale-ladder",
+  "$about": "尺度阶梯（3.6.0）：一个数字逐级放大或缩小，每一级配一个观众摸得到的参照物，最后落回观众手里。像《十的力量》（Powers of Ten）那样的公开结构，只借结构。",
+  "fits": "大到 / 小到难以想象的数字：十二亿间小屋子、一光年、细胞里的分子数",
+  "$howto": "手写组件路线的分镜蓝图（不走 compose-story）。先按 references/director-method.md 写 manifests/treatment.json，candidates 里写 family；再照每拍的 $components 写 scenes.tsx。秒数按 60–90 秒片子给出，括号里是占片长的比例，按台词伸缩。字幕每行 ≤14 字。 每一级的参照物必须换（指甲 → 手掌 → 房间 → 城市），而不是同一个数字越写越大；数字只做最后的题注。",
+  "theme": "<<journal | papercut | archive>>",
+  "beats": [
+    {
+      "id": "L1",
+      "role": "anchor",
+      "at": "0–8 s（≈12%）",
+      "$why": "冷开：第 0 帧是观众手边的那个东西（一块软木、一粒米），旁边已经写着那个吓人的数字的一半。",
+      "caption": [
+        "<<那个大数字，先说一半>>"
+      ],
+      "$components": {
+        "skeleton": "Stage",
+        "craft": [
+          "PinnedPhoto | InkPath（物件已画到一半）",
+          "HandNote"
+        ],
+        "camera": "push-in"
+      }
+    },
+    {
+      "id": "L2",
+      "role": "rung-1",
+      "at": "8–22 s（≈18%）",
+      "$why": "第一级：数得出来的小单位（一行 60 个格子），一格一格画出来，观众跟着数。",
+      "caption": [
+        "<<第一级：数得出来>>"
+      ],
+      "$components": {
+        "skeleton": "Corridor",
+        "craft": [
+          "InkPath（计数格 / 刻度）",
+          "HandNote"
+        ],
+        "camera": "pan-follow（跟着笔走）"
+      }
+    },
+    {
+      "id": "L3",
+      "role": "rung-2",
+      "at": "22–36 s（≈18%）",
+      "$why": "第二级：一行变一面——格子密度变化表现数量（点阵越来越密），参照物换成更大的东西。",
+      "caption": [
+        "<<第二级：一面>>"
+      ],
+      "$components": {
+        "skeleton": "Split",
+        "craft": [
+          "InkPath（点阵）",
+          "WashBlob"
+        ],
+        "camera": "pull-back（从一行拉到一面）"
+      }
+    },
+    {
+      "id": "L4",
+      "role": "rung-3",
+      "at": "36–50 s（≈18%）",
+      "$why": "第三级：一面变一块——到这里数字第一次完整出现，作为题注，不是滚动大数字。",
+      "caption": [
+        "<<完整的数字（题注）>>"
+      ],
+      "$components": {
+        "skeleton": "Zoom",
+        "craft": [
+          "CutPaper | InkPath",
+          "Seal（数字盖章）"
+        ],
+        "camera": "pull-back ≥ 12%（招牌镜头：拉出尺度）"
+      }
+    },
+    {
+      "id": "L5",
+      "role": "back-to-you",
+      "at": "50–70 s（≈34%）",
+      "$why": "落回你手里：回到 L1 的物件，同一构图，只变一处（现在观众知道里面有多少）。",
+      "caption": [
+        "<<落回观众手里的一句>>"
+      ],
+      "$components": {
+        "skeleton": "Stage",
+        "craft": [
+          "同 L1 的构图",
+          "一处变化"
+        ],
+        "camera": "still → 极缓推"
+      }
+    }
+  ],
+  "$rules": [
+    "每一级只换一个变量（尺度），参照物与画法保持同一媒介",
+    "数字要可核对：facts 写清计算过程或原始出处",
+    "开场照 references/narrative-hook.md 的冷开合约（第 0 帧有主体、首条字幕 ≤ 1 s、第一句不用“X 这个词 / 你知道吗”），validate-opening 会查",
+    "镜头动机、景别阶梯、镜长见 references/camera-language.md；招牌镜头真推 ≥ 12%",
+    "相邻两镜换骨架；每个构图 ≤ 12 s（更长就镜内换焦点）；镜长长短错开",
+    "每个选题先 commons-search；真素材进 ArchivePhoto / PinnedPhoto / LoupeMedia，署名自动上屏",
+    "避免：暗底发光线、粒子、金色/冰蓝科技风、电子 BGM、名词→定义→升华"
+  ]
+}

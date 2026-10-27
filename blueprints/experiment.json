@@ -1,0 +1,105 @@
+{
+  "$blueprint": "experiment",
+  "$route": "handwritten-craft",
+  "family": "experiment",
+  "$about": "对照实验（3.6.0）：同一种媒介做两份，并排，只改一个变量，让观众亲眼看到差别。科学课的对照组 / 实验组结构，只借结构。",
+  "fits": "“如果…会怎样”、因果关系、一个变量决定结果（盐水和清水、对折剪和不对折剪、有无纠错码）",
+  "$howto": "手写组件路线的分镜蓝图（不走 compose-story）。先按 references/director-method.md 写 manifests/treatment.json，candidates 里写 family；再照每拍的 $components 写 scenes.tsx。秒数按 60–90 秒片子给出，括号里是占片长的比例，按台词伸缩。字幕每行 ≤14 字。 两份必须同时在画面里、同一时刻发生；镜头不在两边之间来回甩，而是锁定让观众自己比。",
+  "theme": "<<journal | papercut | archive>>",
+  "beats": [
+    {
+      "id": "E1",
+      "role": "result-first",
+      "at": "0–8 s（≈12%）",
+      "$why": "冷开：先给结果——两份已经不一样了（一边圈深、一边均匀），第 0 帧就并排。",
+      "caption": [
+        "<<结果：两份不一样>>"
+      ],
+      "$components": {
+        "skeleton": "Split",
+        "craft": [
+          "WashBlob ×2 | CutPaper ×2",
+          "HandNote（A / B 标签）"
+        ],
+        "camera": "establish（全景，两份都完整入画）"
+      }
+    },
+    {
+      "id": "E2",
+      "role": "setup",
+      "at": "8–22 s（≈20%）",
+      "$why": "倒回去：两份起点完全相同，只有一个变量不同——把那个变量画出来并标红（唯一强调色）。",
+      "caption": [
+        "<<只改了一样东西>>"
+      ],
+      "$components": {
+        "skeleton": "Split",
+        "craft": [
+          "PaperSheet ×2",
+          "InkCircle（圈出变量）"
+        ],
+        "camera": "cinema.focus 推到变量上（≥ 12%），再拉回"
+      }
+    },
+    {
+      "id": "E3",
+      "role": "run",
+      "at": "22–45 s（≈35%）",
+      "$why": "同时开始：两边同一时刻发生原生动作（晕染 / 剪 / 盖章），镜头锁定不动，差别自己长出来。动作前留 0.5–1 s 安静。",
+      "caption": [
+        "<<过程中的一句观察>>"
+      ],
+      "$components": {
+        "skeleton": "Split",
+        "craft": [
+          "WashBlob(sweep) ×2 | CutPaper(backlit) ×2"
+        ],
+        "camera": "still（招牌镜头是动作本身；需要推就推变量那一侧 ≥ 12%）"
+      }
+    },
+    {
+      "id": "E4",
+      "role": "why",
+      "at": "45–58 s（≈18%）",
+      "$why": "为什么：特写差别发生的那一处，引线写出机制。",
+      "caption": [
+        "<<机制（≤14 字）>>"
+      ],
+      "$components": {
+        "skeleton": "Zoom",
+        "craft": [
+          "Loupe",
+          "InkPath（引线）",
+          "HandNote"
+        ],
+        "camera": "insert 或 push-in（特写）"
+      }
+    },
+    {
+      "id": "E5",
+      "role": "you",
+      "at": "58–70 s（≈15%）",
+      "$why": "转向你：观众生活里哪一份是 A、哪一份是 B；回到 E1 的并排构图。",
+      "caption": [
+        "<<你生活里的那一份>>"
+      ],
+      "$components": {
+        "skeleton": "Split",
+        "craft": [
+          "同 E1 的构图",
+          "一处变化"
+        ],
+        "camera": "pull-back"
+      }
+    }
+  ],
+  "$rules": [
+    "两份只差一个变量；其余（颜色、尺寸、位置、时间）完全一致，否则对照不成立",
+    "真实实验的数据写进 facts，注明实验条件",
+    "开场照 references/narrative-hook.md 的冷开合约（第 0 帧有主体、首条字幕 ≤ 1 s、第一句不用“X 这个词 / 你知道吗”），validate-opening 会查",
+    "镜头动机、景别阶梯、镜长见 references/camera-language.md；招牌镜头真推 ≥ 12%",
+    "相邻两镜换骨架；每个构图 ≤ 12 s（更长就镜内换焦点）；镜长长短错开",
+    "每个选题先 commons-search；真素材进 ArchivePhoto / PinnedPhoto / LoupeMedia，署名自动上屏",
+    "避免：暗底发光线、粒子、金色/冰蓝科技风、电子 BGM、名词→定义→升华"
+  ]
+}
