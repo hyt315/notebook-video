@@ -111,6 +111,8 @@ if (!flag('no-gates')) {
     ['validate-media.py', [project], true],
     // 3.3.0 导演层：手作皮肤缺 treatment.json / 没搜过 Commons 即停；flat / cel 只提示
     ['validate-treatment.py', [project], true],
+    // 3.6.0 开场 3 秒：第 0 帧就有事件、首条字幕 ≤ 1 s、片名不当第一镜、前 3 秒 ≥ 3 拍、第一句不是泛问句（手作 P0，flat / cel 只提示）
+    ['validate-opening.py', [project], true],
     // 3.4.0 背景库：库本身（来源 / 许可 / sha256 / 对比度）硬拦；分镜里相邻镜同一张背景只提示
     ['validate-backgrounds.py', [project], true],
     ['validate-backgrounds.py', [project, '--shots'], true],
@@ -237,6 +239,11 @@ if (renderOut) {
   const sheets = [];
   for (let i = 0; i < pngs.length; i += 12) { const out = path.join(project, 'renders', `frames-${i / 12 + 1}.jpg`); await sheet(pngs.slice(i, i + 12), out); sheets.push(out); }
   // 3.3.0：字幕真的读得出吗？（RapidOCR 可选；没装 → SKIPPED，不阻断；P0 记进报告并提示，不自动拦）
+  // 3.6.0：开场像素复核（第 0 / 15 / 45 / 90 帧有主体、在变化）。成片已出，不拦，P0 记进报告。
+  const op = await py('validate-opening.py', [project, '--video', renderOut], {capture: true});
+  results.push({gate: 'validate-opening.py --video', code: op.code, hard: false, verdict: (op.out.match(/结论[^\n]*/) ?? [op.code ? 'FAIL' : 'PASS'])[0]});
+  console.log(`  ${op.code ? '·' : '✓'} validate-opening --video ${results.at(-1).verdict}`);
+  if (op.code) console.log(op.out.split('\n').filter((l) => /P0/.test(l)).slice(0, 6).map((l) => `    ${l}`).join('\n'));
   step('字幕 OCR 复核（validate-ocr，可选）');
   const ocr = await py('validate-ocr.py', [project, '--video', renderOut, '--json', path.join(project, 'renders', 'ocr.json')], {capture: true});
   const ocrVerdict = /SKIPPED/.test(ocr.out) ? 'SKIPPED（未装 RapidOCR）' : (ocr.out.match(/结论[^\n]*/) ?? [ocr.code ? 'FAIL' : 'PASS'])[0];
