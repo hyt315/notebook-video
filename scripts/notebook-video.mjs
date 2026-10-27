@@ -456,7 +456,8 @@ const render = async ([projectArg, outputArg, composition = 'NotebookVideoFilm']
   } else {
     await remotionRender({project, composition, output: raw, concurrency, colorTagged: true, scale: scaleArg});
   }
-  // 响度目标可调。有人声 −16 LUFS（缺省）；静音占位旁白（无 TTS）时 make-video 传 −24，免得把音效整体抬高 14 dB。
+  // 响度目标可调（NOTEBOOK_VIDEO_LUFS）。缺省 −16 LUFS、真峰 −1.5 dBTP；3.6.0 起静音占位旁白的片子也用 −16
+  //（AES TD1004：流媒体 −16…−20，−23/−24 在手机上不够响）。
   const LUFS = process.env.NOTEBOOK_VIDEO_LUFS || '-16';
   // 两遍响度规范化：先测（linear 模式需要 measured_* 才能同时打准 LUFS 与真峰）
   const probe = await run('ffmpeg', ['-hide_banner', '-i', raw, '-af', `loudnorm=I=${LUFS}:LRA=11:TP=-1.5:print_format=json`, '-f', 'null', '-'], {capture: true, allowFailure: true});
@@ -595,7 +596,7 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   const peak = Number(loudLog.match(/Input True Peak:\s*([-0-9.]+) dBTP/)?.[1]);
   if (!Number.isFinite(integrated) || !Number.isFinite(peak)) fail('Unable to parse loudness analysis from FFmpeg output.');
   const lufsTarget = Number(process.env.NOTEBOOK_VIDEO_LUFS || -16);
-  if (integrated < lufsTarget - 2 || integrated > lufsTarget + 2) fail(`Integrated loudness outside target range: ${integrated} LUFS (target ${lufsTarget}; silent-narration films use NOTEBOOK_VIDEO_LUFS=-24)`);
+  if (integrated < lufsTarget - 2 || integrated > lufsTarget + 2) fail(`Integrated loudness outside target range: ${integrated} LUFS (target ${lufsTarget}; set NOTEBOOK_VIDEO_LUFS to validate another target)`);
   if (peak > -1.5) fail(`True peak above the documented -1.5 dBTP ceiling: ${peak} dBTP`);
   console.log(`audio valid: ${integrated.toFixed(1)} LUFS, ${peak.toFixed(1)} dBTP`);
 
@@ -630,9 +631,9 @@ const pythonCommandMap = new Map([
   ['validate-presentation', ['validate-presentation.py']],
   // 3.3.0：导演层门禁、真实素材检索（Commons / Openverse）、渲染后 OCR 可读性抽查
   ['validate-treatment', ['validate-treatment.py']],
-  ['validate-media', ['validate-media.py']],
   ['validate-opening', ['validate-opening.py']],
   ['silent-timing', ['silent-timing.py']],
+  ['validate-media', ['validate-media.py']],
   ['commons', ['commons-search.py']],
   ['prepare-media', ['prepare-media.py']],
   ['validate-ocr', ['validate-ocr.py']],

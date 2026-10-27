@@ -219,8 +219,9 @@ if (flag('stills')) {
 if (renderOut) {
   step(`整片渲染 → ${renderOut}（scale ${scale}）`);
   process.env.NOTEBOOK_VIDEO_SCALE = scale;
-  // 无 TTS：旁白是静音占位 → 整片响度目标 −24 LUFS（音效 / 音乐床保持在舒服的电平）；接入真人声后去掉这一行即 −16
-  if (!process.env.NOTEBOOK_VIDEO_LUFS) process.env.NOTEBOOK_VIDEO_LUFS = '-24';
+  // 3.6.0：静音旁白片也规范到 −16 LUFS（真峰 ≤ −1.5 dBTP），与有人声的片子同一目标。3.5.0 及以前是 −24：
+  // AES TD1004 建议流媒体 −16…−20 LUFS，并点名 −23/−24 在手机上开到最大也不够响；YouTube 只压低过响的内容、不抬高轻的。
+  // 要回到旧电平：NOTEBOOK_VIDEO_LUFS=-24。
   const r = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'render', project, renderOut]);
   if (r.code) die('渲染失败（渲染期门禁或 Remotion 报错，见上）');
   step('成片门禁：静止段 / 编码 / 时长');
@@ -238,12 +239,12 @@ if (renderOut) {
   }
   const sheets = [];
   for (let i = 0; i < pngs.length; i += 12) { const out = path.join(project, 'renders', `frames-${i / 12 + 1}.jpg`); await sheet(pngs.slice(i, i + 12), out); sheets.push(out); }
-  // 3.3.0：字幕真的读得出吗？（RapidOCR 可选；没装 → SKIPPED，不阻断；P0 记进报告并提示，不自动拦）
   // 3.6.0：开场像素复核（第 0 / 15 / 45 / 90 帧有主体、在变化）。成片已出，不拦，P0 记进报告。
   const op = await py('validate-opening.py', [project, '--video', renderOut], {capture: true});
   results.push({gate: 'validate-opening.py --video', code: op.code, hard: false, verdict: (op.out.match(/结论[^\n]*/) ?? [op.code ? 'FAIL' : 'PASS'])[0]});
   console.log(`  ${op.code ? '·' : '✓'} validate-opening --video ${results.at(-1).verdict}`);
   if (op.code) console.log(op.out.split('\n').filter((l) => /P0/.test(l)).slice(0, 6).map((l) => `    ${l}`).join('\n'));
+  // 3.3.0：字幕真的读得出吗？（RapidOCR 可选；没装 → SKIPPED，不阻断；P0 记进报告并提示，不自动拦）
   step('字幕 OCR 复核（validate-ocr，可选）');
   const ocr = await py('validate-ocr.py', [project, '--video', renderOut, '--json', path.join(project, 'renders', 'ocr.json')], {capture: true});
   const ocrVerdict = /SKIPPED/.test(ocr.out) ? 'SKIPPED（未装 RapidOCR）' : (ocr.out.match(/结论[^\n]*/) ?? [ocr.code ? 'FAIL' : 'PASS'])[0];

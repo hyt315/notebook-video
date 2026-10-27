@@ -46,6 +46,10 @@ def main() -> None:
     parser.add_argument("--max-lead-ms", type=int, default=80)
     parser.add_argument("--max-chars", type=int, default=16,
                         help=" characters per subtitle line after stripping trailing punctuation (0 = off)")
+    # 3.6.0 单条字幕在屏时长（到下一条出现为止；最后一条不查）：Netflix 通用字幕要求最短 5/6 s、最长 7 s
+    # （https://partnerhelp.netflixstudios.com/hc/en-us/articles/215758617）。短于下限读不完 = 失败；长于上限只警告。
+    parser.add_argument("--min-cue-sec", type=float, default=0.83, help="minimum on-screen seconds per cue (0 = off)")
+    parser.add_argument("--max-cue-sec", type=float, default=7.0, help="warn above this many on-screen seconds per cue (0 = off)")
     args = parser.parse_args()
 
     source = json.loads(args.tts_words_json.read_text(encoding="utf-8"))
@@ -77,12 +81,27 @@ def main() -> None:
             failures.append(f"cue {index}: visual lead {lead}ms exceeds 0–{args.max_lead_ms}ms")
         flattened.extend(words)
 
+    warnings = []
+    for index, cue in enumerate(cues, 1):
+        if not isinstance(cue.get("start_ms"), (int, float)):
+            continue
+        if index >= len(cues) or not isinstance(cues[index].get("start_ms"), (int, float)):
+            continue  # 最后一条留在屏上直到片尾，时长由片尾决定
+        shown = (cues[index]["start_ms"] - cue["start_ms"]) / 1000
+        if args.min_cue_sec > 0 and shown < args.min_cue_sec:
+            failures.append(f"cue {index}: on screen {shown:.2f}s < {args.min_cue_sec}s ({cue.get('text')!r}); merge it with a neighbour "
+                            f"or slow the reading speed (silent-timing.py --cps)")
+        if args.max_cue_sec > 0 and shown > args.max_cue_sec:
+            warnings.append(f"cue {index}: on screen {shown:.2f}s > {args.max_cue_sec}s ({cue.get('text')!r}); split it or let the gap breathe without a caption")
+
     if [core(word) for word in flattened] != [core(word) for word in source]:
         failures.append("flattened cue words do not exactly match the complete TTS word stream")
     if failures:
         for failure in failures:
             print(f"SYNC ERROR: {failure}")
         raise SystemExit(f"{len(failures)} caption sync failure(s)")
+    for warning in warnings:
+        print(f"SYNC WARN: {warning}")
     print(f"Validated {len(source)} TTS word boundaries across {len(cues)} synchronized cues")
 
 

@@ -1127,6 +1127,8 @@ def main() -> int:
     ap.add_argument("project")
     ap.add_argument("--report")
     ap.add_argument("--check", action="store_true", help="只检查不写盘")
+    # 3.6.0：读速可配置（加权字/秒，1–9）。也可在 story.json 顶层写 "cps"。缺省 4.5（组件路线的既有速度）。
+    ap.add_argument("--cps", type=float, help="无 TTS 时的字幕读速（字/秒，1–9；缺省 4.5，或 story.json 的 cps）")
     a = ap.parse_args()
     sp = Path(a.story)
     if not sp.is_file():
@@ -1138,6 +1140,13 @@ def main() -> int:
         print(f"story.json 不是合法 JSON：第 {e.lineno} 行第 {e.colno} 列 —— {e.msg}", file=sys.stderr)
         return 1
     story["_dir"] = str(sp.parent.resolve())
+    cps = a.cps or story.get("cps")
+    if cps is not None:
+        if not isinstance(cps, (int, float)) or not 1.0 <= float(cps) <= 9.0:
+            print(f"cps={cps!r} 超出 1–9 字/秒（validate-presentation 的成人读速上限是 9）", file=sys.stderr)
+            return 2
+        global CPS, CHAR_MS
+        CPS, CHAR_MS = float(cps), 1000 / float(cps)
     setup_break_rule(Path(a.project))
     p = Problems()
     left = sorted(set(re.findall(r"<<([^>]*)>>", json.dumps(story, ensure_ascii=False))))
