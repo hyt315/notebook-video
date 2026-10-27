@@ -162,8 +162,17 @@ const sheet = async (pngs, out) => {
   return run('ffmpeg', ['-y', '-loglevel', 'error', ...inputs, ...blank, '-filter_complex', `${scaleF};${Array.from({length: n}, (_, i) => `[v${i}]`).join('')}xstack=inputs=${n}:layout=${layout}`, out]);
 };
 const cli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
+// 3.5.0 真卷页：render / fx-probe 把结论写在 renders/.fx-probe.json。本片用到 pageturn / peel 却没开成 → P1（片子照出，转场已退回 slide / drop）。
+const fxNote = () => {
+  try {
+    const fx = JSON.parse(fs.readFileSync(path.join(project, 'renders', '.fx-probe.json'), 'utf8'));
+    if (!fx.used) return [];
+    return fx.on ? [`- 真卷页（pageturn / peel）：已开启（${fx.browser}；探针 ${fx.probeMs ?? '?'} ms）`]
+      : [`- **P1 真卷页未开启**：${fx.reason}。本片的 pageturn / peel 已自动退回 slide / drop；要开：装完整版 Chromium（\`npx playwright install chromium\` 或设 NOTEBOOK_VIDEO_FX_BROWSER），再跑 \`node scripts/notebook-video.mjs fx-probe <工程> --force\`（见 references/fx-effects.md）`];
+  } catch { return []; }
+};
 const writeReport = (frames, sheets, extra = '') => {
-  const lines = [`# make-video 报告 · ${story.title ?? ''}`, '', `- 时长：${rep.frames} 帧（${(rep.frames / 30).toFixed(1)} 秒）`, `- 自动修：${rep.fixes.length} 条 · 建议：${rep.hints.length} 条`, '',
+  const lines = [`# make-video 报告 · ${story.title ?? ''}`, '', `- 时长：${rep.frames} 帧（${(rep.frames / 30).toFixed(1)} 秒）`, `- 自动修：${rep.fixes.length} 条 · 建议：${rep.hints.length} 条`, ...fxNote(), '',
     '## 门禁', ...results.map((r) => `- ${r.code ? (r.hard ? '✗' : '·') : '✓'} ${r.gate} — ${r.verdict}`), '',
     '## 自动修', ...rep.fixes.map((x) => `- ${x}`), '', '## 建议（不拦）', ...rep.hints.map((x) => `- ${x}`), '',
     '## 静帧（看：字是否完整、强调是否对上台词关键词、镜头是否切到标题）', ...frames.map((x) => `- f${x.f} ${x.shot} ${x.what}`), '',
@@ -180,6 +189,10 @@ if (flag('stills')) {
   const bundle = path.join(project, 'renders', '.bundle');
   fs.rmSync(bundle, {recursive: true, force: true});
   if ((await node([cli, 'bundle', 'src/index.tsx', '--out-dir', bundle], {cwd: project, capture: true})).code) die('remotion bundle 失败');
+  // 3.5.0：先探一次真卷页能力，结论进报告（P1）。静帧本身不走完整版 Chrome（每帧 ~3 s）：静帧取的是镜头开场 / 关键词 / 镜尾，
+  // 不落在镜头开头 22 帧的卷页窗口里（只有短于 66 帧的镜头例外，那张静帧里看到的是退回后的 slide / drop）。
+  const fxr = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'fx-probe', project], {capture: true});
+  try { const fx = JSON.parse(fxr.out.slice(fxr.out.indexOf('{'))); if (fx.used) console.log(fx.on ? '  真卷页：探针通过（成片里开启）' : `  ⚠ P1 真卷页未开启：${fx.reason}`); } catch { /* 探针输出读不出：按未开启处理 */ }
   const frames = frameList();
   const dir = path.join(project, 'renders', 'stills');
   fs.mkdirSync(dir, {recursive: true});
