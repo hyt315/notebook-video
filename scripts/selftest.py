@@ -101,6 +101,9 @@ def main() -> int:
         "assets/lecture-template/public/bg/bg-archive-chapter.jpg",
         "assets/lecture-template/public/bg/bg-archive-quiet.jpg",
         "assets/lecture-template/manifests/visual-assets.json",
+        "assets/lecture-template/manifests/backgrounds.json",
+        "scripts/validate-backgrounds.py",
+        "references/background-library.md",
         "assets/lecture-template/scripts/tts-openai-compatible.py",
         "assets/lecture-template/manifests/asset-manifest.json",
         "assets/lecture-template/manifests/caption-cues.json",
@@ -257,6 +260,33 @@ def main() -> int:
             check("负向：音效增益越界被拦", r2.returncode == 1 and "SFX_GAIN" in r2.stdout, f"rc={r2.returncode}")
     else:
         check("音效库门禁（需要 ffmpeg）", False, "ffmpeg 不在 PATH，无法回归音效库门禁")
+
+    # ---- 3.4.0 背景库：模板库必须通过；改坏许可 / 改动文件（sha256）/ 相邻重复必须被拦或提示 ----
+    tpl = ROOT / "assets" / "lecture-template"
+    vb = ROOT / "scripts" / "validate-backgrounds.py"
+    good = run(sys.executable, str(vb), str(tpl), "--min-per-skin", "journal=8,papercut=8,archive=8,flat=4,cel=4")
+    check("背景库：模板通过 validate-backgrounds", good.returncode == 0, f"rc={good.returncode}")
+    with tempfile.TemporaryDirectory() as td3:
+        proj = Path(td3) / "p"
+        (proj / "manifests").mkdir(parents=True)
+        lib = json.loads((tpl / "manifests" / "backgrounds.json").read_text(encoding="utf-8"))
+        one = next(e for e in lib["backgrounds"] if e["id"] == "journal/ruled")
+        (proj / Path(one["file"]).parent).mkdir(parents=True)
+        shutil.copy(tpl / one["file"], proj / one["file"])
+        bad = dict(lib, backgrounds=[dict(one, license="CC-BY-SA-4.0")])
+        (proj / "manifests" / "backgrounds.json").write_text(json.dumps(bad), encoding="utf-8")
+        r1 = run(sys.executable, str(vb), str(proj))
+        check("负向：背景许可不在白名单被拦", r1.returncode == 1 and "白名单" in r1.stderr, f"rc={r1.returncode}")
+        (proj / "manifests" / "backgrounds.json").write_text(json.dumps(dict(lib, backgrounds=[one])), encoding="utf-8")
+        with open(proj / one["file"], "ab") as fh:
+            fh.write(b"x")
+        r2 = run(sys.executable, str(vb), str(proj))
+        check("负向：背景文件被改（sha256）被拦", r2.returncode == 1 and "sha256" in r2.stderr, f"rc={r2.returncode}")
+        (proj / "manifests" / "shots.resolved.json").write_text(json.dumps({"theme": "journal", "shots": [
+            {"id": "S1", "bg": "journal/ruled", "bgFile": "bg/lib/journal-ruled.webp"},
+            {"id": "S2", "bg": "journal/ruled", "bgFile": "bg/lib/journal-ruled.webp"}]}), encoding="utf-8")
+        r3 = run(sys.executable, str(vb), str(proj), "--shots")
+        check("背景分配：相邻镜重复给出 P1 提示", r3.returncode == 0 and "相邻镜重复" in r3.stdout, f"rc={r3.returncode}")
 
     failed = [r for r in results if not r[1]]
     if not failed:

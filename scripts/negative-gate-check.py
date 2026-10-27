@@ -376,6 +376,13 @@ def mk_skill_copy():
         if not os.path.exists(q):
             os.makedirs(os.path.dirname(q), exist_ok=True)
             open(q, 'wb').close()
+    # 3.4.0 背景库的 WebP 同理（一致性检查只查 is_file）
+    lib = json.load(io.open(os.path.join(SKILL, 'assets/lecture-template/manifests/backgrounds.json'), encoding='utf-8'))
+    for e in lib.get('backgrounds', []):
+        q = os.path.join(td, 'assets/lecture-template', e['file'])
+        if not os.path.exists(q):
+            os.makedirs(os.path.dirname(q), exist_ok=True)
+            open(q, 'wb').close()
     return td
 
 
@@ -1404,6 +1411,81 @@ case('M8 media · 尺寸写成同文件常量表达式，放大 >1.5 → 照样�
 cleanup(td)
 td = media_proj(scene='<MediaFrame f={f} id="pr" x={L.x} y={L.y} w={L.w} h={L.h} focus="diff" focusZoom={2.4} />\n')
 case('M9 media · 尺寸来自布局对象量不出 → 按占满画布估，可能糊 → 提醒', [('must_warn:量不出', 'validate-media', run([PY, VMEDIA, td]))])
+cleanup(td)
+
+# ── BG · 3.4.0 背景库门禁（validate-backgrounds.py）+ resolve-shots 的背景解析 ──
+# 判据逐条：许可白名单、CC BY 必须署名、sha256 绑定、字幕区对比度（按 manifest 指标）、亮底、
+# 显式 bg 不存在 / 跨皮肤 → resolve-shots 拦；自动轮换绝不相邻重复；没有背景库的旧工程解析结果逐字节不变。
+VBG = os.path.join(SKILL, 'scripts/validate-backgrounds.py')
+_LIB = json.load(io.open(os.path.join(TPL, 'manifests/backgrounds.json'), encoding='utf-8'))
+
+
+def bg_proj(mutate):
+    td = tempfile.mkdtemp(prefix='nv-bg-')
+    os.makedirs(os.path.join(td, 'manifests'), exist_ok=True)
+    e = json.loads(json.dumps(next(x for x in _LIB['backgrounds'] if x['id'] == 'journal/dots')))
+    os.makedirs(os.path.join(td, os.path.dirname(e['file'])), exist_ok=True)
+    shutil.copy(os.path.join(TPL, e['file']), os.path.join(td, e['file']))
+    mutate(e)
+    io.open(os.path.join(td, 'manifests/backgrounds.json'), 'w', encoding='utf-8').write(json.dumps(dict(_LIB, backgrounds=[e]), ensure_ascii=False))
+    return td
+
+
+td = bg_proj(lambda e: None)
+case('BGL0 背景库 · 原样一张 → 通过', [('must_pass', 'validate-backgrounds', run([PY, VBG, td]))])
+cleanup(td)
+td = bg_proj(lambda e: e.update(license='CC-BY-NC-4.0'))
+case('BGL1 背景库 · NC 许可 → 拦', [('must_block:白名单', 'validate-backgrounds', run([PY, VBG, td]))])
+cleanup(td)
+td = bg_proj(lambda e: (e.update(license='CC-BY-4.0', attribution=''), e['source'].pop('url', None)))
+case('BGL2 背景库 · CC BY 无署名无链接 → 拦', [('must_block:署名', 'validate-backgrounds', run([PY, VBG, td]))])
+cleanup(td)
+td = bg_proj(lambda e: e['metrics'].update(zone_p05_lum=0.05))
+case('BGL3 背景库 · 字幕区有深色装饰（最暗 5 % 过暗）→ 拦', [('must_block:字幕区有深色装饰', 'validate-backgrounds', run([PY, VBG, td]))])
+cleanup(td)
+td = bg_proj(lambda e: e['metrics'].update(mean_lum=0.3))
+case('BGL4 背景库 · 暗底 → 拦', [('must_block:不是亮底', 'validate-backgrounds', run([PY, VBG, td]))])
+cleanup(td)
+td = bg_proj(lambda e: e.update(sha256='0' * 64))
+case('BGL5 背景库 · sha256 对不上 → 拦', [('must_block:sha256', 'validate-backgrounds', run([PY, VBG, td]))])
+cleanup(td)
+
+
+def lib_proj(mutate, theme='flat'):
+    def m(doc):
+        doc['theme'] = theme
+        mutate(doc)
+        return doc
+    td, rc, out = mkproj(m)
+    shutil.copy(os.path.join(TPL, 'manifests/backgrounds.json'), os.path.join(td, 'manifests/backgrounds.json'))
+    return td
+
+
+td = lib_proj(lambda d: d['shots'][0].update(bg='no-such-paper'))
+case('BGL6 分镜 · 显式 bg 不在背景库 → resolve-shots 拦并列出可选名', [('must_block:不在背景库', 'resolve-shots', resolve(td))])
+cleanup(td)
+td = lib_proj(lambda d: d['shots'][0].update(bg='journal/ruled'))
+case('BGL7 分镜 · 显式 bg 属于别的皮肤 → 拦', [('must_block:属于 journal 皮肤', 'resolve-shots', resolve(td))])
+cleanup(td)
+td = lib_proj(lambda d: None)
+_r = resolve(td)
+_res = json.load(io.open(os.path.join(td, 'manifests/shots.resolved.json'), encoding='utf-8'))
+_files = [s.get('bgFile') for s in _res['shots']]
+_adj = sum(1 for a, b in zip(_files, _files[1:]) if a == b)
+case('BGL8 分镜 · 自动轮换：每镜都有 bgFile、相邻不重复、门禁无 P1', [
+    ('must_pass', 'resolve-shots', _r),
+    ('must_pass', f'bgFile 全有 {all(_files)} · 相邻重复 {_adj}', (0 if all(_files) and _adj == 0 else 1, '')),
+    ('must_pass', 'validate-backgrounds --shots', run([PY, VBG, td, '--shots']))])
+cleanup(td)
+td = lib_proj(lambda d: (d['shots'][1].update(bg='mesh-mint'), d['shots'][2].update(bg='flat/mesh-mint')))
+resolve(td)
+case('BGL9 分镜 · 显式写了相邻同一张 → P1 提示（不拦）', [('must_warn:相邻镜重复', 'validate-backgrounds --shots', run([PY, VBG, td, '--shots']))])
+cleanup(td)
+td, _rc, _out = mkproj()
+_before = io.open(os.path.join(td, 'src/shots.ts'), encoding='utf-8').read()
+case('BGL10 分镜 · 没有背景库的旧工程 → 不出 bgFile（3.3.0 行为）', [
+    ('must_pass', 'resolve-shots', (_rc, _out)),
+    ('must_absent:bgFile', 'shots.ts 不含 bgFile', (1, _before))])
 cleanup(td)
 
 print()

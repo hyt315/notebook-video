@@ -382,6 +382,27 @@ def main() -> None:
                     problems.append(f"missing theme background: assets/lecture-template/public/{rel}")
                 if f"'{rel}'" not in src_text:
                     problems.append(f"theme {theme_id}.tsx does not map variant {variant} to '{rel}'")
+        # 3.4.0 背景库：manifest 在、每张图在、每个手作皮肤 ≥ 8 张 / flat、cel ≥ 4 张新增库背景、
+        # 门禁里的皮肤墨色与 theme/*.tsx 的 palette.ink 一致（完整的 sha256 / 许可 / 对比度由 validate-backgrounds.py 查）。
+        bg_lib = SKILL / 'assets' / 'lecture-template' / 'manifests' / 'backgrounds.json'
+        if not bg_lib.is_file():
+            problems.append('missing background library manifest: assets/lecture-template/manifests/backgrounds.json')
+        else:
+            entries = json.loads(bg_lib.read_text(encoding='utf-8')).get('backgrounds', [])
+            need = {'journal': 8, 'papercut': 8, 'archive': 8, 'flat': 4, 'cel': 4}
+            for skin, n in need.items():
+                have = sum(1 for e in entries if e.get('skin') == skin and not e.get('legacy'))
+                if have < n:
+                    problems.append(f"background library: {skin} has {have} library backgrounds, needs >= {n}")
+            for e in entries:
+                if not (SKILL / 'assets' / 'lecture-template' / str(e.get('file', ''))).is_file():
+                    problems.append(f"background library file missing: assets/lecture-template/{e.get('file')}")
+            vb_text = (SKILL / 'scripts' / 'validate-backgrounds.py').read_text(encoding='utf-8', errors='ignore') if (SKILL / 'scripts' / 'validate-backgrounds.py').is_file() else ''
+            for theme_id in THEME_IDS:
+                tsx = (theme_dir / f'{theme_id}.tsx').read_text(encoding='utf-8', errors='ignore') if (theme_dir / f'{theme_id}.tsx').is_file() else ''
+                m = re.search(r"\bink:\s*'(#[0-9a-fA-F]{6})'", tsx)
+                if m and f'"{theme_id}": "{m.group(1).lower()}"' not in vb_text.lower():
+                    problems.append(f"validate-backgrounds.py INK[{theme_id}] must equal {theme_id}.tsx palette.ink {m.group(1)}")
         for removed in ('paper.tsx', 'sticker.tsx'):
             if (theme_dir / removed).exists():
                 problems.append(f"removed theme file is back: assets/lecture-template/src/theme/{removed} (paper / sticker were removed in 3.2.0)")
@@ -455,7 +476,7 @@ def main() -> None:
             "templates_validated": ["lecture-template"],
         }, indent=2))
     else:
-        print('Skill-wide consistency validation passed: lecture template valid (flat + cel + journal/papercut/archive, 3 backgrounds each), no obsolete renderer residue, removed example project, stale render inputs or contract mismatch')
+        print('Skill-wide consistency validation passed: lecture template valid (flat + cel + journal/papercut/archive, 3 backgrounds each + background library), no obsolete renderer residue, removed example project, stale render inputs or contract mismatch')
 
 
 if __name__ == '__main__':
