@@ -29,6 +29,7 @@ description: Turn a topic into a Chinese 16:9 teaching video (flat / cel compone
 蓝图用 `blueprints/medium-metaphor.json`。`validate-treatment.py` 在手作皮肤下把缺项记 P0（`make-video` 自动跑）。
 媒介的八个轴与"不是什么"见 [references/style-recipes.md](references/style-recipes.md)；组件见 [references/craft-kit.md](references/craft-kit.md)
 （`InkPath` / `HandNote` / `HandLettering` / `WashBlob` / `CutPaper` / `Loupe` / `PinnedPhoto` / `ArchivePhoto` …）。
+开场钩子、节奏、运镜分别见 [references/narrative-hook.md](references/narrative-hook.md)、[references/pacing-rhythm.md](references/pacing-rhythm.md)、[references/camera-language.md](references/camera-language.md)。
 先做 3 张风格帧（`--stills`），像了再做全片；渲染后由新会话只看联系表做七项独立评审。
 
 ## 第 1 步 · 选一个蓝图
@@ -41,7 +42,6 @@ description: Turn a topic into a Chinese 16:9 teaching video (flat / cel compone
 | 一件事分几步发生 | `blueprints/process.json` |
 | 一个常见错误 | `blueprints/pitfall.json` |
 
-每个蓝图是同一条讲课弧线：**钩子 → 先懂一个词 → 拆开看 → 举例 → 误区 → 回顾**。
 每一镜都写了 `$components`：该用的**骨架**（Stage / Split / Zoom / Corridor）和**组件**。照它选，别自己发明版式。
 
 ## 第 2 步 · 建工程，照抄示例片的结构
@@ -78,7 +78,7 @@ node "<SKILL_DIR>/scripts/make-video.mjs" ./my-video --render ./my-video/final.m
 ```
 
 Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做：resolve-shots（自动修）→ 门禁 → tsc → 静帧接触表 / 渲染 → 抽帧报告 `renders/report.md`；`--render` 后若装了 RapidOCR，会用 `validate-ocr.py` 抽字幕帧 OCR，核对字幕真的读得出（没装就跳过并提示）。
-**先看 `--stills` 静帧，再渲整片**（整片渲染要先征得用户同意）。`--render` 默认 1920×1080；静音旁白片的响度目标是 −24 LUFS（有真人声时 −16）。
+**先看 `--stills` 静帧，再渲整片**（整片渲染要先征得用户同意）。`--render` 默认 1920×1080；响度目标 −16 LUFS（静音旁白片与真人声片相同）。
 
 **读输出**：`✓ 自动修` = 引擎替你改了什么；`· 建议` 不拦；`✗` 才要改——每条都写了怎么改。同一个 ✗ 连续两次没改过来，停下来把报错原文告诉用户。
 
@@ -113,6 +113,7 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 - 音效库与调音：[references/sfx-library.md](references/sfx-library.md)
 - 主题：[references/theme-flat.md](references/theme-flat.md)、[references/theme-cel.md](references/theme-cel.md)、[references/theme-journal.md](references/theme-journal.md)、[references/theme-papercut.md](references/theme-papercut.md)、[references/theme-archive.md](references/theme-archive.md)
 - 导演层与手作：[references/director-method.md](references/director-method.md)、[references/style-recipes.md](references/style-recipes.md)、[references/craft-kit.md](references/craft-kit.md)
+- 开场 / 节奏 / 运镜：[references/narrative-hook.md](references/narrative-hook.md)、[references/pacing-rhythm.md](references/pacing-rhythm.md)、[references/camera-language.md](references/camera-language.md)
 - 真实素材：[references/commons-media.md](references/commons-media.md)、[references/real-media.md](references/real-media.md)
 - 背景库：[references/background-library.md](references/background-library.md)
 - 真翻页 / 揭纸转场：[references/fx-effects.md](references/fx-effects.md)

@@ -103,7 +103,7 @@ scripts\make-video.cmd .\my-video --render .\my-video\final.mp4
 
 ## 蓝图与镜头长什么样
 
-蓝图都走同一条讲课弧线：**钩子 → 先懂一个词 → 拆开看 → 举例 → 误区 → 回顾**。每镜只改 `<<…>>` 里的内容，`$components` 告诉模型用什么：
+每镜只改 `<<…>>` 里的内容，`$components` 告诉模型用什么：
 
 ```json
 {
