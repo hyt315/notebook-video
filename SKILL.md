@@ -66,6 +66,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 - 一镜 1–3 句，一句一个意思；字幕超 16 字由 `build-semantic-captions.py` 在合法断点自动拆（不拆词、英文、数字）。
 - 要观众「看那里」时，在镜头表写 `cinema.focus`（推近到那个组件的矩形）；不写也有缺省缓推。
 - 相邻两镜换骨架；一镜一个概念；关键数字用 `KineticNumber` 数过去。
+- 背景（3.4.0）：不写就自动轮换——每个皮肤有 8–11 张风格各异的亮底背景（手账：横线本 / 方格 / 点阵 / 牛皮纸 / 水彩纸 / 便签墙 / 旧书页 / 坐标纸；剪纸：红纸衬边 / 宣纸 / 窗花 / 祥云 / 挂笺 / 洒金…；档案：档案袋 / 旧报纸 / 古地图 / 卡片目录 / 胶片 / 展柜布面…），按镜头角色挑、相邻两镜不重复。某一镜要特定的纸，就写 `"bg": "oldpage"`；清单与许可见 [references/background-library.md](references/background-library.md)。
 - 帧参数名：`fxkit` 组件传 `frame={f}`，其余模块传 `f={f}`（传错不报错只会错位，`validate-frame-props.py` 会抓）。
 
 ## 第 4 步 · 一条命令
@@ -95,7 +96,7 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 
 ## 引擎替你保证的
 
-**硬门禁（客观）**：取景不切断标题 / 标签（推近自动留边、回退倍数）；字号地板；文字对比度 ≥4.5:1；字幕每行 ≤16 字、读速 ≤4.5 字/秒；
+**硬门禁（客观）**：取景不切断标题 / 标签（推近自动留边、回退倍数）；字号地板；文字对比度 ≥4.5:1；背景库每张都有来源与许可、亮底、字幕区对比度够（`validate-backgrounds.py`）；字幕每行 ≤16 字、读速 ≤4.5 字/秒；
 画面不静止超过约 1 秒（镜尾 >1.5 秒无事件自动补收束慢推）；音画同步；音效文件 sha256 与增益 / 提前量和 manifest 一致。
 **软建议（主观，只提示）**：同屏强调数、每镜字号种类、装饰预算、快慢交替、留白。
 **音效**：只挂在真事件上；每条 cue 按 manifest 的 `offsetMs` 提前起播，让瞬态落在视觉命中帧；间隔 ≥150 ms、≈24 个/分钟封顶；音乐床在音效下闪避。
@@ -112,6 +113,7 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 - 主题：[references/theme-flat.md](references/theme-flat.md)、[references/theme-cel.md](references/theme-cel.md)、[references/theme-journal.md](references/theme-journal.md)、[references/theme-papercut.md](references/theme-papercut.md)、[references/theme-archive.md](references/theme-archive.md)
 - 导演层与手作：[references/director-method.md](references/director-method.md)、[references/style-recipes.md](references/style-recipes.md)、[references/craft-kit.md](references/craft-kit.md)
 - 真实素材：[references/commons-media.md](references/commons-media.md)、[references/real-media.md](references/real-media.md)
+- 背景库：[references/background-library.md](references/background-library.md)
 - Windows：[references/windows-compatibility.md](references/windows-compatibility.md)
 - 自检：`node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-skill`、`python scripts/selftest.py`、`python scripts/negative-gate-check.py`
 

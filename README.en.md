@@ -31,6 +31,12 @@ full, editable source project.
 - **Reproducible by weaker models**: five teaching blueprints name the skeleton and components for every shot, plus golden
   examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
 
+- **New in 3.4.0 — a background library**: 8 more light backgrounds per craft skin and 5 more for flat / cel (ruled notebook,
+  xuan paper, window-flower papercut, a 1630 map, film strips, screentone, mesh gradients…), rotated by shot role with no two
+  adjacent shots alike; every file records its source and licence (Paper Shaders rendered offline once, public-domain / CC0
+  Commons textures, fixed-seed drawings) and a gate checks light ground and subtitle contrast.
+  See [references/background-library.md](references/background-library.md).
+
 - **New in 3.3.0 — decide what the idea is made of first**: a director layer (metaphor first → the medium is the metaphor → one
   native move at the turn → three candidate structures; `treatment.json` is gated), three light hand-made skins (`journal`
   field notebook / `papercut` red paper-cut / `archive` light table) with craft components (pressure ink, Chinese lettering

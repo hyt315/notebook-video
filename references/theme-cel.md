@@ -25,6 +25,7 @@ All hex values are vendored from Radix Colors v3 (MIT); the theme file names the
 
   Yellow is a fill (bursts, highlight blocks, the subtitle's offset shadow); put `ink` text on it, never white.
 - Panel skin: `3px` solid ink border, `8px` radius, hard offset ink shadow `4px 4px 0` growing to `8px 8px 0` with lift, never blurred. Every panel carries a deterministic micro-tilt of ±0.7° max hashed from its position; scene transforms compose on top of it.
+- Background library (3.4.0): five more light backgrounds — `cel/halftone`, `speedlines`, `panels`, `screentone`, `sunburst` — rotate by shot role with no two adjacent shots alike; see [background-library.md](background-library.md). The three below stay as the `legacy` entries.
 - Backgrounds (LOCKED rasters, 2560×1440, `public/bg/`, registered with sha256 in `manifests/visual-assets.json`):
   - `bg-cel-main.jpg`: black halftone fan + yellow ink-outlined starburst bottom-left, speed lines top-right, red halftone + blue star bottom-right, blue halftone wedge top-left.
   - `bg-cel-chapter.jpg`: short speed-line ticks along the left and right edges, yellow starburst top-right, red halftone top-left, red star bottom-left, blue halftone bottom-right.

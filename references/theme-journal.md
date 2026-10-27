@@ -17,6 +17,7 @@
 - 章节标识（`Chrome`）：左上角钢笔小字 "No.01 — 章名" + 一条手划线；**没有**右上技术页眉、没有吉祥物。
 - 调色（`Grade`）：轻微暖色 + 暗角。
 - 背景：`bg-journal-{main,chapter,quiet}.jpg`（2560×1440，`scripts/dev/make-craft-textures.py` 确定性生成，sha256 登记）；chapter 变体左下 / 右上各一团水彩晕。
+- 背景库（3.4.0）：再加 8 张——`journal/ruled` 横线本、`grid` 方格本、`dots` 点阵本、`kraft` 牛皮纸本、`watercolor` 水彩纸、`sticky` 便签墙、`oldpage` 旧书页、`graph` 坐标纸；不写 `bg` 时按镜头角色自动轮换、相邻不重复，见 [background-library.md](background-library.md)。
 - 转场缺省：`slide`（沿同一页横移）；章节首镜 `drop`（新的一页盖上来）。
 
 ## 原生动作（顿悟点用）
