@@ -4,6 +4,50 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+## [3.6.0] - 2026-10-27
+
+> 审计 12 条里落地 8 条：运镜写了就要兑现、开场 3 秒有门禁、手作结构蓝图、字幕整行出现、无 TTS 读速 6.5 字/秒、静音片响度 −16 LUFS、treatment 增加声音段。
+> Eight of the twelve audit items land: camera intent is enforced, the first three seconds are gated, hand-made structure blueprints, whole-line captions, 6.5 chars/s silent reading speed, −16 LUFS for silent films, and a sound section in the treatment.
+
+### 运镜 / Camera
+
+- `validate-treatment` 拿 treatment 的 `move` / `framing` 对照 `shots.resolved.json`；招牌镜头至少真推 12%，否则手作皮肤 P0。新文档 `references/camera-language.md`。
+  `validate-treatment` checks `move` / `framing` against the resolved shot list; the signature shot must push in ≥ 12% (P0 on hand-made skins). New `references/camera-language.md`.
+- `validate-composition` 新增镜长检查（单构图 > 12 s 无镜内焦点 / 插入镜、镜长分布像节拍器 → P1）；`resolve-shots` 识别 insert 标记。
+  Shot-length checks in `validate-composition`; `resolve-shots` recognises insert markers.
+
+### 开场 / Opening
+
+- 新门禁 `validate-opening.py`（第 0 帧有事件、首条字幕 ≤ 1 s、片名不当第一镜、前 3 秒 ≥ 3 拍、第一句不是泛问句；`--video` 像素复核），已接入 `make-video` 与 CLI。
+  New `validate-opening.py` gate for the first three seconds, wired into `make-video` and the CLI.
+
+### 蓝图 / Blueprints
+
+- `medium-metaphor` 改为冷开；新增 4 个手作结构蓝图：`experiment`、`kishotenketsu`、`mystery`、`scale-ladder`；treatment 的候选结构要写 `family`，限定在结构族内。
+  `medium-metaphor` now opens cold; four new hand-made structure blueprints; candidates declare a structure `family`.
+
+### 字幕 / Captions
+
+- 手作皮肤字幕整行出现（5 帧淡入，`CAPTION_REVEAL` 可覆盖）；还没出字时不画空光晕；空格规则抽成 `caption-gap.ts`；全角标点 `halt` 收半宽。
+  Whole-line captions on hand-made skins; no empty halo; `caption-gap.ts`; `halt` for full-width punctuation.
+
+### 读速与响度 / Reading speed & loudness
+
+- 新命令 `silent-timing`：无 TTS 时按读速排字幕，手作皮肤缺省 6.5 字/秒；`compose-story --cps`；`validate-caption-sync` 增加时长检查。
+  New `silent-timing` (6.5 chars/s default on hand-made skins); `compose-story --cps`; duration checks in `validate-caption-sync`.
+- 静音旁白片的响度目标由 −24 改为 −16 LUFS（真峰 ≤ −1.5 dBTP），与有人声片一致；`NOTEBOOK_VIDEO_LUFS=-24` 可回到旧电平。
+  Silent-narration films now target −16 LUFS like voiced ones; `NOTEBOOK_VIDEO_LUFS=-24` restores the old level.
+
+### 声音 / Sound
+
+- treatment 的 `sound` 段新增顿悟前静默时长、全片最重要的一声、配乐取舍与情绪曲线、按媒介的拟音清单。
+  The treatment's `sound` section adds pre-reveal silence, the single most important sound, a music decision with mood curve, and per-medium foley.
+
+### 文档 / Docs
+
+- SKILL.md 与 director-method 加入 narrative-hook / pacing-rhythm / camera-language 入口；删去"每个蓝图都是同一条讲课弧线"。所有改动均有单元测试。
+  Entry links to the hook, pacing and camera references; removed the claim that every blueprint follows one lecture arc. All changes are unit-tested.
+
 ## [3.5.0] - 2026-10-27
 
 > 手作皮肤的「翻到下一页」不再是镜头横移：上一页真的卷起来翻走，有折痕高光、纸背透出上一页的墨迹。需要 WebGPU；渲染器先画一张探针验收，画不了就自动退回 3.4.0 的 slide / drop，片子照出。
