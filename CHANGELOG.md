@@ -4,6 +4,45 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+## [3.4.0] - 2026-10-27
+
+> 背景不再只有三张：每个手作皮肤新增 8 张、flat / cel 各新增 5 张风格各异的亮底背景，按镜头角色自动轮换、相邻不重复；每张都登记来源与许可，门禁核对亮底与字幕区对比度。
+> Backgrounds are no longer three per skin: 8 more per craft skin and 5 more for flat / cel, rotated by shot role with no two adjacent shots alike; every file records its source and licence, and a gate checks light ground and subtitle contrast.
+
+### 背景库 / Background library
+
+- `assets/lecture-template/public/bg/lib/*.webp`（34 张，2560×1440，共约 2.7 MB）+ `manifests/backgrounds.json`（来源、许可、署名、sha256、对比度指标）。3.3.0 的 main / chapter / quiet 三张原样保留，作为 `legacy` 条目入库。
+  34 new 2560×1440 WebP backgrounds plus a manifest; the 3.3.0 rasters join it unchanged as `legacy` entries.
+  - journal：横线本、方格本（线圈）、点阵本、牛皮纸本、水彩纸、便签墙、旧书页、坐标纸。
+  - papercut：红纸衬边、宣纸、牛皮纸·红绳、折纸纹、窗花角、洒金笺、祥云、挂笺。
+  - archive：档案袋、旧报纸、古地图、卡片目录、胶片灯箱、展柜布面、登记簿、描图纸。
+  - flat：晨光渐变、薄荷渐变、点阵、暖角渐变、几何角饰；cel：网点角、集中线、分格边、渐变网点、放射光。
+- 来源（不造轮子）：Paper Shaders（`@paper-design/shaders` 0.0.82，Apache-2.0）的纸纹 / mesh 渐变 / 点阵 / 半调由维护者工具**离线预渲一次**（渲染期零 WebGL、零新 npm 依赖）；Wikimedia Commons 的 PD / CC0 纹理（牛皮纸、Poly Haven 粗麻布、1630 年荷兰古地图）；其余为固定 seed 的程序生成。
+  Sources: Paper Shaders pre-rendered once offline (no WebGL at render time, no new npm dependency), PD / CC0 Commons textures, and fixed-seed drawings.
+- 维护者工具：`scripts/dev/prerender-paper-shaders.py`（+ `paper-shaders.spec.json`）、`scripts/dev/make-bg-library.py`（两次构建逐字节一致）、`scripts/dev/bg_metrics.py`、`scripts/dev/bg-gallery.py`（带名字与 96 px 字幕样字的联系表）。
+  Maintainer tools for the pre-render, the deterministic build and a contact sheet.
+
+### 引擎 / Engine
+
+- `resolve-shots`：工程有 `manifests/backgrounds.json` 时给每镜定一张背景，写进 `src/shots.ts` 的 `bg` + `bgFile`。显式 `bg` 可写库 id（`"ruled"` 或 `"journal/ruled"`）或 `main / chapter / quiet`；不写则按角色（章节首镜 / zones ≥ 4 / 其余）轮换：最久没用的优先、`bgSeed` 定序、永不与上一镜相同。未知名字或别的皮肤的背景直接报错并列出可选名。
+  `resolve-shots` assigns a background per shot (explicit id or role-based rotation, never repeating the previous shot) and writes `bg` + `bgFile`.
+- `src/index.tsx` 的 `Backdrop`：有 `bgFile` 就直接铺这张图，交叉淡化与视差不变；`Theme` 接口不变。
+  The engine draws `bgFile` when present; cross-fade and parallax unchanged; the `Theme` contract is unchanged.
+
+### 兼容性 / Compatibility
+
+- **行为变化（新工程）**：从 3.4.0 模板新建的工程默认轮换背景（含 flat / cel 与模板示例片）。想要 3.3.0 的三张图规则，在 `manifests/shots.json` 顶层写 `"bgRotate": false`。
+  **Behaviour change for new projects**: backgrounds rotate by default (flat / cel and the template example included); `"bgRotate": false` restores the 3.3.0 rule.
+- 旧工程（没有 `manifests/backgrounds.json`）不受影响：`resolve-shots` 输出逐字节不变，`bg` 仍只接受 main / chapter / quiet。
+  Existing projects without the library are untouched: `resolve-shots` output is byte-identical.
+
+### 门禁与测试 / Gates and tests
+
+- 新门禁 `scripts/validate-backgrounds.py`（标准库；CLI `validate-backgrounds`；`make-video` 构建期自动跑；CI 已接入）：P0 = 缺来源 / 许可不在白名单（PD / CC0 / CC BY / Apache-2.0）/ CC BY 缺署名 / sha256 不符 / 暗底（平均相对亮度 < 0.55）/ 字幕区墨色对比度 < 7:1（平均）或 < 4.5:1（最暗 5 %）；P1 = 中央 70 % 起伏过大、相邻镜同一张背景（`--shots`）。指标由维护者工具 `scripts/dev/bg_metrics.py` 从像素算出并与 sha256 绑定，单元测试重算比对。
+  New stdlib gate for licence, provenance, sha256, light ground and subtitle-zone contrast; `--shots` flags adjacent repeats.
+- 新单元测试 `tests/test_backgrounds.py`（13 项：库合规、每皮肤数量、墨色与皮肤一致、对比度算术、指标与像素一致、轮换确定性与无相邻重复、`bgSeed`、显式 / 简写 / legacy 名、角色池、`bgRotate:false` 与无库工程不变、未知 / 跨皮肤报错、相邻重复提示）；selftest +4 项；负向夹具 +11 例（许可、署名、sha256、暗底、字幕区深色装饰、未知 / 跨皮肤 `bg`、自动轮换无重复、显式相邻重复提示、旧工程不出 `bgFile`）；`validate-skill` 核对库文件齐全、每皮肤数量、门禁墨色与 `palette.ink` 一致。
+  New unit tests, selftest checks, negative fixtures and consistency checks for the library.
+
 ## [3.3.0] - 2026-10-26
 
 > 从"讲课 PPT"到"一个媒介在演一件事"：新增导演层（隐喻先行 + 门禁）、三套亮底手作皮肤、craft 材质组件、Wikimedia Commons / Openverse 素材管线、媒介化拟音与可选 OCR 复核。flat / cel 的行为与全部原有门禁结果不变；`Theme` 只新增可选字段。
