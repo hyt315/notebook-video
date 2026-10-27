@@ -65,6 +65,8 @@ const Grade=THEME.Grade;
 
 // EDITABLE CONTENT SURFACE — 换题材时改 src/film.ts（auto 流程会自动生成它）
 import {COPY, CHAPTER_SHOTS} from './film';
+import * as FILM from './film';
+import {captionGap} from './caption-gap';
 const CHAPTER_STARTS=CHAPTER_SHOTS.map((id)=>SHOTS[id].from);
 
 const clamp={extrapolateLeft:'clamp' as const,extrapolateRight:'clamp' as const};
@@ -206,25 +208,34 @@ const Paper=THEME.Paper;
 
 // 严谨消除句末标点符号（保留句中逗号，句末逗号句号等一概消除）
 const cleanTail=(s:string)=>s.replace(/[，。！？；：、,.!?;:\s]+$/g,'');
+// 3.6.0 字幕出现方式：'line' = 整行一次出现（5 帧淡入）；'type' = 逐字淡入（卡拉 OK 式，配真人声时用）。
+// 缺省：手作皮肤 line（无旁白片的整片节奏就是读速，逐字出现让每张静帧都是半句话），flat / cel 保持 type（既有行为）。
+// 工程可在 src/film.ts 里 `export const CAPTION_REVEAL = 'line' | 'type'` 覆盖。
+const CAPTION_REVEAL:'line'|'type'=((FILM as any).CAPTION_REVEAL??AESTHETIC.captionReveal??(THEME.craft?'line':'type'))==='type'?'type':'line';
+const LINE_FADE=5;
 const Subtitle=()=>{
   const {mode}=useCanvas();
   const f=useRawCurrentFrame(),lead=Math.round(FPS*.18),hold=Math.round(FPS*.05);
   let cue=captions.find((c:any)=>f>=c.startFrame-lead&&f<=c.endFrame+hold);
   if(!cue)cue=[...captions].reverse().find((c:any)=>c.startFrame<=f);
   const full=cue?cleanTail(cue.text):'';
-  const targetChars=full.length;
-  const words=cue?cue.words.filter((w:any)=>w.startFrame<=f+lead):[];
+  // 空白不计数（空格交给 captionGap 补成 \u00a0），这样尾标点裁切与词片里的空格无关
+  const targetChars=full.replace(/\s+/g,'').length;
+  const line=CAPTION_REVEAL==='line';
+  const words=cue?cue.words.filter((w:any)=>(line?cue.startFrame:w.startFrame)<=f+lead):[];
+  // 3.6.0：一个字都还没出来时不画字幕（否则纸色光晕会先出现一团空白）
+  if(!cue||!targetChars||!words.length)return null;
   // 占位层与可见层用**同一套**分词加空格规则渲染。旧版占位层只放 cue.text，而可见层会在
   // 中英文词之间补 \u00a0 —— 于是「三个 AI 技能」这类句子可见宽度大于占位宽度，最后一个字
   // 顶进字幕框的右侧装饰点。现在两层字符完全一致，占位宽 = 最终宽。
-  const allWords=cue?cue.words:[];
+  const allWords=cue.words;
   const renderWords=(list:any[],animate:boolean)=>{
     let charSeq=0;
     return list.map((w:any,wi:number)=>{
-      const part=String(w.part);
-      const prev=wi>0?String(list[wi-1].part):'';
-      const spaced=(wi>0&&!/[\s，。！？；：、,.!?;:（(]$/.test(prev)&&!/^[\s，。！？；：、,.!?;:）)]/.test(part)&&!((/[A-Za-z0-9]$/.test(prev)&&/^[A-Za-z0-9]/.test(part))||(/[一-鿿]$/.test(prev)&&/^[一-鿿]/.test(part))))?'\u00a0':'';
-      return <span key={wi} style={{display:'inline-block'}}>{spaced}{part.split('').map((ch:any,ci:number)=>{
+      const raw=String(w.part);
+      const spaced=wi>0?captionGap(String(list[wi-1].part),raw):'';
+      const chars=raw.split('').filter((ch)=>!/\s/.test(ch));
+      return <span key={wi} style={{display:'inline-block'}}>{spaced}{chars.map((ch:any,ci:number)=>{
         const idx=charSeq++;
         if(idx>=targetChars) return null; // 铁律：严格消除任何词尾带出的句末标点符号
         if(!animate) return <span key={ci} style={{display:'inline-block'}}>{ch}</span>;
@@ -233,6 +244,12 @@ const Subtitle=()=>{
       })}</span>;
     });
   };
+  if(line){
+    const p=interpolate(f,[cue.startFrame-lead,cue.startFrame-lead+LINE_FADE],[0,1],clamp);
+    return <THEME.SubtitleChrome mode={mode}>
+      <span data-caption-line style={{position:'relative',display:'inline-block',opacity:p}}>{renderWords(allWords,false)}</span>
+    </THEME.SubtitleChrome>;
+  }
   return <THEME.SubtitleChrome mode={mode}>
     <span style={{position:'relative'}}>
         <span style={{visibility:'hidden'}}>{renderWords(allWords,false)}</span>

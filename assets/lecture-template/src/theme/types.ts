@@ -59,6 +59,11 @@ export interface ThemeAesthetic {
    */
   subtitleSize?: number;
   subtitleFamily?: string;
+  /**
+   * 3.6.0 新增（可选）：字幕出现方式。'line' = 整行一次出现（5 帧淡入），'type' = 逐字淡入。
+   * 缺省：声明了 craft 的手作皮肤 line，其余 type。工程可在 src/film.ts 用 `export const CAPTION_REVEAL` 覆盖。
+   */
+  captionReveal?: 'line' | 'type';
 }
 
 /** 3.3.0：皮肤可选的章节标识（替代引擎缺省的「章节卡 + 右上技术页眉」）。 */
