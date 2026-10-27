@@ -83,8 +83,8 @@ export interface ThemeCraft {
   bodyFamily: string;
   /** 唯一强调色（lemo 配方「一个强调色」纪律） */
   accent: string;
-  /** 缺省转场（分镜表写 auto 时用） */
-  transition: 'slide' | 'drop' | 'ink' | 'whip' | 'zoom' | 'fade';
+  /** 缺省转场（分镜表写 auto 时用）。3.5.0 pageturn / peel = 真卷页（WebGPU，渲染器探针不通过时退回 slide / drop） */
+  transition: 'slide' | 'drop' | 'pageturn' | 'peel' | 'ink' | 'whip' | 'zoom' | 'fade';
   /** 需要额外加载的字体（AssetGate 会 load 并校验；缺字体则拒绝渲染并提示 `fonts --serif`） */
   fonts?: string[];
 }

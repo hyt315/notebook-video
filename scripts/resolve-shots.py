@@ -119,7 +119,7 @@ def compute_fit(anchor: dict | None, band: dict, keys: list[dict], mode) -> dict
 
 
 REGIONS = ("left", "right", "top", "bottom", "center", "top-left", "top-right", "bottom-left", "bottom-right")
-TRANSITIONS = ("auto", "cut", "reveal", "handoff", "whip", "whip-left", "whip-right", "zoom", "fade", "hard", "slide", "drop")
+TRANSITIONS = ("auto", "cut", "reveal", "handoff", "whip", "whip-left", "whip-right", "zoom", "fade", "hard", "slide", "drop", "pageturn", "peel")
 
 
 def region_rect(r: str, band: dict) -> dict:

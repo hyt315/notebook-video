@@ -46,7 +46,8 @@ import {FillGate} from './fill-gate';
 import {CanvasBoundsGate} from './canvas-bounds-gate';
 import {MascotGate} from './mascot-gate';
 import {planSfx, bedDuckAt, SFX_BED, BED_GAIN} from './sfx';
-import {CINEMA, cinemaCamAt, cinemaMask, cinemaTransform, parallaxTransform, resolveTransition, transitionStyle, WhipBlur, whipOffset} from './cinema';
+import {CINEMA, cinemaCamAt, cinemaMask, cinemaTransform, parallaxTransform, resolveTransition, transitionFrames, transitionStyle, WhipBlur, whipOffset} from './cinema';
+import {FxProbe, PageCurl, curlShadow, isCurl} from './fx';
 import {SHOTS, SHOT_IDS, SHOT_TOTAL} from './shots';
 import {SCENES} from './scenes';
 import {FontFaces} from './fonts';
@@ -290,8 +291,9 @@ const FinalDemo=()=>{
   const Scene=SCENES[id];
   const PrevScene=prevId?SCENES[prevId]:null;
   const kind=transFor(idx);
-  const p=kind&&kind!=='hard'?local/TRANS:1;
+  const p=kind&&kind!=='hard'?local/transitionFrames(kind):1;
   const inTrans=p<1&&!!PrevScene;
+  const curl=inTrans&&isCurl(kind)?kind:null; // 3.5.0 真卷页（只有渲染器探针通过、开了 fx 才会走到这里）
   const out=inTrans&&kind?transitionStyle(kind,p,'out'):null;
   const inn=inTrans&&kind?transitionStyle(kind,p,'in'):{transform:'none',opacity:1,blur:0};
   const cam=camFor(idx,local);
@@ -300,7 +302,17 @@ const FinalDemo=()=>{
   return <>
     {out&&<WhipBlur id="nv-whip-out" amount={out.blur}/>}
     {inTrans&&<WhipBlur id="nv-whip-in" amount={inn.blur}/>}
-    {PrevScene&&prevId&&out&&out.opacity>0.01&&(
+    {curl&&PrevScene&&prevId&&(
+      // 卷走的是上一镜的「整页」：背景（按上一镜末帧的视差位置）+ 内容。新一页（Backdrop + 本镜）在下面不动。
+      <div data-gate-allow="handoff" data-curl={curl} style={{position:'absolute',inset:0,zIndex:130}}>
+        <PageCurl kind={curl} p={p} paper={THEME.palette.paperBase} density={MODES['16:9'].scale*(typeof window!=='undefined'?window.devicePixelRatio||1:1)}>
+          <AbsoluteFill style={{transform:parallaxTransform(camFor(idx-1,SHOTS[prevId].duration-1)),transformOrigin:'960px 540px'}}><ShotBackground id={prevId}/></AbsoluteFill>
+          {world(camFor(idx-1,SHOTS[prevId].duration-1),<PrevScene f={SHOTS[prevId].duration-1}/>)}
+        </PageCurl>
+      </div>
+    )}
+    {curl&&(()=>{const sh=curlShadow(curl,p);return sh?<div aria-hidden style={{position:'absolute',inset:0,zIndex:129,pointerEvents:'none',...sh}}/>:null;})()}
+    {!curl&&PrevScene&&prevId&&out&&out.opacity>0.01&&(
       <div data-gate-allow="handoff" style={{position:'absolute',inset:0,zIndex:130,opacity:out.opacity,transform:out.transform,transformOrigin:'960px 540px',filter:out.blur>0.3?'url(#nv-whip-out)':undefined}}>
         {world(camFor(idx-1,SHOTS[prevId].duration-1),<PrevScene f={SHOTS[prevId].duration-1}/>)}
       </div>
@@ -341,8 +353,9 @@ const Backdrop=()=>{
   const local=f-SHOTS[SHOT_IDS[idx]].from;
   const curId=SHOT_IDS[idx];
   const prevId=idx>0?SHOT_IDS[idx-1]:curId;
-  const p=bgKeyFor(prevId)!==bgKeyFor(curId)?Math.max(0,1-local/TRANS):0;
   const kind=transFor(idx);
+  // 卷页转场时旧背景跟着上一页一起卷走（FinalDemo 的 PageCurl 里），这里只画新背景，不交叉淡化。
+  const p=!isCurl(kind)&&bgKeyFor(prevId)!==bgKeyFor(curId)?Math.max(0,1-local/TRANS):0;
   const tf=parallaxTransform(camFor(idx,local),whipOffset(kind,local/TRANS));
   return <AbsoluteFill style={{transform:tf,transformOrigin:'960px 540px'}}>
     <ShotBackground id={curId}/>
@@ -438,6 +451,9 @@ const CraftSheetComposition=()=> <>
   <CanvasBoundsGate mode="block"/>
 </>;
 
+// 3.5.0 fx 探针（`notebook-video.mjs` 渲一帧读像素，决定这台机器能不能开真卷页）。320×180，不进成片。
+const FxProbeComposition=()=> <FxProbe/>;
+
 const Root=()=> <>
   {/* 官方模板示例片（8 镜 / 4 骨架），按 1920×1080 设计空间编写，交付 2560×1440（见 references/canvas-modes.md）。 */}
   <Composition id="NotebookVideoFilm" component={Film16x9} durationInFrames={DURATION} fps={FPS} width={2560} height={1440}/>
@@ -446,6 +462,8 @@ const Root=()=> <>
   <Composition id="NotebookVideoShowcase" component={ShowcaseComposition} durationInFrames={SHOWCASE_PAGES*30} fps={FPS} width={1920} height={1080}/>
   {/* craft 组件样张（`notebook-video.mjs craft-sheet`），设计坐标 1920×1080 */}
   <Composition id="NotebookVideoCraftSheet" component={CraftSheetComposition} durationInFrames={CRAFT_SHEET_FRAMES} fps={FPS} width={1920} height={1080}/>
+  {/* 真卷页能力探针（`notebook-video.mjs fx-probe`）：WebGPU + HTML-in-canvas 画得出来才给成片开 pageturn / peel */}
+  <Composition id="NotebookVideoFxProbe" component={FxProbeComposition} durationInFrames={1} fps={FPS} width={320} height={180}/>
 </>;
 
 registerRoot(Root);

@@ -2,6 +2,7 @@ import {THEME} from './theme/active';
 import React from 'react';
 import {Easing, interpolate, spring} from 'remotion';
 import {camAt, STAGE, TEXT_ZOOM_MAX} from './shotkit';
+import {FX_ENABLED, FX_FALLBACK, CURL_FRAMES} from './fx';
 
 // ============================================================================
 // cinema.tsx · 引擎级虚拟摄影机
@@ -17,6 +18,7 @@ import {camAt, STAGE, TEXT_ZOOM_MAX} from './shotkit';
 //   3. pan     宽画布横摇：`cinema.pan.worldW` > 1920 时，场景按更宽的世界排版，摄影机横摇扫过；
 //   4. 转场     whip（甩镜：方向模糊 + 位移）/ zoom（推穿：放大淡出 + 新镜从远处推来）/ fade / hard；
 //              缺省 auto：章节首镜 zoom，其余 whip，左右交替；
+//              3.5.0 pageturn / peel：真卷页（src/fx.tsx，WebGPU），渲染器探针不通过时自动退回 slide / drop；
 //   5. 视差     Backdrop 按 0.3 的系数跟随摄影机（背景比内容动得少 → 纵深）。
 //
 // 纪律：全部是**帧的纯函数**（interpolate / spring / Easing），无随机、无状态、无实时动画库；
@@ -40,7 +42,7 @@ export type CinemaSpec = {
   path?: readonly PathKey[];
 };
 export type PathKey = {at: number; x: number; y: number; s: number};
-export type TransitionKind = 'whip' | 'whip-left' | 'whip-right' | 'zoom' | 'fade' | 'hard' | 'slide' | 'drop';
+export type TransitionKind = 'whip' | 'whip-left' | 'whip-right' | 'zoom' | 'fade' | 'hard' | 'slide' | 'drop' | 'pageturn' | 'peel';
 
 /** 默认值：观感调好的常数，普通作者不需要改。 */
 export const CINEMA = {
@@ -225,21 +227,28 @@ export const parallaxTransform = (c: CamState, whipX = 0) => {
 };
 
 /** 自动转场：首镜无；章节首镜 zoom；其余 whip，左右交替。显式写的照用（cut/reveal 视作 auto，hard = 硬切）。 */
-export const resolveTransition = (declared: string | undefined, idx: number, isChapter: boolean): TransitionKind | null => {
+export const resolveTransition = (declared: string | undefined, idx: number, isChapter: boolean, fx: boolean = FX_ENABLED): TransitionKind | null => {
   if (idx === 0) return null;
   const d = declared ?? 'auto';
   if (d === 'hard') return 'hard';
   if (d === 'fade' || d === 'zoom' || d === 'whip-left' || d === 'whip-right' || d === 'slide' || d === 'drop') return d;
+  // 3.5.0：真卷页。渲染器没开 fx（浏览器没有 WebGPU / HTML-in-canvas）→ 退回 slide / drop，片子照样出。
+  if (d === 'pageturn' || d === 'peel') return fx ? d : FX_FALLBACK[d];
   if (d === 'whip') return idx % 2 ? 'whip-left' : 'whip-right';
   // 3.3.0：手作皮肤的媒介内转场（纸在本子上横移 = 一张长卷上的横移镜头；新纸放下来 = drop）。
   // 皮肤声明了 craft.transition 时，auto 用它；章节首镜一律 drop（换一张纸）。
+  // 3.5.0：手账 / 档案缺省 pageturn（翻到下一页），剪纸缺省 peel（从底板上揭起）；无 fx 时同上退回。
   const craft = THEME.craft?.transition;
+  if (craft === 'pageturn' || craft === 'peel') return isChapter ? 'drop' : fx ? craft : FX_FALLBACK[craft];
   if (craft === 'slide' || craft === 'drop') return isChapter ? 'drop' : craft;
   if (isChapter) return 'zoom';
   return idx % 2 ? 'whip-left' : 'whip-right';
 };
 
 export type TransStyle = {transform: string; opacity: number; blur: number};
+
+/** 转场时长（帧）：卷页 CURL_FRAMES，其余 CINEMA.transition。 */
+export const transitionFrames = (kind: TransitionKind | null): number => (kind === 'pageturn' || kind === 'peel' ? CURL_FRAMES : CINEMA.transition);
 
 /**
  * 转场样式：p ∈ [0,1] 为转场进度（镜头边界后 CINEMA.transition 帧）。
@@ -249,6 +258,8 @@ export const transitionStyle = (kind: TransitionKind, p: number, role: 'in' | 'o
   const e = easeIO(Math.max(0, Math.min(1, p)));
   if (kind === 'hard') return role === 'out' ? {transform: 'none', opacity: 0, blur: 0} : {transform: 'none', opacity: 1, blur: 0};
   if (kind === 'fade') return role === 'out' ? {transform: 'none', opacity: 1 - e, blur: 0} : {transform: 'none', opacity: 1, blur: 0};
+  // pageturn / peel：两层都不动，卷页由 index.tsx 的 PageCurl（WebGPU）画在上一镜那一层上。
+  if (kind === 'pageturn' || kind === 'peel') return {transform: 'none', opacity: 1, blur: 0};
   // slide：上一镜与本镜像同一张长纸上的两段，一起向左横移（镜头沿纸面平移，不模糊、不淡出）。
   if (kind === 'slide') return role === 'out' ? {transform: `translateX(${-1500 * e}px)`, opacity: 1, blur: 0} : {transform: `translateX(${1500 * (1 - e)}px)`, opacity: 1, blur: 0};
   // drop：一张新纸从上方落下盖住旧纸（旧内容压暗淡出，新内容带一点落定过冲）。
@@ -350,4 +361,4 @@ export const KineticNumber: React.FC<{
   );
 };
 
-export const CINEMA_VERSION = 'cinema-v1 · fit · drift · focus · world-pan · whip/zoom transitions · parallax · kinetic numbers';
+export const CINEMA_VERSION = 'cinema-v1 · fit · drift · focus · world-pan · whip/zoom/pageturn transitions · parallax · kinetic numbers';
