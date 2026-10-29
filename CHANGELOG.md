@@ -4,10 +4,49 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
-## [Unreleased]
+## [3.7.0] - 2026-10-29
 
-> 3.7.0 进行中（完整条目在发版时写）。新配置：`bgMode`（film / chapter / shot，手作皮肤默认 chapter）、`busy` 背景、`make-video --render --skip-review`、读速 `silent-timing --cps`（3.6.0 已有，缺省 6.5 字/秒）。
-> 3.7.0 in progress (full entry at release). New settings: `bgMode` (film / chapter / shot, hand-made skins default to chapter), `busy` backgrounds, `make-video --render --skip-review`, reading speed `silent-timing --cps` (from 3.6.0, default 6.5 chars/s).
+> 背景按章换纸、分镜表由镜头表生成且渲染前要过评审、组件小修、文档统一成一套规则、Openverse 音频分类；另修 OCR 门禁两处误报 / 失效和档案件署名压字幕。
+> One paper per chapter, a storyboard generated from the shot table with a review gate before rendering, component fixes, one consistent rule set in the docs, Openverse audio categories; plus two OCR-gate fixes and archive credits kept out of the subtitle band.
+
+### 背景 / Backgrounds
+
+- 新配置 `bgMode`：`film`（全片一张）/ `chapter`（每章一张，**手作皮肤默认**）/ `shot`（逐镜轮换，flat / cel 默认、即旧行为）；背景库新增 `busy` 标记，`validate-backgrounds --shots` 只在 `shot` 模式检查相邻重复。
+  New `bgMode`: `film` / `chapter` (default on hand-made skins) / `shot` (flat / cel default, the old behaviour); `busy` backgrounds; adjacency is only checked in `shot` mode.
+
+### 评审 / Review
+
+- `storyboard.md` 由 `resolve-shots` 按镜头表生成（镜头数、起止秒、意图 / 实际缩放两列）；有人工改动标记时写 `.generated.md` 并提示。手作皮肤 `make-video --render` 需要 `treatment.json` 里至少一轮 `review.rounds`，或显式 `--skip-review`（rc=3 拦截）。
+  `storyboard.md` is generated from the resolved shot table; on hand-made skins `make-video --render` needs a review round in `treatment.json` or an explicit `--skip-review`.
+
+### 组件 / Components
+
+- `LoupeMedia` 手柄自动避开署名；`ArchivePhoto` 图片区 ≥ 纸托卡片 70%、编目签字号 ≤ 图高 12%（署名字号不缩）；`FillGate` 在手作皮肤静音，每片只汇总一行。
+  The loupe handle avoids the credit; archive images dominate their labels; `FillGate` is quiet on hand-made skins and prints one summary line.
+- `ArchivePhoto` / `LoupeMedia` 的署名签不进字幕带：整件底边收在设计坐标 y = 874 以上（字幕框顶 934 再让 60，招牌推镜后也不压字幕）。
+  Archive credit slips stay above design y = 874, clear of the subtitle box even after a signature push-in.
+
+### 门禁修复 / Gate fixes
+
+- `validate-ocr`：取样点避开下一条字幕 0.18 s 的提前出现量（旧版会读到下一句，误报 P0）；`NOTEBOOK_VIDEO_OCR_PYTHON` 指向 venv 解释器（符号链接）时也会重新执行，不再静默 SKIPPED。
+  `validate-ocr` samples before the next cue's 0.18 s lead (no more false P0s) and honours `NOTEBOOK_VIDEO_OCR_PYTHON` when it is a venv symlink.
+
+### 素材 / Media
+
+- `commons search --type audio --source openverse --audio-category music|sound_effect`（取值来自 Openverse 官方 OpenAPI）。许可证白名单不变（CC0 / PDM / CC BY）。注意：2026-10-29 实测线上 `category` 过滤返回 0 条（sound_effect）或 HTTP 500（music），不带分类正常。
+  `--audio-category music|sound_effect` for Openverse audio. Licence allow-list unchanged. As of 2026-10-29 the live category filter returns no results (sound_effect) or HTTP 500 (music).
+
+### 文档 / Docs
+
+- SKILL.md 统一：常规镜头不满屏大字、每片 2–3 个锤子帧例外；读速 6.5 字/秒；渲染前评审。删去无出处的数据句；director-method 新增"选结构族"和"5b 声音设计"；真翻页注明仅在 Linux 验证。
+  SKILL.md now has one rule set (hammer frames, 6.5 chars/s, review before render); unsourced numbers removed; structure families and sound design in the director method; page turn noted as Linux-only verified.
+
+### 从 3.2.x / 3.6.x 升级 / Upgrading from 3.2.x / 3.6.x
+
+- **行为变化与改回办法**：手作皮肤背景从逐镜轮换变为每章一张 → `bgMode:"shot"`（或 3.4.0 起的 `bgRotate:false` 固定一张）；手作皮肤字幕整行出现 → 在 `src/film.ts` 写 `export const CAPTION_REVEAL = 'type'` 恢复逐字；手作皮肤 `--render` 需要评审 → 加 `--skip-review`。
+  **Behaviour changes and how to revert**: per-chapter paper → `bgMode:"shot"` (or `bgRotate:false`); whole-line captions → `CAPTION_REVEAL = 'type'` in `src/film.ts`; review gate → `--skip-review`.
+- **兼容检查**（d8d03cb 的模板工程原样复制，用 3.7.0 脚本跑构建期门禁）：无异常栈、无 P0。新增 P1：`validate-treatment` 提示缺 `manifests/treatment.json`（复制 `treatment.example.json` 填写）；`validate-composition` 骨架指纹隔镜重复 ×2、镜长变异系数 0.35 太整齐；`validate-shot-motion` S2 / S7 相邻节拍间隔超镜长 60%；`validate-presentation` 若干 13–15px 小字号与 cel 皮肤 gold 底白字对比不足。`validate-backgrounds` 对没有背景库的旧工程直接放行。
+  **Compatibility check** (the d8d03cb template copied as-is, gated with 3.7.0 scripts): no tracebacks, no P0. New P1 only: missing `treatment.json`, repeated skeleton fingerprints and too-even shot lengths, long beat gaps in S2 / S7, a few 13–15 px font sizes and low contrast on cel gold. Projects without a background library pass `validate-backgrounds`.
 
 ## [3.6.0] - 2026-10-27
 
