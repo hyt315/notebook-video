@@ -80,9 +80,13 @@ class EngineWiringTest(unittest.TestCase):
         src = SFX_TS.read_text(encoding="utf-8")
         self.assertIn("export type SfxDensity = 'sparse' | 'normal';", src)
         self.assertIn("export const SFX_DENSITY_DEFAULT: SfxDensity = 'sparse';", src)
-        # sparse 分支：末拍一条 + 误区镜的第 2 拍
-        self.assertRegex(src, r"if \(density === 'sparse'\) \{[^}]*beats\[n - 1\]")
+        # sparse 分支：换章的镜只留章节声，其余镜末拍一记 + 误区镜的第 2 拍
+        self.assertIn("if (isChapter || !n) return out;", src)
+        self.assertIn("s.beats[n - 1]", src)
         self.assertIn("s.misconception && n >= 3", src)
+        # 转场音在 sparse 下只剩 chapter（riser / whoosh 只在 normal 出现）
+        self.assertIn("if (!isFirst && !sparse) out.push({event: 'riser', at: 2});", src)
+        self.assertIn("} else if (!isFirst && !sparse) {", src)
 
     def test_normal_branch_unchanged(self):
         """normal 必须还是 3.6.0 的逐拍循环——老工程写 normal 后结果不变。"""

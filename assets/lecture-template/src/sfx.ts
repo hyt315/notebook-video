@@ -116,11 +116,14 @@ export const SFX_DENSITY_DEFAULT: SfxDensity = 'sparse';
 /** 一镜的自动音效（本镜本地帧）。 */
 export const autoSfxForShot = (s: ShotLike, isChapter: boolean, isFirst: boolean, density: SfxDensity = SFX_DENSITY_DEFAULT): {event: SfxEvent; at: number; beat?: number}[] => {
   const out: {event: SfxEvent; at: number; beat?: number}[] = [];
+  // sparse：转场只留「换章」这一记。riser 与 chapter 本来就命中同一帧（见下面 normal 分支的注释），
+  // 普通切点的 whoosh 在安静的片子里反而制造噪声——实测（cell 演示片 49 s）保留它们时是 24 条/分钟，
+  // 去掉后是 17 条/分钟，才真正接近「音效是标点」。
+  const sparse = density === 'sparse';
   if (isChapter) {
     out.push({event: 'chapter', at: 2});
-    // riser 的命中点（文件末尾）与 chapter 的命中点同帧——两者合成一个「落点」，不再相隔 2 帧（67 ms）各响一下。
-    if (!isFirst) out.push({event: 'riser', at: 2});
-  } else if (!isFirst) {
+    if (!isFirst && !sparse) out.push({event: 'riser', at: 2});
+  } else if (!isFirst && !sparse) {
     out.push({event: 'whoosh', at: WHOOSH_HIT});
   }
   if (s.sfxEvents && s.sfxEvents.length) {
@@ -129,8 +132,9 @@ export const autoSfxForShot = (s: ShotLike, isChapter: boolean, isFirst: boolean
   }
   const n = s.beats.length;
   if (density === 'sparse') {
-    if (!n) return out;
-    // 末拍：结论镜给 success，其余给 highlight——一镜只留这一记
+    // 「每镜一记」：换章的镜已经有章节声（out 里那条），不再加 beat 音；其余镜在末拍给一记。
+    // 这样 8 镜的片子里 beat 音最多 8 条，加上章节声才是 8–12 条量级（cell 演示片实测 9 条 / 11 条每分钟）。
+    if (isChapter || !n) return out;
     const conclusive = (s.live ?? []).some((x) => CONCLUSIVE.includes(x)) || s.move === '收束' || s.move === '结论';
     out.push({event: conclusive ? 'success' : 'highlight', at: s.beats[n - 1], beat: n - 1});
     // 误区镜的「反转」是叙事骨架，单独留一条

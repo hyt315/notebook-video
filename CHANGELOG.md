@@ -35,7 +35,7 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 ### 声音 / Sound（行为变更）
 
-- 新片级字段 `sfxDensity`：`sparse`（**缺省**）/ `normal`。`sparse` 下每镜只留末拍一记（结论镜 `success`，其余 `highlight`）+ 章节 / 转场音，误区镜额外保留第 2 拍的反转音；`normal` 是 3.6.0 的「一拍一个」。演示片从约 39 条候选（落地 ~24 条/分钟）降到 8–12 条。
+- 新片级字段 `sfxDensity`：`sparse`（**缺省**）/ `normal`。`sparse` 是「每镜一记」：换章的镜只给章节声，其余镜在末拍给一记（结论镜 `success`，其余 `highlight`），误区镜另留第 2 拍的反转音；转场只剩 `chapter`（不再叠 `riser`、普通切点不再 `whoosh`）。`normal` 是 3.6.0 的「一拍一个」。演示片从 39 条候选 / 落地 ~24 条每分钟降到 **9 条 / 11 条每分钟**。
   New film-level `sfxDensity`: `sparse` (default) keeps one hit per shot plus chapter / transition cues, and the beat-2 turn on misconception shots; `normal` restores the 3.6.0 one-per-beat behaviour. The demo drops from ~39 candidates to 8–12 cues.
 - **为什么改缺省**：旁白由使用者自行后配（任意 TTS 或真人），技能不知道以后有没有人声；按 24 条/分钟铺满会跟说话抢注意力。音效是标点，不是配乐。旧工程想恢复原样，在 `manifests/shots.json` 顶层写 `"sfxDensity": "normal"`。
   Rationale: narration is added later by the user (any TTS or a human voice), so the default has to be restrained. Add `"sfxDensity": "normal"` to restore the old density.
