@@ -87,6 +87,17 @@ def cue_at(cues: list[dict], t: float) -> int | None:
     return None
 
 
+def should_reexec(alt: str | None, current: str, env) -> bool:
+    """Re-run under NOTEBOOK_VIDEO_OCR_PYTHON when it names another interpreter path.
+
+    Paths are compared *without* resolving symlinks: a venv's bin/python is a symlink to the system
+    python, so resolving made the venv look like "the same interpreter" and OCR was silently skipped.
+    _NV_OCR_REEXEC guards against a loop when the target also lacks RapidOCR."""
+    if not alt or env.get("_NV_OCR_REEXEC"):
+        return False
+    return os.path.abspath(os.path.expanduser(alt)) != os.path.abspath(current)
+
+
 def judge(expected: str, lines: list[dict], img_h: int, band: float, min_px: float) -> dict:
     """lines: [{text, score, h}]（h = 检测框高，像素）。返回 {sim, score, px, level, issue}。"""
     got = "".join(x["text"] for x in lines)
@@ -188,7 +199,7 @@ def main(argv: list[str]) -> int:
     run = load_engine()
     if run is None:
         alt = os.environ.get("NOTEBOOK_VIDEO_OCR_PYTHON")
-        if alt and Path(alt).resolve() != Path(sys.executable).resolve() and not os.environ.get("_NV_OCR_REEXEC"):
+        if should_reexec(alt, sys.executable, os.environ):
             env = dict(os.environ, _NV_OCR_REEXEC="1")
             return subprocess.run([alt, __file__, *argv], env=env).returncode
         print("validate-ocr · SKIPPED：没装 RapidOCR（pip install rapidocr onnxruntime，或设 NOTEBOOK_VIDEO_OCR_PYTHON）")

@@ -25,6 +25,23 @@ CUES = [
 ]
 
 
+class Reexec(unittest.TestCase):
+    """3.7.0: NOTEBOOK_VIDEO_OCR_PYTHON must work when it points at a venv python (a symlink)."""
+    def test_venv_symlink_to_current_interpreter_reexecs(self):
+        with tempfile.TemporaryDirectory() as d:
+            link = Path(d) / "venv" / "bin" / "python"
+            link.parent.mkdir(parents=True)
+            link.symlink_to(sys.executable)
+            self.assertEqual(link.resolve(), Path(sys.executable).resolve())   # the old check saw "same"
+            self.assertTrue(vocr.should_reexec(str(link), sys.executable, {}))
+
+    def test_same_path_or_guard_or_unset_does_not_reexec(self):
+        self.assertFalse(vocr.should_reexec(sys.executable, sys.executable, {}))
+        self.assertFalse(vocr.should_reexec("/opt/x/python", sys.executable, {"_NV_OCR_REEXEC": "1"}))
+        self.assertFalse(vocr.should_reexec(None, sys.executable, {}))
+        self.assertFalse(vocr.should_reexec("", sys.executable, {}))
+
+
 class Normalize(unittest.TestCase):
     def test_strips_punct_space_and_width(self):
         self.assertEqual(vocr.normalize("他叫它们　Cells！"), "他叫它们cells")
