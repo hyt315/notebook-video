@@ -155,8 +155,8 @@ export const PinnedPhoto: React.FC<Base & {caption?: string; fix?: 'tape' | 'pin
   const textW = Math.min(w - border * 2, Math.max(280, (w - border * 2) * 0.7));
   // 说明与署名之间留 20px：卡片是斜贴的（rot），渲染期 OverlapGate 量的是旋转后的外接矩形，
   // 紧贴的两行在 -2° 下外接框会互相压住（cell 演示片 S7 实测「今天的软木切片」压「Giovanna Canu et」被硬拦）
-  const CAPTION_GAP = 20;
-  const bottom = 14 + (caption ? 40 + CAPTION_GAP : 0) + (credit ? 23 * Math.ceil((credit.length * 10) / textW) : 0);
+  const CAPTION_GAP = 24;
+  const bottom = 14 + (caption ? 40 + CAPTION_GAP : 0) + (credit ? 26 * Math.ceil((credit.length * 10) / textW) : 0);
   const {dw, dh} = fitBox(id, w - border * 2, h - border - bottom);
   const cardW = Math.max(dw, textW) + border * 2;
   const top = y + Math.max(0, (h - (dh + border + bottom)) / 2);
