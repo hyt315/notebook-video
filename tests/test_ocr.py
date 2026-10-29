@@ -27,6 +27,7 @@ CUES = [
 
 class Reexec(unittest.TestCase):
     """3.7.0: NOTEBOOK_VIDEO_OCR_PYTHON must work when it points at a venv python (a symlink)."""
+    @unittest.skipIf(sys.platform == "win32", "Windows 创建符号链接需要管理员/开发者模式（WinError 1314），venv 也不用符号链接")
     def test_venv_symlink_to_current_interpreter_reexecs(self):
         with tempfile.TemporaryDirectory() as d:
             link = Path(d) / "venv" / "bin" / "python"

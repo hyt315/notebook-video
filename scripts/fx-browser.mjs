@@ -252,7 +252,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const sp = spliceArgs('raw.mp4', ['a.mp4', 'b.mp4'], [[100, 121], [300, 331]], 'out.mp4');
   const fc = sp[sp.indexOf('-filter_complex') + 1];
   const wrapper = writeChromeWrapper('/bin/echo', SOFTWARE_GPU_FLAGS, tmp);
-  const echoed = spawnSync(wrapper, ['--use-gl=angle', '--enable-features=CanvasDrawElement', '--headless=new'], {encoding: 'utf8'}).stdout.trim();
+  // Windows 上包装脚本（Linux shell 脚本）根本执行不了，spawnSync 的 stdout 是 undefined，
+  // 以前直接 .trim() 就抛 TypeError，自检整个崩掉（3.7.0 修）。这里容错，并把「echo 断言」限定在 POSIX。
+  const echoRun = spawnSync(wrapper, ['--use-gl=angle', '--enable-features=CanvasDrawElement', '--headless=new'], {encoding: 'utf8'});
+  const echoed = (echoRun.stdout ?? '').trim();
+  const echoChecked = process.platform !== 'win32';
+  if (!echoChecked) console.error('SKIP: wrapper echo check (POSIX only — 包装脚本是 shell 脚本)');
   // 浏览器目录里有 SwiftShader ICD → 包装脚本要指 VK_ICD_FILENAMES（没有它 ANGLE-Vulkan 初始化失败、卷页画空）
   fs.mkdirSync(path.join(tmp, 'cft'));
   fs.writeFileSync(path.join(tmp, 'cft', 'vk_swiftshader_icd.json'), '{}');
@@ -264,6 +269,6 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const pass = icdWrapped && icdSkipped && good.ok && !flat.ok && !empty.ok && usedSkin && !unused && usedShot
     && JSON.stringify(winSlide) === '[[100,121],[300,321]]' && JSON.stringify(winCurl) === '[[100,121],[300,331]]'
     && fc === '[0:v]split=3[m0][m1][m2];[m0]trim=start_frame=0:end_frame=100,setpts=PTS-STARTPTS[p0];[1:v]trim=end_frame=22,setpts=PTS-STARTPTS[w0];[m1]trim=start_frame=122:end_frame=300,setpts=PTS-STARTPTS[p1];[2:v]trim=end_frame=32,setpts=PTS-STARTPTS[w1];[m2]trim=start_frame=332,setpts=PTS-STARTPTS[p2];[p0][w0][p1][w1][p2]concat=n=5:v=1:a=0[v]'
-    && echoed === '--headless=new --enable-features=Vulkan,CanvasDrawElement --window-size=3840,2160 --use-angle=vulkan --use-vulkan=swiftshader --enable-unsafe-swiftshader';
+    && (!echoChecked || echoed === '--headless=new --enable-features=Vulkan,CanvasDrawElement --window-size=3840,2160 --use-angle=vulkan --use-vulkan=swiftshader --enable-unsafe-swiftshader');
   process.exit(pass ? 0 : 1);
 }

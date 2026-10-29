@@ -110,11 +110,20 @@ def grab_frames(video: Path, frames=PROBE_FRAMES) -> list[bytes] | None:
     if not shutil.which("ffmpeg"):
         return None
     sel = "+".join(f"eq(n\\,{f})" for f in frames)
-    cmd = ["ffmpeg", "-v", "error", "-i", str(video), "-vf", f"select='{sel}',scale={SAMPLE_W}:{SAMPLE_H}:flags=area",
-           "-vsync", "0", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]
-    try:
-        raw = subprocess.run(cmd, capture_output=True, check=True, timeout=120).stdout
-    except (subprocess.SubprocessError, OSError):
+    head = ["ffmpeg", "-v", "error", "-i", str(video), "-vf",
+            f"select='{sel}',scale={SAMPLE_W}:{SAMPLE_H}:flags=area"]
+    tail = ["-f", "rawvideo", "-pix_fmt", "rgb24", "-"]
+    # ffmpeg 7.1 起删除了 -vsync（本机 N-125608 直接 "Unrecognized option 'vsync'"），
+    # 以前抽帧命令必然失败 → 像素检查静默 SKIPPED，等于 O6/O7 从来没真跑过。
+    # 新版本用 -fps_mode passthrough，老版本退回 -vsync 0。
+    raw = None
+    for flag in (["-fps_mode", "passthrough"], ["-vsync", "0"]):
+        try:
+            raw = subprocess.run(head + flag + tail, capture_output=True, check=True, timeout=120).stdout
+            break
+        except (subprocess.SubprocessError, OSError):
+            raw = None
+    if raw is None:
         return None
     size = SAMPLE_W * SAMPLE_H * 3
     return [raw[i:i + size] for i in range(0, len(raw) - size + 1, size)]
