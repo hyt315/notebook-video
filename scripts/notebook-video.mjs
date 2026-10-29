@@ -228,6 +228,12 @@ const newProject = async (args) => {
   console.log('Multi-zone lecture composition rules: references/lecture-composition.md. Image generation stays an optional add-on offered separately.');
   console.log('Preserve the engine, background, subtitle, chrome, asset gate, audio tree and frame conventions. Replace topic content, visual plan, registered imagery and semantic scene objects.');
   console.log('Narration audio is intentionally not bundled. Generate or supply licensed audio, then run sync before rendering.');
+  // 3.7.0：手作皮肤的导演层是必填项，直接说清下一步，别让新用户在门禁前面猜。
+  if (SERIF_THEMES.includes(style)) {
+    console.log('下一步：改 manifests/treatment.json（facts 换成你选题的出处、跑一次 commons-search.py search "<关键词>" --project .），然后 make-video --stills。');
+  } else {
+    console.log('下一步：node scripts/make-video.mjs <工程> --stills，先看静帧接触表。');
+  }
 };
 
 const syncProjectAssets = async ([projectArg]) => {

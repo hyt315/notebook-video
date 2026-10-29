@@ -1,0 +1,36 @@
+{
+ "searches": [
+  {
+   "at": "2026-10-29T12:34:00Z",
+   "source": "commons",
+   "query": "cork cells microscope",
+   "type": "image",
+   "category": null,
+   "results": 4,
+   "usable": 4,
+   "top": [
+    {
+     "title": "File:1. Portion of a cork bark under the optical microscope.tif",
+     "license": "CC BY 4.0",
+     "verdict": "ok"
+    },
+    {
+     "title": "File:2. Portion of a cork bark under the optical microscope.tif",
+     "license": "CC BY 4.0",
+     "verdict": "ok"
+    },
+    {
+     "title": "File:3. Portion of a cork bark under the optical microscope.tif",
+     "license": "CC BY 4.0",
+     "verdict": "ok"
+    },
+    {
+     "title": "File:The microscope and its revelations (1856) (14776099884).jpg",
+     "license": "No restrictions",
+     "verdict": "ok"
+    }
+   ],
+   "note": "本机 Python 的 TLS 走代理会 SSL EOF，这条记录由同一个 Commons API 查询（相同参数）经 curl 取回后按 commons-search.py 的日志格式落盘；结果与许可未改动。"
+  }
+ ]
+}

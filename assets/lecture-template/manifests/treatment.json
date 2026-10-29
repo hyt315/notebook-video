@@ -16,9 +16,21 @@
     "why_only_this_medium": "只有组件式画面能把「一次提交」拆成行级的增删再合成一条结果；纸感手绘只能画一个抽象的箭头，说不出「交出去的是什么」。"
   },
   "candidates": [
-    {"id": "A", "family": "lecture-arc", "shape": "钩子（代码还躺在硬盘里）→ 三步各自一镜 → 三个技能收束：一条直线的教学弧。"},
-    {"id": "B", "family": "scale-ladder", "shape": "从「一个 PR」放大到「一个仓库」再到「一个版本」，用尺度递进代替步骤罗列。"},
-    {"id": "C", "family": "mystery", "shape": "先给一条已合并的 PR 记录，再倒推这个人做对了哪三件事。"}
+    {
+      "id": "A",
+      "family": "lecture-arc",
+      "shape": "钩子（代码还躺在硬盘里）→ 三步各自一镜 → 三个技能收束：一条直线的教学弧。"
+    },
+    {
+      "id": "B",
+      "family": "scale-ladder",
+      "shape": "从「一个 PR」放大到「一个仓库」再到「一个版本」，用尺度递进代替步骤罗列。"
+    },
+    {
+      "id": "C",
+      "family": "mystery",
+      "shape": "先给一条已合并的 PR 记录，再倒推这个人做对了哪三件事。"
+    }
   ],
   "chosen": "A",
   "chosen_why": "观众是新手，最需要的是「我现在该做什么」的顺序感，而不是悬念；B 的尺度递进会让第一步显得不重要，C 的倒推需要真实案例，示例片没有。",
@@ -34,25 +46,98 @@
     "one_change": "结尾同一个位置，代码块已经连着三个技能卡片和一条发布线"
   },
   "benchmark": {
-    "works": ["GitHub 官方 Docs 的 Quickstart 版式", "常见开发者工具的产品介绍片（三步式）"],
-    "learn": ["构图：一屏只讲一件事，清单与卡片留白", "节奏：每一步给一个可执行的动词", "配色逻辑：中性底 + 一个强调色"],
-    "not_learn": ["不复刻任何品牌的视觉识别", "不用电子 BGM", "不把三步讲成功能罗列"]
+    "works": [
+      "GitHub 官方 Docs 的 Quickstart 版式",
+      "常见开发者工具的产品介绍片（三步式）"
+    ],
+    "learn": [
+      "构图：一屏只讲一件事，清单与卡片留白",
+      "节奏：每一步给一个可执行的动词",
+      "配色逻辑：中性底 + 一个强调色"
+    ],
+    "not_learn": [
+      "不复刻任何品牌的视觉识别",
+      "不用电子 BGM",
+      "不把三步讲成功能罗列"
+    ]
   },
-  "avoid": ["暗底发光线", "粒子", "金色/冰蓝科技风", "电子 BGM", "名词→定义→升华模板"],
+  "avoid": [
+    "暗底发光线",
+    "粒子",
+    "金色/冰蓝科技风",
+    "电子 BGM",
+    "名词→定义→升华模板"
+  ],
   "shots": [
-    {"id": "S1", "framing": "全", "move": "establish", "why": "先给处境：代码在硬盘里，画面上只有它自己——问题成立，才有后面三步。"},
-    {"id": "S2", "framing": "中", "move": "pan-follow", "why": "横移把「全世界在造软件」这句话变成一条看得见的贡献流，而不是一句口号。"},
-    {"id": "S3", "framing": "中", "move": "reveal", "why": "「其实只要三步」要把三步同时亮出来，观众才知道这条路有多长。"},
-    {"id": "S4", "framing": "近", "move": "push-in", "why": "第一步是唯一要观众动手的一镜：推近到 PR 差异卡片，看清改动行。"},
-    {"id": "S5", "framing": "中", "move": "push-in", "why": "第二步从「作品」推到「仓库结构」，让整理这件事有具体形状。"},
-    {"id": "S6", "framing": "中", "move": "pan-follow", "why": "第三步是流程，横移比推近更适合讲顺序。"},
-    {"id": "S7", "framing": "全", "move": "reveal", "why": "三个技能要一起出现，揭示它们和前三步的对应关系。"},
-    {"id": "S8", "framing": "全", "move": "pull-back", "why": "收束：拉远让三步和三个技能同框，回到开头那枚代码块。"}
+    {
+      "id": "S1",
+      "framing": "全",
+      "move": "establish",
+      "why": "先给处境：代码在硬盘里，画面上只有它自己——问题成立，才有后面三步。"
+    },
+    {
+      "id": "S2",
+      "framing": "中",
+      "move": "pan-follow",
+      "why": "横移把「全世界在造软件」这句话变成一条看得见的贡献流，而不是一句口号。"
+    },
+    {
+      "id": "S3",
+      "framing": "中",
+      "move": "reveal",
+      "why": "「其实只要三步」要把三步同时亮出来，观众才知道这条路有多长。"
+    },
+    {
+      "id": "S4",
+      "framing": "近",
+      "move": "push-in",
+      "why": "第一步是唯一要观众动手的一镜：推近到 PR 差异卡片，看清改动行。"
+    },
+    {
+      "id": "S5",
+      "framing": "中",
+      "move": "push-in",
+      "why": "第二步从「作品」推到「仓库结构」，让整理这件事有具体形状。"
+    },
+    {
+      "id": "S6",
+      "framing": "中",
+      "move": "pan-follow",
+      "why": "第三步是流程，横移比推近更适合讲顺序。"
+    },
+    {
+      "id": "S7",
+      "framing": "全",
+      "move": "reveal",
+      "why": "三个技能要一起出现，揭示它们和前三步的对应关系。"
+    },
+    {
+      "id": "S8",
+      "framing": "全",
+      "move": "pull-back",
+      "why": "收束：拉远让三步和三个技能同框，回到开头那枚代码块。"
+    }
   ],
   "signature_shot": "S4：推近到第一个 PR 的差异卡片，改动行一条条落下",
-  "commons": {"queries": [], "used": []},
-  "facts": [],
-  "facts_note": "示例片只讲流程与自有产品，不引用外部事实；真实项目在这里写 claim / url / quote。",
+  "commons": {
+    "queries": [
+      "pull request"
+    ],
+    "used": []
+  },
+  "facts": [
+    {
+      "claim": "Pull Request 是「提议把代码改动合进项目」的方式",
+      "url": "https://docs.github.com/en/pull-requests/reference/pull-requests",
+      "quote": "Pull requests are proposals to merge code changes into a project. A pull request is GitHub's key collaboration feature, letting you discuss and review changes before merging them."
+    },
+    {
+      "claim": "参与别人的项目不需要仓库所有者的写权限：fork 之后往自己的 fork 推就行",
+      "url": "https://docs.github.com/en/pull-requests/reference/pull-requests",
+      "quote": "In the fork and pull model, anyone can fork an existing (\"upstream\") repository if they have read access and the owner of the upstream repository allows it."
+    }
+  ],
+  "facts_note": "示例片只讲流程，事实只引 GitHub 官方文档原文；真实项目在这里写 claim / url / quote，每个数字、年份、人名都要有对应条目。",
   "sound": {
     "bed": "皮肤自带的纸面 / 环境底噪（无旋律）",
     "foley": [
@@ -63,7 +148,11 @@
     "silence": "第一步差异卡片落下之前留 0.8 秒静默",
     "silence_before_native_move_sec": 0.8,
     "most_important_sound": "14 秒差异卡片合并成绿色结论条的那一声——全片唯一的正向确认音",
-    "music": {"use": false, "why": "示例片要让人跟着步骤做，旋律会分走注意力；留白优于凑数", "mood_curve": []},
+    "music": {
+      "use": false,
+      "why": "示例片要让人跟着步骤做，旋律会分走注意力；留白优于凑数",
+      "mood_curve": []
+    },
     "foley_per_medium": [
       "卡片（Callout / StatRow）：纸张落下",
       "代码（DiffView / HighlightCode）：键盘轻敲",
@@ -71,5 +160,7 @@
       "数字（KineticNumber）：计数 tick"
     ]
   },
-  "review": {"rounds": []}
+  "review": {
+    "rounds": []
+  }
 }
