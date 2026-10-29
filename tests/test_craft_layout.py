@@ -46,7 +46,8 @@ class ArchivePhotoTest(unittest.TestCase):
         self.assertNotRegex(MEDIA, r"fontWeight: 700, fontSize: 30, lineHeight: 1.2, color: C.ink, whiteSpace: 'nowrap'\}\}>\s*\{catalogue")
 
     def test_credit_font_not_reduced(self):
-        self.assertRegex(MEDIA, r"CREDIT_FONT = 20")
+        # 3.7.0 评审 P1-10：署名从 20 提到 22（CC BY 要求可读），这条断言改为「不得低于 22」
+        self.assertRegex(MEDIA, r"CREDIT_FONT = 2[2-9]")
         self.assertIn("fontSize: L.creditFont", MEDIA)
 
     def test_mount_formula_keeps_image_at_least_70_percent(self):

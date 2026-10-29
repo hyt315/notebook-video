@@ -52,7 +52,9 @@ const SLIP_SIDE_W = 300, SLIP_GAP = 18;
 export const ARCHIVE_MIN_IMAGE_FRAC = 0.7;
 /** 3.7.0 层级：编目签（编号 / 名称）字号不超过图片区高度的 12%——签不能比文物还抢眼。署名字号不缩（CC BY 要可读）。 */
 export const ARCHIVE_LABEL_MAX_FRAC = 0.12;
-const LABEL_FONT_MAX = 30, CREDIT_FONT = 20;
+const LABEL_FONT_MAX = 30, CREDIT_FONT = 22;
+/** 署名的字宽 / 行高估算：跟着 CREDIT_FONT 走，字号一改签高自动跟上（3.7.0 P1-10）。 */
+const CREDIT_CHAR_W = 12, CREDIT_LINE_H = 27;   // 3.7.0 评审 P1-10：18/20 px 在手机上读不出，等于署名缺失
 /** 编目签标题字号：≤ 30，且 ≤ 图高 × 12%（下限 12，再小就不是字了）。编号字号 = 标题 × 0.8。 */
 export const archiveLabelFont = (dh: number) => Math.max(12, Math.min(LABEL_FONT_MAX, Math.floor(dh * ARCHIVE_LABEL_MAX_FRAC)));
 /** 纸托边：满足 dw·dh ≥ 70%·(dw+2m)(dh+2m) 的最大 m（不超过 mount）。 */
@@ -87,7 +89,7 @@ export const archiveLayout = (id: string, w: number, frameH: number, mount: numb
   const h = archiveSafeH(y, frameH); // 3.7.0：传入 y 时整件（图 + 签）收在字幕安全线以上
   const credit = creditOf(id);
   const has = labelled || Boolean(credit);
-  const slipH = (sw: number, dh: number) => !has ? 0 : 17 + (labelled ? Math.ceil(archiveLabelFont(dh) * 1.2) : 0) + (credit ? 4 + 25 * Math.ceil((credit.length * 11) / Math.max(120, sw - 19)) : 0);
+  const slipH = (sw: number, dh: number) => !has ? 0 : 17 + (labelled ? Math.ceil(archiveLabelFont(dh) * 1.2) : 0) + (credit ? 4 + CREDIT_LINE_H * Math.ceil((credit.length * CREDIT_CHAR_W) / Math.max(120, sw - 19)) : 0);
   // 每种版式三轮收敛：图尺寸 → 签高 / 纸托边 → 回头缩放图
   const solve = (mode: 'below' | 'side') => {
     let m = mount;
@@ -135,7 +137,7 @@ export const ArchivePhoto: React.FC<Base & {catalogue?: string; title?: string; 
         {(catalogue || title) && <div style={{fontFamily: 'NotoSerifSC,Kai', fontWeight: 700, fontSize: L.labelFont, lineHeight: 1.2, color: C.ink, whiteSpace: 'nowrap'}}>
           {catalogue && <span style={{fontFamily: 'Space,Kai', fontSize: L.catalogueFont, letterSpacing: 3, color: C.orangeInk, marginRight: 12}}>{catalogue}</span>}{title}</div>}
         {/* 署名不截断（CC BY 要求完整署名）：窄签里换行，而不是省略号 */}
-        {credit && <div style={{fontFamily: 'Space,Kai', fontSize: L.creditFont, color: C.muted, marginTop: 4, lineHeight: 1.25, overflowWrap: 'anywhere'}}>{credit}</div>}
+        {credit && <div style={{fontFamily: 'Space,Kai', fontSize: L.creditFont, color: C.ink, marginTop: 4, lineHeight: 1.25, overflowWrap: 'anywhere'}}>{credit}</div>}
       </div>}
     </div>;
   };
@@ -163,7 +165,7 @@ export const PinnedPhoto: React.FC<Base & {caption?: string; fix?: 'tape' | 'pin
     <Img src={staticFile(`media/${m.file}`)} style={{display: 'block', width: dw, height: dh, margin: '0 auto', filter: filterOf(treatment)}} />
     <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '6px 0 8px'}}>
       {caption && <div style={{fontFamily: THEME.craft?.handFamily ?? 'Kai', fontWeight: 700, fontSize: 32, lineHeight: 1.2, color: C.ink, whiteSpace: 'nowrap'}}>{caption}</div>}
-      {credit && <div style={{fontFamily: 'Space,Kai', fontSize: 18, color: C.muted, lineHeight: 1.25, overflowWrap: 'anywhere', marginTop: caption ? CAPTION_GAP : 0}}>{credit}</div>}
+      {credit && <div style={{fontFamily: 'Space,Kai', fontSize: 20, color: C.ink, lineHeight: 1.25, overflowWrap: 'anywhere', marginTop: caption ? CAPTION_GAP : 0}}>{credit}</div>}
     </div>
     {fix === 'tape' ? <TapeStrip x={cardW / 2 - 70} y={-16} w={140} rot={-4} />
       : <div style={{position: 'absolute', left: cardW / 2 - 13, top: -8, width: 26, height: 26, borderRadius: 13, background: THEME.craft?.accent ?? C.red,
