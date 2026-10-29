@@ -376,6 +376,42 @@ const fxProbe = async ([projectArg, ...rest]) => {
   console.log(JSON.stringify(fx, null, 2));
 };
 
+// 3.7.0：FillGate 的浏览器日志按镜头去重。fill-gate.tsx 每个标签每镜只打一条 `[FillGate] underfilled <镜号> …`，
+// 这里把所有标签的这类行吞掉、记下镜号，渲染结束汇总成**一行**；其他输出原样透传。
+const runRemotionFiltered = (nodeArgs, cwd) => new Promise((resolve, reject) => {
+  const child = spawn(process.execPath, nodeArgs, {cwd, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, shell: false});
+  const shots = new Set();
+  let other = 0;
+  const pump = (src, dst) => {
+    let buf = '';
+    src.setEncoding('utf8');
+    const emit = (line) => {
+      if (line.includes('[FillGate]')) {
+        const m = line.match(/underfilled\s+(\S+)/);
+        if (m) shots.add(m[1]); else other += 1;
+        return;
+      }
+      dst.write(line + '\n');
+    };
+    src.on('data', (chunk) => {
+      buf += chunk;
+      let i;
+      while ((i = buf.indexOf('\n')) >= 0) { emit(buf.slice(0, i)); buf = buf.slice(i + 1); }
+    });
+    src.on('end', () => { if (buf) emit(buf); buf = ''; });
+  };
+  pump(child.stdout, process.stdout);
+  pump(child.stderr, process.stderr);
+  child.on('error', reject);
+  child.on('close', (code) => {
+    if (shots.size) {
+      const ids = [...shots].sort((a, b) => a.localeCompare(b, 'en', {numeric: true}));
+      console.warn(`FillGate: ${ids.length} shot${ids.length > 1 ? 's' : ''} (${ids.join(',')}) bottom-quarter underfilled${other ? ` (+${other} other FillGate lines)` : ''}`);
+    } else if (other) console.warn(`FillGate: ${other} message(s) (no underfilled shot)`);
+    if (code === 0) resolve({code}); else reject(new Error(`${process.execPath} exited with code ${code}`));
+  });
+});
+
 const remotionRender = async ({project, composition, output, frames, concurrency, colorTagged = false, scale, fxMode = 'auto', crf = 16, muted = false}) => {
   const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
   if (!fs.existsSync(remotionCli)) await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
@@ -412,7 +448,7 @@ const remotionRender = async ({project, composition, output, frames, concurrency
     if (!fs.existsSync(resolved)) fail(`REMOTION_BROWSER_EXECUTABLE does not exist: ${resolved}`);
     nodeArgs.push(`--browser-executable=${resolved}`);
   }
-  await run(process.execPath, nodeArgs, {cwd: project});
+  await runRemotionFiltered(nodeArgs, project);
   if (colorTagged) await applyColorTags(output);
 };
 

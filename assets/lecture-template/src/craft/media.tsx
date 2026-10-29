@@ -16,7 +16,7 @@ import {Img, Sequence, staticFile} from 'remotion';
 import {THEME} from '../theme/active';
 import {MEDIA} from '../media-frame';
 import {TapeStrip} from '../theme/craft-common';
-import {Loupe} from './lens';
+import {Loupe, pickHandleAngle} from './lens';
 import {prog, CRAFT_TYPE} from './ink';
 
 const C = THEME.palette;
@@ -47,30 +47,57 @@ const fitBox = (id: string, w: number, h: number) => {
 
 /** 编目签的宽度（side 版式固定；below 版式跟图同宽、至少 240）。 */
 const SLIP_SIDE_W = 300, SLIP_GAP = 18;
+/** 3.7.0 层级：图片区至少占纸托卡片（图 + 纸托边）面积的 70%——纸托边按这个比例自动收窄（不超过传入的 mount）。 */
+export const ARCHIVE_MIN_IMAGE_FRAC = 0.7;
+/** 3.7.0 层级：编目签（编号 / 名称）字号不超过图片区高度的 12%——签不能比文物还抢眼。署名字号不缩（CC BY 要可读）。 */
+export const ARCHIVE_LABEL_MAX_FRAC = 0.12;
+const LABEL_FONT_MAX = 30, CREDIT_FONT = 20;
+/** 编目签标题字号：≤ 30，且 ≤ 图高 × 12%（下限 12，再小就不是字了）。编号字号 = 标题 × 0.8。 */
+export const archiveLabelFont = (dh: number) => Math.max(12, Math.min(LABEL_FONT_MAX, Math.floor(dh * ARCHIVE_LABEL_MAX_FRAC)));
+/** 纸托边：满足 dw·dh ≥ 70%·(dw+2m)(dh+2m) 的最大 m（不超过 mount）。 */
+export const archiveMount = (dw: number, dh: number, mount: number) => {
+  const k = 1 / ARCHIVE_MIN_IMAGE_FRAC - 1; // (dw+2m)(dh+2m) ≤ dw·dh/0.7  ⇔  4m² + 2m(dw+dh) − k·dw·dh ≤ 0
+  const mmax = (-2 * (dw + dh) + Math.sqrt(4 * (dw + dh) ** 2 + 16 * k * dw * dh)) / 8;
+  return Math.max(0, Math.min(mount, Math.floor(mmax)));
+};
 
 /**
  * 档案件的版式：图（真实比例）+ 纸托 + 编目签，**一起**装进 w×h 框。
  *   below：签在图下（横图）；side：签在图右下（竖图放进横框时，签放下面会把图挤得很小）。
  *   auto（缺省）：两种都算，取图更大的那个。
  * 签高按字数估（署名在窄签里换行，不截断），图为它让出位置，签不会被挤出框外。
+ * 3.7.0：纸托边按 ARCHIVE_MIN_IMAGE_FRAC 收窄、编目签字号按 ARCHIVE_LABEL_MAX_FRAC 封顶（见上面两个常量）。
  */
 export type ArchiveLabel = 'auto' | 'below' | 'side';
 export const archiveLayout = (id: string, w: number, h: number, mount: number, labelled: boolean, label: ArchiveLabel = 'auto') => {
   const credit = creditOf(id);
   const has = labelled || Boolean(credit);
-  const slipH = (sw: number) => !has ? 0 : 17 + (labelled ? 36 : 0) + (credit ? 4 + 25 * Math.ceil((credit.length * 11) / Math.max(120, sw - 19)) : 0);
-  // below：先按无签估宽，再按这个宽算签高、回头缩图（两轮收敛）
-  let b = fitBox(id, w - mount * 2, h - mount * 2);
-  for (let k = 0; k < 2; k++) b = fitBox(id, w - mount * 2, h - mount * 2 - (has ? 10 : 0) - slipH(Math.max(b.dw + mount * 2, 240)));
-  const below = {mode: 'below' as const, ...b, slipW: Math.max(b.dw + mount * 2, 240), slipH: slipH(Math.max(b.dw + mount * 2, 240))};
-  const sd = fitBox(id, w - mount * 2 - (has ? SLIP_SIDE_W + SLIP_GAP : 0), h - mount * 2);
-  const side = {mode: 'side' as const, ...sd, slipW: SLIP_SIDE_W, slipH: slipH(SLIP_SIDE_W)};
+  const slipH = (sw: number, dh: number) => !has ? 0 : 17 + (labelled ? Math.ceil(archiveLabelFont(dh) * 1.2) : 0) + (credit ? 4 + 25 * Math.ceil((credit.length * 11) / Math.max(120, sw - 19)) : 0);
+  // 每种版式三轮收敛：图尺寸 → 签高 / 纸托边 → 回头缩放图
+  const solve = (mode: 'below' | 'side') => {
+    let m = mount;
+    let b = fitBox(id, w - m * 2 - (mode === 'side' && has ? SLIP_SIDE_W + SLIP_GAP : 0), h - m * 2);
+    for (let k = 0; k < 3; k++) {
+      m = archiveMount(b.dw, b.dh, mount);
+      const sw = mode === 'side' ? SLIP_SIDE_W : Math.max(b.dw + m * 2, 240);
+      b = mode === 'side'
+        ? fitBox(id, w - m * 2 - (has ? SLIP_SIDE_W + SLIP_GAP : 0), h - m * 2)
+        : fitBox(id, w - m * 2, h - m * 2 - (has ? 10 : 0) - slipH(sw, b.dh));
+    }
+    m = archiveMount(b.dw, b.dh, mount);
+    const slipW = mode === 'side' ? SLIP_SIDE_W : Math.max(b.dw + m * 2, 240);
+    return {mode, ...b, mount: m, slipW, slipH: slipH(slipW, b.dh)};
+  };
+  const below = solve('below');
+  const side = solve('side');
   const pick = !has || label === 'below' ? below : label === 'side' ? side : (side.dw * side.dh > below.dw * below.dh * 1.15 ? side : below);
-  const boxW = pick.dw + mount * 2, boxH = pick.dh + mount * 2;
+  const mt = pick.mount;
+  const boxW = pick.dw + mt * 2, boxH = pick.dh + mt * 2;
   const totalW = pick.mode === 'side' && has ? boxW + SLIP_GAP + pick.slipW : boxW;
   const totalH = pick.mode === 'below' && has ? boxH + 10 + pick.slipH : Math.max(boxH, pick.slipH);
   const left = (w - totalW) / 2, top = (h - totalH) / 2;
-  return {...pick, left, top, imgX: left + mount, imgY: top + mount,
+  const labelFont = archiveLabelFont(pick.dh);
+  return {...pick, left, top, imgX: left + mt, imgY: top + mt, labelFont, catalogueFont: Math.round(labelFont * 0.8), creditFont: CREDIT_FONT,
     slipX: pick.mode === 'side' ? left + boxW + SLIP_GAP : left, slipY: pick.mode === 'side' ? top + boxH - pick.slipH : top + boxH + 10};
 };
 
@@ -84,16 +111,16 @@ export const ArchivePhoto: React.FC<Base & {catalogue?: string; title?: string; 
     const L = archiveLayout(id, w, h, mount, Boolean(catalogue || title), label);
     const drop = 24 * (1 - p);
     return <div style={{position: 'absolute', left: x, top: y - drop, width: w, height: h, opacity: Math.min(1, p * 2), transform: `rotate(${rot}deg)`}}>
-      <div style={{position: 'absolute', left: L.left, top: L.top, background: C.paperWarm, padding: mount, border: '1px solid rgba(0,0,0,0.08)',
+      <div style={{position: 'absolute', left: L.left, top: L.top, background: C.paperWarm, padding: L.mount, border: '1px solid rgba(0,0,0,0.08)',
         boxShadow: `0 ${3 + 12 * (1 - p)}px ${8 + 14 * (1 - p)}px rgba(20,25,30,0.22)`}}>
         <Img src={staticFile(`media/${m.file}`)} style={{display: 'block', width: L.dw, height: L.dh, filter: filterOf(treatment)}} />
       </div>
       {(catalogue || title || credit) && <div style={{position: 'absolute', left: L.slipX, top: L.slipY, width: L.slipW, boxSizing: 'border-box', background: C.paper,
         padding: '8px 14px 9px', borderLeft: `5px solid ${THEME.craft?.accent ?? C.orange}`, boxShadow: '0 1px 3px rgba(0,0,0,0.12)'}}>
-        {(catalogue || title) && <div style={{fontFamily: 'NotoSerifSC,Kai', fontWeight: 700, fontSize: 30, lineHeight: 1.2, color: C.ink, whiteSpace: 'nowrap'}}>
-          {catalogue && <span style={{fontFamily: 'Space,Kai', fontSize: 24, letterSpacing: 3, color: C.orangeInk, marginRight: 12}}>{catalogue}</span>}{title}</div>}
+        {(catalogue || title) && <div style={{fontFamily: 'NotoSerifSC,Kai', fontWeight: 700, fontSize: L.labelFont, lineHeight: 1.2, color: C.ink, whiteSpace: 'nowrap'}}>
+          {catalogue && <span style={{fontFamily: 'Space,Kai', fontSize: L.catalogueFont, letterSpacing: 3, color: C.orangeInk, marginRight: 12}}>{catalogue}</span>}{title}</div>}
         {/* 署名不截断（CC BY 要求完整署名）：窄签里换行，而不是省略号 */}
-        {credit && <div style={{fontFamily: 'Space,Kai', fontSize: 20, color: C.muted, marginTop: 4, lineHeight: 1.25, overflowWrap: 'anywhere'}}>{credit}</div>}
+        {credit && <div style={{fontFamily: 'Space,Kai', fontSize: L.creditFont, color: C.muted, marginTop: 4, lineHeight: 1.25, overflowWrap: 'anywhere'}}>{credit}</div>}
       </div>}
     </div>;
   };
@@ -137,11 +164,15 @@ export const LoupeMedia: React.FC<Base & {look: {x: number; y: number}; lensAt: 
   insideTreatment?: Treatment; catalogue?: string; title?: string; label?: ArchiveLabel; overlay?: (inside: boolean) => React.ReactNode}> =
   ({f, id, x, y, w, h, at = 0, rot = 0, treatment = 'none', look, lensAt, r = 220, zoom = 2.2, lens, insideTreatment, catalogue, title, label = 'auto', overlay}) => {
     const mount = 22;
-    const {dw, dh, imgX, imgY} = archiveLayout(id, w, h, mount, Boolean(catalogue || title), label);
+    const A = archiveLayout(id, w, h, mount, Boolean(catalogue || title), label);
+    const {dw, dh, imgX, imgY} = A;
     const ix = x + imgX, iy = y + imgY;
     const tgt = {x: ix + look.x * dw, y: iy + look.y * dh};
     const L = lens ?? tgt;
-    return <Loupe f={f} x={L.x} y={L.y} r={r} zoom={zoom} target={tgt} at={lensAt}
+    // 3.7.0：手柄不许压署名（CC BY 署名必须完整可读）——按编目签的位置选手柄方向
+    const slip = {left: x + A.slipX, top: y + A.slipY, right: x + A.slipX + A.slipW, bottom: y + A.slipY + A.slipH};
+    const handleAngle = A.slipH > 0 ? pickHandleAngle(L.x, L.y, r, [slip]) : 45;
+    return <Loupe f={f} x={L.x} y={L.y} r={r} zoom={zoom} target={tgt} at={lensAt} handleAngle={handleAngle}
       render={(inside) => <>
         <ArchivePhoto f={f} id={id} x={x} y={y} w={w} h={h} at={at} rot={rot} treatment={inside && insideTreatment ? insideTreatment : treatment} catalogue={catalogue} title={title} mount={mount} label={label} />
         {overlay?.(inside)}

@@ -1,6 +1,8 @@
 import React, {useEffect, useMemo} from 'react';
 import {cancelRender, continueRender, delayRender, useCurrentFrame} from 'remotion';
 import {useCanvas} from './theme/canvas';
+import {THEME} from './theme/active';
+import {SHOTS} from './shots';
 
 // ============================================================================
 // FillGate · 「下 1/4 有没有填满」的**实测**门（v1）
@@ -35,9 +37,25 @@ const TOL = 24;
 const SKIP_Z = 140;
 const SAMPLE_EVERY = 15;
 const EVENT_PAD = 2;
-const REPORT_EVERY = 150;
 
 type Box = {left: number; top: number; right: number; bottom: number};
+
+// 3.7.0：
+//  · 手作皮肤（journal / papercut / archive，以 theme/active.ts 为准）不判「下 1/4 必须填满」：
+//    一本手账的大留白是设计，不是空洞（以前每次渲染刷几百条，把真正的警告淹没）。
+//  · 警告按镜头去重：每个浏览器标签里每镜只出一条机器可读的行
+//    `[FillGate] underfilled <镜号> @<帧> y=<底边>`，渲染器（scripts/notebook-video.mjs）把所有标签的这类行
+//    收起来，渲染结束时汇总成一行：`FillGate: 3 shots (S2,S5,S7) bottom-quarter underfilled`。
+//  · flat / cel 的判据（y=876、容差 24、warn / block）不变。
+export const FILL_GATE_SKIP_SKINS = ['journal', 'papercut', 'archive'];
+const SKIN_SKIPPED = FILL_GATE_SKIP_SKINS.includes(String(THEME.id));
+const warned = new Set<string>();
+const shotAt = (frame: number): string => {
+  for (const s of Object.values(SHOTS) as Array<{id: string; from: number; to: number}>) {
+    if (frame >= s.from && frame < s.to) return s.id;
+  }
+  return `f${frame}`;
+};
 
 const hasInk = (el: Element): boolean => {
   const s = getComputedStyle(el as HTMLElement);
@@ -106,7 +124,7 @@ export const FillGate: React.FC<{
     return s;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchKey]);
-  const should = raw % sampleEvery === 0 || hot.has(raw);
+  const should = !SKIN_SKIPPED && (raw % sampleEvery === 0 || hot.has(raw));
 
   useEffect(() => {
     if (!should) return;
@@ -162,7 +180,11 @@ export const FillGate: React.FC<{
             `[FillGate] @${raw} 内容底边只到 y=${Math.round(designBottom)}（设计坐标），` +
             `P0-4 要求接近 y=${floorY}（下 1/4 不留空洞）；本帧计 ${n} 个信息元素。` +
             `修法见 composition-gate.md：补一个**真实信息元素**（指标条/结论条/清单），不是放大现有卡片凑面积。`;
-          if (typeof console !== 'undefined') console.warn(msg);
+          const sid = shotAt(raw);
+          if (!warned.has(sid) && typeof console !== 'undefined') {
+            warned.add(sid);
+            console.warn(`[FillGate] underfilled ${sid} @${raw} y=${Math.round(designBottom)}`);
+          }
           if (mode === 'block') {
             // block 模式下才有拦的必要；blocked 置位后 handle 不再释放，
             // cancelRender 抛出的异常由下面的 catch 原样放行 → 渲染 rc≠0 且不产出图。
@@ -170,8 +192,6 @@ export const FillGate: React.FC<{
             cancelRender(new Error(msg));
             return;
           }
-        } else if (raw % REPORT_EVERY === 0 && typeof console !== 'undefined') {
-          console.warn(`[FillGate] @${raw} 内容底边 y=${Math.round(designBottom)} ≥ ${floorY}，下 1/4 已填（${n} 个信息元素）`);
         }
       } catch (e) {
         if (blocked) throw e;
@@ -198,4 +218,4 @@ export const FillGate: React.FC<{
 };
 
 export const FILL_GATE_VERSION =
-  'fill-gate-v2 · 实测信息元素最低边 vs P0-4 的 y=876（替代原来那个"校验生成器自己写死的常量"的假门）· delayRender 逐帧持柄 · 等字体就绪 · 默认只出声不拦 · 硬拦时 handle 不释放且异常不被自家 catch 吞（v1 会出图 rc=0）';
+  'fill-gate-v3 · 手作皮肤不判下 1/4 · 每镜一条、渲染结束汇总一行 · fill-gate-v2 · 实测信息元素最低边 vs P0-4 的 y=876（替代原来那个"校验生成器自己写死的常量"的假门）· delayRender 逐帧持柄 · 等字体就绪 · 默认只出声不拦 · 硬拦时 handle 不释放且异常不被自家 catch 吞（v1 会出图 rc=0）';
