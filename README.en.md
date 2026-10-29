@@ -4,7 +4,7 @@
 
 **Turn one idea into a 16:9 Chinese teaching video: component scenes, an engine-level virtual camera and on-the-beat sound effects. One command renders it; objective gates fix what they can.**
 
-[![Version](https://img.shields.io/badge/version-3.2.0-1f6feb)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.7.0-1f6feb)](CHANGELOG.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
 [![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel-ff7a59)](references/theme-system.md)
@@ -60,6 +60,17 @@ One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×108
 | **One command** | `make-video.mjs`: resolve-shots → gates → tsc → stills contact sheet or full render → `renders/report.md`; `make-video.cmd` on Windows |
 | **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤4.5 chars/s reading speed, frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
 | **Deterministic** | Every animation is a pure function of the frame (no `Math.random`, CSS animation or timers); no image-generation model, no online API required |
+
+## What's new in 3.5 → 3.7
+
+- **Real page turns**: hand-made skins transition with `pageturn` / `peel` (WebGPU); without a full Chrome build the renderer falls back to `slide` / `drop` and records a P1, so a film always renders.
+- **Camera and cold open are gated**: `validate-treatment` checks the declared `move` / `framing` against the shot table (the signature shot must really push in ≥12%); `validate-opening` covers the first three seconds.
+- **Whole-line captions, −16 LUFS** for silent-narration films.
+- **`bgMode`**: one background per film / chapter / shot.
+- **Storyboard generated from the shot table**, with a review gate before rendering on hand-made skins.
+- **Sparse sound effects by default**: `sfxDensity` defaults to `sparse` (one hit per shot); set `"sfxDensity": "normal"` for the old density.
+
+**Narration** is not bundled: add your own TTS or recorded voice and re-align with `match-timing.py`.
 
 ## Quick start
 
@@ -207,7 +218,7 @@ notebook-video/
 ├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; .cmd / .sh wrappers
 │   └── dev/                     # Maintainer tools (SFX library build and tuning)
 ├── references/                  # Author manuals and specs (camera, layouts, themes, SFX, captions, gates, cross-platform)
-├── tests/                       # test_skill.py
+├── tests/                       # 17 offline unit tests (backgrounds / blueprints / camera / captions / media / sfx density / gates / review …)
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 

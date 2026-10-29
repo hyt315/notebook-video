@@ -4,7 +4,7 @@
 
 **把一个知识点变成一支 16:9 中文讲课视频：组件场景 + 引擎虚拟镜头 + 对拍音效，一条命令出片，客观门禁自动修。**
 
-[![Version](https://img.shields.io/badge/version-3.2.0-1f6feb)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.7.0-1f6feb)](CHANGELOG.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
 [![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel-ff7a59)](references/theme-system.md)
@@ -26,7 +26,7 @@
 - **画面是组件，不是幻灯片**：每一镜都是代码画出来的真组件——控制台、代码差异、清单、数字行、漏斗、进度环、印章、结论条……
   也可以放进真实截图 / 短录屏。
 - **镜头会跟着讲**：引擎级虚拟摄影机缺省缓推，讲到哪个词就推近到哪个组件，换镜用甩镜 / 推穿。
-- **弱模型也能复刻**：5 个讲课蓝图逐镜写好该用的骨架与组件，加上黄金样例、5 步短流程和一条命令；能客观判断的问题，引擎直接自动修。
+- **弱模型也能复刻**：10 个讲课蓝图（5 个组件路线 + 5 个手作结构族）逐镜写好该用的骨架与组件，加上黄金样例、短流程和一条命令；能客观判断的问题，引擎直接自动修。
 
 - **3.7.0 新增：一本手账一张纸、评审先于成片**：手作皮肤默认 `bgMode: "chapter"`（每章一张纸，章内沿用；`"film"` 全片一张、`"shot"` 逐镜轮换），
   装饰重的背景（`busy`）不进常规镜；`resolve-shots` 从实际镜头表自动生成 `storyboard.md` 给独立评审用；
@@ -52,8 +52,19 @@
 | **真实素材** | 截图 / ≤10 秒录屏 / 动图放进 `MediaFrame`（与组件同一套卡片外观，可选浏览器 / 窗口 / 手机外壳，区域推近、描框、旁注、署名徽章）；`prepare-media` 一键转码，`validate-media` 拦糊图与许可缺失 |
 | **弱模型友好** | 5 个蓝图（concept / code-change / data-compare / process / pitfall），每镜的 `$components` 写明骨架与组件；黄金样例 `examples/`；未填的 `<<占位符>>` 直接报错 |
 | **一条命令** | `make-video.mjs`：resolve-shots → 门禁 → tsc → 静帧接触表或整片渲染 → `renders/report.md`；Windows 有 `make-video.cmd` |
-| **门禁与自动修** | 硬门禁只管客观问题（取景切字、字号地板、对比度 ≥4.5:1、字幕每行 ≤16 字、读速 ≤4.5 字/秒、画面静止、音画同步、音效电平），能修的自动修；主观项只给建议 |
+| **门禁与自动修** | 硬门禁只管客观问题（取景切字、字号地板、对比度 ≥4.5:1、字幕每行 ≤16 字、读速（组件路线 ≤4.5 字/秒，手作路线 6.5 字/秒）、画面静止、音画同步、音效电平），能修的自动修；主观项只给建议 |
 | **确定可复现** | 所有动画都是帧号的纯函数（不用 `Math.random`、CSS 动画、计时器）；不依赖生图模型，不需要在线 API |
+
+## 3.5 → 3.7 新特性
+
+- **真翻页转场**：手作皮肤的镜间转场是 `pageturn` / `peel`（WebGPU 卷页），需要完整版 Chrome；机器画不了会自动退回 `slide` / `drop` 并在报告里记 P1，成片照出。
+- **运镜与冷开有门禁**：`validate-treatment` 拿 treatment 写的 `move` / `framing` 对照镜头表，招牌镜头必须真推 ≥12%；`validate-opening` 管前 3 秒（第 0 帧有事件、首条字幕 ≤1 s、片名不当第一镜、第一句不是泛问句）。
+- **整行字幕与响度标准**：字幕整行淡入；静音旁白片目标 −16 LUFS（真峰 ≤ −1.5 dBTP）。
+- **`bgMode` 按章换纸**：见上面「主题」一节。
+- **分镜联系表自动生成**：`storyboard.md` 由 `resolve-shots` 按镜头表写出，手作皮肤渲染前要么有 `review.rounds`、要么显式 `--skip-review`。
+- **音效默认稀疏**：`sfxDensity` 缺省 `sparse`（每镜一记），想更热闹写 `"sfxDensity": "normal"`。
+
+**旁白**：技能不内置 TTS。使用者可后配任意 TTS 或真人旁白，配好后跑 `match-timing.py` 重对齐即可。
 
 ## 快速开始
 
@@ -168,7 +179,7 @@ python scripts/commons-search.py credits ./my-video   # → CREDITS.md
 手作皮肤的字幕是 96 px@1440 的 Noto Serif SC Bold（按需下载、校验 sha256），没有 UI 胶囊；它们要求先写导演层 `manifests/treatment.json`
 （[references/director-method.md](references/director-method.md)），组件见 [references/craft-kit.md](references/craft-kit.md)，风格配方见 [references/style-recipes.md](references/style-recipes.md)。
 
-每套皮肤有三张锁定背景（main / chapter / quiet），中央约 70% 是内容安全区，引擎按分镜自动选择。文字色有专门的 `*Ink` 安全色，保证对比度。规格：[references/theme-system.md](references/theme-system.md)、[theme-flat.md](references/theme-flat.md)、[theme-cel.md](references/theme-cel.md)、[theme-journal.md](references/theme-journal.md)、[theme-papercut.md](references/theme-papercut.md)、[theme-archive.md](references/theme-archive.md)。
+每套皮肤有 8–11 张亮底背景，按 `bgMode` 轮换：`film` 全片一张 / `chapter` 每章一张（手作皮肤默认）/ `shot` 每镜一张（flat、cel 默认），中央约 70% 是内容安全区。清单与许可见 [references/background-library.md](references/background-library.md)。文字色有专门的 `*Ink` 安全色，保证对比度。规格：[references/theme-system.md](references/theme-system.md)、[theme-flat.md](references/theme-flat.md)、[theme-cel.md](references/theme-cel.md)、[theme-journal.md](references/theme-journal.md)、[theme-papercut.md](references/theme-papercut.md)、[theme-archive.md](references/theme-archive.md)。
 
 ## 门禁一览
 
@@ -187,7 +198,7 @@ python scripts/commons-search.py credits ./my-video   # → CREDITS.md
 notebook-video/
 ├── SKILL.md                     # 技能入口：5 步流程（Agent 读这个）
 ├── manifest.json                # 名称、版本、许可
-├── blueprints/                  # 5 个讲课蓝图（concept / code-change / data-compare / process / pitfall）
+├── blueprints/                  # 10 个讲课蓝图（组件路线 5 + 手作结构族 5）
 ├── examples/                    # 黄金样例 story.json、真实素材样例、弱模型测试
 ├── assets/
 │   ├── lecture-template/        # 唯一的工程模板（Remotion + React + TS）
@@ -199,7 +210,7 @@ notebook-video/
 ├── scripts/                     # make-video、notebook-video CLI、compose / resolve、各门禁、自检；.cmd / .sh 包装
 │   └── dev/                     # 维护者工具（音效库构建与调校）
 ├── references/                  # 作者手册与规格（镜头、版式、主题、音效、字幕、门禁、跨平台）
-├── tests/                       # test_skill.py
+├── tests/                       # 17 个离线单元测试（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 音效密度 / 门禁 / 评审 …）
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 
