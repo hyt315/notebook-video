@@ -18,6 +18,7 @@ import {MEDIA} from '../media-frame';
 import {TapeStrip} from '../theme/craft-common';
 import {Loupe, pickHandleAngle} from './lens';
 import {prog, CRAFT_TYPE} from './ink';
+import {MODES} from '../theme/canvas';
 
 const C = THEME.palette;
 const need = (id: string) => {
@@ -62,14 +63,28 @@ export const archiveMount = (dw: number, dh: number, mount: number) => {
 };
 
 /**
+ * 3.7.0 组件规则：署名签不进字幕带。字幕框顶 = designH − subBottom − subH（16:9 为 934）；
+ * 再让出 CAPTION_CLEAR，这样招牌镜头以画面中心推 12.5% 后签底也压不到字幕
+ * （540 + (874 − 540) × 1.125 ≈ 916 < 934）。cell 演示片 S3/S4 的 Schem. XI 署名曾被 OCR 读进字幕带。
+ */
+export const CAPTION_CLEAR = 60;
+const CANVAS = MODES['16:9'];
+export const CREDIT_SAFE_BOTTOM = CANVAS.designH - CANVAS.subBottom - CANVAS.subH - CAPTION_CLEAR;
+/** 放在设计坐标 y 处、框高 h 的档案件实际可用高度：底边不越过 CREDIT_SAFE_BOTTOM；最多让出一半框高（再多图就没了）。y 未知时不变。 */
+export const archiveSafeH = (y: number | undefined, h: number) =>
+  y === undefined ? h : Math.max(Math.round(h * 0.5), Math.min(h, Math.floor(CREDIT_SAFE_BOTTOM - y)));
+
+/**
  * 档案件的版式：图（真实比例）+ 纸托 + 编目签，**一起**装进 w×h 框。
  *   below：签在图下（横图）；side：签在图右下（竖图放进横框时，签放下面会把图挤得很小）。
  *   auto（缺省）：两种都算，取图更大的那个。
  * 签高按字数估（署名在窄签里换行，不截断），图为它让出位置，签不会被挤出框外。
+ * 传入 y（框在画面上的设计坐标）时，整件底边不越过 CREDIT_SAFE_BOTTOM（署名签不进字幕带）。
  * 3.7.0：纸托边按 ARCHIVE_MIN_IMAGE_FRAC 收窄、编目签字号按 ARCHIVE_LABEL_MAX_FRAC 封顶（见上面两个常量）。
  */
 export type ArchiveLabel = 'auto' | 'below' | 'side';
-export const archiveLayout = (id: string, w: number, h: number, mount: number, labelled: boolean, label: ArchiveLabel = 'auto') => {
+export const archiveLayout = (id: string, w: number, frameH: number, mount: number, labelled: boolean, label: ArchiveLabel = 'auto', y?: number) => {
+  const h = archiveSafeH(y, frameH); // 3.7.0：传入 y 时整件（图 + 签）收在字幕安全线以上
   const credit = creditOf(id);
   const has = labelled || Boolean(credit);
   const slipH = (sw: number, dh: number) => !has ? 0 : 17 + (labelled ? Math.ceil(archiveLabelFont(dh) * 1.2) : 0) + (credit ? 4 + 25 * Math.ceil((credit.length * 11) / Math.max(120, sw - 19)) : 0);
@@ -108,7 +123,7 @@ export const ArchivePhoto: React.FC<Base & {catalogue?: string; title?: string; 
     const p = prog(f, at, 14);
     if (p <= 0) return null;
     const credit = creditOf(id);
-    const L = archiveLayout(id, w, h, mount, Boolean(catalogue || title), label);
+    const L = archiveLayout(id, w, h, mount, Boolean(catalogue || title), label, y);
     const drop = 24 * (1 - p);
     return <div style={{position: 'absolute', left: x, top: y - drop, width: w, height: h, opacity: Math.min(1, p * 2), transform: `rotate(${rot}deg)`}}>
       <div style={{position: 'absolute', left: L.left, top: L.top, background: C.paperWarm, padding: L.mount, border: '1px solid rgba(0,0,0,0.08)',
@@ -164,7 +179,7 @@ export const LoupeMedia: React.FC<Base & {look: {x: number; y: number}; lensAt: 
   insideTreatment?: Treatment; catalogue?: string; title?: string; label?: ArchiveLabel; overlay?: (inside: boolean) => React.ReactNode}> =
   ({f, id, x, y, w, h, at = 0, rot = 0, treatment = 'none', look, lensAt, r = 220, zoom = 2.2, lens, insideTreatment, catalogue, title, label = 'auto', overlay}) => {
     const mount = 22;
-    const A = archiveLayout(id, w, h, mount, Boolean(catalogue || title), label);
+    const A = archiveLayout(id, w, h, mount, Boolean(catalogue || title), label, y);
     const {dw, dh, imgX, imgY} = A;
     const ix = x + imgX, iy = y + imgY;
     const tgt = {x: ix + look.x * dw, y: iy + look.y * dh};

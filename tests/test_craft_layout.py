@@ -109,5 +109,60 @@ class FillGateTest(unittest.TestCase):
         self.assertIn("runRemotionFiltered(nodeArgs, project)", CLI)
 
 
+
+CANVAS = (SRC / "theme" / "canvas.ts").read_text(encoding="utf-8")
+
+
+def canvas_num(key: str) -> float:
+    m = re.search(rf"'16:9':\s*{{[^}}]*\b{key}:\s*([0-9.]+)", CANVAS)
+    assert m, key
+    return float(m.group(1))
+
+
+def archive_safe_h(y, h, safe_bottom):
+    """Python mirror of archiveSafeH() in media.tsx."""
+    if y is None:
+        return h
+    return max(round(h * 0.5), min(h, math.floor(safe_bottom - y)))
+
+
+class CreditAvoidsCaptionBand(unittest.TestCase):
+    """3.7.0: an ArchivePhoto credit slip must stay out of the subtitle band (cell-v3 OCR read Schem. XI into cue 9)."""
+    def setUp(self):
+        self.design_h, self.sub_b, self.sub_h = canvas_num("designH"), canvas_num("subBottom"), canvas_num("subH")
+        self.clear = const(MEDIA, "CAPTION_CLEAR")
+        self.safe = self.design_h - self.sub_b - self.sub_h - self.clear
+
+    def test_safe_line_derives_from_canvas(self):
+        self.assertIn("CANVAS.designH - CANVAS.subBottom - CANVAS.subH - CAPTION_CLEAR", MEDIA)
+        self.assertEqual(self.safe, 874)
+
+    def test_safe_line_survives_a_signature_push(self):
+        # 招牌镜头推 12.5%（以画面中心）：安全线推后仍在字幕框顶之上
+        box_top = self.design_h - self.sub_b - self.sub_h
+        cy = self.design_h / 2
+        self.assertLess(cy + (self.safe - cy) * 1.125, box_top)
+
+    def test_layout_receives_y_at_every_call_site(self):
+        self.assertIn("label: ArchiveLabel = 'auto', y?: number)", MEDIA)
+        self.assertIn("const h = archiveSafeH(y, frameH);", MEDIA)
+        calls = re.findall(r"archiveLayout\(id, w, h, mount, [^;]*\);", MEDIA)
+        self.assertEqual(len(calls), 2, calls)          # ArchivePhoto + LoupeMedia
+        for c in calls:
+            self.assertTrue(c.endswith("label, y);"), c)
+
+    def test_safe_height_mirror(self):
+        rnd = random.Random(7)
+        for _ in range(2000):
+            y, h = rnd.uniform(0, 900), rnd.uniform(200, 1000)
+            hh = archive_safe_h(y, h, self.safe)
+            self.assertLessEqual(hh, h)
+            self.assertGreaterEqual(hh, round(h * 0.5))
+            if self.safe - y >= h * 0.5:
+                self.assertLessEqual(y + hh, self.safe + 1e-9)   # 底边不进字幕带
+        self.assertEqual(archive_safe_h(None, 640, self.safe), 640)
+        self.assertEqual(archive_safe_h(100, 800, self.safe), 774)  # cell 的 PLATE（y=100, h=800）
+
+
 if __name__ == "__main__":
     unittest.main()
