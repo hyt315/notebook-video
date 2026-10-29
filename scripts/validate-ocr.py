@@ -39,6 +39,9 @@ SIM_P0 = 0.60
 SIM_P1 = 0.90
 SCORE_P1 = 0.85
 DEFAULT_BAND = 0.26
+# 与 src/index.tsx Subtitle 的 lead = round(FPS*.18) 同口径：下一条字幕提前这么多秒出现
+NEXT_CUE_LEAD = 0.18
+SAMPLE_GUARD = 0.07   # 再留约 2 帧，避开 5 帧淡入
 DEFAULT_MIN_PX = 80.0   # @1440：96 px 字号的汉字字身检测框约 85–100 px
 
 _PUNCT = re.compile(r"[\s\u3000-\u303f\uff00-\uff0f\uff1a-\uff20\uff3b-\uff40\uff5b-\uff65\u2010-\u206f!-/:-@\[-`{-~·•…—–]+")
@@ -63,7 +66,11 @@ def similarity(expected: str, got: str) -> float:
 
 
 def cue_sample_times(cues: list[dict]) -> list[float]:
-    """每条 cue 的取样时刻（秒）：完整显示之后 0.25 s，且不越过下一条的开始。"""
+    """每条 cue 的取样时刻（秒）：完整显示之后 0.25 s，且不越过下一条的**出现**时刻。
+
+    字幕组件（src/index.tsx Subtitle）让下一条提前 NEXT_CUE_LEAD（0.18 s）出现，所以取样上限是
+    下一条开始 − NEXT_CUE_LEAD − SAMPLE_GUARD。3.6.0 用的是「下一条开始 − 0.12 s」，落在提前量里，
+    读到的是下一句，误报 P0。"""
     out = []
     for i, c in enumerate(cues):
         start = float(c.get("start", c.get("start_ms", 0) / 1000))
@@ -71,7 +78,7 @@ def cue_sample_times(cues: list[dict]) -> list[float]:
         t = max(start, shown) + 0.25
         if i + 1 < len(cues):
             nxt = float(cues[i + 1].get("start", cues[i + 1].get("start_ms", 0) / 1000))
-            t = min(t, max(start, nxt - 0.12))
+            t = min(t, max(start, nxt - NEXT_CUE_LEAD - SAMPLE_GUARD))
         out.append(round(t, 3))
     return out
 
@@ -81,7 +88,7 @@ def cue_at(cues: list[dict], t: float) -> int | None:
     for i, c in enumerate(cues):
         start = float(c.get("start", c.get("start_ms", 0) / 1000))
         shown = float(c.get("reveal_end", c.get("reveal_end_ms", start * 1000) / 1000))
-        end = float(cues[i + 1].get("start", cues[i + 1].get("start_ms", 0) / 1000)) if i + 1 < len(cues) else shown + 1.5
+        end = float(cues[i + 1].get("start", cues[i + 1].get("start_ms", 0) / 1000)) - NEXT_CUE_LEAD if i + 1 < len(cues) else shown + 1.5
         if shown <= t < end:
             return i
     return None

@@ -69,7 +69,23 @@ class Timing(unittest.TestCase):
 
     def test_sample_clipped_by_next_cue(self):
         ts = vocr.cue_sample_times([{"text": "a", "start": 0, "reveal_end": 0.9}, {"text": "b", "start": 1.0, "reveal_end": 1.5}])
-        self.assertAlmostEqual(ts[0], 0.88)
+        # 3.7.0：下一条提前 0.18 s 出现，取样点 = 1.0 − 0.18 − 0.07（旧值 0.88 读到的是下一句）
+        self.assertAlmostEqual(ts[0], 0.75)
+
+    def test_sample_never_inside_next_cue_lead(self):
+        # cell-v3 的真实间隔：cue3 3.822–4.797，cue4 5.107（旧算法取 4.987，画面已是 cue4）
+        cues = [{"text": "很多人都以为，", "start": 3.822, "reveal_end": 4.797},
+                {"text": "它生来就指「生命单位」。", "start": 5.107, "reveal_end": 6.544}]
+        ts = vocr.cue_sample_times(cues)
+        self.assertLess(ts[0], 5.107 - vocr.NEXT_CUE_LEAD)
+        self.assertGreaterEqual(ts[0], 4.797)
+        self.assertEqual(vocr.cue_at(cues, ts[0]), 0)
+        self.assertIsNone(vocr.cue_at(cues, 5.0))   # 进入下一条的提前量：不再算 cue3
+
+    def test_lead_matches_subtitle_component(self):
+        src = (ROOT / "assets" / "lecture-template" / "src" / "index.tsx").read_text(encoding="utf-8")
+        self.assertIn("lead=Math.round(FPS*.18)", src)
+        self.assertAlmostEqual(vocr.NEXT_CUE_LEAD, 0.18)
 
     def test_cue_at(self):
         self.assertIsNone(vocr.cue_at(CUES, 0.5))      # 还在逐字显示
