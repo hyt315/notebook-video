@@ -94,8 +94,9 @@ class RotationTest(unittest.TestCase):
         return text, out, problems
 
     def test_auto_rotation_never_repeats_adjacent_and_is_deterministic(self):
+        # 3.7.0: per-shot rotation is bgMode=shot (default only for flat / cel; handcraft skins opt in)
         for theme in ("flat", "cel", "journal", "papercut", "archive"):
-            d = project(theme)
+            d = project(theme, mutate=lambda doc: doc.update(bgMode="shot"))
             try:
                 _, a, p = self.resolve(d)
                 _, b, _ = self.resolve(d)
@@ -110,7 +111,7 @@ class RotationTest(unittest.TestCase):
                 shutil.rmtree(d)
 
     def test_seed_changes_order(self):
-        d1, d2 = project("journal"), project("journal", mutate=lambda doc: doc.update(bgSeed=7))
+        d1, d2 = project("journal", mutate=lambda doc: doc.update(bgMode="shot")), project("journal", mutate=lambda doc: doc.update(bgMode="shot", bgSeed=7))
         try:
             f1 = [r["bgFile"] for r in self.resolve(d1)[1]]
             f2 = [r["bgFile"] for r in self.resolve(d2)[1]]
@@ -136,7 +137,7 @@ class RotationTest(unittest.TestCase):
             shutil.rmtree(d)
 
     def test_role_pools(self):
-        d = project("papercut")
+        d = project("papercut", mutate=lambda doc: doc.update(bgMode="shot"))
         try:
             _, out, _ = self.resolve(d)
             lib = {e["id"]: e for e in LIB["backgrounds"]}

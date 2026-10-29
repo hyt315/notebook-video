@@ -277,6 +277,22 @@ def chapter_starts(project: Path, out: list[dict]) -> set[str]:
     return starts
 
 
+CRAFT_SKINS = ("journal", "papercut", "archive")
+BG_MODES = ("film", "chapter", "shot")
+
+
+def bg_mode(shots_doc: dict, problems: list[str] | None = None) -> str:
+    """3.7.0：背景切换粒度。显式 bgMode 优先；否则手作皮肤 chapter、flat / cel shot。"""
+    m = shots_doc.get("bgMode")
+    if m is None:
+        return "chapter" if shots_doc.get("theme", "cel") in CRAFT_SKINS else "shot"
+    if m not in BG_MODES:
+        if problems is not None:
+            problems.append(f"bgMode={m!r} 不是 {' / '.join(BG_MODES)} 之一")
+        return "shot"
+    return m
+
+
 def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems: list[str]) -> None:
     """3.4.0 背景库：给每镜定一张背景，写进 rec["bg"]（库 id）+ rec["bgFile"]（public/ 下相对路径）。
 
@@ -286,6 +302,13 @@ def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems
       纯函数：同一分镜表 + 同一 bgSeed → 同一结果。
     · 没有 manifests/backgrounds.json，或 shots.json 写了 "bgRotate": false → 不轮换（3.3.0 行为：
       引擎按 main / chapter / quiet 三张图自动选）；此时不出 bgFile 键，旧工程解析结果逐字节不变。
+    · 3.7.0 `bgMode`（shots.json 工程级）：
+        "shot"    逐镜轮换（上面的规则；flat / cel 默认）
+        "chapter" 只在章节首镜换纸，章内沿用（journal / papercut / archive 默认：一本手账的媒介连续性）
+        "film"    全片一张纸
+      chapter / film 的"那张纸"要撑满章内所有常规镜，所以只从 roles 含 main 且非 busy 的背景里挑；
+      跨章不与上一章同一张。显式 `bg` 永远优先，且只作用于那一镜。
+    · `"busy": true` 的背景（装饰重）不分给 main 角色，只给章节卡 / 安静镜。
     """
     lib_p = project / "manifests" / "backgrounds.json"
     if not lib_p.is_file():
@@ -299,9 +322,12 @@ def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems
     mine = [e for e in lib if e.get("skin") == theme]
     rotate = bool(mine) and shots_doc.get("bgRotate", True) is not False
     seed = str(shots_doc.get("bgSeed", 0))
+    mode = bg_mode(shots_doc, problems)
     chapters = chapter_starts(project, out)
     last_used: dict[str, int] = {}
     prev_file = None
+    sheet = None          # chapter / film 模式下当前沿用的那张纸
+    calm = [e for e in mine if "main" in (e.get("roles") or []) and not e.get("busy")] or [e for e in mine if not e.get("busy")] or mine
 
     def file_of(e: dict) -> str:
         f = str(e["file"])
@@ -323,9 +349,16 @@ def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems
                     problems.append(f"{r['id']}: bg={bg!r} 属于 {e.get('skin')} 皮肤，当前皮肤是 {theme}")
                 else:
                     choice = e
+        elif rotate and mode in ("chapter", "film"):
+            if sheet is None or (mode == "chapter" and r["id"] in chapters):
+                prev_sheet = file_of(sheet) if sheet is not None else None
+                fresh = [e for e in calm if file_of(e) != prev_sheet] or calm
+                sheet = min(fresh, key=lambda e: (last_used.get(e["id"], -1), hashlib.sha1(f"{seed}:{i}:{e['id']}".encode()).hexdigest()))
+            choice = sheet
+            r["bgAuto"] = True
         elif rotate:
             role = "chapter" if r["id"] in chapters else ("quiet" if (r.get("zones") or 0) >= 4 else "main")
-            cands = [e for e in mine if role in (e.get("roles") or [])] or mine
+            cands = [e for e in mine if role in (e.get("roles") or []) and not (role == "main" and e.get("busy"))] or [e for e in mine if not e.get("busy")] or mine
             fresh = [e for e in cands if file_of(e) != prev_file] or cands
             choice = min(fresh, key=lambda e: (last_used.get(e["id"], -1), hashlib.sha1(f"{seed}:{i}:{e['id']}".encode()).hexdigest()))
             r["bgAuto"] = True
@@ -509,6 +542,10 @@ def main() -> int:
         fh.write(text)
     theme_id = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8")).get("theme", "cel")
     resolved = {"duration": out[-1]["to"] if out else 0, "theme": theme_id, "shots": out}
+    shots_doc = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8"))
+    if (project / "manifests" / "backgrounds.json").is_file():
+        # 3.7.0：告诉 validate-backgrounds 本片按什么粒度换背景（没有背景库的旧工程不出这个键，输出逐字节不变）
+        resolved["bgMode"] = bg_mode(shots_doc) if shots_doc.get("bgRotate", True) is not False else "off"
     with io.open(project / "manifests" / "shots.resolved.json", "w", encoding="utf-8", newline="") as fh:
         fh.write(json.dumps(resolved, ensure_ascii=False, indent=2))
     print(f"已写出 {target} 与 manifests/shots.resolved.json（{len(out)} 镜，共 {out[-1]['to'] if out else 0} 帧）")

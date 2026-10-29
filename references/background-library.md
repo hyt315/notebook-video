@@ -6,13 +6,33 @@
 
 ## 1. 怎么用 / Usage
 
-**什么都不写就会轮换。** `resolve-shots` 按镜头角色从库里给每镜挑一张：
+### 换纸粒度 `bgMode`（3.7.0）/ How often the paper changes
+
+`manifests/shots.json` 顶层的 `bgMode` 决定多久换一次背景：
+
+| `bgMode` | 行为 | 默认给谁 |
+|---|---|---|
+| `"chapter"` | 只在章节首镜换纸，章内所有镜头沿用同一张；跨章不与上一章同一张 | journal / papercut / archive（手作皮肤：全片是"一本手账"，逐镜换纸会打断媒介连续性） |
+| `"film"` | 全片一张纸 | —（想要最强的"一本书"感时手动写） |
+| `"shot"` | 逐镜轮换（下面的规则，3.4.0–3.6.0 的行为） | flat / cel |
+
+- `chapter` / `film` 模式下那张纸要撑满章内的常规镜头，所以只从 `roles` 含 `main`、且没有标 `busy` 的背景里挑。
+- **改回逐镜轮换：** 顶层写 `"bgMode": "shot"`。**完全不轮换（3.3.0 行为）：** `"bgRotate": false`（优先级高于 `bgMode`）。
+- 显式写了 `bg` 的镜头永远用它自己的，只影响那一镜，章内其他镜头照样沿用章节纸。
+- `validate-backgrounds --shots` 只在 `bgMode=shot` 时把"相邻两镜同一张"记 P1；`chapter` / `film` 模式同章同纸是设计如此，不报。
+
+**装饰重的背景 `"busy": true`：** 便签墙、窗花、洒金笺、祥云、挂笺、红纸衬边、集中线、放射光在 `backgrounds.json` 里标了 `busy`。
+自动选择时它们**不会分给 `main` 角色**（也不会当章节纸），只给章节卡或安静镜；想用在某一镜就显式写 `bg`。
+
+### 逐镜轮换（`bgMode: "shot"`）/ Per-shot rotation
+
+`resolve-shots` 按镜头角色从库里给每镜挑一张：
 
 | 镜头 | 角色 | 候选 |
 |---|---|---|
 | 章节首镜（`src/film.ts` 的 `CHAPTER_SHOTS`；没有就看 `chapter` 名变化） | `chapter` | 本皮肤 `roles` 含 `chapter` 的背景 |
 | `zones ≥ 4` 的信息密集镜 | `quiet` | `roles` 含 `quiet` 的背景 |
-| 其余 | `main` | `roles` 含 `main` 的背景 |
+| 其余 | `main` | `roles` 含 `main`、且不是 `busy` 的背景 |
 
 挑法是纯函数：最久没用过的优先（从没用过的最先），同分按 `sha1(bgSeed:镜号:id)` 定序；**永不与上一镜同一张**（候选只剩一张时除外）。
 同一分镜表 + 同一 `bgSeed` → 同一结果。想换一套组合，在 `manifests/shots.json` 顶层写 `"bgSeed": 7`（任意值）。
@@ -50,7 +70,7 @@
 | P0 | 字幕区（交付坐标 x 391–2169、y 1236–1404）：皮肤墨色 vs 区内平均 < 7:1，或 vs 区内最暗 5 %（4 px 模糊后）< 4.5:1。按「字幕衬底不存在」量：journal 本来就没有衬底，其余皮肤有衬底，这条是保底 |
 | P1 | 中央 70 % 起伏（1/8 降采样后亮度标准差）> 0.05：背景可能和内容抢 |
 | P1 | 皮肤缺某个角色的背景（轮换会退回到全部背景里挑） |
-| P1 | `--shots`：分镜里相邻两镜同一张背景（只可能来自显式 `bg`） |
+| P1 | `--shots`：分镜里相邻两镜同一张背景（仅 `bgMode=shot` 时报；只可能来自显式 `bg`） |
 
 亮度 / 对比度指标在生成时算好写进 manifest 并与 sha256 绑定；维护者用 `python scripts/dev/bg_metrics.py assets/lecture-template` 从像素按同一算法重算比对（numpy + pillow；单元测试会跑）。
 `--min-per-skin journal=8,…` 只数新增的库背景（不含 legacy 三张），CI 与 `validate-skill` 用它守住数量。

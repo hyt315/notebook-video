@@ -16,7 +16,7 @@
 - 字幕：博物馆说明签——白条、左侧 8 px 信号色竖线，墨字 72 设计 px（= 96 px@1440）Noto Serif SC Bold。
 - 章节标识：左上编目号 + 宋体章名；无技术页眉。
 - 调色：冷灰暗角。背景：`bg-archive-{main,chapter,quiet}.jpg`（背光台面的明暗与网格痕）。
-- 背景库（3.4.0）：再加 8 张——`archive/envelope` 档案袋、`newsprint` 旧报纸、`map` 古地图、`catalog` 卡片目录、`filmstrip` 胶片灯箱、`linen` 展柜布面、`ledger` 登记簿、`vellum` 描图纸；不写 `bg` 时按镜头角色自动轮换、相邻不重复，见 [background-library.md](background-library.md)。
+- 背景库（3.4.0）：再加 8 张——`archive/envelope` 档案袋、`newsprint` 旧报纸、`map` 古地图、`catalog` 卡片目录、`filmstrip` 胶片灯箱、`linen` 展柜布面、`ledger` 登记簿、`vellum` 描图纸；3.7.0 起手作皮肤默认 `bgMode: "chapter"`：只在章节首镜换纸、章内沿用（装饰重的 `busy` 背景只给章节卡 / 安静镜）；想全片一张纸写 `"bgMode": "film"`，想改回逐镜轮换写 `"bgMode": "shot"`，见 [background-library.md](background-library.md)。
 - 转场缺省：`pageturn`（3.5.0，档案册翻到下一页，见 [fx-effects.md](fx-effects.md)）；画不了 WebGPU 时自动退回 `slide`（台面横移到下一件）。章节首镜 `drop`。
 
 ## 原生动作

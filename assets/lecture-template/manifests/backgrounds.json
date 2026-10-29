@@ -651,6 +651,7 @@
     },
     {
       "id": "journal/sticky",
+      "busy": true,
       "skin": "journal",
       "file": "public/bg/lib/journal-sticky.webp",
       "name": {
@@ -750,6 +751,7 @@
     },
     {
       "id": "papercut/hongzhi",
+      "busy": true,
       "skin": "papercut",
       "file": "public/bg/lib/papercut-hongzhi.webp",
       "name": {
@@ -889,6 +891,7 @@
     },
     {
       "id": "papercut/lattice",
+      "busy": true,
       "skin": "papercut",
       "file": "public/bg/lib/papercut-lattice.webp",
       "name": {
@@ -924,6 +927,7 @@
     },
     {
       "id": "papercut/sajin",
+      "busy": true,
       "skin": "papercut",
       "file": "public/bg/lib/papercut-sajin.webp",
       "name": {
@@ -959,6 +963,7 @@
     },
     {
       "id": "papercut/cloud",
+      "busy": true,
       "skin": "papercut",
       "file": "public/bg/lib/papercut-cloud.webp",
       "name": {
@@ -994,6 +999,7 @@
     },
     {
       "id": "papercut/menjian",
+      "busy": true,
       "skin": "papercut",
       "file": "public/bg/lib/papercut-menjian.webp",
       "name": {
@@ -1502,6 +1508,7 @@
     },
     {
       "id": "cel/speedlines",
+      "busy": true,
       "skin": "cel",
       "file": "public/bg/lib/cel-speedlines.webp",
       "name": {
@@ -1597,6 +1604,7 @@
     },
     {
       "id": "cel/sunburst",
+      "busy": true,
       "skin": "cel",
       "file": "public/bg/lib/cel-sunburst.webp",
       "name": {

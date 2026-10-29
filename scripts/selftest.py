@@ -282,7 +282,7 @@ def main() -> int:
             fh.write(b"x")
         r2 = run(sys.executable, str(vb), str(proj))
         check("负向：背景文件被改（sha256）被拦", r2.returncode == 1 and "sha256" in r2.stderr, f"rc={r2.returncode}")
-        (proj / "manifests" / "shots.resolved.json").write_text(json.dumps({"theme": "journal", "shots": [
+        (proj / "manifests" / "shots.resolved.json").write_text(json.dumps({"theme": "journal", "bgMode": "shot", "shots": [
             {"id": "S1", "bg": "journal/ruled", "bgFile": "bg/lib/journal-ruled.webp"},
             {"id": "S2", "bg": "journal/ruled", "bgFile": "bg/lib/journal-ruled.webp"}]}), encoding="utf-8")
         r3 = run(sys.executable, str(vb), str(proj), "--shots")

@@ -15,7 +15,7 @@
 - 字幕：一条深红横批（`#8f1216`，两端燕尾，像贴上去的对联条），米色字 72 设计 px（= 96 px@1440）Noto Serif SC Bold，≥7:1。
 - 章节标识：左上一枚红色方印（序号）+ 宋体章名；无技术页眉。
 - 背景：`bg-papercut-{main,chapter,quiet}.jpg`；chapter 变体上沿一条红色锯齿条（装饰区 y<72）。
-- 背景库（3.4.0）：再加 8 张——`papercut/hongzhi` 红纸衬边、`xuan` 宣纸、`kraft` 牛皮纸·红绳、`origami` 折纸纹、`lattice` 窗花角、`sajin` 洒金笺、`cloud` 祥云、`menjian` 挂笺；不写 `bg` 时按镜头角色自动轮换、相邻不重复，见 [background-library.md](background-library.md)。
+- 背景库（3.4.0）：再加 8 张——`papercut/hongzhi` 红纸衬边、`xuan` 宣纸、`kraft` 牛皮纸·红绳、`origami` 折纸纹、`lattice` 窗花角、`sajin` 洒金笺、`cloud` 祥云、`menjian` 挂笺；3.7.0 起手作皮肤默认 `bgMode: "chapter"`：只在章节首镜换纸、章内沿用（装饰重的 `busy` 背景只给章节卡 / 安静镜）；想全片一张纸写 `"bgMode": "film"`，想改回逐镜轮换写 `"bgMode": "shot"`，见 [background-library.md](background-library.md)。
 - 转场缺省：`peel`（3.5.0，从右下角把上一张剪纸揭起来，见 [fx-effects.md](fx-effects.md)）；画不了 WebGPU 时自动退回 `drop`（新纸盖上来）。运动用 `CutPaper` 的 12 fps 跳帧（剪纸动画手感），落定不弹。
 
 ## 原生动作

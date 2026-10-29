@@ -19,7 +19,7 @@
   P0  字幕区：皮肤墨色 vs 字幕区平均亮度 < 7:1，或 vs 字幕区最暗 5 %（4 px 模糊后）< 4.5:1
       ——按「字幕衬底不存在」来量（journal 本来就没有衬底；其余皮肤有衬底，这条是保底）
   P1  中央 70 % 起伏（1/8 降采样后亮度标准差）> 0.05：背景会和内容抢
-  P1  分镜相邻两镜同一张背景（--shots）
+  P1  分镜相邻两镜同一张背景（--shots；只在 bgMode=shot 时算，chapter / film 模式同章同纸是正常的）
 """
 from __future__ import annotations
 
@@ -113,6 +113,8 @@ def check_library(root: Path, min_per_skin: dict | None = None) -> tuple[list[st
             continue
         if not str(eid).startswith(f"{skin}/"):
             p0.append(f"{tag} id 必须以 '{skin}/' 开头")
+        if "busy" in e and not isinstance(e["busy"], bool):
+            p0.append(f"{tag} busy 必须是 true / false")
         bad_roles = [r for r in e.get("roles") or [] if r not in ROLES]
         if bad_roles:
             p0.append(f"{tag} roles 含未知角色 {bad_roles}")
@@ -168,6 +170,9 @@ def check_shots(root: Path) -> tuple[list[str], list[str]]:
         return [f"缺 {rp}（先跑 resolve-shots）"], p1
     res = json.loads(rp.read_text(encoding="utf-8"))
     theme = res.get("theme")
+    # 3.7.0：相邻重复只在逐镜轮换（bgMode=shot）时算问题；chapter / film 模式同章同纸是设计如此。
+    # 旧 resolved 没有 bgMode 键：手作皮肤按 chapter、其余按 shot 推断（与 resolve-shots 的默认一致）。
+    mode = res.get("bgMode") or ("chapter" if theme in ("journal", "papercut", "archive") else "shot")
     try:
         lib = {e["id"]: e for e in load_library(root).get("backgrounds", [])}
     except FileNotFoundError:
@@ -182,7 +187,7 @@ def check_shots(root: Path) -> tuple[list[str], list[str]]:
                 p0.append(f"{s['id']}: 背景 {bid!r} 不在 manifests/backgrounds.json")
             elif e.get("skin") != theme:
                 p0.append(f"{s['id']}: 背景 {bid!r} 属于 {e.get('skin')} 皮肤，当前皮肤是 {theme}")
-        if bg and prev and bg == prev[1]:
+        if bg and prev and bg == prev[1] and mode == "shot":
             p1.append(f"{s['id']}: 与上一镜 {prev[0]} 用同一张背景 {bid}（相邻镜重复：换一张，或去掉显式 bg 让引擎轮换）")
         prev = (s["id"], bg) if bg else None
     return p0, p1
