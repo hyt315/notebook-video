@@ -25,6 +25,26 @@ CUES = [
 ]
 
 
+class EngineProbe(unittest.TestCase):
+    """3.7.0：onnxruntime 与解释器不兼容时 import 即段错误，try/except 拦不住。
+    必须先在子进程里探测，否则用户看到的是「脚本崩溃」而不是「跳过」。"""
+
+    def test_crashing_interpreter_is_reported_not_raised(self):
+        ok, why = vocr._probe([sys.executable, "-c", "import sys; sys.exit(139)"])
+        self.assertFalse(ok)
+        self.assertIn("rc=139", why)
+
+    def test_missing_engine_reports_install_hint(self):
+        ok, why = vocr._probe([sys.executable, "-c", "import sys; sys.exit(3)"])
+        self.assertFalse(ok)
+        self.assertIn("没装 RapidOCR", why)
+
+    def test_healthy_interpreter_is_available(self):
+        ok, why = vocr._probe([sys.executable, "-c", "import sys; sys.exit(0)"])
+        self.assertTrue(ok)
+        self.assertEqual(why, "")
+
+
 class Reexec(unittest.TestCase):
     """3.7.0: NOTEBOOK_VIDEO_OCR_PYTHON must work when it points at a venv python (a symlink)."""
     @unittest.skipIf(sys.platform == "win32", "Windows 创建符号链接需要管理员/开发者模式（WinError 1314），venv 也不用符号链接")

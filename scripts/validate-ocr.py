@@ -156,7 +156,45 @@ def _quiet() -> None:
         logging.getLogger(name).setLevel(logging.WARNING)
 
 
+_PROBE_CODE = "\n".join([
+    "import importlib, sys",
+    "for m in ('rapidocr', 'rapidocr_onnxruntime'):",
+    "    try:",
+    "        importlib.import_module(m)",
+    "        sys.exit(0)",
+    "    except BaseException:",
+    "        pass",
+    "sys.exit(3)",
+])
+
+
+def _probe(argv: list[str]) -> tuple[bool, str]:
+    """在子进程里试加载引擎，返回 (可用, 原因)。
+
+    为什么不用 try/except：onnxruntime 与解释器/CPU 不兼容时，**import 那一刻就段错误**（rc=139 或
+    SIGSEGV），异常拦不住，整个脚本直接被打死——用户看到的是「崩溃」而不是「跳过」。所以在子进程里试。
+    """
+    try:
+        r = subprocess.run(argv, capture_output=True, timeout=180)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return False, f"探测子进程无法启动：{exc}"
+    if r.returncode == 0:
+        return True, ""
+    if r.returncode == 3:
+        return False, "没装 RapidOCR（pip install rapidocr onnxruntime，或设 NOTEBOOK_VIDEO_OCR_PYTHON）"
+    return False, (f"RapidOCR 引擎无法加载：import 时进程异常退出（rc={r.returncode}），"
+                   "常见于 onnxruntime 与本机 Python/CPU 不兼容；换一台机器或换解释器即可")
+
+
+def engine_importable() -> tuple[bool, str]:
+    return _probe([sys.executable, "-c", _PROBE_CODE])
+
+
 def load_engine():
+    ok, why = engine_importable()
+    if not ok:
+        load_engine.reason = why          # 给 main 打 SKIPPED 用
+        return None
     try:
         from rapidocr import RapidOCR  # v2/v3
         _quiet()
@@ -234,7 +272,8 @@ def main(argv: list[str]) -> int:
         if should_reexec(alt, sys.executable, os.environ):
             env = dict(os.environ, _NV_OCR_REEXEC="1")
             return subprocess.run([alt, __file__, *argv], env=env).returncode
-        print("validate-ocr · SKIPPED：没装 RapidOCR（pip install rapidocr onnxruntime，或设 NOTEBOOK_VIDEO_OCR_PYTHON）")
+        print(f"validate-ocr · SKIPPED：{getattr(load_engine, 'reason', '没装 RapidOCR')}"
+              "｜字幕像素级检查未执行（不阻断出片；发版前建议在能跑 RapidOCR 的机器上补一次）")
         return 3 if require else 0
 
     band, min_px = float(opts["--band"]), float(opts["--min-px"])
