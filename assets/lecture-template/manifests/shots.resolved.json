@@ -877,5 +877,6 @@
       "bgFile": "bg/lib/flat-dotgrid.webp"
     }
   ],
+  "sfxDensity": "sparse",
   "bgMode": "shot"
 }

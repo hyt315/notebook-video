@@ -48,7 +48,7 @@ import {MascotGate} from './mascot-gate';
 import {planSfx, bedDuckAt, SFX_BED, BED_GAIN} from './sfx';
 import {CINEMA, cinemaCamAt, cinemaMask, cinemaTransform, parallaxTransform, resolveTransition, transitionFrames, transitionStyle, WhipBlur, whipOffset} from './cinema';
 import {FxProbe, PageCurl, curlShadow, isCurl} from './fx';
-import {SHOTS, SHOT_IDS, SHOT_TOTAL} from './shots';
+import {SHOTS, SHOT_IDS, SHOT_TOTAL, SFX_DENSITY} from './shots';
 import {SCENES} from './scenes';
 import {FontFaces} from './fonts';
 import type {BgVariant} from './theme/types';
@@ -383,7 +383,7 @@ const Backdrop=()=>{
 // 音效：预制语义音效库 + 按分镜表语义自动排（src/sfx.ts 的 planSfx）。
 // 一律相对所属镜头起点推导，改台词重跑 resolve-shots 后自动跟着走；每镜可用 `sfx` 字段覆盖。
 // 混音：音效库统一 -18 LUFS(100ms)，SFX_GAIN 把它们压到人声（-16 LUFS）下方 8–12 LU；音乐床 ≈ -36 LUFS。
-const SFX_PLAN=planSfx(SHOT_IDS.map((id)=>SHOTS[id] as any),CHAPTER_STARTS,DURATION);
+const SFX_PLAN=planSfx(SHOT_IDS.map((id)=>SHOTS[id] as any),CHAPTER_STARTS,DURATION,SFX_DENSITY);
 const Sound=()=>{
   // 音乐床在每个音效下闪避（bedDuckAt），音量是帧的纯函数
   const bedVol=(fr:number)=>interpolate(fr,[0,30,DURATION-45,DURATION],[0,BED_GAIN,BED_GAIN,0],{...clamp,easing:Easing.linear})*bedDuckAt(fr,SFX_PLAN);

@@ -100,15 +100,29 @@ class BgModeTest(unittest.TestCase):
         tmp = Path(tempfile.mkdtemp(prefix="nv-rs360-")) / "rs360.py"
         tmp.write_text(old_src.stdout, encoding="utf-8")
         old = load("rs360", tmp)
+        # 3.7.0：sfxDensity 是**刻意的**行为变更（shots.ts 多一行导出、resolved 多一个键），
+        # 本用例守的是「背景相关输出与 3.6.0 逐字节一致」，所以先把这一行 / 这个键去掉再比。
+        def strip_sfx_ts(text: str) -> str:
+            out: list[str] = []
+            for line in text.splitlines():
+                if "SFX_DENSITY" in line:      # 去掉新增的导出行
+                    continue
+                if not line.strip() and out and not out[-1].strip():
+                    continue                    # 顺带合并因删行产生的连续空行
+                out.append(line)
+            return "\n".join(out)
+
         for theme in ("journal", "flat"):
             d = project(theme, library=False)
-            self.assertEqual(rs.resolve(d)[0], old.resolve(d)[0], theme)
-            # and the CLI writes the same shots.resolved.json
-            outs = []
+            self.assertEqual(strip_sfx_ts(rs.resolve(d)[0]), strip_sfx_ts(old.resolve(d)[0]), theme)
+            # and the CLI writes the same shots.resolved.json（sfxDensity 除外）
+            docs = []
             for script in (ROOT / "scripts" / "resolve-shots.py", tmp):
                 subprocess.run([sys.executable, str(script), str(d)], check=True, capture_output=True)
-                outs.append((d / "manifests" / "shots.resolved.json").read_bytes())
-            self.assertEqual(outs[0], outs[1], theme)
+                doc = json.loads((d / "manifests" / "shots.resolved.json").read_text(encoding="utf-8"))
+                doc.pop("sfxDensity", None)
+                docs.append(doc)
+            self.assertEqual(docs[0], docs[1], theme)
 
     def test_busy_never_on_main(self):
         busy = {k for k, e in LIB.items() if e.get("busy")}

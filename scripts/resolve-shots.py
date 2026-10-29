@@ -293,6 +293,25 @@ def bg_mode(shots_doc: dict, problems: list[str] | None = None) -> str:
     return m
 
 
+SFX_DENSITIES = ("sparse", "normal")
+
+
+def sfx_density(shots_doc: dict, problems: list[str] | None = None) -> str:
+    """3.7.0：音效密度。缺省 sparse（每镜一记）；normal 是 3.6.0 的「一拍一个」。
+
+    为什么缺省改成 sparse：旁白由使用者自行后配（任意 TTS 或真人），技能不知道以后有没有人声，
+    按 24 条/分钟铺满会跟说话抢注意力。老工程想要原样，写 "sfxDensity": "normal"。
+    """
+    d = shots_doc.get("sfxDensity")
+    if d is None:
+        return "sparse"
+    if d not in SFX_DENSITIES:
+        if problems is not None:
+            problems.append(f"sfxDensity={d!r} 不是 {' / '.join(SFX_DENSITIES)} 之一（缺省 sparse）")
+        return "sparse"
+    return d
+
+
 def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems: list[str]) -> None:
     """3.4.0 背景库：给每镜定一张背景，写进 rec["bg"]（库 id）+ rec["bgFile"]（public/ 下相对路径）。
 
@@ -509,6 +528,8 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
         "",
         f"export const SHOT_TOTAL = {total};",
         "",
+        f"export const SFX_DENSITY = {js(sfx_density(shots_doc, problems))} as const;",
+        "",
         "export const SHOTS = {",
     ]
     body = []
@@ -624,6 +645,7 @@ def main() -> int:
     theme_id = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8")).get("theme", "cel")
     resolved = {"duration": out[-1]["to"] if out else 0, "theme": theme_id, "shots": out}
     shots_doc = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8"))
+    resolved["sfxDensity"] = sfx_density(shots_doc, problems)
     if (project / "manifests" / "backgrounds.json").is_file():
         # 3.7.0：告诉 validate-backgrounds 本片按什么粒度换背景（没有背景库的旧工程不出这个键，输出逐字节不变）
         resolved["bgMode"] = bg_mode(shots_doc) if shots_doc.get("bgRotate", True) is not False else "off"

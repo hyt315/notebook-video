@@ -1489,6 +1489,20 @@ case('BGL10 分镜 · 没有背景库的旧工程 → 不出 bgFile（3.3.0 行�
 cleanup(td)
 
 
+# ── SFX1：非法的 sfxDensity 必须被 resolve-shots 拦下（3.7.0）──
+_td, _rc, _out = mkproj(lambda d: (d.__setitem__('sfxDensity', 'loud'), d)[1])
+case('SFX1 分镜 · 非法 sfxDensity → resolve-shots 拦', [
+    ('must_block:sfxDensity', 'resolve-shots', (_rc, _out))])
+cleanup(_td)
+
+
+# ── SFX2：缺省不写 sfxDensity 时按 sparse 生成（3.7.0 行为变更）──
+_td, _rc, _out = mkproj()
+case('SFX2 分镜 · 缺省 sfxDensity = sparse（值由 tests/test_sfx_density.py 核对）', [
+    ('must_pass', 'resolve-shots', (_rc, _out))])
+cleanup(_td)
+
+
 # ---- 3.7.0 评审拦截：手作皮肤 review.rounds 为空时 make-video --render 必须停（不加 --skip-review） ----
 def mk_review_proj(skin, rounds):
     td = tempfile.mkdtemp(prefix='nv-review-')

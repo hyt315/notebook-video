@@ -104,8 +104,17 @@ const middleEvent = (s: ShotLike, i: number): SfxEvent => {
   return i % 2 ? 'click' : 'highlight';
 };
 
+/** 音效密度（3.7.0 片级字段，写进 manifests/shots.json 顶层）：
+ *  · sparse（缺省）：每镜只留末拍一记 + 章节/转场；误区镜额外保留第 2 拍的反转音。
+ *    为什么改缺省：旁白由使用者自行后配（任意 TTS 或真人），不知道以后有没有人声，
+ *    所以默认就该克制——音效是标点，不是配乐。
+ *  · normal：3.6.0 的行为，每个 beat 一个音效（老工程想要原样就写 "sfxDensity": "normal"）。
+ */
+export type SfxDensity = 'sparse' | 'normal';
+export const SFX_DENSITY_DEFAULT: SfxDensity = 'sparse';
+
 /** 一镜的自动音效（本镜本地帧）。 */
-export const autoSfxForShot = (s: ShotLike, isChapter: boolean, isFirst: boolean): {event: SfxEvent; at: number; beat?: number}[] => {
+export const autoSfxForShot = (s: ShotLike, isChapter: boolean, isFirst: boolean, density: SfxDensity = SFX_DENSITY_DEFAULT): {event: SfxEvent; at: number; beat?: number}[] => {
   const out: {event: SfxEvent; at: number; beat?: number}[] = [];
   if (isChapter) {
     out.push({event: 'chapter', at: 2});
@@ -119,6 +128,15 @@ export const autoSfxForShot = (s: ShotLike, isChapter: boolean, isFirst: boolean
     return out;
   }
   const n = s.beats.length;
+  if (density === 'sparse') {
+    if (!n) return out;
+    // 末拍：结论镜给 success，其余给 highlight——一镜只留这一记
+    const conclusive = (s.live ?? []).some((x) => CONCLUSIVE.includes(x)) || s.move === '收束' || s.move === '结论';
+    out.push({event: conclusive ? 'success' : 'highlight', at: s.beats[n - 1], beat: n - 1});
+    // 误区镜的「反转」是叙事骨架，单独留一条
+    if (s.misconception && n >= 3) out.push({event: 'error', at: s.beats[1], beat: 1});
+    return out;
+  }
   s.beats.forEach((b, i) => {
     let ev: SfxEvent;
     if (i === 0) ev = 'pop';
@@ -133,13 +151,13 @@ export const autoSfxForShot = (s: ShotLike, isChapter: boolean, isFirst: boolean
 };
 
 /** 整片音效表（绝对帧）。chapterStarts = 各章首镜的 from。 */
-export const planSfx = (shots: readonly ShotLike[], chapterStarts: readonly number[], total: number): SfxCue[] => {
+export const planSfx = (shots: readonly ShotLike[], chapterStarts: readonly number[], total: number, density: SfxDensity = SFX_DENSITY_DEFAULT): SfxCue[] => {
   const raw: {event: SfxEvent; at: number; vol?: number}[] = [];
   shots.forEach((s, idx) => {
     const ov = s.sfx;
     if (ov === 'none') return;
     const list: Override[] = Array.isArray(ov) ? (ov as Override[]) : [];
-    let auto = s.sfxAuto === false ? [] : autoSfxForShot(s, chapterStarts.includes(s.from), idx === 0);
+    let auto = s.sfxAuto === false ? [] : autoSfxForShot(s, chapterStarts.includes(s.from), idx === 0, density);
     for (const o of list) {
       if (!isEvent(o.event)) continue;
       if (o.beat !== undefined) {

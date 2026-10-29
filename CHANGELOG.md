@@ -33,6 +33,13 @@ All notable changes are recorded here. The project follows semantic versioning.
 - `validate-ocr` 按阅读顺序（先分行、行内从左到右）拼接识别结果；RapidOCR 会把同一行里字形不同的两段倒序输出，旧版因此误报。
   `validate-ocr` joins OCR lines in reading order; RapidOCR may emit two segments of one line in reverse, which caused false reports.
 
+### 声音 / Sound（行为变更）
+
+- 新片级字段 `sfxDensity`：`sparse`（**缺省**）/ `normal`。`sparse` 下每镜只留末拍一记（结论镜 `success`，其余 `highlight`）+ 章节 / 转场音，误区镜额外保留第 2 拍的反转音；`normal` 是 3.6.0 的「一拍一个」。演示片从约 39 条候选（落地 ~24 条/分钟）降到 8–12 条。
+  New film-level `sfxDensity`: `sparse` (default) keeps one hit per shot plus chapter / transition cues, and the beat-2 turn on misconception shots; `normal` restores the 3.6.0 one-per-beat behaviour. The demo drops from ~39 candidates to 8–12 cues.
+- **为什么改缺省**：旁白由使用者自行后配（任意 TTS 或真人），技能不知道以后有没有人声；按 24 条/分钟铺满会跟说话抢注意力。音效是标点，不是配乐。旧工程想恢复原样，在 `manifests/shots.json` 顶层写 `"sfxDensity": "normal"`。
+  Rationale: narration is added later by the user (any TTS or a human voice), so the default has to be restrained. Add `"sfxDensity": "normal"` to restore the old density.
+
 ### 素材 / Media
 
 - `commons search --type audio --source openverse --audio-category music|sound_effect`（取值来自 Openverse 官方 OpenAPI）。许可证白名单不变（CC0 / PDM / CC BY）。注意：2026-10-29 实测线上 `category` 过滤返回 0 条（sound_effect）或 HTTP 500（music），不带分类正常。
