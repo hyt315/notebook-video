@@ -199,6 +199,16 @@ const newProject = async (args) => {
     if (!fs.existsSync(activePath)) fail(`Theme switch is missing in the copied template: ${activePath}`);
     fs.writeFileSync(activePath, `import {THEME} from './${style}';\nexport {THEME};\n`);
   }
+  // 3.7.0（T8.1）：模板自带的 treatment.json 描述的是示例片；换皮肤时 medium.skin 必须跟着改，
+  // 否则 validate-treatment 直接以「medium.skin 与工程皮肤不一致」判 P0（手作皮肤必填项）。
+  const treatmentPath = path.join(target, 'manifests', 'treatment.json');
+  if (fs.existsSync(treatmentPath)) {
+    const t = JSON.parse(fs.readFileSync(treatmentPath, 'utf8'));
+    if (t.medium && typeof t.medium === 'object') {
+      t.medium.skin = style;
+      fs.writeFileSync(treatmentPath, `${JSON.stringify(t, null, 2)}\n`);
+    }
+  }
   const fontDir = await ensureFonts();
   const publicDir = path.join(target, 'public');
   fs.mkdirSync(publicDir, {recursive: true});
