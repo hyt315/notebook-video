@@ -2,7 +2,8 @@
 // ============================================================================
 // make-video.mjs · 3.2.0 一条命令出片（Windows / macOS / Linux 同一套 Node 实现）
 //
-//   node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel] [--stills] [--render OUT.mp4]
+//   node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel] [--stills] [--render OUT.mp4] [--skip-review]
+//   --skip-review：手作皮肤 treatment.review.rounds 为空时 --render 默认停下（3.7.0），草稿 / 自测用它显式跳过
 //                                         [--scale=0.75] [--no-gates]
 //
 // 流程：建工程（不存在时）→ compose-story（排版 + 字幕定时 + 关键词同步 + 相机 + 自动修）
@@ -25,7 +26,7 @@ const flag = (name) => args.find((a) => a === `--${name}` || a.startsWith(`--${n
 const flagVal = (name, dflt) => { const f = flag(name); if (!f) return dflt; const i = f.indexOf('='); if (i > 0) return f.slice(i + 1); const k = args.indexOf(f); return args[k + 1] && !args[k + 1].startsWith('--') ? args[k + 1] : dflt; };
 const positional = args.filter((a, i) => !a.startsWith('--') && !(i > 0 && /^--(render|scale|style)$/.test(args[i - 1])));
 if (!positional[0]) {
-  console.error('用法：node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel] [--stills] [--render OUT.mp4] [--scale=0.75]');
+  console.error('用法：node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel] [--stills] [--render OUT.mp4] [--scale=0.75] [--skip-review]');
   process.exit(2);
 }
 // 两种入口。① 工程目录（推荐，手写组件场景路线：shots.json + scenes.tsx 里用默认组件）；
@@ -98,6 +99,36 @@ if (a.code) die('ffmpeg 不可用：请安装 ffmpeg 并放进 PATH');
 // 4. resolve
 step('resolve-shots');
 if ((await py('resolve-shots.py', [project])).code) die('resolve-shots 失败');
+
+// 4b. 3.7.0 评审拦截：手作皮肤要出成片，先得有一轮独立评审（director-method.md 第 4 步），或显式 --skip-review。
+//     只拦 --render（静帧 / 联系表就是给评审看的，不拦）；flat / cel 不拦，CI / selftest 不走 --render。
+const activeSkin = (() => {
+  try { return fs.readFileSync(path.join(project, 'src', 'theme', 'active.ts'), 'utf8').match(/from\s+'\.\/(\w+)'/)?.[1] ?? style; } catch { return style; }
+})();
+if (renderOut && ['journal', 'papercut', 'archive'].includes(activeSkin) && !flag('skip-review')) {
+  let rounds = null;
+  try { rounds = JSON.parse(fs.readFileSync(path.join(project, 'manifests', 'treatment.json'), 'utf8'))?.review?.rounds ?? []; } catch { rounds = null; }
+  if (Array.isArray(rounds) && rounds.length === 0) {
+    console.error([
+      '',
+      '══════════════════════════════════════════════════════════════════',
+      `✗ 停在渲染前：${activeSkin} 是手作皮肤，manifests/treatment.json 的 review.rounds 还是空的。`,
+      '',
+      '  为什么停：手作片的问题（构图、调度、隐喻和媒介是否一致）只有独立的眼睛才看得出，',
+      '  渲染一次很贵，先评审再出片（references/director-method.md 第 4 步）。',
+      '',
+      '  怎么评审：',
+      '    1. node scripts/make-video.mjs <工程> --stills       → renders/stills-*.jpg 联系表',
+      '    2. 开一个全新的会话 / 子代理，只给它：联系表 + storyboard.md（resolve-shots 自动生成）+ manifests/treatment.json，',
+      '       按 references/quality-checklist.md 与 director-method.md 的评审项打分、分 P0 / P1 / P2 列问题；',
+      '    3. 修掉 P0 / P1，把这一轮写进 treatment.json 的 review.rounds（时间、评审者、问题、处理）。',
+      '',
+      '  确实要跳过（草稿 / 自测）：加 --skip-review。',
+      '══════════════════════════════════════════════════════════════════',
+    ].join('\n'));
+    process.exit(3);
+  }
+}
 
 // 5. gates
 const results = [];

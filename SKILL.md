@@ -30,7 +30,7 @@ description: Turn a topic into a Chinese 16:9 teaching video (flat / cel compone
 媒介的八个轴与"不是什么"见 [references/style-recipes.md](references/style-recipes.md)；组件见 [references/craft-kit.md](references/craft-kit.md)
 （`InkPath` / `HandNote` / `HandLettering` / `WashBlob` / `CutPaper` / `Loupe` / `PinnedPhoto` / `ArchivePhoto` …）。
 开场钩子、节奏、运镜分别见 [references/narrative-hook.md](references/narrative-hook.md)、[references/pacing-rhythm.md](references/pacing-rhythm.md)、[references/camera-language.md](references/camera-language.md)。
-先做 3 张风格帧（`--stills`），像了再做全片；渲染后由新会话只看联系表做七项独立评审。
+先做 3 张风格帧（`--stills`），像了再做全片；**整片渲染前**由新会话只看联系表 + 自动生成的 `storyboard.md` + `treatment.json` 做七项独立评审，写进 `review.rounds`（手作皮肤没评审时 `make-video --render` 会停下，草稿用 `--skip-review` 显式跳过）。
 
 ## 第 1 步 · 选一个蓝图
 

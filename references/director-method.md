@@ -80,10 +80,15 @@ python scripts/commons-search.py search "<关键词>" --source openverse --proje
 1. 写完 treatment.json；
 2. 做 3 张风格帧（其中一张是招牌镜头 / 最难的那一镜）：`make-video --stills` 看图，不像就改媒介或改隐喻，不要硬上；
 3. 全片；`--stills` 联系表两遍；关键动作 0.2 秒连帧；
-4. **独立评审**（做的人不评自己）：开一个新会话 / 子 agent，只给它联系表 + 镜头表，按七项 1–10 打分：
-   构图主体、调度节奏、隐喻与媒介一致、顿悟惊艳、字幕可读、手作质感与色彩纪律、叙事完整。<8 的改完再评，
-   分数与改法写进 `treatment.json → review.rounds`；
-5. 一轮修改把所有问题改完，再渲整片。
+4. **独立评审**（做的人不评自己）：开一个新会话 / 子 agent，**只给它三样东西**：`--stills` 联系表、工程根目录的
+   `storyboard.md`、`manifests/treatment.json`，不给任何过程记录。按七项 1–10 打分：
+   构图主体、调度节奏、隐喻与媒介一致、顿悟惊艳、字幕可读、手作质感与色彩纪律、叙事完整；问题分 P0 / P1 / P2 列出。
+   <8 的改完再评，分数、问题与处理写进 `treatment.json → review.rounds`（时间、评审者、问题、处理）。
+   - `storyboard.md` 由 `resolve-shots` 从 `manifests/shots.resolved.json` **自动生成**（3.7.0）：片名、总帧数、时长、皮肤，
+     每镜一行写起止秒、景别、运镜、意图缩放 / 实际缩放、转场、背景、主要组件、字幕摘要。文件头有"自动生成"标记，手改会被覆盖；
+     如果你手写过 storyboard.md（没有标记），不覆盖，生成的那份写到 `storyboard.generated.md`——评审用生成的那份。
+5. 一轮修改把所有问题改完，再渲整片。手作皮肤 `review.rounds` 为空时 `make-video --render` 会停下并说明原因；
+   草稿 / 自测确实要跳过，显式加 `--skip-review`。
 
 ## treatment.json 字段一览
 见 `assets/lecture-template/manifests/treatment.example.json`（复制成 `treatment.json` 再填）。门禁规则：

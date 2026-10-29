@@ -1488,6 +1488,34 @@ case('BGL10 分镜 · 没有背景库的旧工程 → 不出 bgFile（3.3.0 行�
     ('must_absent:bgFile', 'shots.ts 不含 bgFile', (1, _before))])
 cleanup(td)
 
+
+# ---- 3.7.0 评审拦截：手作皮肤 review.rounds 为空时 make-video --render 必须停（不加 --skip-review） ----
+def mk_review_proj(skin, rounds):
+    td = tempfile.mkdtemp(prefix='nv-review-')
+    os.makedirs(os.path.join(td, 'manifests'))
+    os.makedirs(os.path.join(td, 'src', 'theme'))
+    os.makedirs(os.path.join(td, 'audio'))
+    shutil.copy(os.path.join(TPL, 'manifests/caption-cues.json'), os.path.join(td, 'manifests/caption-cues.json'))
+    shutil.copy(SRC, os.path.join(td, 'manifests/shots.json'))
+    io.open(os.path.join(td, 'src/index.tsx'), 'w', encoding='utf-8').write('// fixture\n')
+    io.open(os.path.join(td, 'src/theme/active.ts'), 'w', encoding='utf-8').write(f"export {{theme}} from './{skin}';\n")
+    # treatment 故意不完整：放行后会被 validate-treatment 拦在 tsc / npm ci 之前（夹具永远不会真的去渲染）
+    io.open(os.path.join(td, 'manifests/treatment.json'), 'w', encoding='utf-8').write(json.dumps({'review': {'rounds': rounds}}))
+    return td
+
+MV = os.path.join(SKILL, 'scripts/make-video.mjs')
+td = mk_review_proj('journal', [])
+case('RV1 手作皮肤 · review.rounds 为空 · --render 不加 --skip-review → 渲染前停下', [
+    ('must_block:review.rounds', 'make-video --render', run(['node', MV, td, '--render', os.path.join(td, 'renders', 'x.mp4')]))])
+case('RV2 同一工程加 --skip-review → 不再被评审拦（继续走到构建期门禁）', [
+    ('must_absent:review.rounds 还是空的', 'make-video --render --skip-review', run(['node', MV, td, '--render', os.path.join(td, 'renders', 'x.mp4'), '--skip-review'])),
+    ('must_block:构建期门禁', '走到了门禁那一步', run(['node', MV, td, '--render', os.path.join(td, 'renders', 'x.mp4'), '--skip-review']))])
+cleanup(td)
+td = mk_review_proj('flat', [])
+case('RV3 flat 皮肤 · review.rounds 为空 → 不拦（只拦手作皮肤）', [
+    ('must_absent:review.rounds 还是空的', 'make-video --render（flat）', run(['node', MV, td, '--render', os.path.join(td, 'renders', 'x.mp4')]))])
+cleanup(td)
+
 print()
 print('== 负向抽查明细 ==')
 _steps = 0
