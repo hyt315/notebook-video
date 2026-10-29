@@ -4,12 +4,13 @@ A film whose every chapter has the same structure, density and speed loses viewe
 
 ## Hammer frames
 
-Plan two or three hammer moments per film (roughly one per 60–90 seconds, never two in adjacent chapters). A hammer moment is the single most quotable line of a chapter shown as a full-screen statement:
+Plan two or three hammer moments per film (roughly one per 60–90 seconds, never two in adjacent chapters). They are the **only** exception to SKILL.md's rule that regular shots never become full-screen text pages. A hammer moment is the single most quotable line of a chapter shown as a full-screen statement:
 
 - one oversized sentence (displayL or larger) on an otherwise nearly empty paper, held 1.5–2.5 seconds;
 - all other zones exit completely before it enters; the multi-zone layout resumes after it;
 - place it on the narration line it quotes, timed from the cue table like every other element;
-- choose lines that reverse an assumption or compress the chapter ("冲突不是报错，是 Git 在问你意见"), not summaries.
+- choose lines that reverse an assumption or compress the chapter ("冲突不是报错，是 Git 在问你意见"), not summaries;
+- **how to build it** — component route: a `StampBanner` (or a `Callout` at displayL) alone in its shot; hand-made route: the sentence hand-lettered across the page with `HandLettering`, or stamped as a large `Seal` — the line lives in the medium, not as plain type on blank paper.
 
 Mark each hammer frame in `storyboard.md` with `Hammer:` plus its cue number so the reviewer can check the beat spacing.
 

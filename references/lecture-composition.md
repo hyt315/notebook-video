@@ -1,5 +1,7 @@
 # Lecture composition: the default multi-zone visual route
 
+> **仅限组件路线（flat / cel）。** 手作路线（journal / papercut / archive）不读这份，必读清单见 SKILL.md 第 0 步。
+
 ## Contents
 
 - [The six rules](#the-six-rules)

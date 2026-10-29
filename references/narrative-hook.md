@@ -40,7 +40,7 @@ The callback must add evidence or causality, not merely repeat the headline. Exa
 
 ## Three proven first-sentence templates
 
-Write the first spoken sentence from one of these shapes, then verify it against the source material. Data point: result-first openings outperform feature-statement openings by more than 2x on completion rate, and 78% of high-completion videos front-load the core conflict or result.
+Write the first spoken sentence from one of these shapes, then verify it against the source material. Rule: put the core result or conflict in the first sentence. Reason: a viewer decides whether to stay before any context has been given, so context-first openings spend the only seconds that decide retention on material that has no pull yet.
 
 1. **Result first** — state the verified outcome before any context: "一条命令，能让你写崩的代码一秒回到十分钟前。"
 2. **Curiosity gap** — name a mistake or blind spot most viewers do not know they have: "你花399买的课，GitHub上大概率有人免费开源了。"
@@ -50,10 +50,10 @@ Never open with audience labeling or roadmap sentences ("作为XX专业的学生
 
 ## First-three-seconds motion density
 
-High-retention openings average close to three visual changes in the first three seconds; a single slow title pop reads as static. Requirements:
+Rule: the first three seconds carry several distinct visual changes. Reason: a single slow title pop reads as a still image, and a still image at second one looks like a loading screen. Requirements:
 
 - at least **three distinct visual actions** inside the first 90 native frames (hero statement lands, then two supporting elements enter or change state);
-- the hero statement is a full-screen hammer frame (displayL or larger) that lands within 45 frames, with one short accent sound at its landing frame;
+- the hero statement is a full-screen hammer frame (displayL or larger) that lands within 45 frames, with one short accent sound at its landing frame — this is one of the film's 2–3 hammer-frame exceptions to SKILL.md's "no full-screen text pages" rule (see pacing-rhythm.md); component route: `StampBanner` / enlarged `Callout`; hand-made route: `HandLettering` or a `Seal` in the medium, never plain text on blank paper;
 - the regular multi-zone layout and chapter chrome begin only after the hammer frame has been legible for at least 1 second.
 
 ## Opening review gate

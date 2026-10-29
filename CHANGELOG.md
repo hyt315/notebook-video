@@ -4,6 +4,11 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+## [Unreleased]
+
+> 3.7.0 进行中（完整条目在发版时写）。新配置：`bgMode`（film / chapter / shot，手作皮肤默认 chapter）、`busy` 背景、`make-video --render --skip-review`、读速 `silent-timing --cps`（3.6.0 已有，缺省 6.5 字/秒）。
+> 3.7.0 in progress (full entry at release). New settings: `bgMode` (film / chapter / shot, hand-made skins default to chapter), `busy` backgrounds, `make-video --render --skip-review`, reading speed `silent-timing --cps` (from 3.6.0, default 6.5 chars/s).
+
 ## [3.6.0] - 2026-10-27
 
 > 审计 12 条里落地 8 条：运镜写了就要兑现、开场 3 秒有门禁、手作结构蓝图、字幕整行出现、无 TTS 读速 6.5 字/秒、静音片响度 −16 LUFS、treatment 增加声音段。

@@ -7,9 +7,11 @@ description: Turn a topic into a Chinese 16:9 teaching video (flat / cel compone
 # notebook-video · 用组件场景讲清一件事
 
 画面 = **组件场景**：每一镜都是真组件（控制台、代码差异、清单、数字行、漏斗、进度环、印章、结论条……），
-由引擎虚拟摄影机推近 / 跟随 / 横摇。**不要做满屏大字的「文字页」**——一句话也要放进卡片（`Callout` / `StampBanner`）里。
+由引擎虚拟摄影机推近 / 跟随 / 横摇。**常规镜头不要做满屏大字的「文字页」**——一句话也要放进卡片（`Callout` / `StampBanner`）里；
+例外是每片 2–3 个**锤子帧**（整章最该被记住的一句，满屏单独出现 1.5–2.5 秒），规则见 [references/pacing-rhythm.md](references/pacing-rhythm.md)。
+锤子帧怎么做：组件路线用 `StampBanner`（或 `Callout` 放大到 displayL）独占一镜；手作路线用 `HandLettering` 手写满屏一句，或 `Seal` 印章大字——都放在媒介里，不是白底大字。
 只有 16:9；五个皮肤：`flat`（默认）、`cel`，以及 3.3.0 的手作皮肤 `journal`（手账水彩）/ `papercut`（红色剪纸）/ `archive`（档案灯台）。
-没有 TTS：旁白是静音占位，字幕按 4.5 字/秒定时。
+没有 TTS：旁白是静音占位，字幕整行出现；组件路线按 4.5 字/秒定时，手作路线用 `silent-timing` 按 6.5 字/秒（`--cps N` 可改）。
 
 ## 先选路线
 
@@ -30,19 +32,26 @@ description: Turn a topic into a Chinese 16:9 teaching video (flat / cel compone
 媒介的八个轴与"不是什么"见 [references/style-recipes.md](references/style-recipes.md)；组件见 [references/craft-kit.md](references/craft-kit.md)
 （`InkPath` / `HandNote` / `HandLettering` / `WashBlob` / `CutPaper` / `Loupe` / `PinnedPhoto` / `ArchivePhoto` …）。
 开场钩子、节奏、运镜分别见 [references/narrative-hook.md](references/narrative-hook.md)、[references/pacing-rhythm.md](references/pacing-rhythm.md)、[references/camera-language.md](references/camera-language.md)。
+**手作路线只必读 4 份**：[director-method.md](references/director-method.md)、[craft-kit.md](references/craft-kit.md)、[camera-language.md](references/camera-language.md)、`references/theme-<皮肤>.md`；其余按需查（`lecture-composition.md` 等仅限组件路线）。
 先做 3 张风格帧（`--stills`），像了再做全片；**整片渲染前**由新会话只看联系表 + 自动生成的 `storyboard.md` + `treatment.json` 做七项独立评审，写进 `review.rounds`（手作皮肤没评审时 `make-video --render` 会停下，草稿用 `--skip-review` 显式跳过）。
 
 ## 第 1 步 · 选一个蓝图
 
-| 你要讲的 | 蓝图 |
-|---|---|
-| 一个词 / 一个原理 | `blueprints/concept.json` |
-| 一次代码改动 | `blueprints/code-change.json` |
-| 几组数字说明一个结论 | `blueprints/data-compare.json` |
-| 一件事分几步发生 | `blueprints/process.json` |
-| 一个常见错误 | `blueprints/pitfall.json` |
+| 你要讲的 | 蓝图 | 路线 |
+|---|---|---|
+| 一个词 / 一个原理 | `blueprints/concept.json` | 组件 |
+| 一次代码改动 | `blueprints/code-change.json` | 组件 |
+| 几组数字说明一个结论 | `blueprints/data-compare.json` | 组件 |
+| 一件事分几步发生 | `blueprints/process.json` | 组件 |
+| 一个常见错误 | `blueprints/pitfall.json` | 组件 |
+| "为什么"类科普：一个错误直觉被一个原生动作推翻 | `blueprints/medium-metaphor.json` | 手作（默认） |
+| 一个现象的来历，适合"起—承—转—合"慢慢翻出意外 | `blueprints/kishotenketsu.json` | 手作 |
+| 一个有悬念的"谁 / 为什么"，线索逐条揭开 | `blueprints/mystery.json` | 手作 |
+| 大小 / 多少超出直觉，要一级一级比出来（尺度、数量） | `blueprints/scale-ladder.json` | 手作 |
+| 能用一次对照实验说清的因果（变一个量，看结果） | `blueprints/experiment.json` | 手作 |
 
-每一镜都写了 `$components`：该用的**骨架**（Stage / Split / Zoom / Corridor）和**组件**。照它选，别自己发明版式。
+组件路线的蓝图每一镜都写了 `$components`：该用的**骨架**（Stage / Split / Zoom / Corridor）和**组件**。照它选，别自己发明版式。
+手作路线的蓝图写的是结构和节拍；三个候选结构至少来自 2 个结构族（见 [references/director-method.md](references/director-method.md) 第 5 步）。
 
 ## 第 2 步 · 建工程，照抄示例片的结构
 
@@ -67,7 +76,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 - 一镜 1–3 句，一句一个意思；字幕超 16 字由 `build-semantic-captions.py` 在合法断点自动拆（不拆词、英文、数字）。
 - 要观众「看那里」时，在镜头表写 `cinema.focus`（推近到那个组件的矩形）；不写也有缺省缓推。
 - 相邻两镜换骨架；一镜一个概念；关键数字用 `KineticNumber` 数过去。
-- 背景（3.4.0）：不写就自动轮换——每个皮肤有 8–11 张风格各异的亮底背景（手账：横线本 / 方格 / 点阵 / 牛皮纸 / 水彩纸 / 便签墙 / 旧书页 / 坐标纸；剪纸：红纸衬边 / 宣纸 / 窗花 / 祥云 / 挂笺 / 洒金…；档案：档案袋 / 旧报纸 / 古地图 / 卡片目录 / 胶片 / 展柜布面…），按镜头角色挑、相邻两镜不重复。某一镜要特定的纸，就写 `"bg": "oldpage"`；清单与许可见 [references/background-library.md](references/background-library.md)。
+- 背景（3.4.0 / 3.7.0）：手作皮肤默认 `bgMode: "chapter"`（每章一张纸、章内沿用），flat / cel 默认 `"shot"`（逐镜轮换）；全片一张纸写 `"bgMode": "film"`，完全不轮换写 `"bgRotate": false`。不写就自动选——每个皮肤有 8–11 张风格各异的亮底背景（手账：横线本 / 方格 / 点阵 / 牛皮纸 / 水彩纸 / 便签墙 / 旧书页 / 坐标纸；剪纸：红纸衬边 / 宣纸 / 窗花 / 祥云 / 挂笺 / 洒金…；档案：档案袋 / 旧报纸 / 古地图 / 卡片目录 / 胶片 / 展柜布面…），逐镜模式按镜头角色挑、相邻两镜不重复，装饰重的（`busy`）不进常规镜。某一镜要特定的纸，就写 `"bg": "oldpage"`；清单与许可见 [references/background-library.md](references/background-library.md)。
 - 帧参数名：`fxkit` 组件传 `frame={f}`，其余模块传 `f={f}`（传错不报错只会错位，`validate-frame-props.py` 会抓）。
 
 ## 第 4 步 · 一条命令
@@ -78,7 +87,7 @@ node "<SKILL_DIR>/scripts/make-video.mjs" ./my-video --render ./my-video/final.m
 ```
 
 Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做：resolve-shots（自动修）→ 门禁 → tsc → 静帧接触表 / 渲染 → 抽帧报告 `renders/report.md`；`--render` 后若装了 RapidOCR，会用 `validate-ocr.py` 抽字幕帧 OCR，核对字幕真的读得出（没装就跳过并提示）。
-**先看 `--stills` 静帧，再渲整片**（整片渲染要先征得用户同意）。`--render` 默认 1920×1080；响度目标 −16 LUFS（静音旁白片与真人声片相同）。
+**先看 `--stills` 静帧，再渲整片**（整片渲染要先征得用户同意）。手作皮肤 `treatment.json` 的 `review.rounds` 为空时 `--render` 会停下（先做独立评审；草稿用 `--skip-review` 显式跳过）。`--render` 默认 1920×1080；响度目标 −16 LUFS（静音旁白片与真人声片相同）。
 
 **读输出**：`✓ 自动修` = 引擎替你改了什么；`· 建议` 不拦；`✗` 才要改——每条都写了怎么改。同一个 ✗ 连续两次没改过来，停下来把报错原文告诉用户。
 

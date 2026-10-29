@@ -43,11 +43,43 @@
 
 ### 5. 三个候选结构，选一个（`candidates` + `chosen` + `chosen_why`）
 每个两三行：形状（一次旅程 / 前后对比 / 倒计时 / 一个清单逐条翻转 / 错误猜想被推翻……）、开头画面、结尾。
-第一个想到的往往是这个媒介的陈词滥调；写满三个再选。推荐默认形状（蓝图 `blueprints/medium-metaphor.json`）：
+第一个想到的往往是这个媒介的陈词滥调；写满三个再选。
+
+**选结构族（3.6.0 起检查）**：每个候选写 `family`，三个候选**至少来自 2 个族**（否则只是同一条曲线的三种写法，validate-treatment 记 P1）。
+族名与蓝图：
+
+| 族 `family` | 蓝图 | 适合 |
+|---|---|---|
+| `medium-metaphor` | `blueprints/medium-metaphor.json` | 错误直觉被一个原生动作推翻（手作默认） |
+| `kishotenketsu` | `blueprints/kishotenketsu.json` | 起承转合，第三拍出意外 |
+| `mystery` | `blueprints/mystery.json` | 悬案：线索逐条揭开 |
+| `scale-ladder` | `blueprints/scale-ladder.json` | 尺度阶梯：一级一级比出大小 / 多少 |
+| `experiment` | `blueprints/experiment.json` | 对照实验：只变一个量 |
+| `lecture-arc` | `blueprints/concept.json`、`code-change.json`、`data-compare.json`、`process.json`、`pitfall.json` | 组件路线的讲解弧 |
+| `one-take-journey` | （无蓝图） | 一镜到底的旅程 |
+| `myth-flip` | （无蓝图） | 一个流行说法被逐条翻转 |
+
+10 个蓝图的归属即上表：5 个组件路线蓝图都属 `lecture-arc`，5 个手作蓝图各自成族。
+
+推荐默认形状（蓝图 `blueprints/medium-metaphor.json`）：
 ```
 生活钩子 → 观众真有的错误直觉被"演出来" → 原生动作把它推翻 → 数得出来的证据（大数字画成"数得出来的多"）
 → 40–45% 处转向"你" → 结尾回到开头画面，但有一处变化，并回答开头的问题
 ```
+
+### 5b. 声音设计（`sound`）
+静音片也要设计声音（3.6.0 起检查，缺项 P1）。`treatment.json → sound` 每项的意思：
+
+| 字段 | 意思 | 示例 |
+|---|---|---|
+| `bed` | 底噪 / 环境声，全片垫底 | "安静的书房：纸面极轻的摩擦" |
+| `foley` | 哪些动作配什么材料声 | ["刀片划过软木：短促的擦声"] |
+| `silence` | 顿悟前那次安静在第几秒（原生动作前留白） | "21.0–21.8 s 全静，放大镜落下前" |
+| `most_important_sound` | 全片最重要的一声：什么声音、第几秒（要比别的都突出） | "22.0 s 放大镜落定：木头轻磕" |
+| `music.use` / `music.why` / `music.mood_curve` | 用不用配乐、为什么；用就写情绪曲线 | `{"use": false, "why": "素材库尚未接入，留白优于凑数"}` |
+| `foley_per_medium` | 每种媒介动作对应的拟音 | ["画线：铅笔划纸", "晕染：湿笔刷", "盖章：印泥按压"] |
+
+响度目标 −16 LUFS（静音旁白片同样）。
 
 ### 6. 对标：学什么、不学什么（`benchmark`）
 挑一两部真实作品（纪录片、片头、绘本、展览），写"学：构图 / 节奏 / 镜头语法 / 配色逻辑"和"不学：角色、具体镜头、旋律、字体"。
