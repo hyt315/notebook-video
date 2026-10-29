@@ -42,6 +42,35 @@ class Reexec(unittest.TestCase):
         self.assertFalse(vocr.should_reexec("", sys.executable, {}))
 
 
+class ReadingOrder(unittest.TestCase):
+    """3.7.0: OCR lines are joined in reading order, not in the engine's output order."""
+    # cell-v3 cue9 实测：署名签 4 行在上，字幕一行被拆成两段且倒序吐出
+    LINES = [
+        {"text": "Schem.XI", "score": 0.99, "h": 32, "x": 60, "y": 17},
+        {"text": "Robert Hooke (1635-1703)·公有领域·", "score": 0.95, "h": 30, "x": 140, "y": 52},
+        {"text": "Wikimedia Commons", "score": 0.97, "h": 25, "x": 90, "y": 78},
+        {"text": "cella:小房间", "score": 0.98, "h": 116, "x": 1080, "y": 195},
+        {"text": "拉丁语", "score": 0.99, "h": 101, "x": 760, "y": 197},
+    ]
+
+    def test_same_row_left_to_right(self):
+        got = "".join(x["text"] for x in vocr.reading_order(self.LINES))
+        self.assertTrue(got.endswith("拉丁语cella:小房间"), got)
+
+    def test_judge_passes_after_reordering(self):
+        res = vocr.judge("拉丁语 cella：小房间。", self.LINES, 281, 0.26, 80)
+        self.assertEqual(res["level"], "ok", res)
+        self.assertEqual(res["sim"], 1.0)
+
+    def test_lines_without_coordinates_keep_engine_order(self):
+        lines = [{"text": "b", "score": 1, "h": 10}, {"text": "a", "score": 1, "h": 10}]
+        self.assertEqual([x["text"] for x in vocr.reading_order(lines)], ["b", "a"])
+
+    def test_line_helper_box_centre(self):
+        ln = vocr._line("x", 0.9, [[0, 10], [100, 10], [100, 50], [0, 50]])
+        self.assertEqual((ln["x"], ln["y"], ln["h"]), (50.0, 30.0, 40.0))
+
+
 class Normalize(unittest.TestCase):
     def test_strips_punct_space_and_width(self):
         self.assertEqual(vocr.normalize("他叫它们　Cells！"), "他叫它们cells")

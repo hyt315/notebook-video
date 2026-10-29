@@ -30,6 +30,8 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 - `validate-ocr`：取样点避开下一条字幕 0.18 s 的提前出现量（旧版会读到下一句，误报 P0）；`NOTEBOOK_VIDEO_OCR_PYTHON` 指向 venv 解释器（符号链接）时也会重新执行，不再静默 SKIPPED。
   `validate-ocr` samples before the next cue's 0.18 s lead (no more false P0s) and honours `NOTEBOOK_VIDEO_OCR_PYTHON` when it is a venv symlink.
+- `validate-ocr` 按阅读顺序（先分行、行内从左到右）拼接识别结果；RapidOCR 会把同一行里字形不同的两段倒序输出，旧版因此误报。
+  `validate-ocr` joins OCR lines in reading order; RapidOCR may emit two segments of one line in reverse, which caused false reports.
 
 ### 素材 / Media
 

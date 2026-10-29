@@ -105,8 +105,33 @@ def should_reexec(alt: str | None, current: str, env) -> bool:
     return os.path.abspath(os.path.expanduser(alt)) != os.path.abspath(current)
 
 
+def _line(text: str, score, box) -> dict:
+    """一条识别结果：文字、置信度、框高，以及框中心 (x, y)，用来排阅读顺序。"""
+    xs, ys = [float(p[0]) for p in box], [float(p[1]) for p in box]
+    return {"text": text, "score": float(score), "h": max(ys) - min(ys), "x": sum(xs) / len(xs), "y": sum(ys) / len(ys)}
+
+
+def reading_order(lines: list[dict]) -> list[dict]:
+    """按阅读顺序排：先分行（框中心高差 < 半个中位框高算同一行），行内从左到右。
+
+    RapidOCR 的输出顺序不保证是阅读顺序：字形不同的两段（如宋体「拉丁语」+ 西文「cella：小房间」）
+    同一行里会被倒着吐出来，拼起来与原文相似度掉到 0.7（cell-v3 cue9 误报）。没有坐标的旧结果保持原序。"""
+    if not lines or any("x" not in x or "y" not in x for x in lines):
+        return list(lines)
+    hs = sorted(x["h"] for x in lines)
+    tol = max(1.0, hs[len(hs) // 2] / 2)
+    rows: list[list[dict]] = []
+    for ln in sorted(lines, key=lambda x: x["y"]):
+        if rows and abs(ln["y"] - sum(r["y"] for r in rows[-1]) / len(rows[-1])) < tol:
+            rows[-1].append(ln)
+        else:
+            rows.append([ln])
+    return [ln for row in rows for ln in sorted(row, key=lambda x: x["x"])]
+
+
 def judge(expected: str, lines: list[dict], img_h: int, band: float, min_px: float) -> dict:
-    """lines: [{text, score, h}]（h = 检测框高，像素）。返回 {sim, score, px, level, issue}。"""
+    """lines: [{text, score, h[, x, y]}]（h = 检测框高，像素；x/y = 框中心）。返回 {sim, score, px, level, issue}。"""
+    lines = reading_order(lines)
     got = "".join(x["text"] for x in lines)
     sim = similarity(expected, got)
     best = [x for x in lines if similarity(x["text"], expected) > 0.3 or similarity(expected, x["text"]) > 0.3] or lines
@@ -141,7 +166,7 @@ def load_engine():
             r = eng(path)
             if r is None or getattr(r, "txts", None) is None:
                 return []
-            return [{"text": t, "score": float(s), "h": float(abs(b[2][1] - b[0][1]))} for t, s, b in zip(r.txts, r.scores, r.boxes)]
+            return [_line(t, s, b) for t, s, b in zip(r.txts, r.scores, r.boxes)]
         return run
     except ImportError:
         pass
@@ -152,7 +177,7 @@ def load_engine():
 
         def run(path: str) -> list[dict]:
             res, _ = eng(path)
-            return [{"text": t, "score": float(s), "h": float(abs(b[2][1] - b[0][1]))} for b, t, s in (res or [])]
+            return [_line(t, s, b) for b, t, s in (res or [])]
         return run
     except ImportError:
         return None
