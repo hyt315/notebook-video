@@ -133,3 +133,65 @@ class ParseTests(unittest.TestCase):
 
 if __name__ == "__main__":
     sys.exit(0 if unittest.main(exit=False, verbosity=1).result.wasSuccessful() else 1)
+
+
+class OpenverseAudioCategoryTest(unittest.TestCase):
+    """3.7.0 --audio-category: maps to Openverse's `category` query parameter; the licence gate is unchanged."""
+
+    def setUp(self):
+        import copy
+        import urllib.parse as up
+        self.up = up
+        self.seen: list[str] = []
+        fixture = json.loads((ROOT / "tests" / "fixtures" / "openverse-audio.json").read_text(encoding="utf-8"))
+        extra = copy.deepcopy(fixture["results"][0])
+        extra.update(id="by-sa-one", license="by-sa", license_version="4.0", license_url="https://creativecommons.org/licenses/by-sa/4.0/")
+        extra2 = copy.deepcopy(fixture["results"][0])
+        extra2.update(id="by-nc-one", license="by-nc", license_version="4.0", license_url="https://creativecommons.org/licenses/by-nc/4.0/")
+        self.payload = {"results": fixture["results"] + [extra, extra2]}
+        self._orig = cs.cached_json
+
+        def fake(url, cache_dir):
+            self.seen.append(url)
+            return self.payload
+        cs.cached_json = fake
+
+    def tearDown(self):
+        cs.cached_json = self._orig
+
+    def query(self) -> dict:
+        return dict(self.up.parse_qsl(self.up.urlsplit(self.seen[-1]).query))
+
+    def test_sound_effect_category_in_request(self):
+        recs = cs.ov_search("rain", "audio", 5, None, "sound_effect")
+        q = self.query()
+        self.assertTrue(self.seen[-1].startswith(cs.OPENVERSE + "/audio/?"))
+        self.assertEqual(q["category"], "sound_effect")
+        self.assertEqual(q["license"], "cc0,pdm,by")
+        ok = {r["title"]: r["verdict"] for r in recs}
+        self.assertNotEqual(ok["openverse:audio:by-sa-one"], "ok")
+        self.assertNotEqual(ok["openverse:audio:by-nc-one"], "ok")
+        self.assertEqual(sum(v == "ok" for v in ok.values()), 3)
+
+    def test_music_category_and_no_category(self):
+        cs.ov_search("piano", "audio", 5, None, "music")
+        self.assertEqual(self.query()["category"], "music")
+        cs.ov_search("piano", "audio", 5, None)
+        self.assertNotIn("category", self.query())
+
+    def test_rejects_bad_values(self):
+        with self.assertRaises(SystemExit):
+            cs.ov_search("rain", "audio", 5, None, "podcast")
+        with self.assertRaises(SystemExit):
+            cs.ov_search("rain", "image", 5, None, "music")
+        self.assertEqual(cs.ARITY["--audio-category"], 1)
+        self.assertEqual(cs.positionals(["search", "rain", "--audio-category", "music", "--type", "audio"]), ["search", "rain"])
+
+    def test_cli_refuses_commons_source(self):
+        import io as _io
+        import contextlib
+        buf = _io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = cs.cmd_search(["rain", "--type", "audio", "--audio-category", "music"])
+        self.assertEqual(rc, 2)
+        self.assertIn("--audio-category", buf.getvalue())

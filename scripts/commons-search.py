@@ -7,6 +7,7 @@
   # 1. 搜（每个选题先搜一次；带 --project 会把这次搜索记进 manifests/commons-log.json，导演层门禁看它）
   python scripts/commons-search.py search "Hooke cork" [--type image|video|audio] [--category "Micrographia"]
          [--min-px 1200] [--limit 12] [--allow-by-sa] [--project ./my-video] [--json out.json] [--source commons|openverse]
+         [--audio-category music|sound_effect]   # 3.7.0：只配 --source openverse --type audio（Openverse 的 category 参数）
 
   # 2. 选中一条，下载进工程（自动查许可、写 url / license / credit、生成上屏署名，走 prepare-media 入库与转码）
   python scripts/commons-search.py add ./my-video "File:Micrographia Schem 11.jpg" --id cork-plate
@@ -15,6 +16,7 @@
   # 第二个源：Openverse（https://api.openverse.org，MIT，免 key）——聚合 Flickr / 博物馆图片与 Freesound / Jamendo 声音，
   # 请求时只要 cc0 / pdm / by。add 时把标题写成 "openverse:image:<id>" 或 "openverse:audio:<id>"（search 结果里原样给出）。
   python scripts/commons-search.py search "paper rustle" --type audio --source openverse --project ./my-video
+  python scripts/commons-search.py search "rain" --type audio --source openverse --audio-category sound_effect
   python scripts/commons-search.py add ./my-video "openverse:audio:30d3f72b-…" --id rustle
 
   # 3. 交付前生成 CREDITS.md（成片署名清单，也给发布简介用）
@@ -241,7 +243,7 @@ def opt(args: list[str], name: str, n: int = 1, default=None):
     return vals if n > 1 else (vals[0] if vals else default)
 
 
-ARITY = {"--type": 1, "--category": 1, "--limit": 1, "--min-px": 1, "--project": 1, "--json": 1, "--id": 1,
+ARITY = {"--type": 1, "--category": 1, "--audio-category": 1, "--limit": 1, "--min-px": 1, "--project": 1, "--json": 1, "--id": 1,
          "--width": 1, "--region": 5, "--trim": 2, "--allow-by-sa": 0, "--keep-pronunciations": 0, "--source": 1}
 
 
@@ -327,11 +329,22 @@ def ov_describe(r: dict, kind: str) -> dict:
     return rec
 
 
-def ov_search(query: str, kind: str, limit: int, cache_dir: Path | None) -> list[dict]:
+# 3.7.0：Openverse 声音分类（API 参数 `category`，https://api.openverse.org/v1/#tag/audio/operation/audio_search）。
+# 只开放配乐 / 音效两类（其余 audiobook / news / podcast / pronunciation 对讲解片没用）。不要和 Commons 的 --category 混用。
+OV_AUDIO_CATEGORIES = ("music", "sound_effect")
+
+
+def ov_search(query: str, kind: str, limit: int, cache_dir: Path | None, audio_category: str | None = None) -> list[dict]:
     if kind not in ("image", "audio"):
         raise SystemExit("✗ Openverse 只有图片和声音（--type image|audio）")
-    url = f"{OPENVERSE}/{'audio' if kind == 'audio' else 'images'}/?" + urllib.parse.urlencode(
-        {"q": query, "license": "cc0,pdm,by", "page_size": str(min(max(limit, 1), 20)), "mature": "false"})
+    params = {"q": query, "license": "cc0,pdm,by", "page_size": str(min(max(limit, 1), 20)), "mature": "false"}
+    if audio_category:
+        if kind != "audio":
+            raise SystemExit("✗ --audio-category 只用于 --type audio")
+        if audio_category not in OV_AUDIO_CATEGORIES:
+            raise SystemExit(f"✗ --audio-category 只能是 {' / '.join(OV_AUDIO_CATEGORIES)}（收到 {audio_category}）")
+        params["category"] = audio_category
+    url = f"{OPENVERSE}/{'audio' if kind == 'audio' else 'images'}/?" + urllib.parse.urlencode(params)
     data = cached_json(url, cache_dir)
     return [ov_describe(r, kind) for r in data.get("results", [])]
 
@@ -373,8 +386,12 @@ def cmd_search(args: list[str]) -> int:
     proj = Path(opt(args, "--project")).resolve() if opt(args, "--project") else None
     cache = proj / ".cache" / "commons" if proj else None
     source = opt(args, "--source", default="commons")
+    audio_category = opt(args, "--audio-category")
+    if audio_category and source != "openverse":
+        print("✗ --audio-category 只用于 --source openverse（Commons 的分类用 --category）")
+        return 2
     if source == "openverse":
-        recs = ov_search(query, kind, limit, cache)
+        recs = ov_search(query, kind, limit, cache, audio_category)
     elif source == "commons":
         recs = search(query, kind, category, limit, cache_dir=cache, keep_pron="--keep-pronunciations" in args)
     else:

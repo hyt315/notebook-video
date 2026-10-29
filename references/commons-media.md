@@ -29,6 +29,18 @@ python scripts/commons-search.py add ./my-video "openverse:audio:<id>" --id scra
 python scripts/commons-search.py credits ./my-video     # → CREDITS.md
 ```
 
+**按声音分类筛（3.7.0）**：`--audio-category music|sound_effect`，只配 `--source openverse --type audio`，对应 Openverse API 的
+`category` 查询参数（官方文档：<https://api.openverse.org/v1/#tag/audio/operation/audio_search>，可选值 `audiobook` / `music` /
+`news` / `podcast` / `pronunciation` / `sound_effect`，这里只开放配乐 `music` 和音效 `sound_effect` 两类）。
+它和 Commons 的 `--category`（Commons 分类）是两回事，不能混用；许可门禁不变（请求仍只要 `cc0,pdm,by`，结果再过一遍白名单）。
+
+```text
+python scripts/commons-search.py search "rain" --type audio --source openverse --audio-category sound_effect
+```
+
+> 2026-10-29 实测：Openverse 线上 API 带 `category` 时对 "rain" 返回 0 条（sound_effect）、对 "piano" 返回 HTTP 500（music），
+> 不带 `category` 正常返回。参数名与取值以官方文档为准；线上筛选恢复前，可以先不加分类搜，再按标题挑。
+
 搜索结果每条给出：标题、尺寸、许可（已归一）、作者、页面链接；不合格的许可直接不列。
 
 ## 许可白名单
@@ -60,4 +72,4 @@ python scripts/commons-search.py credits ./my-video     # → CREDITS.md
 
 ## 测试
 
-`tests/test_commons.py`：离线夹具（`tests/fixtures/`）覆盖许可归一、BY-SA 排除、署名串、Openverse 结果解析、CREDITS 生成；不访问网络。
+`tests/test_commons.py`：离线夹具（`tests/fixtures/`）覆盖许可归一、BY-SA 排除、署名串、Openverse 结果解析、`--audio-category` 请求参数与许可过滤、CREDITS 生成；不访问网络。
