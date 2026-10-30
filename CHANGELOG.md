@@ -40,6 +40,15 @@ All notable changes are recorded here. The project follows semantic versioning.
 - **为什么改缺省**：旁白由使用者自行后配（任意 TTS 或真人），技能不知道以后有没有人声；按 24 条/分钟铺满会跟说话抢注意力。音效是标点，不是配乐。旧工程想恢复原样，在 `manifests/shots.json` 顶层写 `"sfxDensity": "normal"`。
   Rationale: narration is added later by the user (any TTS or a human voice), so the default has to be restrained. Add `"sfxDensity": "normal"` to restore the old density.
 
+### 流程 / Flow
+
+- **Commons 搜不到时不再锁死工程**：断网 / TLS 失败原来直接退出、不写 `commons-log.json`，而手作皮肤的 `validate-treatment` 以「这个选题搜过」为 P0 —— 用户会被卡住且看不出是网络问题。现在失败也记一条（`results: 0` + `error`），返回码 4 与用法错误区分；搜索超时从 60 s × 5 次降到 20 s × 3 次（断网时一分钟内给结论）。
+  A failed Commons search is now recorded (with `error`) instead of leaving the project blocked by the director gate; search timeouts fail in about a minute instead of four.
+- **报告里的时长不再是 0**：只写 `cues` 的手写工程，`renders/report.md` 的「时长」恒为 0 帧（49 秒的片子写成 0.0 秒）；改为读 `shots.resolved.json` 的 `duration`。
+  The report now shows the real duration for hand-written projects (it read a field they never set).
+- **模板自带 `.gitignore`**：用户在自己工程里 `git init` 不会再提交 `node_modules`（约 800 MB）与 `renders/.bundle`。
+  The template ships a `.gitignore` so a user's own repo stays small.
+
 ### 跨平台 / Cross-platform
 
 - `fx-browser --self-test` 在 Windows 上不再崩：包装脚本是 shell 脚本，`spawnSync` 的 `stdout` 为 `undefined`，旧版直接 `.trim()` 抛 `TypeError`；现在容错，并把 echo 断言限定在 POSIX。
