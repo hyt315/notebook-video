@@ -48,7 +48,7 @@ export const SFX_BED = 'sfx/lib/bed.ogg';
  */
 export const SFX_GAIN: Record<SfxEvent, number> = {
   whoosh: 0.338, pop: 0.419, click: 0.491, typing: 0.284, success: 0.459,
-  error: 0.409, chart: 0.419, highlight: 0.356, chapter: 0.522, riser: 0.331,
+  error: 0.409, chart: 0.419, highlight: 0.356, chapter: 0.49, riser: 0.331,
   page: 0.398, place: 0.376, snip: 0.398, stamp: 0.447, rustle: 0.299, latch: 0.335,
 };
 /**

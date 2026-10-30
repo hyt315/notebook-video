@@ -1034,6 +1034,85 @@ def build(story, comp, p: Problems):
     return out_shots, story_ts, total
 
 
+def tts_words(proj: Path) -> list[dict] | None:
+    """读 TTS 产出的词级时间；没有 meta（= 不是 tts 生成的）就不算数。
+
+    为什么认 meta 而不是认文件在不在：compose 自己也会写 audio/narration.mp3.json（静音估算），
+    只认文件会把"自己的估算"当成"TTS 的真实时间"，然后拿它去重排——看起来对齐了，其实没动。
+    """
+    meta = proj / "audio" / "narration.meta.json"
+    words_p = proj / "audio" / "narration.mp3.json"
+    if not meta.is_file() or not words_p.is_file():
+        return None
+    try:
+        words = json.loads(words_p.read_text(encoding="utf-8"))
+    except ValueError:
+        return None
+    return words if isinstance(words, list) and words else None
+
+
+def _spoken(ch: str) -> bool:
+    return ch.isalnum() or ch in "0123456789.%+-" or "\u4e00" <= ch <= "\u9fff"
+
+
+def retime_to_tts(comp: dict, words: list[dict], p: "Problems") -> bool:
+    """把字幕 cues 与镜头起点重排到 TTS 的真实词级时间上。
+
+    字幕文本来自 compose 的语义断句，TTS 词表来自音频。两边按"可发音字符"逐个对；
+    一旦对不上（数字读法、英文缩写差异）就整体放弃并说明——半套时间比没对齐更糟。
+    """
+    timeline: list[tuple[str, int, int]] = []
+    for w in words:
+        cs = [c for c in str(w.get("part", "")) if not c.isspace()]
+        if not cs:
+            continue
+        try:
+            a, b = int(w["start"]), int(w["end"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        for i, ch in enumerate(cs):
+            timeline.append((ch, round(a + (b - a) * i / len(cs)), round(a + (b - a) * (i + 1) / len(cs))))
+    # 词表里要**连标点一起**对：validate-caption-sync 比对的是 cue.text 与 words 的逐字拼接，
+    # 只对齐"可发音字符"会让每条 cue 都少一个句号（实测 16 条 sync failure）。
+    flat = timeline
+    if not flat:
+        return False
+    idx = 0
+    old_start: dict[int, int] = {}
+    cues = comp["cues"]
+    for ci, cue in enumerate(cues):
+        chars = [c for c in cue["text"] if not c.isspace()]
+        if not chars:
+            continue
+        seg = flat[idx:idx + len(chars)]
+        if [c for c, _, _ in seg] != chars:
+            p.hint(
+                f"TTS 词表与第 {ci + 1} 句字幕对不上（音频说的字与字幕文本不一致）——"
+                f"字幕/镜头沿用原有时序。修法：让 narration.txt 与字幕同文，或重跑 tts。"
+            )
+            return False
+        old_start[ci] = int(cue["start_ms"])
+        cue["words"] = [{"part": c, "start": st, "end": en} for c, st, en in seg]
+        cue["start_ms"], cue["speech_end_ms"], cue["reveal_end_ms"] = seg[0][1], seg[-1][2], seg[-1][2]
+        cue["start"], cue["speech_end"], cue["reveal_end"] = (
+            round(cue["start_ms"] / 1000, 3), round(cue["speech_end_ms"] / 1000, 3), round(cue["reveal_end_ms"] / 1000, 3))
+        idx += len(chars)
+    # 镜头起点跟着它第一句字幕走（保持"台词前多久起镜"的相对关系）
+    prev = 0
+    for sh in comp["shots"]:
+        ix = sh.get("line_cues") or []
+        if ix and ix[0][0] in old_start:
+            ci = ix[0][0]
+            sh["start_ms"] = max(prev + 1, int(sh["start_ms"]) + (int(cues[ci]["start_ms"]) - old_start[ci]))
+        else:
+            sh["start_ms"] = max(prev + 1, int(sh.get("start_ms", prev + 1)))
+        prev = int(sh["start_ms"])
+    last_end = max((c["speech_end_ms"] for c in cues), default=0)
+    comp["total_ms"] = max(int(comp.get("total_ms", 0)), last_end + END_TAIL_F * 1000 // FPS)
+    p.hint(f"按 TTS 词级时间重排：{len(cues)} 句字幕 / {len(comp['shots'])} 镜（时间来自 audio/narration.meta.json）")
+    return True
+
+
 def js(v) -> str:
     return json.dumps(v, ensure_ascii=False, separators=(",", ":"))
 
@@ -1106,8 +1185,11 @@ def write_project(story, comp, out_shots, story_ts, total, proj: Path):
     txt = json.dumps(cdoc, ensure_ascii=False, indent=1) + "\n"
     (proj / "manifests" / "caption-cues.json").write_text(txt, encoding="utf-8")
     (proj / "src" / "caption-cues.json").write_text(txt, encoding="utf-8")
-    words = [w for c in cues for w in c["words"]]
-    (proj / "audio" / "narration.mp3.json").write_text(json.dumps(words, ensure_ascii=False) + "\n", encoding="utf-8")
+    # 有 TTS 的 meta 时，audio/narration.mp3.json 是**真实词级时间**，compose 不许覆盖它
+    # （覆盖后字幕会退回"按 4.5 字/秒估算"，与音频脱同步，而且看不出来）。
+    if not (proj / "audio" / "narration.meta.json").is_file():
+        words = [w for c in cues for w in c["words"]]
+        (proj / "audio" / "narration.mp3.json").write_text(json.dumps(words, ensure_ascii=False) + "\n", encoding="utf-8")
     (proj / "narration.txt").write_text("\n".join(c["text"] for c in cues) + "\n", encoding="utf-8")
     (proj / "manifests" / "protected-caption-phrases.txt").write_text("# compose-story：术语表与 protect 列表，字幕不许切开\n" + "\n".join(comp["protected"]) + "\n", encoding="utf-8")
     (proj / "manifests" / "semantic-caption-lines.txt").write_text("\n".join(c["text"] for c in cues) + "\n", encoding="utf-8")
@@ -1200,6 +1282,9 @@ def main() -> int:
         return 1
     comp = compose(story, p)
     if comp is not None:
+        _tw = tts_words(Path(a.project))
+        if _tw:
+            retime_to_tts(comp, _tw, p)
         for c in comp["cues"]:
             if re.search(r"主页搜\s*(?!【)", c["text"]):
                 p.hint(f"{c['text']!r} 里还留着示例账号 —— 换成你自己的，或写成「主页搜【你的账号】」；"

@@ -139,6 +139,57 @@ def check_library(project: Path, p0: list[str], p1: list[str], checked: list[dic
                 p0.append(f"SFX_OFFSET_MS.{ev}={v} 与 sfx-manifest.json offsetMs={mo} 不一致（瞬态会偏离视觉命中帧）")
 
 
+def mix_stats(project: Path) -> dict | None:
+    """成片的音效密度 / 与人声的最近间隔 / 混音余量（3.5.0）。
+
+    只读工程里的机器可读产物，不解码音频：
+      · 密度 = 任意 10 秒窗口内的音效个数上限（sfxEvents 的 at 是镜内帧，加镜起点）；
+      · 最近人声间隔 = 每个音效时刻到最近一句人声起止的毫秒距离；
+      · 混音余量 = 20·log10(1/max(SFX_GAIN))，即最响的一记音效比人声低多少 dB。
+    """
+    shots_p = project / "manifests" / "shots.json"
+    cues_p = project / "manifests" / "caption-cues.json"
+    if not shots_p.is_file() or not cues_p.is_file():
+        return None
+    try:
+        shots = json.loads(shots_p.read_text(encoding="utf-8")).get("shots") or []
+        cues = json.loads(cues_p.read_text(encoding="utf-8")).get("cues") or []
+    except ValueError:
+        return None
+    events: list[tuple[int, str]] = []
+    for sh in shots:
+        for e in sh.get("sfxEvents") or []:
+            try:
+                events.append((int(sh.get("from", 0)) + int(e.get("at", 0)), str(e.get("event", ""))))
+            except (TypeError, ValueError):
+                continue
+    times = sorted(t for t, _ in events)
+    peak10 = 0
+    j = 0
+    for i, t in enumerate(times):
+        while times[i] - times[j] >= 300:  # 30 fps × 10 s
+            j += 1
+        peak10 = max(peak10, i - j + 1)
+    speech = [(int(c["start_ms"]), int(c["speech_end_ms"])) for c in cues
+              if c.get("start_ms") is not None and c.get("speech_end_ms") is not None]
+    nearest = None
+    for t, _ in events:
+        ms = t * 1000.0 / 30.0
+        if not speech:
+            break
+        d = min(min(abs(ms - a), abs(ms - b)) for a, b in speech)
+        nearest = d if nearest is None else min(nearest, d)
+    atten = None
+    sfx_ts = project / "src" / "sfx.ts"
+    if sfx_ts.is_file():
+        m = re.search(r"export const SFX_GAIN[^{]*\{([^}]*)\}", sfx_ts.read_text(encoding="utf-8"))
+        if m:
+            gains = [float(x) for x in re.findall(r":\s*([\d.]+)", m.group(1))]
+            if gains and max(gains) > 0:
+                atten = -20 * __import__("math").log10(max(gains))
+    return {"events": len(events), "peak_per_10s": peak10, "nearest_voice_ms": nearest,
+            "mix_headroom_db": atten, "shots": len(shots)}
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("project")
@@ -187,8 +238,24 @@ def main() -> int:
             print(f"  ·· 测量失败 {mf}", file=sys.stderr)
         return 2
 
-    if not any((sfx_dir / f"bgm{s}").exists() for s in (".mp3", ".wav", ".ogg")) and not (sfx_dir / "lib" / "bed.ogg").exists() and sfx_dir.is_dir():
-        p1.append("缺少 bgm（背景音乐）文件")
+    # 3.5.0 · 默认无 BGM：只有 treatment.sound.music.use=true 时才要求音乐床文件。
+    music_on = False
+    tp = project / "manifests" / "treatment.json"
+    if tp.is_file():
+        try:
+            music_on = json.loads(tp.read_text(encoding="utf-8")).get("sound", {}).get("music", {}).get("use") is True
+        except ValueError:
+            p0.append("manifests/treatment.json 不是合法 JSON，无法判断配乐开关")
+    if music_on and not any((sfx_dir / f"bgm{s}").exists() for s in (".mp3", ".wav", ".ogg")) and not (sfx_dir / "lib" / "bed.ogg").exists():
+        p0.append("treatment.sound.music.use=true，但 public/sfx/ 里没有音乐床（bgm.* / lib/bed.ogg）")
+    mix = mix_stats(project)
+    if mix:
+        if mix["peak_per_10s"] > 4:
+            p1.append(f"音效密度 {mix['peak_per_10s']} 个/10 秒 > 4 —— sparse 的密度上限是 4（sfx.density 可调，但默认要稀疏）")
+        if mix["mix_headroom_db"] is not None and mix["mix_headroom_db"] < 6:
+            p1.append(f"音效最响一记只比人声低 {mix['mix_headroom_db']:.1f} dB < 6 dB —— 会抢话；调低 SFX_GAIN")
+    else:
+        p1.append("没有 shots.json / caption-cues.json：音效密度与人声间隔无法统计（先跑 compose + resolve）")
 
     # 引用的音效文件是否存在
     idx = project / "src" / "index.tsx"
@@ -210,6 +277,13 @@ def main() -> int:
             if c.get("manifest_lufs_100ms") is not None:
                 extra += f"  manifest {c['manifest_lufs_100ms']:>6.1f} LUFS/100ms"
             print(f"  ·· {c['file']:<24} 峰值 {c['peak_db']:>6.1f} dBFS{extra}")
+        if mix:
+            gap = mix["nearest_voice_ms"]
+            atten = mix["mix_headroom_db"]
+            print(f"  音效 {mix['events']} 个 / 每 10 秒最多 {mix['peak_per_10s']} 个 / "
+                  f"最近人声 {('%.0f ms' % gap) if gap is not None else 'n/a'} / "
+                  f"混音余量 {('%.1f dB' % atten) if atten is not None else 'n/a'}")
+        print(f"  配乐：{'开（treatment.sound.music.use=true）' if music_on else '关（默认无 BGM）'}")
         for x in p0:
             print(f"  P0 {x}")
         for x in p1:

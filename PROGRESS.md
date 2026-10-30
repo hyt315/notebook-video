@@ -66,3 +66,38 @@ selftest:      SELFTEST PASS (all 20 checks passed)   # 18 → 20
 validate-skill: Skill-wide consistency validation passed
 negative-gate: 合计：用例 107 · 断言 166 · 全部通过
 ```
+
+## P1 · 声音：TTS 为主线，少量音效，默认无 BGM ✅（成片实测并入 P4）
+
+### P1-1 关掉音乐床
+- `sync-render-inputs.cjs` 从 `manifests/treatment.json` 生成 `src/audio-config.ts`（`MUSIC_ON`）；
+  `index.tsx` 只在 `MUSIC_ON` 为真时加载 `bed.ogg`。没有 treatment / `use=false` → 不加载（默认）。
+- 文档：`SKILL.md`、`references/director-method.md` 改成「默认无 BGM」口径。
+- 新门禁 `scripts/validate-silence.py`：music 关闭时，按字幕句间空隙（≥0.4 s）跑
+  `silencedetect=n=-45dB:d=0.4`，要求检测到的静音段 ≥ 空隙数 − 1；接进 make-video 成片门禁（硬拦）。
+- `tests/test_silence.py`：静音轨通过 / 持续正弦音（模拟配乐）P0 / `music.use=true` 跳过。
+
+### P1-2 TTS 成为正式步骤
+- 新命令 `notebook-video tts <工程> [--engine=edge|file] [--voice=…] [--rate=…]`（`scripts/tts.py`）：
+  - `edge`：edge-tts，`boundary="WordBoundary"` 取词级时间；标点按源文本补回（否则每条 cue 都少句号）；
+  - `file`：用户自备录音，按字数均分时间并标 `estimated=true`；
+  - 失败 rc=3，信息含两条路（装 edge-tts / 换 `--engine=file`），不会悄悄退回静音。
+- `compose-story.py`：检测 `audio/narration.meta.json` 后按词级时间**重排 cues 与镜头起点**；
+  对不上就整体放弃并报 P1（不半套对齐）。实测弱模型样例：15 句 / 171 字音，`validate-caption-sync` PASS。
+- `make-video`：旁白已存在就绝不覆盖；没有旁白才生成静音占位并写 `.silent-placeholder`；
+  `--render` 时若仍是占位 → rc=3 停在渲染前（负向用例 TTS1）。
+- 实测 edge 合成：`tts：15 句 / 171 个字音 · 引擎 edge`（之前 0 字音是因为 edge-tts 7.x 默认
+  `SentenceBoundary`，已显式改 `WordBoundary`）。断网 / 未装模块两条路径都实测报两条替代路径。
+
+### P1-3 音效：少而准
+- `sfxDensity` 缺省已是 `sparse`；`validate-audio-levels` 新增一行统计：
+  `音效 N 个 / 每 10 秒最多 M 个 / 最近人声 X ms / 混音余量 Y dB`，`M>4` 或 `Y<6` 报 P1。
+- 最响的一记（chapter 0.522 → 0.49）落到人声下方 6.2 dB；manifest 与 `SFX_GAIN` 同步。
+
+### P1 回归
+```
+pytest:        189 passed, 2 skipped, 5 subtests passed in 22.99s
+selftest:      SELFTEST PASS (all 20 checks passed)
+validate-skill: Skill-wide consistency validation passed
+negative-gate: 合计：用例 108 · 断言 168 · 全部通过
+```

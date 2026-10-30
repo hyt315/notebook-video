@@ -1099,6 +1099,8 @@ const pythonCommandMap = new Map([
   ['validate-layering', ['validate-layering.py']],
   ['validate-visual-plan', ['validate-visual-plan.py']],
   ['validate-glyphs', ['validate-glyphs.py']],
+  ['tts', ['tts.py']],
+  ['validate-silence', ['validate-silence.py']],
   ['validate-caption-sync', ['validate-caption-sync.py']],
   ['validate-semantic-breaks', ['validate-semantic-breaks.py']],
   ['export-srt', ['export-srt.py']],

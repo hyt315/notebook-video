@@ -46,6 +46,7 @@ import {FillGate} from './fill-gate';
 import {CanvasBoundsGate} from './canvas-bounds-gate';
 import {MascotGate} from './mascot-gate';
 import {planSfx, bedDuckAt, SFX_BED, BED_GAIN} from './sfx';
+import {MUSIC_ON} from './audio-config';
 import {CINEMA, cinemaCamAt, cinemaMask, cinemaTransform, parallaxTransform, resolveTransition, transitionFrames, transitionStyle, WhipBlur, whipOffset} from './cinema';
 import {FxProbe, PageCurl, curlShadow, isCurl} from './fx';
 import {SHOTS, SHOT_IDS, SHOT_TOTAL, SFX_DENSITY} from './shots';
@@ -397,7 +398,10 @@ const Sound=()=>{
   const bedVol=(fr:number)=>interpolate(fr,[0,30,DURATION-45,DURATION],[0,BED_GAIN,BED_GAIN,0],{...clamp,easing:Easing.linear})*bedDuckAt(fr,SFX_PLAN);
   return <>
     <Audio src={staticFile('narration.mp3')} volume={1}/>
-    <Audio src={staticFile(SFX_BED)} volume={(fr:number)=>bedVol(fr)} loop/>
+    {/* 3.5.0：默认无 BGM。MUSIC_ON 由 sync-render-inputs.cjs 从 treatment.sound.music.use 生成；
+        没有 treatment / use=false / 组件路线 → false，音乐床根本不加载（旧版无条件循环 bed.ogg，
+        把 use=false 也关不掉）。 */}
+    {MUSIC_ON && <Audio src={staticFile(SFX_BED)} volume={(fr:number)=>bedVol(fr)} loop/>}
     {SFX_PLAN.map((x,i)=><Sequence key={`${x.event}-${i}`} from={deliveryFrame(x.at)} layout="none"><Audio src={staticFile(x.src)} volume={x.vol} trimBefore={x.trim||undefined}/></Sequence>)}
   </>;
 };

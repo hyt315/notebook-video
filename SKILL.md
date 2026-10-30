@@ -11,7 +11,7 @@ description: Turn a topic into a Chinese 16:9 teaching video (flat / cel compone
 例外是每片 2–3 个**锤子帧**（整章最该被记住的一句，满屏单独出现 1.5–2.5 秒），规则见 [references/pacing-rhythm.md](references/pacing-rhythm.md)。
 锤子帧怎么做：组件路线用 `StampBanner`（或 `Callout` 放大到 displayL）独占一镜；手作路线用 `HandLettering` 手写满屏一句，或 `Seal` 印章大字——都放在媒介里，不是白底大字。
 只有 16:9；五个皮肤：`flat`（默认）、`cel`，以及 3.3.0 的手作皮肤 `journal`（手账水彩）/ `papercut`（红色剪纸）/ `archive`（档案灯台）。
-没有 TTS：旁白是静音占位，字幕整行出现；组件路线按 4.5 字/秒定时，手作路线用 `silent-timing` 按 6.5 字/秒（`--cps N` 可改）。
+TTS 是正式步骤：`notebook-video tts <工程>`（默认 edge-tts；也可 `--engine=file` 用你自己的录音），字幕与镜头按**词级时间**对齐；没有真实旁白时 `--render` 会停在渲染前（静音占位只给 `--stills` / `preview`）。默认无 BGM，音效稀疏。
 
 ## 先选路线
 
@@ -164,7 +164,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" sweep ./my-video --json   # 给脚
 **软建议（主观，只提示）**：同屏强调数、每镜字号种类、装饰预算、快慢交替、留白。
 **开场**：`validate-opening.py` 管前 3 秒——第 0 帧就有东西在发生、首条字幕 ≤1 s、片名不当第一镜、前 3 秒 ≥3 拍、第一句不是泛问句（`--video` 还会读像素复核）。
 
-**音效**：只挂在真事件上；每条 cue 按 manifest 的 `offsetMs` 提前起播，让瞬态落在视觉命中帧；间隔 ≥150 ms；音乐床在音效下闪避。密度由片级 `sfxDensity` 决定：缺省 `sparse`（每镜一记：换章的镜给章节声、其余给末拍，误区镜另留反转音），写 `"sfxDensity": "normal"` 回到「一拍一个」。旁白由使用者后配，所以默认就该克制。
+**音效**：只挂在真事件上；每条 cue 按 manifest 的 `offsetMs` 提前起播，让瞬态落在视觉命中帧；间隔 ≥150 ms；默认**无 BGM**（只有 `treatment.sound.music.use=true` 才加载音乐床，并在音效下闪避）。密度由片级 `sfxDensity` 决定：缺省 `sparse`（每镜一记：换章的镜给章节声、其余给末拍，误区镜另留反转音），写 `"sfxDensity": "normal"` 回到「一拍一个」。旁白是 TTS 生成的，音效必须压在人声下，所以默认就该克制。
 
 ## 可选 · auto 草稿（story.json）
 

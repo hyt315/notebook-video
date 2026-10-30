@@ -1,0 +1,199 @@
+#!/usr/bin/env python3
+"""tts.py · 旁白合成（TTS 成为正式步骤，而不是外挂）
+
+用法：
+    python scripts/tts.py PROJECT [--engine=edge|file] [--voice=zh-CN-YunxiNeural] [--rate=+0%]
+
+产物（写进 PROJECT）：
+    audio/narration.mp3        旁白音轨
+    audio/narration.mp3.json   词级时间 [{part,start,end}]，毫秒
+    audio/narration.meta.json  {engine, voice, estimated, generated_at}
+并删除 audio/.silent-placeholder（静音占位不算旁白）。
+
+引擎：
+  · edge  微软 Edge 在线语音（pip install edge-tts；需要联网）。词级时间来自 WordBoundary。
+  · file  用户自备录音 / 别家 TTS：把音频放到 audio/narration.mp3，再跑本脚本。
+          没有词级对齐时按字数均分（estimated=true），字幕会对齐到句子级。
+
+失败一律 rc=3 并给出**两条可走的路**（装 edge-tts / 换 --engine=file），
+不许悄悄退回静音占位——那正是旧版"成片没人说话"的来源。
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+SPOKEN_EXTRA = "0123456789.%+-"
+
+
+def spoken(ch: str) -> bool:
+    return ch.isalnum() or ch in SPOKEN_EXTRA or "\u4e00" <= ch <= "\u9fff"
+
+
+def split_chars(text: str) -> list[str]:
+    return [c for c in text if not c.isspace()]
+
+
+def read_lines(project: Path) -> list[str]:
+    p = project / "narration.txt"
+    if not p.is_file():
+        return []
+    return [ln.strip() for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
+
+
+def fail(msg: str) -> int:
+    print(msg, file=sys.stderr)
+    return 3
+
+
+def merge_punctuation(words: list[dict], source: str) -> list[dict]:
+    """把标点补回词级时间：Edge 的 WordBoundary 只给"读出来的词"，句号/逗号不在里面，
+    而字幕校验比对的是 cue.text 的逐字拼接。缺标点 → 每条 cue 都判"text differs"。
+    只有整条源文本按顺序对得上时才补；对不上就原样返回（交给 compose 报 P1，不硬改）。
+    """
+    src = [c for c in source if not c.isspace()]
+    out: list[dict] = []
+    wi, prev_end = 0, 0
+    for ch in src:
+        if wi < len(words) and words[wi]["part"] == ch:
+            out.append(words[wi])
+            prev_end = words[wi]["end"]
+            wi += 1
+        elif not ch.isalnum():
+            out.append({"part": ch, "start": prev_end, "end": prev_end + 1})
+        else:
+            return words
+    return out if wi == len(words) else words
+
+
+def synth_edge(text: str, voice: str, rate: str, out_mp3: Path) -> tuple[list[dict], str]:
+    try:
+        import asyncio
+
+        import edge_tts
+    except ImportError:
+        raise RuntimeError(
+            "没有安装 edge-tts。两条路：\n"
+            "  1) pip install edge-tts（然后重跑同一条命令）\n"
+            "  2) 用你自己的录音：把音频放到 audio/narration.mp3，再跑 --engine=file"
+        )
+    words: list[dict] = []
+
+    async def run() -> None:
+        comm = edge_tts.Communicate(text, voice, rate=rate, boundary="WordBoundary")
+        with out_mp3.open("wb") as f:
+            async for chunk in comm.stream():
+                if chunk["type"] == "audio":
+                    f.write(chunk["data"])
+                elif chunk["type"] == "WordBoundary":
+                    # offset / duration 单位是 100ns
+                    a = round(chunk["offset"] / 10000)
+                    b = round((chunk["offset"] + chunk["duration"]) / 10000)
+                    cs = split_chars(chunk["text"])
+                    for i, ch in enumerate(cs):
+                        words.append({"part": ch,
+                                      "start": round(a + (b - a) * i / max(1, len(cs))),
+                                      "end": round(a + (b - a) * (i + 1) / max(1, len(cs)))})
+
+    try:
+        asyncio.run(run())
+    except Exception as e:  # 网络 / 服务端 403 / 证书……
+        raise RuntimeError(
+            f"edge-tts 合成失败：{e.__class__.__name__}: {e}\n"
+            "两条路：\n"
+            "  1) 检查网络后重试（edge-tts 需要连 speech.platform.bing.com）\n"
+            "  2) 用你自己的录音：把音频放到 audio/narration.mp3，再跑 --engine=file"
+        ) from e
+    if not words:
+        raise RuntimeError(
+            "edge-tts 合成完成但没有返回词边界（boundary=WordBoundary 为空）——"
+            "无法把字幕对齐到音频。两条路：\n"
+            "  1) 升级 edge-tts 后重试：pip install -U edge-tts\n"
+            "  2) 用你自己的录音：把音频放到 audio/narration.mp3，再跑 --engine=file"
+        )
+    return words, "edge"
+
+
+def audio_duration_ms(path: Path) -> int | None:
+    try:
+        r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                            "-of", "default=nw=1:nk=1", str(path)],
+                           capture_output=True, text=True, timeout=60)
+        return round(float((r.stdout or "").strip()) * 1000)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+
+
+def synth_file(project: Path, lines: list[str]) -> tuple[list[dict], str]:
+    audio = project / "audio" / "narration.mp3"
+    if not audio.is_file() or audio.stat().st_size == 0:
+        raise RuntimeError(
+            "audio/narration.mp3 不存在或为空。两条路：\n"
+            "  1) 先把录音 / 别家 TTS 的音频放到 audio/narration.mp3，再重跑\n"
+            "  2) 用在线引擎：python scripts/tts.py . --engine=edge"
+        )
+    total = audio_duration_ms(audio)
+    if not total:
+        raise RuntimeError("读不出 audio/narration.mp3 的时长（需要 ffprobe）")
+    text = "".join(split_chars("".join(lines)))
+    chars = [c for c in text if not c.isspace()]
+    if not chars:
+        raise RuntimeError("narration.txt 是空的：先写每行一句的旁白")
+    # 留 200ms 尾部，其余按字数均分
+    usable = max(1, total - 200)
+    words = []
+    for i, ch in enumerate(chars):
+        a = round(usable * i / len(chars))
+        b = round(usable * (i + 1) / len(chars))
+        words.append({"part": ch, "start": a, "end": b})
+    return words, "file"
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("project", type=Path)
+    ap.add_argument("--engine", choices=["edge", "file"], default="edge")
+    ap.add_argument("--voice", default="zh-CN-YunxiNeural")
+    ap.add_argument("--rate", default="+0%")
+    a = ap.parse_args()
+    project = a.project.resolve()
+    if not project.is_dir():
+        print(f"没有这个工程目录：{project}", file=sys.stderr)
+        return 2
+    lines = read_lines(project)
+    if not lines:
+        return fail("没有 narration.txt（每行一句旁白）。先跑 compose-story 生成，或自己写一份。")
+    out_mp3 = project / "audio" / "narration.mp3"
+    out_mp3.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        if a.engine == "edge":
+            source = "\n".join(lines)
+            words, engine = synth_edge(source, a.voice, a.rate, out_mp3)
+            words = merge_punctuation(words, source)
+            estimated = False
+        else:
+            words, engine = synth_file(project, lines)
+            estimated = True
+    except RuntimeError as e:
+        return fail(f"✗ TTS 没有完成：{e}")
+    (project / "audio" / "narration.mp3.json").write_text(
+        json.dumps(words, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    meta = {"engine": engine, "voice": a.voice if engine == "edge" else None,
+            "rate": a.rate if engine == "edge" else None, "estimated": estimated,
+            "words": len(words), "lines": len(lines)}
+    (project / "audio" / "narration.meta.json").write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    marker = project / "audio" / ".silent-placeholder"
+    if marker.exists():
+        marker.unlink()
+    print(f"tts：{len(lines)} 句 / {len(words)} 个字音 · 引擎 {engine}"
+          f"{'（时间按字数估计）' if estimated else ''} → {out_mp3}")
+    print("下一步：node scripts/make-video.mjs <工程> --render <out.mp4>（compose 会按词级时间重排字幕与镜头）")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

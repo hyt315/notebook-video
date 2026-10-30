@@ -1278,6 +1278,22 @@ cleanup(_gp)
 
 # ---- 3.2.0 的 compose / story / 音效 / 背景库 / 评审拦截用例 ----
 # 已切到 gates_compose.py；导入即注册（放在这里是为了保持输出顺序：核心用例在前）。
+# ---- 3.5.0 · 成片必须有真实旁白：静音占位只给 --stills / preview ----
+def mk_narr_proj():
+    # 完整模板副本（去掉大目录）：要让它真的走过 resolve + 构建期门禁，才到得了"渲染前"那道旁白检查。
+    td = tempfile.mkdtemp(prefix='nv-narr-')
+    shutil.copytree(TPL, td, dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns('node_modules', 'renders'))
+    return td
+
+MV = os.path.join(SKILL, 'scripts/make-video.mjs')
+_td = mk_narr_proj()
+case('TTS1 成片没有真实旁白（只有静音占位）→ make-video --render 停在渲染前', [
+    ('must_block:静音占位', 'make-video --render', run(['node', MV, _td, '--render', os.path.join(_td, 'renders', 'x.mp4')])),
+    ('must_block:tts', '错误信息指向 tts 命令', run(['node', MV, _td, '--render', os.path.join(_td, 'renders', 'x.mp4')])),
+])
+cleanup(_td)
+
 import gates_compose  # noqa: E402,F401
 
 sys.exit(summary())
