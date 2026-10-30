@@ -1294,6 +1294,16 @@ case('TTS1 成片没有真实旁白（只有静音占位）→ make-video --rend
 ])
 cleanup(_td)
 
+# ---- 3.5.0 · 画面三层：讲火箭却没有火箭 → P0 ----
+_td = tempfile.mkdtemp(prefix='nv-fusion-')
+_r = run([PY, os.path.join(SKILL, 'scripts/compose-story.py'),
+          os.path.join(SKILL, 'examples/regress/rocket-components-only.story.json'), _td])
+case('FUS1 全组件 + 主题物「火箭」从未出现 → validate-fusion P0', [
+    ('must_pass', 'compose-story', _r),
+    ('must_block:火箭', 'validate-fusion', run([PY, os.path.join(SKILL, 'scripts/validate-fusion.py'), _td])),
+])
+cleanup(_td)
+
 import gates_compose  # noqa: E402,F401
 
 sys.exit(summary())

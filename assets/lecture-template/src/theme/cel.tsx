@@ -147,6 +147,11 @@ export const THEME: Theme = {
   id: 'cel',
   palette,
   aesthetic,
+  // 3.5.0：cel 的线稿是「粗一档描边 + 平涂色块」，与吉祥物同一套语言。
+  craft: {
+    medium: 'cel', fibre: 0, inkLine: palette.ink, handFamily: 'Kai', bodyFamily: 'Kai',
+    accent: palette.orange, transition: 'zoom',
+  },
   paperShadow,
   backgrounds: BACKGROUNDS,
   Background,

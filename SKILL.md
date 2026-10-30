@@ -1,12 +1,15 @@
 ---
 name: notebook-video
 version: 3.4.0
-description: Turn a topic into a Chinese 16:9 teaching video (flat / cel component themes, or the journal / papercut / archive hand-made skins driven by a metaphor-first director layer) with React, TypeScript and Remotion. Every shot is a code-drawn component scene — consoles, diffs, checklists, stat rows, funnels, progress rings, kinetic numbers, stamp seals, verdict bars, or a real screenshot / screen recording in a MediaFrame — moved by an engine-level virtual camera that pushes in on whatever the narration names. Weak-model friendly: five teaching blueprints with per-shot component picks, golden examples, a five-step workflow and one cross-platform command (`node scripts/make-video.mjs <project>`, `make-video.cmd` on Windows) that resolves shots, runs hard gates with objective auto-fixes (no clipped titles, font floor, text contrast, ≤16-character captions at 4.5 chars/s, no dead tails, blurry-media check) and renders stills or the MP4. Tuned semantic sound effects land on the visual hit and duck the music bed. Every topic first searches Wikimedia Commons / Openverse for licence-filtered real media with automatic on-screen credits. No built-in TTS and no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
+description: Turn a topic into a Chinese 16:9 teaching video (flat / cel component themes, or the journal / papercut / archive hand-made skins driven by a metaphor-first director layer) with React, TypeScript and Remotion. Every shot fuses up to three layers: code-drawn components (consoles, diffs, checklists, stat rows, charts), a skin-matched line drawing of the thing being explained (30 built-in sketches, seven verbs), and hand annotations (circle / underline / arrow / note) that connect the two; an engine-level virtual camera frames it without cropping the sketch. Eight recipes let a weak model fill content only. Weak-model friendly: five teaching blueprints with per-shot component picks, golden examples, a five-step workflow and one cross-platform command (`node scripts/make-video.mjs <project>`, `make-video.cmd` on Windows) that resolves shots, runs hard gates with objective auto-fixes (no clipped titles, font floor, text contrast, ≤16-character captions at 4.5 chars/s, no dead tails, blurry-media check) and renders stills or the MP4. Tuned semantic sound effects land on the visual hit; no BGM by default. Every topic first searches Wikimedia Commons / Openverse for licence-filtered real media with automatic on-screen credits. TTS narration (edge-tts or your own recording) drives caption and shot timing; no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
 ---
 
-# notebook-video · 用组件场景讲清一件事
+# notebook-video · 讲清一件事：组件 + 线稿 + 讲解
 
-画面 = **组件场景**：每一镜都是真组件（控制台、代码差异、清单、数字行、漏斗、进度环、印章、结论条……），
+画面 = **三层融合**（每镜至少两层）：**组件层**给信息（控制台、代码差异、清单、数字行、柱条、结论条……），**线稿层**让观众认出「在讲什么东西」（30 个内置简笔线稿，跟着皮肤墨色），**讲解层**把两者连起来（手绘圈注 / 下划线 / 引线 / 手写小字）。
+含线稿镜头占片长 30–60%，纯组件镜头 ≤30%，纯文字镜头 ≤10%（锤子帧除外）；主题里的那个东西全片至少出现一次，否则 `validate-fusion` 判 P0。配方见 [references/recipes.md](references/recipes.md)，线稿写法见 [references/linework.md](references/linework.md)。
+
+组件仍然是信息的主体：每一镜都要有真组件（控制台、代码差异、清单、数字行、漏斗、进度环、印章、结论条……），
 由引擎虚拟摄影机推近 / 跟随 / 横摇。**常规镜头不要做满屏大字的「文字页」**——一句话也要放进卡片（`Callout` / `StampBanner`）里；
 例外是每片 2–3 个**锤子帧**（整章最该被记住的一句，满屏单独出现 1.5–2.5 秒），规则见 [references/pacing-rhythm.md](references/pacing-rhythm.md)。
 锤子帧怎么做：组件路线用 `StampBanner`（或 `Callout` 放大到 displayL）独占一镜；手作路线用 `HandLettering` 手写满屏一句，或 `Seal` 印章大字——都放在媒介里，不是白底大字。

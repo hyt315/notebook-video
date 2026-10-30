@@ -101,3 +101,55 @@ selftest:      SELFTEST PASS (all 20 checks passed)
 validate-skill: Skill-wide consistency validation passed
 negative-gate: 合计：用例 108 · 断言 168 · 全部通过
 ```
+
+## P2 · 三层融合：线稿层 + 讲解层 + 配方（引擎完成，样张验收待跑）
+
+### P2-1 线稿笔触在五个皮肤下都能用
+- `theme/flat.tsx` / `theme/cel.tsx` 补 `craft` 声明（`inkLine` / `accent` / `handFamily` / `fibre: 0`）。
+  以前只有手作皮肤声明 craft，`InkPath` / `HandNote` 在 flat 下读不到墨色。
+
+### P2-2 `sketch` 数据结构与 7 个动词
+- 新增 `src/linework/types.ts` + `sketch.tsx`：`lib:` / `shapes:` / `trace:`（trace 目前只给配方⑥做标注层）。
+- 七个动词全部实现：`enter`（描出）/ `point`（点部位 + 外置手写标注）/ `drop`（脱离、旋转、落出）/
+  `swap`（换态）/ `count`（复制 N 份）/ `mark`（勾叉圈）/ `exit`。
+- `at` 支持本镜帧号、`@L1`（第 1 句开始）、`@L1.4`（第 1 句第 4 个字音），compose 换算成帧号。
+- 有线稿的镜头**自动取消推近**（`cinema.path` 固定全景）：实测锤子帧的小火箭被 1.18× 推近顶出画框。
+
+### P2-3 内置线稿库 30 个
+- `src/linework/library.ts`：火箭 / 卫星 / 地球 / 灯泡 / 电池 / 手机 / 笔记本 / 服务器 / 芯片 / 云 /
+  房子 / 汽车 / 钞票 / 硬币 / 购物车 / 钱包 / 人 / 人群 / 气泡 / 书 / 笔记 / 日历 / 钟表 / 放大镜 /
+  锁 / 钥匙 / 文件 / 邮件 / 工厂 / 树。每个带 `fit` 包围盒、2–4 个部位。
+- 按 a2e 的笔法重做：**三档线宽**（外壳 > 内部 > 细节，`detail: true` 走暖灰细线）、
+  **连续剪影**（火箭/树/人都改成一条闭合 path，不再用 rect 叠积木）、
+  **标注在线稿外侧**（细引线 + 起点圆点，≤6 字）、`wash` 降到 8%、主体填满方框。
+- 样张实测（火箭 4 镜 + 手机/树/人 3 镜）逐帧看过：轮廓认得出、线不糊、标注不压物体。
+
+### P2-4 八个融合配方
+- `compose-story.py` 新增 `SKETCH_BOX` / `lay_recipe`：
+  ① `sketch-readout` ② `component-annotated` ③ `scene-verdict` ④ `before-after`
+  ⑤ `list-icons` ⑥ `photo-traced` ⑦ `data-with-object` ⑧ `hammer`。
+- 前四个自带版面（不跑原版式，避免 `content.text` 必填项挡住弱模型）；后四个复用原版式 + 角落/右侧线稿。
+- 讲解层 `annotate:[{target,kind,text}]`：圈注 / 下划线 / 箭头 / 手写小字，按元素矩形与句子帧号落位。
+
+### P2-5 组件小改
+- 组件级 `annotate` 通过镜头级叠加层实现（任意版式可用）；`unit_icon` / 每条一个图标仍是简版（配方⑤⑦当前给一块代表线稿）。
+
+### 样例与门禁
+- `examples/recipes/rocket-fusion.story.json`（①③④⑧ 四镜）、`annotated`（②）、`list-icons`（⑤）、
+  `data-with-object`（⑦）；`examples/regress/rocket-components-only.story.json`（全组件，必须 P0）。
+- 新增 `scripts/validate-fusion.py`：主题物从未出现 P0；纯组件 >30% / 含线稿 >60% 或 <30% /
+  纯文字 >10% / 锤子帧 >3 / 自拼 >12 形 / `see` 写成文字，全部 P1 并给可复制修法。
+- `tests/test_fusion_gate.py` 3 条；负向用例 `FUS1`。
+
+### P2 未完成（下一轮）
+- 30 线稿 × flat/journal 两张接触表 + 评审认出率 ≥27/30（要一次 30 帧渲染）。
+- `photo-traced` 需要真实媒体样例；配方⑤⑦的「每条/每柱一个图标」仍是简版。
+- 弱模型盲测（只给 SKILL + linework.md + recipes.md，写「什么是复利」3 镜）。
+
+### 回归
+```
+pytest:        192 passed, 2 skipped, 5 subtests passed
+selftest:      SELFTEST PASS (all 20 checks passed)
+validate-skill: Skill-wide consistency validation passed
+negative-gate: 合计：用例 109 · 断言 170 · 全部通过
+```

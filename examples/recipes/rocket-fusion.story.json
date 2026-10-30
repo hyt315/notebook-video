@@ -1,0 +1,159 @@
+{
+  "title": "火箭为什么要分级",
+  "theme": "flat",
+  "kicker": "讲清一件事",
+  "header": "火箭 / ROCKET",
+  "headerSub": "FUSION RECIPE DEMO",
+  "subject_of_film": "火箭",
+  "captions": {
+    "mode": "line"
+  },
+  "chapters": [
+    {
+      "title": "为什么不是一整根",
+      "shots": [
+        {
+          "role": "hook",
+          "layout": "statement",
+          "recipe": "scene-verdict",
+          "lines": [
+            "先看一枚完整的火箭。",
+            "它其实分成好几节。"
+          ],
+          "sketch": {
+            "id": "rocket",
+            "draw": "lib:rocket",
+            "place": "center",
+            "parts": {
+              "stage1": "第一级",
+              "stage2": "第二级",
+              "payload": "卫星"
+            },
+            "acts": [
+              {
+                "at": "@L1",
+                "do": "enter"
+              },
+              {
+                "at": "@L2",
+                "do": "point",
+                "target": "stage1"
+              }
+            ],
+            "label": "火箭"
+          },
+          "content": {
+            "verdict": "一整根一起加速，烧完的空壳也得一直带着飞。"
+          }
+        },
+        {
+          "role": "breakdown",
+          "layout": "statement",
+          "recipe": "sketch-readout",
+          "lines": [
+            "第一级最重，占起飞质量八成多。",
+            "烧完就扔掉，不再拖着它。"
+          ],
+          "sketch": {
+            "id": "rocket",
+            "draw": "lib:rocket",
+            "place": "left",
+            "parts": {
+              "stage1": "第一级",
+              "stage2": "第二级",
+              "payload": "卫星"
+            },
+            "acts": [
+              {
+                "at": "@L1",
+                "do": "enter"
+              },
+              {
+                "at": "@L1.4",
+                "do": "point",
+                "target": "stage1"
+              },
+              {
+                "at": "@L2.3",
+                "do": "drop",
+                "target": "stage1"
+              }
+            ],
+            "label": "火箭"
+          },
+          "content": {
+            "cards": [
+              "第一级约占起飞质量的 85%",
+              "这一节烧完就分离，不进入轨道"
+            ]
+          }
+        },
+        {
+          "role": "example",
+          "layout": "compare",
+          "recipe": "before-after",
+          "lines": [
+            "不分级，全程推着空壳。",
+            "分级，烧完一节扔一节。"
+          ],
+          "sketch": {
+            "id": "rocket",
+            "draw": "lib:rocket",
+            "place": "center",
+            "acts": [
+              {
+                "at": "@L1",
+                "do": "enter"
+              },
+              {
+                "at": "@L1",
+                "do": "point",
+                "target": "stage1"
+              },
+              {
+                "at": "@L2",
+                "do": "swap",
+                "target": "stage1"
+              },
+              {
+                "at": "@L2",
+                "do": "mark",
+                "target": "stage1",
+                "mark": "check"
+              }
+            ],
+            "label": "火箭"
+          },
+          "content": {
+            "before": "一整根：空壳也要加速到入轨",
+            "after": "分级：烧完一节，扔一节"
+          }
+        },
+        {
+          "role": "recap",
+          "layout": "statement",
+          "recipe": "hammer",
+          "lines": [
+            "记住这一句。",
+            "分级，是为了扔掉死重。"
+          ],
+          "sketch": {
+            "id": "rocket",
+            "draw": "lib:rocket",
+            "place": "corner",
+            "acts": [
+              {
+                "at": "@L2",
+                "do": "enter"
+              }
+            ],
+            "label": "火箭"
+          },
+          "content": {
+            "text": "分级，是为了扔掉死重"
+          }
+        }
+      ]
+    }
+  ]
+}

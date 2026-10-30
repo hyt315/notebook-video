@@ -67,6 +67,7 @@ def main() -> int:
         "scripts/validate-visual-plan.py",
         "scripts/validate-presentation.py",
         "scripts/validate-glyphs.py",
+        "scripts/validate-fusion.py",
         "references/presentation-gate.md",
         "scripts/coords-lint.py",
         "scripts/retime.py",

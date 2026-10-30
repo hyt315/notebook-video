@@ -187,6 +187,8 @@ if (!flag('no-gates')) {
     ['validate-presentation.py', [project], true],
     // 3.5.0 中文字面：字体栈里必须在泛型族之前有一个带 CJK 字面的族（代码卡豆腐块的根因）
     ['validate-glyphs.py', [project], true],
+    // 3.5.0 画面三层：主题物必须出现、配比不能回到「全是组件」（P0 只有主题物一条）
+    ['validate-fusion.py', [project], true],
     ['validate-frame-props.py', [project], true],
     ['validate-audio-levels.py', [project], true],
     ['validate-media.py', [project], true],

@@ -642,6 +642,65 @@ def lay_media(p, sid, c, variant):
     return els
 
 
+# ---------------------------------------------------------------- recipes (3.5.0)
+# 八个融合配方的**版面**。内容 schema 尽量小：弱模型只填「卡片说什么 / 结论是什么」，
+# 线稿怎么摆、卡片多大、引线从哪拉，都由这里算。
+SKETCH_BOX = {
+    "left": {"x": 150, "y": 200, "w": 620, "h": 650},
+    "right": {"x": 1150, "y": 200, "w": 620, "h": 650},
+    "center": {"x": 560, "y": 170, "w": 800, "h": 700},
+    "corner": {"x": 1480, "y": 700, "w": 280, "h": 280},
+}
+RECIPE_BOX = {
+    "data-with-object": {"x": 1440, "y": 690, "w": 300, "h": 300},
+    "list-icons": {"x": 1250, "y": 210, "w": 420, "h": 420},
+    "component-annotated": {"x": 1500, "y": 720, "w": 240, "h": 240},
+}
+
+
+def lay_recipe(p, sid, recipe, c, variant):
+    """返回 (els, sketch_box) 或 None（None = 沿用原版式，只加一块小线稿）。"""
+    X, Y, W = BAND["x"], BAND["y"], BAND["w"]
+    if recipe == "sketch-readout":
+        cards = c.get("cards") or ([c["text"]] if c.get("text") else [])
+        if not cards:
+            p.err(f"{sid}: sketch-readout 需要 content.cards（1–2 条读数卡）")
+            return [], SKETCH_BOX["left"]
+        els, y = [], Y + 40
+        for i, t in enumerate(cards[:2]):
+            ls, s_, w_, h_ = fit_text(p, f"{sid}.cards[{i}]", str(t), TYPE["body"], 700, 3, lh=1.35)
+            els.append(el(f"card{i + 1}", "card", 900, y, 780, h_ + 64, str(t), s_, "body", 0, lines=ls, lh=1.35, pad=26))
+            y += h_ + 64 + 36
+        return els, SKETCH_BOX["left"]
+    if recipe == "scene-verdict":
+        v = c.get("verdict") or c.get("text") or ""
+        if not v:
+            p.err(f"{sid}: scene-verdict 需要 content.verdict（一句结论）")
+            return [], SKETCH_BOX["center"]
+        ls, s_, w_, h_ = fit_text(p, f"{sid}.verdict", v, TYPE["title"], 1200, 1)
+        x = BAND["x"] + (BAND["w"] - (w_ + 80)) / 2
+        return [el("verdict", "card", x, 790, w_ + 80, h_ + 60, v, s_, "body", 0, lines=ls, lh=1.3, pad=26)], {"x": 560, "y": 150, "w": 800, "h": 560}
+    if recipe == "before-after":
+        els = []
+        for i, key in enumerate(("before", "after")):
+            lab = "改之前" if key == "before" else "改之后"
+            t = c.get(key) or ""
+            x = 200 + i * 960
+            els.append(el(f"{key}Label", "text", x, 700, 420, 60, lab, TYPE["title"], "title", 0))
+            if t:
+                ls, s_, w_, h_ = fit_text(p, f"{sid}.{key}", str(t), TYPE["body"], 520, 2, lh=1.35)
+                els.append(el(key, "card", x, 770, 560, h_ + 50, str(t), s_, "body", 1, lines=ls, lh=1.35, pad=22))
+        return els, {"x": 660, "y": 120, "w": 600, "h": 520}
+    if recipe == "hammer":
+        t = c.get("text") or ""
+        if not t:
+            p.err(f"{sid}: hammer 需要 content.text（全片最该记住的那一句）")
+            return [], SKETCH_BOX["corner"]
+        ls, s_, w_, h_ = fit_text(p, f"{sid}.text", str(t), 96, 1200, 2, lh=1.15)
+        return [el("text", "text", (X + (W - w_) / 2), 360, w_, h_, str(t), s_, "display", 0, lines=ls, lh=1.15, align="center")], SKETCH_BOX["corner"]
+    return None
+
+
 LAY = {"media": lay_media, "statement": lay_statement, "define": lay_define, "number": lay_number, "bars": lay_bars, "compare": lay_compare,
        "code": lay_code, "flow": lay_flow, "list": lay_list, "quiz": lay_quiz, "custom": lay_custom}
 
@@ -735,7 +794,22 @@ def compose(story: dict, p: Problems):
                 else:
                     p.hint(f"{sid}: 与上一镜同为 {lay} 版式且没有可换的变体 —— 换一个组件版式（例如 list / compare / flow），或在两镜之间插一镜")
             content = sh.get("content") or {}
-            els = LAY[lay](p, sid, content, variant)
+            recipe = sh.get("recipe")
+            # 这四类配方自带版面，不跑原版式（原版式会要求 content.text 等必填项，弱模型会被无关报错挡住）
+            els = [] if recipe in ("sketch-readout", "scene-verdict", "before-after", "hammer") else LAY[lay](p, sid, content, variant)
+            sketch_box = SKETCH_BOX.get((sh.get("sketch") or {}).get("place") or "left") if sh.get("sketch") else None
+            if recipe:
+                r = lay_recipe(p, sid, recipe, content, variant)
+                if r:
+                    els, sketch_box = r
+                elif recipe in RECIPE_BOX:
+                    sketch_box = RECIPE_BOX[recipe]
+                else:
+                    p.hint(f"{sid}: recipe={recipe!r} 未知 —— 按组件路线走（有效：sketch-readout / component-annotated / scene-verdict / before-after / list-icons / photo-traced / data-with-object / hammer）")
+                    recipe = None
+            sk_raw = sh.get("sketch")
+            if sk_raw and not sketch_box:
+                sketch_box = SKETCH_BOX["left"]
             if lay not in ("custom", "bars", "statement") and els:
                 u = union(els)
                 dy = BAND["y"] + (BAND["h"] - u["h"]) / 2 - u["y"]
@@ -780,7 +854,9 @@ def compose(story: dict, p: Problems):
             shots.append({"sid": sid, "layout": lay, "variant": variant, "chapter": ch.get("title", f"第{ci + 1}章"), "ci": ci,
                           "first_in_chapter": si == 0, "els": els, "line_cues": line_cues, "terms": terms_all, "content": content,
                           "start_ms": shot_start_ms, "icons": int(sh.get("icons", 0)), "custom": content.get("component"),
-                          "role": sh.get("role") or ch.get("role")})
+                          "role": sh.get("role") or ch.get("role"), "recipe": recipe, "sketch": sk_raw,
+                          "sketch_box": sketch_box, "annotate": sh.get("annotate") or content.get("annotate"),
+                          "see": sh.get("see")})
             if si == 0:
                 chapter_first.append(sid)
             prev_layout, prev_variant = lay, variant
@@ -1005,8 +1081,16 @@ def build(story, comp, p: Problems):
             cam.update({"from": 1.03, "to": 1.0})
         if cam["intent"] == "reveal":
             cam.update({"to": 1.03})
+        # 3.5.0：有线稿的镜头不推近。线稿画在画面边上（角落 / 左侧），一推近就被裁出画外
+        # （实测锤子帧的小火箭被 1.5× 推近顶到画框外）。线稿层自己不动，镜头只做极轻的呼吸。
+        if sh.get("sketch"):
+            cam = {"intent": "establish", "at": 6, "dur": max(30, min(90, dur - 10)), "from": 1.0, "to": 1.012}
         beats = [{"cue": ci_, "offset": 0} for ix in sh["line_cues"] for ci_ in ix]
         a = {"x": round(U["x"], 1), "y": round(U["y"], 1), "w": round(U["w"], 1), "h": round(U["h"], 1)}
+        # 3.5.0：线稿镜头不做推近 / 取景收紧——线稿在画面边上，任何 >1.05 的缩放都会把它顶出画框。
+        if sh.get("sketch"):
+            path = [{"at": 0, "x": 960.0, "y": 540.0, "s": 1.0}]
+            focus_out = []
         rec = {"id": sid, "chapter": sh["chapter"], "skeleton": skel, "layout": f"{sh['layout']}{('-' + sh['variant']) if sh['variant'] else ''}",
                "from": frm, "to": to, "cues": [sh["line_cues"][0][0], sh["line_cues"][-1][-1]],
                "media": MEDIA[sh["layout"]], "live": ["AutoShot"], "camera": cam, "anchor": a, "contentBand": BAND,
@@ -1018,9 +1102,17 @@ def build(story, comp, p: Problems):
         if sh["layout"] == "quiz":
             rec["misconception"] = sh["content"].get("question"); rec.pop("noMisconception")
         out_shots.append(rec)
+        sk_out = resolve_sketch(p, sid, sh.get("sketch"), line_start, sh["line_cues"], cues, frm) if sh.get("sketch") else None
+        if sk_out is not None:
+            sk_out["box"] = sh.get("sketch_box") or SKETCH_BOX["left"]
+        ann_out = resolve_annotate(p, sid, sh.get("annotate"), els, line_start)
         story_ts[sid] = {"layout": sh["layout"], "variant": sh["variant"], "elements": els, "focus": focus_out, "tips": tips,
                          "lines": line_start, "lineEnds": line_end, "think": int(float(sh["content"].get("think", 3)) * FPS) if sh["layout"] == "quiz" else 0,
                          "custom": sh["custom"], "icons": icons}
+        if sk_out:
+            story_ts[sid]["sketch"] = sk_out
+        if ann_out:
+            story_ts[sid]["annotate"] = ann_out
     # 节奏：快慢交替（同速 3 镜连排 → 提示）
     tempo = ["fast" if (s["to"] - s["from"]) < 150 or s["layout"].startswith(("number", "statement")) else "slow" for s in out_shots]
     for i in range(2, len(tempo)):
@@ -1032,6 +1124,75 @@ def build(story, comp, p: Problems):
     if ic / mins > ICON_BUDGET_MIN:
         p.hint(f"全片图标 {ic} 个 / {mins:.1f} 分钟 > 每分钟 {ICON_BUDGET_MIN} 个 —— 删掉装饰性图标")
     return out_shots, story_ts, total
+
+
+def resolve_act_at(at, line_start, line_cues, cues, frm):
+    """把 act 的 at 解析成本镜帧号。
+
+    支持：数字（本镜帧）/ "@L1"（第 1 句开始）/ "@L1.3"（第 1 句第 3 个字音开始）。
+    解析不了返回 None（调用方报 P1，不猜）。
+    """
+    if isinstance(at, (int, float)):
+        return int(at)
+    m = re.match(r"^@L?(\d+)(?:\.(\d+))?$", str(at or "").strip())
+    if not m:
+        return None
+    li = int(m.group(1)) - 1
+    if not (0 <= li < len(line_start)):
+        return None
+    if not m.group(2):
+        return int(line_start[li])
+    wi = int(m.group(2)) - 1
+    for ci in line_cues[li]:
+        words = cues[ci]["words"]
+        if 0 <= wi < len(words):
+            return frame(words[wi]["start"]) - frm
+        wi -= len(words)
+    return int(line_start[li])
+
+
+SKETCH_VERBS = ("enter", "point", "drop", "swap", "count", "mark", "exit")
+
+
+def resolve_sketch(p, sid, sk, line_start, line_cues, cues, frm):
+    """校验 + 换算 sketch.acts；返回可直接进 story.ts 的对象。"""
+    if not isinstance(sk, dict) or not sk.get("draw"):
+        p.err(f"{sid}: sketch 需要 draw（lib:<名字> / shapes:[…] / trace:<media id>）")
+        return None
+    frames = []
+    for i, a in enumerate(sk.get("acts") or []):
+        verb = a.get("do")
+        if verb not in SKETCH_VERBS:
+            p.err(f"{sid}: sketch.acts[{i}].do={verb!r} 不是七个动词之一（{' / '.join(SKETCH_VERBS)}）")
+            continue
+        at = resolve_act_at(a.get("at"), line_start, line_cues, cues, frm)
+        if at is None:
+            p.hint(f"{sid}: sketch.acts[{i}].at={a.get('at')!r} 解析不了 —— 用数字帧、@L1 或 @L1.3")
+            continue
+        frames.append({"at": max(0, at), "do": verb, "target": a.get("target"), "n": a.get("n"), "mark": a.get("mark")})
+    out = {k: v for k, v in sk.items() if k != "acts"}
+    out["frames"] = frames
+    return out
+
+
+def resolve_annotate(p, sid, ann, els, line_start):
+    """annotate:[{target, kind, text}] → 带矩形与帧号的叠加层。"""
+    out = []
+    for i, a in enumerate(ann or []):
+        kind = a.get("kind")
+        if kind not in ("circle", "underline", "arrow", "note"):
+            p.hint(f"{sid}: annotate[{i}].kind={kind!r} 不是 circle / underline / arrow / note 之一")
+            continue
+        target = a.get("target")
+        e = next((x for x in els if x["id"] == target), None)
+        if not e:
+            p.hint(f"{sid}: annotate[{i}].target={target!r} 找不到画面元素 —— 写元素 id（可用：{', '.join(x['id'] for x in els[:8])}）")
+            continue
+        li = int(a.get("line", 0))
+        at = int(line_start[min(li, max(0, len(line_start) - 1))]) if line_start else 0
+        out.append({"kind": kind, "x": e["x"], "y": e["y"], "w": e["w"], "h": e["h"], "at": at,
+                    "text": a.get("text", ""), "seed": f"{sid}-{target}"})
+    return out
 
 
 def tts_words(proj: Path) -> list[dict] | None:
@@ -1193,6 +1354,22 @@ def write_project(story, comp, out_shots, story_ts, total, proj: Path):
     (proj / "narration.txt").write_text("\n".join(c["text"] for c in cues) + "\n", encoding="utf-8")
     (proj / "manifests" / "protected-caption-phrases.txt").write_text("# compose-story：术语表与 protect 列表，字幕不许切开\n" + "\n".join(comp["protected"]) + "\n", encoding="utf-8")
     (proj / "manifests" / "semantic-caption-lines.txt").write_text("\n".join(c["text"] for c in cues) + "\n", encoding="utf-8")
+    # 3.5.0：融合门禁要读的东西（主题物 / 每镜配方 / 有没有线稿 / 关掉声音看到什么）。
+    # 写进工程而不是让门禁回头找 story.json：工程可能被单独拷走 / 手改，story 不一定在旁边。
+    rec_by = {r["id"]: r for r in out_shots}
+    shots_f = {}
+    for sid, st in story_ts.items():
+        sk = st.get("sketch") or {}
+        rec = rec_by.get(sid) or {}
+        shots_f[sid] = {
+            "see": rec.get("see") or "", "recipe": rec.get("recipe"), "layout": rec.get("layout", st.get("layout")),
+            "sketch": bool(sk), "annotate": bool(st.get("annotate")),
+            "sketch_label": " ".join(str(x) for x in [sk.get("label", ""), *((sk.get("parts") or {}).values())]),
+            "sketch_draw": sk.get("draw", ""),
+        }
+    fusion = {"subject_of_film": story.get("subject_of_film", ""), "subject_why": story.get("subject_why", ""),
+              "shots": shots_f}
+    (proj / "manifests" / "fusion.json").write_text(json.dumps(fusion, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     sdoc = {"$comment": "AUTO-GENERATED by scripts/compose-story.py from story.json — 改内容请改 story.json 后重跑",
             "duration": total, "theme": story.get("theme", "flat"), "canvas": "16:9", "shots": out_shots}
     (proj / "manifests" / "shots.json").write_text(json.dumps(sdoc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

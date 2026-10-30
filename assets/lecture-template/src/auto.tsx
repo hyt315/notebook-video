@@ -5,6 +5,9 @@ import {KineticNumber, drawOn} from './cinema';
 import {STORY} from './story';
 import {CUSTOM} from './custom';
 import {MediaFrame} from './media-frame';
+import {SketchLayer} from './linework/sketch';
+import type {SketchSpec} from './linework/types';
+import {HandNote, InkCircle, InkPath, Underline} from './craft/ink';
 
 // ============================================================================
 // auto.tsx · 3.2.0 内容驱动的镜头渲染器（AutoShot）
@@ -32,6 +35,10 @@ export type Tip = {term: string; x: number; y: number; w: number; h: number; lin
 export type StoryShot = {
   layout: string; variant: string; elements: Elem[]; focus: FocusOut[]; tips: Tip[];
   lines: number[]; lineEnds: number[]; think: number; custom: string | null; icons: number;
+  /** 3.5.0：线稿层（compose 已把 acts 换算成本镜帧号，并给好画面方框） */
+  sketch?: (SketchSpec & {box: {x: number; y: number; w: number; h: number}}) | null;
+  /** 3.5.0：讲解层的圈注 / 下划线 / 引线 / 手写小字（design 坐标） */
+  annotate?: Array<{kind: 'circle' | 'underline' | 'arrow' | 'note'; x: number; y: number; w: number; h: number; at: number; text?: string; seed: string}> | null;
 };
 
 /** 色调 → {填充, 文字安全色, 浅底}。文字永远用 ink（自动满足对比度）。 */
@@ -255,6 +262,20 @@ export type CustomProps = {
   C: typeof C;
 };
 
+/** 讲解层：手绘圈注 / 下划线 / 箭头 / 手写小字。全部读皮肤墨色，跟着线稿层走。 */
+const AnnotLayer: React.FC<{list: NonNullable<StoryShot['annotate']>; f: number}> = ({list, f}) => (
+  <>
+    {list.map((a, i) => {
+      const p = interpolate(f, [a.at, a.at + 12], [0, 1], clamp);
+      if (p <= 0) return null;
+      if (a.kind === 'circle') return <InkCircle key={i} cx={a.x + a.w / 2} cy={a.y + a.h / 2} rx={a.w / 2 + 18} ry={a.h / 2 + 14} p={p} seed={a.seed} />;
+      if (a.kind === 'underline') return <Underline key={i} x={a.x + 8} y={a.y + a.h - 6} w={a.w - 16} p={p} seed={a.seed} />;
+      if (a.kind === 'note') return <HandNote key={i} f={f} at={a.at} x={a.x + a.w + 30} y={a.y - 12} text={a.text || ''} size={30} to={{x: a.x + a.w, y: a.y + a.h / 2}} />;
+      return <InkPath key={i} d={`M ${a.x + a.w + 90} ${a.y + a.h / 2} Q ${a.x + a.w + 34} ${a.y + a.h / 2 - 8} ${a.x + a.w + 6} ${a.y + a.h / 2}`} p={p} size={5} seed={a.seed} />;
+    })}
+  </>
+);
+
 /** 未注册定制组件的运行时兜底：不再用一行红字顶替继续出片，而是整片渲染失败。
  *  构建期（compose-story / validate-visual-plan）已经拦过一次；这里只防"绕过构建直接渲染"。 */
 const MissingCustom: React.FC<{name: string}> = ({name}) => {
@@ -284,7 +305,9 @@ export const AutoShot: React.FC<{id: string; f: number}> = ({id, f}) => {
     </div>;
   }
   return <div style={{position: 'absolute', inset: 0}}>
+    {shot.sketch ? <SketchLayer spec={shot.sketch} f={f} box={shot.sketch.box} /> : null}
     {els.map((e) => <ElemView key={e.id} e={e} f={f} shot={shot} all={els} />)}
+    {shot.annotate ? <AnnotLayer list={shot.annotate} f={f} /> : null}
     {shot.tips.map((t, i) => <TipView key={i} t={t} f={f} />)}
   </div>;
 };

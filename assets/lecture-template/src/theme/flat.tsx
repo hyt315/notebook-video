@@ -119,6 +119,12 @@ export const THEME: Theme = {
   id: 'flat',
   palette,
   aesthetic,
+  // 3.5.0：线稿层在 flat 下也要能用（以前只有手作皮肤声明 craft，InkPath / HandNote 读不到墨线色）。
+  // 笔触口径：干净等宽描边、圆角端点、皮肤主色淡填——产品插画线稿，不是手绘抖动。
+  craft: {
+    medium: 'flat', fibre: 0, inkLine: palette.ink, handFamily: 'Kai', bodyFamily: 'Kai',
+    accent: palette.orange, transition: 'fade',
+  },
   paperShadow,
   backgrounds: BACKGROUNDS,
   Background,

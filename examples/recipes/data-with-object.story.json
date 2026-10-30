@@ -1,0 +1,11 @@
+{
+  "title": "三级火箭的质量",
+  "theme": "flat",
+  "subject_of_film": "火箭",
+  "chapters": [{"title": "看数字", "shots": [
+    {"role": "breakdown", "layout": "bars", "recipe": "data-with-object",
+     "lines": ["三级质量差得很远。", "第一级占了八成多。"],
+     "sketch": {"draw": "lib:rocket", "label": "火箭", "place": "corner", "acts": [{"at": "@L1", "do": "enter"}, {"at": "@L2", "do": "count", "n": 3}]},
+     "content": {"title": "起飞质量占比", "unit": "%", "highlight": "第一级", "data": [{"label": "第一级", "value": 85}, {"label": "第二级", "value": 10}, {"label": "载荷", "value": 3}]}}
+  ]}]
+}
