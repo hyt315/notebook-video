@@ -3,20 +3,82 @@
   "theme": "journal",
   "subject_of_film": "细胞",
   "subject_why": "这一题的主角是 1665 年那张真图版：先看原书，再放大看格子，最后才落到「细胞」这个名字。",
-  "chapters": [{"title": "一个词", "shots": [
-    {"role": "context", "layout": "page",
-     "lines": ["1665 年，胡克削下一片软木。", "放到显微镜下。"],
-     "content": {"page": "plate", "media": "hooke-plate", "catalogue": "Schem. XI",
-                 "title": "《显微图谱》1665", "big": "1665", "stamp": "胡克", "note": "第十八篇 · 软木"}},
-    {"role": "turn", "layout": "compare",
-     "lines": ["拉丁语里，cella 就是小房间。", "他借这个词，给格子起了名。"],
-     "content": {"title": "一个词，两次搬家", "verdict": "名字先于发现：先有「房间」，很久以后才有「住户」",
-                 "before": {"title": "cella（拉丁语）", "items": ["小房间、储藏室", "说的是空间，不是生命"], "tone": "blue"},
-                 "after": {"title": "cell（1665）", "items": ["软木里的一格格空房", "墙很薄，里面是空的"], "tone": "orange"}}},
-    {"role": "evidence", "layout": "page",
-     "lines": ["他看见「许许多多的小盒子」。", "他把它们叫作 cells。"],
-     "content": {"page": "loupe", "media": "hooke-plate", "catalogue": "Schem. XI",
-                 "title": "《显微图谱》1665", "big": "细胞", "note": "cells · 小房间",
-                 "look": [0.25, 0.42], "zoom": 2.6}}
-  ]}]
+  "chapters": [
+    {
+      "title": "一个词",
+      "shots": [
+        {
+          "role": "context",
+          "layout": "page",
+          "lines": [
+            "1665 年，胡克削下一片软木。",
+            "放到显微镜下。"
+          ],
+          "content": {
+            "page": "plate",
+            "media": "hooke-plate",
+            "catalogue": "Schem. XI",
+            "title": "《显微图谱》1665",
+            "big": "1665",
+            "stamp": "胡克",
+            "note": "第十八篇 · 软木",
+            "figure": {
+              "draw": "lib:book",
+              "label": "《显微图谱》",
+              "size": 300
+            }
+          }
+        },
+        {
+          "role": "turn",
+          "layout": "compare",
+          "lines": [
+            "拉丁语里，cella 就是小房间。",
+            "他借这个词，给格子起了名。"
+          ],
+          "content": {
+            "title": "一个词，两次搬家",
+            "verdict": "名字先于发现：先有「房间」，很久以后才有「住户」",
+            "before": {
+              "title": "cella（拉丁语）",
+              "items": [
+                "小房间、储藏室",
+                "说的是空间，不是生命"
+              ],
+              "tone": "blue"
+            },
+            "after": {
+              "title": "cell（1665）",
+              "items": [
+                "软木里的一格格空房",
+                "墙很薄，里面是空的"
+              ],
+              "tone": "orange"
+            }
+          }
+        },
+        {
+          "role": "evidence",
+          "layout": "page",
+          "lines": [
+            "他看见「许许多多的小盒子」。",
+            "他把它们叫作 cells。"
+          ],
+          "content": {
+            "page": "loupe",
+            "media": "hooke-plate",
+            "catalogue": "Schem. XI",
+            "title": "《显微图谱》1665",
+            "big": "细胞",
+            "note": "cells · 小房间",
+            "look": [
+              0.25,
+              0.42
+            ],
+            "zoom": 2.6
+          }
+        }
+      ]
+    }
+  ]
 }

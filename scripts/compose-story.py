@@ -724,6 +724,18 @@ def lay_page(p, sid, c, variant):
         # 说明写在第二句（图版已经看过了，再补一句「这是第几篇」）；只有一句时跟第一句
         els.append(el("note", "handnote", PAGE_LEFT_X, 430, max(200.0, text_w(str(note), nsize)), nsize * 1.3,
                       str(note), nsize, "title", 1))
+    # 页内示意图（可选）：手账页空白处随手画的一张小题图，配一行手写名。
+    # 这是 a2e 那套线稿在本 skill 里唯一合适的位置：它不解释概念，只帮观众认出「说的是哪件东西」。
+    # 尺寸硬压 340（画宽 18%）：再大就变成"线稿当解释图"，实测比不画更差。
+    fig = c.get("figure")
+    if fig:
+        if not isinstance(fig, dict) or not fig.get("draw"):
+            p.err(f"{sid}: content.figure 要写 {{\"draw\": \"lib:<名字>\", \"label\": \"<这东西叫什么>\"}}")
+        else:
+            w = min(360, max(220, int(fig.get("size", 340))))
+            els.append(el("figure", "figure", PAGE_LEFT_X, 546, w, w, "", 0, "body", 1,
+                          draw=fig.get("draw"), label=fig.get("label"), parts=fig.get("parts"),
+                          figAt=int(fig.get("at", 1))))
     return els
 
 

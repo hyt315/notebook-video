@@ -198,3 +198,16 @@ negative-gate: 合计：用例 109 · 断言 170 · 全部通过
 - 组件的 journal 化：`compare` 在点阵纸上仍是「白卡片 + 圆角边框」，像贴上去的 PPT；
   需要给 panel / card 一套纸感变体（去边框、改纸条 / 墨框）。
 - 素材获取链路（commons-search → media.json）还没在 journal 主线里跑通一遍完整样例。
+
+## 3.6.1 · 线稿融入手账页（页内示意图）
+
+用户澄清：不是二选一，而是**把 a2e 那套线稿技法融进手账页**——真手账里本来就会在文字旁边随手画个小图。
+
+- 手账页新增可选字段 `content.figure`：`{"draw":"lib:book","label":"《显微图谱》","size":300}`。
+  渲染器加 `case 'figure'` → 复用 `SketchLayer`（三档线宽 / 外置标注 / 包囲盒都沿用）。
+- 尺寸硬压 360（画宽 ≤19%），固定在左下空白处：再大就退回「线稿当解释图」，那正是要避免的。
+- 只当**速写**用：帮观众认出「说的是哪件东西」，不解释概念、不点名、不拆解。
+- 样张实测（plate 页左下角一本简笔书）：不抢右侧真图版，像笔记里的随手插图。
+- 文档：`references/journal-page.md` 新增「页内示意图」一节。
+
+回归：pytest 193 passed / selftest 20 项 / validate-skill PASS / tsc 无错。

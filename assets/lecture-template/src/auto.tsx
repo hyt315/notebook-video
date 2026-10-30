@@ -246,6 +246,12 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
         catalogue={e.catalogue} title={e.title} label={e.label ?? 'below'}
         look={{x: (e.look ?? [0.5, 0.5])[0], y: (e.look ?? [0.5, 0.5])[1]}}
         lensAt={e.lensAt ?? e.at} r={e.r ?? 220} zoom={e.zoom ?? 2.4} />;
+    case 'figure':
+      // 页内示意图：手账页上「随手画的那张小图」。a2e 那套线稿在这里才有位置——
+      // 它不解释概念，只帮观众认出「说的是哪件东西」，所以尺寸压在画宽 25% 以内。
+      return <SketchLayer f={f} box={{x: e.x, y: e.y, w: e.w, h: e.h}}
+        spec={{id: e.id, draw: e.draw, label: e.label, parts: e.parts,
+               frames: [{at: e.figAt ?? 0, do: 'enter' as const}]}} />;
     case 'media':
       // 3.2.0 真实素材：MediaFrame 自带卡片外壳 / 署名徽章；区域推近由 content.region 指定
       return <Box e={e} f={f} dim={dim}><MediaFrame f={f} id={e.media} x={0} y={0} w={e.w} h={e.h} chrome={e.chrome} at={e.at} focus={e.region ?? undefined} focusAt={e.at + 24} highlight={shot.focus.filter((k) => f >= k.at && f <= k.until + 12 && shot.elements.some((x) => x.id === k.id && x.kind === 'region')).map((k) => k.id)} highlightAt={e.at} /></Box>;
