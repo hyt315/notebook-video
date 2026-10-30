@@ -1,0 +1,18 @@
+# 依赖（npm ci 会重建，体积几百 MB，千万别提交）
+node_modules/
+
+# 渲染缓存与中间产物
+renders/.bundle/
+renders/.benchmark-*.mp4
+renders/*.part
+.tools/
+.cache/
+
+# 系统垃圾
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+
+# 说明：renders/ 里的成片（.mp4）与接触表（.jpg）默认**不**忽略——
+# 那是你要交付的东西，提不提交由你决定。
