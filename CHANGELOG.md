@@ -40,6 +40,22 @@ All notable changes are recorded here. The project follows semantic versioning.
 - **为什么改缺省**：旁白由使用者自行后配（任意 TTS 或真人），技能不知道以后有没有人声；按 24 条/分钟铺满会跟说话抢注意力。音效是标点，不是配乐。旧工程想恢复原样，在 `manifests/shots.json` 顶层写 `"sfxDensity": "normal"`。
   Rationale: narration is added later by the user (any TTS or a human voice), so the default has to be restrained. Add `"sfxDensity": "normal"` to restore the old density.
 
+### 跨平台 / Cross-platform
+
+- `fx-browser --self-test` 在 Windows 上不再崩：包装脚本是 shell 脚本，`spawnSync` 的 `stdout` 为 `undefined`，旧版直接 `.trim()` 抛 `TypeError`；现在容错，并把 echo 断言限定在 POSIX。
+  The renderer self-test no longer crashes on Windows (undefined `stdout` from a shell wrapper).
+- `validate-opening` 的抽帧从 `-vsync 0` 改为 `-fps_mode passthrough`（老 ffmpeg 回退）。ffmpeg 7.1 起删除了 `-vsync`，旧写法让抽帧必然失败、O6 / O7 像素检查**静默 SKIPPED**——这两条门禁在装有新版 ffmpeg 的机器上其实从未真跑过。
+  `validate-opening` samples frames with `-fps_mode passthrough`; the removed `-vsync` flag used to make the pixel checks silently skip on any recent ffmpeg.
+- `validate-ocr` 先在子进程里探测引擎：`onnxruntime` 与解释器 / CPU 不兼容时 import 即段错误（rc=139 / 0xC0000005），`try/except` 拦不住，旧版表现为整个脚本被杀。现在按「没装 / 加载失败」分别 SKIPPED 并打印原因，rc=0（`--require` 仍 rc=3）。
+  `validate-ocr` probes the engine in a subprocess so a crashing onnxruntime skips with a reason instead of killing the run.
+
+### 模板 / Template
+
+- 模板自带一份填好的 `manifests/treatment.json`（示例片自己的导演层），并在 `new-project --style=…` 时同步 `medium.skin`：手作皮肤新建工程不再被 `validate-treatment` 以 P0 拦死。示例片补了两条 GitHub 官方文档的逐字引文与一次真实的 Commons 搜索记录，招牌镜头 S4 真推 12.5%。
+  The template ships a filled `treatment.json` (with sourced facts, a Commons search log and a real 12.5% signature push), so a fresh hand-made project is not blocked by the director gate.
+- 编目签署名 20 → 22 px 并改墨色（18–20 px 灰字在手机上读不出，等于 CC BY 署名缺失）；`PinnedPhoto` 的说明与署名之间留 24 px。
+  Archive credits are 22 px ink; pinned-photo captions keep 24 px clear of the credit line.
+
 ### 素材 / Media
 
 - `commons search --type audio --source openverse --audio-category music|sound_effect`（取值来自 Openverse 官方 OpenAPI）。许可证白名单不变（CC0 / PDM / CC BY）。注意：2026-10-29 实测线上 `category` 过滤返回 0 条（sound_effect）或 HTTP 500（music），不带分类正常。
