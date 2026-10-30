@@ -1,12 +1,8 @@
 {
   "name": "notebook-video-visual-director-v9",
   "version": "3.3.0",
-  "description": "notebook-video lecture template: 16:9 Chinese teaching-video project (Remotion, flat / cel themes)",
   "private": true,
-  "license": "Apache-2.0",
-  "engines": {
-    "node": ">=18"
-  },
+  "description": "notebook-video lecture template: 16:9 Chinese teaching-video project (Remotion, flat / cel themes)",
   "scripts": {
     "sync": "node sync-render-inputs.cjs",
     "render": "npm run sync && remotion render src/index.tsx NotebookVideoFilm renders/notebook-video-visual-director.mp4 --codec=h264 --crf=16 --color-space=bt709 --concurrency=4",
@@ -62,5 +58,12 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "zod": "4.6.7"
+  },
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18"
   }
 }
