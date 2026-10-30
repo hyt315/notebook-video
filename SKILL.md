@@ -91,6 +91,12 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 
 **读输出**：`✓ 自动修` = 引擎替你改了什么；`· 建议` 不拦；`✗` 才要改——每条都写了怎么改。同一个 ✗ 连续两次没改过来，停下来把报错原文告诉用户。
 
+**看动起来对不对，别直接渲整片**：`node "<SKILL_DIR>/scripts/notebook-video.mjs" preview ./my-video --seconds=30`
+（默认 0.5 倍分辨率、关翻页；30 秒约 40 秒出片，同时给接触片和响度读数。单镜验：`--shot=S6`。
+`--fx=on` 才带翻页——它会切完整版 Chromium、每帧约 3 秒，别拿它做预览。）
+预览结束会打一行 `FillGate coverage`：每镜 `cells`（48 格占用）/ `blank`（全空的列）/ `largest`（最大单体占画面）/ `widest`（最大横向跨度），
+`largest<0.06` 或 `blank≥3/8` 会点名。被判空时**不要放大卡片凑面积**，按 [references/composition-gate.md](references/composition-gate.md) §3.8.0 的两条写法改：结构先满再演过程、空洞处补一层属于主体的东西。
+
 ## 第 5 步 · （需要时）定制组件
 
 题目需要一张只属于它的图（比如「请求怎么穿过缓存」）时，照抄 `src/custom/RequestLane.tsx` 写一个组件，在 `src/custom/index.ts` 注册，

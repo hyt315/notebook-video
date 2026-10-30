@@ -411,12 +411,19 @@ const fxProbe = async ([projectArg, ...rest]) => {
 const runRemotionFiltered = (nodeArgs, cwd) => new Promise((resolve, reject) => {
   const child = spawn(process.execPath, nodeArgs, {cwd, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, shell: false});
   const shots = new Set();
+  const coverage = new Map();
   let other = 0;
   const pump = (src, dst) => {
     let buf = '';
     src.setEncoding('utf8');
     const emit = (line) => {
       if (line.includes('[FillGate]')) {
+        // 3.8.0：横向覆盖先只收数字，渲染结束打一行表，用来定"空场"的阈值。
+        const cov = line.match(/coverage\s+(\S+)\s+cells=(\d+)\/(\d+)\s+blank=(\d+)\/(\d+)\s+largest=([\d.]+)\s+widest=([\d.]+)/);
+        if (cov) {
+          coverage.set(cov[1], {cells: cov[2], total: cov[3], blank: cov[4], cols: cov[5], largest: cov[6], widest: cov[7]});
+          return;
+        }
         const m = line.match(/underfilled\s+(\S+)/);
         if (m) shots.add(m[1]); else other += 1;
         return;
@@ -434,6 +441,29 @@ const runRemotionFiltered = (nodeArgs, cwd) => new Promise((resolve, reject) => 
   pump(child.stderr, process.stderr);
   child.on('error', reject);
   child.on('close', (code) => {
+    if (coverage.size) {
+      const ids = [...coverage.keys()].sort((a, b) => a.localeCompare(b, 'en', {numeric: true}));
+      // 阈值来自 3.8.0 的实测（cell 30 秒预览，6 镜，取每镜最完整的那一帧）：
+      //   主体过小 = 面积 < 6% **且** 跨度 < 45% 画宽 —— 条状主体（标尺 / 格带 / 时间轴）
+      //   面积天然小，但跨度够，不该被判空；这条和 validate-shot-motion 里 fillAfter
+      //   对"文字为主版式"的豁免是同一个道理。
+      //   横向空洞 = 有 3 列及以上整列没有任何信息元素。
+      const sparse = ids.filter((id) => {
+        const c = coverage.get(id);
+        return Number(c.largest) < 0.06 && Number(c.widest) < 0.45;
+      });
+      const hollow = ids.filter((id) => Number(coverage.get(id).blank) >= 3);
+      console.warn(`FillGate coverage: ${ids.map((id) => {
+        const c = coverage.get(id);
+        return `${id} cells=${c.cells}/${c.total} blank=${c.blank}/${c.cols} largest=${c.largest} widest=${c.widest}`;
+      }).join(' | ')}`);
+      if (sparse.length) console.warn(`FillGate 主体过小（largest<0.06 且 widest<0.45）：${sparse.join(',')}`);
+      if (hollow.length) console.warn(`FillGate 横向空洞（blank≥3/8）：${hollow.join(',')}`);
+      try {
+        fs.mkdirSync(path.join(cwd, 'renders'), {recursive: true});
+        fs.writeFileSync(path.join(cwd, 'renders', 'fill-coverage.json'), `${JSON.stringify(Object.fromEntries(coverage), null, 1)}\n`);
+      } catch { /* 写不进盘不影响出片，数字已经打在终端上 */ }
+    }
     if (shots.size) {
       const ids = [...shots].sort((a, b) => a.localeCompare(b, 'en', {numeric: true}));
       console.warn(`FillGate: ${ids.length} shot${ids.length > 1 ? 's' : ''} (${ids.join(',')}) bottom-quarter underfilled${other ? ` (+${other} other FillGate lines)` : ''}`);
@@ -562,6 +592,61 @@ const renderRange = async ([projectArg, outputArg, startArg, endArg, composition
   // 交付路径（短片段也常被直接拿去交付/送审）：回写色彩元数据。
   await remotionRender({project, composition, output, frames: `${start}-${end}`, concurrency, colorTagged: true});
   console.log(`Rendered review range ${start}-${end}: ${output}`);
+};
+
+// 30 秒验证单元（3.8.0）：只渲一段，用来判断"这一版好不好看"，不是交付物。
+// 存在的理由：全片 1472 帧约 13 分钟，改一版看一版会把迭代次数压到个位数。
+// 默认半分辨率、默认前 30 秒；--shot=S4 只看一镜。
+const preview = async (argv) => {
+  const [projectArg, ...rest] = argv;
+  if (!projectArg) fail('Usage: notebook-video preview PROJECT_DIRECTORY [--seconds=30] [--from=SEC] [--shot=ID] [--scale=0.5]', 2);
+  const opt = (name, fallback) => {
+    const hit = rest.find((a) => a.startsWith(`--${name}=`));
+    return hit === undefined ? fallback : hit.slice(name.length + 3);
+  };
+  const project = resolvePath(projectArg);
+  const fps = Number(process.env.NOTEBOOK_VIDEO_FPS || 30);
+  const resolvedPath = path.join(project, 'manifests', 'shots.resolved.json');
+  let totalFrames = null;
+  let shots = [];
+  if (fs.existsSync(resolvedPath)) {
+    const table = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'));
+    totalFrames = Number(table.duration) || null;
+    shots = Array.isArray(table.shots) ? table.shots : [];
+  }
+  const shotId = opt('shot', null);
+  let start = Math.max(0, Math.round(Number(opt('from', 0)) * fps));
+  let end;
+  if (shotId) {
+    const shot = shots.find((s) => s.id === shotId);
+    if (!shot) fail(`没有这一镜：${shotId}（现有 ${shots.map((s) => s.id).join(', ') || '无'}）`, 2);
+    start = Number(shot.from);
+    end = Number(shot.to);
+  } else {
+    end = start + Math.round(Number(opt('seconds', 30)) * fps);
+  }
+  if (totalFrames) end = Math.min(end, totalFrames);
+  if (!Number.isFinite(end) || end <= start) fail(`渲染区间无效：${start}-${end}`, 2);
+  const scale = Number(opt('scale', 0.5));
+  // 预览默认关掉卷页特效：翻页要换完整版 Chromium + 并发 1（见 remotionRender 注释），
+  // 实测把 30 秒片段从 ~1 分钟拖到 8 分钟以上。判构图不需要它；要看翻页时加 --fx=on。
+  const fxMode = opt('fx', 'off') === 'on' ? 'auto' : 'off';
+  const label = shotId ? `shot-${shotId}` : `f${start}-${end}`;
+  const output = path.join(project, 'renders', `preview-${label}.mp4`);
+  await syncProjectAssets([project]);
+  const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
+  const started = Date.now();
+  console.log(`Preview ${start}-${end - 1}（${((end - start) / fps).toFixed(1)} 秒）@ ${scale}x …`);
+  await remotionRender({project, composition: 'NotebookVideoFilm', output, frames: `${start}-${end - 1}`, concurrency, scale, fxMode});
+  const contact = output.replace(/\.mp4$/i, '-contact.jpg');
+  await makeContactSheet(output, contact, (end - start) / fps);
+  const lufs = await run('ffmpeg', ['-nostats', '-i', output, '-af', 'ebur128=peak=true', '-f', 'null', '-'], {capture: true, allowFailure: true});
+  const summary = (lufs.stderr || '').match(/I:\s*(-?[\d.]+) LUFS[\s\S]*?Peak:\s*(-?[\d.]+) dBFS/);
+  const took = (Date.now() - started) / 1000;
+  console.log(`Preview: ${output}`);
+  console.log(`Contact: ${contact}`);
+  if (summary) console.log(`Loudness: ${summary[1]} LUFS / peak ${summary[2]} dBFS`);
+  if (totalFrames) console.log(`Done in ${took.toFixed(0)}s — 全片约 ${Math.round(took * totalFrames / Math.max(1, end - start))}s`);
 };
 
 const benchmarkRender = async ([projectArg, composition = 'NotebookVideoFilm']) => {
@@ -821,7 +906,8 @@ const craftSheet = async (args) => {
 };
 
 const usage = () => {
-  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  fonts [--serif]   (download the pinned LXGW WenKai Lite fonts once — plus Noto Serif SC with --serif; new-project does this automatically)\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel|journal|papercut|archive]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nvalidate-treatment PROJECT_DIRECTORY   (3.3.0 director layer: manifests/treatment.json)\nvalidate-opening PROJECT_DIRECTORY [--video MP4]   (3.3.0 first three seconds: cold open, first caption, beats, pixels)\nsilent-timing LINES_TXT OUT_JSON [--cps N] [--project DIR]   (3.3.0 caption timing without TTS; hand-made skins default 6.5 chars/s)\nvalidate-backgrounds PROJECT_DIRECTORY [--shots] [--recompute]   (3.3.0 background library: manifests/backgrounds.json)\nvalidate-media PROJECT_DIRECTORY\nprepare-media PROJECT_DIRECTORY [--add FILE --id ID …]\ncommons search \"QUERY\" [--type image|video|audio] [--source commons|openverse] [--audio-category music|sound_effect] [--project DIR] | commons add PROJECT \"File:…\" --id ID | commons credits PROJECT\nvalidate-ocr PROJECT_DIRECTORY --video MP4 | --stills DIR   (optional: needs pip rapidocr onnxruntime)\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\ncraft-sheet PROJECT_DIRECTORY [OUTPUT_PNG] [--frame=N]   (3.3.0: one page with every src/craft component)\nfx-probe PROJECT_DIRECTORY [--force]   (3.3.0: can this machine draw the WebGPU page turn? prints JSON; render runs it automatically)\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
+  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  fonts [--serif]   (download the pinned LXGW WenKai Lite fonts once — plus Noto Serif SC with --serif; new-project does this automatically)\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel|journal|papercut|archive]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]
+  preview PROJECT_DIRECTORY [--seconds=30] [--from=SEC] [--shot=ID] [--scale=0.5] [--fx=on]   (3.8.0: 30 s low-res check before the full render; 卷页默认关)\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nvalidate-treatment PROJECT_DIRECTORY   (3.3.0 director layer: manifests/treatment.json)\nvalidate-opening PROJECT_DIRECTORY [--video MP4]   (3.3.0 first three seconds: cold open, first caption, beats, pixels)\nsilent-timing LINES_TXT OUT_JSON [--cps N] [--project DIR]   (3.3.0 caption timing without TTS; hand-made skins default 6.5 chars/s)\nvalidate-backgrounds PROJECT_DIRECTORY [--shots] [--recompute]   (3.3.0 background library: manifests/backgrounds.json)\nvalidate-media PROJECT_DIRECTORY\nprepare-media PROJECT_DIRECTORY [--add FILE --id ID …]\ncommons search \"QUERY\" [--type image|video|audio] [--source commons|openverse] [--audio-category music|sound_effect] [--project DIR] | commons add PROJECT \"File:…\" --id ID | commons credits PROJECT\nvalidate-ocr PROJECT_DIRECTORY --video MP4 | --stills DIR   (optional: needs pip rapidocr onnxruntime)\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\ncraft-sheet PROJECT_DIRECTORY [OUTPUT_PNG] [--frame=N]   (3.3.0: one page with every src/craft component)\nfx-probe PROJECT_DIRECTORY [--force]   (3.3.0: can this machine draw the WebGPU page turn? prints JSON; render runs it automatically)\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };
 
 const main = async () => {
@@ -840,6 +926,7 @@ const main = async () => {
     case 'prepare-browser': return prepareBrowser(args);
     case 'benchmark-render': return benchmarkRender(args);
     case 'render-range': return renderRange(args);
+    case 'preview': return preview(args);
     case 'review-frames': return reviewFrames(args);
     case 'render': return render(args);
     case 'showcase': return showcase(args, false);

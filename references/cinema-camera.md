@@ -46,7 +46,7 @@
 
 - 代码镜头：`HighlightCode fontSize={34–40}`；差异镜头：`DiffView fontSize={26–32}`；控制台是主角时 `ConsoleWindow fontSize={28–34}`。
 - 关键数字：`KineticNumber`（`src/cinema.tsx`）——计数（ease-out）+ 落定瞬间放大 1.18 回弹 + 下划线扫入；字号 200–380。用在「讲到这个数」的那一拍。
-- `validate-shot-motion.py` 复核每镜 `fillAfter`：< 45% → **P0**（引擎推到上限仍太小，内容本身画小了）；45–60% → P1；> 90% → P1（太满，或 anchor 写得比内容大）。
+- `validate-shot-motion.py` 复核每镜 `fillAfter`（实测常量 `FIT_P0, FIT_LO, FIT_HI_WARN = 0.45, 0.60, 0.90`）：< 45% → **P0**（引擎推到上限仍太小，内容本身画小了；`statement / define / quiz / list / custom` 这几种"文字为主"的版式留白是有意的，降为 P1，提示加大字号或补副标题）；45–60% → P1；> 90% → P1（太满，或 anchor 写得比内容大）。**目标是 60–80%。**
 
 ## 5. 相邻镜头换布局
 
@@ -58,6 +58,6 @@
 | 门禁 | 查什么 |
 |---|---|
 | `resolve-shots.py` | `cinema.drift / fit / focus / pan` 与 `transition` 取值；focus 的 beat 越界；region 名 |
-| `validate-shot-motion.py` | `fillAfter` 60–80%；focus zoom × 场景缩放 ≤ 1.35；焦点矩形放大后放得进画面；focus.at 在本镜内；缺 cinema 块（旧解析结果）→ P1 |
+| `validate-shot-motion.py` | `fillAfter` 目标 60–80%（<45% P0，文字为主版式降 P1；45–60% P1；>90% P1）；focus zoom × 场景缩放 ≤ 1.35；焦点矩形放大后放得进画面；focus.at 在本镜内；缺 cinema 块（旧解析结果）→ P1 |
 | `validate-composition.py` | 转场闭合集合（`auto/cut/handoff/reveal/whip/whip-left/whip-right/zoom/fade/hard/slide/drop/pageturn/peel`）；相邻 `layout` 不同 |
 | 渲染期 | 转场期间新旧两镜都挂载，带 `data-gate-allow="handoff"`，重叠门禁对这 14 帧（卷页 22 帧）放行 |

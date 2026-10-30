@@ -67,6 +67,8 @@ const Grade=THEME.Grade;
 import {COPY, CHAPTER_SHOTS} from './film';
 import * as FILM from './film';
 import {captionGap} from './caption-gap';
+// 3.8.0：章节卡标题的自适应字号改用它（同一能力的唯一实现，别再在调用处估算）。
+import {fitChineseTextOnNLines} from './components/fittext';
 const CHAPTER_STARTS=CHAPTER_SHOTS.map((id)=>SHOTS[id].from);
 
 const clamp={extrapolateLeft:'clamp' as const,extrapolateRight:'clamp' as const};
@@ -270,14 +272,17 @@ const Chrome=()=>{
           <PillTag text={COPY.chromeKicker} color={C.blue} bg={C.blueLight} fontSize={TYPE.microS}/>
         </div>
         {(() => {
-          // v3.0.2：固定卡片里放可变长标题，必须"按可用宽自适应字号 + 禁止换行"。
-          // 实测可用内宽 286px（392 − 2 描边 − 72 编号块 − 32 内边距），而 TYPE.titleS=27px 时
-          // 「第三步 · 运营与三技能」实算 282.96px —— 只差不到 1px 就会折行，折行后即被 82 高的框裁掉。
-          // 这里按字数算字号：CJK 按 1 字宽、ASCII/空格/间隔号按 0.55 折算，并夹到 [19, TYPE.titleS]。
+          // 3.8.0：不再用「CJK 1 字宽 / ASCII 0.55 折算」估字号，改为**实测反推**。
+          // 同一能力在 components/fittext.tsx 里已有一份正经实现（measureText + UAX #14 + budoux），
+          // 这里的估算既重复、又处在「差不到 1px 就折行」的临界——估算永远证明不了「不会折」。
+          // 可用内宽 286px（392 − 2 描边 − 72 编号块 − 32 内边距）；下限 19 保持与旧版一致。
           const title = String(titles[stage] ?? '');
-          const units = [...title].reduce((n, ch) => n + (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(ch) ? 1 : 0.55), 0) || 1;
           const availW = 286;
-          const fitSize = Math.max(19, Math.min(TYPE.titleS, Math.floor(availW / units)));
+          const {fontSize: measured} = fitChineseTextOnNLines({
+            text: title, maxLines: 1, maxBoxWidth: availW,
+            fontFamily: 'Kai', fontWeight: 700, maxFontSize: TYPE.titleS, minFontSize: 19,
+          });
+          const fitSize = Math.max(19, Math.min(TYPE.titleS, Math.floor(measured)));
           return <JumpInText key={stage} items={[{text:title}]} fontSize={fitSize}
             start={CHAPTER_STARTS[stage]+8} stagger={1.1}
             style={{marginTop:3,justifyContent:'flex-start',flexWrap:'nowrap',whiteSpace:'nowrap',overflow:'hidden',maxWidth:availW}}/>;

@@ -50,6 +50,12 @@ type Box = {left: number; top: number; right: number; bottom: number};
 export const FILL_GATE_SKIP_SKINS = ['journal', 'papercut', 'archive'];
 const SKIN_SKIPPED = FILL_GATE_SKIP_SKINS.includes(String(THEME.id));
 const warned = new Set<string>();
+// 3.8.0：横向覆盖（cells / blank 列 / 最大单体占比）。每个镜头只报一行，供阈值实测。
+// 只在"构图更完整"的帧上更新并上报：镜头的入场帧几乎必然是空的（元素还在画），
+// 拿第一帧判"空场"会把每一镜都打成空洞——这是第一版实测踩到的假阳性。
+const coverageSeen = new Map<string, {cells: number; blank: number; largest: number; widest: number}>();
+const COVER_COLS = 8;
+const COVER_ROWS = 6;
 const shotAt = (frame: number): string => {
   for (const s of Object.values(SHOTS) as Array<{id: string; from: number; to: number}>) {
     if (frame >= s.from && frame < s.to) return s.id;
@@ -124,7 +130,11 @@ export const FillGate: React.FC<{
     return s;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchKey]);
-  const should = !SKIN_SKIPPED && (raw % sampleEvery === 0 || hot.has(raw));
+  // 3.8.0：手作皮肤不再整条跳过。原来 `SKIN_SKIPPED` 把 journal/papercut/archive 全部短路，
+  // 于是「主体缩在一角、四到七成空」这类横向空洞从来没有被量过（评审两轮都点了这条）。
+  // 现在只跳过「下 1/4 必须填满」这条判据（手账的大留白确实不是空洞），覆盖率照量。
+  const should = raw % sampleEvery === 0 || hot.has(raw);
+  const checkFloor = !SKIN_SKIPPED;
 
   useEffect(() => {
     if (!should) return;
@@ -160,6 +170,7 @@ export const FillGate: React.FC<{
         const k = rr.width / canvasMode.designW || 1;
         let bottom = -Infinity;
         let n = 0;
+        const boxes: Box[] = [];
         document.querySelectorAll<HTMLElement>('div,span,p,svg,text,tspan,circle,ellipse,rect,path,line,polyline,polygon').forEach((el) => {
           if (el.closest('[data-gate-skip]')) return;
           if (el.closest('[data-gate-allow]')) return;
@@ -167,6 +178,7 @@ export const FillGate: React.FC<{
           const b = infoBoxOf(el);
           if (!b) return;
           n++;
+          boxes.push(b);
           if (b.bottom > bottom) bottom = b.bottom;
         });
         if (!n || bottom === -Infinity) {
@@ -174,8 +186,58 @@ export const FillGate: React.FC<{
           return;
         }
         const designBottom = (bottom - rr.top) / k;
+
+        // 3.8.0 · 横向覆盖：把同一批实测盒子落到 8×6 网格上。
+        // 只出声、不判 —— 阈值要等这批数字量出来再定，避免又造一个"凭感觉"的门。
+        const dw = canvasMode.designW;
+        const dh = canvasMode.designH;
+        const cellW = dw / COVER_COLS;
+        const cellH = dh / COVER_ROWS;
+        const grid = new Uint8Array(COVER_COLS * COVER_ROWS);
+        let largest = 0;
+        let widest = 0;
+        for (const b of boxes) {
+          const l = (b.left - rr.left) / k;
+          const t = (b.top - rr.top) / k;
+          const r2 = (b.right - rr.left) / k;
+          const b2 = (b.bottom - rr.top) / k;
+          const area = Math.max(0, r2 - l) * Math.max(0, b2 - t);
+          if (area > largest) largest = area;
+          const span = Math.max(0, r2 - l) / dw;
+          if (span > widest) widest = span;
+          const c0 = Math.max(0, Math.min(COVER_COLS - 1, Math.floor(l / cellW)));
+          const c1 = Math.max(0, Math.min(COVER_COLS - 1, Math.ceil(r2 / cellW) - 1));
+          const r0 = Math.max(0, Math.min(COVER_ROWS - 1, Math.floor(t / cellH)));
+          const r1 = Math.max(0, Math.min(COVER_ROWS - 1, Math.ceil(b2 / cellH) - 1));
+          for (let cy = r0; cy <= r1; cy++) {
+            for (let cx = c0; cx <= c1; cx++) grid[cy * COVER_COLS + cx] = 1;
+          }
+        }
+        let cells = 0;
+        const colHit = new Uint8Array(COVER_COLS);
+        for (let cy = 0; cy < COVER_ROWS; cy++) {
+          for (let cx = 0; cx < COVER_COLS; cx++) {
+            if (grid[cy * COVER_COLS + cx]) { cells++; colHit[cx] = 1; }
+          }
+        }
+        let blankCols = 0;
+        for (let cx = 0; cx < COVER_COLS; cx++) if (!colHit[cx]) blankCols++;
+        const sidNow = shotAt(raw);
+        const prev = coverageSeen.get(sidNow);
+        const largestShare = largest / (dw * dh);
+        // 取"最完整的那一帧"：格子数更多，或格子数相同但主体更大。
+        if (!prev || cells > prev.cells || (cells === prev.cells && largestShare > prev.largest)) {
+          coverageSeen.set(sidNow, {cells, blank: blankCols, largest: largestShare, widest});
+          if (typeof console !== 'undefined') {
+            console.warn(
+              `[FillGate] coverage ${sidNow} cells=${cells}/${COVER_COLS * COVER_ROWS} ` +
+              `blank=${blankCols}/${COVER_COLS} largest=${largestShare.toFixed(2)} widest=${widest.toFixed(2)} n=${n}`
+            );
+          }
+        }
+
         const pass = designBottom >= floorY - TOL;
-        if (!pass) {
+        if (checkFloor && !pass) {
           const msg =
             `[FillGate] @${raw} 内容底边只到 y=${Math.round(designBottom)}（设计坐标），` +
             `P0-4 要求接近 y=${floorY}（下 1/4 不留空洞）；本帧计 ${n} 个信息元素。` +
@@ -218,4 +280,4 @@ export const FillGate: React.FC<{
 };
 
 export const FILL_GATE_VERSION =
-  'fill-gate-v3 · 手作皮肤不判下 1/4 · 每镜一条、渲染结束汇总一行 · fill-gate-v2 · 实测信息元素最低边 vs P0-4 的 y=876（替代原来那个"校验生成器自己写死的常量"的假门）· delayRender 逐帧持柄 · 等字体就绪 · 默认只出声不拦 · 硬拦时 handle 不释放且异常不被自家 catch 吞（v1 会出图 rc=0）';
+  'fill-gate-v4 · 手作皮肤不再整条跳过（只跳过下 1/4 判据）· 横向覆盖 8×6 网格 / 空白列 / 最大单体占比，先只报不拦 · 阈值由 cell 实测得出（largest<0.06、blank≥3/8）· fill-gate-v3 · 每镜一条、渲染结束汇总一行 · v2 · 实测信息元素最低边 vs y=876（替代"校验生成器自己写死的常量"的假门）· delayRender 逐帧持柄 · 等字体就绪 · 硬拦时 handle 不释放且异常不被自家 catch 吞';

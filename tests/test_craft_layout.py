@@ -100,7 +100,13 @@ class FillGateTest(unittest.TestCase):
         self.assertIsNotNone(m)
         self.assertEqual(sorted(re.findall(r"'(\w+)'", m.group(1))), ["archive", "journal", "papercut"])
         self.assertIn("THEME.id", FILL)
-        self.assertIn("!SKIN_SKIPPED &&", FILL)
+        # 3.8.0：手作皮肤只跳过「下 1/4」这一条判据，横向覆盖率照量。
+        # 旧契约是整条短路（`!SKIN_SKIPPED &&`），结果是 journal 片子的横向空洞从来没被量过。
+        self.assertIn("const checkFloor = !SKIN_SKIPPED;", FILL)
+        self.assertIn("if (checkFloor && !pass)", FILL)
+        self.assertIn("coverageSeen", FILL)
+        self.assertIn("COVER_COLS", FILL)
+        self.assertNotIn("!SKIN_SKIPPED &&", FILL)
 
     def test_one_line_per_shot_and_summary(self):
         self.assertIn("[FillGate] underfilled ${sid}", FILL)

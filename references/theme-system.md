@@ -1,9 +1,14 @@
 # Theme system: shared contract
 
-Status: LOCKED. Two themes ship with the skill (3.2.0+, visual identity rebuilt in 3.2.0): `flat` (default, calm modern edu illustration) and `cel` (bold comic / manga). Both are fully implemented in `assets/lecture-template/src/theme/`. A production selects its theme once at kickoff via `new-project ./dir [--style=flat|cel]` and then reads only its own contract:
+Status: LOCKED. Five themes ship with the skill: `flat` (default, calm modern edu illustration) and `cel` (bold comic / manga) from 3.2.0, plus the hand-made skins `journal` / `papercut` / `archive` from 3.3.0. All are implemented in `assets/lecture-template/src/theme/`. A production selects its theme once at kickoff via `new-project ./dir [--style=flat|cel|journal|papercut|archive]` and then reads only its own contract:
 
 - flat (default) → `theme-flat.md`
 - cel → `theme-cel.md`
+- journal → `theme-journal.md`
+- papercut → `theme-papercut.md`
+- archive → `theme-archive.md`
+
+Route: 软件 / 产品 / 代码 / 图表类选题走组件路线（flat / cel）；科普、自然、历史、"为什么"类选题走手作路线（journal / papercut / archive），手作路线先写 `treatment.json`（见 `director-method.md`）。本节以前只列了两套皮肤，Agent 读到会以为手作三套不存在——2026-10-30 修正。
 
 The former `paper` and `sticker` themes were removed in 3.2.0, and the warm-ivory `--classic` example project in 3.2.0; projects created with them are not supported. The palette token names `paper` / `paperWarm` / `paperBase`, the `Paper` card component and `CoverPanel tone="paper"` are generic card-surface names kept by both remaining themes — they do not refer to the removed theme.
 

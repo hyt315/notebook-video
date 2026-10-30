@@ -45,11 +45,11 @@
 - Inserted modules finish fully behind the front lip with no residual fragment.
 - Temporary components exit completely; no half corner remains.
 - Dynamic shadow changes only when paper lifts.
-- In the official v9 engine, paper uses its locked lift-linked contact/environment shadow recipe; no component invents a conflicting shadow.
-- In the official v9 engine, display, title, body, label and micro copy use its locked type scale.
-- In the official v9 engine, system glyphs and emoji are not used as production icons; use its locked line-icon language.
-- In the official v9 engine, the whole-film grade is static and restrained; no animated grain or moving light texture.
-- In the official v9 engine, ordinary production edits stay inside `COPY`, narration, semantic captions, visual plan, registered image assets, timing and topic-specific scene objects.
+- In the official engine (3.3.0), paper uses its locked lift-linked contact/environment shadow recipe; no component invents a conflicting shadow.
+- In the official engine (3.3.0), display, title, body, label and micro copy use its locked type scale.
+- In the official engine (3.3.0), system glyphs and emoji are not used as production icons; use its locked line-icon language.
+- In the official engine (3.3.0), the whole-film grade is static and restrained; no animated grain or moving light texture.
+- In the official engine (3.3.0), ordinary production edits stay inside `COPY`, narration, semantic captions, visual plan, registered image assets, timing and topic-specific scene objects.
 - Data dashes move only during a real transfer and in the correct direction.
 - Text-bearing paper has visible padding on all sides.
 - Exact Chinese text and real brand assets are preserved.
