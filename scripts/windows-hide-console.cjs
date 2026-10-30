@@ -1,4 +1,4 @@
-// windows-hide-console.cjs · Windows 上不让子进程闪出控制台窗口（3.7.0）
+// windows-hide-console.cjs · Windows 上不让子进程闪出控制台窗口（3.3.0）
 //
 // 为什么要它：
 //   Remotion 的 @remotion/renderer 拉浏览器、收尾杀浏览器时**从不**设 windowsHide：
@@ -26,50 +26,50 @@ const childProcess = require('node:child_process');
 
 // 只在 Windows 上动手：POSIX 没有控制台窗口这回事。
 if (process.platform === 'win32') {
-  const patched = new WeakSet();
-
-  // 把 options 对象补上 windowsHide，但不覆盖调用方显式写的值。
-  const withHide = (options) => {
+  // Node 内部实现里 exec → execFile → spawn 会层层转调。若每一层都重新包装 options，
+  // 参数位就会被搞乱（实测 exec(cmd, cb) 会把 options 当成 callback 传给 execFile，
+  // 报 ERR_INVALID_ARG_TYPE）。
+  // 解法：用内部 Symbol 标记「这份 options 本 shim 已处理过」，下游层看到标记就直接放行。
+  const HANDLED = Symbol('nvWindowsHideHandled');
+  const mark = (options) => {
     if (!options || typeof options !== 'object') return options;
     if (options.windowsHide === true) return options;
-    return {...options, windowsHide: true};
+    const next = {...options, windowsHide: true};
+    Object.defineProperty(next, HANDLED, {value: true, enumerable: false});
+    return next;
   };
 
   const originalSpawn = childProcess.spawn;
   childProcess.spawn = function spawn(command, args, options) {
-    return originalSpawn.call(this, command, args, withHide(options));
+    return originalSpawn.call(this, command, args, mark(options));
   };
 
   const originalSpawnSync = childProcess.spawnSync;
   childProcess.spawnSync = function spawnSync(command, args, options) {
-    return originalSpawnSync.call(this, command, args, withHide(options));
+    return originalSpawnSync.call(this, command, args, mark(options));
   };
 
   const originalExec = childProcess.exec;
   childProcess.exec = function exec(command, options, callback) {
     // exec 有两种签名：exec(cmd, cb) 与 exec(cmd, options, cb)
     if (typeof options === 'function') {
-      return originalExec.call(this, command, withHide({}), options);
+      return originalExec.call(this, command, mark({}), options);
     }
-    return originalExec.call(this, command, withHide(options), callback);
+    return originalExec.call(this, command, mark(options), callback);
   };
 
   const originalExecSync = childProcess.execSync;
   childProcess.execSync = function execSync(command, options) {
-    return originalExecSync.call(this, command, withHide(options));
+    return originalExecSync.call(this, command, mark(options));
   };
 
-  const originalExecFile = childProcess.execFile;
-  childProcess.execFile = function execFile(file, args, options, callback) {
-    if (typeof args === 'function') {
-      return originalExecFile.call(this, file, withHide({}), args);
-    }
-    if (typeof options === 'function') {
-      return originalExecFile.call(this, file, args, withHide({}), options);
-    }
-    return originalExecFile.call(this, file, args, withHide(options), callback);
-  };
-
-  // 避免重复预加载时把同一个函数包多层（幂等）。
-  patched.add(childProcess.spawn);
+  // execFile **不要**包。
+  // 原因：Node 内部实现里 exec 会转调 execFile(cmd, args, options, cb)，而那个转调
+  // 走的是模块内部的原始 execFile 引用 —— 但它命中的是我们挂在 childProcess 上的
+  // 这个属性（内部实现读的就是 childProcess.execFile）。一旦我们包了它，
+  // exec 传下来的 (cmd, args, options, cb) 会被我们的签名判断误判成
+  // (file, args=options对象, options=cb) → callback 位收到对象 → ERR_INVALID_ARG_TYPE。
+  // 既然 exec 最终会落到 spawn，而 spawn 已经带上了 windowsHide，这里不动 execFile。
+  //
+  // execFile 的独立调用（Remotion 没用到）保持原样即可。
 }
