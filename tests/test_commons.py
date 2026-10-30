@@ -25,6 +25,55 @@ assert vm_spec.loader
 vm_spec.loader.exec_module(vm)
 
 
+class OfflineSearchTest(unittest.TestCase):
+    """3.7.0：搜索失败（断网 / TLS）也必须留一条记录。
+
+    为什么重要：手作皮肤的 validate-treatment 用「commons-log.json 非空」判断「这个选题搜过」。
+    以前断网时脚本直接 SystemExit，什么都不写 → 用户被 P0 卡死，还看不出是网络问题。
+    """
+
+    def setUp(self):
+        import tempfile
+        self.tmp = Path(tempfile.mkdtemp(prefix="nv-commons-off-"))
+        (self.tmp / "manifests").mkdir()
+
+    def test_network_failure_is_logged(self):
+        original = cs.search
+
+        def boom(*a, **k):
+            raise SystemExit("✗ 连不上 Commons（timeout）。检查网络，或稍后重试。")
+
+        cs.search = boom
+        try:
+            rc = cs.cmd_search(["cork cells", "--project", str(self.tmp)])
+        finally:
+            cs.search = original
+        self.assertEqual(rc, 4, "失败应返回 4（区分于用法错误 2）")
+        doc = json.loads((self.tmp / "manifests" / "commons-log.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(doc["searches"]), 1)
+        entry = doc["searches"][0]
+        self.assertEqual(entry["results"], 0)
+        self.assertEqual(entry["usable"], 0)
+        self.assertIn("连不上 Commons", entry["error"])
+        self.assertEqual(entry["query"], "cork cells")
+
+    def test_log_is_accepted_by_treatment_gate(self):
+        """一条失败记录也算「搜过」——门禁不该因为断网把工程锁死。"""
+        import shutil
+        tpl = ROOT / "assets" / "lecture-template" / "manifests"
+        for name in ("treatment.json", "shots.json", "caption-cues.json", "media.json"):
+            if (tpl / name).is_file():
+                shutil.copy(tpl / name, self.tmp / "manifests" / name)
+        cs.log_search(self.tmp, "cork cells", "image", None, [], error="timeout")
+        vt_spec = importlib.util.spec_from_file_location("vt_commons", ROOT / "scripts" / "validate-treatment.py")
+        vt = importlib.util.module_from_spec(vt_spec)
+        assert vt_spec.loader
+        vt_spec.loader.exec_module(vt)
+        hard, soft, _skin = vt.check(self.tmp)
+        joined = " ".join(hard + soft)
+        self.assertNotIn("Commons", joined, f"断网记录应满足「搜过」这一条：{joined[:200]}")
+
+
 class LicenseTests(unittest.TestCase):
     def v(self, short, usage="", url=""):
         return cs.classify_license(short, usage, url)

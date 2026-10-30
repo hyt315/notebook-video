@@ -198,7 +198,7 @@ def http_json(params: dict, cache_dir: Path | None) -> dict:
         cf = cache_dir / f"{key}.json"
         if cf.is_file():
             return json.loads(cf.read_text(encoding="utf-8"))
-    data = json.loads(http_get(url))
+    data = json.loads(http_get(url, timeout=20, retries=2))
     if "error" in data:
         raise SystemExit(f"✗ Commons API 报错：{data['error'].get('code')} {data['error'].get('info', '')[:160]}")
     if cache_dir:
@@ -207,19 +207,20 @@ def http_json(params: dict, cache_dir: Path | None) -> dict:
     return data
 
 
-def http_get(url: str, binary: bool = False):
-    for attempt in range(5):
+def http_get(url: str, binary: bool = False, timeout: int = 60, retries: int = 4):
+    """GET 一个 URL。timeout / retries 可调：搜索要快失败（断网时别让人等四分钟），下载素材可以慢。"""
+    for attempt in range(retries + 1):
         wait = MIN_INTERVAL - (time.monotonic() - _last_request[0])
         if wait > 0:
             time.sleep(wait)
         _last_request[0] = time.monotonic()
         req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Encoding": "identity"})
         try:
-            with urllib.request.urlopen(req, timeout=60) as r:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
                 body = r.read()
                 return body if binary else body.decode("utf-8")
         except urllib.error.HTTPError as e:
-            if e.code in (429, 503) and attempt < 4:
+            if e.code in (429, 503) and attempt < retries:
                 ra = e.headers.get("Retry-After")
                 delay = float(ra) if ra and ra.isdigit() else 2 ** (attempt + 1)
                 print(f"  · Commons 限速（HTTP {e.code}），{delay:.0f} 秒后重试", file=sys.stderr)
@@ -227,7 +228,7 @@ def http_get(url: str, binary: bool = False):
                 continue
             raise SystemExit(f"✗ 下载失败 HTTP {e.code}：{url[:120]}")
         except urllib.error.URLError as e:
-            if attempt < 4:
+            if attempt < retries:
                 time.sleep(2 ** (attempt + 1))
                 continue
             raise SystemExit(f"✗ 连不上 Commons（{e.reason}）。检查网络，或稍后重试。")
@@ -292,13 +293,21 @@ def fileinfo(title: str, thumb_w: int, cache_dir: Path | None) -> dict:
     return describe(pages[0])
 
 
-def log_search(proj: Path, query: str, kind: str, category: str | None, recs: list[dict], source: str = "commons") -> None:
+def log_search(proj: Path, query: str, kind: str, category: str | None, recs: list[dict], source: str = "commons",
+               error: str | None = None) -> None:
+    """记一次搜索。error 非空 = 这次没搜成（断网 / 被墙 / API 挂）。
+
+    为什么失败也要记：手作皮肤的 validate-treatment 要求「每个选题先搜一次」（看 commons-log.json
+    非空）。如果断网时什么都不写，用户会被 P0 卡死，而且没有任何提示告诉他是网络问题——
+    记一条 error，门禁知道「搜过了」，人也能看见「为什么没结果」。
+    """
     lf = proj / "manifests" / "commons-log.json"
     doc = json.loads(lf.read_text(encoding="utf-8")) if lf.is_file() else {"searches": []}
     doc.setdefault("searches", []).append({
         "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "source": source, "query": query, "type": kind, "category": category,
         "results": len(recs), "usable": sum(1 for r in recs if r["verdict"] == "ok"),
         "top": [{"title": r["title"], "license": r["license"], "verdict": r["verdict"]} for r in recs[:8]],
+        **({"error": error} if error else {}),
     })
     lf.parent.mkdir(parents=True, exist_ok=True)
     lf.write_text(json.dumps(doc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
@@ -362,7 +371,7 @@ def cached_json(url: str, cache_dir: Path | None) -> dict:
     key = hashlib.sha1(url.encode()).hexdigest()
     if cache_dir and (cache_dir / f"{key}.json").is_file():
         return json.loads((cache_dir / f"{key}.json").read_text(encoding="utf-8"))
-    data = json.loads(http_get(url))
+    data = json.loads(http_get(url, timeout=20, retries=2))
     if cache_dir:
         cache_dir.mkdir(parents=True, exist_ok=True)
         (cache_dir / f"{key}.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
@@ -390,13 +399,25 @@ def cmd_search(args: list[str]) -> int:
     if audio_category and source != "openverse":
         print("✗ --audio-category 只用于 --source openverse（Commons 的分类用 --category）")
         return 2
-    if source == "openverse":
-        recs = ov_search(query, kind, limit, cache, audio_category)
-    elif source == "commons":
-        recs = search(query, kind, category, limit, cache_dir=cache, keep_pron="--keep-pronunciations" in args)
-    else:
-        print("✗ --source 只能是 commons 或 openverse")
-        return 2
+    try:
+        if source == "openverse":
+            recs = ov_search(query, kind, limit, cache, audio_category)
+        elif source == "commons":
+            recs = search(query, kind, category, limit, cache_dir=cache, keep_pron="--keep-pronunciations" in args)
+        else:
+            print("✗ --source 只能是 commons 或 openverse")
+            return 2
+    except (SystemExit, Exception) as exc:  # 断网 / TLS 失败 / API 5xx：记一条 error，别把工程卡死
+        why = str(exc) or exc.__class__.__name__
+        why = why.replace("✗ ", "").strip()
+        if proj:
+            log_search(proj, query, kind, category, [], source, error=why[:200])
+            print(f"⚠ 搜索没成功：{why[:120]}")
+            print(f"  已在 {proj / 'manifests' / 'commons-log.json'} 记下这次尝试（results=0, error）。")
+            print("  处理办法：换网络重试，或直接把选题需要的出处写进 treatment.json 的 facts（url + 原文引文）。")
+        else:
+            print(f"⚠ 搜索没成功：{why[:120]}")
+        return 4
     if proj:
         log_search(proj, query, kind, category, recs, source)
     shown = 0

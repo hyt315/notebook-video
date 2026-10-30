@@ -103,6 +103,15 @@ if (a.code) die('ffmpeg 不可用：请安装 ffmpeg 并放进 PATH');
 // 4. resolve
 step('resolve-shots');
 if ((await py('resolve-shots.py', [project])).code) die('resolve-shots 失败');
+// 手写工程的分镜表只写 cues，帧数由 resolve-shots 算出来；报告里的「时长」要读它，
+// 否则 cells 这类工程会写成「0 帧 / 0.0 秒」（3.7.0 修）。
+{
+  const rp = path.join(project, 'manifests', 'shots.resolved.json');
+  if (fs.existsSync(rp)) {
+    const rf = JSON.parse(fs.readFileSync(rp, 'utf8')).duration;
+    if (typeof rf === 'number' && rf > 0) rep.frames = rf;
+  }
+}
 
 // 4b. 3.7.0 评审拦截：手作皮肤要出成片，先得有一轮独立评审（director-method.md 第 4 步），或显式 --skip-review。
 //     只拦 --render（静帧 / 联系表就是给评审看的，不拦）；flat / cel 不拦，CI / selftest 不走 --render。
