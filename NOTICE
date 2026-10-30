@@ -63,4 +63,15 @@ and bundles the following third-party materials:
    - The optional full Chromium used for WebGPU rendering (Chrome for Testing / Playwright Chromium, BSD-3-Clause and bundled
      third-party licences) is found on the user's machine or installed by the user; it is not bundled.
 
+11. **Redistributed in this repository** (3.9.0) — `assets/vendor/budoux/`, an ~80 KB slice of BudouX
+    (`budoux` 0.9.2, Apache License 2.0, Copyright 2021 Google LLC, https://github.com/google/budoux).
+    It powers the caption phrase rule in `scripts/validate-semantic-breaks.py`: a subtitle line must break on a
+    word boundary, or a proper noun gets split down the middle. The skill ships no `node_modules`, so without this
+    slice the rule silently reported `SKIPPED` on a fresh clone — which in a report reads almost exactly like `passed`.
+    Files: `module/parser.js`, `module/data/models/zh-hans.js` and `module/package.json` are copied verbatim;
+    `module/index.js` is **our own** five-line entry (upstream's pulls in `linkedom` for HTML input we never pass —
+    output is byte-identical on plain text, asserted in `tests/test_bundled_budoux.py`).
+    Licence text: `assets/vendor/budoux/LICENSE`. Provenance and upgrade steps: `assets/vendor/README.md`.
+    Everything outside `assets/vendor/` still follows item 8: installed by `npm install`, not redistributed.
+
 The repository-level license must not override these third-party license notices.

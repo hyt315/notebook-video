@@ -16,6 +16,18 @@ from pathlib import Path
 SKILL = Path(__file__).resolve().parent.parent
 if '--root' in sys.argv:
     SKILL = Path(sys.argv[sys.argv.index('--root') + 1]).resolve()
+
+# 断句短语规则要 BudouX。3.9.0 起技能自带一份（`assets/vendor/budoux/`，Apache-2.0，80 KB 中文切片），
+# 所以新克隆的仓库里这条规则也能真跑；`build-semantic-captions.py` 的 find_budoux_root 会兜底到它。
+# 工程里装了 node_modules 时优先用工程那份（版本跟 package-lock.json 走）。
+#   python scripts/validate-skill-consistency.py --budoux-dir <某工程的 node_modules>   # 覆盖自带那份
+# 最终结论里会写 `phrase rule: enforced (BudouX from …)` 或 `... did NOT run`，后者说明 vendor 丢了。
+BUDOUX_DIR = None
+if '--budoux-dir' in sys.argv:
+    _i = sys.argv.index('--budoux-dir')
+    if _i + 1 >= len(sys.argv):
+        raise SystemExit('--budoux-dir needs a path')
+    BUDOUX_DIR = sys.argv[_i + 1]
 IGNORED_PARTS = {"node_modules", ".git", ".cache", ".tools", "renders", "__pycache__"}
 TEXT_SUFFIXES = {'.md', '.py', '.sh', '.cmd', '.mjs', '.json', '.yaml', '.yml', '.tsx', '.cjs'}
 
@@ -474,17 +486,35 @@ def main() -> None:
     subprocess.run([sys.executable, str(SKILL / 'scripts' / 'validate-layering.py'), str(lecture / 'manifests' / 'asset-manifest.json')], check=True)
     subprocess.run([sys.executable, str(SKILL / 'scripts' / 'validate-visual-plan.py'), str(lecture)], check=True)
     subprocess.run([sys.executable, str(SKILL / 'scripts' / 'validate-caption-sync.py'), str(lecture / 'audio' / 'narration.mp3.json'), str(lecture_cues)], check=True)
-    subprocess.run([sys.executable, str(SKILL / 'scripts' / 'validate-semantic-breaks.py'), str(lecture_cues), str(lecture / 'manifests' / 'protected-caption-phrases.txt')], check=True)
+    semantic_cmd = [sys.executable, str(SKILL / 'scripts' / 'validate-semantic-breaks.py'),
+                    str(lecture_cues), str(lecture / 'manifests' / 'protected-caption-phrases.txt')]
+    if BUDOUX_DIR:
+        semantic_cmd += ['--budoux-dir', BUDOUX_DIR]
+    semantic = subprocess.run(semantic_cmd, capture_output=True, text=True)
+    sys.stdout.write(semantic.stdout)
+    sys.stderr.write(semantic.stderr)
+    if semantic.returncode != 0:
+        raise SystemExit(semantic.returncode)
+    # 子进程在缺模型时会打印 "phrase rule: SKIPPED" 并仍然 rc=0——那是跳过，不是通过。
+    phrase_skipped = 'phrase rule: SKIPPED' in (semantic.stdout + semantic.stderr)
 
+    verdict = ('Skill-wide consistency validation passed: lecture template valid (flat + cel + journal/papercut/archive, '
+               '3 backgrounds each + background library), no obsolete renderer residue, removed example project, '
+               'stale render inputs or contract mismatch')
+    if phrase_skipped:
+        verdict += ('\n  ↳ BUT the semantic phrase rule did NOT run (BudouX not found): mechanical rules + protected '
+                    'phrase list only. Point it at a node_modules with --budoux-dir <dir> to enforce the phrase rule.')
     if "--json" in sys.argv:
         print(json.dumps({
             "status": "pass",
             "read_only": True,
             "problems_count": len(problems),
             "templates_validated": ["lecture-template"],
+            # 机器消费者也要能分辨"全跑过"和"短语规则跳过"
+            "semantic_phrase_rule": "skipped_no_budoux" if phrase_skipped else "enforced",
         }, indent=2))
     else:
-        print('Skill-wide consistency validation passed: lecture template valid (flat + cel + journal/papercut/archive, 3 backgrounds each + background library), no obsolete renderer residue, removed example project, stale render inputs or contract mismatch')
+        print(verdict)
 
 
 if __name__ == '__main__':

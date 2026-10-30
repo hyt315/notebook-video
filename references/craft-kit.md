@@ -38,13 +38,22 @@
 | `InkCircle` | 手圈一个东西（1.12 圈，首尾交叠） | `cx cy rx ry p` |
 | `HandNote` | 钢笔批注：引线先长到目标，字再从左往右写出 | `f at x y text to?`；纸色光晕保证 ≥7:1 |
 | `HandLettering` | 一行中文（≤10 字）沿字形轮廓描墨、再填墨 | `f at text x y size perChar` |
+| `Dimension` | 尺寸线：主线 16 帧 → 两端刻度各 6 帧 → 标注。刻度方向按主线自动垂直，横竖斜都成立 | `f at from to tick=24 label labelAt` |
+| `MagnifyInset` | 局部放大：一个框淡入 20 帧 + 引线 22 帧长过去 + 标注；把主体里的**一个单元**拎到旁边 | `f at box={x,y,w,h} rotate radius lead label labelAt` |
 
 辅助：`prog(f, at, dur)`（帧 → 0..1，墨水缓动）、`samplePath(d, n)`、`easeInk`、`CRAFT_TYPE`（字号阶梯）。
+
+**这两个是「空场」的正解**：画面显得空时，先问「主体还缺哪一层属于它的东西」——
+有尺寸就标尺寸（`Dimension`），由很多小单元组成就拎一个出来放大（`MagnifyInset`）。
+不要放大卡片凑面积，也不要往空白处另起一句说明（判据见 `composition-gate.md` §3.8.0）。
 
 ```tsx
 <InkPath d="M 300 700 C 600 640, 900 760, 1200 690" p={prog(f, b[1], 24)} size={9} seed="arrow" />
 <HandNote f={f} at={b[2]} x={1180} y={300} text="一间间小盒子" to={{x: 980, y: 520}} />
 <HandLettering f={f} at={10} text="细胞" x={760} y={380} size={CRAFT_TYPE.hero} />
+<Dimension f={f} at={b[0] + 6} from={[330, 200]} to={[330, 810]} label="2.54 cm" labelAt={[252, 140]} />
+<MagnifyInset f={f} at={b[0] + 18} box={{x: 1330, y: 700, w: 230, h: 180}} rotate={1.4}
+  lead="M 1630 700 C 1618 760, 1560 806, 1508 820" label="1 间" labelAt={[1344, 902]} />
 ```
 
 ### 纸与颜料（`paper.tsx`）
@@ -103,8 +112,8 @@
 `src/craft-sheet.tsx`（合成 `NotebookVideoCraftSheet`，组件 `CraftSheet`）把 12 个组件排在一页上，用当前皮肤的纸面与颜色：
 
 ```text
-node scripts/notebook-video.mjs craft-sheet ./my-video                       # renders/craft-sheet.png，第 72 帧（全部落定）
-node scripts/notebook-video.mjs craft-sheet ./my-video mid.png --frame=18    # 动作进行中
+node scripts/notebook-video.mjs showcase ./my-video --craft                   # renders/craft-sheet.png，第 72 帧（全部落定）
+node scripts/notebook-video.mjs showcase ./my-video mid.png --craft --frame=18  # 动作进行中
 ```
 
 真实素材格用 `manifests/media.json` 里的前两张图；还没有图时画虚线占位。样张挂了越界闸门（`CanvasBoundsGate` block），

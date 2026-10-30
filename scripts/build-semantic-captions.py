@@ -100,6 +100,18 @@ def protected_spans(stream: str, phrases: list[str]) -> tuple[set[int], list[str
 
 
 def find_budoux_root(explicit: str | None, bases: list[Path]) -> Path | None:
+    """Locate a directory that contains `budoux/module/index.js`.
+
+    Order matters: an explicit `--budoux-dir` wins, then the project's own
+    `node_modules` (so the model version tracks `package-lock.json`), and only
+    then the copy bundled with the skill.
+
+    That last fallback is the point of this function's 3.9.0 change.  The skill
+    ships no `node_modules`, so on a fresh clone the phrase rule had nothing to
+    load and quietly reported "SKIPPED" — which, in a report, reads almost
+    exactly like "passed".  `assets/vendor` is an ~80 KB slice of BudouX
+    (Apache-2.0, see NOTICE) that makes the rule run without any project deps.
+    """
     marker = Path("budoux") / "module" / "index.js"
     if explicit:
         given = Path(explicit)
@@ -119,6 +131,11 @@ def find_budoux_root(explicit: str | None, bases: list[Path]) -> Path | None:
             if current.parent == current:
                 break
             current = current.parent
+    # 兜底：技能自带的精简副本。脚本被单独拷走时这里找不到，函数照旧返回 None
+    # （调用方按"跳过"处理），不会假装自己验过。
+    bundled = Path(__file__).resolve().parent.parent / "assets" / "vendor"
+    if (bundled / marker).is_file():
+        return bundled
     return None
 
 

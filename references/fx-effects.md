@@ -62,6 +62,20 @@ Studio 预览与普通 `remotion still` 缺省没有 `nvFx`，看到的是退回
 细胞片 4 处卷页：额外约 4 × (20 s 启动 + 22 帧 × 3 s) ≈ 6 分钟，加一遍重编码约 3 分钟（x264 medium ≈ 80 ms/帧）。
 `render-range`（送审短片段）不拼接，整段走完整版 Chrome。`make-video --stills` 的静帧不走完整版 Chrome（静帧取镜头开场 / 关键词 / 镜尾，不落在卷页窗口里）。
 
+### 单独看一眼卷页，别渲整片
+
+`preview --fx=on` 会切完整版 Chrome，30 秒窗口要 8 分钟以上——这不是命令的问题，是 WebGPU 的单价。
+只看一处卷页，就截转场那一段：
+
+```bash
+node scripts/notebook-video.mjs preview <工程> --from=3.4 --seconds=1.2 --scale=0.5 --fx=on
+# 实测 61 秒出 f102–138，正好覆盖 S1→S2 那处卷页（边界 from=115，÷30fps = 3.83s）
+```
+
+`--from` 取「跨镜边界前一秒」，边界在 `manifests/shots.resolved.json` 的 `from` 里。
+`--seconds` 收小数。带 fx 时 CLI **不再打印全片耗时推算**：只有转场帧走 WebGPU，按窗口速率线性外推
+会得到「全片 43 分钟」这种假数字（实测同一窗口外推 2614 秒，而全片是 13 分钟）。
+
 ## 4. `fractalNoise()` 评估结论：不默认开
 
 `fractalNoise()`（WebGL2）可以做「纸纹的动态层」。实测：

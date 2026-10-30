@@ -62,7 +62,7 @@ export TTS_API_BASE='https://api.xiaomimimo.com/v1'
 export TTS_API_KEY='sk-<YOUR_KEY>'
 export TTS_MODEL='mimo-v2.5-tts'
 export TTS_VOICE='白桦'
-python scripts/tts-openai-compatible.py ./my-film
+python ./my-film/scripts/tts-openai-compatible.py ./my-film   # 脚本由 new-project 拷进工程；技能自己的 scripts/ 里没有它
 ```
 
 **音色是否真的生效，可以不听声音就验**：同一句话分别用两个音色合成，比对返回的
@@ -71,7 +71,7 @@ base64 长度/哈希，再对 WAV 做一次自相关基频估计——男声 `�
 
 ## Standard delivery pace
 
-Raw synthesis with a patient teaching prompt lands near 305 characters per minute, which viewers on short-video platforms read as slow. Prompt wording cannot control pace precisely (any "faster" instruction overshoots past 400), so pace is fixed deterministically after synthesis: run the bundled `scripts/speed-post.py PROJECT_DIR 1.10`, which applies `atempo=1.10` (pitch unchanged), re-normalizes loudness, and divides every timestamp in `narration.mp3.json` and `manifests/chapters.json` by the same factor. The result is 336 characters per minute, verified across full productions. Every downstream consumer (captions, scene boundaries, sound tables) stays self-consistent because they all derive from the scaled timing files. Run it once, immediately after synthesis and before building captions; never re-run it on already-scaled output.
+Raw synthesis with a patient teaching prompt lands near 305 characters per minute, which viewers on short-video platforms read as slow. Prompt wording cannot control pace precisely (any "faster" instruction overshoots past 400), so pace is fixed deterministically after synthesis: run the bundled `<PROJECT_DIR>/scripts/speed-post.py PROJECT_DIR 1.10`, which applies `atempo=1.10` (pitch unchanged), re-normalizes loudness, and divides every timestamp in `narration.mp3.json` and `manifests/chapters.json` by the same factor. The result is 336 characters per minute, verified across full productions. Every downstream consumer (captions, scene boundaries, sound tables) stays self-consistent because they all derive from the scaled timing files. Run it once, immediately after synthesis and before building captions; never re-run it on already-scaled output.
 
 ### The narration drives the timeline, not the other way round
 

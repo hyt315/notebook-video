@@ -29,6 +29,32 @@ const resolvePath = (value, base = process.cwd()) => path.resolve(base, value);
 const ensureParent = (target) => fs.mkdirSync(path.dirname(target), {recursive: true});
 const isNonEmptyFile = (target) => fs.existsSync(target) && fs.statSync(target).isFile() && fs.statSync(target).size > 0;
 
+// 3.9.0：preview / sweep / poster 各抄了一份「取 --flag=值 + 拒绝拼错参数」，收成一份。
+// 拼错参数默默按默认值跑是修过一次的坑（`--second=6` 会渲 30 秒）；三份漏一份就等于没修，
+// poster 就一直是漏的。只做这件事，不碰排版 / 渲染。
+const parseFlags = (argv, name, names) => {
+  const opt = (flag, fallback) => {
+    const hit = argv.find((a) => a.startsWith(`--${flag}=`));
+    return hit === undefined ? fallback : hit.slice(flag.length + 3);
+  };
+  const unknown = argv
+    .filter((a) => a.startsWith('--'))
+    .map((a) => a.slice(2).split('=')[0])
+    .filter((n) => !names.includes(n));
+  if (unknown.length) {
+    fail(`${name} 不认这些参数：${[...new Set(unknown)].map((n) => `--${n}`).join(', ')}（可用：${names.map((n) => `--${n}`).join(' / ')}）`, 2);
+  }
+  return opt;
+};
+
+// 读分镜表；找不到返回 null，要不要报错由调用方定（preview 没它也能渲，sweep 不能）。
+const readShotTable = (project) => {
+  try {
+    const table = JSON.parse(fs.readFileSync(path.join(project, 'manifests', 'shots.resolved.json'), 'utf8'));
+    return {table, shots: Array.isArray(table.shots) ? table.shots : [], total: Number(table.duration) || null};
+  } catch { return null; }
+};
+
 const run = (command, args = [], options = {}) => new Promise((resolve, reject) => {
   const child = spawn(command, args, {
     cwd: options.cwd,
@@ -164,6 +190,19 @@ const ensureFonts = async () => {
   return fontDir;
 };
 
+// 渲染前把中文字体补进工程。字体不入库（OFL 的 12 MB 二进制不该进 git），只在
+// `new-project` 时拷；于是"直接渲染一个现成工程/模板副本"会因为缺 ttf 在**第 0 帧**
+// 报 Chrome 的 `A network error occurred`——完全看不出是缺字体。这里补齐它。
+const ensureProjectFonts = async (project) => {
+  const want = ['LXGWWenKaiLite-Regular.ttf', 'LXGWWenKaiLite-Medium.ttf'];
+  const missing = want.filter((n) => !fs.existsSync(path.join(project, 'public', n)));
+  if (!missing.length) return;
+  const dir = await ensureFonts();
+  fs.mkdirSync(path.join(project, 'public'), {recursive: true});
+  for (const n of missing) fs.copyFileSync(path.join(dir, n), path.join(project, 'public', n));
+  console.log(`已补中文字体到工程 public/：${missing.join(', ')}（LXGW WenKai Lite · OFL-1.1）`);
+};
+
 // Noto Serif SC Bold（OFL-1.1，~12 MB，SC 子集 OTF）同样按需下载、按版本与 sha256 锁定，不入库。
 // 镜像：NOTEBOOK_VIDEO_SERIF_URL 指向同一个文件。
 const SERIF_RELEASE = 'Serif2.003';
@@ -250,7 +289,7 @@ const newProject = async (args) => {
   }
 };
 
-const syncProjectAssets = async ([projectArg]) => {
+const syncProjectAssets = async ([projectArg], {quiet = false} = {}) => {
   if (!projectArg) fail('Usage: notebook-video sync PROJECT_DIRECTORY', 2);
   const project = resolvePath(projectArg);
   const pairs = [
@@ -269,7 +308,7 @@ const syncProjectAssets = async ([projectArg]) => {
     fs.copyFileSync(source, target);
     if (hashFile(source) !== hashFile(target)) fail(`Render input sync failed: ${from} -> ${to}`);
   }
-  console.log('Synchronized canonical render inputs into public/ and src/.');
+  if (!quiet) console.log('Synchronized canonical render inputs into public/ and src/.');
 };
 
 const prepareBrowser = async ([projectArg]) => {
@@ -406,19 +445,79 @@ const fxProbe = async ([projectArg, ...rest]) => {
   console.log(JSON.stringify(fx, null, 2));
 };
 
+// 3.9.0：覆盖率判据**只写这一处**。渲染收尾的汇总行和 `sweep` 的全片表都调它 ——
+// 这个项目已经在"两个地方各判一次"上栽过三次（响度读数、空场采样、耗时推算），
+// 症状都是"终端说 pass、报告说有问题"，查半天才发现判的不是同一件事。
+const assessCoverage = (coverage) => {
+  const ids = [...coverage.keys()].sort((a, b) => a.localeCompare(b, 'en', {numeric: true}));
+  const rows = ids.map((id) => {
+    const c = coverage.get(id);
+    const cells = Number(c.cells);
+    const total = Number(c.total);
+    const blank = Number(c.blank);
+    const cols = Number(c.cols);
+    const largest = Number(c.largest);
+    const widest = Number(c.widest);
+    // 两条豁免（阈值来自 3.8.0 实测，理由见 fill-gate.tsx 与 composition-gate.md）：
+    //   条状主体（标尺 / 格带 / 时间轴）：面积天然小，但跨度够 45% 画宽，不算空。
+    //   组合装置（照片 + 引线 + 网格）：没有空白列、48 格里至少 24 格有内容。
+    //   largest 是按**单个 DOM 元素**量的，多个中等元素拼成的主体天生只有 3%。
+    // ⚠ 豁免只在"没有它就会报警"（largest<0.06）时才算数。否则 S4 这种 widest=0.82
+    //   但 largest=0.29 的镜也会被贴上"条状主体"，读的人会以为它本来要报警。
+    const needsExemption = largest < 0.06;
+    const exempt = !needsExemption ? null : (widest >= 0.45 ? 'strip' : (blank === 0 && cells >= 24 ? 'composite' : null));
+    const verdict = blank >= 3 ? 'hollow' : (needsExemption && !exempt ? 'sparse' : 'pass');
+    return {id, cells, total, blank, cols, largest, widest, exempt, needsExemption, verdict};
+  });
+  return {
+    rows,
+    sparse: rows.filter((r) => r.needsExemption && !r.exempt).map((r) => r.id),
+    hollow: rows.filter((r) => r.blank >= 3).map((r) => r.id),
+  };
+};
+
+// 覆盖率落盘：合并、不覆盖。`preview --shot=S6` 只量了 S6，不该把另外五镜的数字抹掉——
+// 之前是整体覆盖，量完单镜后文件里只剩一镜，读的人会以为全片只有一镜。
+// 每条记 `at`（何时量的），陈旧数字因此看得出来，而不是冒充"刚量过"。
+const writeCoverage = (cwd, coverage) => {
+  try {
+    const out = path.join(cwd, 'renders', 'fill-coverage.json');
+    fs.mkdirSync(path.dirname(out), {recursive: true});
+    let prev = {};
+    try { prev = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* 首次或损坏，按空处理 */ }
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const at = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const merged = {...prev};
+    for (const [id, c] of coverage) merged[id] = {...c, at};
+    const ordered = {};
+    for (const id of Object.keys(merged).sort((a, b) => a.localeCompare(b, 'en', {numeric: true}))) ordered[id] = merged[id];
+    fs.writeFileSync(out, `${JSON.stringify(ordered, null, 1)}\n`);
+  } catch { /* 写不进盘不影响出片，数字已经打在终端上 */ }
+};
+
 // 3.3.0：FillGate 的浏览器日志按镜头去重。fill-gate.tsx 每个标签每镜只打一条 `[FillGate] underfilled <镜号> …`，
 // 这里把所有标签的这类行吞掉、记下镜号，渲染结束汇总成**一行**；其他输出原样透传。
-const runRemotionFiltered = (nodeArgs, cwd) => new Promise((resolve, reject) => {
+// 3.9.0 加 quiet：`sweep` 要为每镜起一次 still，八次"汇总 + 落盘"会刷八遍；
+// quiet 只收数字不吭声，失败时把尾巴 40 行吐出来（否则报错只有一句 exit code 1）。
+// measure=false：窗口短到还没进入落定态时，量到的必然是入场帧，那不是"空场"——
+// 不打印、不落盘，免得一个 1 秒预览把某镜的覆盖率改成一个假数字。
+// persist=false：`preview` 只打印不落盘。它的窗口可能只盖到某镜的前半段，
+// 那个数字是"窗口内最完整帧"，不是"整镜最完整帧"——留档会让人以为量过整镜。
+// 落盘只有两个来源：整片 `render`（覆盖全部帧）和 `sweep`（每镜取落定态）。
+const runRemotionFiltered = (nodeArgs, cwd, {quiet = false, measure = true, persist = true} = {}) => new Promise((resolve, reject) => {
   const child = spawn(process.execPath, nodeArgs, {cwd, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, shell: false});
   const shots = new Set();
   const coverage = new Map();
+  const tailLines = [];
   let other = 0;
   const pump = (src, dst) => {
     let buf = '';
     src.setEncoding('utf8');
     const emit = (line) => {
       if (line.includes('[FillGate]')) {
-        // 3.8.0：横向覆盖先只收数字，渲染结束打一行表，用来定"空场"的阈值。
+        // verbose 模式下 Chrome 会把同一行再包一层 `chrome [pid:ts:INFO:CONSOLE:…] "…"`，
+        // 所以这里用 find 而不是锚定行首。
         const cov = line.match(/coverage\s+(\S+)\s+cells=(\d+)\/(\d+)\s+blank=(\d+)\/(\d+)\s+largest=([\d.]+)\s+widest=([\d.]+)/);
         if (cov) {
           coverage.set(cov[1], {cells: cov[2], total: cov[3], blank: cov[4], cols: cov[5], largest: cov[6], widest: cov[7]});
@@ -426,6 +525,11 @@ const runRemotionFiltered = (nodeArgs, cwd) => new Promise((resolve, reject) => 
         }
         const m = line.match(/underfilled\s+(\S+)/);
         if (m) shots.add(m[1]); else other += 1;
+        return;
+      }
+      if (quiet) {
+        tailLines.push(line);
+        if (tailLines.length > 40) tailLines.shift();
         return;
       }
       dst.write(line + '\n');
@@ -441,39 +545,41 @@ const runRemotionFiltered = (nodeArgs, cwd) => new Promise((resolve, reject) => 
   pump(child.stderr, process.stderr);
   child.on('error', reject);
   child.on('close', (code) => {
-    if (coverage.size) {
-      const ids = [...coverage.keys()].sort((a, b) => a.localeCompare(b, 'en', {numeric: true}));
-      // 阈值来自 3.8.0 的实测（cell 30 秒预览，6 镜，取每镜最完整的那一帧）：
-      //   主体过小 = 面积 < 6% **且** 跨度 < 45% 画宽 —— 条状主体（标尺 / 格带 / 时间轴）
-      //   面积天然小，但跨度够，不该被判空；这条和 validate-shot-motion 里 fillAfter
-      //   对"文字为主版式"的豁免是同一个道理。
-      //   横向空洞 = 有 3 列及以上整列没有任何信息元素。
-      const sparse = ids.filter((id) => {
-        const c = coverage.get(id);
-        return Number(c.largest) < 0.06 && Number(c.widest) < 0.45;
-      });
-      const hollow = ids.filter((id) => Number(coverage.get(id).blank) >= 3);
-      console.warn(`FillGate coverage: ${ids.map((id) => {
-        const c = coverage.get(id);
-        return `${id} cells=${c.cells}/${c.total} blank=${c.blank}/${c.cols} largest=${c.largest} widest=${c.widest}`;
+    if (quiet && code !== 0 && tailLines.length) console.error(tailLines.join('\n'));
+    if (coverage.size && !quiet && measure) {
+      const {rows, sparse, hollow} = assessCoverage(coverage);
+      console.warn(`FillGate coverage: ${rows.map((r) => {
+        return `${r.id} cells=${r.cells}/${r.total} blank=${r.blank}/${r.cols} largest=${r.largest.toFixed(2)} widest=${r.widest.toFixed(2)}${r.exempt ? ` (${r.exempt})` : ''}`;
       }).join(' | ')}`);
-      if (sparse.length) console.warn(`FillGate 主体过小（largest<0.06 且 widest<0.45）：${sparse.join(',')}`);
+      if (sparse.length) console.warn(`FillGate 主体过小（largest<0.06，且不属条状 / 组合装置）：${sparse.join(',')}`);
       if (hollow.length) console.warn(`FillGate 横向空洞（blank≥3/8）：${hollow.join(',')}`);
-      try {
-        fs.mkdirSync(path.join(cwd, 'renders'), {recursive: true});
-        fs.writeFileSync(path.join(cwd, 'renders', 'fill-coverage.json'), `${JSON.stringify(Object.fromEntries(coverage), null, 1)}\n`);
-      } catch { /* 写不进盘不影响出片，数字已经打在终端上 */ }
+      if (persist) writeCoverage(cwd, coverage);
     }
-    if (shots.size) {
+    if (!quiet && shots.size) {
       const ids = [...shots].sort((a, b) => a.localeCompare(b, 'en', {numeric: true}));
       console.warn(`FillGate: ${ids.length} shot${ids.length > 1 ? 's' : ''} (${ids.join(',')}) bottom-quarter underfilled${other ? ` (+${other} other FillGate lines)` : ''}`);
-    } else if (other) console.warn(`FillGate: ${other} message(s) (no underfilled shot)`);
-    if (code === 0) resolve({code}); else reject(new Error(`${process.execPath} exited with code ${code}`));
+    } else if (!quiet && other) console.warn(`FillGate: ${other} message(s) (no underfilled shot)`);
+    const measured = measure && coverage.size ? assessCoverage(coverage) : null;
+    const underfilled = [...shots].sort((a, b) => a.localeCompare(b, 'en', {numeric: true}));
+    if (code === 0) resolve({code, coverage, measured, underfilled}); else reject(new Error(`${process.execPath} exited with code ${code}`));
   });
 });
 
-const remotionRender = async ({project, composition, output, frames, concurrency, colorTagged = false, scale, fxMode = 'auto', crf = 16, muted = false}) => {
-  const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
+// 3.9.0：浏览器路径解析抽出来给 render / still 共用。以前这段埋在 remotionRender 里，
+// `sweep` 要起 still 就得抄一遍——抄第二遍的时候一定会漏掉"缓存存在就别下载"这条。
+const resolveBrowserExecutable = () => {
+  let browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE;
+  if (!browserExecutable && process.platform === 'win32') {
+    const cached = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'remotion-browser', 'chrome-headless-shell', 'win64', 'chrome-headless-shell.exe');
+    if (fs.existsSync(cached)) browserExecutable = cached;
+  }
+  if (!browserExecutable) return null;
+  const resolved = resolvePath(browserExecutable);
+  if (!fs.existsSync(resolved)) fail(`REMOTION_BROWSER_EXECUTABLE does not exist: ${resolved}`);
+  return resolved;
+};
+
+const remotionRender = async ({project, composition, output, frames, concurrency, colorTagged = false, scale, fxMode = 'auto', crf = 16, muted = false, measure = true, persist = true}) => {  const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
   if (!fs.existsSync(remotionCli)) await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
   if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after npm ci: ${remotionCli}`);
   ensureParent(output);
@@ -498,24 +604,20 @@ const remotionRender = async ({project, composition, output, frames, concurrency
   // Browser resolution: explicit env wins, then the local Remotion cache that
   // `prepare-browser` already populated — never trigger a fresh 100MB+ shell
   // download when a cached copy exists on this machine.
-  let browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE;
-  if (!browserExecutable && process.platform === 'win32') {
-    const cached = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'remotion-browser', 'chrome-headless-shell', 'win64', 'chrome-headless-shell.exe');
-    if (fs.existsSync(cached)) browserExecutable = cached;
-  }
-  if (browserExecutable && !fx.on) {
-    const resolved = resolvePath(browserExecutable);
-    if (!fs.existsSync(resolved)) fail(`REMOTION_BROWSER_EXECUTABLE does not exist: ${resolved}`);
-    nodeArgs.push(`--browser-executable=${resolved}`);
-  }
-  await runRemotionFiltered(nodeArgs, project);
+  const browserExecutable = resolveBrowserExecutable();
+  if (browserExecutable && !fx.on) nodeArgs.push(`--browser-executable=${browserExecutable}`);
+  // 返回 FillGate 的实测结果：`render` 不看，`sweep` 要拿它打全片表。
+  // 之前这里丢掉了返回值，于是 sweep 只能再读一次终端输出——那就是第二个真源。
+  const result = await runRemotionFiltered(nodeArgs, project, {measure, persist});
   if (colorTagged) await applyColorTags(output);
+  return result;
 };
 
 const render = async ([projectArg, outputArg, composition = 'NotebookVideoFilm']) => {
   if (!projectArg || !outputArg) fail('Usage: notebook-video render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]', 2);
   const project = resolvePath(projectArg);
   const output = resolvePath(outputArg);
+  await ensureProjectFonts(project);
   await syncProjectAssets([project]);
   // 中间文件放系统临时目录。Remotion 的 faststart 第二遍要回写文件头，网络 / FUSE 盘（实测 JuiceFS）上会
   // `Error writing trailer: Input/output error`，整片渲完却拿不到文件。
@@ -587,10 +689,15 @@ const renderRange = async ([projectArg, outputArg, startArg, endArg, composition
   const start = Number(startArg), end = Number(endArg);
   if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start) fail(`Invalid frame range: ${startArg}-${endArg}`);
   const project = resolvePath(projectArg), output = resolvePath(outputArg);
+  await ensureProjectFonts(project);
   await syncProjectAssets([project]);
   const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
   // 交付路径（短片段也常被直接拿去交付/送审）：回写色彩元数据。
-  await remotionRender({project, composition, output, frames: `${start}-${end}`, concurrency, colorTagged: true});
+  // 同 preview：这是**窗口**渲染，FillGate 量到的是窗口内最完整帧，不是整镜最完整帧。
+  // 留档会让人以为量过整镜（实测 60 帧窗口把 S1 记成 cells=25，整镜是 28）。
+  // 要留档的只有两个来源：整片 `render` 和 `sweep`。
+  const windowFrames = end - start + 1;
+  await remotionRender({project, composition, output, frames: `${start}-${end}`, concurrency, colorTagged: true, measure: windowFrames >= 60, persist: false});
   console.log(`Rendered review range ${start}-${end}: ${output}`);
 };
 
@@ -600,20 +707,16 @@ const renderRange = async ([projectArg, outputArg, startArg, endArg, composition
 const preview = async (argv) => {
   const [projectArg, ...rest] = argv;
   if (!projectArg) fail('Usage: notebook-video preview PROJECT_DIRECTORY [--seconds=30] [--from=SEC] [--shot=ID] [--scale=0.5]', 2);
-  const opt = (name, fallback) => {
-    const hit = rest.find((a) => a.startsWith(`--${name}=`));
-    return hit === undefined ? fallback : hit.slice(name.length + 3);
-  };
-  const project = resolvePath(projectArg);
-  const fps = Number(process.env.NOTEBOOK_VIDEO_FPS || 30);
-  const resolvedPath = path.join(project, 'manifests', 'shots.resolved.json');
-  let totalFrames = null;
-  let shots = [];
-  if (fs.existsSync(resolvedPath)) {
-    const table = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'));
-    totalFrames = Number(table.duration) || null;
-    shots = Array.isArray(table.shots) ? table.shots : [];
+  const opt = parseFlags(rest, 'preview', ['seconds', 'from', 'shot', 'scale', 'fx']);
+  if (opt('shot', null) !== null && opt('from', null) !== null) {
+    fail('preview：--shot 和 --from 只能给一个（--shot 会覆盖 --from，别让它悄悄生效）', 2);
   }
+  const project = resolvePath(projectArg);
+  await ensureProjectFonts(project);
+  const fps = Number(process.env.NOTEBOOK_VIDEO_FPS || 30);
+  const st = readShotTable(project);
+  const totalFrames = st ? st.total : null;
+  const shots = st ? st.shots : [];
   const shotId = opt('shot', null);
   let start = Math.max(0, Math.round(Number(opt('from', 0)) * fps));
   let end;
@@ -628,6 +731,7 @@ const preview = async (argv) => {
   if (totalFrames) end = Math.min(end, totalFrames);
   if (!Number.isFinite(end) || end <= start) fail(`渲染区间无效：${start}-${end}`, 2);
   const scale = Number(opt('scale', 0.5));
+  if (!Number.isFinite(scale) || scale < 0.1 || scale > 1) fail(`--scale 必须在 0.1–1 之间，收到 ${opt('scale', 0.5)}`, 2);
   // 预览默认关掉卷页特效：翻页要换完整版 Chromium + 并发 1（见 remotionRender 注释），
   // 实测把 30 秒片段从 ~1 分钟拖到 8 分钟以上。判构图不需要它；要看翻页时加 --fx=on。
   const fxMode = opt('fx', 'off') === 'on' ? 'auto' : 'off';
@@ -637,51 +741,255 @@ const preview = async (argv) => {
   const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
   const started = Date.now();
   console.log(`Preview ${start}-${end - 1}（${((end - start) / fps).toFixed(1)} 秒）@ ${scale}x …`);
-  await remotionRender({project, composition: 'NotebookVideoFilm', output, frames: `${start}-${end - 1}`, concurrency, scale, fxMode});
+  // 窗口不足 2 秒（60 帧）时，FillGate 量到的还只是入场帧——元素还在画，那不是空场。
+  // 实测：`--seconds=1` 会把 S1 判成「横向空洞」（cells 很少、blank 很多），
+  // 而同一镜在 30 秒预览里是 28/48。所以这种窗口不判、也不写 fill-coverage.json，
+  // 免得一个"只看一眼"的预览把某镜的覆盖率改成一个假数字。
+  const measure = end - start >= fps * 2;
+  if (!measure) console.log(`窗口只有 ${end - start} 帧，还没进入落定态：这次只出片，不判 FillGate（要量密度用 sweep）`);
+  await remotionRender({project, composition: 'NotebookVideoFilm', output, frames: `${start}-${end - 1}`, concurrency, scale, fxMode, measure, persist: false});
   const contact = output.replace(/\.mp4$/i, '-contact.jpg');
   await makeContactSheet(output, contact, (end - start) / fps);
-  const lufs = await run('ffmpeg', ['-nostats', '-i', output, '-af', 'ebur128=peak=true', '-f', 'null', '-'], {capture: true, allowFailure: true});
-  const summary = (lufs.stderr || '').match(/I:\s*(-?[\d.]+) LUFS[\s\S]*?Peak:\s*(-?[\d.]+) dBFS/);
+  // 响度：用 loudnorm 的 JSON（和正片 §probe 同口径）。原来用 ebur128 + 正则，
+  // 但 ebur128 每 100 ms 打一行运行值，正则会抓到**第一行**——开场静音段，于是报 −70 LUFS。
+  // 预览片明明有声音（ffprobe 有 aac 流、RMS 约 −24 dB）。读数错比没有读数更坏。
+  const lufs = await run('ffmpeg', ['-hide_banner', '-i', output, '-af', 'loudnorm=I=-16:TP=-1.5:print_format=json', '-f', 'null', '-'],
+    {capture: true, allowFailure: true});
+  const lufsJson = `${lufs.stdout || ''}\n${lufs.stderr || ''}`.match(/\{[\s\S]*\}/);
+  let loudness = null;
+  if (lufsJson) {
+    try {
+      const m = JSON.parse(lufsJson[0]);
+      if (Number.isFinite(Number(m.input_i))) loudness = {lufs: m.input_i, tp: m.input_tp};
+    } catch { /* 读不到就只说没读到，不编数 */ }
+  }
   const took = (Date.now() - started) / 1000;
   console.log(`Preview: ${output}`);
   console.log(`Contact: ${contact}`);
-  if (summary) console.log(`Loudness: ${summary[1]} LUFS / peak ${summary[2]} dBFS`);
-  if (totalFrames) console.log(`Done in ${took.toFixed(0)}s — 全片约 ${Math.round(took * totalFrames / Math.max(1, end - start))}s`);
+  console.log(loudness
+    ? `Loudness: ${loudness.lufs} LUFS / true peak ${loudness.tp} dBTP（预览是原始渲染、未做交付规范化；交付按 −16 LUFS）`
+    : 'Loudness: 未能读取（loudnorm 输出无法解析）');
+  // 全片推算只在它成立的时候给。开了真卷页时**不能线性外推**：WebGPU 只用于转场那几十帧，
+  // 其余帧走普通渲染，按"每帧 1.8 秒"乘全片会得到 40 分钟这种假数字（实测：
+  // `--from=3 --seconds=1 --fx=on` 53 秒，外推全片 2614 秒；而全片实际是 13 分钟）。
+  // 探针结论已缓存（fxFor），这里问一次不会重跑浏览器。
+  const fxOn = fxMode !== 'off' && (await fxFor(project, {quiet: true})).on;
+  if (totalFrames && fxOn) {
+    console.log(`Done in ${took.toFixed(0)}s — 开了真卷页，全片耗时无法从窗口线性推算（只有转场帧走 WebGPU）`);
+  } else if (totalFrames) {
+    console.log(`Done in ${took.toFixed(0)}s — 按 ${scale}x 推算全片约 ${Math.round(took * totalFrames / Math.max(1, end - start))}s（交付分辨率另计）`);
+  }
+  // 3.9.0：预览只盖一段时，**当场说出后面还有几镜没看**。
+  // 文档里写"记得补跑"不算工程手段——cell 的 S7/S8 就是整片漏掉的，
+  // 直到补量才发现 S7 右下角空 30%。这句话是把那次教训变成自动提醒。
+  if (totalFrames && end < totalFrames) {
+    const unseen = shots.filter((s) => Number(s.from) >= end).map((s) => s.id);
+    const tailNote = unseen.length
+      ? `后面 ${unseen.length} 镜（${unseen.join(', ')}）没看`
+      : `后面还有 ${((totalFrames - end) / fps).toFixed(0)} 秒没看`;
+    console.log(`⚠ Preview 只到 f${end}/${totalFrames} · ${tailNote} · 全片量一遍用 sweep`);
+  }
 };
 
-const benchmarkRender = async ([projectArg, composition = 'NotebookVideoFilm']) => {
-  if (!projectArg) fail('Usage: notebook-video benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]', 2);
-  const project = resolvePath(projectArg);
-  await syncProjectAssets([project]);
-  const max = Math.max(2, Math.min(6, os.availableParallelism()));
-  const candidates = [...new Set([2, 4, 6].filter((value) => value <= max).concat(max))].sort((a, b) => a - b);
-  const results = [];
-  for (const concurrency of candidates) {
-    const output = path.join(project, 'renders', `.benchmark-c${concurrency}.mp4`);
-    const started = Date.now();
-    // 调试产物：只为了测速，渲完就删 —— 不回写色彩元数据（那是交付路径的事）。
-    await remotionRender({project, composition, output, frames: '0-89', concurrency});
-    const seconds = (Date.now() - started) / 1000;
-    fs.rmSync(output, {force: true});
-    results.push({concurrency, seconds});
-    console.log(`concurrency ${concurrency}: ${seconds.toFixed(1)}s`);
+// 3.9.0 · `sweep`：全片每一镜都量一遍，一分钟出头。
+//
+// 存在的理由不是"再多一个检查"，是补一个**已经发生过的漏检**：`preview` 默认只盖前 30 秒，
+// 片子比 30 秒长的时候，后半段的镜头**一次都没有被任何门禁看过**。cell 的 S7/S8 就是这么漏的
+// ——补跑 `--from=32` 才发现 S7 右下角空 30%。靠"记得补跑尾巴"不是工程手段。
+//
+// 做法是每镜截**一张落定态**，不是渲一段视频：45 帧里 44 帧长得一样，渲成 mp4 只是把
+// 同一个数字量 45 遍；而一张 PNG 既能出数字，又能直接拼成"全片体检表"一眼看完。
+const SWEEP_GRID = 15;   // FillGate 的 sampleEvery 缺省值，见 fill-gate.tsx
+
+// 每镜一个采样帧：**必须是 15 的倍数**——FillGate 只在 `frame % 15 === 0` 或 watch 事件
+// ±2 帧上采样。取一个不在网格上的帧会得到**零数据**，而零数据和"这镜没问题"长得一模一样，
+// 这是这个项目已经犯过三次的错（量错东西，但数字看着合理）。
+//
+// 位置取"切点前最近的一个网格帧"：入场帧几乎必然是空的（元素还在画），拿它判空场会把
+// 每一镜都打成空洞——FillGate 第一版就是这么误报的。切点前是落定态。
+const sweepFrames = (shots) => {
+  const picks = [];
+  const skipped = [];
+  for (const s of shots) {
+    const from = Math.round(Number(s.from));
+    const last = Math.round(Number(s.to)) - 1;      // shots[].to 是开区间
+    if (!Number.isFinite(from) || !Number.isFinite(last) || last < from) {
+      skipped.push({id: s.id, why: '区间无效'});
+      continue;
+    }
+    // 必须落在**后半段**：只要求"是 15 的倍数"不够——一个 15 帧长的镜头，
+    // 唯一的网格点就是它的入场帧（0），而入场帧几乎必然是空的。那会量出一个假空洞。
+    const midpoint = from + Math.floor((last - from + 1) / 2);
+    const lastGrid = Math.floor(last / SWEEP_GRID) * SWEEP_GRID;
+    const gridAfterMid = Math.ceil(midpoint / SWEEP_GRID) * SWEEP_GRID;
+    const frame = lastGrid >= midpoint ? lastGrid : gridAfterMid;
+    // 后半段里一个网格点都没有（镜头短于一个网格）→ 退回最后一帧，靠 FillGate 的
+    // hot 事件兜底；兜不住会进 missing —— 那也比假装量过好。
+    const onGrid = frame <= last;
+    // 兜底时也标上落在后半段的哪一帧，不是随便取第一帧。
+    picks.push({id: s.id, frame: onGrid ? frame : last, onGrid});
   }
-  results.sort((a, b) => a.seconds - b.seconds);
-  console.log(`Recommended: REMOTION_CONCURRENCY=${results[0].concurrency}`);
+  return {picks, skipped};
 };
+
+// 单帧截图。`--log=verbose` 不是可选的：不加它 Remotion 不转发浏览器 console，
+// FillGate 的 coverage 行就一条都收不到——而"收不到"和"没问题"在终端上长得一样。
+const renderStill = async ({project, output, frame, scale}) => {
+  const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
+  if (!fs.existsSync(remotionCli)) fail(`Remotion CLI 缺失：${remotionCli}（先在工程里跑 npm ci）`, 1);
+  const nodeArgs = [...hideConsoleArgs()];
+  nodeArgs.push(remotionCli, 'still', REMOTION_ENTRY_POINT, 'NotebookVideoFilm', output, `--frame=${frame}`, `--scale=${scale}`, '--log=verbose');
+  // ⚠ 必须放在 remotion 子命令参数里（nodeArgs 末尾），不是 node 自己的参数——
+  // 放前面 node 会报 `bad option: --browser-executable=…` 然后 rc=9，而且八镜会连报八次。
+  const browser = resolveBrowserExecutable();
+  if (browser) nodeArgs.push(`--browser-executable=${browser}`);
+  return runRemotionFiltered(nodeArgs, project, {quiet: true});
+};
+
+// 把每镜一张拼成一张表。用 ffmpeg 的 concat demuxer + tile：不依赖文件名排序，
+// 也不要求镜头数是 4 的倍数（xstack 做不到）。
+const tileStills = async (pngs, output, cols) => {
+  if (!pngs.length) return false;
+  if (pngs.length === 1) { fs.copyFileSync(pngs[0], output); return true; }
+  const list = path.join(os.tmpdir(), `nv-sweep-list-${process.pid}.txt`);
+  const esc = (p) => p.replace(/\\/g, '/').replace(/'/g, "'\\''");
+  fs.writeFileSync(list, `${pngs.map((p) => `file '${esc(p)}'`).join('\n')}\n`);
+  const rows = Math.ceil(pngs.length / cols);
+  const r = await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'concat', '-safe', '0',
+    '-i', list, '-vf', `tile=${cols}x${rows}:padding=10:margin=10:color=white`, '-frames:v', '1', '-q:v', '3', output],
+    {capture: true, allowFailure: true});
+  fs.rmSync(list, {force: true});
+  if (r.code) {
+    console.warn(`拼表失败（单张图还在 renders/sweep/）：${((r.stderr || '').trim().split('\n').slice(-1)[0] || `ffmpeg ${r.code}`)}`);
+    return false;
+  }
+  return true;
+};
+
+const sweep = async (argv) => {
+  const [projectArg, ...rest] = argv;
+  if (!projectArg) fail('Usage: notebook-video sweep PROJECT_DIRECTORY [--scale=0.5] [--cols=4] [--plan] [--json]', 2);
+  const opt = parseFlags(rest, 'sweep', ['scale', 'cols', 'plan', 'json']);
+
+  const project = resolvePath(projectArg);
+  const resolvedPath = path.join(project, 'manifests', 'shots.resolved.json');
+  const st = readShotTable(project);
+  if (!st) fail(`没有 ${resolvedPath}：先跑 resolve-shots PROJECT_DIRECTORY`, 2);
+  const shots = st.shots;
+  if (!shots.length) fail(`${resolvedPath} 里 shots 为空，没有可扫的镜头`, 2);
+  const {picks, skipped} = sweepFrames(shots);
+  if (!picks.length) fail('没有可扫的镜头（分镜表区间都无效）', 2);
+
+  // 参数校验放在 --plan 之前：`sweep --plan --scale=0.05` 也该当场报错，
+  // 否则"先看成本"这一步会给出一个能跑、但跑起来参数非法的计划。
+  const scale = Number(opt('scale', 0.5));
+  if (!Number.isFinite(scale) || scale < 0.1 || scale > 1) fail(`--scale 必须在 0.1–1 之间，收到 ${opt('scale', 0.5)}`, 2);
+  const tileCols = Number(opt('cols', 4));
+  if (!Number.isInteger(tileCols) || tileCols < 1 || tileCols > 8) fail(`--cols 必须是 1–8 的整数，收到 ${opt('cols', 4)}`, 2);
+
+  // --plan：只算会量哪几帧，不启动浏览器。给"先看成本"和测试用（纯函数，不需要工程能跑）。
+  if (rest.includes('--plan')) {
+    console.log(JSON.stringify({grid: SWEEP_GRID, picks, skipped}, null, 2));
+    return;
+  }
+
+  const asJson = rest.includes('--json');
+  await ensureProjectFonts(project);
+  await syncProjectAssets([project], {quiet: asJson});
+  const dir = path.join(project, 'renders', 'sweep');
+  fs.mkdirSync(dir, {recursive: true});
+  // 清掉上一次的 PNG：镜头改过（删了一镜、改了顺序）时旧图会留在目录里，
+  // 拼图只用本次的 pngs 不会拼错，但人翻目录时会看到一张不存在的镜头。
+  for (const f of fs.readdirSync(dir)) {
+    if (/^S\d+\.png$/.test(f)) fs.rmSync(path.join(dir, f), {force: true});
+  }
+
+  const started = Date.now();
+  // --json 时终端只能留 JSON：进度行混进去就没法 `| jq` 了。
+  const progress = asJson ? () => {} : (line) => process.stdout.write(line);
+  if (!asJson) console.log(`Sweep ${picks.length} 镜 · 每镜一张落定态 @ ${scale}x …`);
+  const merged = new Map();
+  const pngs = [];
+  const failed = [];
+  for (const [i, pick] of picks.entries()) {
+    const png = path.join(dir, `${pick.id}.png`);
+    const t0 = Date.now();
+    progress(`  [${i + 1}/${picks.length}] ${pick.id} @${pick.frame}${pick.onGrid ? '' : '（不在网格上）'} … `);
+    try {
+      const r = await renderStill({project, output: png, frame: pick.frame, scale});
+      if (r?.coverage?.size) for (const [id, c] of r.coverage) merged.set(id, c);
+      if (fs.existsSync(png)) pngs.push(png); else failed.push(pick.id);
+      progress(`${((Date.now() - t0) / 1000).toFixed(0)}s\n`);
+    } catch (e) {
+      progress(`失败（${String(e.message).split('\n')[0]}）\n`);
+      failed.push(pick.id);
+    }
+  }
+  if (merged.size) writeCoverage(project, merged);
+  const assessed = assessCoverage(merged);
+  const rows = assessed.rows;
+  const got = new Set(rows.map((r) => r.id));
+  const missing = picks.filter((p) => !got.has(p.id)).map((p) => p.id);
+  const took = (Date.now() - started) / 1000;
+
+  const sheet = path.join(project, 'renders', 'sweep-sheet.jpg');
+  const sheetOk = pngs.length ? await tileStills(pngs, sheet, tileCols) : false;
+
+  const label = (r) => {
+    if (r.verdict === 'hollow') return '空洞（blank≥3/8）';
+    if (r.verdict === 'sparse') return '主体过小（largest<0.06）';
+    if (r.exempt === 'strip') return '过（条状主体）';
+    if (r.exempt === 'composite') return '过（组合装置）';
+    return '过';
+  };
+  const now = new Date();
+  const p2 = (n) => String(n).padStart(2, '0');
+  const payload = {
+    at: `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())} ${p2(now.getHours())}:${p2(now.getMinutes())}`,
+    grid: SWEEP_GRID, scale, cols: tileCols,
+    picks, skipped, missing, failed,
+    sheet: sheetOk ? sheet : null,
+    rows,
+  };
+  try {
+    fs.mkdirSync(path.join(project, 'renders'), {recursive: true});
+    fs.writeFileSync(path.join(project, 'renders', 'sweep.json'), `${JSON.stringify(payload, null, 1)}\n`);
+  } catch { /* 写不进盘不影响结论，表已经打出来了 */ }
+
+  // 一镜都没量到 = 这次没有产出任何判断。rc=0 会让"没量到"和"全过"在脚本里长得一样。
+  // 放在 --json 分支之前，两种输出模式都退 1。
+  if (!rows.length) {
+    console.error('Sweep 一镜都没量到：上面每一镜都失败了，这次没有给出任何判断');
+    process.exitCode = 1;
+  }
+  if (asJson) { console.log(JSON.stringify(payload, null, 2)); return; }
+  console.log('');
+  for (const r of rows) {
+    console.log(`  ${r.id.padEnd(4)}cells=${String(r.cells).padStart(2)}/${r.total}  blank=${r.blank}/${r.cols}  largest=${r.largest.toFixed(2)}  widest=${r.widest.toFixed(2)}  ${label(r)}`);
+  }
+  if (missing.length) console.log(`  未量到：${missing.join(', ')}（那一帧 FillGate 没采样——镜头短于 15 帧，或画面还在画）`);
+  if (skipped.length) console.log(`  跳过：${skipped.map((s) => `${s.id}（${s.why}）`).join('、')}`);
+  const bad = rows.filter((r) => r.verdict !== 'pass');
+  console.log('');
+  console.log(`Sweep: ${rows.length}/${picks.length} 镜量到 · ${rows.length - bad.length} 过 · ${assessed.sparse.length} 过小 · ${assessed.hollow.length} 空洞 · ${took.toFixed(0)}s`);
+  if (sheetOk) console.log(`Sweep sheet: ${sheet}`);
+  console.log(`Sweep stills: ${dir}`);
+};
+
 
 const reviewFrames = async ([projectArg, outputArg, startArg, endArg, composition = 'NotebookVideoFilm']) => {
   if (!projectArg || !outputArg || startArg === undefined || endArg === undefined) fail('Usage: notebook-video review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]', 2);
   const start = Number(startArg), end = Number(endArg);
   if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start) fail(`Invalid frame range: ${startArg}-${endArg}`);
   const project = resolvePath(projectArg), output = resolvePath(outputArg);
+  await ensureProjectFonts(project);
   await syncProjectAssets([project]);
   const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
   const fps = Number(process.env.NOTEBOOK_VIDEO_FPS || 30);
   // 调试产物（看画面对不对，不是拿去交付）：不回写色彩元数据。
   // 代价写在 applyColorTags 上方：这条片子的 ffprobe 会显示 color_transfer=unknown，
   // 要验色彩契约请验**交付文件**（validate-video 也只认交付文件）。
-  await remotionRender({project, composition, output, frames: `${start}-${end}`, concurrency});
+  await remotionRender({project, composition, output, frames: `${start}-${end}`, concurrency, measure: (end - start + 1) >= 60, persist: false});
   // 一次 bundle/一次浏览器：范围视频 + 自动接触片一步到位。
   // 多帧视觉检查用本命令替代逐帧 still，实测约省 3 倍时间（bundle 与浏览器开销只付一次）。
   const contact = path.join(path.dirname(output), path.basename(output).replace(/\.mp4$/i, '') + '-contact.jpg');
@@ -771,6 +1079,8 @@ const pythonCommandMap = new Map([
   ['validate-visual-plan', ['validate-visual-plan.py']],
   ['validate-caption-sync', ['validate-caption-sync.py']],
   ['validate-semantic-breaks', ['validate-semantic-breaks.py']],
+  ['export-srt', ['export-srt.py']],
+  ['eval-project', ['eval-project.py']],
   ['match-timing', ['match-timing.py']],
   ['resolve-shots', ['resolve-shots.py']],
   ['validate-shot-motion', ['validate-shot-motion.py']],
@@ -799,7 +1109,8 @@ const pythonCommandMap = new Map([
 //   · 从 CAPTION_CUES_JSON 所在目录逐级向上探测 node_modules/budoux/module/index.js
 //     （判据与 validate-semantic-breaks.py 的 find_budoux_root 同一 marker）；
 //   · 探测到 → 注入 `--budoux-dir <该 node_modules> --require-budoux`（真正跑短语规则）；
-//   · 探测不到 → 仍然注入 `--require-budoux`，缺依赖直接硬失败，报错会写明装依赖/--budoux-dir 两条修法。
+//   · 探测不到 → 退到技能自带的 `assets/vendor`（3.9.0 起随包分发，80 KB 中文切片）；
+//   · 连自带切片都没了 → 才注入 `--require-budoux` 硬失败（那是真的坏了，报错写明两条修法）。
 // 调用方已显式传 `--require-budoux` 或 `--no-budoux`（本地夹具刻意跳过短语规则）时原样放行。
 const semanticBreaksArgs = (args) => {
   if (args.some((a) => a === '--require-budoux' || a === '--no-budoux')) return args;
@@ -818,6 +1129,12 @@ const semanticBreaksArgs = (args) => {
     if (parent === current) break;
     current = parent;
   }
+  // 找不到工程的 node_modules 时退到技能自带的切片（`assets/vendor`，见 assets/vendor/README.md）。
+  // 3.9.0 之前这里直接注入 --require-budoux，于是新克隆的仓库跑交付链**必然失败**——
+  // 而现在那个目录里就有一份 80 KB 的中文模型，不需要谁先去 npm ci。
+  // 顺序仍然优先工程依赖：那样模型版本跟 package-lock.json 走。
+  const bundled = path.resolve(SCRIPT_DIR, '..', 'assets', 'vendor');
+  if (!budouxModules && fs.existsSync(path.join(bundled, marker))) budouxModules = bundled;
   return budouxModules
     ? [...args, '--budoux-dir', budouxModules, '--require-budoux']
     : [...args, '--require-budoux'];
@@ -861,19 +1178,43 @@ const addSilentAudioTrack = async (target) => {
 // 所以它走的是交付规格，不是调试规格：2560×1440（`SHOWCASE_DELIVERY_SCALE`）+ 静音 AAC 音轨 +
 // 色彩四项回写。v3.1.1 之前这条命令按 Remotion 默认参数跑（1920×1080、无音轨、不回写色彩），
 // 于是"照文档跑一遍"会把交付文件**静默换成调试版** —— 规格漂了却没有任何门禁看得见。
-const showcase = async (args, sheetOnly = false) => {
+// 3.9.0：showcase / showcase-sheet / craft-sheet 是同一件事的三个入口（都是"组件样张"），
+// 收成一个 `showcase`，用 --sheet / --craft 选产物。命令面 42 → 39，craft-sheet 那条
+// 618 字符的说明（全手册最重的一条）随之消失。**产出物一字不变**。
+const showcase = async (args) => {
+  const opt = parseFlags(args, 'showcase', ['sheet', 'craft', 'frame', 'scale']);
+  const craft = args.includes('--craft');
+  const sheet = args.includes('--sheet');
+  if (craft && sheet) fail('showcase：--sheet 和 --craft 只能给一个（前者出组件库接触表，后者出手作笔刷样张）', 2);
   const positional = args.filter((a) => !a.startsWith('--'));
   const [projectArg, outputArg] = positional;
-  if (!projectArg) fail(`Usage: notebook-video ${sheetOnly ? 'showcase-sheet' : 'showcase'} PROJECT_DIRECTORY [OUTPUT_FILE]`, 2);
+  if (!projectArg) fail('Usage: notebook-video showcase PROJECT_DIRECTORY [OUTPUT] [--sheet|--craft] [--frame=N] [--scale=S]', 2);
   const project = resolvePath(projectArg);
-  // 两个产物**各自**有自己的路径：`showcase` 的位置参数是 mp4，`showcase-sheet` 的是 jpg。
-  // （旧版把同一个 outputArg 同时当成 mp4 和 jpg 的路径 —— 传了输出路径时，最后那步抽帧会用
+
+  if (craft) {
+    const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
+    if (!fs.existsSync(remotionCli)) await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
+    if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after npm ci: ${remotionCli}`);
+    const out = resolvePath(outputArg ?? path.join(project, 'renders', 'craft-sheet.png'));
+    ensureParent(out);
+    const frame = Number(opt('frame', 72));
+    const scale = Number(opt('scale', 1));
+    const nodeArgs = [...hideConsoleArgs(), remotionCli, 'still', REMOTION_ENTRY_POINT, 'NotebookVideoCraftSheet', out, `--frame=${frame}`, `--scale=${scale}`];
+    const browser = resolveBrowserExecutable();
+    if (browser) nodeArgs.push(`--browser-executable=${browser}`);
+    await run(process.execPath, nodeArgs, {cwd: project});
+    console.log(`Craft sheet written: ${out} — 读它判断当前皮肤下的手作组件（references/craft-kit.md）。`);
+    return;
+  }
+
+  // 两个产物**各自**有自己的路径：视频是 mp4、接触表是 jpg。
+  // （旧版把同一个 outputArg 同时当成两者的路径 —— 传了输出路径时，最后那步抽帧会用
   //  一张 jpg 覆盖掉刚渲好的 mp4；默认路径下看不出来，因为两个默认路径本来就不同。）
-  const mp4 = resolvePath(!sheetOnly && outputArg ? outputArg : path.join(project, 'renders', 'showcase.mp4'));
-  const jpg = resolvePath(sheetOnly && outputArg ? outputArg : path.join(project, 'renders', 'showcase-sheet.jpg'));
+  const mp4 = resolvePath(!sheet && outputArg ? outputArg : path.join(project, 'renders', 'showcase.mp4'));
+  const jpg = resolvePath(sheet && outputArg ? outputArg : path.join(project, 'renders', 'showcase-sheet.jpg'));
   ensureParent(mp4);
   ensureParent(jpg);
-  if (!sheetOnly || !isNonEmptyFile(mp4)) {
+  if (!sheet || !isNonEmptyFile(mp4)) {
     const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
     // 三段各自可单独重做（后两段失败时的报错都会说清"视频已经渲完了，不必重渲"）：
     //   ① 放大 4/3 渲出视频流 → ② 补静音音轨 → ③ 回写色彩四项。
@@ -884,30 +1225,32 @@ const showcase = async (args, sheetOnly = false) => {
   }
   await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', mp4, '-vf', "select='eq(mod(n,30),6)+eq(mod(n,30),21)',scale=640:-1,tile=6x6", '-frames:v', '1', '-q:v', '3', jpg]);
   console.log(`Showcase contact sheet written: ${jpg}`);
-  console.log('Read it to pick components by sight; see references/media-routing.md §6.');
+  console.log('读它按样子挑组件；见 references/media-routing.md §6。');
 };
 
-// 3.3.0：craft 组件样张 —— 一页 12 格（src/craft-sheet.tsx），出一张 PNG 看图。缺省第 72 帧（全部落定）。
-const craftSheet = async (args) => {
+const deliver = async (args) => {
   const positional = args.filter((a) => !a.startsWith('--'));
-  const [projectArg, outputArg] = positional;
-  if (!projectArg) fail('Usage: notebook-video craft-sheet PROJECT_DIRECTORY [OUTPUT_PNG] [--frame=N] [--scale=S]', 2);
+  const [projectArg] = positional;
+  if (!projectArg) fail('Usage: notebook-video deliver PROJECT_DIRECTORY', 2);
   const project = resolvePath(projectArg);
-  const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
-  if (!fs.existsSync(remotionCli)) await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
-  if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after npm ci: ${remotionCli}`);
-  const out = resolvePath(outputArg ?? path.join(project, 'renders', 'craft-sheet.png'));
-  ensureParent(out);
-  const opt = (k, d) => (args.find((a) => a.startsWith(`--${k}=`)) ?? `=${d}`).split('=')[1];
-  const nodeArgs = [...hideConsoleArgs(), remotionCli, 'still', REMOTION_ENTRY_POINT, 'NotebookVideoCraftSheet', out, `--frame=${opt('frame', 72)}`, `--scale=${opt('scale', 1)}`];
-  if (process.env.REMOTION_BROWSER_EXECUTABLE) nodeArgs.push(`--browser-executable=${resolvePath(process.env.REMOTION_BROWSER_EXECUTABLE)}`);
-  await run(process.execPath, nodeArgs, {cwd: project});
-  console.log(`Craft sheet written: ${out} — read it to judge the craft components under the current skin (references/craft-kit.md).`);
+  const cues = path.join(project, 'manifests', 'caption-cues.json');
+  const srtOut = path.join(project, 'renders', 'captions.srt');
+  if (fs.existsSync(cues)) {
+    const r = await runPython('export-srt.py', [cues, srtOut], {capture: true});
+    if (r.code) fail(`字幕导出失败：${(r.stdout + r.stderr).trim().split('\n').slice(-1)[0] || r.code}`, 1);
+    console.log(`Subtitle: ${srtOut}`);
+  } else {
+    console.warn(`没有 ${cues}：跳过字幕导出`);
+  }
+  await poster([project]);
 };
 
-const usage = () => {
-  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  fonts [--serif]   (download the pinned LXGW WenKai Lite fonts once — plus Noto Serif SC with --serif; new-project does this automatically)\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel|journal|papercut|archive]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]
-  preview PROJECT_DIRECTORY [--seconds=30] [--from=SEC] [--shot=ID] [--scale=0.5] [--fx=on]   (3.8.0: 30 s low-res check before the full render; 卷页默认关)\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nvalidate-treatment PROJECT_DIRECTORY   (3.3.0 director layer: manifests/treatment.json)\nvalidate-opening PROJECT_DIRECTORY [--video MP4]   (3.3.0 first three seconds: cold open, first caption, beats, pixels)\nsilent-timing LINES_TXT OUT_JSON [--cps N] [--project DIR]   (3.3.0 caption timing without TTS; hand-made skins default 6.5 chars/s)\nvalidate-backgrounds PROJECT_DIRECTORY [--shots] [--recompute]   (3.3.0 background library: manifests/backgrounds.json)\nvalidate-media PROJECT_DIRECTORY\nprepare-media PROJECT_DIRECTORY [--add FILE --id ID …]\ncommons search \"QUERY\" [--type image|video|audio] [--source commons|openverse] [--audio-category music|sound_effect] [--project DIR] | commons add PROJECT \"File:…\" --id ID | commons credits PROJECT\nvalidate-ocr PROJECT_DIRECTORY --video MP4 | --stills DIR   (optional: needs pip rapidocr onnxruntime)\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\ncraft-sheet PROJECT_DIRECTORY [OUTPUT_PNG] [--frame=N]   (3.3.0: one page with every src/craft component)\nfx-probe PROJECT_DIRECTORY [--force]   (3.3.0: can this machine draw the WebGPU page turn? prints JSON; render runs it automatically)\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
+const usage = () => {  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  fonts [--serif]   (download the pinned LXGW WenKai Lite fonts once — plus Noto Serif SC with --serif; new-project does this automatically)\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel|journal|papercut|archive]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]
+  preview PROJECT_DIRECTORY [--seconds=30] [--from=SEC] [--shot=ID] [--scale=0.5] [--fx=on]   (3.8.0: 30 s low-res check before the full render; 卷页默认关)\n  sweep PROJECT_DIRECTORY [--scale=0.5] [--cols=4] [--plan] [--json]   (3.9.0: 每镜末段扫一遍，全片都量到——preview 只看开头，尾巴容易漏)\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nvalidate-treatment PROJECT_DIRECTORY   (3.3.0 director layer: manifests/treatment.json)\nvalidate-opening PROJECT_DIRECTORY [--video MP4]   (3.3.0 first three seconds: cold open, first caption, beats, pixels)\nsilent-timing LINES_TXT OUT_JSON [--cps N] [--project DIR]   (3.3.0 caption timing without TTS; hand-made skins default 6.5 chars/s)\nvalidate-backgrounds PROJECT_DIRECTORY [--shots] [--recompute]   (3.3.0 background library: manifests/backgrounds.json)\nvalidate-media PROJECT_DIRECTORY\nprepare-media PROJECT_DIRECTORY [--add FILE --id ID …]\ncommons search \"QUERY\" [--type image|video|audio] [--source commons|openverse] [--audio-category music|sound_effect] [--project DIR] | commons add PROJECT \"File:…\" --id ID | commons credits PROJECT\nvalidate-ocr PROJECT_DIRECTORY --video MP4 | --stills DIR   (optional: needs pip rapidocr onnxruntime)\nshowcase PROJECT_DIRECTORY [OUTPUT] [--sheet|--craft] [--frame=N] [--scale=S]   (组件样张：默认出库的 mp4+接触表，--sheet 只要接触表，--craft 出手作笔刷样张)
+poster PROJECT_DIRECTORY [OUTPUT_JPG] [--frame=N|--shot=ID] [--scale=1]   (3.9.0: one cover still — a settled frame of the signature shot, captions suppressed)
+deliver PROJECT_DIRECTORY   (3.9.0: subtitles + cover for a finished project, re-runnable without re-rendering)
+export-srt CAPTION_CUES_JSON OUTPUT_SRT [--offset-ms N]   (3.9.0: delivery subtitles from the cues the film already uses)
+eval-project PROJECT_A [PROJECT_B] [--json]   (3.9.0: measure one film, or diff two versions — numbers only, no score)\nfx-probe PROJECT_DIRECTORY [--force]   (3.3.0: can this machine draw the WebGPU page turn? prints JSON; render runs it automatically)\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };
 
 const main = async () => {
@@ -924,14 +1267,14 @@ const main = async () => {
     case 'new-project': return newProject(args);
     case 'sync': return syncProjectAssets(args);
     case 'prepare-browser': return prepareBrowser(args);
-    case 'benchmark-render': return benchmarkRender(args);
     case 'render-range': return renderRange(args);
     case 'preview': return preview(args);
+    case 'sweep': return sweep(args);
     case 'review-frames': return reviewFrames(args);
     case 'render': return render(args);
-    case 'showcase': return showcase(args, false);
-    case 'showcase-sheet': return showcase(args, true);
-    case 'craft-sheet': return craftSheet(args);
+    case 'showcase': return showcase(args);
+    case 'poster': return poster(args);
+    case 'deliver': return deliver(args);
     case 'fx-probe': return fxProbe(args);
     case 'validate-video': return validateVideo(args);
     case 'package': return packageProject(args);

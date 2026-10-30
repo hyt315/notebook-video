@@ -48,7 +48,7 @@ Wait for fonts and media before rendering. Keep the asset gate. Measure every su
 
 Default to half the available logical CPUs, clamped to 2–6 workers. Higher concurrency can slow a 2K browser render through CPU, memory and encoder contention.
 
-Run `benchmark-render` once per machine or after a major environment change. It renders the same 90-frame opening sample with several worker counts and reports the fastest setting. Export `REMOTION_CONCURRENCY` to reuse that result. Benchmark a representative dense range manually if the opening is unusually simple.
+To pick a worker count, run a short `preview` window two or three times with different `REMOTION_CONCURRENCY` values and compare the `Done in Ns` line (a 30-second window is enough — the opening is representative for throughput). Export `REMOTION_CONCURRENCY` with the fastest setting to reuse it. Do this once per machine or after a major environment change; benchmark a representative dense range manually if the opening is unusually simple.
 
 ## 6. Fast iteration
 

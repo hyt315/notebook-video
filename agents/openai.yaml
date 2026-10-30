@@ -1,4 +1,4 @@
 interface:
   display_name: "Notebook Video"
   short_description: "用 Remotion 组件场景 + 虚拟镜头做 16:9 中文讲解视频"
-  default_prompt: "Use $notebook-video to turn a topic into a Chinese 16:9 teaching video: pick a blueprint, adapt the example project (component scenes, optional real screenshots), write narration and the shot table, then run make-video to pass the gates and render stills or the final MP4."
+  default_prompt: "Use $notebook-video to turn a topic into a Chinese 16:9 teaching video: pick a blueprint, adapt the example project (component scenes, optional real screenshots), write narration and the shot table, then run make-video to pass the gates. Check a 30-second window with `preview` (or `preview --shot=Sx`) before paying for the full render, then run `sweep` once to measure every shot — preview only covers the opening, so a long film's tail silently escapes. Fix an empty-looking shot by filling the structure first instead of enlarging a card."

@@ -4,10 +4,10 @@
 
 **Turn one idea into a 16:9 Chinese teaching video: component scenes, an engine-level virtual camera and on-the-beat sound effects. One command renders it; objective gates fix what they can.**
 
-[![Version](https://img.shields.io/badge/version-3.3.0-1f6feb)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.4.0-1f6feb)](CHANGELOG.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
-[![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel-ff7a59)](references/theme-system.md)
+[![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel%20%7C%20journal%20%7C%20papercut%20%7C%20archive-ff7a59)](references/theme-system.md)
 [![Validate](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml/badge.svg)](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
 
@@ -31,44 +31,48 @@ full, editable source project.
 - **Reproducible by weaker models**: five teaching blueprints name the skeleton and components for every shot, plus golden
   examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
 
-- **New in 3.3.0 — one paper per notebook, review before render**: hand-made skins default to `bgMode: "chapter"` (one paper per chapter; `"film"` keeps one for the whole film, `"shot"` rotates per shot), and decorative `busy` backgrounds stay off regular shots; `resolve-shots` generates `storyboard.md` from the real shot table for the independent review; for hand-made skins `make-video --render` stops until a review round is recorded (drafts pass `--skip-review`); silent films time whole-line captions at `--cps` (default 6.5 chars/s).
+- **One paper per notebook, review before render**: hand-made skins default to `bgMode: "chapter"` (one paper per chapter; `"film"` keeps one for the whole film, `"shot"` rotates per shot), and decorative `busy` backgrounds stay off regular shots; `resolve-shots` generates `storyboard.md` from the real shot table for the independent review; for hand-made skins `make-video --render` stops until a review round is recorded (drafts pass `--skip-review`); silent films time whole-line captions at `--cps` (default 6.5 chars/s).
 
-- **New in 3.3.0 — a background library**: 8 more light backgrounds per craft skin and 5 more for flat / cel (ruled notebook,
+- **A background library**: 8 more light backgrounds per craft skin and 5 more for flat / cel (ruled notebook,
   xuan paper, window-flower papercut, a 1630 map, film strips, screentone, mesh gradients…), rotated by shot role with no two
   adjacent shots alike; every file records its source and licence (Paper Shaders rendered offline once, public-domain / CC0
   Commons textures, fixed-seed drawings) and a gate checks light ground and subtitle contrast.
   See [references/background-library.md](references/background-library.md).
 
-- **New in 3.3.0 — decide what the idea is made of first**: a director layer (metaphor first → the medium is the metaphor → one
+- **Decide what the idea is made of first**: a director layer (metaphor first → the medium is the metaphor → one
   native move at the turn → three candidate structures; `treatment.json` is gated), three light hand-made skins (`journal`
   field notebook / `papercut` red paper-cut / `archive` light table) with craft components (pressure ink, Chinese lettering
   that writes itself, watercolour washes, paper cuts, a loupe), and a **Wikimedia Commons / Openverse** search for every topic
   with licence filtering and on-screen credits.
 
 One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×1080 design space, native 30 fps). Five themes:
-`flat` (default, calm modern edu illustration), `cel` (bold comic ink) and the 3.3.0 craft skins `journal` / `papercut` / `archive`.
+`flat` (default, calm modern edu illustration), `cel` (bold comic ink) and the craft skins `journal` / `papercut` / `archive`.
 
 ## Key features
 
 | Capability | Details |
 | --- | --- |
+| **Look at 30 seconds first** | `notebook-video preview <project>` renders one window (first 30 s, half resolution by default) plus a contact sheet and a loudness readout; `--shot=S6` narrows it to a single shot. Checking a revision no longer costs a full render — a 30 s window lands in about 40 s |
+| **No shot left unchecked** | `notebook-video sweep <project>` grabs one settled frame per shot and tiles them into `renders/sweep-sheet.jpg` — eight shots in about 60 s, judged by the same empty-space thresholds the render uses. `preview` only covers the opening; on a longer film the tail silently escapes, and this closes that gap |
+| **A delivery is not just an mp4** | A finished render also writes `renders/captions.srt` (the same line breaks burned into the film, not a re-recognition) and `renders/poster.jpg` (a settled frame of `treatment.signature_shot`, with captions suppressed). Standalone: `poster` / `export-srt` / `deliver` |
+| **Compare two cuts** | `eval-project old/ new/` turns a film into comparable numbers (shot-length spread, variety of skeletons / media / transitions, camera coverage, caption density, empty-space readings) and prints the delta. No score: thresholds live in the gates, in one place only |
 | **Component scenes** | 4 skeletons (Stage / Split / Zoom / Corridor) and a component library (`ConsoleWindow`, `DiffView`, `HighlightCode`, `StatRow`, `Funnel`, `ProgressRing`, `KineticNumber`, `StampSeal`, `VerdictBar`, …), all coloured from theme tokens |
 | **Virtual camera** | Default slow push-in per shot; `cinema.focus` pushes to the component a keyword names and pans between targets; whip / zoom-through transitions; background parallax; small content is enlarged to 60–80 % of the safe area; push-ins keep margins so titles are never cut |
-| **On-the-beat SFX** | 10 code-synthesised semantic sounds (CC0) and an optional music bed; each cue carries `gain` / `offsetMs` and is pre-rolled so its transient lands on the visual hit (±1 frame); ≥150 ms spacing, ≈24/min cap; the bed ducks under each cue |
+| **On-the-beat SFX** | 16 code-synthesised semantic sounds (CC0, `public/sfx/lib/`) and an optional music bed; each cue carries `gain` / `offsetMs` and is pre-rolled so its transient lands on the visual hit (±1 frame); ≥150 ms spacing, ≈24/min cap; the bed ducks under each cue |
 | **Real media** | Screenshots, ≤10 s recordings and GIFs inside `MediaFrame` (same card look as the components, optional browser / window / device chrome, region zoom, highlight boxes, callouts, credit badge); `prepare-media` transcodes, `validate-media` blocks blurry or unlicensed media |
 | **Weak-model friendly** | 5 blueprints (concept / code-change / data-compare / process / pitfall) with a per-shot `$components` pick; golden examples in `examples/`; unfilled `<<placeholders>>` fail loudly |
 | **One command** | `make-video.mjs`: resolve-shots → gates → tsc → stills contact sheet or full render → `renders/report.md`; `make-video.cmd` on Windows |
 | **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤4.5 chars/s reading speed, frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
 | **Deterministic** | Every animation is a pure function of the frame (no `Math.random`, CSS animation or timers); no image-generation model, no online API required |
 
-## What's new in 3.5 → 3.7
+## What's new in 3.4.0
 
-- **Real page turns**: hand-made skins transition with `pageturn` / `peel` (WebGPU); without a full Chrome build the renderer falls back to `slide` / `drop` and records a P1, so a film always renders.
-- **Camera and cold open are gated**: `validate-treatment` checks the declared `move` / `framing` against the shot table (the signature shot must really push in ≥12%); `validate-opening` covers the first three seconds.
-- **Whole-line captions, −16 LUFS** for silent-narration films.
-- **`bgMode`**: one background per film / chapter / shot.
-- **Storyboard generated from the shot table**, with a review gate before rendering on hand-made skins.
-- **Sparse sound effects by default**: `sfxDensity` defaults to `sparse` (one hit per shot); set `"sfxDensity": "normal"` for the old density.
+- **`preview` — check a revision in seconds.** Renders one window (first 30 s, half resolution) with a contact sheet and a loudness readout; `--shot=S6` narrows it to one shot, `--from` / `--seconds` take any window. No full render needed.
+- **`sweep` — no shot left unchecked.** Samples one settled frame per shot into `renders/sweep-sheet.jpg`; a missed shot is named, never silently passed. `preview` only covers the opening — this is what catches the tail.
+- **Empty space is measurable.** FillGate quantifies layout on an 8×6 grid (`cells` / `blank` / `largest` / `widest`) with two exemptions (strip subjects, composite devices); numbers land in `renders/fill-coverage.json`.
+- **Delivery companions.** `export-srt` writes the SRT, `poster` takes the `signature_shot` settled frame without captions, `deliver` packages them; a full render produces them automatically.
+- **`eval-project` — compare revisions.** Turns a film into comparable numbers (shot-length distribution, layout / medium / transition variety, camera coverage, caption density, empty-space readings) and reports deltas. Numbers only, never scores.
+- **Bundled Chinese segmentation.** The BudouX model ships with the repository (`assets/vendor/budoux/`), so phrase-aware line breaking works offline.
 
 **Narration** is not bundled: add your own TTS or recorded voice and re-align with `match-timing.py`.
 

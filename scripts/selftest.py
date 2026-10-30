@@ -54,7 +54,12 @@ def main() -> int:
         "SKILL.md", "CHANGELOG.md",
         "scripts/notebook-video.mjs",
         "scripts/validate-caption-sync.py",
+        "scripts/export-srt.py",
+        "scripts/eval-project.py",
         "scripts/validate-semantic-breaks.py",
+        # 3.9.0：随技能分发的 BudouX 切片。缺了它，上面那条断句规则会静默跳过而不是报错，
+        # 所以把入口也算进"关键产物"——文件不在了，自检直接失败。
+        "assets/vendor/budoux/module/index.js",
         "scripts/validate-layering.py",
         "scripts/resolve-shots.py",
         "scripts/validate-shot-motion.py",
@@ -189,9 +194,22 @@ def main() -> int:
                 check("负向：非法 --style 不产生半成品", True, "clean")
 
     # ---- 好夹具 2：官方引擎自检 ----
+    # 断句短语规则要 BudouX，而技能本身不发行 node_modules——不指路就会静默跳过。
+    # 自检里显式透传，避免"全绿"其实少跑了一条规则。
     if NODE:
-        proc = run(str(NODE), str(ROOT / "scripts" / "notebook-video.mjs"), "validate-skill")
-        check("validate-skill 通过", proc.returncode == 0, "passed" if proc.returncode == 0 else "failed")
+        extra: list[str] = []
+        if "--budoux-dir" in sys.argv:
+            i = sys.argv.index("--budoux-dir")
+            if i + 1 >= len(sys.argv):
+                check("validate-skill 通过", False, "--budoux-dir needs a path")
+            else:
+                extra = ["--budoux-dir", sys.argv[i + 1]]
+        proc = run(str(NODE), str(ROOT / "scripts" / "notebook-video.mjs"), "validate-skill", *extra)
+        ok = proc.returncode == 0
+        detail = "passed" if ok else "failed"
+        if ok and "did NOT run" in ((proc.stdout or "") + (proc.stderr or "")):
+            detail = "passed（但短语规则没跑：assets/vendor 丢了？）"
+        check("validate-skill 通过", ok, detail)
 
     # ---- 负向夹具 ----
     if NODE:

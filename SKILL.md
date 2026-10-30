@@ -1,6 +1,6 @@
 ---
 name: notebook-video
-version: 3.3.0
+version: 3.4.0
 description: Turn a topic into a Chinese 16:9 teaching video (flat / cel component themes, or the journal / papercut / archive hand-made skins driven by a metaphor-first director layer) with React, TypeScript and Remotion. Every shot is a code-drawn component scene — consoles, diffs, checklists, stat rows, funnels, progress rings, kinetic numbers, stamp seals, verdict bars, or a real screenshot / screen recording in a MediaFrame — moved by an engine-level virtual camera that pushes in on whatever the narration names. Weak-model friendly: five teaching blueprints with per-shot component picks, golden examples, a five-step workflow and one cross-platform command (`node scripts/make-video.mjs <project>`, `make-video.cmd` on Windows) that resolves shots, runs hard gates with objective auto-fixes (no clipped titles, font floor, text contrast, ≤16-character captions at 4.5 chars/s, no dead tails, blurry-media check) and renders stills or the MP4. Tuned semantic sound effects land on the visual hit and duck the music bed. Every topic first searches Wikimedia Commons / Openverse for licence-filtered real media with automatic on-screen credits. No built-in TTS and no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
 ---
 
@@ -63,10 +63,16 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 手作皮肤的镜间转场缺省是**真翻页**（journal / archive `pageturn`、papercut `peel`，WebGPU）：渲染器先画一张探针验收，机器画不了就自动退回 `slide` / `drop` 并在报告里记 P1，不会渲染失败（[references/fx-effects.md](references/fx-effects.md)）。
 
 工程里已有一部完整的示例片（8 镜）。**照着改，不要从零写**：
+
 - `manifests/shots.json`：每镜一行（`skeleton` / `live` 组件 / `cameraIntent` / `beats` / `transition`）——镜头表是唯一真相；
 - `src/scenes.tsx`：每镜一个 React 组件，用 `live` 里列的组件画出来，动画只用帧号 `f`；
 - `src/film.ts`：片名、章节标题；
 - `manifests/caption-cues.json` + `audio/narration.mp3.json`：字幕（每行 ≤16 字）。
+
+> **抄结构，不要抄片子。** 拿到模板最容易犯的错是把它再演一遍——同样的镜序、同样的招牌镜头、同样的收尾。
+> 改完跑一次 `eval-project "<SKILL_DIR>/assets/lecture-template" ./my-video`，看
+> **版式种类 / 介质种类 / 转场种类 / 镜长分布 / 最大推近**这几行有没有真的不同；全都一样就说明你只是在换文案。
+> 这是测量不是打分——"像不像"没有客观界线，但两列摆在一起你自己看得出来。
 
 组件怎么选：[references/media-routing.md](references/media-routing.md)（修辞动作 → 组件表）、[references/fxkit.md](references/fxkit.md)。
 完整作者手册（骨架、镜头语言、门禁细节）：[references/handwritten-scenes.md](references/handwritten-scenes.md)。
@@ -89,13 +95,54 @@ node "<SKILL_DIR>/scripts/make-video.mjs" ./my-video --render ./my-video/final.m
 Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做：resolve-shots（自动修）→ 门禁 → tsc → 静帧接触表 / 渲染 → 抽帧报告 `renders/report.md`；`--render` 后若装了 RapidOCR，会用 `validate-ocr.py` 抽字幕帧 OCR，核对字幕真的读得出（没装就跳过并提示）。
 **先看 `--stills` 静帧，再渲整片**（整片渲染要先征得用户同意）。手作皮肤 `treatment.json` 的 `review.rounds` 为空时 `--render` 会停下（先做独立评审；草稿用 `--skip-review` 显式跳过）。`--render` 默认 1920×1080；响度目标 −16 LUFS（静音旁白片与真人声片相同）。
 
+**改完一版想确认"有没有变好"**：`node "<SKILL_DIR>/scripts/notebook-video.mjs" eval-project 旧工程 新工程`。
+它把片子拆成可比的数据（镜长分布、版式/介质/转场种类、运镜覆盖、字幕密度、空场读数）并给出 Δ。
+**它不打分**——判据只在门禁里存一处，两处各写一份阈值就会漂移。看到 Δ 之后，好坏仍由门禁 + 独立评审判。
+
 **读输出**：`✓ 自动修` = 引擎替你改了什么；`· 建议` 不拦；`✗` 才要改——每条都写了怎么改。同一个 ✗ 连续两次没改过来，停下来把报错原文告诉用户。
+
+**交付不止一个 mp4**。`--render` 成功后会自动再出两样（都失败不拦片，只记一笔）：
+
+| 产物 | 怎么来的 | 给谁 |
+|---|---|---|
+| `renders/captions.srt` | `export-srt` 从 `manifests/caption-cues.json` 导出（就是画面里那套断句，不是重新识别） | 上传平台要字幕轨、或别人要翻译 |
+| `renders/poster.jpg` | `poster` 渲一帧静帧。默认取 `treatment.signature_shot` 声明的招牌镜头的**落定窗口**（动作做完、还没到切点），并且**不画字幕** | 封面 / 缩略图 / 文档配图 |
+
+单独用：`notebook-video poster <工程> [out.jpg] [--shot=S4|--frame=759]`、`notebook-video export-srt <cues.json> <out.srt>`；
+两样一起重出用 `notebook-video deliver <工程>`（改封面构图、换字幕都不必再渲整片）。
+不要拿几何中点当封面：中点经常正好压在最后一拍上，封面里会出现半截正在被写的字（cell 的 S5 就踩过两次）。
 
 **看动起来对不对，别直接渲整片**：`node "<SKILL_DIR>/scripts/notebook-video.mjs" preview ./my-video --seconds=30`
 （默认 0.5 倍分辨率、关翻页；30 秒约 40 秒出片，同时给接触片和响度读数。单镜验：`--shot=S6`。
-`--fx=on` 才带翻页——它会切完整版 Chromium、每帧约 3 秒，别拿它做预览。）
+`--fx=on` 才带翻页——它会切完整版 Chromium（预览 0.5x 下约 1.8 秒/帧，交付分辨率约 3 秒/帧），
+所以别拿它渲 30 秒窗口，**要看翻页就只截转场那 30 来帧**：
+`--from=<跨镜边界前一秒> --seconds=1.2 --fx=on`（实测 61 秒出片）。
+跨镜边界在 `manifests/shots.resolved.json` 的 `from` 里，除以帧率就是秒。带翻页时不给全片耗时推算，
+因为只有转场帧走 WebGPU，线性外推会得假数字。）
 预览结束会打一行 `FillGate coverage`：每镜 `cells`（48 格占用）/ `blank`（全空的列）/ `largest`（最大单体占画面）/ `widest`（最大横向跨度），
-`largest<0.06` 或 `blank≥3/8` 会点名。被判空时**不要放大卡片凑面积**，按 [references/composition-gate.md](references/composition-gate.md) §3.8.0 的两条写法改：结构先满再演过程、空洞处补一层属于主体的东西。
+`largest<0.06` 判「主体过小」，但有两条豁免：`widest≥0.45`（面积小但横跨够的条状主体——标尺、格带、时间轴）
+和 `blank=0` 且 `cells≥24`（照片+引线+网格这类多个中等元素拼成一个主体，没有单个"大件"）。
+`blank≥3/8` 判「横向空洞」。被判空时**不要放大卡片凑面积**，按 [references/composition-gate.md](references/composition-gate.md) §3.8.0 的两条写法改：结构先满再演过程、空洞处补一层属于主体的东西。
+
+**片子比 30 秒长时，别看开头就下结论。** `preview --seconds=30` 只覆盖前六镜，cell 的 S7/S8 就是这么漏的
+（补跑 `--from=32` 才发现 S7 右下角空 30%）。全片一次量完用 `sweep`——每镜截一张落定态、拼成一张体检表，八镜约 60 秒：
+
+```bash
+node "<SKILL_DIR>/scripts/notebook-video.mjs" sweep ./my-video          # 0.5x，八镜一张表
+node "<SKILL_DIR>/scripts/notebook-video.mjs" sweep ./my-video --plan   # 只算会量哪几帧，不起浏览器
+node "<SKILL_DIR>/scripts/notebook-video.mjs" sweep ./my-video --json   # 给脚本读（stdout 只有 JSON）
+```
+
+它按镜取「切点前最近的一个 **15 的倍数**帧」，两个条件都不是随手写的：必须是 15 的倍数，因为 FillGate 只在
+`frame % 15 === 0` 上采样，取别处会得到**零数据**——而零数据和"这镜没问题"在屏幕上长得一模一样；必须落在**后半段**，
+因为入场帧几乎必然是空的，拿它判空场会把每一镜都打成空洞（FillGate 第一版就是这么误报的）。
+产出三样：终端八行表、`renders/sweep-sheet.jpg`（每镜一格，一眼看完构图）、`renders/sweep.json`（含每镜量的是第几帧，可复查）。
+数字可能比整片渲染略低（整片在整镜里扫，sweep 只取一帧，差 2–3 格属正常），但**判定用的是同一套阈值**
+（`assessCoverage()`，渲染收尾那行 `FillGate coverage` 也走它——阈值只有一处）。
+
+**覆盖率留档只有两个来源**：整片 `render` 和 `sweep`。`preview` / `render-range` / `review-frames` 是**窗口**渲染，
+量到的是"窗口内最完整帧"，不是"整镜最完整帧"——实测 60 帧窗口把 S1 记成 cells=25，整镜是 28。
+这几个命令只打印、不写 `fill-coverage.json`，免得一次"看一眼"的预览把某镜的覆盖率改成假数字。
 
 ## 第 5 步 · （需要时）定制组件
 
@@ -125,16 +172,12 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 它用组件式版式（define / number / bars / compare / code / flow / list / quiz / custom / media）；`statement` 只渲染成一张卡片，不是缺省版式。
 正式交付仍建议改写成第 2–3 步的组件场景。细节见 [references/auto-engine.md](references/auto-engine.md)；示例 `examples/*.story.json`。
 
-## 更多
+## 文档
 
-- 音效库与调音：[references/sfx-library.md](references/sfx-library.md)
-- 主题：[references/theme-flat.md](references/theme-flat.md)、[references/theme-cel.md](references/theme-cel.md)、[references/theme-journal.md](references/theme-journal.md)、[references/theme-papercut.md](references/theme-papercut.md)、[references/theme-archive.md](references/theme-archive.md)
-- 导演层与手作：[references/director-method.md](references/director-method.md)、[references/style-recipes.md](references/style-recipes.md)、[references/craft-kit.md](references/craft-kit.md)
-- 开场 / 节奏 / 运镜：[references/narrative-hook.md](references/narrative-hook.md)、[references/pacing-rhythm.md](references/pacing-rhythm.md)、[references/camera-language.md](references/camera-language.md)
-- 真实素材：[references/commons-media.md](references/commons-media.md)、[references/real-media.md](references/real-media.md)
-- 背景库：[references/background-library.md](references/background-library.md)
-- 真翻页 / 揭纸转场：[references/fx-effects.md](references/fx-effects.md)
-- Windows：[references/windows-compatibility.md](references/windows-compatibility.md)
+全部 44 篇正文的索引按「你接下来要做什么」分组，见 [references/INDEX.md](references/INDEX.md)（索引本身不计入 44）。
+作者通常只读 4 篇（见上文「手作路线只必读 4 份」），其余按需查。
+
 - 自检：`node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-skill`、`python scripts/selftest.py`、`python scripts/negative-gate-check.py`
+- 断句短语规则要 BudouX。**技能已自带一份**（`assets/vendor/budoux/`，Apache-2.0，80 KB 中文切片），所以三个自检命令都不用加参数就能真正跑这条规则；工程里装了 `node_modules` 时优先用工程那份（版本跟 `package-lock.json` 走）。结论行会写 `phrase rule: enforced (BudouX from …)`；如果出现 `did NOT run`，说明 `assets/vendor` 被删了——那是真故障，别当成通过。
 
 依赖纪律：`scripts/*.py` 只用 Python 3.10+ 标准库；模板已内置的 npm 依赖随 `npm ci` 安装，新增依赖要用户同意。

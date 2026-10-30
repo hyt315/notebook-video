@@ -48,7 +48,7 @@ import {FitCard, Typewriter, StampSeal, Funnel, ChatThread, ProgressRing, Stagge
 
 ```text
 node scripts/notebook-video.mjs showcase PROJECT_DIR
-node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR
+node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet
 ```
 
 选组件前先看接触表，比读 props 文档准确得多。新增组件时必须同时加进接触表。

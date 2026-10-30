@@ -1,0 +1,822 @@
+{
+ "source": "audio/narration.mp3.json",
+ "lead_ms": 60,
+ "segmentation": "semantic",
+ "break_rule": "compose-story (silent, 4.5 chars/s, ≤16 chars per line)",
+ "cues": [
+  {
+   "text": "一百万个名字里找一个，只要一步。",
+   "words": [
+    {
+     "part": "一",
+     "start": 760,
+     "end": 961
+    },
+    {
+     "part": "百",
+     "start": 971,
+     "end": 1172
+    },
+    {
+     "part": "万",
+     "start": 1182,
+     "end": 1383
+    },
+    {
+     "part": "个",
+     "start": 1393,
+     "end": 1594
+    },
+    {
+     "part": "名",
+     "start": 1604,
+     "end": 1806
+    },
+    {
+     "part": "字",
+     "start": 1816,
+     "end": 2017
+    },
+    {
+     "part": "里",
+     "start": 2027,
+     "end": 2228
+    },
+    {
+     "part": "找",
+     "start": 2238,
+     "end": 2439
+    },
+    {
+     "part": "一",
+     "start": 2449,
+     "end": 2650
+    },
+    {
+     "part": "个，",
+     "start": 2660,
+     "end": 2861
+    },
+    {
+     "part": "只",
+     "start": 3021,
+     "end": 3222
+    },
+    {
+     "part": "要",
+     "start": 3232,
+     "end": 3433
+    },
+    {
+     "part": "一",
+     "start": 3443,
+     "end": 3644
+    },
+    {
+     "part": "步。",
+     "start": 3654,
+     "end": 3856
+    }
+   ],
+   "start_ms": 700,
+   "speech_end_ms": 3856,
+   "reveal_end_ms": 3856,
+   "start": 0.7,
+   "speech_end": 3.856,
+   "reveal_end": 3.856
+  },
+  {
+   "text": "它是怎么做到的？",
+   "words": [
+    {
+     "part": "它",
+     "start": 4436,
+     "end": 4637
+    },
+    {
+     "part": "是",
+     "start": 4647,
+     "end": 4848
+    },
+    {
+     "part": "怎",
+     "start": 4858,
+     "end": 5059
+    },
+    {
+     "part": "么",
+     "start": 5069,
+     "end": 5270
+    },
+    {
+     "part": "做",
+     "start": 5280,
+     "end": 5482
+    },
+    {
+     "part": "到",
+     "start": 5492,
+     "end": 5693
+    },
+    {
+     "part": "的？",
+     "start": 5703,
+     "end": 5904
+    }
+   ],
+   "start_ms": 4376,
+   "speech_end_ms": 5904,
+   "reveal_end_ms": 5904,
+   "start": 4.376,
+   "speech_end": 5.904,
+   "reveal_end": 5.904
+  },
+  {
+   "text": "先认识一个词：哈希。",
+   "words": [
+    {
+     "part": "先",
+     "start": 6904,
+     "end": 7105
+    },
+    {
+     "part": "认",
+     "start": 7115,
+     "end": 7316
+    },
+    {
+     "part": "识",
+     "start": 7326,
+     "end": 7527
+    },
+    {
+     "part": "一",
+     "start": 7537,
+     "end": 7738
+    },
+    {
+     "part": "个",
+     "start": 7748,
+     "end": 7950
+    },
+    {
+     "part": "词：",
+     "start": 7960,
+     "end": 8161
+    },
+    {
+     "part": "哈",
+     "start": 8321,
+     "end": 8522
+    },
+    {
+     "part": "希。",
+     "start": 8532,
+     "end": 8733
+    }
+   ],
+   "start_ms": 6844,
+   "speech_end_ms": 8733,
+   "reveal_end_ms": 8733,
+   "start": 6.844,
+   "speech_end": 8.733,
+   "reveal_end": 8.733
+  },
+  {
+   "text": "它把名字变成一个编号。",
+   "words": [
+    {
+     "part": "它",
+     "start": 9313,
+     "end": 9514
+    },
+    {
+     "part": "把",
+     "start": 9524,
+     "end": 9725
+    },
+    {
+     "part": "名",
+     "start": 9735,
+     "end": 9936
+    },
+    {
+     "part": "字",
+     "start": 9946,
+     "end": 10147
+    },
+    {
+     "part": "变",
+     "start": 10157,
+     "end": 10359
+    },
+    {
+     "part": "成",
+     "start": 10369,
+     "end": 10570
+    },
+    {
+     "part": "一",
+     "start": 10580,
+     "end": 10781
+    },
+    {
+     "part": "个",
+     "start": 10791,
+     "end": 10992
+    },
+    {
+     "part": "编",
+     "start": 11002,
+     "end": 11203
+    },
+    {
+     "part": "号。",
+     "start": 11213,
+     "end": 11414
+    }
+   ],
+   "start_ms": 9253,
+   "speech_end_ms": 11414,
+   "reveal_end_ms": 11414,
+   "start": 9.253,
+   "speech_end": 11.414,
+   "reveal_end": 11.414
+  },
+  {
+   "text": "存的时候，先算编号。",
+   "words": [
+    {
+     "part": "存",
+     "start": 12414,
+     "end": 12615
+    },
+    {
+     "part": "的",
+     "start": 12625,
+     "end": 12826
+    },
+    {
+     "part": "时",
+     "start": 12836,
+     "end": 13037
+    },
+    {
+     "part": "候，",
+     "start": 13047,
+     "end": 13248
+    },
+    {
+     "part": "先",
+     "start": 13408,
+     "end": 13610
+    },
+    {
+     "part": "算",
+     "start": 13620,
+     "end": 13821
+    },
+    {
+     "part": "编",
+     "start": 13831,
+     "end": 14032
+    },
+    {
+     "part": "号。",
+     "start": 14042,
+     "end": 14243
+    }
+   ],
+   "start_ms": 12354,
+   "speech_end_ms": 14243,
+   "reveal_end_ms": 14243,
+   "start": 12.354,
+   "speech_end": 14.243,
+   "reveal_end": 14.243
+  },
+  {
+   "text": "再放进对应的桶。",
+   "words": [
+    {
+     "part": "再",
+     "start": 14823,
+     "end": 15024
+    },
+    {
+     "part": "放",
+     "start": 15034,
+     "end": 15235
+    },
+    {
+     "part": "进",
+     "start": 15245,
+     "end": 15446
+    },
+    {
+     "part": "对",
+     "start": 15456,
+     "end": 15657
+    },
+    {
+     "part": "应",
+     "start": 15667,
+     "end": 15869
+    },
+    {
+     "part": "的",
+     "start": 15879,
+     "end": 16080
+    },
+    {
+     "part": "桶。",
+     "start": 16090,
+     "end": 16291
+    }
+   ],
+   "start_ms": 14763,
+   "speech_end_ms": 16291,
+   "reveal_end_ms": 16291,
+   "start": 14.763,
+   "speech_end": 16.291,
+   "reveal_end": 16.291
+  },
+  {
+   "text": "找的时候，直接去那个桶。",
+   "words": [
+    {
+     "part": "找",
+     "start": 16871,
+     "end": 17072
+    },
+    {
+     "part": "的",
+     "start": 17082,
+     "end": 17283
+    },
+    {
+     "part": "时",
+     "start": 17293,
+     "end": 17494
+    },
+    {
+     "part": "候，",
+     "start": 17504,
+     "end": 17705
+    },
+    {
+     "part": "直",
+     "start": 17865,
+     "end": 18067
+    },
+    {
+     "part": "接",
+     "start": 18077,
+     "end": 18278
+    },
+    {
+     "part": "去",
+     "start": 18288,
+     "end": 18489
+    },
+    {
+     "part": "那",
+     "start": 18499,
+     "end": 18700
+    },
+    {
+     "part": "个",
+     "start": 18710,
+     "end": 18911
+    },
+    {
+     "part": "桶。",
+     "start": 18921,
+     "end": 19122
+    }
+   ],
+   "start_ms": 16811,
+   "speech_end_ms": 19122,
+   "reveal_end_ms": 19122,
+   "start": 16.811,
+   "speech_end": 19.122,
+   "reveal_end": 19.122
+  },
+  {
+   "text": "挨个比，最坏要比 100 万 次。",
+   "words": [
+    {
+     "part": "挨",
+     "start": 19802,
+     "end": 20003
+    },
+    {
+     "part": "个",
+     "start": 20013,
+     "end": 20214
+    },
+    {
+     "part": "比，",
+     "start": 20224,
+     "end": 20425
+    },
+    {
+     "part": "最",
+     "start": 20585,
+     "end": 20786
+    },
+    {
+     "part": "坏",
+     "start": 20796,
+     "end": 20998
+    },
+    {
+     "part": "要",
+     "start": 21008,
+     "end": 21209
+    },
+    {
+     "part": "比 ",
+     "start": 21219,
+     "end": 21420
+    },
+    {
+     "part": "100 ",
+     "start": 21430,
+     "end": 21736
+    },
+    {
+     "part": "万 ",
+     "start": 21746,
+     "end": 21948
+    },
+    {
+     "part": "次。",
+     "start": 21958,
+     "end": 22159
+    }
+   ],
+   "start_ms": 19742,
+   "speech_end_ms": 22159,
+   "reveal_end_ms": 22159,
+   "start": 19.742,
+   "speech_end": 22.159,
+   "reveal_end": 22.159
+  },
+  {
+   "text": "哈希表平均只要一次。",
+   "words": [
+    {
+     "part": "哈",
+     "start": 22739,
+     "end": 22940
+    },
+    {
+     "part": "希",
+     "start": 22950,
+     "end": 23151
+    },
+    {
+     "part": "表",
+     "start": 23161,
+     "end": 23362
+    },
+    {
+     "part": "平",
+     "start": 23372,
+     "end": 23573
+    },
+    {
+     "part": "均",
+     "start": 23583,
+     "end": 23785
+    },
+    {
+     "part": "只",
+     "start": 23795,
+     "end": 23996
+    },
+    {
+     "part": "要",
+     "start": 24006,
+     "end": 24207
+    },
+    {
+     "part": "一",
+     "start": 24217,
+     "end": 24418
+    },
+    {
+     "part": "次。",
+     "start": 24428,
+     "end": 24629
+    }
+   ],
+   "start_ms": 22679,
+   "speech_end_ms": 24629,
+   "reveal_end_ms": 24629,
+   "start": 22.679,
+   "speech_end": 24.629,
+   "reveal_end": 24.629
+  },
+  {
+   "text": "很多人以为，哈希表永远是一步。",
+   "words": [
+    {
+     "part": "很",
+     "start": 25629,
+     "end": 25830
+    },
+    {
+     "part": "多",
+     "start": 25840,
+     "end": 26041
+    },
+    {
+     "part": "人",
+     "start": 26051,
+     "end": 26252
+    },
+    {
+     "part": "以",
+     "start": 26262,
+     "end": 26463
+    },
+    {
+     "part": "为，",
+     "start": 26473,
+     "end": 26675
+    },
+    {
+     "part": "哈",
+     "start": 26835,
+     "end": 27036
+    },
+    {
+     "part": "希",
+     "start": 27046,
+     "end": 27247
+    },
+    {
+     "part": "表",
+     "start": 27257,
+     "end": 27458
+    },
+    {
+     "part": "永",
+     "start": 27468,
+     "end": 27669
+    },
+    {
+     "part": "远",
+     "start": 27679,
+     "end": 27880
+    },
+    {
+     "part": "是",
+     "start": 27890,
+     "end": 28091
+    },
+    {
+     "part": "一",
+     "start": 28101,
+     "end": 28302
+    },
+    {
+     "part": "步。",
+     "start": 28312,
+     "end": 28513
+    }
+   ],
+   "start_ms": 25569,
+   "speech_end_ms": 28513,
+   "reveal_end_ms": 28513,
+   "start": 25.569,
+   "speech_end": 28.513,
+   "reveal_end": 28.513
+  },
+  {
+   "text": "其实编号撞车时，要多找几步。",
+   "words": [
+    {
+     "part": "其",
+     "start": 29093,
+     "end": 29294
+    },
+    {
+     "part": "实",
+     "start": 29304,
+     "end": 29505
+    },
+    {
+     "part": "编",
+     "start": 29515,
+     "end": 29716
+    },
+    {
+     "part": "号",
+     "start": 29726,
+     "end": 29927
+    },
+    {
+     "part": "撞",
+     "start": 29937,
+     "end": 30139
+    },
+    {
+     "part": "车",
+     "start": 30149,
+     "end": 30350
+    },
+    {
+     "part": "时，",
+     "start": 30360,
+     "end": 30561
+    },
+    {
+     "part": "要",
+     "start": 30721,
+     "end": 30922
+    },
+    {
+     "part": "多",
+     "start": 30932,
+     "end": 31133
+    },
+    {
+     "part": "找",
+     "start": 31143,
+     "end": 31344
+    },
+    {
+     "part": "几",
+     "start": 31354,
+     "end": 31555
+    },
+    {
+     "part": "步。",
+     "start": 31565,
+     "end": 31766
+    }
+   ],
+   "start_ms": 29033,
+   "speech_end_ms": 31766,
+   "reveal_end_ms": 31766,
+   "start": 29.033,
+   "speech_end": 31.766,
+   "reveal_end": 31.766
+  },
+  {
+   "text": "记住这一句：",
+   "words": [
+    {
+     "part": "记",
+     "start": 32446,
+     "end": 32647
+    },
+    {
+     "part": "住",
+     "start": 32657,
+     "end": 32858
+    },
+    {
+     "part": "这",
+     "start": 32868,
+     "end": 33069
+    },
+    {
+     "part": "一",
+     "start": 33079,
+     "end": 33280
+    },
+    {
+     "part": "句：",
+     "start": 33290,
+     "end": 33492
+    }
+   ],
+   "start_ms": 32386,
+   "speech_end_ms": 33492,
+   "reveal_end_ms": 33492,
+   "start": 32.386,
+   "speech_end": 33.492,
+   "reveal_end": 33.492
+  },
+  {
+   "text": "算出位置，不用挨个找。",
+   "words": [
+    {
+     "part": "算",
+     "start": 34072,
+     "end": 34273
+    },
+    {
+     "part": "出",
+     "start": 34283,
+     "end": 34484
+    },
+    {
+     "part": "位",
+     "start": 34494,
+     "end": 34695
+    },
+    {
+     "part": "置，",
+     "start": 34705,
+     "end": 34906
+    },
+    {
+     "part": "不",
+     "start": 35066,
+     "end": 35268
+    },
+    {
+     "part": "用",
+     "start": 35278,
+     "end": 35479
+    },
+    {
+     "part": "挨",
+     "start": 35489,
+     "end": 35690
+    },
+    {
+     "part": "个",
+     "start": 35700,
+     "end": 35901
+    },
+    {
+     "part": "找。",
+     "start": 35911,
+     "end": 36112
+    }
+   ],
+   "start_ms": 34012,
+   "speech_end_ms": 36112,
+   "reveal_end_ms": 36112,
+   "start": 34.012,
+   "speech_end": 36.112,
+   "reveal_end": 36.112
+  },
+  {
+   "text": "这就是哈希表快的原因。",
+   "words": [
+    {
+     "part": "这",
+     "start": 36692,
+     "end": 36893
+    },
+    {
+     "part": "就",
+     "start": 36903,
+     "end": 37104
+    },
+    {
+     "part": "是",
+     "start": 37114,
+     "end": 37315
+    },
+    {
+     "part": "哈",
+     "start": 37325,
+     "end": 37526
+    },
+    {
+     "part": "希",
+     "start": 37536,
+     "end": 37738
+    },
+    {
+     "part": "表",
+     "start": 37748,
+     "end": 37949
+    },
+    {
+     "part": "快",
+     "start": 37959,
+     "end": 38160
+    },
+    {
+     "part": "的",
+     "start": 38170,
+     "end": 38371
+    },
+    {
+     "part": "原",
+     "start": 38381,
+     "end": 38582
+    },
+    {
+     "part": "因。",
+     "start": 38592,
+     "end": 38793
+    }
+   ],
+   "start_ms": 36632,
+   "speech_end_ms": 38793,
+   "reveal_end_ms": 38793,
+   "start": 36.632,
+   "speech_end": 38.793,
+   "reveal_end": 38.793
+  }
+ ]
+}

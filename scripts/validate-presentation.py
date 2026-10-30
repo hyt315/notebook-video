@@ -37,6 +37,8 @@
     · P1：强调色当**文字色**时低于要求（<24px 要 4.5、≥24px 或 ≥18.5px 粗体要 3.0）
       —— 这一条是**已知的真实缺陷**（v3.x 时四套皮肤里 gold/green 当文字色只有 1.4–3.3:1），
       怎么处置（调深色值 / 约定这些色只用于图形）是审美决定，留给用户，见 CHANGELOG。
+    · `--strict` 才会报的另一条：**白字压在强调色填充上**。它检的是色板组合而不是这一片，
+      四套皮肤都不过，所以默认不占 P1 条数（理由见 STRICT 的注释）。
 
   G-5 节拍拥挤（P1，代理指标）
     · 同一镜内 ≥3 个 beat 落在 12 帧窗口 → P1（"好几件事挤在一拍上"）
@@ -69,6 +71,17 @@ FONT_FLOOR = 13            # G-3：绝对地板（= components/data.tsx 的 MIN_
 FONT_LABEL_MIN = 16        # G-3：标注档
 CONTRAST_TEXT = 4.5        # WCAG 2.2 SC 1.4.3 正文
 CONTRAST_LARGE = 3.0       # 大字号（≥24px 或 ≥18.5px 粗体）
+
+# 「彩色填充上的白字」这条只在 --strict 下报（3.9.0）。
+#
+# 它检的是**色板组合**，不是这一片画错了：四套皮肤里 gold / green 承载白字都只有
+# 1.3–2.3:1，所以只要皮肤还是这套色，这条就永远为真、每场交付都报一次。
+# 实测模板里没有任何地方把白字放在这些强调色上（gold 只用于 conic-gradient、边框、
+# boxShadow、18% 透明的水彩底）。一条永远为真、又指不出改了哪里的告警，读久了就等于没有。
+#
+# 保留成 --strict 的理由：改色板时它有用（想知道哪些强调色不能承载白字）。
+# 日常交付、模板审查之外不该占 P1 条数——否则 21 条建议里 4 条是同一句废话。
+STRICT = False
 
 norm = lambda s: re.sub(r"\s+", "", s)
 
@@ -387,8 +400,8 @@ def check_readability(project: Path) -> tuple[list, list]:
         if ink_bad:
             p0.append({"id": f"theme:{name}", "issue": "文字安全色没过 4.5:1（它们是**专门**用来当文字色的）：" + " · ".join(ink_bad)})
         white_bad = [f"{a} {contrast(hexed['white'], hexed[a]):.2f}:1" for a in ACCENT_FILLS if a in hexed and "white" in hexed and contrast(hexed["white"], hexed[a]) < CONTRAST_LARGE]
-        if white_bad:
-            p1.append({"id": f"theme:{name}", "issue": f"彩色填充上的白字对比不足（需 3.0）：{' · '.join(white_bad)}"})
+        if white_bad and STRICT:
+            p1.append({"id": f"theme:{name}", "issue": f"彩色填充上的白字对比不足（需 3.0）：{' · '.join(white_bad)}（色板风险；模板当前无此用法，见 --strict）"})
         tone_bad = []
         for fg in sorted(used_as_text):
             if fg in {"ink", "white", "muted", "paper", "paperWarm", "paperBase"}:
@@ -596,7 +609,12 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("project")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--strict", action="store_true",
+                    help="also report theme-level palette risks that are true of the palette itself "
+                         "rather than of this film (currently: white text on accent fills)")
     args = ap.parse_args()
+    global STRICT
+    STRICT = args.strict
     project = Path(args.project).resolve()
     if not (project / "manifests").is_dir():
         print(f"项目目录里没有 manifests/：{project}", file=sys.stderr)

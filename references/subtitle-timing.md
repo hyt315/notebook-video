@@ -37,12 +37,14 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" build-semantic-captions audio/narr
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-semantic-breaks manifests/caption-cues.json manifests/protected-caption-phrases.txt
 ```
 
-Both tools find BudouX by walking up from the caption file to the project's `node_modules`. On the delivery path (the CLI above) **installing project dependencies is a precondition, not a skippable item**: the CLI injects `--require-budoux` automatically — with the detected `--budoux-dir` when `node_modules/budoux` exists, and still `--require-budoux` when it does not, so the run fails and names the fix (`npm ci` in the project, or `--budoux-dir`). Only an explicit `--no-budoux` opts out, and invoking the validator script directly keeps the legacy loud-skip behavior (stderr `WARNING: BudouX ...`, exit 0) for bare fixtures — the validator itself never writes files; the cue-file record `"break_rule": "mechanical-only (BudouX unavailable)"` is what the **builder** (`build-semantic-captions.py`) stamps into the cue file when it built the cues without BudouX. Pass `--budoux-dir PATH` to point at any `node_modules` that has `budoux`.
+Both tools find BudouX in three steps, in this order: an explicit `--budoux-dir`, then the project's `node_modules` (walking up from the caption file, at most eight levels), then **the slice bundled with the skill at `assets/vendor/budoux/`** (BudouX 0.9.2, Apache-2.0, ~80 KB, simplified Chinese only — provenance in `assets/vendor/README.md`). Project dependencies win when present so the model version tracks `package-lock.json`; the bundled slice is what makes the rule run on a fresh clone, where the skill ships no `node_modules`.
 
-To see the rule actually work on a project that has no `node_modules`, point at one that does and feed it the fixture:
+On the delivery path (the CLI above) the CLI injects `--require-budoux` automatically and resolves the directory the same way, so **the rule now runs without a prior `npm ci`**. It only hard-fails when even the bundled slice is gone — that is a real breakage, and the message names both fixes (`npm ci` in the project, or `--budoux-dir`). Only an explicit `--no-budoux` opts out, and invoking the validator script directly keeps the loud-skip behavior (stderr `WARNING: BudouX ...`, exit 0) for bare fixtures — the validator itself never writes files; the cue-file record `"break_rule": "mechanical-only (BudouX unavailable)"` is what the **builder** (`build-semantic-captions.py`) stamps into the cue file when it built the cues without BudouX. Pass `--budoux-dir PATH` to point at any directory that has `budoux/module/index.js`.
+
+To watch the rule catch a bad break, feed the fixture (no `--budoux-dir` needed — the bundled slice covers it):
 
 ```text
-python scripts/validate-semantic-breaks.py bad-cues.json protected.txt --budoux-dir /path/to/node_modules
+python scripts/validate-semantic-breaks.py bad-cues.json protected.txt
 # a cue pair cut as '上网就是连到一台服' / '务器。' reports:
 #   SEMANTIC BREAK ERROR: cue 1/2: break at character 9 splits a word or ASCII token: '一台服' | '务器。'
 ```
@@ -102,14 +104,15 @@ Run the browser fit gate plus both file validators after any narration edit:
 # CaptionFitGate runs automatically during Remotion render. It measures the bundled font,
 # converts delivery-scaled width back to design pixels, and rejects widths over 1334px.
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-caption-sync audio/narration.mp3.json manifests/caption-cues.json
-# Delivery path: the CLI auto-adds --require-budoux (plus --budoux-dir when the project's
-# node_modules/budoux is detected); a missing BudouX fails the gate instead of skipping quietly.
+# Delivery path: the CLI auto-adds --require-budoux and resolves the model from the project's
+# node_modules or, failing that, the slice bundled at assets/vendor/budoux/; only a missing
+# bundle fails the gate instead of skipping quietly.
 node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-semantic-breaks manifests/caption-cues.json manifests/protected-caption-phrases.txt
 ```
 
 Reject word-stream mismatch, non-semantic segmentation, a break that is not a BudouX phrase boundary or a clause break, a cue starting with a closing mark, an ASCII model/product token split, a protected phrase crossing a cue boundary, overflow, horizontal jitter, two-line text, trailing visual punctuation, dark subtitle side marks or a changed contour.
 
-The word-cut rule is the one that catches what the phrase list misses, so read the validator's last line: it ends with `phrase rule: enforced (BudouX from …)` when the rule ran. On the delivery path (the CLI) that line is mandatory — the CLI passes `--require-budoux`, so an unresolvable BudouX exits non-zero instead of degrading. The `SKIPPED — BudouX not found` tail only remains reachable via a deliberate `--no-budoux` or a direct script invocation on a bare fixture; there, only the mechanical checks and the phrase list were applied.
+The word-cut rule is the one that catches what the phrase list misses, so read the validator's last line: it ends with `phrase rule: enforced (BudouX from …)` when the rule ran. On the delivery path (the CLI) that line is mandatory — the CLI passes `--require-budoux`, and since 3.9.0 the model itself ships with the skill, so an unresolvable BudouX means the bundle was deleted. The `SKIPPED — BudouX not found` tail only remains reachable via a deliberate `--no-budoux` or a direct script invocation where `assets/vendor/` is missing; there, only the mechanical checks and the phrase list were applied.
 
 ## Line length: at most 16 characters
 

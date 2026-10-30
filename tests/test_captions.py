@@ -46,16 +46,16 @@ class SubtitleSource(unittest.TestCase):
     def test_line_reveal_is_default_for_craft_and_overridable(self):
         self.assertIn("(FILM as any).CAPTION_REVEAL??AESTHETIC.captionReveal??(THEME.craft?'line':'type')", self.idx)
         self.assertIn("captionReveal?: 'line' | 'type';", (SRC / "theme" / "types.ts").read_text(encoding="utf-8"))
-        body = self.idx[self.idx.index("const Subtitle=()=>{"):self.idx.index("const Chrome=()=>{")]
+        body = self.idx[self.idx.index("const Subtitle="):self.idx.index("const Chrome=()=>{")]
         self.assertIn("if(line){", body)
         self.assertIn("LINE_FADE", body)
 
     def test_no_halo_before_the_first_character(self):
-        body = self.idx[self.idx.index("const Subtitle=()=>{"):self.idx.index("const Chrome=()=>{")]
+        body = self.idx[self.idx.index("const Subtitle="):self.idx.index("const Chrome=()=>{")]
         self.assertIn("if(!cue||!targetChars||!words.length)return null;", body)
 
     def test_whitespace_not_counted_for_tail_trim(self):
-        body = self.idx[self.idx.index("const Subtitle=()=>{"):self.idx.index("const Chrome=()=>{")]
+        body = self.idx[self.idx.index("const Subtitle="):self.idx.index("const Chrome=()=>{")]
         self.assertIn("full.replace(/\\s+/g,'').length", body)
         self.assertIn("filter((ch)=>!/\\s/.test(ch))", body)
 

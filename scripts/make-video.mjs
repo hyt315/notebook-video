@@ -176,6 +176,13 @@ if (!flag('no-gates')) {
     const verdict = (r.out.match(/结论[^\n]*/) ?? [r.code ? 'FAIL' : 'PASS'])[0];
     results.push({gate: g, code: r.code, hard, verdict});
     console.log(`  ${r.code ? (hard ? '✗' : '·') : '✓'} ${g.padEnd(30)} ${verdict}`);
+    // 把 P1 明细收进报告。手写场景工程不走 compose-story，`rep` 一直是初始值
+    // （fixes / hints 都是空数组），于是报告里「建议（不拦）」永远是 0 条 ——
+    // 而实测一场交付有 22 条 P1，它们只在终端滚过去了，写进文件的一条都没有。
+    // 数字说了"有建议"却看不到是什么，跟"跳过冒充通过"是同一类毛病。
+    const p1 = [...(r.out || '').matchAll(/^\s*P1\s*[-\w]*:\s*(.+)$/gm)]
+      .map((m) => `${g.replace(/\.py$/, '')}：${m[1].trim()}`);
+    if (p1.length) rep.hints.push(...p1);
     if (r.code && hard) { console.log(r.out.split('\n').filter((l) => /P0|✗|FAIL|Error|错误/.test(l)).slice(0, 12).join('\n')); die(`${g} 未通过`); }
   }
 }
@@ -308,6 +315,16 @@ if (renderOut) {
   const ocrVerdict = /SKIPPED/.test(ocr.out) ? 'SKIPPED（未装 RapidOCR）' : (ocr.out.match(/结论[^\n]*/) ?? [ocr.code ? 'FAIL' : 'PASS'])[0];
   results.push({gate: 'validate-ocr.py', code: ocr.code, hard: false, verdict: ocrVerdict});
   console.log(ocr.out.split('\n').filter((l) => /validate-ocr|✗|·|结论/.test(l)).slice(0, 12).map((l) => `  ${l}`).join('\n'));
+  // 3.9.0：交付附件。mp4 之外，拿到片子的人还需要一份字幕和一张能当缩略图的封面。
+  // 失败不拦片：只记一笔，成片照出（跟 OCR 复核同一个处理级别）。
+  step('交付附件（字幕 / 封面）');
+  const deliverRun = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'deliver', project], {capture: true});
+  for (const [gate, verdict] of [['export-srt.py', 'captions.srt'], ['poster', 'poster.jpg']]) {
+    const line = (deliverRun.out || '').split('\n').find((l) => new RegExp(verdict.replace('.', '\\.')).test(l)) ?? '';
+    const ok = deliverRun.code === 0 && !/未生成|失败/.test(line);
+    results.push({gate, code: ok ? 0 : 1, hard: false, verdict: ok ? verdict : 'FAIL'});
+    console.log(`  ${ok ? '✓' : '·'} ${ok ? line.trim().replace(/^(Subtitle|Poster): /, '') : `${verdict} 未生成（可单独跑 notebook-video deliver <工程>）`}`);
+  }
   writeReport(frames, sheets, `\n成片：${renderOut}`);
   if (mg.code) die('validate-motion-gaps 未通过（画面有超长静止段）');
   console.log(`✓ 成片 ${renderOut}；抽帧接触表 ${sheets.join(', ')}；报告 renders/report.md`);

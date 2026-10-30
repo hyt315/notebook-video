@@ -4,6 +4,59 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
+> **版本号有两套，别混。** 对外只发 3.3.0 这一个版本——它把内部 3.3.0–3.7.0 的迭代合并成了一次公开发布
+> （见提交 `chore(release): 3.3.0 — collapse the internal iterations into one public release`）。
+> 发版后内部迭代仍在继续（3.8.0、3.9.0 …），所以仓库注释与 `references/` 里出现的
+> `3.4.0`–`3.9.0` 都是**内部迭代号**，不对应任何对外发布；对外可引用的版本只有本文件里的这些条目。
+>
+> **Two numbering lines — do not mix them.** Only 3.3.0 was ever published; it folded the internal
+> 3.3.0–3.7.0 iterations into one public release. Internal iteration kept going after that (3.8.0,
+> 3.9.0 …), so every `3.4.0`–`3.9.0` you see in source comments and `references/` is an internal
+> iteration number, not a release. Cite only the versions listed below.
+
+## [3.4.0] - 2026-10-30
+
+> 3.3.0 之后的功能迭代：新增 30 秒预览与全片体检两条命令，把「版面空」变成可度量的指标；补齐字幕、封面与打包三条交付链路；自带中文分词模型；统一组件样张入口并移除闲置工具。
+> Feature iteration after 3.3.0: a 30-second preview and a whole-film sweep, measurable empty-space metrics, SRT / poster / package delivery, a bundled Chinese segmenter, one showcase entry point, and the removal of an unused tool.
+
+### 新增 / Added
+
+- `preview`：只渲一段（缺省前 30 秒、半分辨率）并出接触片与响度读数；`--shot=S6` 单镜查验，`--from` / `--seconds` 任意窗口。改一版看一版不必等整片。
+  Renders one window at half resolution with a contact sheet and a loudness readout; `--shot` narrows it to a single shot.
+- `sweep`：每镜取一帧落定态，一次量完全片，拼成 `renders/sweep-sheet.jpg` 体检表；少一镜会明写「未量到」。弥补 `preview` 只看开头、片尾容易漏的缺口。
+  Samples one settled frame per shot and produces a whole-film contact sheet; a missed shot is reported, never silently passed.
+- 交付附件：`export-srt`（SRT 字幕）、`poster`（封面，取 `signature_shot` 的落定窗口并去字幕）、`deliver`（打包出片与附件）。
+  Delivery companions: SRT export, a poster frame taken from the signature shot, and a packaging command.
+- `eval-project`：对工程做客观测量，并支持版本间对比（读速按汉字 1、ASCII 0.5 加权）。只测量与对比，不打分。
+  Measures a project and compares two revisions; it reports numbers, never scores.
+- 空场度量（FillGate）：以 8×6 网格量化版面占用——`cells` / `blank` / `largest` / `widest`；「主体过小」有条状主体与组合装置两条豁免。数字落盘 `renders/fill-coverage.json`，与渲染期同一套阈值。
+  Empty-space metrics on an 8×6 grid with two exemptions (strip subjects, composite devices), persisted to `renders/fill-coverage.json`.
+- 组件 `Dimension`（尺寸线）与 `MagnifyInset`（局部放大），减少每片重写坐标的成本。
+  New `Dimension` and `MagnifyInset` craft components.
+- 自带 BudouX 中文分词模型（`assets/vendor/budoux/`）：短语断行规则在没有网络与没有全局安装时同样生效，自检中明确标注 enforced / skipped。
+  A bundled BudouX Chinese model so phrase-aware line breaking works offline.
+
+### 改进 / Changed
+
+- 版面：格带改为「结构先满再演过程」，立方体提前填格并加尺寸线，网格与照片同底铺满——空场从「看着不对」变成有数可对。
+  Layout fixes on three shots so the structure fills first and the motion plays on top of it.
+- 覆盖率数据的落盘纪律：只有整片渲染与 `sweep` 写 `fill-coverage.json`；`preview` / `render-range` / `review-frames` 只打印不落盘，避免一次短窗口把某镜的数字污染成假值。
+  Only a full render or `sweep` persists coverage; window renders print but never overwrite.
+- 组件样张统一为 `showcase`：`showcase PROJECT [OUT] [--sheet|--craft]` 取代 `showcase` / `showcase-sheet` / `craft-sheet` 三个入口，产出物不变。
+  The three showcase commands collapse into one; outputs are unchanged.
+- 参数解析与分镜表读取去重：`preview` / `sweep` / `poster` 共用一份校验，拼错参数一律拒绝（此前 poster 会静默忽略）。
+  Shared flag parsing and shot-table loading; a mistyped flag is now rejected everywhere.
+
+### 移除 / Removed
+
+- `benchmark-render`：开发期的并发测速命令，已由 `preview` 的耗时读数取代。
+  The development-only concurrency benchmark, superseded by `preview`'s timing output.
+
+### 修复 / Fixed
+
+- 手册与文档：`sweep` 的说明曾列出已废弃的参数；工程内脚本（TTS 适配器、语速后处理）的调用路径有歧义；版本号双轨说明漏列后续内部号。均已更正。
+  Corrections to the command manual, in-project script paths, and the dual version-numbering note.
+
 ## [3.3.0] - 2026-10-30
 
 > 3.2.0 之后的首个公开版本：新增导演层（隐喻先行 + 门禁 + 独立评审）、三套亮底手作皮肤、真翻页转场、34 张背景库、运镜 / 开场 / 字幕 / 响度四道新门禁、音效默认稀疏，并把 Windows 上跑不完流程的几个问题修掉。

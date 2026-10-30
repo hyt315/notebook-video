@@ -5,6 +5,8 @@
 //   Underline     手划的下划线 / 圈注（InkPath 的便捷封装）
 //   HandNote      钢笔小注 + 引线：引线先长到标本，字再从左往右写出（批注层）
 //   HandLettering 中文字真的被「写」出来：霞鹜文楷字形轮廓（opentype.js，MIT）先描边、再填墨
+//   Dimension     尺寸线（主线 + 两端刻度 + 标注）：给主体标「多大」，是「空场」的正解
+//   MagnifyInset  局部放大（框 + 引线 + 标注）：把主体里的一个单元拎到旁边
 //
 // 纪律（与引擎一致）：只用帧号驱动，无随机数（抖动全部来自 @remotion/noise 的确定性噪声 + seed）；
 // 文字颜色用 THEME.palette.ink / *Ink；画内必读文字 ≥ CRAFT_TYPE.label（48 设计 px ≈ 64 px@1440）。
@@ -162,3 +164,56 @@ export const HandLettering: React.FC<{f: number; at: number; text: string; x: nu
     });
     return <svg style={{position: 'absolute', left: x, top: y, overflow: 'visible'}} width={cursor} height={size * 1.25} aria-label={text}>{glyphs}</svg>;
   };
+
+/**
+ * Dimension — 尺寸线：给一个有尺寸的主体标「多大」。
+ *
+ * 它解决的是「画面空着该放什么」：放一根**属于主体**的量尺，而不是另起一句说明。
+ * 主线先画（16 帧），两端刻度随后各 6 帧补上，标注最后写。
+ * 刻度方向由主线自动算（垂直于线），所以横、竖、斜都成立。
+ */
+export const Dimension: React.FC<{
+  f: number; at: number;
+  from: [number, number]; to: [number, number];
+  /** 刻度半长（px）；0 = 不画刻度 */
+  tick?: number;
+  label?: string; labelAt?: [number, number];
+  size?: number; color?: string; seed?: string;
+}> = ({f, at, from, to, tick = 24, label, labelAt, size = 3, color = THEME.craft?.accent ?? C.orange, seed = 'dim'}) => {
+  const dx = to[0] - from[0], dy = to[1] - from[1];
+  const L = Math.hypot(dx, dy) || 1;
+  const px = (-dy / L) * tick, py = (dx / L) * tick;
+  return <>
+    <InkPath d={`M ${from[0]} ${from[1]} L ${to[0]} ${to[1]}`} p={prog(f, at, 16)} size={size} color={color} seed={`${seed}-line`} />
+    {tick > 0 && <InkPath d={`M ${from[0] - px} ${from[1] - py} L ${from[0] + px} ${from[1] + py}`} p={prog(f, at + 4, 6)} size={size} color={color} seed={`${seed}-t0`} />}
+    {tick > 0 && <InkPath d={`M ${to[0] - px} ${to[1] - py} L ${to[0] + px} ${to[1] + py}`} p={prog(f, at + 8, 6)} size={size} color={color} seed={`${seed}-t1`} />}
+    {label && labelAt && <HandNote f={f} at={at + 6} x={labelAt[0]} y={labelAt[1]} text={label} size={CRAFT_TYPE.label} />}
+  </>;
+};
+
+/**
+ * MagnifyInset — 局部放大：把主体里的「一个单元」拎到旁边，用引线指回去。
+ *
+ * 用在「主体由很多小东西组成」的镜：观众需要看见其中一个长什么样，
+ * 而不是把整片放大（那只会让每个格子更小）。
+ * 框先淡入（20 帧），引线 22 帧长过去，标注最后写。
+ */
+export const MagnifyInset: React.FC<{
+  f: number; at: number;
+  box: {x: number; y: number; w: number; h: number};
+  /** 手作感：轻微倾斜（度） */
+  rotate?: number; radius?: number;
+  /** 引线路径（设计坐标的 d 串）；不写就不画 */
+  lead?: string;
+  label?: string; labelAt?: [number, number];
+  seed?: string;
+}> = ({f, at, box, rotate = 0, radius = 8, lead, label, labelAt, seed = 'mag'}) => {
+  const op = interpolate(f, [at, at + 20], [0, 1], {...clamp, easing: Easing.bezier(0.16, 1, 0.3, 1)});
+  return <>
+    <div style={{position: 'absolute', left: box.x, top: box.y, width: box.w, height: box.h,
+      border: `4px solid ${C.ink}`, borderRadius: radius, background: `${C.gold}2e`,
+      transform: `rotate(${rotate}deg)`, opacity: op}} />
+    {lead && <InkPath d={lead} p={prog(f, at + 8, 22)} size={4} color={THEME.craft?.accent ?? C.orange} seed={`${seed}-lead`} />}
+    {label && labelAt && <HandNote f={f} at={at + 26} x={labelAt[0]} y={labelAt[1]} text={label} size={CRAFT_TYPE.title} />}
+  </>;
+};

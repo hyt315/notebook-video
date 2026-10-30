@@ -32,6 +32,11 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from story_camera import (  # noqa: E402  （必须在 sys.path 之后导入）
+    SAFE, ZOOM_MAX, clamp_look, frame_rect, move_frames, partial_clips, to_screen, union,
+)
+
 FPS = 30
 CPS = 4.5                      # 中文朗读 / 阅读速度：4–5 字/秒，取 4.5
 CHAR_MS = 1000 / CPS           # ≈ 222 ms
@@ -45,8 +50,7 @@ MAX_CHARS = 16
 MIN_FONT = 32                  # 手机可读地板（设计像素，1920 宽）
 TYPE = {"display": 76, "title": 46, "body": 36}  # 三档字号；hero 数字另算（同镜仍 ≤3 种）
 BAND = {"x": 200, "y": 214, "w": 1520, "h": 630}  # 内容带（页眉下、字幕上）
-SAFE = (130, 196, 1790, 862)   # 屏幕安全框：推近后元素必须完整落在这里（顶 178 有遮罩、底是字幕）
-ZOOM_MAX, ZOOM_MIN_FOCUS = 1.32, 1.08
+ZOOM_MIN_FOCUS = 1.08          # 焦点推近的下限；SAFE / ZOOM_MAX 见 story_camera.py
 PUNCT = "，。！？；：、,.!?;:"
 TAIL_PUNCT_RE = re.compile(r"[，。！？；：、,.!?;:\s]+$")
 TERM_RE = re.compile(r"\{\{([^}|]+)(?:\|([^}]+))?\}\}")
@@ -644,72 +648,8 @@ def sub_rect(e, term):
 
 
 # ---------------------------------------------------------------- camera
-def to_screen(r, look, s):
-    return ((r["x"] - look[0]) * s + 960, (r["y"] - look[1]) * s + 540, r["w"] * s, r["h"] * s)
-
-
-def clamp_look(x, y, s):
-    hx, hy = 960 / s, 540 / s
-    return (min(1920 - hx, max(hx, x)), min(1080 - hy, max(hy, y)))
-
-
-def partial_clips(look, s, els):
-    """取景窗（屏幕安全框）会切断哪些文字元素：一部分在框内、一部分在框外。"""
-    bad = []
-    for e in els:
-        if e["kind"] in ("arrow", "codebox"):
-            continue
-        x, y, w, h = to_screen(e, look, s)
-        inside = x >= SAFE[0] - 2 and y >= SAFE[1] - 2 and x + w <= SAFE[2] + 2 and y + h <= SAFE[3] + 2
-        # 顶部遮罩：y < 140 完全隐去，140–178 是羽化带 → 文字底边必须在 150 以上才算「完全在框外」
-        outside = x + w <= 0 or x >= 1920 or y + h <= 150 or y >= 1080
-        if not inside and not outside:
-            bad.append(e["id"])
-    return bad
-
-
-def frame_rect(r, els, max_s=ZOOM_MAX, min_s=1.0):
-    """把矩形 r 取进安全框：先按 r 求最大推近，再逐级回退，直到没有任何文字元素被取景窗切断。"""
-    pad = 36
-    rw, rh = r["w"] + 2 * pad, r["h"] + 2 * pad
-    sw, sh = SAFE[2] - SAFE[0], SAFE[3] - SAFE[1]
-    s = max(min_s, min(max_s, 0.92 * min(sw / rw, sh / rh)))
-    cx, cy = r["x"] + r["w"] / 2, r["y"] + r["h"] / 2
-    scy = (SAFE[1] + SAFE[3]) / 2  # 安全框中心在 529，略高于画面中心
-    tries = []
-    offs = sorted(range(-480, 481, 40), key=abs)
-    offy = sorted(range(-300, 301, 30), key=abs)
-    while s >= min_s - 1e-9:
-        seen = set()
-        for dy in offy:
-            for dx in offs:
-                look = clamp_look(cx + dx / s, cy - (scy - 540) / s + dy / s, s)
-                key = (round(look[0]), round(look[1]))
-                if key in seen:
-                    continue
-                seen.add(key)
-                sx, sy, sw_, sh_ = to_screen(r, look, s)
-                if sx < SAFE[0] - 1 or sy < SAFE[1] - 1 or sx + sw_ > SAFE[2] + 1 or sy + sh_ > SAFE[3] + 1:
-                    continue
-                # 运行时还有 ≤3.5% 的慢推 + 微漂移：两个倍数都要不切字
-                if not partial_clips(look, s, els) and not partial_clips(look, s * 1.035, els):
-                    return {"x": round(look[0], 1), "y": round(look[1], 1), "s": round(s, 3)}, tries
-        tries.append(round(s, 3))
-        s -= 0.03
-    return {"x": 960.0, "y": 540.0, "s": 1.0}, tries
-
-
-def union(els):
-    xs = [e["x"] for e in els]; ys = [e["y"] for e in els]
-    x2 = [e["x"] + e["w"] for e in els]; y2 = [e["y"] + e["h"] for e in els]
-    return {"x": min(xs), "y": min(ys), "w": max(x2) - min(xs), "h": max(y2) - min(ys)}
-
-
-def move_frames(a, b):
-    """速度上限：屏幕位移 ≤ 28 px/帧、缩放 ≤ 0.012/帧；至少 16 帧、至多 34 帧。"""
-    dist = math.hypot((a["x"] - b["x"]) * max(a["s"], b["s"]), (a["y"] - b["y"]) * max(a["s"], b["s"]))
-    return int(max(16, min(34, max(dist / 28, abs(a["s"] - b["s"]) / 0.012))))
-
+# 取景计算（to_screen / clamp_look / partial_clips / frame_rect / union / move_frames）
+# 已切到 story_camera.py：纯函数组，单独可测。这里只保留调用。
 
 # ---------------------------------------------------------------- main compose
 def compose(story: dict, p: Problems):

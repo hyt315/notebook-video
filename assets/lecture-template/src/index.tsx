@@ -215,7 +215,10 @@ const cleanTail=(s:string)=>s.replace(/[，。！？；：、,.!?;:\s]+$/g,'');
 // 工程可在 src/film.ts 里 `export const CAPTION_REVEAL = 'line' | 'type'` 覆盖。
 const CAPTION_REVEAL:'line'|'type'=((FILM as any).CAPTION_REVEAL??AESTHETIC.captionReveal??(THEME.craft?'line':'type'))==='type'?'type':'line';
 const LINE_FADE=5;
-const Subtitle=()=>{
+const Subtitle=({off=false}:{off?:boolean})=>{
+  // 只有出封面帧（`notebook-video poster`）会传 off=true：字幕是烧在画面里的，
+  // 而封面当缩略图时带一行半句话的字幕很难看。正片渲染永远走默认值，行为不变。
+  if(off)return null;
   const {mode}=useCanvas();
   const f=useRawCurrentFrame(),lead=Math.round(FPS*.18),hold=Math.round(FPS*.05);
   let cue=captions.find((c:any)=>f>=c.startFrame-lead&&f<=c.endFrame+hold);
@@ -407,7 +410,7 @@ const Sound=()=>{
 // **只有 1 张**落在抽样集合上，于是「对每一镜跑一遍门禁」等于什么都没量。
 // 处置：把每镜的落定帧显式加进 WATCH —— **你要看的那一帧，门禁必须先看过**。
 const WATCH=(()=>{const out:number[]=[];SHOT_IDS.forEach((id:string)=>{const s:any=(SHOTS as any)[id];out.push(s.from-1,s.from,s.from+1,s.to-1,s.to);out.push(s.to-12);(s.beats||[]).forEach((b:number)=>out.push(s.from+b));(s.keys||[]).forEach((k:any)=>out.push(s.from+k.f));});return out;})();
-const FilmLayout:React.FC=()=>{
+const FilmLayout:React.FC<{hideCaptions?:boolean}>=({hideCaptions})=>{
   const mode=MODES['16:9'];
   return <CanvasContext.Provider value={{canvas:'16:9',mode}}>
     <AbsoluteFill style={{overflow:'hidden',background:C.paperBase}}>
@@ -428,14 +431,14 @@ const FilmLayout:React.FC=()=>{
         <FillGate mode="warn" watch={WATCH}/><MascotGate watch={WATCH}/><Sound/><Backdrop/>
         {<><Chrome/><FinalDemo/></>}
         <Grade/>
-        <Subtitle/>
+        <Subtitle off={hideCaptions}/>
       </div>
     </AbsoluteFill>
   </CanvasContext.Provider>;
 };
 
 // 只有 16:9 一种交付画布（2560×1440，设计坐标 1920×1080）。
-const Film16x9=()=> <FilmLayout/>;
+const Film16x9=({hideCaptions}:{hideCaptions?:boolean}={})=> <FilmLayout hideCaptions={hideCaptions}/>;
 
 // 接触表 composition 的渲染期门禁（v1）：
 // `NotebookVideoShowcase` 此前**一道门禁都没有** —— 第 ⑥ 页第三站的标签块越出画布右缘被裁

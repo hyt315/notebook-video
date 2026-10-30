@@ -4,10 +4,10 @@
 
 **把一个知识点变成一支 16:9 中文讲课视频：组件场景 + 引擎虚拟镜头 + 对拍音效，一条命令出片，客观门禁自动修。**
 
-[![Version](https://img.shields.io/badge/version-3.3.0-1f6feb)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.4.0-1f6feb)](CHANGELOG.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
-[![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel-ff7a59)](references/theme-system.md)
+[![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel%20%7C%20journal%20%7C%20papercut%20%7C%20archive-ff7a59)](references/theme-system.md)
 [![Validate](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml/badge.svg)](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
 
@@ -28,15 +28,15 @@
 - **镜头会跟着讲**：引擎级虚拟摄影机缺省缓推，讲到哪个词就推近到哪个组件，换镜用甩镜 / 推穿。
 - **弱模型也能复刻**：10 个讲课蓝图（5 个组件路线 + 5 个手作结构族）逐镜写好该用的骨架与组件，加上黄金样例、短流程和一条命令；能客观判断的问题，引擎直接自动修。
 
-- **3.3.0 新增：一本手账一张纸、评审先于成片**：手作皮肤默认 `bgMode: "chapter"`（每章一张纸，章内沿用；`"film"` 全片一张、`"shot"` 逐镜轮换），
+- **一本手账一张纸、评审先于成片**：手作皮肤默认 `bgMode: "chapter"`（每章一张纸，章内沿用；`"film"` 全片一张、`"shot"` 逐镜轮换），
   装饰重的背景（`busy`）不进常规镜；`resolve-shots` 从实际镜头表自动生成 `storyboard.md` 给独立评审用；
   手作皮肤没做评审时 `make-video --render` 先停下（草稿用 `--skip-review`）；无 TTS 片按读速 `--cps`（缺省 6.5 字/秒）整行出字幕。
 
-- **3.3.0 新增：背景库**：每个手作皮肤再加 8 张、flat / cel 各加 5 张亮底背景（横线本、宣纸、窗花、古地图、胶片、网点、mesh 渐变……），
+- **背景库**：每个手作皮肤再加 8 张、flat / cel 各加 5 张亮底背景（横线本、宣纸、窗花、古地图、胶片、网点、mesh 渐变……），
   不写就按镜头角色自动轮换、相邻两镜不重复；每张都登记了来源与许可（Paper Shaders 离线预渲、Commons 公有领域 / CC0 纹理、确定性程序生成），
   门禁核对亮底与字幕区对比度。见 [references/background-library.md](references/background-library.md)。
 
-- **3.3.0 新增：先想"用什么东西演"**：导演层（隐喻先行 → 媒介即隐喻 → 顿悟点的原生动作 → 三候选结构，`treatment.json` 有门禁）；
+- **先想"用什么东西演"**：导演层（隐喻先行 → 媒介即隐喻 → 顿悟点的原生动作 → 三候选结构，`treatment.json` 有门禁）；
   三套亮底手作皮肤（`journal` 手账水彩 / `papercut` 红色剪纸 / `archive` 档案灯台）和 craft 材质组件（压感墨线、"写出来"的中文、水彩晕染、剪纸、放大镜）；
   每个选题先搜 **Wikimedia Commons / Openverse** 的真实素材，许可自动过滤、署名自动上屏。
 
@@ -48,21 +48,25 @@
 | --- | --- |
 | **组件场景** | 4 种骨架（Stage / Split / Zoom / Corridor）+ 组件库（`ConsoleWindow`、`DiffView`、`HighlightCode`、`StatRow`、`Funnel`、`ProgressRing`、`KineticNumber`、`StampSeal`、`VerdictBar` 等），配色全部走主题 token |
 | **引擎虚拟镜头** | 每镜缺省缓推；`cinema.focus` 按台词关键词推近到对应组件、镜头横摇；甩镜 / 推穿转场；背景视差；内容太小时自动放大到安全区 60–80%；推近时自动留边，不切断标题 |
-| **对拍音效** | 10 个代码合成的语义音效（CC0）+ 可选音乐床；每条 cue 带 `gain` / `offsetMs`，提前起播让瞬态落在视觉命中帧（±1 帧）；间隔 ≥150 ms、约 24 个/分钟封顶；音乐床在音效下自动闪避 |
+| **对拍音效** | 16 个代码合成的语义音效（CC0，`public/sfx/lib/`）+ 可选音乐床；每条 cue 带 `gain` / `offsetMs`，提前起播让瞬态落在视觉命中帧（±1 帧）；间隔 ≥150 ms、约 24 个/分钟封顶；音乐床在音效下自动闪避 |
 | **真实素材** | 截图 / ≤10 秒录屏 / 动图放进 `MediaFrame`（与组件同一套卡片外观，可选浏览器 / 窗口 / 手机外壳，区域推近、描框、旁注、署名徽章）；`prepare-media` 一键转码，`validate-media` 拦糊图与许可缺失 |
 | **弱模型友好** | 5 个蓝图（concept / code-change / data-compare / process / pitfall），每镜的 `$components` 写明骨架与组件；黄金样例 `examples/`；未填的 `<<占位符>>` 直接报错 |
 | **一条命令** | `make-video.mjs`：resolve-shots → 门禁 → tsc → 静帧接触表或整片渲染 → `renders/report.md`；Windows 有 `make-video.cmd` |
+| **交付不只是一个 mp4** | 整片渲完自动再出 `renders/captions.srt`（画面里那套断句，不是重新识别）和 `renders/poster.jpg`（取 `treatment.signature_shot` 的落定帧，且不画字幕）。单独重出：`poster` / `export-srt` / `deliver` |
+| **改完能对比** | `eval-project 旧工程 新工程` 把片子拆成可比的数据（镜长分布、版式 / 介质 / 转场种类、运镜覆盖、字幕密度、空场读数）并给 Δ。**不打分**：阈值只在门禁里存一处 |
+| **先看 30 秒再渲全片** | `notebook-video preview <工程>` 只渲一段（缺省前 30 秒、半分辨率）并出接触片和响度读数；`--shot=S6` 只看一镜。改一版看一版不必等整片，实测 30 秒片段约 40 秒出片 |
+| **全片一镜不漏** | `notebook-video sweep <工程>` 每镜截一张落定态、拼成一张体检表（`renders/sweep-sheet.jpg`），八镜约 60 秒跑完，判空场用的是渲染期同一套阈值。`preview` 只看开头，片子长了尾巴容易漏——这一步补的就是它 |
 | **门禁与自动修** | 硬门禁只管客观问题（取景切字、字号地板、对比度 ≥4.5:1、字幕每行 ≤16 字、读速（组件路线 ≤4.5 字/秒，手作路线 6.5 字/秒）、画面静止、音画同步、音效电平），能修的自动修；主观项只给建议 |
 | **确定可复现** | 所有动画都是帧号的纯函数（不用 `Math.random`、CSS 动画、计时器）；不依赖生图模型，不需要在线 API |
 
-## 3.5 → 3.7 新特性
+## 3.4.0 新增
 
-- **真翻页转场**：手作皮肤的镜间转场是 `pageturn` / `peel`（WebGPU 卷页），需要完整版 Chrome；机器画不了会自动退回 `slide` / `drop` 并在报告里记 P1，成片照出。
-- **运镜与冷开有门禁**：`validate-treatment` 拿 treatment 写的 `move` / `framing` 对照镜头表，招牌镜头必须真推 ≥12%；`validate-opening` 管前 3 秒（第 0 帧有事件、首条字幕 ≤1 s、片名不当第一镜、第一句不是泛问句）。
-- **整行字幕与响度标准**：字幕整行淡入；静音旁白片目标 −16 LUFS（真峰 ≤ −1.5 dBTP）。
-- **`bgMode` 按章换纸**：见上面「主题」一节。
-- **分镜联系表自动生成**：`storyboard.md` 由 `resolve-shots` 按镜头表写出，手作皮肤渲染前要么有 `review.rounds`、要么显式 `--skip-review`。
-- **音效默认稀疏**：`sfxDensity` 缺省 `sparse`（每镜一记），想更热闹写 `"sfxDensity": "normal"`。
+- **`preview`：改一版看一版**。只渲一段（缺省前 30 秒、半分辨率）并出接触片与响度读数；`--shot=S6` 只看一镜，`--from` / `--seconds` 任意窗口。不必等整片。
+- **`sweep`：全片一镜不漏**。每镜取一帧落定态，拼成 `renders/sweep-sheet.jpg` 体检表；少一镜会明写「未量到」。`preview` 只看开头、片子长了尾巴容易漏——这一步补的就是它。
+- **空场可度量**。FillGate 以 8×6 网格量化版面占用（`cells` / `blank` / `largest` / `widest`），「主体过小」有条状主体与组合装置两条豁免；数字落盘 `renders/fill-coverage.json`。
+- **交付三件套**。`export-srt` 出 SRT 字幕、`poster` 出封面（取 `signature_shot` 的落定帧、不画字幕）、`deliver` 打包；整片渲完自动产出。
+- **`eval-project` 改完能对比**。把片子拆成可比的数据（镜长分布、版式 / 介质 / 转场种类、运镜覆盖、字幕密度、空场读数）并给 Δ，只测量不打分。
+- **自带中文分词**。BudouX 模型随仓库分发（`assets/vendor/budoux/`），短语断行在离线环境同样生效。
 
 **旁白**：技能不内置 TTS。使用者可后配任意 TTS 或真人旁白，配好后跑 `match-timing.py` 重对齐即可。
 

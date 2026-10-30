@@ -113,7 +113,9 @@ class FillGateTest(unittest.TestCase):
         self.assertIn("warned.has(sid)", FILL)
         self.assertNotIn("下 1/4 已填", FILL)  # the periodic "all good" lines are gone
         self.assertIn("bottom-quarter underfilled", CLI)
-        self.assertIn("runRemotionFiltered(nodeArgs, project)", CLI)
+        # 渲染路径必须经过过滤器（否则 FillGate 的日志不会被汇总）。
+        # 3.9.0 多带了 options（measure / persist），所以用前缀匹配而不是整串相等。
+        self.assertRegex(CLI, r"runRemotionFiltered\(nodeArgs, project[,)]")
 
 
 

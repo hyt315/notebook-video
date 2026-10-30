@@ -297,7 +297,7 @@ wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的�
 
 ```text
 node scripts/notebook-video.mjs showcase PROJECT_DIR          # 渲染接触表 mp4（交付规格：2560×1440 / 静音 AAC / 色彩四项回写）
-node scripts/notebook-video.mjs showcase-sheet PROJECT_DIR    # 再抽接触表 jpg（select 按帧号取每页第 6/21 帧：两张中段图，6×6 共 36 格）
+node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet   # 只要接触表 jpg（select 按帧号取每页第 6/21 帧：两张中段图，6×6 共 36 格）
 ```
 
 > 交付规格说明：composition 原生画布是 1920×1080，那支 mp4 是**交付物**（组件接触表成片），
