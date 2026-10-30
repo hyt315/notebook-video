@@ -156,6 +156,8 @@ if (!flag('no-gates')) {
   const gates = [
     ['validate-shot-motion.py', [project], true],
     ['validate-presentation.py', [project], true],
+    // 3.5.0 中文字面：字体栈里必须在泛型族之前有一个带 CJK 字面的族（代码卡豆腐块的根因）
+    ['validate-glyphs.py', [project], true],
     ['validate-frame-props.py', [project], true],
     ['validate-audio-levels.py', [project], true],
     ['validate-media.py', [project], true],

@@ -174,14 +174,17 @@ export const FillGate: React.FC<{
         document.querySelectorAll<HTMLElement>('div,span,p,svg,text,tspan,circle,ellipse,rect,path,line,polyline,polygon').forEach((el) => {
           if (el.closest('[data-gate-skip]')) return;
           if (el.closest('[data-gate-allow]')) return;
-          if (el.closest('[data-cinema-focus]')) return; // 推近特写不量下 1/4 填充
-          const b = infoBoxOf(el);
-          if (!b) return;
+          // 推近特写只免「下 1/4」判据；横向覆盖照量（裁到画布内），否则镜尾一推近整镜就零数据（sweep 0/8）。
+          const focused = !!el.closest('[data-cinema-focus]');
+          const b0 = infoBoxOf(el);
+          if (!b0) return;
+          const b = {left: Math.max(b0.left, rr.left), top: Math.max(b0.top, rr.top), right: Math.min(b0.right, rr.right), bottom: Math.min(b0.bottom, rr.bottom)};
+          if (b.right - b.left < 1 || b.bottom - b.top < 1) return;
           n++;
           boxes.push(b);
-          if (b.bottom > bottom) bottom = b.bottom;
+          if (!focused && b.bottom > bottom) bottom = b.bottom;
         });
-        if (!n || bottom === -Infinity) {
+        if (!n) {
           release();
           return;
         }
@@ -236,7 +239,7 @@ export const FillGate: React.FC<{
           }
         }
 
-        const pass = designBottom >= floorY - TOL;
+        const pass = bottom === -Infinity || designBottom >= floorY - TOL;
         if (checkFloor && !pass) {
           const msg =
             `[FillGate] @${raw} 内容底边只到 y=${Math.round(designBottom)}（设计坐标），` +

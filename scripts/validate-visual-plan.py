@@ -174,7 +174,41 @@ def validate(project: Path) -> list[str]:
     if scene_asset_ids != declared:
         errors.append(f"scene visual asset IDs differ from project declaration: {sorted(scene_asset_ids)} != {sorted(declared)}")
     errors.extend(validate_canvas_mode(project))
+    errors.extend(validate_custom_registry(project))
     return errors
+
+
+def validate_custom_registry(project: Path) -> list[str]:
+    """story 里引用的定制组件必须在 src/custom/index.ts 的 CUSTOM 表里真实注册。
+
+    为什么在这里也查一次：compose-story 是主要拦截点，但工程可能被手改（直接编辑 story.ts）
+    或绕过 compose 重新渲染。`CUSTOM` 里找不到 → 渲染期就是红字顶替 / cancelRender，
+    与其到出片时才发现，不如在 validate 阶段点名组件与注册文件。
+    """
+    story = project / "src" / "story.ts"
+    if not story.is_file():
+        return []
+    names = sorted(set(re.findall(r'"custom"\s*:\s*"([^"]+)"', story.read_text(encoding="utf-8"))))
+    if not names:
+        return []
+    registry = project / "src" / "custom" / "index.ts"
+    have: set[str] = set()
+    if registry.is_file():
+        text = registry.read_text(encoding="utf-8")
+        m = re.search(r"export const CUSTOM\b[^=]*=\s*\{", text)
+        if m:
+            i, depth, start = m.end(), 1, m.end()
+            while i < len(text) and depth:
+                if text[i] == "{":
+                    depth += 1
+                elif text[i] == "}":
+                    depth -= 1
+                i += 1
+            have = set(re.findall(r"(?m)^\s*([A-Za-z_$][\w$]*)\s*(?::|,|$)", text[start:i - 1]))
+    return [
+        f"custom: component {name!r} is referenced by story but not registered in {registry}"
+        for name in names if name not in have
+    ]
 
 
 def main() -> int:

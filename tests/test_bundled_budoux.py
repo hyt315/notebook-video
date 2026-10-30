@@ -112,9 +112,10 @@ class BundledBudouXTest(unittest.TestCase):
         )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        # A directory with no node_modules anywhere above it that matters: the
-        # template's manifests dir, which is where the real call site sits.
-        found = module.find_budoux_root(None, [ROOT / "assets" / "lecture-template" / "manifests"])
+        # 一个祖先目录里没有 node_modules 的路径：模拟"刚 clone、没装依赖"的工程。
+        # 不能用 assets/lecture-template/manifests：开发机上装了模板依赖后，
+        # 那一层 node_modules 会（正确地）被优先命中，这条兜底就测不到了。
+        found = module.find_budoux_root(None, [ROOT / "examples"])
         self.assertIsNotNone(found, "没有兜底到 assets/vendor —— 短语规则会静默跳过")
         self.assertEqual(Path(found).resolve(), VENDOR.resolve())
 

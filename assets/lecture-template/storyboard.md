@@ -13,4 +13,4 @@
 | S5 | 17.73–22.73 | 中 | push-in | 中：最松 ≤1.20 | 1.03→1.08 | cut | flat/sunrise | Funnel · ProgressRing | 第三步，学会运营， / 按时发布新版本。 |
 | S6 | 22.73–26.77 | 中 | pan-follow | 中：最松 ≤1.20 | 1.06→1.06 | cut | flat/mesh-mint | StampSeal | 这三步，我做成了 / 三个AI技能。 |
 | S7 | 26.77–30.63 | 全 | reveal | 全：最松 ≤1.05 | 1.04→1.08 | reveal | flat/main | ChatThread · SkeletonCard | 让智能体陪你走完全程。 |
-| S8 | 30.63–38.33 | 全 | pull-back | 全：最松 ≤1.05 | 1.10→1.00 | cut | flat/dotgrid | MetricGrid · StampBanner · VerdictBar | 三期视频，一期一步。 / 主页搜hyt315，现在出发。 |
+| S8 | 30.63–38.33 | 全 | pull-back | 全：最松 ≤1.05 | 1.10→1.00 | cut | flat/dotgrid | MetricGrid · StampBanner · VerdictBar | 三期视频，一期一步。 / 主页搜【你的账号】，现在出发。 |

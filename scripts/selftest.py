@@ -66,6 +66,7 @@ def main() -> int:
         "scripts/validate-composition.py",
         "scripts/validate-visual-plan.py",
         "scripts/validate-presentation.py",
+        "scripts/validate-glyphs.py",
         "references/presentation-gate.md",
         "scripts/coords-lint.py",
         "scripts/retime.py",
@@ -141,6 +142,18 @@ def main() -> int:
         except SyntaxError as exc:
             ast_errors.append(f"{py_script.name}: Syntax error: {exc}")
     check("脚本 AST 语法解析", not ast_errors, f"errors: {ast_errors}" if ast_errors else "all scripts/*.py valid syntax")
+
+    # ---- 好夹具 1c：中文字面门禁（3.5.0）。模板必须过；故意写一条 monospace 中文栈必须拦 ----
+    good = run(sys.executable, "scripts/validate-glyphs.py", str(ROOT / "assets" / "lecture-template"))
+    check("中文字体栈：模板通过", good.returncode == 0,
+          (good.stdout.strip().splitlines() or ["<no output>"])[-1][:90])
+    with tempfile.TemporaryDirectory() as td:
+        src = Path(td) / "src"
+        src.mkdir()
+        (src / "bad.tsx").write_text("export const x = {fontFamily: 'monospace'};\n", encoding="utf-8")
+        bad = run(sys.executable, "scripts/validate-glyphs.py", td)
+        check("负向：中文栈只写 monospace 被拦", bad.returncode == 1 and "CJK" in bad.stdout,
+              f"rc={bad.returncode}")
 
     # ---- 好夹具 2：主题开关默认 flat（出厂状态，3.2.0 起） ----
     active = ROOT / "assets" / "lecture-template" / "src" / "theme" / "active.ts"

@@ -519,8 +519,9 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
             p1.append({"id": "-", "issue": f"最长/最短镜头仅 {ratio:.2f} 倍（{hi}/{lo}），全片一个速度=节拍器；建议 2.5–3 倍以上"})
         mean = sum(durs) / len(durs)
         cv = (sum((d - mean) ** 2 for d in durs) / len(durs)) ** 0.5 / max(mean, 1)
-        if cv < MIN_LENGTH_CV:
-            p1.append({"id": "-", "issue": f"镜长变异系数 {cv:.2f} < {MIN_LENGTH_CV}（平均 {mean / 30:.1f}s）：镜长太整齐，读起来是节拍器；长短镜交替（references/camera-language.md §5）"})
+        # 比较与显示用同一精度：0.349 显示成 0.35，却报「0.35 < 0.35」，读者无法理解（实测 P1 里出现过）。
+        if round(cv, 2) < round(MIN_LENGTH_CV, 2):
+            p1.append({"id": "-", "issue": f"镜长变异系数 {cv:.2f} < {MIN_LENGTH_CV:.2f}（平均 {mean / 30:.1f}s）：镜长太整齐，读起来是节拍器；长短镜交替（references/camera-language.md §5）"})
         share = {}
         for d in durs:
             for a, b, name in BANDS:

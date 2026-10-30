@@ -180,6 +180,19 @@ def check(proj: Path) -> tuple[list[str], list[str], str]:
         hard.append(f"medium.skin={ms} 与工程皮肤 {skin} 不一致（媒介即隐喻：选定了就用它）")
     elif ms and ms not in SKINS and not placeholder(ms):
         hard.append(f"medium.skin={ms} 不是已有皮肤（{', '.join(sorted(SKINS))}）")
+    # why 必须为**自己这个皮肤**辩护：出现别的皮肤名、且同一句里是推荐语气（更 / 适合 / 不如 / 优于）
+    # → P1。旧版只换 skin 不换 why，新建 journal 工程的 treatment 却在论证 flat 更直接（自相矛盾）。
+    why = str(get(t, "medium.why") or "")
+    for other in sorted(SKINS - {skin}):
+        for sent in re.split(r"[；;。\n]", why):
+            if not sent.strip():
+                continue
+            if re.search(rf"(?<![A-Za-z]){re.escape(other)}(?![A-Za-z])", sent) and re.search(r"更|不如|适合|优于|胜过|比", sent):
+                soft.append(
+                    f"medium.why 在论证 {other} 而不是 {skin}：「{sent.strip()}」—— 换成一段为 {skin} 辩护的理由"
+                    f"（为什么这个题材非它不可），否则皮肤与理由是两套说法"
+                )
+                break
     # 片长
     dur = None
     rs = proj / "manifests" / "shots.resolved.json"

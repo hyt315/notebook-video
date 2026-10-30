@@ -158,7 +158,15 @@ const checkDeps = async () => {
 
 // flat 为默认；cel 漫画；3.3.0 新增三套手作皮肤（亮底纸张）：journal 手账水彩 / papercut 红色剪纸 / archive 档案灯台。
 const THEME_IDS = ['flat', 'cel', 'journal', 'papercut', 'archive'];
-// 手作皮肤的字幕与正文用 Noto Serif SC Bold（用户字幕规范：96 px@1440 衬线粗体），需要额外字体。
+// new-project 换皮肤时，medium.why 要和 medium.skin 一起换：每段只为自己这个皮肤辩护。
+// （旧版只改 skin，于是「新建 journal 工程」的 treatment 里 why 在说 flat 更直接 —— 自相矛盾。）
+const SKIN_WHY = {
+  flat: '这是一个操作性的、要观众跟着做的话题：干净的卡片、清单、代码差异和数字行比纸感更直接；手作皮肤留给「有人第一次看见某件事」的题。',
+  cel: '这个话题有一个具体的「角色」和一次转折：漫画分镜能把动作与反应画在同一格里，比中性卡片更能让观众站在主角那一侧。',
+  journal: '这个话题是「一个人第一次弄明白一件事」：手账的纸面、便签和手写批注让笔记本身成为证据，观众看到的是一个人边写边想，而不是一份结论。',
+  papercut: '这个话题有一个可以剪出来的形状和一层层叠加的关系：剪纸的硬边、套色和层叠正好说明「一层压一层」的结构，换成平涂会丢掉这种手感。',
+  archive: '这个话题依赖「旧材料被重新翻出来」：档案纸、标签、印章和编号让每一条事实都像从卷宗里取出，比干净卡片更有出处感。',
+};// 手作皮肤的字幕与正文用 Noto Serif SC Bold（用户字幕规范：96 px@1440 衬线粗体），需要额外字体。
 const SERIF_THEMES = ['journal', 'papercut', 'archive'];
 
 // LXGW WenKai Lite (OFL-1.1) is not stored in the repo (~28 MB). It is downloaded once
@@ -254,11 +262,14 @@ const newProject = async (args) => {
   }
   // 3.3.0（T8.1）：模板自带的 treatment.json 描述的是示例片；换皮肤时 medium.skin 必须跟着改，
   // 否则 validate-treatment 直接以「medium.skin 与工程皮肤不一致」判 P0（手作皮肤必填项）。
+  // 3.5.0：why 也必须一起换 —— 只改 skin 会得到「选了 journal，why 却在论证 flat 更直接」的自相矛盾
+  // （手作黄金样例实测就是这么写出来的）。
   const treatmentPath = path.join(target, 'manifests', 'treatment.json');
   if (fs.existsSync(treatmentPath)) {
     const t = JSON.parse(fs.readFileSync(treatmentPath, 'utf8'));
     if (t.medium && typeof t.medium === 'object') {
       t.medium.skin = style;
+      if (SKIN_WHY[style]) t.medium.why = SKIN_WHY[style];
       fs.writeFileSync(treatmentPath, `${JSON.stringify(t, null, 2)}\n`);
     }
   }
@@ -838,12 +849,22 @@ const renderStill = async ({project, output, frame, scale}) => {
   const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
   if (!fs.existsSync(remotionCli)) fail(`Remotion CLI 缺失：${remotionCli}（先在工程里跑 npm ci）`, 1);
   const nodeArgs = [...hideConsoleArgs()];
-  nodeArgs.push(remotionCli, 'still', REMOTION_ENTRY_POINT, 'NotebookVideoFilm', output, `--frame=${frame}`, `--scale=${scale}`, '--log=verbose');
+  // 用 `render --frames=N-N --sequence` 而不是 `still`：实测 Remotion 4.0.539 的 `still` 在 Linux 上不转发组件内的
+  // console（连 FillGate 的 delayRender 都看不到），sweep 因此 0/8 镜量到；`render` 单帧序列会转发。
+  const seqDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nv-still-'));
+  nodeArgs.push(remotionCli, 'render', REMOTION_ENTRY_POINT, 'NotebookVideoFilm', seqDir, `--frames=${frame}-${frame}`, '--sequence', '--image-format=png', `--scale=${scale}`, '--log=verbose');
   // ⚠ 必须放在 remotion 子命令参数里（nodeArgs 末尾），不是 node 自己的参数——
   // 放前面 node 会报 `bad option: --browser-executable=…` 然后 rc=9，而且八镜会连报八次。
   const browser = resolveBrowserExecutable();
   if (browser) nodeArgs.push(`--browser-executable=${browser}`);
-  return runRemotionFiltered(nodeArgs, project, {quiet: true});
+  try {
+    const r = await runRemotionFiltered(nodeArgs, project, {quiet: true});
+    const png = fs.readdirSync(seqDir).find((f) => f.endsWith('.png'));
+    if (png) fs.copyFileSync(path.join(seqDir, png), output);
+    return r;
+  } finally {
+    fs.rmSync(seqDir, {recursive: true, force: true});
+  }
 };
 
 // 把每镜一张拼成一张表。用 ffmpeg 的 concat demuxer + tile：不依赖文件名排序，
@@ -1077,6 +1098,7 @@ const pythonCommandMap = new Map([
   ['build-semantic-captions', ['build-semantic-captions.py']],
   ['validate-layering', ['validate-layering.py']],
   ['validate-visual-plan', ['validate-visual-plan.py']],
+  ['validate-glyphs', ['validate-glyphs.py']],
   ['validate-caption-sync', ['validate-caption-sync.py']],
   ['validate-semantic-breaks', ['validate-semantic-breaks.py']],
   ['export-srt', ['export-srt.py']],
@@ -1246,7 +1268,8 @@ const deliver = async (args) => {
 };
 
 const usage = () => {  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  fonts [--serif]   (download the pinned LXGW WenKai Lite fonts once — plus Noto Serif SC with --serif; new-project does this automatically)\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel|journal|papercut|archive]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]
-  preview PROJECT_DIRECTORY [--seconds=30] [--from=SEC] [--shot=ID] [--scale=0.5] [--fx=on]   (3.8.0: 30 s low-res check before the full render; 卷页默认关)\n  sweep PROJECT_DIRECTORY [--scale=0.5] [--cols=4] [--plan] [--json]   (3.9.0: 每镜末段扫一遍，全片都量到——preview 只看开头，尾巴容易漏)\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nvalidate-treatment PROJECT_DIRECTORY   (3.3.0 director layer: manifests/treatment.json)\nvalidate-opening PROJECT_DIRECTORY [--video MP4]   (3.3.0 first three seconds: cold open, first caption, beats, pixels)\nsilent-timing LINES_TXT OUT_JSON [--cps N] [--project DIR]   (3.3.0 caption timing without TTS; hand-made skins default 6.5 chars/s)\nvalidate-backgrounds PROJECT_DIRECTORY [--shots] [--recompute]   (3.3.0 background library: manifests/backgrounds.json)\nvalidate-media PROJECT_DIRECTORY\nprepare-media PROJECT_DIRECTORY [--add FILE --id ID …]\ncommons search \"QUERY\" [--type image|video|audio] [--source commons|openverse] [--audio-category music|sound_effect] [--project DIR] | commons add PROJECT \"File:…\" --id ID | commons credits PROJECT\nvalidate-ocr PROJECT_DIRECTORY --video MP4 | --stills DIR   (optional: needs pip rapidocr onnxruntime)\nshowcase PROJECT_DIRECTORY [OUTPUT] [--sheet|--craft] [--frame=N] [--scale=S]   (组件样张：默认出库的 mp4+接触表，--sheet 只要接触表，--craft 出手作笔刷样张)
+  preview PROJECT_DIRECTORY [--seconds=30] [--from=SEC] [--shot=ID] [--scale=0.5] [--fx=on]   (3.8.0: 30 s low-res check before the full render; 卷页默认关)\n  sweep PROJECT_DIRECTORY [--scale=0.5] [--cols=4] [--plan] [--json]   (3.9.0: 每镜末段扫一遍，全片都量到——preview 只看开头，尾巴容易漏)\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY
+validate-glyphs PROJECT_DIRECTORY   (3.5.0: every on-screen font stack must carry a CJK face before the generic family)\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nvalidate-treatment PROJECT_DIRECTORY   (3.3.0 director layer: manifests/treatment.json)\nvalidate-opening PROJECT_DIRECTORY [--video MP4]   (3.3.0 first three seconds: cold open, first caption, beats, pixels)\nsilent-timing LINES_TXT OUT_JSON [--cps N] [--project DIR]   (3.3.0 caption timing without TTS; hand-made skins default 6.5 chars/s)\nvalidate-backgrounds PROJECT_DIRECTORY [--shots] [--recompute]   (3.3.0 background library: manifests/backgrounds.json)\nvalidate-media PROJECT_DIRECTORY\nprepare-media PROJECT_DIRECTORY [--add FILE --id ID …]\ncommons search \"QUERY\" [--type image|video|audio] [--source commons|openverse] [--audio-category music|sound_effect] [--project DIR] | commons add PROJECT \"File:…\" --id ID | commons credits PROJECT\nvalidate-ocr PROJECT_DIRECTORY --video MP4 | --stills DIR   (optional: needs pip rapidocr onnxruntime)\nshowcase PROJECT_DIRECTORY [OUTPUT] [--sheet|--craft] [--frame=N] [--scale=S]   (组件样张：默认出库的 mp4+接触表，--sheet 只要接触表，--craft 出手作笔刷样张)
 poster PROJECT_DIRECTORY [OUTPUT_JPG] [--frame=N|--shot=ID] [--scale=1]   (3.9.0: one cover still — a settled frame of the signature shot, captions suppressed)
 deliver PROJECT_DIRECTORY   (3.9.0: subtitles + cover for a finished project, re-runnable without re-rendering)
 export-srt CAPTION_CUES_JSON OUTPUT_SRT [--offset-ms N]   (3.9.0: delivery subtitles from the cues the film already uses)

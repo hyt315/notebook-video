@@ -1,5 +1,5 @@
-import React from 'react';
-import {Easing, interpolate} from 'remotion';
+import React, {useEffect} from 'react';
+import {Easing, cancelRender, interpolate} from 'remotion';
 import {THEME} from './theme/active';
 import {KineticNumber, drawOn} from './cinema';
 import {STORY} from './story';
@@ -84,7 +84,10 @@ const Box: React.FC<{e: Elem; f: number; dim: number; style?: React.CSSPropertie
   </div>
 );
 
-const CODE_FONT = "'JetBrains Mono','DejaVu Sans Mono',Consolas,Menlo,monospace,Kai"; // Kai 兜底：代码注释里的中文不出豆腐块
+// ⚠ 泛型族（monospace）必须排在最后：CSS 里泛型族之后的名字会被整条忽略。
+// 旧值 `…,monospace,Kai` 于是让 Kai 从未参与回退——Linux 渲染机上 Consolas/Menlo 都不在，
+// monospace 落到 DejaVu Sans Mono（无 CJK 字面），代码注释里的中文就成了豆腐块。
+const CODE_FONT = "'JetBrains Mono','DejaVu Sans Mono',Consolas,Menlo,Kai,monospace";
 const codeTokens = (line: string) => {
   const out: {t: string; c: string}[] = [];
   const re = /(#.*$|\/\/.*$)|("[^"]*"|'[^']*')|\b(def|return|import|from|class|if|else|for|in|const|let|function|await|async|new)\b|(@[\w.]+)|(\d+(?:\.\d+)?)/g;
@@ -131,7 +134,7 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
         <HiBox w={w} pad={2} />
         <div style={{position: 'absolute', left: lx, width: e.barW, bottom: 52, height: e.barH * g, background: hot ? C.orange : C.lineBlue, borderRadius: '10px 10px 0 0'}} />
         <div style={{position: 'absolute', left: 0, right: 0, bottom: 52 + e.barH * g + 8, textAlign: 'center', fontSize: e.size, fontWeight: 700, color: hot ? C.orangeInk : C.ink, opacity: g, fontFamily: 'Space,Kai'}}>{e.valueText}</div>
-        <div style={{position: 'absolute', left: 0, right: 0, bottom: 4, textAlign: 'center', fontSize: e.size, color: C.ink, fontWeight: bold}}>{e.text}</div>
+        <div style={{position: 'absolute', left: 0, right: 0, bottom: 4, textAlign: 'center', fontSize: e.size, color: C.ink, fontWeight: bold, whiteSpace: 'nowrap'}}>{e.text}</div>
       </div>;
     }
     case 'codebox':
@@ -252,6 +255,18 @@ export type CustomProps = {
   C: typeof C;
 };
 
+/** 未注册定制组件的运行时兜底：不再用一行红字顶替继续出片，而是整片渲染失败。
+ *  构建期（compose-story / validate-visual-plan）已经拦过一次；这里只防"绕过构建直接渲染"。 */
+const MissingCustom: React.FC<{name: string}> = ({name}) => {
+  useEffect(() => {
+    cancelRender(new Error(
+      `未注册的定制组件：${name}。在 src/custom/index.ts 的 CUSTOM 表里注册它`
+      + `（照抄 RequestLane.tsx 的写法），然后重跑 compose-story。`
+    ));
+  }, [name]);
+  return null;
+};
+
 export const AutoShot: React.FC<{id: string; f: number}> = ({id, f}) => {
   const shot = STORY[id];
   if (!shot) return null;
@@ -264,7 +279,7 @@ export const AutoShot: React.FC<{id: string; f: number}> = ({id, f}) => {
       line: (i) => shot.lines[Math.max(0, Math.min(i, shot.lines.length - 1))] ?? 0,
     };
     return <div style={{position: 'absolute', inset: 0}}>
-      {Comp ? <Comp {...props} /> : <div style={{position: 'absolute', left: 200, top: 400, fontSize: 40, color: C.redInk}}>未注册的定制组件：{shot.custom}</div>}
+      {Comp ? <Comp {...props} /> : <MissingCustom name={String(shot.custom)} />}
       {shot.tips.map((t, i) => <TipView key={i} t={t} f={f} />)}
     </div>;
   }

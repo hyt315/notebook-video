@@ -1221,6 +1221,61 @@ case('CG 一致性 · MIN_LABEL_FONT 单独漂移（数值双真源交叉校验�
 ])
 cleanup(td_skill)
 
+# ---- 3.5.0 · 未注册的定制组件：构建期必须停（旧版渲染成一行红字继续出片） ----
+def mk_custom_proj():
+    td = tempfile.mkdtemp(prefix='nv-custom-')
+    for sub in ('src', 'manifests'):
+        shutil.copytree(os.path.join(TPL, sub), os.path.join(td, sub))
+    story = json.load(io.open(os.path.join(SKILL, 'examples/weak-model-test/float.story.json'), encoding='utf-8'))
+    story['chapters'][0]['shots'][0] = {
+        'layout': 'custom',
+        'lines': ['这一镜想手画一枚火箭。', '但组件没有注册。'],
+        'content': {'component': 'StageStack', 'elements': [
+            {'id': 'body', 'x': 300, 'y': 300, 'w': 600, 'h': 400, 'label': '箭体'}]},
+    }
+    io.open(os.path.join(td, 'story.json'), 'w', encoding='utf-8', newline='').write(
+        json.dumps(story, ensure_ascii=False, indent=2))
+    return td
+
+CW = os.path.join(SKILL, 'scripts/compose-story.py')
+_cp = mk_custom_proj()
+case('CW1 定制组件未注册 → compose-story 构建期停止（点名组件与镜号）', [
+    ('must_block:StageStack', 'compose-story', run([PY, CW, os.path.join(_cp, 'story.json'), _cp])),
+    ('must_block:未注册', '错误信息说清"未注册"与注册位置', run([PY, CW, os.path.join(_cp, 'story.json'), _cp])),
+])
+_reg = os.path.join(_cp, 'src/custom/index.ts')
+_txt = io.open(_reg, encoding='utf-8').read().replace('  RequestLane,\n', '  RequestLane,\n  StageStack: RequestLane,\n')
+io.open(_reg, 'w', encoding='utf-8', newline='').write(_txt)
+case('CW2 同一工程把组件注册进 CUSTOM → compose-story 放行（阴性对照）', [
+    ('must_pass', 'compose-story', run([PY, CW, os.path.join(_cp, 'story.json'), _cp])),
+])
+cleanup(_cp)
+
+# ---- 3.5.0 · 中文字体栈：泛型族后面的 CJK 族会被浏览器忽略，中文变豆腐块 ----
+def mk_glyph_proj(extra):
+    td = tempfile.mkdtemp(prefix='nv-glyph-')
+    shutil.copytree(os.path.join(TPL, 'src'), os.path.join(td, 'src'))
+    if extra:
+        io.open(os.path.join(td, 'src', '__gate_fixture.tsx'), 'w', encoding='utf-8', newline='').write(extra)
+    return td
+
+VG = os.path.join(SKILL, 'scripts/validate-glyphs.py')
+_gp = mk_glyph_proj("// fixture\nexport const x = {fontFamily: 'monospace'};\n")
+case('GL0 中文字体栈里没有任何带 CJK 字面的族（只写 monospace）→ validate-glyphs 拦', [
+    ('must_block:CJK', 'validate-glyphs', run([PY, VG, _gp])),
+])
+cleanup(_gp)
+_gp = mk_glyph_proj("// fixture\nexport const x = {fontFamily: 'JetBrains Mono,monospace,Kai'};\n")
+case('GL1 中文节点把 Kai 写在泛型族之后（浏览器会忽略）→ validate-glyphs 拦', [
+    ('must_block:泛型族', 'validate-glyphs', run([PY, VG, _gp])),
+])
+cleanup(_gp)
+_gp = mk_glyph_proj("// fixture\nexport const x = {fontFamily: 'Consolas,Menlo,Kai,monospace'};\n")
+case('GL2 同一栈把 Kai 放在泛型族之前 → 通过（阴性对照）', [
+    ('must_pass', 'validate-glyphs', run([PY, VG, _gp])),
+])
+cleanup(_gp)
+
 # ---- 3.2.0 的 compose / story / 音效 / 背景库 / 评审拦截用例 ----
 # 已切到 gates_compose.py；导入即注册（放在这里是为了保持输出顺序：核心用例在前）。
 import gates_compose  # noqa: E402,F401

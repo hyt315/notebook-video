@@ -66,6 +66,39 @@ INTENTS = {"statement": "establish", "define": "push-in", "number": "push-in", "
            "code": "push-in", "flow": "reveal", "list": "establish", "quiz": "push-in", "custom": "reveal", "media": "push-in"}
 ICON_BUDGET_SHOT, ICON_BUDGET_MIN = 1, 4
 
+# 允许直接上屏的单位（符号 / 公制短单位）。故事里的 `unit` 只该写这一列里的东西；
+# 写成「占比 %」「公斤燃料 / 公斤干重」这类说明句，会把柱顶读数拼成「85占比 %」并折行压到柱子上。
+UNIT_TOKENS = (
+    "%", "‰", "°C", "°", "×", "元", "万元", "亿元", "美元", "公斤", "千克", "克", "吨",
+    "米", "公里", "千米", "厘米", "毫米", "秒", "分钟", "小时", "天", "年", "人", "次",
+    "个", "倍", "度", "瓦", "千瓦", "伏", "安", "GB", "MB", "TB", "KB", "ms", "kg", "km",
+    "cm", "mm", "kWh", "W", "V", "A", "Gbps", "Mbps", "万次", "亿次", "万", "亿",
+)
+UNIT_OK = set(UNIT_TOKENS)
+
+
+def clean_unit(p: "Problems", sid: str, raw) -> str:
+    """把 unit 收敛成一个真正的单位符号。
+
+    规则：只接受 UNIT_TOKENS；带 % / ‰ / ° 的取符号；斜杠或空格分隔的取第一个合法单位；
+    都不行就去掉单位（宁可不写，也不把说明文字拼进读数）。每次降级都报 P1 并给出改法。
+    """
+    u = str(raw or "").strip()
+    if not u or u in UNIT_OK:
+        return u
+    for token in ("%", "‰", "°C", "°", "×"):
+        if token in u:
+            p.hint(f"{sid}: unit={raw!r} 不是单位，读数会拼成「85{u}」。已只保留 {token!r}；"
+                   f"「{u.replace(token, '').strip()}」这类说明请写进 title 或 label。")
+            return token
+    for part in re.split(r"[\s/]+", u):
+        for cand in sorted(UNIT_TOKENS, key=len, reverse=True):
+            if part.startswith(cand):
+                p.hint(f"{sid}: unit={raw!r} 太长，已收敛为 {cand!r}（其余的说明写进 title / label）。")
+                return cand
+    p.hint(f"{sid}: unit={raw!r} 不是可上屏的单位，已去掉 —— unit 只写符号（% / 公斤 / GB…），说明写进 title。")
+    return ""
+
 
 class Problems:
     def __init__(self):
@@ -354,7 +387,7 @@ def lay_number(p, sid, c, variant):
     dec = int(c.get("decimals", 0 if float(val).is_integer() else 1))
     txt = f"{c.get('prefix', '')}{val:.{dec}f}"
     size = 230
-    unit = c.get("unit", "")
+    unit = clean_unit(p, sid, c.get("unit", ""))
     nw = text_w(txt, size) * 0.98 + text_w(unit, size * 0.42)
     if nw > 820:
         size = int(size * 820 / nw); nw = 820
@@ -394,13 +427,17 @@ def lay_bars(p, sid, c, variant):
     total = bw * n + gap * (n - 1)
     x0 = X + (W - total) / 2
     vmax = max(float(d["value"]) for d in data) or 1
-    unit = c.get("unit", "")
+    unit = clean_unit(p, sid, c.get("unit", ""))
     hl = c.get("highlight")
     for i, d in enumerate(data):
         v = float(d["value"])
         bh = max(8, (bottom - top - 60) * v / vmax)
         bx = x0 + i * (bw + gap)
         lab = str(d["label"])
+        # 柱顶标签必须一行放下：>8 个汉字就报 P1（不自动折行——折下来的第二行会压在柱子上，
+        # 成片 45 秒处「13公斤燃料 / 公斤干重」就是这么糊成两行的）。
+        if len(lab) > 8:
+            p.hint(f"{sid}: 柱标签「{lab}」{len(lab)} 字 > 8 —— 柱顶只放一个短标签，细节写进 title 或台词。")
         lsz = TYPE["body"]
         while text_w(lab, lsz) > bw + gap - 10 and lsz > MIN_FONT:
             lsz -= 2
@@ -432,7 +469,7 @@ def lay_compare(p, sid, c, variant):
             ih.append((ils, isz, iht))
             hh += iht + 22
         return el(key, "panel", x, y, w, max(hh + 70, 300), d.get("title", ""), TYPE["title"], "body", appear,
-                  side=side, title=d.get("title", "之前" if side == "before" else "之后"), value=d.get("value"), unit=d.get("unit", ""),
+                  side=side, title=d.get("title", "之前" if side == "before" else "之后"), value=d.get("value"), unit=clean_unit(p, f"{sid}.{side}", d.get("unit", "")),
                   decimals=int(d.get("decimals", 0)), items=[{"lines": a, "size": b} for a, b, _ in ih], tone=d.get("tone", "orange" if side == "before" else "green"))
 
     if mode == "morph":
@@ -1001,6 +1038,64 @@ def js(v) -> str:
     return json.dumps(v, ensure_ascii=False, separators=(",", ":"))
 
 
+CUSTOM_KEY_RE = re.compile(r"(?m)^\s*([A-Za-z_$][\w$]*)\s*(?::|,|$)")
+
+
+def registered_customs(proj: Path) -> set[str]:
+    """读 `src/custom/index.ts` 的 CUSTOM 表，返回已注册的组件名。
+
+    为什么不用正则扫全文：注册表里还有 import、注释、以及 `RequestLane,` 这种简写；
+    只取 `export const CUSTOM = { … }` 这一层花括号里的键，才是真正能渲染的名字。
+    """
+    f = proj / "src" / "custom" / "index.ts"
+    if not f.is_file():
+        return set()
+    text = f.read_text(encoding="utf-8")
+    m = re.search(r"export const CUSTOM\b[^=]*=\s*\{", text)
+    if not m:
+        return set()
+    i, depth, start = m.end(), 1, m.end()
+    while i < len(text) and depth:
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+        i += 1
+    return set(CUSTOM_KEY_RE.findall(text[start:i - 1]))
+
+
+def check_customs(p: Problems, proj: Path, story_ts: dict) -> None:
+    """P0：story.json 引用了未注册的定制组件 → 构建期停止。
+
+    旧行为是渲染期用一行红字顶替（成片 74 秒处真的出过这行红字），既没有门禁也不出片失败。
+    现在在写盘前拦：说清组件名、哪几镜、注册文件、照抄哪个范例。
+    """
+    need = sorted({v.get("custom") for v in story_ts.values() if v.get("custom")})
+    if not need:
+        return
+    # 只有"完整工程"里才有注册表可核对。compose 也常被用来往空目录做一次干跑
+    # （负向夹具 / 只算帧数），那里没有 src/index.tsx —— 此时不冒充"查过了"，给一条提示，
+    # 运行期还有 cancelRender 兜底。
+    if not (proj / "src" / "index.tsx").is_file():
+        p.hint(
+            f"这个目录还不是完整工程（没有 src/index.tsx），无法核对定制组件 {', '.join(need)} 是否注册；"
+            f"写进真实工程后 compose 会再查一次。"
+        )
+        return
+    have = registered_customs(proj)
+    reg = proj / "src" / "custom" / "index.ts"
+    for name in need:
+        if name in have:
+            continue
+        shots = [sid for sid, v in story_ts.items() if v.get("custom") == name]
+        p.err(
+            f"{'、'.join(shots)}：定制组件 {name} 未注册 —— 在 {reg} 的 CUSTOM 表里加一行 `{name},`。"
+            f"组件本体照抄 src/custom/RequestLane.tsx：新建 src/custom/{name}.tsx，"
+            f"导出 `const {name}: React.FC<CustomProps>`；story.json 里写 \"component\":\"{name}\"。"
+            f"（未注册的定制组件以前会渲染成一行红字继续出片，现在直接停止。）"
+        )
+
+
 def write_project(story, comp, out_shots, story_ts, total, proj: Path):
     (proj / "manifests").mkdir(parents=True, exist_ok=True)
     (proj / "audio").mkdir(exist_ok=True)
@@ -1020,9 +1115,14 @@ def write_project(story, comp, out_shots, story_ts, total, proj: Path):
             "duration": total, "theme": story.get("theme", "flat"), "canvas": "16:9", "shots": out_shots}
     (proj / "manifests" / "shots.json").write_text(json.dumps(sdoc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     chapters = [c.get("title", "") for c in story["chapters"]]
+    # 3.5.0 · captions.mode：line（默认，整行随 TTS 句子出现）/ typewriter（逐字，保留可选）。
+    # 写进 film.ts，引擎侧（index.tsx）优先读它；老工程没有这个导出时按皮肤默认走。
+    cap_mode = str((story.get("captions") or {}).get("mode", "line")).lower()
+    reveal = "line" if cap_mode in ("line", "") else "type"
     film = ("// AUTO-GENERATED by scripts/compose-story.py — 禁止手改（改 story.json）。\n"
             f"export const COPY = {js({'chapterTitles': chapters, 'chromeKicker': story.get('kicker', 'NOTEBOOK-VIDEO'), 'header': story.get('header', story.get('title', '')), 'headerSub': story.get('headerSub', '')})} as const;\n"
             f"export const CHAPTER_SHOTS = {js(comp['chapter_first'])} as const;\n"
+            f"export const CAPTION_REVEAL = '{reveal}' as const;\n"
             "")
     (proj / "src" / "film.ts").write_text(film, encoding="utf-8")
     st = ("// AUTO-GENERATED by scripts/compose-story.py — 禁止手改（改 story.json）。\n"
@@ -1089,6 +1189,9 @@ def main() -> int:
         CPS, CHAR_MS = float(cps), 1000 / float(cps)
     setup_break_rule(Path(a.project))
     p = Problems()
+    cap_mode = str((story.get("captions") or {}).get("mode", "line")).lower()
+    if cap_mode not in ("line", "typewriter", "type"):
+        p.err(f"captions.mode={cap_mode!r} 不是有效值 —— 用 \"line\"（默认，整行出现）或 \"typewriter\"（逐字打出）。")
     left = sorted(set(re.findall(r"<<([^>]*)>>", json.dumps(story, ensure_ascii=False))))
     if left:
         for x in left[:12]:
@@ -1096,11 +1199,18 @@ def main() -> int:
         print(f"compose-story：还有 {len(left)} 处 <<占位符>> 没填")
         return 1
     comp = compose(story, p)
+    if comp is not None:
+        for c in comp["cues"]:
+            if re.search(r"主页搜\s*(?!【)", c["text"]):
+                p.hint(f"{c['text']!r} 里还留着示例账号 —— 换成你自己的，或写成「主页搜【你的账号】」；"
+                       f"弱模型常原样抄走示例结尾。")
+                break
     if comp is None or not comp["shots"]:
         for m in p.errors:
             print(f"  ✗ {m}")
         return 1
     out_shots, story_ts, total = build(story, comp, p)
+    check_customs(p, Path(a.project), story_ts)
     for m in p.fixes:
         print(f"  ✓ 自动修：{m}")
     for m in p.hints:
