@@ -2,7 +2,7 @@
   "$blueprint": "mystery",
   "$route": "handwritten-craft",
   "family": "mystery",
-  "$about": "悬案式（3.6.0）：先给怪现象 / 结果 → 三条线索逐条摆上桌 → 排除一个“看起来很像”的错误嫌疑 → 揭晓。像侦探故事的公开结构，只借结构。",
+  "$about": "悬案式（3.3.0）：先给怪现象 / 结果 → 三条线索逐条摆上桌 → 排除一个“看起来很像”的错误嫌疑 → 揭晓。像侦探故事的公开结构，只借结构。",
   "fits": "“为什么…”类问题：现象人人见过，原因反直觉（咖啡渍为什么一圈深边、天为什么是蓝的）",
   "$howto": "手写组件路线的分镜蓝图（不走 compose-story）。先按 references/director-method.md 写 manifests/treatment.json，candidates 里写 family；再照每拍的 $components 写 scenes.tsx。秒数按 60–90 秒片子给出，括号里是占片长的比例，按台词伸缩。字幕每行 ≤14 字。 线索要可视化成桌面上的物件（照片、样本、笔记），每条线索一镜；揭晓时让线索自己连起来。",
   "theme": "<<journal | papercut | archive>>",

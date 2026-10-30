@@ -7,7 +7,7 @@
   # 1. 搜（每个选题先搜一次；带 --project 会把这次搜索记进 manifests/commons-log.json，导演层门禁看它）
   python scripts/commons-search.py search "Hooke cork" [--type image|video|audio] [--category "Micrographia"]
          [--min-px 1200] [--limit 12] [--allow-by-sa] [--project ./my-video] [--json out.json] [--source commons|openverse]
-         [--audio-category music|sound_effect]   # 3.7.0：只配 --source openverse --type audio（Openverse 的 category 参数）
+         [--audio-category music|sound_effect]   # 3.3.0：只配 --source openverse --type audio（Openverse 的 category 参数）
 
   # 2. 选中一条，下载进工程（自动查许可、写 url / license / credit、生成上屏署名，走 prepare-media 入库与转码）
   python scripts/commons-search.py add ./my-video "File:Micrographia Schem 11.jpg" --id cork-plate
@@ -338,7 +338,7 @@ def ov_describe(r: dict, kind: str) -> dict:
     return rec
 
 
-# 3.7.0：Openverse 声音分类（API 参数 `category`，https://api.openverse.org/v1/#tag/audio/operation/audio_search）。
+# 3.3.0：Openverse 声音分类（API 参数 `category`，https://api.openverse.org/v1/#tag/audio/operation/audio_search）。
 # 只开放配乐 / 音效两类（其余 audiobook / news / podcast / pronunciation 对讲解片没用）。不要和 Commons 的 --category 混用。
 OV_AUDIO_CATEGORIES = ("music", "sound_effect")
 

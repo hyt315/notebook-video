@@ -4,177 +4,35 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
-## [3.7.0] - 2026-10-29
+## [3.3.0] - 2026-10-30
 
-> 背景按章换纸、分镜表由镜头表生成且渲染前要过评审、组件小修、文档统一成一套规则、Openverse 音频分类；另修 OCR 门禁两处误报 / 失效和档案件署名压字幕。
-> One paper per chapter, a storyboard generated from the shot table with a review gate before rendering, component fixes, one consistent rule set in the docs, Openverse audio categories; plus two OCR-gate fixes and archive credits kept out of the subtitle band.
+> 3.2.0 之后的首个公开版本：新增导演层（隐喻先行 + 门禁 + 独立评审）、三套亮底手作皮肤、真翻页转场、34 张背景库、运镜 / 开场 / 字幕 / 响度四道新门禁、音效默认稀疏，并把 Windows 上跑不完流程的几个问题修掉。
+> The first public release since 3.2.0: a metaphor-first director layer with its gate and an independent review, three light hand-made skins, real page-turn transitions, a 34-image background library, four new gates (camera, cold open, captions, loudness), sparse sound effects by default, and fixes for the Windows paths that could not finish a run.
 
-### 背景 / Backgrounds
+### 导演层与评审 / Director layer & review
 
-- 新配置 `bgMode`：`film`（全片一张）/ `chapter`（每章一张，**手作皮肤默认**）/ `shot`（逐镜轮换，flat / cel 默认、即旧行为）；背景库新增 `busy` 标记，`validate-backgrounds --shots` 只在 `shot` 模式检查相邻重复。
-  New `bgMode`: `film` / `chapter` (default on hand-made skins) / `shot` (flat / cel default, the old behaviour); `busy` backgrounds; adjacency is only checked in `shot` mode.
-
-### 评审 / Review
-
-- `storyboard.md` 由 `resolve-shots` 按镜头表生成（镜头数、起止秒、意图 / 实际缩放两列）；有人工改动标记时写 `.generated.md` 并提示。手作皮肤 `make-video --render` 需要 `treatment.json` 里至少一轮 `review.rounds`，或显式 `--skip-review`（rc=3 拦截）。
-  `storyboard.md` is generated from the resolved shot table; on hand-made skins `make-video --render` needs a review round in `treatment.json` or an explicit `--skip-review`.
-
-### 组件 / Components
-
-- `LoupeMedia` 手柄自动避开署名；`ArchivePhoto` 图片区 ≥ 纸托卡片 70%、编目签字号 ≤ 图高 12%（署名字号不缩）；`FillGate` 在手作皮肤静音，每片只汇总一行。
-  The loupe handle avoids the credit; archive images dominate their labels; `FillGate` is quiet on hand-made skins and prints one summary line.
-- `ArchivePhoto` / `LoupeMedia` 的署名签不进字幕带：整件底边收在设计坐标 y = 874 以上（字幕框顶 934 再让 60，招牌推镜后也不压字幕）。
-  Archive credit slips stay above design y = 874, clear of the subtitle box even after a signature push-in.
-
-### 门禁修复 / Gate fixes
-
-- `validate-ocr`：取样点避开下一条字幕 0.18 s 的提前出现量（旧版会读到下一句，误报 P0）；`NOTEBOOK_VIDEO_OCR_PYTHON` 指向 venv 解释器（符号链接）时也会重新执行，不再静默 SKIPPED。
-  `validate-ocr` samples before the next cue's 0.18 s lead (no more false P0s) and honours `NOTEBOOK_VIDEO_OCR_PYTHON` when it is a venv symlink.
-- `validate-ocr` 按阅读顺序（先分行、行内从左到右）拼接识别结果；RapidOCR 会把同一行里字形不同的两段倒序输出，旧版因此误报。
-  `validate-ocr` joins OCR lines in reading order; RapidOCR may emit two segments of one line in reverse, which caused false reports.
-
-### 声音 / Sound（行为变更）
-
-- 新片级字段 `sfxDensity`：`sparse`（**缺省**）/ `normal`。`sparse` 是「每镜一记」：换章的镜只给章节声，其余镜在末拍给一记（结论镜 `success`，其余 `highlight`），误区镜另留第 2 拍的反转音；转场只剩 `chapter`（不再叠 `riser`、普通切点不再 `whoosh`）。`normal` 是 3.6.0 的「一拍一个」。演示片从 39 条候选 / 落地 ~24 条每分钟降到 **9 条 / 11 条每分钟**。
-  New film-level `sfxDensity`: `sparse` (default) keeps one hit per shot plus chapter / transition cues, and the beat-2 turn on misconception shots; `normal` restores the 3.6.0 one-per-beat behaviour. The demo drops from ~39 candidates to 8–12 cues.
-- **为什么改缺省**：旁白由使用者自行后配（任意 TTS 或真人），技能不知道以后有没有人声；按 24 条/分钟铺满会跟说话抢注意力。音效是标点，不是配乐。旧工程想恢复原样，在 `manifests/shots.json` 顶层写 `"sfxDensity": "normal"`。
-  Rationale: narration is added later by the user (any TTS or a human voice), so the default has to be restrained. Add `"sfxDensity": "normal"` to restore the old density.
-
-### 流程 / Flow
-
-- **Commons 搜不到时不再锁死工程**：断网 / TLS 失败原来直接退出、不写 `commons-log.json`，而手作皮肤的 `validate-treatment` 以「这个选题搜过」为 P0 —— 用户会被卡住且看不出是网络问题。现在失败也记一条（`results: 0` + `error`），返回码 4 与用法错误区分；搜索超时从 60 s × 5 次降到 20 s × 3 次（断网时一分钟内给结论）。
-  A failed Commons search is now recorded (with `error`) instead of leaving the project blocked by the director gate; search timeouts fail in about a minute instead of four.
-- **报告里的时长不再是 0**：只写 `cues` 的手写工程，`renders/report.md` 的「时长」恒为 0 帧（49 秒的片子写成 0.0 秒）；改为读 `shots.resolved.json` 的 `duration`。
-  The report now shows the real duration for hand-written projects (it read a field they never set).
-- **模板自带 `.gitignore`**：用户在自己工程里 `git init` 不会再提交 `node_modules`（约 800 MB）与 `renders/.bundle`。
-  The template ships a `.gitignore` so a user's own repo stays small.
-
-### 跨平台 / Cross-platform
-
-- `fx-browser --self-test` 在 Windows 上不再崩：包装脚本是 shell 脚本，`spawnSync` 的 `stdout` 为 `undefined`，旧版直接 `.trim()` 抛 `TypeError`；现在容错，并把 echo 断言限定在 POSIX。
-  The renderer self-test no longer crashes on Windows (undefined `stdout` from a shell wrapper).
-- `validate-opening` 的抽帧从 `-vsync 0` 改为 `-fps_mode passthrough`（老 ffmpeg 回退）。ffmpeg 7.1 起删除了 `-vsync`，旧写法让抽帧必然失败、O6 / O7 像素检查**静默 SKIPPED**——这两条门禁在装有新版 ffmpeg 的机器上其实从未真跑过。
-  `validate-opening` samples frames with `-fps_mode passthrough`; the removed `-vsync` flag used to make the pixel checks silently skip on any recent ffmpeg.
-- `validate-ocr` 先在子进程里探测引擎：`onnxruntime` 与解释器 / CPU 不兼容时 import 即段错误（rc=139 / 0xC0000005），`try/except` 拦不住，旧版表现为整个脚本被杀。现在按「没装 / 加载失败」分别 SKIPPED 并打印原因，rc=0（`--require` 仍 rc=3）。
-  `validate-ocr` probes the engine in a subprocess so a crashing onnxruntime skips with a reason instead of killing the run.
-
-### 模板 / Template
-
-- 模板自带一份填好的 `manifests/treatment.json`（示例片自己的导演层），并在 `new-project --style=…` 时同步 `medium.skin`：手作皮肤新建工程不再被 `validate-treatment` 以 P0 拦死。示例片补了两条 GitHub 官方文档的逐字引文与一次真实的 Commons 搜索记录，招牌镜头 S4 真推 12.5%。
-  The template ships a filled `treatment.json` (with sourced facts, a Commons search log and a real 12.5% signature push), so a fresh hand-made project is not blocked by the director gate.
-- 编目签署名 20 → 22 px 并改墨色（18–20 px 灰字在手机上读不出，等于 CC BY 署名缺失）；`PinnedPhoto` 的说明与署名之间留 24 px。
-  Archive credits are 22 px ink; pinned-photo captions keep 24 px clear of the credit line.
-
-### 素材 / Media
-
-- `commons search --type audio --source openverse --audio-category music|sound_effect`（取值来自 Openverse 官方 OpenAPI）。许可证白名单不变（CC0 / PDM / CC BY）。注意：2026-10-29 实测线上 `category` 过滤返回 0 条（sound_effect）或 HTTP 500（music），不带分类正常。
-  `--audio-category music|sound_effect` for Openverse audio. Licence allow-list unchanged. As of 2026-10-29 the live category filter returns no results (sound_effect) or HTTP 500 (music).
-
-### 文档 / Docs
-
-- SKILL.md 统一：常规镜头不满屏大字、每片 2–3 个锤子帧例外；读速 6.5 字/秒；渲染前评审。删去无出处的数据句；director-method 新增"选结构族"和"5b 声音设计"；真翻页注明仅在 Linux 验证。
-  SKILL.md now has one rule set (hammer frames, 6.5 chars/s, review before render); unsourced numbers removed; structure families and sound design in the director method; page turn noted as Linux-only verified.
-
-### 从 3.2.x / 3.6.x 升级 / Upgrading from 3.2.x / 3.6.x
-
-- **行为变化与改回办法**：手作皮肤背景从逐镜轮换变为每章一张 → `bgMode:"shot"`（或 3.4.0 起的 `bgRotate:false` 固定一张）；手作皮肤字幕整行出现 → 在 `src/film.ts` 写 `export const CAPTION_REVEAL = 'type'` 恢复逐字；手作皮肤 `--render` 需要评审 → 加 `--skip-review`。
-  **Behaviour changes and how to revert**: per-chapter paper → `bgMode:"shot"` (or `bgRotate:false`); whole-line captions → `CAPTION_REVEAL = 'type'` in `src/film.ts`; review gate → `--skip-review`.
-- **兼容检查**（d8d03cb 的模板工程原样复制，用 3.7.0 脚本跑构建期门禁）：无异常栈、无 P0。新增 P1：`validate-treatment` 提示缺 `manifests/treatment.json`（复制 `treatment.example.json` 填写）；`validate-composition` 骨架指纹隔镜重复 ×2、镜长变异系数 0.35 太整齐；`validate-shot-motion` S2 / S7 相邻节拍间隔超镜长 60%；`validate-presentation` 若干 13–15px 小字号与 cel 皮肤 gold 底白字对比不足。`validate-backgrounds` 对没有背景库的旧工程直接放行。
-  **Compatibility check** (the d8d03cb template copied as-is, gated with 3.7.0 scripts): no tracebacks, no P0. New P1 only: missing `treatment.json`, repeated skeleton fingerprints and too-even shot lengths, long beat gaps in S2 / S7, a few 13–15 px font sizes and low contrast on cel gold. Projects without a background library pass `validate-backgrounds`.
-
-## [3.6.0] - 2026-10-27
-
-> 审计 12 条里落地 8 条：运镜写了就要兑现、开场 3 秒有门禁、手作结构蓝图、字幕整行出现、无 TTS 读速 6.5 字/秒、静音片响度 −16 LUFS、treatment 增加声音段。
-> Eight of the twelve audit items land: camera intent is enforced, the first three seconds are gated, hand-made structure blueprints, whole-line captions, 6.5 chars/s silent reading speed, −16 LUFS for silent films, and a sound section in the treatment.
-
-### 运镜 / Camera
-
-- `validate-treatment` 拿 treatment 的 `move` / `framing` 对照 `shots.resolved.json`；招牌镜头至少真推 12%，否则手作皮肤 P0。新文档 `references/camera-language.md`。
-  `validate-treatment` checks `move` / `framing` against the resolved shot list; the signature shot must push in ≥ 12% (P0 on hand-made skins). New `references/camera-language.md`.
-- `validate-composition` 新增镜长检查（单构图 > 12 s 无镜内焦点 / 插入镜、镜长分布像节拍器 → P1）；`resolve-shots` 识别 insert 标记。
-  Shot-length checks in `validate-composition`; `resolve-shots` recognises insert markers.
-
-### 开场 / Opening
-
-- 新门禁 `validate-opening.py`（第 0 帧有事件、首条字幕 ≤ 1 s、片名不当第一镜、前 3 秒 ≥ 3 拍、第一句不是泛问句；`--video` 像素复核），已接入 `make-video` 与 CLI。
-  New `validate-opening.py` gate for the first three seconds, wired into `make-video` and the CLI.
-
-### 蓝图 / Blueprints
+- `references/director-method.md`：一个生活问题 → 只属于这个题的隐喻 → 媒介即隐喻 → 顿悟点的原生动作 → 三个候选结构 → 对标学 / 不学 → 镜头要写理由；每个选题先搜 Commons；事实带原文引文；风格帧先行；独立评审七项打分。
+  Metaphor-first method, Commons search first, sourced facts, style frames first, independent seven-score review.
+- `manifests/treatment.json` + `scripts/validate-treatment.py`：手作皮肤缺项为 P0，flat / cel 为 P1（老工程照常通过）；`make-video` 与 CLI 已接入。新蓝图 `blueprints/medium-metaphor.json`。
+  Treatment gate (P0 for craft skins, P1 for flat / cel) wired into make-video and the CLI; new `medium-metaphor` blueprint.
+- `references/style-recipes.md`：把一种观感拆成八个轴（材料、颜色分工、字、运动质感、镜头语法、换场、声音、原生动作）+ "不是什么" + "坑"；三个已实现、五个只写配方。
+  Style recipes on eight axes; three implemented as skins, five documented.
 
 - `medium-metaphor` 改为冷开；新增 4 个手作结构蓝图：`experiment`、`kishotenketsu`、`mystery`、`scale-ladder`；treatment 的候选结构要写 `family`，限定在结构族内。
   `medium-metaphor` now opens cold; four new hand-made structure blueprints; candidates declare a structure `family`.
 
-### 字幕 / Captions
+- `storyboard.md` 由 `resolve-shots` 按镜头表生成（镜头数、起止秒、意图 / 实际缩放两列）；有人工改动标记时写 `.generated.md` 并提示。手作皮肤 `make-video --render` 需要 `treatment.json` 里至少一轮 `review.rounds`，或显式 `--skip-review`（rc=3 拦截）。
+  `storyboard.md` is generated from the resolved shot table; on hand-made skins `make-video --render` needs a review round in `treatment.json` or an explicit `--skip-review`.
 
-- 手作皮肤字幕整行出现（5 帧淡入，`CAPTION_REVEAL` 可覆盖）；还没出字时不画空光晕；空格规则抽成 `caption-gap.ts`；全角标点 `halt` 收半宽。
-  Whole-line captions on hand-made skins; no empty halo; `caption-gap.ts`; `halt` for full-width punctuation.
+### 皮肤与背景 / Skins & backgrounds
 
-### 读速与响度 / Reading speed & loudness
+- 新皮肤 `journal`（博物学家手账）、`papercut`（红色窗花剪纸）、`archive`（档案灯台）：`new-project --style=journal|papercut|archive`。纸面卡片、媒介化字幕（72 设计 px = 96 px@1440，Noto Serif SC Bold，按需下载并校验 sha256）、`Theme.Chrome` 取代技术页眉、新转场 `slide` / `drop`。
+  Three craft skins with paper cards, medium-native 96 px@1440 subtitles (Noto Serif SC Bold, downloaded on demand), `Theme.Chrome` and in-medium transitions `slide` / `drop`.
+- 契约文档：`references/theme-journal.md`、`theme-papercut.md`、`theme-archive.md`。
+  Contract docs for each skin.
 
-- 新命令 `silent-timing`：无 TTS 时按读速排字幕，手作皮肤缺省 6.5 字/秒；`compose-story --cps`；`validate-caption-sync` 增加时长检查。
-  New `silent-timing` (6.5 chars/s default on hand-made skins); `compose-story --cps`; duration checks in `validate-caption-sync`.
-- 静音旁白片的响度目标由 −24 改为 −16 LUFS（真峰 ≤ −1.5 dBTP），与有人声片一致；`NOTEBOOK_VIDEO_LUFS=-24` 可回到旧电平。
-  Silent-narration films now target −16 LUFS like voiced ones; `NOTEBOOK_VIDEO_LUFS=-24` restores the old level.
-
-### 声音 / Sound
-
-- treatment 的 `sound` 段新增顿悟前静默时长、全片最重要的一声、配乐取舍与情绪曲线、按媒介的拟音清单。
-  The treatment's `sound` section adds pre-reveal silence, the single most important sound, a music decision with mood curve, and per-medium foley.
-
-### 文档 / Docs
-
-- SKILL.md 与 director-method 加入 narrative-hook / pacing-rhythm / camera-language 入口；删去"每个蓝图都是同一条讲课弧线"。所有改动均有单元测试。
-  Entry links to the hook, pacing and camera references; removed the claim that every blueprint follows one lecture arc. All changes are unit-tested.
-
-## [3.5.0] - 2026-10-27
-
-> 手作皮肤的「翻到下一页」不再是镜头横移：上一页真的卷起来翻走，有折痕高光、纸背透出上一页的墨迹。需要 WebGPU；渲染器先画一张探针验收，画不了就自动退回 3.4.0 的 slide / drop，片子照出。
-> The hand-made skins now turn a real page: the old page curls away with a shaded fold and its back showing through. It needs WebGPU; the renderer verifies it with a pixel probe first and falls back to the 3.4.0 slide / drop otherwise, so a film always renders.
-
-### 转场 / Transitions
-
-- 新转场 `pageturn`（近乎竖直的折线，整页从右往左翻走）与 `peel`（对角折线，从右下角揭起），由 `@remotion/effects` 的 `pageTurn()`（WebGPU + HTML-in-canvas）绘制，`src/fx.tsx`。卷走的是上一镜的整页（背景 + 内容），22 帧；几何是进度的纯函数，同一帧渲两次结果相同。
-  New `pageturn` and `peel` transitions drawn with `@remotion/effects` `pageTurn()`; the whole previous page curls away over 22 frames; deterministic.
-- 皮肤缺省：journal / archive → `pageturn`，papercut → `peel`；章节首镜仍是 `drop`；flat / cel 不变。分镜表也可以对任何皮肤显式写 `pageturn` / `peel`。
-  Skin defaults: journal / archive `pageturn`, papercut `peel`; chapter openers stay `drop`; flat / cel unchanged.
-
-### 渲染器 / Renderer
-
-- `scripts/fx-browser.mjs` + 新命令 `fx-probe`：找完整版 Chromium（`NOTEBOOK_VIDEO_FX_BROWSER` 或本机 Playwright 缓存），Linux 上用包装脚本换成软件 Vulkan（SwiftShader，并把 `VK_ICD_FILENAMES` 指向浏览器自带的 ICD），渲一帧 320×180 探针读像素；结论缓存在 `renders/.fx-probe.json`。不通过 → 不开，`make-video` 报告记 **P1 真卷页未开启** 并写明原因。`NOTEBOOK_VIDEO_FX=off` 手动关闭。
-  Pixel-verified WebGPU probe with a software-Vulkan wrapper; result cached; P1 in the report when the film wants page turns but the machine cannot draw them.
-- 「快速整片 + 卷页片段拼接」：完整版 Chrome + SwiftShader 每帧约 3.1 s（Headless Shell 约 0.25 s），且并发 > 1 会花屏。所以整片仍用 Headless Shell 近无损渲（crf 8），每个 22 帧卷页窗口用完整版 Chrome 单独渲（并发 1），ffmpeg 按帧号 split / trim / concat 拼回，只在这一遍编码到交付质量（crf 16）。
-  Whole film with Headless Shell, each curl window with full Chrome, spliced by frame number and encoded once.
-- 修：`prepare-browser` 引用了一个未定义的变量（设了 `REMOTION_BROWSER_EXECUTABLE` 时会崩）。
-  Fix: `prepare-browser` referenced an undefined variable.
-
-### 依赖 / Dependencies
-
-- 新增 `@remotion/effects`；Remotion 全家（`remotion` / `@remotion/*`）统一精确锁定 4.0.539（Remotion 要求同版本，`^4.0.0` 会让它们各自漂移）。许可同 `@remotion/transitions`（Remotion License）；EffectCraft（MIT）署名见包内 `THIRD_PARTY_LICENSES.md`，已登记在 `NOTICE` / `DEPENDENCIES.md`。完整版 Chromium 是可选的、本机安装，不随仓库分发。
-  Adds `@remotion/effects`; the whole Remotion family pinned to exactly 4.0.539. Licences recorded in NOTICE / DEPENDENCIES.
-- 评估过 `fractalNoise()`（动态纸纹）：全分辨率 ≈ 3.2 s/帧、与 pageTurn 的浏览器配置互斥、观感像「沸腾的纸」，不进渲染期（`references/fx-effects.md` §4）。
-  `fractalNoise()` evaluated and not adopted at render time.
-
-### 测试 / Tests
-
-- `tests/test_fx.py`（9 项）+ `node scripts/fx-browser.mjs --self-test`（探针判据、卷页窗口、拼接滤镜、包装脚本参数与 ICD 导出）；`validate-skill-consistency` 交叉校验 `CURL_FRAMES`，并开始认 `scripts/*.mjs` 的导出常量与环境变量；CI 接入。
-  New unit tests and renderer self-test; consistency check for `CURL_FRAMES`; CI wired.
-- 回归（Remotion 4.0.539）：selftest 18/18、negative-gate-check 97 例 / 154 断言、unittest 70 项、tsc、coords-lint 全部通过。
-  Regression on Remotion 4.0.539: all green.
-
-### 兼容性 / Compatibility
-
-- 没有 WebGPU 的机器（含缺省 Headless Shell）：输出与 3.4.0 相同（pageturn → slide、peel → drop），只多一条 P1。Studio 预览缺省看到的也是退回后的转场。
-  Without WebGPU the output equals 3.4.0 plus one P1 note.
-
-## [3.4.0] - 2026-10-27
-
-> 背景不再只有三张：每个手作皮肤新增 8 张、flat / cel 各新增 5 张风格各异的亮底背景，按镜头角色自动轮换、相邻不重复；每张都登记来源与许可，门禁核对亮底与字幕区对比度。
-> Backgrounds are no longer three per skin: 8 more per craft skin and 5 more for flat / cel, rotated by shot role with no two adjacent shots alike; every file records its source and licence, and a gate checks light ground and subtitle contrast.
-
-### 背景库 / Background library
-
-- `assets/lecture-template/public/bg/lib/*.webp`（34 张，2560×1440，共约 2.7 MB）+ `manifests/backgrounds.json`（来源、许可、署名、sha256、对比度指标）。3.3.0 的 main / chapter / quiet 三张原样保留，作为 `legacy` 条目入库。
-  34 new 2560×1440 WebP backgrounds plus a manifest; the 3.3.0 rasters join it unchanged as `legacy` entries.
+- `assets/lecture-template/public/bg/lib/*.webp`（34 张，2560×1440，共约 2.7 MB）+ `manifests/backgrounds.json`（来源、许可、署名、sha256、对比度指标）。旧的 main / chapter / quiet 三张原样保留，作为 `legacy` 条目入库。
+  34 new 2560×1440 WebP backgrounds plus a manifest; the previous rasters join it unchanged as `legacy` entries.
   - journal：横线本、方格本（线圈）、点阵本、牛皮纸本、水彩纸、便签墙、旧书页、坐标纸。
   - papercut：红纸衬边、宣纸、牛皮纸·红绳、折纸纹、窗花角、洒金笺、祥云、挂笺。
   - archive：档案袋、旧报纸、古地图、卡片目录、胶片灯箱、展柜布面、登记簿、描图纸。
@@ -184,54 +42,58 @@ All notable changes are recorded here. The project follows semantic versioning.
 - 维护者工具：`scripts/dev/prerender-paper-shaders.py`（+ `paper-shaders.spec.json`）、`scripts/dev/make-bg-library.py`（两次构建逐字节一致）、`scripts/dev/bg_metrics.py`、`scripts/dev/bg-gallery.py`（带名字与 96 px 字幕样字的联系表）。
   Maintainer tools for the pre-render, the deterministic build and a contact sheet.
 
-### 引擎 / Engine
+- 新配置 `bgMode`：`film`（全片一张）/ `chapter`（每章一张，**手作皮肤默认**）/ `shot`（逐镜轮换，flat / cel 默认、即旧行为）；背景库新增 `busy` 标记，`validate-backgrounds --shots` 只在 `shot` 模式检查相邻重复。
+  New `bgMode`: `film` / `chapter` (default on hand-made skins) / `shot` (flat / cel default, the old behaviour); `busy` backgrounds; adjacency is only checked in `shot` mode.
 
-- `resolve-shots`：工程有 `manifests/backgrounds.json` 时给每镜定一张背景，写进 `src/shots.ts` 的 `bg` + `bgFile`。显式 `bg` 可写库 id（`"ruled"` 或 `"journal/ruled"`）或 `main / chapter / quiet`；不写则按角色（章节首镜 / zones ≥ 4 / 其余）轮换：最久没用的优先、`bgSeed` 定序、永不与上一镜相同。未知名字或别的皮肤的背景直接报错并列出可选名。
-  `resolve-shots` assigns a background per shot (explicit id or role-based rotation, never repeating the previous shot) and writes `bg` + `bgFile`.
-- `src/index.tsx` 的 `Backdrop`：有 `bgFile` 就直接铺这张图，交叉淡化与视差不变；`Theme` 接口不变。
-  The engine draws `bgFile` when present; cross-fade and parallax unchanged; the `Theme` contract is unchanged.
-
-### 兼容性 / Compatibility
-
-- **行为变化（新工程）**：从 3.4.0 模板新建的工程默认轮换背景（含 flat / cel 与模板示例片）。想要 3.3.0 的三张图规则，在 `manifests/shots.json` 顶层写 `"bgRotate": false`。
-  **Behaviour change for new projects**: backgrounds rotate by default (flat / cel and the template example included); `"bgRotate": false` restores the 3.3.0 rule.
-- 旧工程（没有 `manifests/backgrounds.json`）不受影响：`resolve-shots` 输出逐字节不变，`bg` 仍只接受 main / chapter / quiet。
-  Existing projects without the library are untouched: `resolve-shots` output is byte-identical.
-
-### 门禁与测试 / Gates and tests
-
-- 新门禁 `scripts/validate-backgrounds.py`（标准库；CLI `validate-backgrounds`；`make-video` 构建期自动跑；CI 已接入）：P0 = 缺来源 / 许可不在白名单（PD / CC0 / CC BY / Apache-2.0）/ CC BY 缺署名 / sha256 不符 / 暗底（平均相对亮度 < 0.55）/ 字幕区墨色对比度 < 7:1（平均）或 < 4.5:1（最暗 5 %）；P1 = 中央 70 % 起伏过大、相邻镜同一张背景（`--shots`）。指标由维护者工具 `scripts/dev/bg_metrics.py` 从像素算出并与 sha256 绑定，单元测试重算比对。
-  New stdlib gate for licence, provenance, sha256, light ground and subtitle-zone contrast; `--shots` flags adjacent repeats.
-- 新单元测试 `tests/test_backgrounds.py`（13 项：库合规、每皮肤数量、墨色与皮肤一致、对比度算术、指标与像素一致、轮换确定性与无相邻重复、`bgSeed`、显式 / 简写 / legacy 名、角色池、`bgRotate:false` 与无库工程不变、未知 / 跨皮肤报错、相邻重复提示）；selftest +4 项；负向夹具 +11 例（许可、署名、sha256、暗底、字幕区深色装饰、未知 / 跨皮肤 `bg`、自动轮换无重复、显式相邻重复提示、旧工程不出 `bgFile`）；`validate-skill` 核对库文件齐全、每皮肤数量、门禁墨色与 `palette.ink` 一致。
-  New unit tests, selftest checks, negative fixtures and consistency checks for the library.
-
-## [3.3.0] - 2026-10-26
-
-> 从"讲课 PPT"到"一个媒介在演一件事"：新增导演层（隐喻先行 + 门禁）、三套亮底手作皮肤、craft 材质组件、Wikimedia Commons / Openverse 素材管线、媒介化拟音与可选 OCR 复核。flat / cel 的行为与全部原有门禁结果不变；`Theme` 只新增可选字段。
-> From "lecture slides" to "a medium acting the idea out": a director layer with a gate, three light hand-made skins, craft components, a Wikimedia Commons / Openverse media pipeline, medium-native foley and an optional OCR check. flat / cel and every existing gate behave as before; `Theme` only gains optional fields.
-
-### 导演层 / Director layer
-
-- `references/director-method.md`：一个生活问题 → 只属于这个题的隐喻 → 媒介即隐喻 → 顿悟点的原生动作 → 三个候选结构 → 对标学 / 不学 → 镜头要写理由；每个选题先搜 Commons；事实带原文引文；风格帧先行；独立评审七项打分。
-  Metaphor-first method, Commons search first, sourced facts, style frames first, independent seven-score review.
-- `manifests/treatment.json` + `scripts/validate-treatment.py`：手作皮肤缺项为 P0，flat / cel 为 P1（老工程照常通过）；`make-video` 与 CLI 已接入。新蓝图 `blueprints/medium-metaphor.json`。
-  Treatment gate (P0 for craft skins, P1 for flat / cel) wired into make-video and the CLI; new `medium-metaphor` blueprint.
-- `references/style-recipes.md`：把一种观感拆成八个轴（材料、颜色分工、字、运动质感、镜头语法、换场、声音、原生动作）+ "不是什么" + "坑"；三个已实现、五个只写配方。
-  Style recipes on eight axes; three implemented as skins, five documented.
-
-### 皮肤 / Skins
-
-- 新皮肤 `journal`（博物学家手账）、`papercut`（红色窗花剪纸）、`archive`（档案灯台）：`new-project --style=journal|papercut|archive`。纸面卡片、媒介化字幕（72 设计 px = 96 px@1440，Noto Serif SC Bold，按需下载并校验 sha256）、`Theme.Chrome` 取代技术页眉、新转场 `slide` / `drop`。
-  Three craft skins with paper cards, medium-native 96 px@1440 subtitles (Noto Serif SC Bold, downloaded on demand), `Theme.Chrome` and in-medium transitions `slide` / `drop`.
-- 契约文档：`references/theme-journal.md`、`theme-papercut.md`、`theme-archive.md`。
-  Contract docs for each skin.
-
-### craft 组件 / Craft components
+### 组件与转场 / Components & transitions
 
 - `src/craft/`：`InkPath` / `Underline` / `InkCircle` / `HandNote`（perfect-freehand 压感墨线）、`HandLettering`（opentype.js 取霞鹜文楷字形，"写"出中文）、`PaperSheet` / `WashBlob` / `CutPaper` / `Seal`、`Loupe` 放大镜、`ArchivePhoto` / `PinnedPhoto` / `LoupeMedia` / `MediaAudio`（真实素材强制署名）。只用帧号驱动、确定性。文档 `references/craft-kit.md`；样张合成 `CraftSheet`。
   Frame-driven craft components built on perfect-freehand and opentype.js; documented in `craft-kit.md`; a `CraftSheet` composition shows them all.
 - 新 npm 依赖：`perfect-freehand` 1.2.3、`opentype.js` 2.0.0（均 MIT）。
   New npm dependencies (both MIT).
+
+- 新转场 `pageturn`（近乎竖直的折线，整页从右往左翻走）与 `peel`（对角折线，从右下角揭起），由 `@remotion/effects` 的 `pageTurn()`（WebGPU + HTML-in-canvas）绘制，`src/fx.tsx`。卷走的是上一镜的整页（背景 + 内容），22 帧；几何是进度的纯函数，同一帧渲两次结果相同。
+  New `pageturn` and `peel` transitions drawn with `@remotion/effects` `pageTurn()`; the whole previous page curls away over 22 frames; deterministic.
+- 皮肤缺省：journal / archive → `pageturn`，papercut → `peel`；章节首镜仍是 `drop`；flat / cel 不变。分镜表也可以对任何皮肤显式写 `pageturn` / `peel`。
+  Skin defaults: journal / archive `pageturn`, papercut `peel`; chapter openers stay `drop`; flat / cel unchanged.
+
+- `LoupeMedia` 手柄自动避开署名；`ArchivePhoto` 图片区 ≥ 纸托卡片 70%、编目签字号 ≤ 图高 12%（署名字号不缩）；`FillGate` 在手作皮肤静音，每片只汇总一行。
+  The loupe handle avoids the credit; archive images dominate their labels; `FillGate` is quiet on hand-made skins and prints one summary line.
+- `ArchivePhoto` / `LoupeMedia` 的署名签不进字幕带：整件底边收在设计坐标 y = 874 以上（字幕框顶 934 再让 60，招牌推镜后也不压字幕）。
+  Archive credit slips stay above design y = 874, clear of the subtitle box even after a signature push-in.
+
+### 运镜与开场 / Camera & opening
+
+- `validate-treatment` 拿 treatment 的 `move` / `framing` 对照 `shots.resolved.json`；招牌镜头至少真推 12%，否则手作皮肤 P0。新文档 `references/camera-language.md`。
+  `validate-treatment` checks `move` / `framing` against the resolved shot list; the signature shot must push in ≥ 12% (P0 on hand-made skins). New `references/camera-language.md`.
+- `validate-composition` 新增镜长检查（单构图 > 12 s 无镜内焦点 / 插入镜、镜长分布像节拍器 → P1）；`resolve-shots` 识别 insert 标记。
+  Shot-length checks in `validate-composition`; `resolve-shots` recognises insert markers.
+
+- 新门禁 `validate-opening.py`（第 0 帧有事件、首条字幕 ≤ 1 s、片名不当第一镜、前 3 秒 ≥ 3 拍、第一句不是泛问句；`--video` 像素复核），已接入 `make-video` 与 CLI。
+  New `validate-opening.py` gate for the first three seconds, wired into `make-video` and the CLI.
+
+### 字幕、读速与响度 / Captions, reading speed & loudness
+
+- 手作皮肤字幕整行出现（5 帧淡入，`CAPTION_REVEAL` 可覆盖）；还没出字时不画空光晕；空格规则抽成 `caption-gap.ts`；全角标点 `halt` 收半宽。
+  Whole-line captions on hand-made skins; no empty halo; `caption-gap.ts`; `halt` for full-width punctuation.
+
+- 新命令 `silent-timing`：无 TTS 时按读速排字幕，手作皮肤缺省 6.5 字/秒；`compose-story --cps`；`validate-caption-sync` 增加时长检查。
+  New `silent-timing` (6.5 chars/s default on hand-made skins); `compose-story --cps`; duration checks in `validate-caption-sync`.
+- 静音旁白片的响度目标由 −24 改为 −16 LUFS（真峰 ≤ −1.5 dBTP），与有人声片一致；`NOTEBOOK_VIDEO_LUFS=-24` 可回到旧电平。
+  Silent-narration films now target −16 LUFS like voiced ones; `NOTEBOOK_VIDEO_LUFS=-24` restores the old level.
+
+### 声音 / Sound
+
+- 6 条手作拟音（page / place / snip / stamp / rustle / latch），取自 Kenney "RPG Audio"（CC0），按音效库合同归一化；手作皮肤的自动音效计划把 UI 声换成纸声，显式 sfx 与 flat / cel 不变。
+  Six CC0 Kenney foley one-shots; craft skins swap UI sounds for paper sounds automatically.
+
+- treatment 的 `sound` 段新增顿悟前静默时长、全片最重要的一声、配乐取舍与情绪曲线、按媒介的拟音清单。
+  The treatment's `sound` section adds pre-reveal silence, the single most important sound, a music decision with mood curve, and per-medium foley.
+
+- 新片级字段 `sfxDensity`：`sparse`（**缺省**）/ `normal`。`sparse` 是「每镜一记」：换章的镜只给章节声，其余镜在末拍给一记（结论镜 `success`，其余 `highlight`），误区镜另留第 2 拍的反转音；转场只剩 `chapter`（不再叠 `riser`、普通切点不再 `whoosh`）。`normal` 是旧版的「一拍一个」。演示片从 39 条候选 / 落地 ~24 条每分钟降到 **9 条 / 11 条每分钟**。
+  New film-level `sfxDensity`: `sparse` (default) keeps one hit per shot plus chapter / transition cues, and the beat-2 turn on misconception shots; `normal` restores the old one-per-beat behaviour. The demo drops from ~39 candidates to 8–12 cues.
+- **为什么改缺省**：旁白由使用者自行后配（任意 TTS 或真人），技能不知道以后有没有人声；按 24 条/分钟铺满会跟说话抢注意力。音效是标点，不是配乐。旧工程想恢复原样，在 `manifests/shots.json` 顶层写 `"sfxDensity": "normal"`。
+  Rationale: narration is added later by the user (any TTS or a human voice), so the default has to be restrained. Add `"sfxDensity": "normal"` to restore the old density.
 
 ### 真实素材 / Real media
 
@@ -240,10 +102,27 @@ All notable changes are recorded here. The project follows semantic versioning.
 - `validate-media`：CC BY-SA 素材由静默通过改为 P1 提示。
   BY-SA media now raise a P1 notice.
 
-### 声音 / Sound
+- `commons search --type audio --source openverse --audio-category music|sound_effect`（取值来自 Openverse 官方 OpenAPI）。许可证白名单不变（CC0 / PDM / CC BY）。注意：2026-10-29 实测线上 `category` 过滤返回 0 条（sound_effect）或 HTTP 500（music），不带分类正常。
+  `--audio-category music|sound_effect` for Openverse audio. Licence allow-list unchanged. As of 2026-10-29 the live category filter returns no results (sound_effect) or HTTP 500 (music).
 
-- 6 条手作拟音（page / place / snip / stamp / rustle / latch），取自 Kenney "RPG Audio"（CC0），按音效库合同归一化；手作皮肤的自动音效计划把 UI 声换成纸声，显式 sfx 与 flat / cel 不变。
-  Six CC0 Kenney foley one-shots; craft skins swap UI sounds for paper sounds automatically.
+### 引擎与渲染 / Engine & rendering
+
+- `resolve-shots`：工程有 `manifests/backgrounds.json` 时给每镜定一张背景，写进 `src/shots.ts` 的 `bg` + `bgFile`。显式 `bg` 可写库 id（`"ruled"` 或 `"journal/ruled"`）或 `main / chapter / quiet`；不写则按角色（章节首镜 / zones ≥ 4 / 其余）轮换：最久没用的优先、`bgSeed` 定序、永不与上一镜相同。未知名字或别的皮肤的背景直接报错并列出可选名。
+  `resolve-shots` assigns a background per shot (explicit id or role-based rotation, never repeating the previous shot) and writes `bg` + `bgFile`.
+- `src/index.tsx` 的 `Backdrop`：有 `bgFile` 就直接铺这张图，交叉淡化与视差不变；`Theme` 接口不变。
+  The engine draws `bgFile` when present; cross-fade and parallax unchanged; the `Theme` contract is unchanged.
+
+- `scripts/fx-browser.mjs` + 新命令 `fx-probe`：找完整版 Chromium（`NOTEBOOK_VIDEO_FX_BROWSER` 或本机 Playwright 缓存），Linux 上用包装脚本换成软件 Vulkan（SwiftShader，并把 `VK_ICD_FILENAMES` 指向浏览器自带的 ICD），渲一帧 320×180 探针读像素；结论缓存在 `renders/.fx-probe.json`。不通过 → 不开，`make-video` 报告记 **P1 真卷页未开启** 并写明原因。`NOTEBOOK_VIDEO_FX=off` 手动关闭。
+  Pixel-verified WebGPU probe with a software-Vulkan wrapper; result cached; P1 in the report when the film wants page turns but the machine cannot draw them.
+- 「快速整片 + 卷页片段拼接」：完整版 Chrome + SwiftShader 每帧约 3.1 s（Headless Shell 约 0.25 s），且并发 > 1 会花屏。所以整片仍用 Headless Shell 近无损渲（crf 8），每个 22 帧卷页窗口用完整版 Chrome 单独渲（并发 1），ffmpeg 按帧号 split / trim / concat 拼回，只在这一遍编码到交付质量（crf 16）。
+  Whole film with Headless Shell, each curl window with full Chrome, spliced by frame number and encoded once.
+- 修：`prepare-browser` 引用了一个未定义的变量（设了 `REMOTION_BROWSER_EXECUTABLE` 时会崩）。
+  Fix: `prepare-browser` referenced an undefined variable.
+
+- 新增 `@remotion/effects`；Remotion 全家（`remotion` / `@remotion/*`）统一精确锁定 4.0.539（Remotion 要求同版本，`^4.0.0` 会让它们各自漂移）。许可同 `@remotion/transitions`（Remotion License）；EffectCraft（MIT）署名见包内 `THIRD_PARTY_LICENSES.md`，已登记在 `NOTICE` / `DEPENDENCIES.md`。完整版 Chromium 是可选的、本机安装，不随仓库分发。
+  Adds `@remotion/effects`; the whole Remotion family pinned to exactly 4.0.539. Licences recorded in NOTICE / DEPENDENCIES.
+- 评估过 `fractalNoise()`（动态纸纹）：全分辨率 ≈ 3.2 s/帧、与 pageTurn 的浏览器配置互斥、观感像「沸腾的纸」，不进渲染期（`references/fx-effects.md` §4）。
+  `fractalNoise()` evaluated and not adopted at render time.
 
 ### 门禁与测试 / Gates and tests
 
@@ -256,6 +135,49 @@ All notable changes are recorded here. The project follows semantic versioning.
 - `validate-composition`：手作皮肤（journal / papercut / archive）的"功能分区"放宽到 1–5（组件皮肤仍 3–5）。一镜一个主体（一张真铜版画 + 放大镜）是手作片的常态，硬凑 3 区会逼出满屏卡片。皮肤以 `src/theme/active.ts` 为准。新测试 `tests/test_composition_craft.py`。
   Hand-made skins may declare 1–5 zones (component skins keep 3–5); the skin is read from `src/theme/active.ts`.
 
+- 新门禁 `scripts/validate-backgrounds.py`（标准库；CLI `validate-backgrounds`；`make-video` 构建期自动跑；CI 已接入）：P0 = 缺来源 / 许可不在白名单（PD / CC0 / CC BY / Apache-2.0）/ CC BY 缺署名 / sha256 不符 / 暗底（平均相对亮度 < 0.55）/ 字幕区墨色对比度 < 7:1（平均）或 < 4.5:1（最暗 5 %）；P1 = 中央 70 % 起伏过大、相邻镜同一张背景（`--shots`）。指标由维护者工具 `scripts/dev/bg_metrics.py` 从像素算出并与 sha256 绑定，单元测试重算比对。
+  New stdlib gate for licence, provenance, sha256, light ground and subtitle-zone contrast; `--shots` flags adjacent repeats.
+- 新单元测试 `tests/test_backgrounds.py`（13 项：库合规、每皮肤数量、墨色与皮肤一致、对比度算术、指标与像素一致、轮换确定性与无相邻重复、`bgSeed`、显式 / 简写 / legacy 名、角色池、`bgRotate:false` 与无库工程不变、未知 / 跨皮肤报错、相邻重复提示）；selftest +4 项；负向夹具 +11 例（许可、署名、sha256、暗底、字幕区深色装饰、未知 / 跨皮肤 `bg`、自动轮换无重复、显式相邻重复提示、旧工程不出 `bgFile`）；`validate-skill` 核对库文件齐全、每皮肤数量、门禁墨色与 `palette.ink` 一致。
+  New unit tests, selftest checks, negative fixtures and consistency checks for the library.
+
+- `tests/test_fx.py`（9 项）+ `node scripts/fx-browser.mjs --self-test`（探针判据、卷页窗口、拼接滤镜、包装脚本参数与 ICD 导出）；`validate-skill-consistency` 交叉校验 `CURL_FRAMES`，并开始认 `scripts/*.mjs` 的导出常量与环境变量；CI 接入。
+  New unit tests and renderer self-test; consistency check for `CURL_FRAMES`; CI wired.
+- 回归（Remotion 4.0.539）：selftest 18/18、negative-gate-check 97 例 / 154 断言、unittest 70 项、tsc、coords-lint 全部通过。
+  Regression on Remotion 4.0.539: all green.
+
+- `validate-ocr`：取样点避开下一条字幕 0.18 s 的提前出现量（旧版会读到下一句，误报 P0）；`NOTEBOOK_VIDEO_OCR_PYTHON` 指向 venv 解释器（符号链接）时也会重新执行，不再静默 SKIPPED。
+  `validate-ocr` samples before the next cue's 0.18 s lead (no more false P0s) and honours `NOTEBOOK_VIDEO_OCR_PYTHON` when it is a venv symlink.
+- `validate-ocr` 按阅读顺序（先分行、行内从左到右）拼接识别结果；RapidOCR 会把同一行里字形不同的两段倒序输出，旧版因此误报。
+  `validate-ocr` joins OCR lines in reading order; RapidOCR may emit two segments of one line in reverse, which caused false reports.
+
+### 兼容性 / Compatibility
+
+- 没有 WebGPU 的机器（含缺省 Headless Shell）：输出与旧版相同（pageturn → slide、peel → drop），只多一条 P1。Studio 预览缺省看到的也是退回后的转场。
+  Without WebGPU the output equals the previous release plus one P1 note.
+
+### 跨平台 / Cross-platform
+
+- `fx-browser --self-test` 在 Windows 上不再崩：包装脚本是 shell 脚本，`spawnSync` 的 `stdout` 为 `undefined`，旧版直接 `.trim()` 抛 `TypeError`；现在容错，并把 echo 断言限定在 POSIX。
+  The renderer self-test no longer crashes on Windows (undefined `stdout` from a shell wrapper).
+- `validate-opening` 的抽帧从 `-vsync 0` 改为 `-fps_mode passthrough`（老 ffmpeg 回退）。ffmpeg 7.1 起删除了 `-vsync`，旧写法让抽帧必然失败、O6 / O7 像素检查**静默 SKIPPED**——这两条门禁在装有新版 ffmpeg 的机器上其实从未真跑过。
+  `validate-opening` samples frames with `-fps_mode passthrough`; the removed `-vsync` flag used to make the pixel checks silently skip on any recent ffmpeg.
+- `validate-ocr` 先在子进程里探测引擎：`onnxruntime` 与解释器 / CPU 不兼容时 import 即段错误（rc=139 / 0xC0000005），`try/except` 拦不住，旧版表现为整个脚本被杀。现在按「没装 / 加载失败」分别 SKIPPED 并打印原因，rc=0（`--require` 仍 rc=3）。
+  `validate-ocr` probes the engine in a subprocess so a crashing onnxruntime skips with a reason instead of killing the run.
+
+### 模板与流程 / Template & flow
+
+- **Commons 搜不到时不再锁死工程**：断网 / TLS 失败原来直接退出、不写 `commons-log.json`，而手作皮肤的 `validate-treatment` 以「这个选题搜过」为 P0 —— 用户会被卡住且看不出是网络问题。现在失败也记一条（`results: 0` + `error`），返回码 4 与用法错误区分；搜索超时从 60 s × 5 次降到 20 s × 3 次（断网时一分钟内给结论）。
+  A failed Commons search is now recorded (with `error`) instead of leaving the project blocked by the director gate; search timeouts fail in about a minute instead of four.
+- **报告里的时长不再是 0**：只写 `cues` 的手写工程，`renders/report.md` 的「时长」恒为 0 帧（49 秒的片子写成 0.0 秒）；改为读 `shots.resolved.json` 的 `duration`。
+  The report now shows the real duration for hand-written projects (it read a field they never set).
+- **模板自带 `.gitignore`**：用户在自己工程里 `git init` 不会再提交 `node_modules`（约 800 MB）与 `renders/.bundle`。
+  The template ships a `.gitignore` so a user's own repo stays small.
+
+- 模板自带一份填好的 `manifests/treatment.json`（示例片自己的导演层），并在 `new-project --style=…` 时同步 `medium.skin`：手作皮肤新建工程不再被 `validate-treatment` 以 P0 拦死。示例片补了两条 GitHub 官方文档的逐字引文与一次真实的 Commons 搜索记录，招牌镜头 S4 真推 12.5%。
+  The template ships a filled `treatment.json` (with sourced facts, a Commons search log and a real 12.5% signature push), so a fresh hand-made project is not blocked by the director gate.
+- 编目签署名 20 → 22 px 并改墨色（18–20 px 灰字在手机上读不出，等于 CC BY 署名缺失）；`PinnedPhoto` 的说明与署名之间留 24 px。
+  Archive credits are 22 px ink; pinned-photo captions keep 24 px clear of the credit line.
+
 ### 修复 / Fixes
 
 - 手写工程（HAND 路线）缺 `audio/narration.mp3` 时自动生成静音占位，`--stills` 不再崩。
@@ -267,10 +189,29 @@ All notable changes are recorded here. The project follows semantic versioning.
 - `PinnedPhoto`：说明与署名之间留 20 px。斜贴的卡片在旋转后外接框会互相压住，渲染期 `OverlapGate` 硬拦（演示片实测）。
   `PinnedPhoto` leaves a gap between caption and credit so the rotated card does not trip `OverlapGate`.
 
-### 许可说明 / Licensing
+### 许可 / Licensing
 
 - NOTICE 增补 lemo-opuscar（MIT，方法借鉴、无代码复制）、perfect-freehand、opentype.js、Noto Serif SC（OFL）、Kenney（CC0）、RapidOCR（可选）；README / DEPENDENCIES 注明 Remotion 为 source-available 许可（个人与 ≤3 人公司免费，4 人及以上的营利公司需购买公司许可）。
   NOTICE and DEPENDENCIES updated; Remotion's source-available licence is spelled out.
+
+### 文档 / Docs
+
+- SKILL.md 与 director-method 加入 narrative-hook / pacing-rhythm / camera-language 入口；删去"每个蓝图都是同一条讲课弧线"。所有改动均有单元测试。
+  Entry links to the hook, pacing and camera references; removed the claim that every blueprint follows one lecture arc. All changes are unit-tested.
+
+- SKILL.md 统一：常规镜头不满屏大字、每片 2–3 个锤子帧例外；读速 6.5 字/秒；渲染前评审。删去无出处的数据句；director-method 新增"选结构族"和"5b 声音设计"；真翻页注明仅在 Linux 验证。
+  SKILL.md now has one rule set (hammer frames, 6.5 chars/s, review before render); unsourced numbers removed; structure families and sound design in the director method; page turn noted as Linux-only verified.
+
+### 从 3.2.0 升级 / Upgrading from 3.2.0
+
+- **行为变化与改回办法**：手作皮肤背景从逐镜轮换改为每章一张 → `bgMode:"shot"`（或 `bgRotate:false` 固定一张）；手作皮肤字幕整行出现 → 在 `src/film.ts` 写 `export const CAPTION_REVEAL = 'type'` 恢复逐字；手作皮肤 `--render` 需要评审 → 加 `--skip-review`；音效默认稀疏 → 在 `manifests/shots.json` 顶层写 `"sfxDensity": "normal"`。
+  **Behaviour changes and how to revert**: per-chapter paper → `bgMode:"shot"` (or `bgRotate:false`); whole-line captions → `CAPTION_REVEAL = 'type'` in `src/film.ts`; review gate → `--skip-review`; sparse sound → `"sfxDensity": "normal"`.
+- **新工程默认轮换背景**（含 flat / cel 与模板示例片）。想要旧的三张图规则，写 `"bgRotate": false`。
+  New projects rotate backgrounds by default (flat / cel and the template example included); `"bgRotate": false` restores the old three-image rule.
+- **旧工程不受影响**：没有 `manifests/backgrounds.json` 的工程，`resolve-shots` 输出逐字节不变，`bg` 仍只接受 main / chapter / quiet。
+  Existing projects without the library are untouched: `resolve-shots` output is byte-identical.
+- **兼容检查**（`d8d03cb` 的模板工程原样复制，用本版脚本跑构建期门禁）：无异常栈、无 P0。新增 P1：`validate-treatment` 提示缺 `manifests/treatment.json`（复制 `treatment.example.json` 填写）；`validate-composition` 骨架指纹隔镜重复 ×2、镜长变异系数 0.35 太整齐；`validate-shot-motion` S2 / S7 相邻节拍间隔超镜长 60%；`validate-presentation` 若干 13–15px 小字号与 cel 皮肤 gold 底白字对比不足。`validate-backgrounds` 对没有背景库的旧工程直接放行。
+  **Compatibility check** (the d8d03cb template copied as-is, gated with this release's scripts): no tracebacks, no P0. New P1 only: missing `treatment.json`, repeated skeleton fingerprints and too-even shot lengths, long beat gaps in S2 / S7, a few 13–15 px font sizes and low contrast on cel gold. Projects without a background library pass `validate-backgrounds`.
 
 ## [3.2.0] - 2026-10-18
 

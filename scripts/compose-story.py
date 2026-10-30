@@ -1127,7 +1127,7 @@ def main() -> int:
     ap.add_argument("project")
     ap.add_argument("--report")
     ap.add_argument("--check", action="store_true", help="只检查不写盘")
-    # 3.6.0：读速可配置（加权字/秒，1–9）。也可在 story.json 顶层写 "cps"。缺省 4.5（组件路线的既有速度）。
+    # 3.3.0：读速可配置（加权字/秒，1–9）。也可在 story.json 顶层写 "cps"。缺省 4.5（组件路线的既有速度）。
     ap.add_argument("--cps", type=float, help="无 TTS 时的字幕读速（字/秒，1–9；缺省 4.5，或 story.json 的 cps）")
     a = ap.parse_args()
     sp = Path(a.story)

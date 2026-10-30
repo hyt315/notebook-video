@@ -4,7 +4,7 @@
 
 **把一个知识点变成一支 16:9 中文讲课视频：组件场景 + 引擎虚拟镜头 + 对拍音效，一条命令出片，客观门禁自动修。**
 
-[![Version](https://img.shields.io/badge/version-3.7.0-1f6feb)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.3.0-1f6feb)](CHANGELOG.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
 [![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel-ff7a59)](references/theme-system.md)
@@ -28,11 +28,11 @@
 - **镜头会跟着讲**：引擎级虚拟摄影机缺省缓推，讲到哪个词就推近到哪个组件，换镜用甩镜 / 推穿。
 - **弱模型也能复刻**：10 个讲课蓝图（5 个组件路线 + 5 个手作结构族）逐镜写好该用的骨架与组件，加上黄金样例、短流程和一条命令；能客观判断的问题，引擎直接自动修。
 
-- **3.7.0 新增：一本手账一张纸、评审先于成片**：手作皮肤默认 `bgMode: "chapter"`（每章一张纸，章内沿用；`"film"` 全片一张、`"shot"` 逐镜轮换），
+- **3.3.0 新增：一本手账一张纸、评审先于成片**：手作皮肤默认 `bgMode: "chapter"`（每章一张纸，章内沿用；`"film"` 全片一张、`"shot"` 逐镜轮换），
   装饰重的背景（`busy`）不进常规镜；`resolve-shots` 从实际镜头表自动生成 `storyboard.md` 给独立评审用；
   手作皮肤没做评审时 `make-video --render` 先停下（草稿用 `--skip-review`）；无 TTS 片按读速 `--cps`（缺省 6.5 字/秒）整行出字幕。
 
-- **3.4.0 新增：背景库**：每个手作皮肤再加 8 张、flat / cel 各加 5 张亮底背景（横线本、宣纸、窗花、古地图、胶片、网点、mesh 渐变……），
+- **3.3.0 新增：背景库**：每个手作皮肤再加 8 张、flat / cel 各加 5 张亮底背景（横线本、宣纸、窗花、古地图、胶片、网点、mesh 渐变……），
   不写就按镜头角色自动轮换、相邻两镜不重复；每张都登记了来源与许可（Paper Shaders 离线预渲、Commons 公有领域 / CC0 纹理、确定性程序生成），
   门禁核对亮底与字幕区对比度。见 [references/background-library.md](references/background-library.md)。
 

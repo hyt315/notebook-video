@@ -1,4 +1,4 @@
-// fx-browser.mjs · 真卷页（@remotion/effects 的 pageTurn，WebGPU）的浏览器选择 + 能力探针（3.5.0）
+// fx-browser.mjs · 真卷页（@remotion/effects 的 pageTurn，WebGPU）的浏览器选择 + 能力探针（3.3.0）
 //
 // 为什么要这一层：Remotion 缺省的 Chrome Headless Shell 是老式无头模式，没有 WebGPU 适配器
 // （实测 157.0.8080.0 / linux-arm64：`No WebGPU adapter available`）。pageTurn 要：
@@ -253,7 +253,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const fc = sp[sp.indexOf('-filter_complex') + 1];
   const wrapper = writeChromeWrapper('/bin/echo', SOFTWARE_GPU_FLAGS, tmp);
   // Windows 上包装脚本（Linux shell 脚本）根本执行不了，spawnSync 的 stdout 是 undefined，
-  // 以前直接 .trim() 就抛 TypeError，自检整个崩掉（3.7.0 修）。这里容错，并把「echo 断言」限定在 POSIX。
+  // 以前直接 .trim() 就抛 TypeError，自检整个崩掉（3.3.0 修）。这里容错，并把「echo 断言」限定在 POSIX。
   const echoRun = spawnSync(wrapper, ['--use-gl=angle', '--enable-features=CanvasDrawElement', '--headless=new'], {encoding: 'utf8'});
   const echoed = (echoRun.stdout ?? '').trim();
   const echoChecked = process.platform !== 'win32';

@@ -48,13 +48,13 @@ const fitBox = (id: string, w: number, h: number) => {
 
 /** 编目签的宽度（side 版式固定；below 版式跟图同宽、至少 240）。 */
 const SLIP_SIDE_W = 300, SLIP_GAP = 18;
-/** 3.7.0 层级：图片区至少占纸托卡片（图 + 纸托边）面积的 70%——纸托边按这个比例自动收窄（不超过传入的 mount）。 */
+/** 3.3.0 层级：图片区至少占纸托卡片（图 + 纸托边）面积的 70%——纸托边按这个比例自动收窄（不超过传入的 mount）。 */
 export const ARCHIVE_MIN_IMAGE_FRAC = 0.7;
-/** 3.7.0 层级：编目签（编号 / 名称）字号不超过图片区高度的 12%——签不能比文物还抢眼。署名字号不缩（CC BY 要可读）。 */
+/** 3.3.0 层级：编目签（编号 / 名称）字号不超过图片区高度的 12%——签不能比文物还抢眼。署名字号不缩（CC BY 要可读）。 */
 export const ARCHIVE_LABEL_MAX_FRAC = 0.12;
 const LABEL_FONT_MAX = 30, CREDIT_FONT = 22;
-/** 署名的字宽 / 行高估算：跟着 CREDIT_FONT 走，字号一改签高自动跟上（3.7.0 P1-10）。 */
-const CREDIT_CHAR_W = 12, CREDIT_LINE_H = 27;   // 3.7.0 评审 P1-10：18/20 px 在手机上读不出，等于署名缺失
+/** 署名的字宽 / 行高估算：跟着 CREDIT_FONT 走，字号一改签高自动跟上（3.3.0 P1-10）。 */
+const CREDIT_CHAR_W = 12, CREDIT_LINE_H = 27;   // 3.3.0 评审 P1-10：18/20 px 在手机上读不出，等于署名缺失
 /** 编目签标题字号：≤ 30，且 ≤ 图高 × 12%（下限 12，再小就不是字了）。编号字号 = 标题 × 0.8。 */
 export const archiveLabelFont = (dh: number) => Math.max(12, Math.min(LABEL_FONT_MAX, Math.floor(dh * ARCHIVE_LABEL_MAX_FRAC)));
 /** 纸托边：满足 dw·dh ≥ 70%·(dw+2m)(dh+2m) 的最大 m（不超过 mount）。 */
@@ -65,7 +65,7 @@ export const archiveMount = (dw: number, dh: number, mount: number) => {
 };
 
 /**
- * 3.7.0 组件规则：署名签不进字幕带。字幕框顶 = designH − subBottom − subH（16:9 为 934）；
+ * 3.3.0 组件规则：署名签不进字幕带。字幕框顶 = designH − subBottom − subH（16:9 为 934）；
  * 再让出 CAPTION_CLEAR，这样招牌镜头以画面中心推 12.5% 后签底也压不到字幕
  * （540 + (874 − 540) × 1.125 ≈ 916 < 934）。cell 演示片 S3/S4 的 Schem. XI 署名曾被 OCR 读进字幕带。
  */
@@ -82,11 +82,11 @@ export const archiveSafeH = (y: number | undefined, h: number) =>
  *   auto（缺省）：两种都算，取图更大的那个。
  * 签高按字数估（署名在窄签里换行，不截断），图为它让出位置，签不会被挤出框外。
  * 传入 y（框在画面上的设计坐标）时，整件底边不越过 CREDIT_SAFE_BOTTOM（署名签不进字幕带）。
- * 3.7.0：纸托边按 ARCHIVE_MIN_IMAGE_FRAC 收窄、编目签字号按 ARCHIVE_LABEL_MAX_FRAC 封顶（见上面两个常量）。
+ * 3.3.0：纸托边按 ARCHIVE_MIN_IMAGE_FRAC 收窄、编目签字号按 ARCHIVE_LABEL_MAX_FRAC 封顶（见上面两个常量）。
  */
 export type ArchiveLabel = 'auto' | 'below' | 'side';
 export const archiveLayout = (id: string, w: number, frameH: number, mount: number, labelled: boolean, label: ArchiveLabel = 'auto', y?: number) => {
-  const h = archiveSafeH(y, frameH); // 3.7.0：传入 y 时整件（图 + 签）收在字幕安全线以上
+  const h = archiveSafeH(y, frameH); // 3.3.0：传入 y 时整件（图 + 签）收在字幕安全线以上
   const credit = creditOf(id);
   const has = labelled || Boolean(credit);
   const slipH = (sw: number, dh: number) => !has ? 0 : 17 + (labelled ? Math.ceil(archiveLabelFont(dh) * 1.2) : 0) + (credit ? 4 + CREDIT_LINE_H * Math.ceil((credit.length * CREDIT_CHAR_W) / Math.max(120, sw - 19)) : 0);
@@ -186,7 +186,7 @@ export const LoupeMedia: React.FC<Base & {look: {x: number; y: number}; lensAt: 
     const ix = x + imgX, iy = y + imgY;
     const tgt = {x: ix + look.x * dw, y: iy + look.y * dh};
     const L = lens ?? tgt;
-    // 3.7.0：手柄不许压署名（CC BY 署名必须完整可读）——按编目签的位置选手柄方向
+    // 3.3.0：手柄不许压署名（CC BY 署名必须完整可读）——按编目签的位置选手柄方向
     const slip = {left: x + A.slipX, top: y + A.slipY, right: x + A.slipX + A.slipW, bottom: y + A.slipY + A.slipH};
     const handleAngle = A.slipH > 0 ? pickHandleAngle(L.x, L.y, r, [slip]) : 45;
     return <Loupe f={f} x={L.x} y={L.y} r={r} zoom={zoom} target={tgt} at={lensAt} handleAngle={handleAngle}

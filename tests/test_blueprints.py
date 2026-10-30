@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the hand-made story blueprints (3.6.0): four new structures + the cold-open medium-metaphor."""
+"""Tests for the hand-made story blueprints (3.3.0): four new structures + the cold-open medium-metaphor."""
 from __future__ import annotations
 
 import importlib.util

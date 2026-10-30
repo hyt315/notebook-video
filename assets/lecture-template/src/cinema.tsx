@@ -18,7 +18,7 @@ import {FX_ENABLED, FX_FALLBACK, CURL_FRAMES} from './fx';
 //   3. pan     宽画布横摇：`cinema.pan.worldW` > 1920 时，场景按更宽的世界排版，摄影机横摇扫过；
 //   4. 转场     whip（甩镜：方向模糊 + 位移）/ zoom（推穿：放大淡出 + 新镜从远处推来）/ fade / hard；
 //              缺省 auto：章节首镜 zoom，其余 whip，左右交替；
-//              3.5.0 pageturn / peel：真卷页（src/fx.tsx，WebGPU），渲染器探针不通过时自动退回 slide / drop；
+//              3.3.0 pageturn / peel：真卷页（src/fx.tsx，WebGPU），渲染器探针不通过时自动退回 slide / drop；
 //   5. 视差     Backdrop 按 0.3 的系数跟随摄影机（背景比内容动得少 → 纵深）。
 //
 // 纪律：全部是**帧的纯函数**（interpolate / spring / Easing），无随机、无状态、无实时动画库；
@@ -232,12 +232,12 @@ export const resolveTransition = (declared: string | undefined, idx: number, isC
   const d = declared ?? 'auto';
   if (d === 'hard') return 'hard';
   if (d === 'fade' || d === 'zoom' || d === 'whip-left' || d === 'whip-right' || d === 'slide' || d === 'drop') return d;
-  // 3.5.0：真卷页。渲染器没开 fx（浏览器没有 WebGPU / HTML-in-canvas）→ 退回 slide / drop，片子照样出。
+  // 3.3.0：真卷页。渲染器没开 fx（浏览器没有 WebGPU / HTML-in-canvas）→ 退回 slide / drop，片子照样出。
   if (d === 'pageturn' || d === 'peel') return fx ? d : FX_FALLBACK[d];
   if (d === 'whip') return idx % 2 ? 'whip-left' : 'whip-right';
   // 3.3.0：手作皮肤的媒介内转场（纸在本子上横移 = 一张长卷上的横移镜头；新纸放下来 = drop）。
   // 皮肤声明了 craft.transition 时，auto 用它；章节首镜一律 drop（换一张纸）。
-  // 3.5.0：手账 / 档案缺省 pageturn（翻到下一页），剪纸缺省 peel（从底板上揭起）；无 fx 时同上退回。
+  // 3.3.0：手账 / 档案缺省 pageturn（翻到下一页），剪纸缺省 peel（从底板上揭起）；无 fx 时同上退回。
   const craft = THEME.craft?.transition;
   if (craft === 'pageturn' || craft === 'peel') return isChapter ? 'drop' : fx ? craft : FX_FALLBACK[craft];
   if (craft === 'slide' || craft === 'drop') return isChapter ? 'drop' : craft;

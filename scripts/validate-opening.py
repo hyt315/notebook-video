@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""validate-opening.py — 开场 3 秒门禁（3.6.0）：第 0 帧就要有东西在发生，片名不当第一镜，第一句不是泛问句。
+"""validate-opening.py — 开场 3 秒门禁（3.3.0）：第 0 帧就要有东西在发生，片名不当第一镜，第一句不是泛问句。
 
 用法：
     python scripts/validate-opening.py PROJECT [--video MP4] [--json]

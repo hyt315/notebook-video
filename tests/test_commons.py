@@ -26,7 +26,7 @@ vm_spec.loader.exec_module(vm)
 
 
 class OfflineSearchTest(unittest.TestCase):
-    """3.7.0：搜索失败（断网 / TLS）也必须留一条记录。
+    """3.3.0：搜索失败（断网 / TLS）也必须留一条记录。
 
     为什么重要：手作皮肤的 validate-treatment 用「commons-log.json 非空」判断「这个选题搜过」。
     以前断网时脚本直接 SystemExit，什么都不写 → 用户被 P0 卡死，还看不出是网络问题。
@@ -185,7 +185,7 @@ if __name__ == "__main__":
 
 
 class OpenverseAudioCategoryTest(unittest.TestCase):
-    """3.7.0 --audio-category: maps to Openverse's `category` query parameter; the licence gate is unchanged."""
+    """3.3.0 --audio-category: maps to Openverse's `category` query parameter; the licence gate is unchanged."""
 
     def setUp(self):
         import copy

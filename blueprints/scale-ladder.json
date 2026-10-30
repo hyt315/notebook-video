@@ -2,7 +2,7 @@
   "$blueprint": "scale-ladder",
   "$route": "handwritten-craft",
   "family": "scale-ladder",
-  "$about": "尺度阶梯（3.6.0）：一个数字逐级放大或缩小，每一级配一个观众摸得到的参照物，最后落回观众手里。像《十的力量》（Powers of Ten）那样的公开结构，只借结构。",
+  "$about": "尺度阶梯（3.3.0）：一个数字逐级放大或缩小，每一级配一个观众摸得到的参照物，最后落回观众手里。像《十的力量》（Powers of Ten）那样的公开结构，只借结构。",
   "fits": "大到 / 小到难以想象的数字：十二亿间小屋子、一光年、细胞里的分子数",
   "$howto": "手写组件路线的分镜蓝图（不走 compose-story）。先按 references/director-method.md 写 manifests/treatment.json，candidates 里写 family；再照每拍的 $components 写 scenes.tsx。秒数按 60–90 秒片子给出，括号里是占片长的比例，按台词伸缩。字幕每行 ≤14 字。 每一级的参照物必须换（指甲 → 手掌 → 房间 → 城市），而不是同一个数字越写越大；数字只做最后的题注。",
   "theme": "<<journal | papercut | archive>>",

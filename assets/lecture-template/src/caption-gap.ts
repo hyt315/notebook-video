@@ -1,4 +1,4 @@
-// caption-gap.ts · 字幕词片之间的空格规则（3.6.0 从 index.tsx 抽出，tests/test_captions.py 直接跑这个文件）。
+// caption-gap.ts · 字幕词片之间的空格规则（3.3.0 从 index.tsx 抽出，tests/test_captions.py 直接跑这个文件）。
 // 只用纯 JS 语法加两处参数类型标注，测试端去掉类型后用 node 执行。
 
 /**

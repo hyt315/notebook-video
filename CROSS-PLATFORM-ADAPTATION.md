@@ -39,5 +39,5 @@ The wrappers contain no separate rendering logic, so the two platforms cannot dr
 
 The build environment was Linux, so macOS and Windows wrapper behavior was statically audited rather than executed on native machines. The universal Node path is the authoritative entry on all systems.
 
-真翻页（WebGPU `pageturn` / `peel`，3.5.0 起）**仅在 Linux 上验证过**；macOS 与 Windows 未实测，探针失败时自动退回 `slide` 转场，不影响出片。
-The real page turn (WebGPU `pageturn` / `peel`, since 3.5.0) has **only been verified on Linux**; on macOS and Windows it is untested, and a failed probe falls back to the `slide` transition without blocking the render.
+真翻页（WebGPU `pageturn` / `peel`，3.3.0 起）**仅在 Linux 上验证过**；macOS 与 Windows 未实测，探针失败时自动退回 `slide` 转场，不影响出片。
+The real page turn (WebGPU `pageturn` / `peel`, since 3.3.0) has **only been verified on Linux**; on macOS and Windows it is untested, and a failed probe falls back to the `slide` transition without blocking the render.

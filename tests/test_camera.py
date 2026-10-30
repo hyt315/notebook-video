@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the 3.6.0 camera / shot-length rules (references/camera-language.md §5).
+"""Tests for the 3.3.0 camera / shot-length rules (references/camera-language.md §5).
 
 validate-composition: shot-length coefficient of variation >= 0.35; a single composition > 12 s needs an in-shot
 focus (cinema.focus) or an insert shot. resolve-shots passes the optional `insert` marker through.

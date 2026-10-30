@@ -7,7 +7,7 @@
   · 手作皮肤（journal / papercut / archive）：缺 treatment.json 或必填没填 = P0（阻断）；
   · flat / cel：同样的问题只记 P1（向后兼容：老工程没有这一层）；
   · 风格 / 节奏类建议（转向你的时间点、运镜种类、评审分数）永远是 P1；
-  · 3.6.0：treatment 的 move / framing 对照镜头表（shots.resolved.json）的 cameraIntent / keys 缩放（P1）；
+  · 3.3.0：treatment 的 move / framing 对照镜头表（shots.resolved.json）的 cameraIntent / keys 缩放（P1）；
     招牌镜头实推 < 12% 记入 hard（手作 P0）；候选结构 family 至少 2 族（P1）；sound 段（P1）。
 只用标准库。退出码：0 通过，1 有 P0，2 用法错误。
 """
@@ -20,9 +20,9 @@ from pathlib import Path
 
 CRAFT = {"journal", "papercut", "archive"}
 SKINS = CRAFT | {"flat", "cel"}
-# 3.6.0：叙事结构族（候选结构至少 2 族，见 references/director-method.md 第 5 步、blueprints/*.json 的 family）
+# 3.3.0：叙事结构族（候选结构至少 2 族，见 references/director-method.md 第 5 步、blueprints/*.json 的 family）
 FAMILIES = ("medium-metaphor", "kishotenketsu", "mystery", "scale-ladder", "experiment", "one-take-journey", "myth-flip", "lecture-arc")
-# 3.6.0：treatment 的景别 / 运镜要在镜头表里兑现（references/camera-language.md §2）
+# 3.3.0：treatment 的景别 / 运镜要在镜头表里兑现（references/camera-language.md §2）
 MOVES = ("establish", "push-in", "pull-back", "pan-follow", "reveal", "micro-orbit", "still")
 SIGNATURE_PUSH_MIN = 0.12   # 招牌镜头至少真推 12%（缩放变化，或 cinema.focus 的 zoom）
 FRAMING_RULES = {           # 景别 → 实际取景（镜头表 keys 的缩放 / 主体占画高）

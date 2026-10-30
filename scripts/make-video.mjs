@@ -3,7 +3,7 @@
 // make-video.mjs · 3.2.0 一条命令出片（Windows / macOS / Linux 同一套 Node 实现）
 //
 //   node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel] [--stills] [--render OUT.mp4] [--skip-review]
-//   --skip-review：手作皮肤 treatment.review.rounds 为空时 --render 默认停下（3.7.0），草稿 / 自测用它显式跳过
+//   --skip-review：手作皮肤 treatment.review.rounds 为空时 --render 默认停下（3.3.0），草稿 / 自测用它显式跳过
 //                                         [--scale=0.75] [--no-gates]
 //
 // 流程：建工程（不存在时）→ compose-story（排版 + 字幕定时 + 关键词同步 + 相机 + 自动修）
@@ -58,6 +58,12 @@ const PY = findPython();
 const PY_UTF8_ENV = {...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1'};
 const py = (script, argv, opts = {}) => run(PY.c, [...PY.pre, path.join(SCRIPT_DIR, script), ...argv], {...opts, env: PY_UTF8_ENV});
 const node = (argv, opts) => run(process.execPath, argv, opts);
+// 3.7.0：Windows 上 Remotion 不设 windowsHide，每帧收尾的 taskkill 都会闪一个 CMD 窗口
+// （--stills 逐帧模式下 = 每帧闪一次）。预加载 scripts/windows-hide-console.cjs 强制隐藏，
+// 不改 node_modules（重装依赖就会失效）。详见该文件头部的实测记录。
+const HIDE_CONSOLE_SHIM = path.join(SCRIPT_DIR, 'windows-hide-console.cjs');
+const hideConsoleArgs = () => (IS_WIN && fs.existsSync(HIDE_CONSOLE_SHIM) ? ['--require', HIDE_CONSOLE_SHIM] : []);
+const nodeRemotion = (argv, opts) => run(process.execPath, [...hideConsoleArgs(), ...argv], opts);
 const step = (t) => console.log(`\n── ${t}`);
 const die = (m) => { console.error(`\n✗ ${m}`); process.exit(1); };
 
@@ -104,7 +110,7 @@ if (a.code) die('ffmpeg 不可用：请安装 ffmpeg 并放进 PATH');
 step('resolve-shots');
 if ((await py('resolve-shots.py', [project])).code) die('resolve-shots 失败');
 // 手写工程的分镜表只写 cues，帧数由 resolve-shots 算出来；报告里的「时长」要读它，
-// 否则 cells 这类工程会写成「0 帧 / 0.0 秒」（3.7.0 修）。
+// 否则 cells 这类工程会写成「0 帧 / 0.0 秒」（3.3.0 修）。
 {
   const rp = path.join(project, 'manifests', 'shots.resolved.json');
   if (fs.existsSync(rp)) {
@@ -113,7 +119,7 @@ if ((await py('resolve-shots.py', [project])).code) die('resolve-shots 失败');
   }
 }
 
-// 4b. 3.7.0 评审拦截：手作皮肤要出成片，先得有一轮独立评审（director-method.md 第 4 步），或显式 --skip-review。
+// 4b. 3.3.0 评审拦截：手作皮肤要出成片，先得有一轮独立评审（director-method.md 第 4 步），或显式 --skip-review。
 //     只拦 --render（静帧 / 联系表就是给评审看的，不拦）；flat / cel 不拦，CI / selftest 不走 --render。
 const activeSkin = (() => {
   try { return fs.readFileSync(path.join(project, 'src', 'theme', 'active.ts'), 'utf8').match(/from\s+'\.\/(\w+)'/)?.[1] ?? style; } catch { return style; }
@@ -155,9 +161,9 @@ if (!flag('no-gates')) {
     ['validate-media.py', [project], true],
     // 3.3.0 导演层：手作皮肤缺 treatment.json / 没搜过 Commons 即停；flat / cel 只提示
     ['validate-treatment.py', [project], true],
-    // 3.6.0 开场 3 秒：第 0 帧就有事件、首条字幕 ≤ 1 s、片名不当第一镜、前 3 秒 ≥ 3 拍、第一句不是泛问句（手作 P0，flat / cel 只提示）
+    // 3.3.0 开场 3 秒：第 0 帧就有事件、首条字幕 ≤ 1 s、片名不当第一镜、前 3 秒 ≥ 3 拍、第一句不是泛问句（手作 P0，flat / cel 只提示）
     ['validate-opening.py', [project], true],
-    // 3.4.0 背景库：库本身（来源 / 许可 / sha256 / 对比度）硬拦；分镜里相邻镜同一张背景只提示
+    // 3.3.0 背景库：库本身（来源 / 许可 / sha256 / 对比度）硬拦；分镜里相邻镜同一张背景只提示
     ['validate-backgrounds.py', [project], true],
     ['validate-backgrounds.py', [project, '--shots'], true],
     ['validate-caption-sync.py', [path.join(project, 'audio', 'narration.mp3.json'), path.join(project, 'manifests', 'caption-cues.json')], true],
@@ -215,7 +221,7 @@ const sheet = async (pngs, out) => {
   return run('ffmpeg', ['-y', '-loglevel', 'error', ...inputs, ...blank, '-filter_complex', `${scaleF};${Array.from({length: n}, (_, i) => `[v${i}]`).join('')}xstack=inputs=${n}:layout=${layout}`, out]);
 };
 const cli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
-// 3.5.0 真卷页：render / fx-probe 把结论写在 renders/.fx-probe.json。本片用到 pageturn / peel 却没开成 → P1（片子照出，转场已退回 slide / drop）。
+// 3.3.0 真卷页：render / fx-probe 把结论写在 renders/.fx-probe.json。本片用到 pageturn / peel 却没开成 → P1（片子照出，转场已退回 slide / drop）。
 const fxNote = () => {
   try {
     const fx = JSON.parse(fs.readFileSync(path.join(project, 'renders', '.fx-probe.json'), 'utf8'));
@@ -242,8 +248,8 @@ if (flag('stills')) {
   const bundle = path.join(project, 'renders', '.bundle');
   // Windows 上杀毒/索引器会短暂占用文件，rmSync 会抛 EBUSY/EPERM；maxRetries 是 Node 官方给的重试开关。
   fs.rmSync(bundle, {recursive: true, force: true, maxRetries: 5, retryDelay: 120});
-  if ((await node([cli, 'bundle', 'src/index.tsx', '--out-dir', bundle], {cwd: project, capture: true})).code) die('remotion bundle 失败');
-  // 3.5.0：先探一次真卷页能力，结论进报告（P1）。静帧本身不走完整版 Chrome（每帧 ~3 s）：静帧取的是镜头开场 / 关键词 / 镜尾，
+  if ((await nodeRemotion([cli, 'bundle', 'src/index.tsx', '--out-dir', bundle], {cwd: project, capture: true})).code) die('remotion bundle 失败');
+  // 3.3.0：先探一次真卷页能力，结论进报告（P1）。静帧本身不走完整版 Chrome（每帧 ~3 s）：静帧取的是镜头开场 / 关键词 / 镜尾，
   // 不落在镜头开头 22 帧的卷页窗口里（只有短于 66 帧的镜头例外，那张静帧里看到的是退回后的 slide / drop）。
   const fxr = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'fx-probe', project], {capture: true});
   try { const fx = JSON.parse(fxr.out.slice(fxr.out.indexOf('{'))); if (fx.used) console.log(fx.on ? '  真卷页：探针通过（成片里开启）' : `  ⚠ P1 真卷页未开启：${fx.reason}`); } catch { /* 探针输出读不出：按未开启处理 */ }
@@ -253,7 +259,7 @@ if (flag('stills')) {
   const pngs = [];
   for (const x of frames) {
     const out = path.join(dir, `f${String(x.f).padStart(5, '0')}.png`);
-    const r = await node([cli, 'still', bundle, 'NotebookVideoFilm', out, `--frame=${x.f}`, '--scale=0.5'], {cwd: project, capture: true});
+    const r = await nodeRemotion([cli, 'still', bundle, 'NotebookVideoFilm', out, `--frame=${x.f}`, '--scale=0.5'], {cwd: project, capture: true});
     if (r.code) { console.log(r.out.split('\n').filter((l) => /Error|Gate|overflow|溢出|越出/.test(l)).slice(0, 6).join('\n')); die(`静帧 f${x.f} 渲染失败（渲染期门禁拦下了，见上）`); }
     pngs.push(out);
     process.stdout.write('.');
@@ -271,7 +277,7 @@ if (flag('stills')) {
 if (renderOut) {
   step(`整片渲染 → ${renderOut}（scale ${scale}）`);
   process.env.NOTEBOOK_VIDEO_SCALE = scale;
-  // 3.6.0：静音旁白片也规范到 −16 LUFS（真峰 ≤ −1.5 dBTP），与有人声的片子同一目标。3.5.0 及以前是 −24：
+  // 3.3.0：静音旁白片也规范到 −16 LUFS（真峰 ≤ −1.5 dBTP），与有人声的片子同一目标。3.3.0 及以前是 −24：
   // AES TD1004 建议流媒体 −16…−20 LUFS，并点名 −23/−24 在手机上开到最大也不够响；YouTube 只压低过响的内容、不抬高轻的。
   // 要回到旧电平：NOTEBOOK_VIDEO_LUFS=-24。
   const r = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'render', project, renderOut]);
@@ -291,7 +297,7 @@ if (renderOut) {
   }
   const sheets = [];
   for (let i = 0; i < pngs.length; i += 12) { const out = path.join(project, 'renders', `frames-${i / 12 + 1}.jpg`); await sheet(pngs.slice(i, i + 12), out); sheets.push(out); }
-  // 3.6.0：开场像素复核（第 0 / 15 / 45 / 90 帧有主体、在变化）。成片已出，不拦，P0 记进报告。
+  // 3.3.0：开场像素复核（第 0 / 15 / 45 / 90 帧有主体、在变化）。成片已出，不拦，P0 记进报告。
   const op = await py('validate-opening.py', [project, '--video', renderOut], {capture: true});
   results.push({gate: 'validate-opening.py --video', code: op.code, hard: false, verdict: (op.out.match(/结论[^\n]*/) ?? [op.code ? 'FAIL' : 'PASS'])[0]});
   console.log(`  ${op.code ? '·' : '✓'} validate-opening --video ${results.at(-1).verdict}`);

@@ -208,7 +208,7 @@ const Paper=THEME.Paper;
 
 // 严谨消除句末标点符号（保留句中逗号，句末逗号句号等一概消除）
 const cleanTail=(s:string)=>s.replace(/[，。！？；：、,.!?;:\s]+$/g,'');
-// 3.6.0 字幕出现方式：'line' = 整行一次出现（5 帧淡入）；'type' = 逐字淡入（卡拉 OK 式，配真人声时用）。
+// 3.3.0 字幕出现方式：'line' = 整行一次出现（5 帧淡入）；'type' = 逐字淡入（卡拉 OK 式，配真人声时用）。
 // 缺省：手作皮肤 line（无旁白片的整片节奏就是读速，逐字出现让每张静帧都是半句话），flat / cel 保持 type（既有行为）。
 // 工程可在 src/film.ts 里 `export const CAPTION_REVEAL = 'line' | 'type'` 覆盖。
 const CAPTION_REVEAL:'line'|'type'=((FILM as any).CAPTION_REVEAL??AESTHETIC.captionReveal??(THEME.craft?'line':'type'))==='type'?'type':'line';
@@ -223,7 +223,7 @@ const Subtitle=()=>{
   const targetChars=full.replace(/\s+/g,'').length;
   const line=CAPTION_REVEAL==='line';
   const words=cue?cue.words.filter((w:any)=>(line?cue.startFrame:w.startFrame)<=f+lead):[];
-  // 3.6.0：一个字都还没出来时不画字幕（否则纸色光晕会先出现一团空白）
+  // 3.3.0：一个字都还没出来时不画字幕（否则纸色光晕会先出现一团空白）
   if(!cue||!targetChars||!words.length)return null;
   // 占位层与可见层用**同一套**分词加空格规则渲染。旧版占位层只放 cue.text，而可见层会在
   // 中英文词之间补 \u00a0 —— 于是「三个 AI 技能」这类句子可见宽度大于占位宽度，最后一个字
@@ -310,7 +310,7 @@ const FinalDemo=()=>{
   const kind=transFor(idx);
   const p=kind&&kind!=='hard'?local/transitionFrames(kind):1;
   const inTrans=p<1&&!!PrevScene;
-  const curl=inTrans&&isCurl(kind)?kind:null; // 3.5.0 真卷页（只有渲染器探针通过、开了 fx 才会走到这里）
+  const curl=inTrans&&isCurl(kind)?kind:null; // 3.3.0 真卷页（只有渲染器探针通过、开了 fx 才会走到这里）
   const out=inTrans&&kind?transitionStyle(kind,p,'out'):null;
   const inn=inTrans&&kind?transitionStyle(kind,p,'in'):{transform:'none',opacity:1,blur:0};
   const cam=camFor(idx,local);
@@ -342,7 +342,7 @@ const FinalDemo=()=>{
 
 
 // 背景：每镜一张，由分镜表推导，镜头交接时与上一镜的背景交叉淡化 TRANS 帧。
-//   · 3.4.0 背景库：resolve-shots 已给每镜定好 `bgFile`（manifests/backgrounds.json 里的一张，显式 `bg` 或按角色自动轮换、
+//   · 3.3.0 背景库：resolve-shots 已给每镜定好 `bgFile`（manifests/backgrounds.json 里的一张，显式 `bg` 或按角色自动轮换、
 //     相邻不重复）→ 直接画这张图；
 //   · 否则（旧工程 / `bgRotate:false`）：分镜表写了 `bg: 'main' | 'chapter' | 'quiet'` → 照写的用；
 //     不写：章节首镜 → chapter；信息密集（zones ≥ 4）→ quiet；其余 → main。
@@ -468,7 +468,7 @@ const CraftSheetComposition=()=> <>
   <CanvasBoundsGate mode="block"/>
 </>;
 
-// 3.5.0 fx 探针（`notebook-video.mjs` 渲一帧读像素，决定这台机器能不能开真卷页）。320×180，不进成片。
+// 3.3.0 fx 探针（`notebook-video.mjs` 渲一帧读像素，决定这台机器能不能开真卷页）。320×180，不进成片。
 const FxProbeComposition=()=> <FxProbe/>;
 
 const Root=()=> <>

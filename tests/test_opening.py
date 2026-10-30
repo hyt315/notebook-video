@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for scripts/validate-opening.py (3.6.0 cold-open gate)."""
+"""Tests for scripts/validate-opening.py (3.3.0 cold-open gate)."""
 from __future__ import annotations
 
 import importlib.util

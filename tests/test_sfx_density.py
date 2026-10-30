@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""3.7.0 sfxDensity: 缺省 sparse（每镜一记），normal 保留 3.6.0 的「一拍一个」。
+"""3.3.0 sfxDensity: 缺省 sparse（每镜一记），normal 保留 3.3.0 的「一拍一个」。
 
 为什么改缺省：旁白由使用者自行后配（任意 TTS 或真人），技能不知道以后有没有人声，
 按 24 条/分钟铺满会跟说话抢注意力。音效是标点，不是配乐。
@@ -89,7 +89,7 @@ class EngineWiringTest(unittest.TestCase):
         self.assertIn("} else if (!isFirst && !sparse) {", src)
 
     def test_normal_branch_unchanged(self):
-        """normal 必须还是 3.6.0 的逐拍循环——老工程写 normal 后结果不变。"""
+        """normal 必须还是 3.3.0 的逐拍循环——老工程写 normal 后结果不变。"""
         src = SFX_TS.read_text(encoding="utf-8")
         self.assertIn("s.beats.forEach((b, i) => {", src)
 

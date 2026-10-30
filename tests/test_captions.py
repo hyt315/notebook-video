@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the 3.6.0 subtitle fixes: whole-line reveal, no empty halo, mixed CJK/Latin spacing, full-width punctuation."""
+"""Tests for the 3.3.0 subtitle fixes: whole-line reveal, no empty halo, mixed CJK/Latin spacing, full-width punctuation."""
 from __future__ import annotations
 
 import json

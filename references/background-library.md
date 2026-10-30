@@ -1,12 +1,12 @@
-# 背景库 · Background library（3.4.0）
+# 背景库 · Background library（3.3.0）
 
-> 3.3.0 之前每个皮肤只有 `main / chapter / quiet` 三张背景，一条片子来回就那三张。3.4.0 起每个手作皮肤（journal / papercut / archive）
+> 3.3.0 之前每个皮肤只有 `main / chapter / quiet` 三张背景，一条片子来回就那三张。3.3.0 起每个手作皮肤（journal / papercut / archive）
 > 新增 8 张、flat / cel 各新增 5 张风格各异、符合皮肤媒介的背景，旧的三张原样保留并入库（标 legacy）。
 > Every craft skin gains 8 backgrounds and flat / cel gain 5 each; the three 3.3.0 rasters stay, marked legacy.
 
 ## 1. 怎么用 / Usage
 
-### 换纸粒度 `bgMode`（3.7.0）/ How often the paper changes
+### 换纸粒度 `bgMode`（3.3.0）/ How often the paper changes
 
 `manifests/shots.json` 顶层的 `bgMode` 决定多久换一次背景：
 
@@ -14,7 +14,7 @@
 |---|---|---|
 | `"chapter"` | 只在章节首镜换纸，章内所有镜头沿用同一张；跨章不与上一章同一张 | journal / papercut / archive（手作皮肤：全片是"一本手账"，逐镜换纸会打断媒介连续性） |
 | `"film"` | 全片一张纸 | —（想要最强的"一本书"感时手动写） |
-| `"shot"` | 逐镜轮换（下面的规则，3.4.0–3.6.0 的行为） | flat / cel |
+| `"shot"` | 逐镜轮换（下面的规则，3.3.0–3.3.0 的行为） | flat / cel |
 
 - `chapter` / `film` 模式下那张纸要撑满章内的常规镜头，所以只从 `roles` 含 `main`、且没有标 `busy` 的背景里挑。
 - **改回逐镜轮换：** 顶层写 `"bgMode": "shot"`。**完全不轮换（3.3.0 行为）：** `"bgRotate": false`（优先级高于 `bgMode`）。
@@ -81,7 +81,7 @@
 
 1. **Paper Shaders**（[paper-design/shaders](https://github.com/paper-design/shaders)，`@paper-design/shaders@0.0.82`，Apache-2.0）——纸纹（冷压水彩纸、长纤维宣纸、
    帘纹纸、旧纸 foxing、揉皱折痕）、mesh 渐变、点阵、半调网点。它是 WebGL：3.3.0 因为逐帧 WebGL 在纯 CPU（SwiftShader）上太贵而暂缓。
-   3.4.0 的做法是**离线预渲一次**：`scripts/dev/prerender-paper-shaders.py` 用无头 Chromium 把 `scripts/dev/paper-shaders.spec.json` 里每个着色器
+   3.3.0 的做法是**离线预渲一次**：`scripts/dev/prerender-paper-shaders.py` 用无头 Chromium 把 `scripts/dev/paper-shaders.spec.json` 里每个着色器
    以静态参数（speed 0、固定 seed）渲成 2560×1440 PNG，再由生成器合成、压成 WebP 入库。**渲染期零 WebGL、零新 npm 依赖**。
 2. **Wikimedia Commons 的公有领域 / CC0 纹理**（用 `scripts/commons-search.py` 搜，CC0 / PD 优先）：牛皮纸（Coyau，PD）、
    粗麻布（Poly Haven「Hessian 380」，CC0）、1630 年荷兰古地图（PD）。生成器取图时重新核对 Commons 页面上的许可，变了就拒绝。

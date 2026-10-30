@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""3.7.0 component fixes: ArchivePhoto hierarchy constants, LoupeMedia credit avoidance, FillGate per-skin + one-line summary.
+"""3.3.0 component fixes: ArchivePhoto hierarchy constants, LoupeMedia credit avoidance, FillGate per-skin + one-line summary.
 
 Static consistency checks over the TSX (no browser): the numbers the docs promise are the numbers the code uses."""
 from __future__ import annotations
@@ -46,7 +46,7 @@ class ArchivePhotoTest(unittest.TestCase):
         self.assertNotRegex(MEDIA, r"fontWeight: 700, fontSize: 30, lineHeight: 1.2, color: C.ink, whiteSpace: 'nowrap'\}\}>\s*\{catalogue")
 
     def test_credit_font_not_reduced(self):
-        # 3.7.0 评审 P1-10：署名从 20 提到 22（CC BY 要求可读），这条断言改为「不得低于 22」
+        # 3.3.0 评审 P1-10：署名从 20 提到 22（CC BY 要求可读），这条断言改为「不得低于 22」
         self.assertRegex(MEDIA, r"CREDIT_FONT = 2[2-9]")
         self.assertIn("fontSize: L.creditFont", MEDIA)
 
@@ -128,7 +128,7 @@ def archive_safe_h(y, h, safe_bottom):
 
 
 class CreditAvoidsCaptionBand(unittest.TestCase):
-    """3.7.0: an ArchivePhoto credit slip must stay out of the subtitle band (cell-v3 OCR read Schem. XI into cue 9)."""
+    """3.3.0: an ArchivePhoto credit slip must stay out of the subtitle band (cell-v3 OCR read Schem. XI into cue 9)."""
     def setUp(self):
         self.design_h, self.sub_b, self.sub_h = canvas_num("designH"), canvas_num("subBottom"), canvas_num("subH")
         self.clear = const(MEDIA, "CAPTION_CLEAR")

@@ -16,7 +16,7 @@
 | **drift** 缓推 / 漂移 | `auto`（4.5%） | `cinema.drift: "auto" \| "none" \| 0–0.08` | 每镜一次慢推，镜与镜之间轮换：正推 → 右移推 → 拉 → 左移推（不会全片同一种推）。 |
 | **focus** 讲到哪推到哪 | 无 | `cinema.focus: [{beat \| cue \| at, region \| x,y,w,h, zoom?, hold?}]` | 第 N 拍开始，弹簧曲线（20 帧）推近该区域，停 `hold` 帧（缺省 60）后 24 帧缓拉回；相邻焦点首尾相接时直接从一个**横摇**到下一个。`region` 简写：`left/right/top/bottom/center/top-left/…`（按本镜 `contentBand` 切）。<br>**不切字**：`slide: false` 关掉横向滑回；`keep: {x,y,w,h} \| region` = 推近时也必须完整入画的矩形（例如推近右侧终端时左侧的大数字），引擎把推近倍数降到能装下「焦点 ∪ keep」（留 28 px 边距，不低于 1.1，装不下就忽略 keep）。`hero-number` 版式缺省 `keep` = anchor + 8% 字号的字形外溢余量；`keep: false` 关掉。镜头里有 MediaFrame 卡片又要推近别处时，给卡片写 `keep`，否则卡片会被推出画面一半。 |
 | **pan** 宽画布横摇 | 无 | `cinema.pan: {worldW: 2800, beat? \| at?, dur?, dir?: "ltr" \| "rtl"}` | 场景按更宽的世界排版，摄影机横摇扫过（时间线、长链路）。 |
-| **transition** 换镜 | `auto` | 镜级 `transition` | `auto` = 章节首镜 **zoom**（推穿：上一镜放大淡出、新镜从远处推来）、其余 **whip**（甩镜：水平方向模糊 + 位移，左右交替）；也可写 `whip / whip-left / whip-right / zoom / fade / hard`，手作皮肤另有 `slide / drop` 与 3.5.0 的真卷页 `pageturn / peel`（[fx-effects.md](fx-effects.md)；渲染器探针不通过时退回 `slide / drop`）。`cut / handoff / reveal` 是旧写法，引擎按 `auto` 处理。转场 14 帧（卷页 22 帧）。 |
+| **transition** 换镜 | `auto` | 镜级 `transition` | `auto` = 章节首镜 **zoom**（推穿：上一镜放大淡出、新镜从远处推来）、其余 **whip**（甩镜：水平方向模糊 + 位移，左右交替）；也可写 `whip / whip-left / whip-right / zoom / fade / hard`，手作皮肤另有 `slide / drop` 与 3.3.0 的真卷页 `pageturn / peel`（[fx-effects.md](fx-effects.md)；渲染器探针不通过时退回 `slide / drop`）。`cut / handoff / reveal` 是旧写法，引擎按 `auto` 处理。转场 14 帧（卷页 22 帧）。 |
 | **parallax** 视差 | 开 | — | 背景按 0.3 的系数跟随摄影机（背景动得比内容少 → 纵深），预放大 1.06 保证不露边；甩镜时背景一起甩。 |
 
 纪律：无随机、无状态、无实时动画库；同一帧渲两次结果相同。总缩放（场景 × 引擎）钳在 `TEXT_ZOOM_MAX = 1.35`，取景窗永远落在 1920×1080 舞台（或 pan 世界）之内。

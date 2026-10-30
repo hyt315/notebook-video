@@ -60,7 +60,7 @@ export interface ThemeAesthetic {
   subtitleSize?: number;
   subtitleFamily?: string;
   /**
-   * 3.6.0 新增（可选）：字幕出现方式。'line' = 整行一次出现（5 帧淡入），'type' = 逐字淡入。
+   * 3.3.0 新增（可选）：字幕出现方式。'line' = 整行一次出现（5 帧淡入），'type' = 逐字淡入。
    * 缺省：声明了 craft 的手作皮肤 line，其余 type。工程可在 src/film.ts 用 `export const CAPTION_REVEAL` 覆盖。
    */
   captionReveal?: 'line' | 'type';
@@ -88,7 +88,7 @@ export interface ThemeCraft {
   bodyFamily: string;
   /** 唯一强调色（lemo 配方「一个强调色」纪律） */
   accent: string;
-  /** 缺省转场（分镜表写 auto 时用）。3.5.0 pageturn / peel = 真卷页（WebGPU，渲染器探针不通过时退回 slide / drop） */
+  /** 缺省转场（分镜表写 auto 时用）。3.3.0 pageturn / peel = 真卷页（WebGPU，渲染器探针不通过时退回 slide / drop） */
   transition: 'slide' | 'drop' | 'pageturn' | 'peel' | 'ink' | 'whip' | 'zoom' | 'fade';
   /** 需要额外加载的字体（AssetGate 会 load 并校验；缺字体则拒绝渲染并提示 `fonts --serif`） */
   fonts?: string[];

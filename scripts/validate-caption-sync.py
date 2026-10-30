@@ -46,7 +46,7 @@ def main() -> None:
     parser.add_argument("--max-lead-ms", type=int, default=80)
     parser.add_argument("--max-chars", type=int, default=16,
                         help=" characters per subtitle line after stripping trailing punctuation (0 = off)")
-    # 3.6.0 单条字幕在屏时长（到下一条出现为止；最后一条不查）：Netflix 通用字幕要求最短 5/6 s、最长 7 s
+    # 3.3.0 单条字幕在屏时长（到下一条出现为止；最后一条不查）：Netflix 通用字幕要求最短 5/6 s、最长 7 s
     # （https://partnerhelp.netflixstudios.com/hc/en-us/articles/215758617）。短于下限读不完 = 失败；长于上限只警告。
     parser.add_argument("--min-cue-sec", type=float, default=0.83, help="minimum on-screen seconds per cue (0 = off)")
     parser.add_argument("--max-cue-sec", type=float, default=7.0, help="warn above this many on-screen seconds per cue (0 = off)")

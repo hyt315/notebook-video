@@ -1,4 +1,4 @@
-# 真翻页 / 揭纸转场（`@remotion/effects`，3.5.0）
+# 真翻页 / 揭纸转场（`@remotion/effects`，3.3.0）
 
 > 手作皮肤的「翻到下一页」不再是镜头横移，而是一页纸真的卷起来翻走：卷曲、折痕高光、纸背透出上一页的墨迹。
 > The hand-made skins now turn a real page: the old page curls away with a shaded fold and its back showing through, instead of a camera pan.
@@ -70,7 +70,7 @@ Studio 预览与普通 `remotion still` 缺省没有 `nvFx`，看到的是退回
 - 完整版 Chrome + 上面那组 Vulkan 参数：WebGL2 上下文建不起来（`createWebGL2ContextError`），**与 pageTurn 不能同在一个浏览器配置里**；
 - 观感：纸本身不会动，逐帧演化的云纹在亮底上像「沸腾的纸」，盖过了墨线和水彩的手作感。1/4 分辨率 + 每 5 帧跳一次（6 fps 手绘抖动）便宜很多，但仍需要 `--gl=swangle` 整片渲染。
 
-结论：现有的静态纤维纹理（`public/craft/fibre-tile.png`）+ 背景库里 Paper Shaders 离线预渲的纸纹，已经比动态噪声好且零运行时成本。`fractalNoise` 只作为**离线**生成静态纹理的候选（维护者工具里渲一次存成位图，与 3.4.0 处理 Paper Shaders 的方式相同），不进渲染期。
+结论：现有的静态纤维纹理（`public/craft/fibre-tile.png`）+ 背景库里 Paper Shaders 离线预渲的纸纹，已经比动态噪声好且零运行时成本。`fractalNoise` 只作为**离线**生成静态纹理的候选（维护者工具里渲一次存成位图，与 3.3.0 处理 Paper Shaders 的方式相同），不进渲染期。
 
 ## 5. 许可
 

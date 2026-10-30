@@ -12,6 +12,14 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = path.dirname(SCRIPT_DIR);
 const IS_WINDOWS = process.platform === 'win32';
 
+// 3.7.0：Windows 上 Remotion 拉浏览器 / 收尾 taskkill 时不设 windowsHide，
+// 于是每渲染一帧就闪一个 CMD 窗口（child_process.exec 在 Windows 上固定经 cmd.exe /d /s /c 启动）。
+// 不改 node_modules（重装依赖就没了），改成预加载 scripts/windows-hide-console.cjs，
+// 由它把 child_process 的 spawn/exec 包一层强制补上 windowsHide。
+// 见 scripts/windows-hide-console.cjs 头部的实测记录。
+const HIDE_CONSOLE_SHIM = path.join(SCRIPT_DIR, 'windows-hide-console.cjs');
+const hideConsoleArgs = () => (IS_WINDOWS && fs.existsSync(HIDE_CONSOLE_SHIM) ? ['--require', HIDE_CONSOLE_SHIM] : []);
+
 const fail = (message, code = 1) => {
   console.error(message);
   process.exit(code);
@@ -205,7 +213,7 @@ const newProject = async (args) => {
     if (!fs.existsSync(activePath)) fail(`Theme switch is missing in the copied template: ${activePath}`);
     fs.writeFileSync(activePath, `import {THEME} from './${style}';\nexport {THEME};\n`);
   }
-  // 3.7.0（T8.1）：模板自带的 treatment.json 描述的是示例片；换皮肤时 medium.skin 必须跟着改，
+  // 3.3.0（T8.1）：模板自带的 treatment.json 描述的是示例片；换皮肤时 medium.skin 必须跟着改，
   // 否则 validate-treatment 直接以「medium.skin 与工程皮肤不一致」判 P0（手作皮肤必填项）。
   const treatmentPath = path.join(target, 'manifests', 'treatment.json');
   if (fs.existsSync(treatmentPath)) {
@@ -234,7 +242,7 @@ const newProject = async (args) => {
   console.log('Multi-zone lecture composition rules: references/lecture-composition.md. Image generation stays an optional add-on offered separately.');
   console.log('Preserve the engine, background, subtitle, chrome, asset gate, audio tree and frame conventions. Replace topic content, visual plan, registered imagery and semantic scene objects.');
   console.log('Narration audio is intentionally not bundled. Generate or supply licensed audio, then run sync before rendering.');
-  // 3.7.0：手作皮肤的导演层是必填项，直接说清下一步，别让新用户在门禁前面猜。
+  // 3.3.0：手作皮肤的导演层是必填项，直接说清下一步，别让新用户在门禁前面猜。
   if (SERIF_THEMES.includes(style)) {
     console.log('下一步：改 manifests/treatment.json（facts 换成你选题的出处、跑一次 commons-search.py search "<关键词>" --project .），然后 make-video --stills。');
   } else {
@@ -277,7 +285,7 @@ const prepareBrowser = async ([projectArg]) => {
     if (!fs.existsSync(resolved)) fail(`REMOTION_BROWSER_EXECUTABLE does not exist: ${resolved}`);
     args.push(`--browser-executable=${resolved}`);
   }
-  await run(process.execPath, args, {cwd: project});
+  await run(process.execPath, [...hideConsoleArgs(), ...args], {cwd: project});
   console.log('Remotion rendering browser is ready.');
 };
 
@@ -368,7 +376,7 @@ const applyColorTags = async (target) => {
   }
 };
 
-// 3.5.0：真卷页能力探针（scripts/fx-browser.mjs）。同一进程内只探一次；结论写 renders/.fx-probe.json 供 make-video 写报告。
+// 3.3.0：真卷页能力探针（scripts/fx-browser.mjs）。同一进程内只探一次；结论写 renders/.fx-probe.json 供 make-video 写报告。
 const fxCache = new Map();
 const fxFor = async (project, {force = false, quiet = false} = {}) => {
   if (!force && fxCache.has(project)) return fxCache.get(project);
@@ -377,7 +385,7 @@ const fxFor = async (project, {force = false, quiet = false} = {}) => {
   try { remotionVersion = JSON.parse(fs.readFileSync(path.join(project, 'node_modules', 'remotion', 'package.json'), 'utf8')).version; } catch { /* 未安装 */ }
   const runStill = async (args) => {
     if (!fs.existsSync(remotionCli)) return {code: 1, out: `Remotion CLI missing: ${remotionCli}`};
-    const r = await run(process.execPath, [remotionCli, 'still', REMOTION_ENTRY_POINT, ...args], {cwd: project, capture: true, allowFailure: true});
+    const r = await run(process.execPath, [...hideConsoleArgs(), remotionCli, 'still', REMOTION_ENTRY_POINT, ...args], {cwd: project, capture: true, allowFailure: true});
     return {code: r.code, out: `${r.stdout}\n${r.stderr}`};
   };
   const fx = await resolveFx({project, remotionVersion, runStill, force});
@@ -398,7 +406,7 @@ const fxProbe = async ([projectArg, ...rest]) => {
   console.log(JSON.stringify(fx, null, 2));
 };
 
-// 3.7.0：FillGate 的浏览器日志按镜头去重。fill-gate.tsx 每个标签每镜只打一条 `[FillGate] underfilled <镜号> …`，
+// 3.3.0：FillGate 的浏览器日志按镜头去重。fill-gate.tsx 每个标签每镜只打一条 `[FillGate] underfilled <镜号> …`，
 // 这里把所有标签的这类行吞掉、记下镜号，渲染结束汇总成**一行**；其他输出原样透传。
 const runRemotionFiltered = (nodeArgs, cwd) => new Promise((resolve, reject) => {
   const child = spawn(process.execPath, nodeArgs, {cwd, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, shell: false});
@@ -439,13 +447,13 @@ const remotionRender = async ({project, composition, output, frames, concurrency
   if (!fs.existsSync(remotionCli)) await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
   if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after npm ci: ${remotionCli}`);
   ensureParent(output);
-  const nodeArgs = [];
+  const nodeArgs = [...hideConsoleArgs()];
   if (process.env.REMOTION_USE_NETWORK_SHIM === '1') {
     const shim = path.join(project, 'remotion-network-shim.cjs');
     if (!fs.existsSync(shim)) fail(`Optional network shim is missing: ${shim}`);
     nodeArgs.push('--require', shim);
   }
-  // 3.5.0 真卷页（pageturn / peel，WebGPU）：只有成片 composition、且本片用到卷页时才探测；
+  // 3.3.0 真卷页（pageturn / peel，WebGPU）：只有成片 composition、且本片用到卷页时才探测；
   // 探针通过 → 换完整版 Chromium + 软件 GPU 参数并传 {nvFx:'on'}，并发压到 1（完整版 Chrome 多标签会花屏，见 fx-browser.mjs）；
   // 不通过 → 照常渲染（合成里自动退回 slide / drop）。
   // fxMode：auto = 探针说行就开；off = 不开（整片快速渲染那一遍）；on = 必须开（卷页片段那一遍，调用方已确认探针通过）。
@@ -489,7 +497,7 @@ const render = async ([projectArg, outputArg, composition = 'NotebookVideoFilm']
   // 交付路径：这是"真正出交付物"的渲染，色彩元数据必须打全（见 applyColorTags）。
   // NOTEBOOK_VIDEO_SCALE=0.75 → 1920×1080 交付（缺省 2560×1440）
   const scaleArg = process.env.NOTEBOOK_VIDEO_SCALE || undefined;
-  // 3.5.0 真卷页：完整版 Chrome + 软件 GPU 每帧约 3 s（实测 2 核 arm64、2560×1440，缺省 Headless Shell 约 0.25 s），
+  // 3.3.0 真卷页：完整版 Chrome + 软件 GPU 每帧约 3 s（实测 2 核 arm64、2560×1440，缺省 Headless Shell 约 0.25 s），
   // 整片都用它会慢 10 倍以上。所以「快速整片 + 卷页片段 + 按帧号拼接」：
   //   ① 整片照常用 Headless Shell 渲（卷页处是退回的 slide，马上被替换），近无损 crf 8；
   //   ② 每个卷页窗口（22 帧）用完整版 Chrome 单独渲（crf 8、静音）；
@@ -514,7 +522,7 @@ const render = async ([projectArg, outputArg, composition = 'NotebookVideoFilm']
   } else {
     await remotionRender({project, composition, output: raw, concurrency, colorTagged: true, scale: scaleArg});
   }
-  // 响度目标可调（NOTEBOOK_VIDEO_LUFS）。缺省 −16 LUFS、真峰 −1.5 dBTP；3.6.0 起静音占位旁白的片子也用 −16
+  // 响度目标可调（NOTEBOOK_VIDEO_LUFS）。缺省 −16 LUFS、真峰 −1.5 dBTP；3.3.0 起静音占位旁白的片子也用 −16
   //（AES TD1004：流媒体 −16…−20，−23/−24 在手机上不够响）。
   const LUFS = process.env.NOTEBOOK_VIDEO_LUFS || '-16';
   // 两遍响度规范化：先测（linear 模式需要 measured_* 才能同时打准 LUFS 与真峰）
@@ -695,7 +703,7 @@ const pythonCommandMap = new Map([
   ['commons', ['commons-search.py']],
   ['prepare-media', ['prepare-media.py']],
   ['validate-ocr', ['validate-ocr.py']],
-  // 3.4.0：背景库门禁（来源 / 许可 / sha256 / 亮底 / 字幕区对比度；--shots 查相邻镜重复）
+  // 3.3.0：背景库门禁（来源 / 许可 / sha256 / 亮底 / 字幕区对比度；--shots 查相邻镜重复）
   ['validate-backgrounds', ['validate-backgrounds.py']],
 ]);
 
@@ -806,14 +814,14 @@ const craftSheet = async (args) => {
   const out = resolvePath(outputArg ?? path.join(project, 'renders', 'craft-sheet.png'));
   ensureParent(out);
   const opt = (k, d) => (args.find((a) => a.startsWith(`--${k}=`)) ?? `=${d}`).split('=')[1];
-  const nodeArgs = [remotionCli, 'still', REMOTION_ENTRY_POINT, 'NotebookVideoCraftSheet', out, `--frame=${opt('frame', 72)}`, `--scale=${opt('scale', 1)}`];
+  const nodeArgs = [...hideConsoleArgs(), remotionCli, 'still', REMOTION_ENTRY_POINT, 'NotebookVideoCraftSheet', out, `--frame=${opt('frame', 72)}`, `--scale=${opt('scale', 1)}`];
   if (process.env.REMOTION_BROWSER_EXECUTABLE) nodeArgs.push(`--browser-executable=${resolvePath(process.env.REMOTION_BROWSER_EXECUTABLE)}`);
   await run(process.execPath, nodeArgs, {cwd: project});
   console.log(`Craft sheet written: ${out} — read it to judge the craft components under the current skin (references/craft-kit.md).`);
 };
 
 const usage = () => {
-  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  fonts [--serif]   (download the pinned LXGW WenKai Lite fonts once — plus Noto Serif SC with --serif; new-project does this automatically)\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel|journal|papercut|archive]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nvalidate-treatment PROJECT_DIRECTORY   (3.3.0 director layer: manifests/treatment.json)\nvalidate-opening PROJECT_DIRECTORY [--video MP4]   (3.6.0 first three seconds: cold open, first caption, beats, pixels)\nsilent-timing LINES_TXT OUT_JSON [--cps N] [--project DIR]   (3.6.0 caption timing without TTS; hand-made skins default 6.5 chars/s)\nvalidate-backgrounds PROJECT_DIRECTORY [--shots] [--recompute]   (3.4.0 background library: manifests/backgrounds.json)\nvalidate-media PROJECT_DIRECTORY\nprepare-media PROJECT_DIRECTORY [--add FILE --id ID …]\ncommons search \"QUERY\" [--type image|video|audio] [--source commons|openverse] [--audio-category music|sound_effect] [--project DIR] | commons add PROJECT \"File:…\" --id ID | commons credits PROJECT\nvalidate-ocr PROJECT_DIRECTORY --video MP4 | --stills DIR   (optional: needs pip rapidocr onnxruntime)\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\ncraft-sheet PROJECT_DIRECTORY [OUTPUT_PNG] [--frame=N]   (3.3.0: one page with every src/craft component)\nfx-probe PROJECT_DIRECTORY [--force]   (3.5.0: can this machine draw the WebGPU page turn? prints JSON; render runs it automatically)\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
+  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  fonts [--serif]   (download the pinned LXGW WenKai Lite fonts once — plus Noto Serif SC with --serif; new-project does this automatically)\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel|journal|papercut|archive]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  benchmark-render PROJECT_DIRECTORY [COMPOSITION_ID]\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-frame-props PROJECT_DIRECTORY\nvalidate-audio-levels PROJECT_DIRECTORY\nvalidate-treatment PROJECT_DIRECTORY   (3.3.0 director layer: manifests/treatment.json)\nvalidate-opening PROJECT_DIRECTORY [--video MP4]   (3.3.0 first three seconds: cold open, first caption, beats, pixels)\nsilent-timing LINES_TXT OUT_JSON [--cps N] [--project DIR]   (3.3.0 caption timing without TTS; hand-made skins default 6.5 chars/s)\nvalidate-backgrounds PROJECT_DIRECTORY [--shots] [--recompute]   (3.3.0 background library: manifests/backgrounds.json)\nvalidate-media PROJECT_DIRECTORY\nprepare-media PROJECT_DIRECTORY [--add FILE --id ID …]\ncommons search \"QUERY\" [--type image|video|audio] [--source commons|openverse] [--audio-category music|sound_effect] [--project DIR] | commons add PROJECT \"File:…\" --id ID | commons credits PROJECT\nvalidate-ocr PROJECT_DIRECTORY --video MP4 | --stills DIR   (optional: needs pip rapidocr onnxruntime)\nshowcase PROJECT_DIRECTORY [OUTPUT_MP4]\nshowcase-sheet PROJECT_DIRECTORY [OUTPUT_JPG]\ncraft-sheet PROJECT_DIRECTORY [OUTPUT_PNG] [--frame=N]   (3.3.0: one page with every src/craft component)\nfx-probe PROJECT_DIRECTORY [--force]   (3.3.0: can this machine draw the WebGPU page turn? prints JSON; render runs it automatically)\n  package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };
 
 const main = async () => {

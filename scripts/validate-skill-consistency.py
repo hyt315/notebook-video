@@ -76,7 +76,7 @@ DOC_IDENT_WHITELIST = {
     'Chloe', 'Dean', 'Mia', 'Milo', 'TransitionSeries',      # 供应商音色名 / Remotion API
     'FiZoomOut', 'LuZoomOut',                                 # react-icons 的两个字形名（政策里做字节级对照）
     'DeepSeek', 'Opus',                                       # 模型名
-    'NOTICE', 'UNLICENSED', 'Vulkan', 'VK_ICD_FILENAMES',      # 仓库文件名 / npm 许可字段 / Chromium feature / Vulkan loader 环境变量（3.5.0 fx-effects.md）
+    'NOTICE', 'UNLICENSED', 'Vulkan', 'VK_ICD_FILENAMES',      # 仓库文件名 / npm 许可字段 / Chromium feature / Vulkan loader 环境变量（3.3.0 fx-effects.md）
     # —— 以下名字在文档里**只允许以"已删除/历史对照"的身份出现**（写它们的用途是告诉读者"别再用"）——
     'BackgroundMute', 'CameraRig', 'SceneContribute', 'SceneShip', 'SceneSkills',
     'Film4x3', 'Film3x4',                                        # 3.2.0 删除的 4:3 / 3:4 Composition
@@ -95,7 +95,7 @@ def doc_defined_names() -> set[str]:
         t = f.read_text(encoding='utf-8', errors='ignore')
         names |= set(re.findall(r'^([A-Za-z_][\w]*)\s*=', t, re.M))   # 模块级常量/变量
         names |= set(re.findall(r'^def\s+([A-Za-z_][\w]*)', t, re.M)) # 函数名
-    # Node 脚本（3.5.0 起 fx-browser.mjs 有导出常量与环境变量）：`export const NAME`、`env.NAME` / `process.env.NAME` 都是真名字。
+    # Node 脚本（3.3.0 起 fx-browser.mjs 有导出常量与环境变量）：`export const NAME`、`env.NAME` / `process.env.NAME` 都是真名字。
     for f in (SKILL / 'scripts').glob('*.mjs'):
         t = f.read_text(encoding='utf-8', errors='ignore')
         names |= set(re.findall(r'export\s+(?:const|function|class)\s+([A-Za-z_$][\w$]*)', t))
@@ -261,7 +261,7 @@ _PY_STAGE_CY = r'^STAGE_CX,\s*STAGE_CY\s*=\s*[\d.]+,\s*([\d.]+)'
 _TS_STAGE_CX = r'STAGE = \{[^}]*cx:\s*([\d.]+)'
 _TS_STAGE_CY = r'STAGE = \{[^}]*cy:\s*([\d.]+)'
 _NUM_DUAL_PAIRS = (
-    # 3.5.0 卷页转场时长：合成（src/fx.tsx）⇄ 渲染器拼接窗口（scripts/fx-browser.mjs）。窗口比转场短 → 拼接处露出退回的 slide
+    # 3.3.0 卷页转场时长：合成（src/fx.tsx）⇄ 渲染器拼接窗口（scripts/fx-browser.mjs）。窗口比转场短 → 拼接处露出退回的 slide
     ('CURL_FRAMES fx.tsx vs fx-browser.mjs', 'assets/lecture-template/src/fx.tsx', r'export const CURL_FRAMES\s*=\s*(\d+)', 'scripts/fx-browser.mjs', r'^export const CURL_FRAMES\s*=\s*(\d+)'),
     # 字号绝对地板：data.tsx「反推低于它就不画字」⇄ G-3 地板（判据侧注释自证口径 = MIN_LABEL_FONT）
     ('MIN_LABEL_FONT vs FONT_FLOOR', _TS_DATA, r'export const MIN_LABEL_FONT\s*=\s*([\d.]+)', _PY_PRESENT, r'^FONT_FLOOR\s*=\s*([\d.]+)'),
@@ -390,7 +390,7 @@ def main() -> None:
                     problems.append(f"missing theme background: assets/lecture-template/public/{rel}")
                 if f"'{rel}'" not in src_text:
                     problems.append(f"theme {theme_id}.tsx does not map variant {variant} to '{rel}'")
-        # 3.4.0 背景库：manifest 在、每张图在、每个手作皮肤 ≥ 8 张 / flat、cel ≥ 4 张新增库背景、
+        # 3.3.0 背景库：manifest 在、每张图在、每个手作皮肤 ≥ 8 张 / flat、cel ≥ 4 张新增库背景、
         # 门禁里的皮肤墨色与 theme/*.tsx 的 palette.ink 一致（完整的 sha256 / 许可 / 对比度由 validate-backgrounds.py 查）。
         bg_lib = SKILL / 'assets' / 'lecture-template' / 'manifests' / 'backgrounds.json'
         if not bg_lib.is_file():

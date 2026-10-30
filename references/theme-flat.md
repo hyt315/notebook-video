@@ -25,7 +25,7 @@ All hex values are vendored from Radix Colors v3 (MIT); the theme file names the
 
   `navy` `#113264` (blue 12) is the dark fill and the header accent. Gold is a highlight fill only: put `ink` text on it, never white.
 - Card skin: white card, `2px` hairline `rgba(28,32,36,0.14)`, `22px` radius, hard offset shadow `6px 6px 0` in the lead blue (a scene's `borderColor` recolors it), lift extends the offset by up to 3px. No ink border, no blur.
-- Background library (3.4.0): five more light backgrounds — `flat/mesh-dawn`, `mesh-mint`, `dotgrid`, `sunrise`, `shapes` — rotate by shot role with no two adjacent shots alike; see [background-library.md](background-library.md). The three below stay as the `legacy` entries.
+- Background library (3.3.0): five more light backgrounds — `flat/mesh-dawn`, `mesh-mint`, `dotgrid`, `sunrise`, `shapes` — rotate by shot role with no two adjacent shots alike; see [background-library.md](background-library.md). The three below stay as the `legacy` entries.
 - Backgrounds (LOCKED rasters, 2560×1440, `public/bg/`, registered with sha256 in `manifests/visual-assets.json`):
   - `bg-flat-main.jpg`: soft sky → cream gradient with paper grain; the robot mascot peeks up from the bottom-right edge, a mint hill with the coral buddy sits at the bottom-left, tiny clouds and yellow dots in the top corners.
   - `bg-flat-chapter.jpg`: the same scene mirrored (mascot bottom-left, hill and buddy bottom-right) on a slightly richer sky with a soft cream glow behind the centre.

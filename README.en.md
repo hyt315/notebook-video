@@ -4,7 +4,7 @@
 
 **Turn one idea into a 16:9 Chinese teaching video: component scenes, an engine-level virtual camera and on-the-beat sound effects. One command renders it; objective gates fix what they can.**
 
-[![Version](https://img.shields.io/badge/version-3.7.0-1f6feb)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.3.0-1f6feb)](CHANGELOG.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
 [![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel-ff7a59)](references/theme-system.md)
@@ -31,9 +31,9 @@ full, editable source project.
 - **Reproducible by weaker models**: five teaching blueprints name the skeleton and components for every shot, plus golden
   examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
 
-- **New in 3.7.0 — one paper per notebook, review before render**: hand-made skins default to `bgMode: "chapter"` (one paper per chapter; `"film"` keeps one for the whole film, `"shot"` rotates per shot), and decorative `busy` backgrounds stay off regular shots; `resolve-shots` generates `storyboard.md` from the real shot table for the independent review; for hand-made skins `make-video --render` stops until a review round is recorded (drafts pass `--skip-review`); silent films time whole-line captions at `--cps` (default 6.5 chars/s).
+- **New in 3.3.0 — one paper per notebook, review before render**: hand-made skins default to `bgMode: "chapter"` (one paper per chapter; `"film"` keeps one for the whole film, `"shot"` rotates per shot), and decorative `busy` backgrounds stay off regular shots; `resolve-shots` generates `storyboard.md` from the real shot table for the independent review; for hand-made skins `make-video --render` stops until a review round is recorded (drafts pass `--skip-review`); silent films time whole-line captions at `--cps` (default 6.5 chars/s).
 
-- **New in 3.4.0 — a background library**: 8 more light backgrounds per craft skin and 5 more for flat / cel (ruled notebook,
+- **New in 3.3.0 — a background library**: 8 more light backgrounds per craft skin and 5 more for flat / cel (ruled notebook,
   xuan paper, window-flower papercut, a 1630 map, film strips, screentone, mesh gradients…), rotated by shot role with no two
   adjacent shots alike; every file records its source and licence (Paper Shaders rendered offline once, public-domain / CC0
   Commons textures, fixed-seed drawings) and a gate checks light ground and subtitle contrast.

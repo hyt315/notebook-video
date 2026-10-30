@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the 3.4.0 background library: scripts/validate-backgrounds.py and the rotation in scripts/resolve-shots.py."""
+"""Tests for the 3.3.0 background library: scripts/validate-backgrounds.py and the rotation in scripts/resolve-shots.py."""
 from __future__ import annotations
 
 import importlib.util
@@ -94,7 +94,7 @@ class RotationTest(unittest.TestCase):
         return text, out, problems
 
     def test_auto_rotation_never_repeats_adjacent_and_is_deterministic(self):
-        # 3.7.0: per-shot rotation is bgMode=shot (default only for flat / cel; handcraft skins opt in)
+        # 3.3.0: per-shot rotation is bgMode=shot (default only for flat / cel; handcraft skins opt in)
         for theme in ("flat", "cel", "journal", "papercut", "archive"):
             d = project(theme, mutate=lambda doc: doc.update(bgMode="shot"))
             try:

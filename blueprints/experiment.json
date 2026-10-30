@@ -2,7 +2,7 @@
   "$blueprint": "experiment",
   "$route": "handwritten-craft",
   "family": "experiment",
-  "$about": "对照实验（3.6.0）：同一种媒介做两份，并排，只改一个变量，让观众亲眼看到差别。科学课的对照组 / 实验组结构，只借结构。",
+  "$about": "对照实验（3.3.0）：同一种媒介做两份，并排，只改一个变量，让观众亲眼看到差别。科学课的对照组 / 实验组结构，只借结构。",
   "fits": "“如果…会怎样”、因果关系、一个变量决定结果（盐水和清水、对折剪和不对折剪、有无纠错码）",
   "$howto": "手写组件路线的分镜蓝图（不走 compose-story）。先按 references/director-method.md 写 manifests/treatment.json，candidates 里写 family；再照每拍的 $components 写 scenes.tsx。秒数按 60–90 秒片子给出，括号里是占片长的比例，按台词伸缩。字幕每行 ≤14 字。 两份必须同时在画面里、同一时刻发生；镜头不在两边之间来回甩，而是锁定让观众自己比。",
   "theme": "<<journal | papercut | archive>>",

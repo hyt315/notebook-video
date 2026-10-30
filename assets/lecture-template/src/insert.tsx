@@ -68,7 +68,7 @@ export const TRANSITIONS = ['auto', 'cut', 'handoff', 'reveal', 'whip', 'whip-le
 // 转场由引擎实现（src/cinema.tsx 的 resolveTransition / transitionStyle）：auto（缺省）= 章节首镜 zoom 推穿、
 // 其余 whip 甩镜左右交替；cut / handoff / reveal 是旧写法，引擎按 auto 处理（reveal 另由 RevealMask 做镜内揭示）；
 // fade = 交叉淡化；hard = 真硬切；slide / drop = 手作皮肤的纸面横移 / 新纸落下；
-// pageturn / peel（3.5.0）= 真卷页 / 揭纸（src/fx.tsx，WebGPU；渲染器探针不通过时自动退回 slide / drop）。
+// pageturn / peel（3.3.0）= 真卷页 / 揭纸（src/fx.tsx，WebGPU；渲染器探针不通过时自动退回 slide / drop）。
 export type TransitionKind = (typeof TRANSITIONS)[number];
 
 /**

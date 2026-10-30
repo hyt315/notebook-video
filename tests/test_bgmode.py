@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""3.7.0 bgMode: handcraft skins keep one paper per chapter (or per film); flat / cel keep per-shot rotation."""
+"""3.3.0 bgMode: handcraft skins keep one paper per chapter (or per film); flat / cel keep per-shot rotation."""
 from __future__ import annotations
 
 import importlib.util
@@ -96,12 +96,12 @@ class BgModeTest(unittest.TestCase):
     def test_no_library_output_unchanged_vs_360(self):
         old_src = subprocess.run(["git", "show", "9decea6:scripts/resolve-shots.py"], cwd=ROOT, capture_output=True, text=True)
         if old_src.returncode != 0:
-            self.skipTest("3.6.0 commit not in this clone")
+            self.skipTest("3.3.0 commit not in this clone")
         tmp = Path(tempfile.mkdtemp(prefix="nv-rs360-")) / "rs360.py"
         tmp.write_text(old_src.stdout, encoding="utf-8")
         old = load("rs360", tmp)
-        # 3.7.0：sfxDensity 是**刻意的**行为变更（shots.ts 多一行导出、resolved 多一个键），
-        # 本用例守的是「背景相关输出与 3.6.0 逐字节一致」，所以先把这一行 / 这个键去掉再比。
+        # 3.3.0：sfxDensity 是**刻意的**行为变更（shots.ts 多一行导出、resolved 多一个键），
+        # 本用例守的是「背景相关输出与 3.3.0 逐字节一致」，所以先把这一行 / 这个键去掉再比。
         def strip_sfx_ts(text: str) -> str:
             out: list[str] = []
             for line in text.splitlines():

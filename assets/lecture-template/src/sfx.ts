@@ -104,11 +104,11 @@ const middleEvent = (s: ShotLike, i: number): SfxEvent => {
   return i % 2 ? 'click' : 'highlight';
 };
 
-/** 音效密度（3.7.0 片级字段，写进 manifests/shots.json 顶层）：
+/** 音效密度（3.3.0 片级字段，写进 manifests/shots.json 顶层）：
  *  · sparse（缺省）：每镜只留末拍一记 + 章节/转场；误区镜额外保留第 2 拍的反转音。
  *    为什么改缺省：旁白由使用者自行后配（任意 TTS 或真人），不知道以后有没有人声，
  *    所以默认就该克制——音效是标点，不是配乐。
- *  · normal：3.6.0 的行为，每个 beat 一个音效（老工程想要原样就写 "sfxDensity": "normal"）。
+ *  · normal：3.3.0 的行为，每个 beat 一个音效（老工程想要原样就写 "sfxDensity": "normal"）。
  */
 export type SfxDensity = 'sparse' | 'normal';
 export const SFX_DENSITY_DEFAULT: SfxDensity = 'sparse';

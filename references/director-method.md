@@ -45,7 +45,7 @@
 每个两三行：形状（一次旅程 / 前后对比 / 倒计时 / 一个清单逐条翻转 / 错误猜想被推翻……）、开头画面、结尾。
 第一个想到的往往是这个媒介的陈词滥调；写满三个再选。
 
-**选结构族（3.6.0 起检查）**：每个候选写 `family`，三个候选**至少来自 2 个族**（否则只是同一条曲线的三种写法，validate-treatment 记 P1）。
+**选结构族（3.3.0 起检查）**：每个候选写 `family`，三个候选**至少来自 2 个族**（否则只是同一条曲线的三种写法，validate-treatment 记 P1）。
 族名与蓝图：
 
 | 族 `family` | 蓝图 | 适合 |
@@ -68,7 +68,7 @@
 ```
 
 ### 5b. 声音设计（`sound`）
-静音片也要设计声音（3.6.0 起检查，缺项 P1）。`treatment.json → sound` 每项的意思：
+静音片也要设计声音（3.3.0 起检查，缺项 P1）。`treatment.json → sound` 每项的意思：
 
 | 字段 | 意思 | 示例 |
 |---|---|---|
@@ -87,7 +87,7 @@
 
 ### 7. 镜头表要写"为什么"（`shots`、`signature_shot`）
 每镜：景别（全 / 中 / 近 / 特写 / 插入）、运镜（推 / 拉 / 横移 / 跟 / 静）、**理由**。全片 ≥4 种运镜，一个招牌镜头。
-**景别写了就要兑现**（3.6.0）：`validate-treatment` 拿 treatment 的 `move` / `framing` 对照镜头表的 `cameraIntent` 和实际缩放；
+**景别写了就要兑现**（3.3.0）：`validate-treatment` 拿 treatment 的 `move` / `framing` 对照镜头表的 `cameraIntent` 和实际缩放；
 招牌镜头至少真推 12%（keys 缩放或 `cinema.focus` 的 zoom），否则手作皮肤 P0。动机、景别阶梯、视线连续、什么时候不动、镜长：
 见 [camera-language.md](camera-language.md)。
 转场在媒介内部完成（翻页、换一张纸、剪刀剪过、墨晕开），不用缺省的淡入淡出 / 甩镜。
@@ -116,7 +116,7 @@ python scripts/commons-search.py search "<关键词>" --source openverse --proje
    `storyboard.md`、`manifests/treatment.json`，不给任何过程记录。按七项 1–10 打分：
    构图主体、调度节奏、隐喻与媒介一致、顿悟惊艳、字幕可读、手作质感与色彩纪律、叙事完整；问题分 P0 / P1 / P2 列出。
    <8 的改完再评，分数、问题与处理写进 `treatment.json → review.rounds`（时间、评审者、问题、处理）。
-   - `storyboard.md` 由 `resolve-shots` 从 `manifests/shots.resolved.json` **自动生成**（3.7.0）：片名、总帧数、时长、皮肤，
+   - `storyboard.md` 由 `resolve-shots` 从 `manifests/shots.resolved.json` **自动生成**（3.3.0）：片名、总帧数、时长、皮肤，
      每镜一行写起止秒、景别、运镜、意图缩放 / 实际缩放、转场、背景、主要组件、字幕摘要。文件头有"自动生成"标记，手改会被覆盖；
      如果你手写过 storyboard.md（没有标记），不覆盖，生成的那份写到 `storyboard.generated.md`——评审用生成的那份。
 5. 一轮修改把所有问题改完，再渲整片。手作皮肤 `review.rounds` 为空时 `make-video --render` 会停下并说明原因；
@@ -135,6 +135,6 @@ python scripts/commons-search.py search "<关键词>" --source openverse --proje
 | 搜过 Commons（`commons-log.json` 至少一次）且 `commons.used` 都在 media.json 里 | P0 | P1 |
 | `turn_to_you_sec` 落在片长 35–55% | P1 | P1 |
 | 镜头表每镜有理由；运镜 ≥4 种；有 `signature_shot` | P1 | P1 |
-| 招牌镜头实推 ≥ 12%（对照 shots.resolved.json，3.6.0） | P0 | P1 |
-| `move` = 镜头表 `cameraIntent`；`framing` 与实际缩放 / 主体占比相符（3.6.0） | P1 | P1 |
+| 招牌镜头实推 ≥ 12%（对照 shots.resolved.json，3.3.0） | P0 | P1 |
+| `move` = 镜头表 `cameraIntent`；`framing` 与实际缩放 / 主体占比相符（3.3.0） | P1 | P1 |
 | `review.rounds` 最后一轮七项都 ≥8 | P1 | P1 |

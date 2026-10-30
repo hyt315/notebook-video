@@ -49,7 +49,7 @@ export const PaperSubtitle = (o: {ink: string; halo: string; family?: string; si
         background: `radial-gradient(ellipse at center, ${o.halo} 0%, ${o.halo} 52%, transparent 76%)`, filter: 'blur(6px)'}} />}
       <div style={{position: 'relative', fontFamily: o.family ?? 'NotoSerifSC,Kai', fontSize: o.size, fontWeight: 700, lineHeight: 1.16,
         letterSpacing: o.letterSpacing ?? 2, color: o.ink, whiteSpace: 'nowrap',
-        // 3.6.0：全角标点收半宽（「 」、，。两侧不再像多了一个空格）
+        // 3.3.0：全角标点收半宽（「 」、，。两侧不再像多了一个空格）
         fontFeatureSettings: '"halt"',
         textShadow: o.plate ? undefined : `0 0 10px ${o.halo}, 0 0 4px ${o.halo}`}}>
         {children}

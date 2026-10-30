@@ -17,8 +17,8 @@
 - 章节标识（`Chrome`）：左上角钢笔小字 "No.01 — 章名" + 一条手划线；**没有**右上技术页眉、没有吉祥物。
 - 调色（`Grade`）：轻微暖色 + 暗角。
 - 背景：`bg-journal-{main,chapter,quiet}.jpg`（2560×1440，`scripts/dev/make-craft-textures.py` 确定性生成，sha256 登记）；chapter 变体左下 / 右上各一团水彩晕。
-- 背景库（3.4.0）：再加 8 张——`journal/ruled` 横线本、`grid` 方格本、`dots` 点阵本、`kraft` 牛皮纸本、`watercolor` 水彩纸、`sticky` 便签墙、`oldpage` 旧书页、`graph` 坐标纸；3.7.0 起手作皮肤默认 `bgMode: "chapter"`：只在章节首镜换纸、章内沿用（装饰重的 `busy` 背景只给章节卡 / 安静镜）；想全片一张纸写 `"bgMode": "film"`，想改回逐镜轮换写 `"bgMode": "shot"`，见 [background-library.md](background-library.md)。
-- 转场缺省：`pageturn`（3.5.0，真翻页：上一页卷起来翻走，见 [fx-effects.md](fx-effects.md)）；机器画不了 WebGPU 时自动退回 `slide`（沿同一页横移）。章节首镜 `drop`（新的一页盖上来）。
+- 背景库（3.3.0）：再加 8 张——`journal/ruled` 横线本、`grid` 方格本、`dots` 点阵本、`kraft` 牛皮纸本、`watercolor` 水彩纸、`sticky` 便签墙、`oldpage` 旧书页、`graph` 坐标纸；3.3.0 起手作皮肤默认 `bgMode: "chapter"`：只在章节首镜换纸、章内沿用（装饰重的 `busy` 背景只给章节卡 / 安静镜）；想全片一张纸写 `"bgMode": "film"`，想改回逐镜轮换写 `"bgMode": "shot"`，见 [background-library.md](background-library.md)。
+- 转场缺省：`pageturn`（3.3.0，真翻页：上一页卷起来翻走，见 [fx-effects.md](fx-effects.md)）；机器画不了 WebGPU 时自动退回 `slide`（沿同一页横移）。章节首镜 `drop`（新的一页盖上来）。
 
 ## 原生动作（顿悟点用）
 1. **晕染即揭示**：`WashBlob` 在结构上晕开，水干后边缘自己变深——"本来就在那里，只是你没看出来"。

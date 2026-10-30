@@ -261,7 +261,7 @@ def main() -> int:
     else:
         check("音效库门禁（需要 ffmpeg）", False, "ffmpeg 不在 PATH，无法回归音效库门禁")
 
-    # ---- 3.4.0 背景库：模板库必须通过；改坏许可 / 改动文件（sha256）/ 相邻重复必须被拦或提示 ----
+    # ---- 3.3.0 背景库：模板库必须通过；改坏许可 / 改动文件（sha256）/ 相邻重复必须被拦或提示 ----
     tpl = ROOT / "assets" / "lecture-template"
     vb = ROOT / "scripts" / "validate-backgrounds.py"
     good = run(sys.executable, str(vb), str(tpl), "--min-per-skin", "journal=8,papercut=8,archive=8,flat=4,cel=4")

@@ -40,7 +40,7 @@ const EVENT_PAD = 2;
 
 type Box = {left: number; top: number; right: number; bottom: number};
 
-// 3.7.0：
+// 3.3.0：
 //  · 手作皮肤（journal / papercut / archive，以 theme/active.ts 为准）不判「下 1/4 必须填满」：
 //    一本手账的大留白是设计，不是空洞（以前每次渲染刷几百条，把真正的警告淹没）。
 //  · 警告按镜头去重：每个浏览器标签里每镜只出一条机器可读的行

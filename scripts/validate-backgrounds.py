@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""validate-backgrounds.py · 背景库门禁（3.4.0）。
+"""validate-backgrounds.py · 背景库门禁（3.3.0）。
 
 两种用法：
 
@@ -170,7 +170,7 @@ def check_shots(root: Path) -> tuple[list[str], list[str]]:
         return [f"缺 {rp}（先跑 resolve-shots）"], p1
     res = json.loads(rp.read_text(encoding="utf-8"))
     theme = res.get("theme")
-    # 3.7.0：相邻重复只在逐镜轮换（bgMode=shot）时算问题；chapter / film 模式同章同纸是设计如此。
+    # 3.3.0：相邻重复只在逐镜轮换（bgMode=shot）时算问题；chapter / film 模式同章同纸是设计如此。
     # 旧 resolved 没有 bgMode 键：手作皮肤按 chapter、其余按 shot 推断（与 resolve-shots 的默认一致）。
     mode = res.get("bgMode") or ("chapter" if theme in ("journal", "papercut", "archive") else "shot")
     try:
@@ -215,7 +215,7 @@ def main() -> int:
         try:
             p0, p1 = check_library(root, parse_min(a.min_per_skin))
         except FileNotFoundError as e:
-            print(f"validate-backgrounds：没有背景库 {e}（3.4.0 之前的工程：按 main/chapter/quiet 三张图渲染，不受影响）")
+            print(f"validate-backgrounds：没有背景库 {e}（3.3.0 之前的工程：按 main/chapter/quiet 三张图渲染，不受影响）")
             return 0
         label = "背景库"
     for x in p0:

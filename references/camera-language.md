@@ -1,6 +1,6 @@
 # 镜头语言：为什么动、动多少、什么时候不动
 
-> 3.6.0 新增。适用：每一条片子（手作路线必读）。配套：[cinema-camera.md](cinema-camera.md)（引擎能做什么、字段怎么写）、
+> 3.3.0 新增。适用：每一条片子（手作路线必读）。配套：[cinema-camera.md](cinema-camera.md)（引擎能做什么、字段怎么写）、
 > [shot-language.md](shot-language.md)（7 个 intent 与出界证明）、[director-method.md](director-method.md) 第 7 步（treatment 里写景别和理由）。
 > 门禁：`validate-treatment.py` 对照 treatment 与镜头表（§2），`validate-composition.py` 查镜长（§5）。
 >

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""3.7.0: storyboard.md is generated from the real shot table (shots.resolved.json) by resolve-shots."""
+"""3.3.0: storyboard.md is generated from the real shot table (shots.resolved.json) by resolve-shots."""
 from __future__ import annotations
 
 import json

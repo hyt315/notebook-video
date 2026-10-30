@@ -376,7 +376,7 @@ def mk_skill_copy():
         if not os.path.exists(q):
             os.makedirs(os.path.dirname(q), exist_ok=True)
             open(q, 'wb').close()
-    # 3.4.0 背景库的 WebP 同理（一致性检查只查 is_file）
+    # 3.3.0 背景库的 WebP 同理（一致性检查只查 is_file）
     lib = json.load(io.open(os.path.join(SKILL, 'assets/lecture-template/manifests/backgrounds.json'), encoding='utf-8'))
     for e in lib.get('backgrounds', []):
         q = os.path.join(td, 'assets/lecture-template', e['file'])
@@ -1413,7 +1413,7 @@ td = media_proj(scene='<MediaFrame f={f} id="pr" x={L.x} y={L.y} w={L.w} h={L.h}
 case('M9 media · 尺寸来自布局对象量不出 → 按占满画布估，可能糊 → 提醒', [('must_warn:量不出', 'validate-media', run([PY, VMEDIA, td]))])
 cleanup(td)
 
-# ── BG · 3.4.0 背景库门禁（validate-backgrounds.py）+ resolve-shots 的背景解析 ──
+# ── BG · 3.3.0 背景库门禁（validate-backgrounds.py）+ resolve-shots 的背景解析 ──
 # 判据逐条：许可白名单、CC BY 必须署名、sha256 绑定、字幕区对比度（按 manifest 指标）、亮底、
 # 显式 bg 不存在 / 跨皮肤 → resolve-shots 拦；自动轮换绝不相邻重复；没有背景库的旧工程解析结果逐字节不变。
 VBG = os.path.join(SKILL, 'scripts/validate-backgrounds.py')
@@ -1489,21 +1489,21 @@ case('BGL10 分镜 · 没有背景库的旧工程 → 不出 bgFile（3.3.0 行�
 cleanup(td)
 
 
-# ── SFX1：非法的 sfxDensity 必须被 resolve-shots 拦下（3.7.0）──
+# ── SFX1：非法的 sfxDensity 必须被 resolve-shots 拦下（3.3.0）──
 _td, _rc, _out = mkproj(lambda d: (d.__setitem__('sfxDensity', 'loud'), d)[1])
 case('SFX1 分镜 · 非法 sfxDensity → resolve-shots 拦', [
     ('must_block:sfxDensity', 'resolve-shots', (_rc, _out))])
 cleanup(_td)
 
 
-# ── SFX2：缺省不写 sfxDensity 时按 sparse 生成（3.7.0 行为变更）──
+# ── SFX2：缺省不写 sfxDensity 时按 sparse 生成（3.3.0 行为变更）──
 _td, _rc, _out = mkproj()
 case('SFX2 分镜 · 缺省 sfxDensity = sparse（值由 tests/test_sfx_density.py 核对）', [
     ('must_pass', 'resolve-shots', (_rc, _out))])
 cleanup(_td)
 
 
-# ---- 3.7.0 评审拦截：手作皮肤 review.rounds 为空时 make-video --render 必须停（不加 --skip-review） ----
+# ---- 3.3.0 评审拦截：手作皮肤 review.rounds 为空时 make-video --render 必须停（不加 --skip-review） ----
 def mk_review_proj(skin, rounds):
     td = tempfile.mkdtemp(prefix='nv-review-')
     os.makedirs(os.path.join(td, 'manifests'))

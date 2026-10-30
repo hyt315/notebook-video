@@ -26,7 +26,7 @@ CUES = [
 
 
 class EngineProbe(unittest.TestCase):
-    """3.7.0：onnxruntime 与解释器不兼容时 import 即段错误，try/except 拦不住。
+    """3.3.0：onnxruntime 与解释器不兼容时 import 即段错误，try/except 拦不住。
     必须先在子进程里探测，否则用户看到的是「脚本崩溃」而不是「跳过」。"""
 
     def test_crashing_interpreter_is_reported_not_raised(self):
@@ -46,7 +46,7 @@ class EngineProbe(unittest.TestCase):
 
 
 class Reexec(unittest.TestCase):
-    """3.7.0: NOTEBOOK_VIDEO_OCR_PYTHON must work when it points at a venv python (a symlink)."""
+    """3.3.0: NOTEBOOK_VIDEO_OCR_PYTHON must work when it points at a venv python (a symlink)."""
     @unittest.skipIf(sys.platform == "win32", "Windows 创建符号链接需要管理员/开发者模式（WinError 1314），venv 也不用符号链接")
     def test_venv_symlink_to_current_interpreter_reexecs(self):
         with tempfile.TemporaryDirectory() as d:
@@ -64,7 +64,7 @@ class Reexec(unittest.TestCase):
 
 
 class ReadingOrder(unittest.TestCase):
-    """3.7.0: OCR lines are joined in reading order, not in the engine's output order."""
+    """3.3.0: OCR lines are joined in reading order, not in the engine's output order."""
     # cell-v3 cue9 实测：署名签 4 行在上，字幕一行被拆成两段且倒序吐出
     LINES = [
         {"text": "Schem.XI", "score": 0.99, "h": 32, "x": 60, "y": 17},
@@ -119,7 +119,7 @@ class Timing(unittest.TestCase):
 
     def test_sample_clipped_by_next_cue(self):
         ts = vocr.cue_sample_times([{"text": "a", "start": 0, "reveal_end": 0.9}, {"text": "b", "start": 1.0, "reveal_end": 1.5}])
-        # 3.7.0：下一条提前 0.18 s 出现，取样点 = 1.0 − 0.18 − 0.07（旧值 0.88 读到的是下一句）
+        # 3.3.0：下一条提前 0.18 s 出现，取样点 = 1.0 − 0.18 − 0.07（旧值 0.88 读到的是下一句）
         self.assertAlmostEqual(ts[0], 0.75)
 
     def test_sample_never_inside_next_cue_lead(self):

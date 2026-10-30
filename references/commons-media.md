@@ -29,7 +29,7 @@ python scripts/commons-search.py add ./my-video "openverse:audio:<id>" --id scra
 python scripts/commons-search.py credits ./my-video     # → CREDITS.md
 ```
 
-**按声音分类筛（3.7.0）**：`--audio-category music|sound_effect`，只配 `--source openverse --type audio`，对应 Openverse API 的
+**按声音分类筛（3.3.0）**：`--audio-category music|sound_effect`，只配 `--source openverse --type audio`，对应 Openverse API 的
 `category` 查询参数（官方文档：<https://api.openverse.org/v1/#tag/audio/operation/audio_search>，可选值 `audiobook` / `music` /
 `news` / `podcast` / `pronunciation` / `sound_effect`，这里只开放配乐 `music` 和音效 `sound_effect` 两类）。
 它和 Commons 的 `--category`（Commons 分类）是两回事，不能混用；许可门禁不变（请求仍只要 `cc0,pdm,by`，结果再过一遍白名单）。

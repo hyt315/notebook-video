@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the 3.6.0 configurable reading speed (silent-timing.py, compose-story --cps) and cue duration gate."""
+"""Tests for the 3.3.0 configurable reading speed (silent-timing.py, compose-story --cps) and cue duration gate."""
 from __future__ import annotations
 
 import importlib.util

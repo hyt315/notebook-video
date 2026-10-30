@@ -103,7 +103,7 @@ def cam(sid: str, scales: list[float], intent: str = "push-in", **kw) -> dict:
 
 
 class CameraAgainstShotTable(unittest.TestCase):
-    """3.6.0：treatment 写的景别 / 运镜要在 shots.resolved.json 里兑现。"""
+    """3.3.0：treatment 写的景别 / 运镜要在 shots.resolved.json 里兑现。"""
 
     def gate(self, skin: str, t: dict, shots: list[dict]):
         d = with_shots(project(skin, {**t, "medium": {"skin": skin, "why": "w"}}), shots)

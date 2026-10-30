@@ -69,7 +69,7 @@ def cue_sample_times(cues: list[dict]) -> list[float]:
     """每条 cue 的取样时刻（秒）：完整显示之后 0.25 s，且不越过下一条的**出现**时刻。
 
     字幕组件（src/index.tsx Subtitle）让下一条提前 NEXT_CUE_LEAD（0.18 s）出现，所以取样上限是
-    下一条开始 − NEXT_CUE_LEAD − SAMPLE_GUARD。3.6.0 用的是「下一条开始 − 0.12 s」，落在提前量里，
+    下一条开始 − NEXT_CUE_LEAD − SAMPLE_GUARD。3.3.0 用的是「下一条开始 − 0.12 s」，落在提前量里，
     读到的是下一句，误报 P0。"""
     out = []
     for i, c in enumerate(cues):
