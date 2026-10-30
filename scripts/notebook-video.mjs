@@ -59,11 +59,15 @@ const findPython = () => {
   return null;
 };
 
+// 中文 Windows 控制台是 cp936，门禁脚本里的「✓ ✗ ⚠」不在 GBK 里；输出被管道捕获时
+// print 会抛 UnicodeEncodeError，看起来像门禁失败。统一给 python 子进程开 UTF-8。
+const PY_UTF8_ENV = {...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1'};
+
 const runPython = async (scriptName, args = [], options = {}) => {
   const python = findPython();
   if (!python) throw new Error('Python 3 was not found. Install Python 3 and make py, python, or python3 available on PATH.');
   const script = path.isAbsolute(scriptName) ? scriptName : path.join(SCRIPT_DIR, scriptName);
-  return run(python.command, [...python.prefix, script, ...args], options);
+  return run(python.command, [...python.prefix, script, ...args], {...options, env: options.env ?? PY_UTF8_ENV});
 };
 
 const npmInvocation = () => {
@@ -73,7 +77,9 @@ const npmInvocation = () => {
     path.resolve(path.dirname(process.execPath), '..', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
   ];
   const cli = candidates.find((candidate) => fs.existsSync(candidate));
-  return cli ? {command: process.execPath, prefix: [cli]} : {command: 'npm.cmd', prefix: []};
+  // 找不到随 Node 安装的 npm-cli.js 时退回 npm.cmd——但 Node 18+ 禁止直接 spawn .cmd（EINVAL），
+  // 必须经 shell，所以把 shell 需求一起带出去。
+  return cli ? {command: process.execPath, prefix: [], shell: false} : {command: 'npm.cmd', prefix: [], shell: true};
 };
 
 const runNpm = (args, options = {}) => {
@@ -81,7 +87,7 @@ const runNpm = (args, options = {}) => {
   const cwd = options.cwd ?? process.cwd();
   const cache = process.env.NOTEBOOK_VIDEO_NPM_CACHE || path.join(cwd, '.tools', 'npm-cache');
   fs.mkdirSync(cache, {recursive: true});
-  return run(npm.command, [...npm.prefix, ...args], {...options, env: {...process.env, npm_config_cache: cache}});
+  return run(npm.command, [...npm.prefix, ...args], {...options, shell: options.shell ?? npm.shell ?? false, env: {...process.env, npm_config_cache: cache}});
 };
 
 const hashFile = (target) => createHash('sha256').update(fs.readFileSync(target)).digest('hex');

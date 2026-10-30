@@ -40,7 +40,7 @@ const scale = flagVal('scale', '0.75');
 const renderOut = flag('render') ? path.resolve(flagVal('render', path.join(project, 'renders', 'final.mp4'))) : null;
 
 const run = (cmd, argv, opts = {}) => new Promise((resolve) => {
-  const child = spawn(cmd, argv, {cwd: opts.cwd, stdio: opts.capture ? ['ignore', 'pipe', 'pipe'] : 'inherit', windowsHide: true, shell: false});
+  const child = spawn(cmd, argv, {cwd: opts.cwd, stdio: opts.capture ? ['ignore', 'pipe', 'pipe'] : 'inherit', windowsHide: true, shell: opts.shell ?? false});
   let out = '';
   if (opts.capture) { child.stdout.on('data', (d) => { out += d; }); child.stderr.on('data', (d) => { out += d; }); }
   child.on('close', (code) => resolve({code, out}));
@@ -52,7 +52,11 @@ const findPython = () => {
   console.error('找不到 Python 3（py / python / python3）。'); process.exit(2);
 };
 const PY = findPython();
-const py = (script, argv, opts) => run(PY.c, [...PY.pre, path.join(SCRIPT_DIR, script), ...argv], opts);
+// 中文 Windows 的控制台默认 cp936，而门禁脚本会 print「✓ ✗ ⚠」——这三个字符不在 GBK 里，
+// 输出被管道捕获时（make-video 就是这么调的）会抛 UnicodeEncodeError → 门禁假失败 → 出片被拦死。
+// 统一给子进程开 UTF-8 模式，比逐个脚本改 print 可靠。
+const PY_UTF8_ENV = {...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1'};
+const py = (script, argv, opts = {}) => run(PY.c, [...PY.pre, path.join(SCRIPT_DIR, script), ...argv], {...opts, env: PY_UTF8_ENV});
 const node = (argv, opts) => run(process.execPath, argv, opts);
 const step = (t) => console.log(`\n── ${t}`);
 const die = (m) => { console.error(`\n✗ ${m}`); process.exit(1); };
@@ -165,9 +169,16 @@ if (!flag('no-gates')) {
 step('TypeScript 检查');
 const tscJs = path.join(project, 'node_modules', 'typescript', 'bin', 'tsc');
 if (!fs.existsSync(tscJs)) {
-  const npm = IS_WIN ? 'npm.cmd' : 'npm';
-  const r = await run(npm, ['ci', '--no-audit', '--no-fund'], {cwd: project});
-  if (r.code) die('npm ci 失败');
+  // Node 18 起禁止直接 spawn .cmd（CVE-2024-27980），Windows 上 spawn('npm.cmd') 会抛 EINVAL。
+  // 优先用随 Node 安装的 npm-cli.js 直接跑；找不到才退回 shell。
+  const npmCli = [
+    path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    path.resolve(path.dirname(process.execPath), '..', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+  ].find((q) => fs.existsSync(q));
+  const r = npmCli
+    ? await node([npmCli, 'ci', '--no-audit', '--no-fund'], {cwd: project})
+    : await run(IS_WIN ? 'npm.cmd' : 'npm', ['ci', '--no-audit', '--no-fund'], {cwd: project, shell: IS_WIN});
+  if (r.code) die(`npm ci 失败（在 ${project} 里手动跑一次 npm ci 看具体报错）`);
 }
 if ((await node([tscJs, '--noEmit', '-p', '.'], {cwd: project})).code) die('tsc 报错（多半是 src/custom/ 里的定制组件）');
 
