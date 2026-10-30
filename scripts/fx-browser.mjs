@@ -263,7 +263,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   fs.writeFileSync(path.join(tmp, 'cft', 'vk_swiftshader_icd.json'), '{}');
   const icdWrapped = fs.readFileSync(writeChromeWrapper(path.join(tmp, 'cft', 'chrome'), SOFTWARE_GPU_FLAGS, tmp), 'utf8').includes('export VK_ICD_FILENAMES=');
   const icdSkipped = !fs.readFileSync(writeChromeWrapper(path.join(tmp, 'cft', 'chrome'), [], tmp), 'utf8').includes('VK_ICD_FILENAMES');
-  fs.rmSync(tmp, {recursive: true, force: true});
+  fs.rmSync(tmp, {recursive: true, force: true, maxRetries: 5, retryDelay: 120});
   const result = {good: good.ok, flat: flat.ok, empty: empty.ok, usedSkin, unused, usedShot, echoed, winSlide, winCurl, fc, icdWrapped, icdSkipped};
   console.log(JSON.stringify(result));
   const pass = icdWrapped && icdSkipped && good.ok && !flat.ok && !empty.ok && usedSkin && !unused && usedShot

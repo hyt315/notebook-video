@@ -231,7 +231,8 @@ fs.copyFileSync(path.join(project, 'audio', 'narration.mp3'), path.join(project,
 if (flag('stills')) {
   step('静帧报告（一次打包，逐帧出图；不渲整片）');
   const bundle = path.join(project, 'renders', '.bundle');
-  fs.rmSync(bundle, {recursive: true, force: true});
+  // Windows 上杀毒/索引器会短暂占用文件，rmSync 会抛 EBUSY/EPERM；maxRetries 是 Node 官方给的重试开关。
+  fs.rmSync(bundle, {recursive: true, force: true, maxRetries: 5, retryDelay: 120});
   if ((await node([cli, 'bundle', 'src/index.tsx', '--out-dir', bundle], {cwd: project, capture: true})).code) die('remotion bundle 失败');
   // 3.5.0：先探一次真卷页能力，结论进报告（P1）。静帧本身不走完整版 Chrome（每帧 ~3 s）：静帧取的是镜头开场 / 关键词 / 镜尾，
   // 不落在镜头开头 22 帧的卷页窗口里（只有短于 66 帧的镜头例外，那张静帧里看到的是退回后的 slide / drop）。

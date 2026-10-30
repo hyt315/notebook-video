@@ -510,7 +510,7 @@ const render = async ([projectArg, outputArg, composition = 'NotebookVideoFilm']
     }
     await run('ffmpeg', spliceArgs(fastRaw, segs, windows, raw));
     await applyColorTags(raw);
-    fs.rmSync(tmpDir, {recursive: true, force: true});
+    fs.rmSync(tmpDir, {recursive: true, force: true, maxRetries: 5, retryDelay: 120});   // Windows：文件被短暂占用时重试
   } else {
     await remotionRender({project, composition, output: raw, concurrency, colorTagged: true, scale: scaleArg});
   }
