@@ -1,13 +1,25 @@
 ---
 name: notebook-video
 version: 3.4.0
-description: Turn a topic into a Chinese 16:9 teaching video (flat / cel component themes, or the journal / papercut / archive hand-made skins driven by a metaphor-first director layer) with React, TypeScript and Remotion. Every shot fuses up to three layers: code-drawn components (consoles, diffs, checklists, stat rows, charts), a skin-matched line drawing of the thing being explained (30 built-in sketches, seven verbs), and hand annotations (circle / underline / arrow / note) that connect the two; an engine-level virtual camera frames it without cropping the sketch. Eight recipes let a weak model fill content only. Weak-model friendly: five teaching blueprints with per-shot component picks, golden examples, a five-step workflow and one cross-platform command (`node scripts/make-video.mjs <project>`, `make-video.cmd` on Windows) that resolves shots, runs hard gates with objective auto-fixes (no clipped titles, font floor, text contrast, ≤16-character captions at 4.5 chars/s, no dead tails, blurry-media check) and renders stills or the MP4. Tuned semantic sound effects land on the visual hit; no BGM by default. Every topic first searches Wikimedia Commons / Openverse for licence-filtered real media with automatic on-screen credits. TTS narration (edge-tts or your own recording) drives caption and shot timing; no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
+description: Turn a topic into a Chinese 16:9 teaching video (flat / cel component themes, or the journal / papercut / archive hand-made skins driven by a metaphor-first director layer) with React, TypeScript and Remotion. Two kinds of shots alternate: a **notebook page** (`layout: "page"`) that carries the real thing — a mounted archival plate, a magnifier over it, handwriting and a red seal on paper — and **components** (flows, comparisons, bars, numbers, code) that do the explaining. Line drawings are optional (specimen sketches only), because a clip-art sketch explaining a concept reads worse than no drawing. Weak-model friendly: five teaching blueprints with per-shot component picks, golden examples, a five-step workflow and one cross-platform command (`node scripts/make-video.mjs <project>`, `make-video.cmd` on Windows) that resolves shots, runs hard gates with objective auto-fixes (no clipped titles, font floor, text contrast, ≤16-character captions at 4.5 chars/s, no dead tails, blurry-media check) and renders stills or the MP4. Tuned semantic sound effects land on the visual hit; no BGM by default. Every topic first searches Wikimedia Commons / Openverse for licence-filtered real media with automatic on-screen credits. TTS narration (edge-tts or your own recording) drives caption and shot timing; no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
 ---
 
-# notebook-video · 讲清一件事：组件 + 线稿 + 讲解
+# notebook-video · 讲清一件事：手账页承载 + 组件讲解
 
-画面 = **三层融合**（每镜至少两层）：**组件层**给信息（控制台、代码差异、清单、数字行、柱条、结论条……），**线稿层**让观众认出「在讲什么东西」（30 个内置简笔线稿，跟着皮肤墨色），**讲解层**把两者连起来（手绘圈注 / 下划线 / 引线 / 手写小字）。
-含线稿镜头占片长 30–60%，纯组件镜头 ≤30%，纯文字镜头 ≤10%（锤子帧除外）；主题里的那个东西全片至少出现一次，否则 `validate-fusion` 判 P0。配方见 [references/recipes.md](references/recipes.md)，线稿写法见 [references/linework.md](references/linework.md)。
+画面由两种东西分工，**交替出现**：
+
+| | 负责 | 长什么样 | 怎么写 |
+|---|---|---|---|
+| **手账页** | **承载**：把要讲的那个真东西摆到眼前 | 一页纸：装裱好的原版图版 / 标本、手写页眉、朱红印章、一行手写说明、放大镜 | `layout: "page"` + `content.page` = `plate` / `loupe` |
+| **组件** | **讲解**：把概念拆开、对比、算清 | 流程、对比、清单、柱条、大数字、代码 | `flow` / `compare` / `list` / `bars` / `number` / `code` |
+
+- 手账页占 **25–75%**，组件 **≥25%**；两个都没有 → `validate-fusion` 报 P1。
+- 主题里的那个东西全片**至少出现一次**（手账页的图版说明 / 标本速写 / `see` 任一处），否则判 **P0**。
+- 手账页的容器是**纸**，不是卡片：不要给它套圆角框，也不要把图版做成"浏览器截图卡片"。
+- 手账页写法见 [references/journal-page.md](references/journal-page.md)；最好的一支参考片是 [examples/cell-notebook](examples/cell-notebook/README.md)（49 秒 / 8 镜 / 真图版 + 放大镜 + 印章）；组件配方见 [references/recipes.md](references/recipes.md)。
+
+**线稿是可选件，只做标本速写**（一件东西 + 尺寸线 + 手写名）。不要用简笔线稿去「解释」概念——
+实测那种画面像剪贴画，比不画更差。`validate-fusion` 对「文字 + 简笔线稿」超过 20% 判 P1。线稿写法见 [references/linework.md](references/linework.md)。
 
 组件仍然是信息的主体：每一镜都要有真组件（控制台、代码差异、清单、数字行、漏斗、进度环、印章、结论条……），
 由引擎虚拟摄影机推近 / 跟随 / 横摇。**常规镜头不要做满屏大字的「文字页」**——一句话也要放进卡片（`Callout` / `StampBanner`）里；
@@ -20,8 +32,8 @@ TTS 是正式步骤：`notebook-video tts <工程>`（默认 edge-tts；也可 `
 
 | 题目 | 路线 |
 |---|---|
-| 软件、产品、代码、操作教程 | **组件路线**：`flat` / `cel` + 下面第 1–5 步 |
-| 科普、自然、历史、"为什么"类问题 | **手作路线**：先走第 0 步导演层，皮肤选 `journal` / `papercut` / `archive`，画面用 `src/craft/` 组件，再接第 2–4 步 |
+| 软件、产品、代码、操作教程 | **组件为主**：`flat` / `cel` + 下面第 1–5 步；需要「看真东西」时插 1–2 页手账 |
+| 科普、自然、历史、"为什么"类问题 | **手账为主**：`journal` / `papercut` / `archive`，先走第 0 步导演层；手账页承载 + 组件讲概念 |
 
 **不论哪条路线，每个选题都先搜一次 Commons / Openverse**（真东西几乎总能让片子更好）：
 `python scripts/commons-search.py search "<英文关键词>" --project ./my-video`，能用的 `add` 进来，交付前 `credits` 生成 `CREDITS.md`。
@@ -172,7 +184,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" sweep ./my-video --json   # 给脚
 ## 可选 · auto 草稿（story.json）
 
 赶时间时可以先用 `node scripts/make-video.mjs my-story.json ./draft --stills` 从蓝图直接出草稿（`compose-story.py` 自动排版、关键词同步、字幕定时）。
-它用组件式版式（define / number / bars / compare / code / flow / list / quiz / custom / media）；`statement` 只渲染成一张卡片，不是缺省版式。
+它用这几种版式：**`page`**（手账页，`content.page` = `plate` / `loupe`）、`define` / `number` / `bars` / `compare` / `code` / `flow` / `list` / `quiz` / `custom` / `media`；`statement` 只渲染成一张卡片，不是缺省版式。
 正式交付仍建议改写成第 2–3 步的组件场景。细节见 [references/auto-engine.md](references/auto-engine.md)；示例 `examples/*.story.json`。
 
 ## 文档

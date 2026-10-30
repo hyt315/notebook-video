@@ -39,3 +39,23 @@ fs.writeFileSync(
   + `export const MUSIC_ON = ${music};\n`
 );
 console.log(`Sound config: music ${music ? 'ON (treatment.sound.music.use=true)' : 'OFF (default)'}.`);
+
+// 3.6.0 · 素材表：src/media.json 是渲染包里唯一被读的那份（craft/media.tsx 的 MEDIA）。
+// 以前没人同步它，于是 manifests/media.json 加了素材、画面照样报
+// 「manifests/media.json 里没有 id=…」——素材在，图出不来。
+const mediaSrc = path.join(root, 'manifests', 'media.json');
+const mediaOut = path.join(root, 'src', 'media.json');
+if (fs.existsSync(mediaSrc)) {
+  const raw = fs.readFileSync(mediaSrc, 'utf8');
+  try {
+    JSON.parse(raw);
+  } catch (e) {
+    throw new Error(`manifests/media.json 不是合法 JSON：${e.message}`);
+  }
+  const before = fs.existsSync(mediaOut) ? fs.readFileSync(mediaOut, 'utf8') : '';
+  if (before !== raw) {
+    fs.writeFileSync(mediaOut, raw);
+    const n = (JSON.parse(raw).items || []).length;
+    console.log(`Media: synced ${n} item(s) from manifests/media.json → src/media.json.`);
+  }
+}

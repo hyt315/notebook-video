@@ -153,3 +153,48 @@ selftest:      SELFTEST PASS (all 20 checks passed)
 validate-skill: Skill-wide consistency validation passed
 negative-gate: 合计：用例 109 · 断言 170 · 全部通过
 ```
+
+## 3.6.0 · 方向修正：线稿降级，手账页上位
+
+### 为什么改
+P2 做完 30 个线稿 + 8 个配方后，与 cell 片（49 秒《细胞为什么叫细胞》）逐帧比对：
+**线稿当解释图 = 剪贴画**，它能说明「这里有个火箭」，说不清「为什么这样」；
+cell 的说服力来自「真图版 + 手写批注 + 印章 + 放大镜」——一个人在你面前研究给你看。
+用户判断（两次确认）：讲解视频用手账页承载，线稿只适合 a2e 那种生词卡。
+
+### 改了什么
+1. **新增 `layout: "page"`（手账页版式）**，`content.page` = `plate` | `loupe`：
+   - `plate`：装裱好的真图版（右，画宽 45%）+ 手写大字 + 朱红印章 + 手写说明，**整页不产生任何卡片框**；
+   - `loupe`：同一张图版 + 放大镜，`look` 给镜心（0–1），`zoom` 默认 2.6（>3 糊，validate-media 拦）。
+   - 渲染器 `auto.tsx` 新增 5 个元素类型：`archive` / `lettering` / `stamp` / `handnote` / `loupe`，
+     全部复用 `src/craft/` 里既有道具（与 cell 工程逐字一致，无需另搬）。
+2. **`validate-fusion.py` 换口径**（P0 一条 + P1 六条）：
+   - P0 主题物从未出现（证据范围扩到：手账页图版说明 / 标本速写标签 / `see`）；
+   - P1 手账页 <20%（没有承载）/ >75%（变图册）；组件 <25%（概念没讲）；
+   - P1「文字 + 简笔线稿」>20% —— 这条直接编码了「乱加线稿更差」的实测结论。
+3. **文档改主线**：`SKILL.md` 开篇改成「手账页承载 + 组件讲解」两栏表；
+   新增 `references/journal-page.md`（六件要素、三种页型、配比、禁忌）；
+   `references/recipes.md` 顶部加降级说明（八个线稿配方改为可选）。
+4. **cell 归档为黄金样例**：`examples/cell-notebook/`（treatment + storyboard + narration + 复刻写法 + 它没做到的地方）。
+5. **修素材表不同步**：`sync-render-inputs.cjs` 现在把 `manifests/media.json` 同步到 `src/media.json`。
+   旧版没人同步，于是「素材明明加了，渲染报 id 不存在」——实测 3 条素材现在能正常读出。
+
+### 实测样张（journal 皮肤 / 1440×810 出图）
+- 三镜样例 `examples/recipes/cork-page.story.json`：plate → compare → loupe，18.5 秒，
+  `validate-fusion` **P0=0 P1=0**（手账页 67% / 组件 33%）。
+- 逐帧看过：图版页（1665 + 印章 + 「第十八篇 · 软木」）与放大镜页（镜内 3 倍格子）都成立，
+  与 cell 原片的语法一致。
+
+### 回归
+```
+pytest:        193 passed, 2 skipped, 5 subtests passed
+selftest:      SELFTEST PASS (all 20 checks passed)
+validate-skill: Skill-wide consistency validation passed
+negative-gate: 合计：用例 109 · 断言 170 · 全部通过
+```
+
+### 未做（下一轮）
+- `specimen` 页（标本速写 + Dimension 尺寸线）还没做成版式，目前要手写 `statement + sketch`。
+- 组件的 journal 化：`compare` 在点阵纸上仍是「白卡片 + 圆角边框」，像贴上去的 PPT；
+  需要给 panel / card 一套纸感变体（去边框、改纸条 / 墨框）。
+- 素材获取链路（commons-search → media.json）还没在 journal 主线里跑通一遍完整样例。

@@ -7,7 +7,9 @@ import {CUSTOM} from './custom';
 import {MediaFrame} from './media-frame';
 import {SketchLayer} from './linework/sketch';
 import type {SketchSpec} from './linework/types';
-import {HandNote, InkCircle, InkPath, Underline} from './craft/ink';
+import {HandLettering, HandNote, InkCircle, InkPath, Underline} from './craft/ink';
+import {Seal} from './craft/paper';
+import {ArchivePhoto, LoupeMedia} from './craft/media';
 
 // ============================================================================
 // auto.tsx · 3.2.0 内容驱动的镜头渲染器（AutoShot）
@@ -224,6 +226,26 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
         <div style={{position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: e.size, fontWeight: 700, color: C.blueInk}}>{e.text}</div>
       </div>;
     }
+    // ---------------------------------------------------------------- 3.6.0 手账页
+    // 这一组不是「卡片」，是纸上的东西：装裱的真图版、手写大字、印章、批注、放大镜。
+    // 语法抄自 cell 片（journal 皮肤）：容器是纸，不是圆角矩形；位置由 compose 的 page 版式算好。
+    case 'archive':
+      // 装裱好的真图版：ArchivePhoto 自带卡纸白边、编目签与 CC BY 署名，不要在外面再套框
+      return <ArchivePhoto f={f} id={e.media} x={e.x} y={e.y} w={e.w} h={e.h} at={e.at}
+        catalogue={e.catalogue} title={e.title} label={e.label ?? 'below'} />;
+    case 'lettering':
+      // 手写大字：年份 / 数字 / 一个词。手账页的「标题」是写上去的，不是排出来的
+      return <HandLettering f={f} at={e.at} text={e.text} x={e.x} y={e.y} size={e.size} perChar={e.perChar ?? 6} />;
+    case 'stamp':
+      return <Seal f={f} at={e.at} x={e.x} y={e.y} size={e.w} text={e.text} />;
+    case 'handnote':
+      return <HandNote f={f} at={e.at} x={e.x} y={e.y} text={e.text} size={e.size} />;
+    case 'loupe':
+      // 放大镜压在图上：镜内是原图放大。look 是 0–1 相对坐标，lensAt 是落镜帧
+      return <LoupeMedia f={f} id={e.media} x={e.x} y={e.y} w={e.w} h={e.h} at={e.at}
+        catalogue={e.catalogue} title={e.title} label={e.label ?? 'below'}
+        look={{x: (e.look ?? [0.5, 0.5])[0], y: (e.look ?? [0.5, 0.5])[1]}}
+        lensAt={e.lensAt ?? e.at} r={e.r ?? 220} zoom={e.zoom ?? 2.4} />;
     case 'media':
       // 3.2.0 真实素材：MediaFrame 自带卡片外壳 / 署名徽章；区域推近由 content.region 指定
       return <Box e={e} f={f} dim={dim}><MediaFrame f={f} id={e.media} x={0} y={0} w={e.w} h={e.h} chrome={e.chrome} at={e.at} focus={e.region ?? undefined} focusAt={e.at + 24} highlight={shot.focus.filter((k) => f >= k.at && f <= k.until + 12 && shot.elements.some((x) => x.id === k.id && x.kind === 'region')).map((k) => k.id)} highlightAt={e.at} /></Box>;

@@ -1,7 +1,9 @@
-"""画面三层门禁：主题物必须出现。
+"""配比门禁：手账页承载 + 组件讲概念（3.6.0 改口径）。
 
-用用户那部片的形态做回归夹具：讲火箭、全片却是字卡 / 柱条 / 对比卡（原片 29 张抽帧里没有一枚火箭）。
-这条必须 P0 失败并点名「火箭」——旧版没有任何门禁，这种片子照样全绿。
+两组回归夹具：
+  · 讲火箭、全片却是字卡 / 柱条 / 对比卡 → 主题物从未出现，P0 并点名「火箭」；
+  · 手账页 + 组件交替（cork-page）→ P0=0 且 P1=0，这是新主线该有的样子。
+线稿片（rocket-fusion）不再豁免：它仍 P0=0，但会被报「手账页 0%」——线稿不是必填项。
 """
 from __future__ import annotations
 
@@ -32,13 +34,24 @@ class FusionGate(unittest.TestCase):
             self.assertIn("P0", g.stdout)
             self.assertIn("火箭", g.stdout)
 
-    def test_sketch_story_passes_p0(self):
+    def test_page_story_passes_both_gates(self):
+        """手账页承载 + 组件讲解：这条必须 P0=0 且 P1=0。"""
+        with tempfile.TemporaryDirectory() as td:
+            r = build(ROOT / "examples" / "recipes" / "cork-page.story.json", td)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            g = subprocess.run([sys.executable, str(GATE), td], capture_output=True, text=True, timeout=60)
+            self.assertEqual(g.returncode, 0, g.stdout + g.stderr)
+            self.assertIn("P0=0 P1=0", g.stdout)
+            self.assertRegex(g.stdout, r"手账页 6\d%")
+
+    def test_linework_alone_is_not_enough(self):
+        """全片只有线稿、没有手账页：P0 过（主题物出现了），但要被报「没有承载」。"""
         with tempfile.TemporaryDirectory() as td:
             r = build(ROOT / "examples" / "recipes" / "rocket-fusion.story.json", td)
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             g = subprocess.run([sys.executable, str(GATE), td], capture_output=True, text=True, timeout=60)
             self.assertEqual(g.returncode, 0, g.stdout + g.stderr)
-            self.assertIn("含线稿", g.stdout)
+            self.assertIn("手账页只占 0%", g.stdout)
 
     def test_abstract_exempt_with_reason(self):
         with tempfile.TemporaryDirectory() as td:

@@ -54,16 +54,19 @@ ZOOM_MIN_FOCUS = 1.08          # 焦点推近的下限；SAFE / ZOOM_MAX 见 sto
 PUNCT = "，。！？；：、,.!?;:"
 TAIL_PUNCT_RE = re.compile(r"[，。！？；：、,.!?;:\s]+$")
 TERM_RE = re.compile(r"\{\{([^}|]+)(?:\|([^}]+))?\}\}")
-LAYOUTS = ("statement", "define", "number", "bars", "compare", "code", "flow", "list", "quiz", "custom", "media")
+LAYOUTS = ("statement", "define", "number", "bars", "compare", "code", "flow", "list", "quiz", "custom", "media", "page")
 # 每种版式可以贴的骨架标签（validate-composition 要求相邻不同）：首选在前
 SKELETONS = {"statement": ["Stage", "Zoom"], "define": ["Split", "Stage"], "number": ["Stage", "Zoom"],
              "bars": ["Zoom", "Stage"], "compare": ["Split", "Stage"], "code": ["Zoom", "Stage"],
-             "flow": ["Corridor", "Stage"], "list": ["Stage", "Corridor"], "quiz": ["Split", "Stage"], "custom": ["Stage", "Zoom"], "media": ["Zoom", "Stage"]}
+             "flow": ["Corridor", "Stage"], "list": ["Stage", "Corridor"], "quiz": ["Split", "Stage"], "custom": ["Stage", "Zoom"], "media": ["Zoom", "Stage"],
+             "page": ["Stage", "Stage"]}
 MEDIA = {"statement": ["text"], "define": ["text"], "number": ["metric", "text"], "bars": ["chart", "metric"],
          "compare": ["metric", "text"], "code": ["code", "text"], "flow": ["graphic", "text"], "list": ["text"],
-         "quiz": ["text", "graphic"], "custom": ["graphic", "text"], "media": ["graphic", "console"]}
+         "quiz": ["text", "graphic"], "custom": ["graphic", "text"], "media": ["graphic", "console"],
+         "page": ["graphic", "text"]}
 INTENTS = {"statement": "establish", "define": "push-in", "number": "push-in", "bars": "reveal", "compare": "pull-back",
-           "code": "push-in", "flow": "reveal", "list": "establish", "quiz": "push-in", "custom": "reveal", "media": "push-in"}
+           "code": "push-in", "flow": "reveal", "list": "establish", "quiz": "push-in", "custom": "reveal", "media": "push-in",
+           "page": "establish"}
 ICON_BUDGET_SHOT, ICON_BUDGET_MIN = 1, 4
 
 # 允许直接上屏的单位（符号 / 公制短单位）。故事里的 `unit` 只该写这一列里的东西；
@@ -642,6 +645,88 @@ def lay_media(p, sid, c, variant):
     return els
 
 
+# ---------------------------------------------------------------- 手账页 (3.6.0)
+# 语法来自 cell 片（journal 皮肤）：**容器是纸，不是卡片**。整页不产生任何 card / panel / 圆角框。
+# 一页 = 装裱好的真图版（右，占画宽 45%）+ 手写大字（页标题）+ 印章 + 一行手写说明。
+# 为什么另开一族而不是改现有版式：现有 10 个版式的视觉语言是「白卡片 + 圆角 + 边框」，
+# 那是幻灯片的语言；手账页一旦套上卡片框，就退回成 PPT（实测被评审判「像课件」）。
+PAGE_MEDIA = {"x": 960, "y": 96, "w": 860, "h": 800}
+PAGE_LEFT_X, PAGE_TEXT_W = 236, 600
+
+
+def lay_page(p, sid, c, variant):
+    """一页「有人在研究」的记录。
+
+    content:
+      page       plate（默认，真图版页）| loupe（放大镜页）
+      media      真图版 id（manifests/media.json 的条目）
+      catalogue  编目号（如 "Schem. XI"）
+      title      图版名（如 "《显微图谱》1665"）
+      big        手写大字：年份 / 数字 / 一个词（≤8 字）
+      stamp      印章（2–3 字，朱砂）
+      note       手写说明（一行，≤16 字）
+      look       loupe 的镜心（0–1 相对图版，如 [0.25,0.42]）
+      zoom       loupe 放大倍数（默认 2.6；>3 会糊，validate-media 会拦）
+    """
+    page = str(c.get("page") or "plate").strip()
+    mid = c.get("media")
+    if not mid:
+        p.err(f"{sid}: page 版式需要 content.media = manifests/media.json 里的素材 id")
+        return []
+    box = PAGE_MEDIA
+    els = []
+    common = dict(media=mid, catalogue=c.get("catalogue"), title=c.get("title"))
+    if page == "loupe":
+        look = c.get("look") or [0.5, 0.5]
+        try:
+            look = [float(look[0]), float(look[1])]
+        except (TypeError, ValueError, IndexError):
+            p.err(f"{sid}: content.look 要写 [x, y] 两个 0–1 的数（图版上的相对位置）")
+            look = [0.5, 0.5]
+        els.append(el("plate", "loupe", box["x"], box["y"], box["w"], box["h"], "", 0, "body", 0,
+                      look=look, lensAt=int(c.get("lensAt", 34)), zoom=float(c.get("zoom", 2.6)),
+                      r=int(c.get("r", 225)), **common))
+    elif page == "plate":
+        els.append(el("plate", "archive", box["x"], box["y"], box["w"], box["h"], "", 0, "body", 0, **common))
+    else:
+        p.err(f"{sid}: content.page={page!r} 不认识（这一族只有 plate / loupe；标本速写用 layout=statement + sketch）")
+        return []
+
+    # 左侧：手写大字当页标题。手账的标题是写上去的，不是排出来的。
+    big = c.get("big")
+    big_w = 0.0
+    y = 250
+    if big:
+        size = 88
+        while text_w(str(big), size) > PAGE_TEXT_W and size > 56:
+            size -= 4
+        if text_w(str(big), size) > PAGE_TEXT_W:
+            p.hint(f"{sid}: content.big={big!r} 太长（手写大字 ≤8 字）；把剩下的意思写进 note")
+        big_w = text_w(str(big), size)
+        # appear 是「第几句」不是帧号（compose 在这里换算成帧）：大字跟第一句一起写上去
+        els.append(el("big", "lettering", PAGE_LEFT_X, y, big_w, size * 1.2, str(big), size, "display", 0, perChar=6))
+    # 印章：大字右侧 60px；没有大字就贴左上
+    stamp = c.get("stamp")
+    if stamp:
+        sx = PAGE_LEFT_X + (big_w + 60 if big else 0)
+        if sx > 860:
+            sx = 860
+        # 印章压在第一句末尾：字写完 → 盖章，一个动作接一个动作
+        els.append(el("stamp", "stamp", sx, y + 2, 104, 104, str(stamp), 0, "body", 0))
+    # 手写说明：大字下方一行
+    note = c.get("note")
+    if note:
+        nsize = 64
+        while text_w(str(note), nsize) > PAGE_TEXT_W + 60 and nsize > 44:
+            nsize -= 4
+        if text_w(str(note), nsize) > PAGE_TEXT_W + 60:
+            p.hint(f"{sid}: content.note={note!r} 太长（一行手写说明 ≤16 字）")
+        # 说明写在第二句（图版已经看过了，再补一句「这是第几篇」）；只有一句时跟第一句
+        els.append(el("note", "handnote", PAGE_LEFT_X, 430, max(200.0, text_w(str(note), nsize)), nsize * 1.3,
+                      str(note), nsize, "title", 1))
+    return els
+
+
 # ---------------------------------------------------------------- recipes (3.5.0)
 # 八个融合配方的**版面**。内容 schema 尽量小：弱模型只填「卡片说什么 / 结论是什么」，
 # 线稿怎么摆、卡片多大、引线从哪拉，都由这里算。
@@ -701,7 +786,7 @@ def lay_recipe(p, sid, recipe, c, variant):
     return None
 
 
-LAY = {"media": lay_media, "statement": lay_statement, "define": lay_define, "number": lay_number, "bars": lay_bars, "compare": lay_compare,
+LAY = {"media": lay_media, "page": lay_page, "statement": lay_statement, "define": lay_define, "number": lay_number, "bars": lay_bars, "compare": lay_compare,
        "code": lay_code, "flow": lay_flow, "list": lay_list, "quiz": lay_quiz, "custom": lay_custom}
 
 
@@ -782,7 +867,7 @@ def compose(story: dict, p: Problems):
             sid = sh.get("id") or f"S{sid_n}"
             lay = sh.get("layout")
             if lay not in LAYOUTS:
-                p.err(f"{sid}: layout={lay!r} 不是 {LAYOUTS} 之一 —— 不确定就用 define / list / compare 这类组件版式")
+                p.err(f"{sid}: layout={lay!r} 不是 {LAYOUTS} 之一 —— 不确定就用 define / list / compare 这类组件版式（手账页用 page）")
                 continue
             variant = sh.get("variant", "")
             # 自动修：相邻同版式 → 换镜像变体
@@ -856,7 +941,13 @@ def compose(story: dict, p: Problems):
                           "start_ms": shot_start_ms, "icons": int(sh.get("icons", 0)), "custom": content.get("component"),
                           "role": sh.get("role") or ch.get("role"), "recipe": recipe, "sketch": sk_raw,
                           "sketch_box": sketch_box, "annotate": sh.get("annotate") or content.get("annotate"),
-                          "see": sh.get("see")})
+                          "see": sh.get("see"),
+                          "page": (content or {}).get("page") if lay == "page" else None,
+                          "media": (content or {}).get("media") if lay == "page" else None,
+                          "catalogue": (content or {}).get("catalogue") if lay == "page" else None,
+                          "title": (content or {}).get("title") if lay == "page" else None,
+                          "big": (content or {}).get("big") if lay == "page" else None,
+                          "note": (content or {}).get("note") if lay == "page" else None})
             if si == 0:
                 chapter_first.append(sid)
             prev_layout, prev_variant = lay, variant
@@ -880,7 +971,8 @@ def build(story, comp, p: Problems):
     # 叙事动作（validate-presentation 要求同一 move 不连续 ≥3 镜）：按蓝图角色 / 版式取，撞了就换近义动作
     ROLE_MOVE = {"hook": "引入", "pre": "定位", "breakdown": "拆分/合并", "example": "传递", "misconception": "反证", "recap": "收束"}
     LAY_MOVE = {"statement": "收束", "define": "定位", "number": "引入", "bars": "反证", "compare": "对比", "code": "定位",
-                "flow": "拆分/合并", "list": "累积", "quiz": "反证", "custom": "传递", "media": "定位"}
+                "flow": "拆分/合并", "list": "累积", "quiz": "反证", "custom": "传递", "media": "定位",
+                "page": "定位"}
     moves = []
     for k, sh in enumerate(shots):
         m = ROLE_MOVE.get(sh.get("role") or "", LAY_MOVE[sh["layout"]])
@@ -1101,6 +1193,14 @@ def build(story, comp, p: Problems):
                "cinema": {"drift": "none", "fit": "none", "path": path}, "sfxEvents": sfx}
         if sh["layout"] == "quiz":
             rec["misconception"] = sh["content"].get("question"); rec.pop("noMisconception")
+        # 手账页：把「拍到的是什么」也记进来。rec 的 "media" 已被骨架占用（graphic/text），
+        # 所以真图版用 media_id —— validate-fusion 靠 media_label 判断主题物有没有出现。
+        if sh["layout"] == "page":
+            _c = sh.get("content") or {}
+            rec["page"] = _c.get("page") or "plate"
+            rec["media_id"] = _c.get("media")
+            rec["media_label"] = " ".join(str(x) for x in [
+                _c.get("catalogue") or "", _c.get("title") or "", _c.get("big") or "", _c.get("note") or ""]).strip()
         out_shots.append(rec)
         sk_out = resolve_sketch(p, sid, sh.get("sketch"), line_start, sh["line_cues"], cues, frm) if sh.get("sketch") else None
         if sk_out is not None:
@@ -1366,6 +1466,10 @@ def write_project(story, comp, out_shots, story_ts, total, proj: Path):
             "sketch": bool(sk), "annotate": bool(st.get("annotate")),
             "sketch_label": " ".join(str(x) for x in [sk.get("label", ""), *((sk.get("parts") or {}).values())]),
             "sketch_draw": sk.get("draw", ""),
+            # 3.6.0：手账页（承载）与它的真图版。validate-fusion 靠这三个字段判断
+            # 「讲细胞却一张细胞图都没有」以及「全片都是手账页、概念没讲清」。
+            "page": rec.get("page"), "media_id": rec.get("media_id"),
+            "media_label": rec.get("media_label") or "",
         }
     fusion = {"subject_of_film": story.get("subject_of_film", ""), "subject_why": story.get("subject_why", ""),
               "shots": shots_f}
