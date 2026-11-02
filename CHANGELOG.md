@@ -4,15 +4,69 @@ All notable changes are recorded here. The project follows semantic versioning.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
-> **版本号有两套，别混。** 对外只发 3.3.0 这一个版本——它把内部 3.3.0–3.7.0 的迭代合并成了一次公开发布
-> （见提交 `chore(release): 3.3.0 — collapse the internal iterations into one public release`）。
-> 发版后内部迭代仍在继续（3.8.0、3.9.0 …），所以仓库注释与 `references/` 里出现的
-> `3.4.0`–`3.9.0` 都是**内部迭代号**，不对应任何对外发布；对外可引用的版本只有本文件里的这些条目。
+> **版本号有两套，别混。** 对外可引用的版本只有本文件里的条目（3.3.0 / 3.4.0 / 3.5.0）。
+> 3.3.0 曾把内部 3.3.0–3.7.0 的多轮迭代合并为一次公开发布；此后内部迭代继续推进
+> （3.6.0、3.7.0、3.8.0 …），所以仓库注释与 `references/` 里高于 3.5.0 的号是**内部迭代号**，
+> 不对应任何对外发布。
 >
-> **Two numbering lines — do not mix them.** Only 3.3.0 was ever published; it folded the internal
-> 3.3.0–3.7.0 iterations into one public release. Internal iteration kept going after that (3.8.0,
-> 3.9.0 …), so every `3.4.0`–`3.9.0` you see in source comments and `references/` is an internal
-> iteration number, not a release. Cite only the versions listed below.
+> **Two numbering lines — do not mix them.** Cite only the versions listed below (3.3.0, 3.4.0, 3.5.0).
+> 3.3.0 folded several internal iterations into one public release; internal iteration continues past
+> 3.5.0 (3.6.0, 3.7.0, 3.8.0 …), so a higher number in source comments or `references/` may be an
+> internal iteration, not a release.
+
+## [3.5.0] - 2026-11-02
+
+> 3.4.0 之后的一轮迭代：把「组件 + 线稿 + 讲解」三层融合做成引擎能力，配 30 个内置线稿与 8 个融合配方；TTS 升为正式步骤并按词级时间对齐，默认不再加载音乐床；同时修掉 7 个已复现缺陷。
+> The iteration after 3.4.0: three-layer fusion (components + line drawings + annotations) becomes an engine capability with 30 built-in sketches and eight fusion recipes; TTS becomes a first-class step aligned to word-level time, and the music bed is off by default. Seven reproduced defects are fixed.
+
+### 新增 / Added
+
+- 三段融合结构：**组件层**给信息、**线稿层**让人认出「在讲什么东西」、**讲解层**把两者连起来（圈注 / 下划线 / 引线 / 手写小字）。线稿以 `sketch` 数据写在镜头上，支持 `lib:` 内置库、`shapes:` 自绘与 `trace:` 描真实素材三种来源。
+  Three fused layers: components carry the information, line drawings make the subject recognisable, annotations connect the two. A sketch is declared on the shot as `sketch` data, sourced from the built-in `lib:`, hand-written `shapes:` or a traced `trace:` of real media.
+- 30 个内置线稿（火箭、卫星、地球、灯泡、电池、手机、笔电、服务器、芯片、云、房子、车、钱、硬币、购物车、钱包、人物、人群、气泡、书、笔记本、日历、时钟、放大镜、锁、钥匙、文件、邮件、工厂、树），笔触随五个皮肤各自的墨色绘制。
+  Thirty built-in sketches, each inked to match the skin it is drawn on.
+- 7 个线稿动作：`enter` / `point` / `drop` / `swap` / `count` / `mark` / `exit`，可与字幕词级时间对齐（`@L1.3` 写法）。
+  Seven sketch actions, addressable on word-level time.
+- 8 个融合配方（`references/recipes.md`）：`sketch-readout`、`component-annotated`、`before-after`、`hammer` 等。配方决定版面与线稿位置，作者只填内容。
+  Eight fusion recipes decide the layout and where the sketch sits, so the author only fills content.
+- 门禁 `validate-fusion`：核对配比（含线稿镜头占片长 30–60 %、纯组件 ≤30 %、纯文字 ≤10 %）与「主题物全片至少出现一次」。
+  `validate-fusion` checks the mix and that the film's subject appears at least once.
+- 门禁 `validate-glyphs`：核对线稿几何——不被取景裁切、不越出画布、推近时自动留边。
+  `validate-glyphs` checks sketch geometry: no cropping by the camera, no running off canvas, margins kept on push-ins.
+- 门禁 `validate-silence`：核对句间静音与音效电平，避免音效压住人声。
+  `validate-silence` checks inter-sentence silence and effect level against the voice.
+- `notebook-video tts <工程>`（`scripts/tts.py`）：默认走 edge-tts，也可 `--engine=file` 使用自有录音；产出词级时间供字幕与镜头重排。
+  `notebook-video tts <project>` uses edge-tts by default or `--engine=file` for a recording, producing word-level time for captions and shot timing.
+- 样例：`examples/recipes/` 四支配方样例与 `examples/regress/` 纯组件对照组。
+  Recipe examples and a components-only control group under `examples/`.
+
+### 改进 / Changed
+
+- TTS 从「可选后配」变为正式步骤：字幕与镜头按真实词级时间对齐；没有真实旁白时 `--render` 停在渲染前，静音占位只留给 `--stills` 与 `preview`。
+  TTS moves from an optional add-on to a real step: captions and shots align to word-level time, and `--render` stops before rendering when no real narration exists.
+- 默认不加载音乐床：只有 `treatment.sound.music.use=true` 时才加载，并在音效下闪避。
+  No music bed by default; it loads only when `treatment.sound.music.use=true` and ducks under each cue.
+- 音效改为稀疏：片级 `sfxDensity` 缺省 `sparse`（每镜一记），音效间隔 ≥150 ms，压在人声之下。
+  Effects are sparse by default: one hit per shot, ≥150 ms apart, sitting under the voice.
+- 引擎虚拟镜头推近线稿时自动留边，不切断图；线稿强调部位换强调色、其余压暗。
+  The virtual camera keeps margins around sketches on push-ins, and a pointed part takes the accent colour while the rest dims.
+
+### 修复 / Fixed
+
+- `sweep` 量不到：静帧改用 `render --frames=N-N --sequence` 取帧，FillGate 对推近镜头照量横向覆盖。
+  `sweep` measured nothing; stills now come from a single-frame sequence render and the fill gate measures pushed-in shots correctly.
+- 未注册的定制组件会静默出片：构建期 `check_customs()` 判 P0 并给出注册文件与范例，渲染期换成 `MissingCustom` 拒绝出片。
+  An unregistered custom component used to render silently; it is now a P0 at build time and a hard stop at render time.
+- 代码卡里的中文显示为豆腐块：代码字体回退链补上中文字体。
+  CJK text in code cards rendered as tofu; the font fallback chain now includes a CJK face.
+- 数字与柱标签的单位、进位与对齐错误。
+  Unit, rounding and alignment errors in number and bar labels.
+- 字幕模式下的断句与行数不符合 16 字上限的问题。
+  Caption mode produced lines that broke the 16-character limit.
+- 手作样例的 `treatment` 自相矛盾（招牌镜与运镜声明冲突）。
+  A craft sample declared a self-contradictory `treatment`.
+- 其余小项：参数拼写、路径歧义与提示文案。
+  Smaller items: flag spelling, path ambiguity and message wording.
 
 ## [3.4.0] - 2026-10-30
 

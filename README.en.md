@@ -2,9 +2,9 @@
 
 <div align="center">
 
-**Turn one idea into a 16:9 Chinese teaching video: component scenes, an engine-level virtual camera and on-the-beat sound effects. One command renders it; objective gates fix what they can.**
+**Turn one idea into a 16:9 Chinese teaching video: components, line drawings and hand annotations fused in every shot, an engine-level virtual camera that follows the narration, one command to render. Objective gates fix what they can.**
 
-[![Version](https://img.shields.io/badge/version-3.4.0-1f6feb)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.5.0-1f6feb)](CHANGELOG.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
 [![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel%20%7C%20journal%20%7C%20papercut%20%7C%20archive-ff7a59)](references/theme-system.md)
@@ -24,12 +24,9 @@ ask for "a short explainer on hash tables", and the agent uses the blueprints, t
 multi-minute Chinese teaching video with **React + TypeScript + [Remotion](https://www.remotion.dev/)**. You get the MP4 and the
 full, editable source project.
 
-- **Components, not slides**: every shot is a real code-drawn component — consoles, code diffs, checklists, stat rows, funnels,
-  progress rings, stamp seals, verdict bars… — or a real screenshot / short screen recording.
-- **The camera follows the narration**: an engine-level virtual camera pushes in by default, moves to whatever component the
-  narration names, and cuts with whip pans or zoom-throughs.
-- **Reproducible by weaker models**: five teaching blueprints name the skeleton and components for every shot, plus golden
-  examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
+- **Three fused layers, not slides**: every shot combines a **component layer** that carries the information (consoles, code diffs, checklists, stat rows, bars, verdict strips…), a **line-drawing layer** that lets viewers recognise *what is being talked about* (30 built-in sketches, inked to match the skin), and an **annotation layer** that links the two (hand-drawn circles, underlines, leader lines, handwritten notes). Shots with linework take 30–60 % of the running time, components-only ≤30 %, text-only ≤10 % — and a gate checks it.
+- **The camera follows the narration**: an engine-level virtual camera pushes in by default, moves to the component or sketch part the narration names, and cuts with whip pans or zoom-throughs; push-ins keep margins so the drawing is never cropped.
+- **Reproducible by weaker models**: eight fusion recipes decide where the sketch sits and how big the cards are — the author only fills content. Five teaching blueprints name the skeleton and components for every shot, plus golden examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
 
 - **One paper per notebook, review before render**: hand-made skins default to `bgMode: "chapter"` (one paper per chapter; `"film"` keeps one for the whole film, `"shot"` rotates per shot), and decorative `busy` backgrounds stay off regular shots; `resolve-shots` generates `storyboard.md` from the real shot table for the independent review; for hand-made skins `make-video --render` stops until a review round is recorded (drafts pass `--skip-review`); silent films time whole-line captions at `--cps` (default 6.5 chars/s).
 
@@ -56,25 +53,25 @@ One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×108
 | **No shot left unchecked** | `notebook-video sweep <project>` grabs one settled frame per shot and tiles them into `renders/sweep-sheet.jpg` — eight shots in about 60 s, judged by the same empty-space thresholds the render uses. `preview` only covers the opening; on a longer film the tail silently escapes, and this closes that gap |
 | **A delivery is not just an mp4** | A finished render also writes `renders/captions.srt` (the same line breaks burned into the film, not a re-recognition) and `renders/poster.jpg` (a settled frame of `treatment.signature_shot`, with captions suppressed). Standalone: `poster` / `export-srt` / `deliver` |
 | **Compare two cuts** | `eval-project old/ new/` turns a film into comparable numbers (shot-length spread, variety of skeletons / media / transitions, camera coverage, caption density, empty-space readings) and prints the delta. No score: thresholds live in the gates, in one place only |
+| **Three-layer fusion** | Components (information) + line drawings (recognition) + annotations (connection); 30 built-in sketches and 7 actions (enter / point / drop / swap / count / mark / exit), inked to match the skin. `validate-fusion` checks the mix and that the subject of the film appears at least once; `validate-glyphs` checks no sketch is cropped |
 | **Component scenes** | 4 skeletons (Stage / Split / Zoom / Corridor) and a component library (`ConsoleWindow`, `DiffView`, `HighlightCode`, `StatRow`, `Funnel`, `ProgressRing`, `KineticNumber`, `StampSeal`, `VerdictBar`, …), all coloured from theme tokens |
 | **Virtual camera** | Default slow push-in per shot; `cinema.focus` pushes to the component a keyword names and pans between targets; whip / zoom-through transitions; background parallax; small content is enlarged to 60–80 % of the safe area; push-ins keep margins so titles are never cut |
-| **On-the-beat SFX** | 16 code-synthesised semantic sounds (CC0, `public/sfx/lib/`) and an optional music bed; each cue carries `gain` / `offsetMs` and is pre-rolled so its transient lands on the visual hit (±1 frame); ≥150 ms spacing, ≈24/min cap; the bed ducks under each cue |
+| **On-the-beat SFX** | 16 code-synthesised semantic sounds (CC0, `public/sfx/lib/`), **no BGM by default** (a music bed loads only when `treatment.sound.music.use=true`, and ducks under each cue); every cue carries `gain` / `offsetMs` and is pre-rolled so its transient lands on the visual hit (±1 frame); ≥150 ms spacing, ≈24/min cap; `validate-silence` checks inter-sentence silence and SFX level |
 | **Real media** | Screenshots, ≤10 s recordings and GIFs inside `MediaFrame` (same card look as the components, optional browser / window / device chrome, region zoom, highlight boxes, callouts, credit badge); `prepare-media` transcodes, `validate-media` blocks blurry or unlicensed media |
-| **Weak-model friendly** | 5 blueprints (concept / code-change / data-compare / process / pitfall) with a per-shot `$components` pick; golden examples in `examples/`; unfilled `<<placeholders>>` fail loudly |
+| **Weak-model friendly** | 8 fusion recipes + 5 blueprints (concept / code-change / data-compare / process / pitfall) with a per-shot `$components` pick; golden examples in `examples/` (including `examples/recipes/`); unfilled `<<placeholders>>` fail loudly |
 | **One command** | `make-video.mjs`: resolve-shots → gates → tsc → stills contact sheet or full render → `renders/report.md`; `make-video.cmd` on Windows |
 | **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤4.5 chars/s reading speed, frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
 | **Deterministic** | Every animation is a pure function of the frame (no `Math.random`, CSS animation or timers); no image-generation model, no online API required |
 
-## What's new in 3.4.0
+## What's new in 3.5.0
 
-- **`preview` — check a revision in seconds.** Renders one window (first 30 s, half resolution) with a contact sheet and a loudness readout; `--shot=S6` narrows it to one shot, `--from` / `--seconds` take any window. No full render needed.
-- **`sweep` — no shot left unchecked.** Samples one settled frame per shot into `renders/sweep-sheet.jpg`; a missed shot is named, never silently passed. `preview` only covers the opening — this is what catches the tail.
-- **Empty space is measurable.** FillGate quantifies layout on an 8×6 grid (`cells` / `blank` / `largest` / `widest`) with two exemptions (strip subjects, composite devices); numbers land in `renders/fill-coverage.json`.
-- **Delivery companions.** `export-srt` writes the SRT, `poster` takes the `signature_shot` settled frame without captions, `deliver` packages them; a full render produces them automatically.
-- **`eval-project` — compare revisions.** Turns a film into comparable numbers (shot-length distribution, layout / medium / transition variety, camera coverage, caption density, empty-space readings) and reports deltas. Numbers only, never scores.
-- **Bundled Chinese segmentation.** The BudouX model ships with the repository (`assets/vendor/budoux/`), so phrase-aware line breaking works offline.
+- **Three-layer fusion.** Components carry the information, a line drawing makes the subject recognisable, hand annotations connect the two. 30 built-in sketches, 7 actions, inked to match the skin, with push-ins that keep the drawing in frame. The mix is gated: linework shots 30–60 %, components-only ≤30 %, text-only ≤10 %, and the film's subject must appear at least once. See [references/linework.md](references/linework.md).
+- **Eight fusion recipes.** `sketch-readout`, `component-annotated`, `before-after`, `hammer` and four more decide the layout and where the sketch sits; the author only fills content. See [references/recipes.md](references/recipes.md).
+- **TTS is a real step.** `notebook-video tts <project>` uses edge-tts by default, or `--engine=file` for your own recording; captions and shot timing align to word-level time. Without real narration `--render` stops before rendering (a silent placeholder is only for `--stills` and `preview`).
+- **No BGM by default, sparse SFX.** A music bed loads only when `treatment.sound.music.use=true`; effects sit under the voice, spaced ≥150 ms, and `validate-silence` checks inter-sentence silence and levels.
+- **Seven reproduced defects fixed**: `sweep` measuring nothing, unregistered custom components rendering silently, CJK tofu in code cards, unit and bar labels, caption mode, self-contradictory `treatment`, each with a negative test.
 
-**Narration** is not bundled: add your own TTS or recorded voice and re-align with `match-timing.py`.
+Everything from 3.4.0 — `preview`, `sweep`, empty-space metrics and the delivery companions — is still here; see [CHANGELOG.md](CHANGELOG.md).
 
 ## Quick start
 
@@ -197,7 +194,7 @@ Each theme ships three locked backgrounds (main / chapter / quiet) with a calm c
 
 | Stage | Checks | Typical catches |
 | --- | --- | --- |
-| Build time (Python) | `resolve-shots`, `validate-composition`, `validate-shot-motion`, `validate-frame-props`, `validate-presentation`, `validate-caption-sync`, `validate-semantic-breaks`, `validate-layering`, `validate-visual-plan`, `validate-audio-levels`, `validate-media` | Same layout in adjacent shots, content too small, wrong frame-prop name, low contrast, caption lines over 16 characters or too fast to read, SFX gain out of sync with the library, blurry media |
+| Build time (Python) | `resolve-shots`, `validate-composition`, `validate-shot-motion`, `validate-frame-props`, `validate-presentation`, `validate-caption-sync`, `validate-semantic-breaks`, `validate-layering`, `validate-visual-plan`, `validate-fusion`, `validate-glyphs`, `validate-silence`, `validate-audio-levels`, `validate-media` | Same layout in adjacent shots, content too small, wrong frame-prop name, low contrast, caption lines over 16 characters or too fast to read, unbalanced sketch ratio or a missing subject, a cropped sketch, no silence between sentences or SFX drowning the voice, SFX gain out of sync with the library, blurry media |
 | Render time (in the browser) | `OverlapGate`, `ClippingGate`, `CanvasBoundsGate`, `FillGate`, `CaptionFitGate`, `MascotGate` | Overlapping text, clipped graphics, content off-canvas, caption overflow |
 | Final film | `validate-video`, `validate-motion-gaps` | Wrong size / codec / colour tags, frames frozen too long |
 | Skill self-checks | `validate-skill-consistency`, `selftest`, `negative-gate-check` | Docs naming components that do not exist, broken links; every gate must block a deliberately broken input |
@@ -221,14 +218,14 @@ notebook-video/
 │   └── fonts/                   # LXGW WenKai Lite (OFL-1.1, not committed; downloaded on first use)
 ├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; .cmd / .sh wrappers
 │   └── dev/                     # Maintainer tools (SFX library build and tuning)
-├── references/                  # Author manuals and specs (camera, layouts, themes, SFX, captions, gates, cross-platform)
-├── tests/                       # 17 offline unit tests (backgrounds / blueprints / camera / captions / media / sfx density / gates / review …)
+├── references/                  # Author manuals and specs (camera, layouts, themes, linework, recipes, SFX, captions, gates, cross-platform)
+├── tests/                       # 26 offline unit tests (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 
 ## FAQ and limitations
 
-- **Is there built-in voice-over?** No. Narration defaults to a silent placeholder and captions are timed at 4.5 characters per second. For a real voice or TTS, bring your own audio or point the template's `scripts/tts-openai-compatible.py` at your own OpenAI-compatible TTS endpoint (keys are read from environment variables only), then re-align with `scripts/match-timing.py`.
+- **Is there built-in voice-over?** There is a TTS command, not a voice model. `notebook-video tts <project>` uses edge-tts by default (needs network), or `--engine=file` for your own recording; either way captions and shots align to word-level time. Without real narration `--render` stops instead of shipping a silent film.
 - **Does it use an image-generation model?** No, and image generation is not a default route. Scenes are drawn by components; use screenshots / recordings when a real interface matters.
 - **Portrait or 4:3?** No. Since 3.2.0 the only canvas is 16:9; the 3.1.x 4:3 / 3:4 canvases, the `paper` / `sticker` skins and the `--classic` example project are gone, and older projects are not supported.
 - **My topic needs a one-off diagram.** Copy `src/custom/RequestLane.tsx`, write your component and register it in `src/custom/index.ts`.

@@ -1,6 +1,6 @@
 ---
 name: notebook-video
-version: 3.4.0
+version: 3.5.0
 description: Turn a topic into a Chinese 16:9 teaching video (flat / cel component themes, or the journal / papercut / archive hand-made skins driven by a metaphor-first director layer) with React, TypeScript and Remotion. Every shot fuses up to three layers: code-drawn components (consoles, diffs, checklists, stat rows, charts), a skin-matched line drawing of the thing being explained (30 built-in sketches, seven verbs), and hand annotations (circle / underline / arrow / note) that connect the two; an engine-level virtual camera frames it without cropping the sketch. Eight recipes let a weak model fill content only. Weak-model friendly: five teaching blueprints with per-shot component picks, golden examples, a five-step workflow and one cross-platform command (`node scripts/make-video.mjs <project>`, `make-video.cmd` on Windows) that resolves shots, runs hard gates with objective auto-fixes (no clipped titles, font floor, text contrast, ≤16-character captions at 4.5 chars/s, no dead tails, blurry-media check) and renders stills or the MP4. Tuned semantic sound effects land on the visual hit; no BGM by default. Every topic first searches Wikimedia Commons / Openverse for licence-filtered real media with automatic on-screen credits. TTS narration (edge-tts or your own recording) drives caption and shot timing; no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
 ---
 

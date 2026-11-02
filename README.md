@@ -2,9 +2,9 @@
 
 <div align="center">
 
-**把一个知识点变成一支 16:9 中文讲课视频：组件场景 + 引擎虚拟镜头 + 对拍音效，一条命令出片，客观门禁自动修。**
+**把一个知识点变成一支 16:9 中文讲课视频：组件 + 线稿 + 讲解三层融合，引擎虚拟镜头跟着讲，一条命令出片，客观门禁自动修。**
 
-[![Version](https://img.shields.io/badge/version-3.4.0-1f6feb)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.5.0-1f6feb)](CHANGELOG.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
 [![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel%20%7C%20journal%20%7C%20papercut%20%7C%20archive-ff7a59)](references/theme-system.md)
@@ -23,10 +23,11 @@
 你说「做一支讲哈希表的科普视频」，它就按这里的蓝图、模板和门禁，用 **React + TypeScript + [Remotion](https://www.remotion.dev/)**
 做出一支 30 秒到数分钟的中文讲课视频，并交付 MP4 和整套可改的源码工程。
 
-- **画面是组件，不是幻灯片**：每一镜都是代码画出来的真组件——控制台、代码差异、清单、数字行、漏斗、进度环、印章、结论条……
-  也可以放进真实截图 / 短录屏。
-- **镜头会跟着讲**：引擎级虚拟摄影机缺省缓推，讲到哪个词就推近到哪个组件，换镜用甩镜 / 推穿。
-- **弱模型也能复刻**：10 个讲课蓝图（5 个组件路线 + 5 个手作结构族）逐镜写好该用的骨架与组件，加上黄金样例、短流程和一条命令；能客观判断的问题，引擎直接自动修。
+- **三层融合，不是幻灯片**：每一镜由**组件层**给信息（控制台、代码差异、清单、数字行、柱条、结论条……），
+  **线稿层**让人一眼认出「在讲什么东西」（30 个内置简笔线稿，跟着皮肤墨色），**讲解层**把两者连起来
+  （手绘圈注 / 下划线 / 引线 / 手写小字）。含线稿镜头占片长 30–60%、纯组件 ≤30%、纯文字 ≤10%，由门禁核对。
+- **镜头会跟着讲**：引擎级虚拟摄影机缺省缓推，讲到哪个词就推近到对应组件或线稿部位，换镜用甩镜 / 推穿；推近时给线稿留边，不切断图。
+- **弱模型也能复刻**：8 个融合配方决定「线稿摆哪、卡片多大」，作者只填内容；10 个讲课蓝图（5 个组件路线 + 5 个手作结构族）逐镜写好该用的骨架与组件，加上黄金样例、短流程和一条命令；能客观判断的问题，引擎直接自动修。
 
 - **一本手账一张纸、评审先于成片**：手作皮肤默认 `bgMode: "chapter"`（每章一张纸，章内沿用；`"film"` 全片一张、`"shot"` 逐镜轮换），
   装饰重的背景（`busy`）不进常规镜；`resolve-shots` 从实际镜头表自动生成 `storyboard.md` 给独立评审用；
@@ -46,11 +47,12 @@
 
 | 能力 | 说明 |
 | --- | --- |
+| **三层融合** | 组件（信息）+ 线稿（认出来）+ 讲解层（连起来）；30 个内置线稿、7 种动作（入场 / 指向 / 落下 / 替换 / 计数 / 标记 / 退场），墨色跟着皮肤走；`validate-fusion` 核对配比与「主题物全片至少出现一次」，`validate-glyphs` 核对线稿几何不被裁 |
 | **组件场景** | 4 种骨架（Stage / Split / Zoom / Corridor）+ 组件库（`ConsoleWindow`、`DiffView`、`HighlightCode`、`StatRow`、`Funnel`、`ProgressRing`、`KineticNumber`、`StampSeal`、`VerdictBar` 等），配色全部走主题 token |
 | **引擎虚拟镜头** | 每镜缺省缓推；`cinema.focus` 按台词关键词推近到对应组件、镜头横摇；甩镜 / 推穿转场；背景视差；内容太小时自动放大到安全区 60–80%；推近时自动留边，不切断标题 |
-| **对拍音效** | 16 个代码合成的语义音效（CC0，`public/sfx/lib/`）+ 可选音乐床；每条 cue 带 `gain` / `offsetMs`，提前起播让瞬态落在视觉命中帧（±1 帧）；间隔 ≥150 ms、约 24 个/分钟封顶；音乐床在音效下自动闪避 |
+| **对拍音效** | 16 个代码合成的语义音效（CC0，`public/sfx/lib/`），**默认无 BGM**（只有 `treatment.sound.music.use=true` 才加载音乐床，并在音效下闪避）；每条 cue 带 `gain` / `offsetMs`，提前起播让瞬态落在视觉命中帧（±1 帧）；间隔 ≥150 ms、约 24 个/分钟封顶；`validate-silence` 核对句间静音与音效电平 |
 | **真实素材** | 截图 / ≤10 秒录屏 / 动图放进 `MediaFrame`（与组件同一套卡片外观，可选浏览器 / 窗口 / 手机外壳，区域推近、描框、旁注、署名徽章）；`prepare-media` 一键转码，`validate-media` 拦糊图与许可缺失 |
-| **弱模型友好** | 5 个蓝图（concept / code-change / data-compare / process / pitfall），每镜的 `$components` 写明骨架与组件；黄金样例 `examples/`；未填的 `<<占位符>>` 直接报错 |
+| **弱模型友好** | 8 个融合配方 + 5 个蓝图（concept / code-change / data-compare / process / pitfall），每镜的 `$components` 写明骨架与组件；黄金样例 `examples/`（含 `examples/recipes/`）；未填的 `<<占位符>>` 直接报错 |
 | **一条命令** | `make-video.mjs`：resolve-shots → 门禁 → tsc → 静帧接触表或整片渲染 → `renders/report.md`；Windows 有 `make-video.cmd` |
 | **交付不只是一个 mp4** | 整片渲完自动再出 `renders/captions.srt`（画面里那套断句，不是重新识别）和 `renders/poster.jpg`（取 `treatment.signature_shot` 的落定帧，且不画字幕）。单独重出：`poster` / `export-srt` / `deliver` |
 | **改完能对比** | `eval-project 旧工程 新工程` 把片子拆成可比的数据（镜长分布、版式 / 介质 / 转场种类、运镜覆盖、字幕密度、空场读数）并给 Δ。**不打分**：阈值只在门禁里存一处 |
@@ -59,16 +61,15 @@
 | **门禁与自动修** | 硬门禁只管客观问题（取景切字、字号地板、对比度 ≥4.5:1、字幕每行 ≤16 字、读速（组件路线 ≤4.5 字/秒，手作路线 6.5 字/秒）、画面静止、音画同步、音效电平），能修的自动修；主观项只给建议 |
 | **确定可复现** | 所有动画都是帧号的纯函数（不用 `Math.random`、CSS 动画、计时器）；不依赖生图模型，不需要在线 API |
 
-## 3.4.0 新增
+## 3.5.0 新增
 
-- **`preview`：改一版看一版**。只渲一段（缺省前 30 秒、半分辨率）并出接触片与响度读数；`--shot=S6` 只看一镜，`--from` / `--seconds` 任意窗口。不必等整片。
-- **`sweep`：全片一镜不漏**。每镜取一帧落定态，拼成 `renders/sweep-sheet.jpg` 体检表；少一镜会明写「未量到」。`preview` 只看开头、片子长了尾巴容易漏——这一步补的就是它。
-- **空场可度量**。FillGate 以 8×6 网格量化版面占用（`cells` / `blank` / `largest` / `widest`），「主体过小」有条状主体与组合装置两条豁免；数字落盘 `renders/fill-coverage.json`。
-- **交付三件套**。`export-srt` 出 SRT 字幕、`poster` 出封面（取 `signature_shot` 的落定帧、不画字幕）、`deliver` 打包；整片渲完自动产出。
-- **`eval-project` 改完能对比**。把片子拆成可比的数据（镜长分布、版式 / 介质 / 转场种类、运镜覆盖、字幕密度、空场读数）并给 Δ，只测量不打分。
-- **自带中文分词**。BudouX 模型随仓库分发（`assets/vendor/budoux/`），短语断行在离线环境同样生效。
+- **三层融合**。组件给信息、线稿让人认出来、手注把两者连起来；30 个内置线稿、7 种动作，墨色跟着皮肤走，推近时自动留边不切断图。配比有门禁：含线稿镜头 30–60%、纯组件 ≤30%、纯文字 ≤10%，主题里的那个东西全片至少出现一次。写法见 [references/linework.md](references/linework.md)。
+- **8 个融合配方**。`sketch-readout` / `component-annotated` / `before-after` / `hammer` 等，配方决定版面与线稿位置，作者只填内容。见 [references/recipes.md](references/recipes.md)。
+- **TTS 成为正式步骤**。`notebook-video tts <工程>` 默认走 edge-tts，也可 `--engine=file` 用你自己的录音；字幕与镜头按词级时间对齐。没有真实旁白时 `--render` 停在渲染前（静音占位只给 `--stills` 与 `preview`）。
+- **默认无 BGM、音效稀疏**。只有 `treatment.sound.music.use=true` 才加载音乐床；音效压在人声下，间隔 ≥150 ms，`validate-silence` 核对句间静音与电平。
+- **修掉 7 个已复现缺陷**：`sweep` 量不到、未注册定制组件静默出片、代码卡中文豆腐块、单位与柱标签、字幕模式、`treatment` 自相矛盾等，每一项都补了负向用例。
 
-**旁白**：技能不内置 TTS。使用者可后配任意 TTS 或真人旁白，配好后跑 `match-timing.py` 重对齐即可。
+3.4.0 的 `preview` / `sweep` / 空场度量 / 交付三件套仍在，详见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 快速开始
 
@@ -189,7 +190,7 @@ python scripts/commons-search.py credits ./my-video   # → CREDITS.md
 
 | 阶段 | 检查 | 典型拦截 |
 | --- | --- | --- |
-| 构建期（Python） | `resolve-shots`、`validate-composition`、`validate-shot-motion`、`validate-frame-props`、`validate-presentation`、`validate-caption-sync`、`validate-semantic-breaks`、`validate-layering`、`validate-visual-plan`、`validate-audio-levels`、`validate-media` | 相邻两镜同版式、内容太小、帧参数名写错、对比度不足、字幕超 16 字或读不完、音效增益与库不一致、素材会糊 |
+| 构建期（Python） | `resolve-shots`、`validate-composition`、`validate-shot-motion`、`validate-frame-props`、`validate-presentation`、`validate-caption-sync`、`validate-semantic-breaks`、`validate-layering`、`validate-visual-plan`、`validate-fusion`、`validate-glyphs`、`validate-silence`、`validate-audio-levels`、`validate-media` | 相邻两镜同版式、内容太小、帧参数名写错、对比度不足、字幕超 16 字或读不完、线稿配比失衡或主题物缺席、线稿被裁、句间没有静音或音效压不住人声、音效增益与库不一致、素材会糊 |
 | 渲染期（浏览器内） | `OverlapGate`、`ClippingGate`、`CanvasBoundsGate`、`FillGate`、`CaptionFitGate`、`MascotGate` | 文字互相压、图形被裁、越出画布、字幕溢出 |
 | 成片 | `validate-video`、`validate-motion-gaps` | 尺寸 / 编码 / 色彩标记不对、画面静止过久 |
 | 技能自检 | `validate-skill-consistency`、`selftest`、`negative-gate-check` | 文档写了不存在的组件、断链；每道门禁喂坏输入必须拦住 |
@@ -213,14 +214,14 @@ notebook-video/
 │   └── fonts/                   # LXGW 文楷 Lite（OFL-1.1，不入库，首次使用时自动下载）
 ├── scripts/                     # make-video、notebook-video CLI、compose / resolve、各门禁、自检；.cmd / .sh 包装
 │   └── dev/                     # 维护者工具（音效库构建与调校）
-├── references/                  # 作者手册与规格（镜头、版式、主题、音效、字幕、门禁、跨平台）
-├── tests/                       # 17 个离线单元测试（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 音效密度 / 门禁 / 评审 …）
+├── references/                  # 作者手册与规格（镜头、版式、主题、线稿、配方、音效、字幕、门禁、跨平台）
+├── tests/                       # 26 个离线单元测试（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 融合配方 / TTS / 静音 / 门禁 / 评审 …）
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 
 ## 常见问题与限制
 
-- **自带配音吗？** 不自带。默认旁白是静音占位，字幕按 4.5 字/秒定时。要真人声或 TTS：用你自己的音频，或用模板里的 `scripts/tts-openai-compatible.py` 接你自己的 OpenAI 兼容 TTS 端点（密钥只从环境变量读），再用 `scripts/match-timing.py` 重对齐。
+- **自带配音吗？** 带一条 TTS 命令，不带声音模型。`notebook-video tts <工程>` 默认走 edge-tts（需联网），也可以 `--engine=file` 直接给录音；两种情况都按词级时间对齐字幕与镜头。没有真实旁白时 `--render` 会停下，不静音出片。
 - **要用生图模型吗？** 不用，也不支持把生图作为默认路线。画面由组件绘制，需要真实界面时用截图 / 录屏。
 - **能做竖屏或 4:3 吗？** 不能。3.2.0 起只有 16:9；3.1.x 的 4:3 / 3:4 画布、`paper` / `sticker` 皮肤与 `--classic` 示例工程已删除，旧工程不再支持。
 - **题目需要一张专属的图怎么办？** 照 `src/custom/RequestLane.tsx` 写一个组件，在 `src/custom/index.ts` 注册即可。
