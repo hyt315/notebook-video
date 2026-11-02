@@ -5,6 +5,7 @@
 **把一个知识点变成一支 16:9 中文讲课视频：组件 + 线稿 + 讲解三层融合，引擎虚拟镜头跟着讲，一条命令出片，客观门禁自动修。**
 
 [![Version](https://img.shields.io/badge/version-3.5.0-1f6feb)](CHANGELOG.md)
+[![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
 [![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel%20%7C%20journal%20%7C%20papercut%20%7C%20archive-ff7a59)](references/theme-system.md)

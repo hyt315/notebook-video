@@ -5,6 +5,7 @@
 **Turn one idea into a 16:9 Chinese teaching video: components, line drawings and hand annotations fused in every shot, an engine-level virtual camera that follows the narration, one command to render. Objective gates fix what they can.**
 
 [![Version](https://img.shields.io/badge/version-3.5.0-1f6feb)](CHANGELOG.md)
+[![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
 [![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel%20%7C%20journal%20%7C%20papercut%20%7C%20archive-ff7a59)](references/theme-system.md)
