@@ -216,8 +216,14 @@ class CacheAndFallbackTest(unittest.TestCase):
         self.assertAlmostEqual(empty.advance_em("汉"), 1.0)
 
     def test_parser_sees_both_cmap_formats(self):
-        """TTF（kai，cmap4）与 OTF（serif）都要能解析。"""
-        for role in ("kai", "serif"):
+        """TTF（kai，cmap4）与 OTF（serif）都要能解析。
+
+        字体按需下载、不入库：干净克隆与 CI 上没有这两个文件，只能验缓存——
+        那不是「解析器看得懂两种 cmap」，所以缺文件时跳过，不假装通过。
+        """
+        for role, name in (("kai", "LXGWWenKaiLite-Regular.ttf"), ("serif", "NotoSerifSC-Bold.otf")):
+            if not (ROOT / "assets" / "fonts" / name).exists():
+                self.skipTest(f"缺 {name}（按需下载）：解析器路径无从验证")
             m = tm.get(role)
             self.assertFalse(m.fallback, role)
             self.assertGreater(len(m.advances), 1000, role)

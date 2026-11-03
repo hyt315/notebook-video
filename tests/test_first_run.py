@@ -42,7 +42,15 @@ class ProcessTreeTest(unittest.TestCase):
 class FontDownloadFailureTest(unittest.TestCase):
     """断网/镜像挂掉时，报错必须能照着修。"""
 
+    @classmethod
+    def setUpClass(cls):
+        # 字体是**按需下载**、不入库（.gitignore 里有 assets/fonts/*.ttf）。
+        # 干净克隆 / CI 上没有字体文件，这两条用例无从下手——先记下基线，没有就跳过。
+        cls.baseline = sorted(p.name for p in FONTS.glob("*.ttf")) + sorted(p.name for p in FONTS.glob("*.otf"))
+
     def test_missing_font_offline_gives_actionable_error(self):
+        if not self.baseline:
+            self.skipTest("字体按需下载、不入库：这棵树上没有字体，无从模拟「下载失败」")
         moved: list[tuple[Path, Path]] = []
         try:
             for f in sorted(FONTS.glob("*.ttf")) + sorted(FONTS.glob("*.otf")):
@@ -62,11 +70,16 @@ class FontDownloadFailureTest(unittest.TestCase):
             for f, bak in moved:
                 if bak.exists():
                     bak.rename(f)
+            # 恢复断言放在同一个用例里：否则「没恢复」会被下一条的跳过条件吃掉
+            now = sorted(p.name for p in FONTS.glob("*.ttf")) + sorted(p.name for p in FONTS.glob("*.otf"))
+            self.assertEqual(now, self.baseline, "字体没恢复 —— 后面所有渲染都会因缺字体失败")
 
     def test_fonts_are_restored(self):
-        # 上一组把字体临时搬走过：这条确保它真的被搬回来了（否则后续渲染全废）
-        self.assertTrue(list(FONTS.glob("*.ttf")) or list(FONTS.glob("*.otf")),
-                        "字体没恢复 —— 后面所有渲染都会因缺字体失败")
+        # 全量跑完之后再核一次：任何一条用例把字体搬走没搬回来，这里都会红
+        if not self.baseline:
+            self.skipTest("字体按需下载、不入库：没有可核对的对象")
+        now = sorted(p.name for p in FONTS.glob("*.ttf")) + sorted(p.name for p in FONTS.glob("*.otf"))
+        self.assertEqual(now, self.baseline, "字体清单和开跑前不一致 —— 有用例搬走没搬回")
 
 
 class NewProjectFirstRunTest(unittest.TestCase):

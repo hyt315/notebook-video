@@ -75,8 +75,10 @@ if (pids) {
   say(alive(pids.grandchild), '前提：孙进程已启动', `pid ${pids.grandchild}`);
 
   const how = killTree(pair.parent);
-  say(how === (process.platform === 'win32' ? 'taskkill' : 'group') || how === 'single',
-      'killTree 走到了预期分支', `方式 ${how}`);
+  // win32 走 taskkill；POSIX 走 ps 枚举出的后代（'tree'），枚举不到才退回进程组（'group'）。
+  // 'single' 不算通过：父进程明明还有孙进程，只杀自己就是留孤儿。
+  const expected = process.platform === 'win32' ? ['taskkill'] : ['tree', 'group'];
+  say(expected.includes(how), 'killTree 走到了预期分支', `方式 ${how}`);
 
   await new Promise((r) => setTimeout(r, 600));
   say(!alive(pids.parent), '父进程已结束');
