@@ -12,11 +12,15 @@
 - [Mix and export](#mix-and-export)
 - [Re-voicing without re-timing](#re-voicing-without-re-timing)
 
+## 3.5.1 status
+
+Since 3.5.0 the skill ships `scripts/tts.py`: `notebook-video tts <project>` uses **edge-tts** (detected at run time, not bundled; install with `pip install edge-tts`) or `--engine=file` for your own recording. edge-tts calls Microsoft's online speech service, so it needs network access and its output is subject to that service's terms — check them yourself before publishing commercially. `--engine=file` has no word timing: it spreads the audio evenly over the characters (punctuation included), so captions are only approximately aligned. Hand-written projects get their captions rebuilt automatically after `tts` (3.5.1). The provider-neutral contract below still applies if you use another provider.
+
 ## Provider-neutral TTS contract
 
 The project does not bundle generated narration. Before synthesis, record the provider, voice, generation date, governing terms and whether public/commercial redistribution is allowed.
 
-No TTS package, SDK, key or provider-specific command is bundled. An AI implementing this skill should inspect the tools available in the user's environment and write a small adapter for the selected provider.
+No TTS package, SDK or key is bundled; `scripts/tts.py` only detects edge-tts at run time. An AI implementing this skill should inspect the tools available in the user's environment and write a small adapter for the selected provider.
 
 The adapter must write:
 

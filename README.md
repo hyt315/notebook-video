@@ -32,7 +32,7 @@
 
 - **一本手账一张纸、评审先于成片**：手作皮肤默认 `bgMode: "chapter"`（每章一张纸，章内沿用；`"film"` 全片一张、`"shot"` 逐镜轮换），
   装饰重的背景（`busy`）不进常规镜；`resolve-shots` 从实际镜头表自动生成 `storyboard.md` 给独立评审用；
-  手作皮肤没做评审时 `make-video --render` 先停下（草稿用 `--skip-review`）；无 TTS 片按读速 `--cps`（缺省 6.5 字/秒）整行出字幕。
+  手作皮肤没做评审时 `make-video --render` 先停下（草稿用 `--skip-review`）；没有跑 TTS 时按读速 `--cps`（缺省 6.5 字/秒）估计字幕时间；正式片用 `notebook-video tts` 拿词级时间。
 
 - **背景库**：每个手作皮肤再加 8 张、flat / cel 各加 5 张亮底背景（横线本、宣纸、窗花、古地图、胶片、网点、mesh 渐变……），
   不写就按镜头角色自动轮换、相邻两镜不重复；每张都登记了来源与许可（Paper Shaders 离线预渲、Commons 公有领域 / CC0 纹理、确定性程序生成），
