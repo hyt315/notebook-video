@@ -12,7 +12,7 @@ class LineworkPartsTest(unittest.TestCase):
     def test_array_parts_really_filter_the_drawing(self):
         self.assertIn("Array.isArray(spec.parts) ? new Set(spec.parts) : null", SKETCH)
         self.assertIn("filter(([id]) => !selected || selected.has(id))", SKETCH)
-        self.assertIn("{partEntries.map(([id, part]) =>", SKETCH)
+        self.assertIn("{partEntries.map(([id, part], k) =>", SKETCH)
         self.assertNotIn("{Object.entries(def.parts).map(([id, part]) =>", SKETCH)
 
     def test_single_part_can_have_its_own_closeup_fit(self):

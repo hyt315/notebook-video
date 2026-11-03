@@ -20,7 +20,7 @@ import {ArchivePhoto, LoupeMedia} from './craft/media';
 // 本层只负责「画」，几何全部在 compose-story 里算好（门禁也在那里跑），所以弱模型写不坏版面。
 //
 // 克制原则：
-//   · 入场只有「淡入 + 14px 上浮」一种，不回弹、不旋转、不闪；statement 版式只淡入。
+//   · 出现（3.5.1 草稿纸）：沿阅读方向左→右展开，线性；不淡入、不上浮、不回弹。见 references/reveal-rules.md
 //   · 强调 = 底色带 + 左侧标记条 + 加粗（不只靠颜色，色弱观众也看得出）；同时只强调一个元素，其余略暗。
 //   · 文字色一律走主题的 *Ink 变体（WCAG AA ≥4.5:1），原色只做填充 / 描边。
 //   · 帧的纯函数：没有任何 useState / 随机 / 实时动画。
@@ -56,12 +56,18 @@ export const tone = (t?: string) => {
   }
 };
 
-/** 入场：淡入 + 上浮 14px，18 帧，无回弹。
+/** 出现（3.5.1 草稿纸）：沿阅读方向左→右展开，线性，dur 帧；不淡入、不上浮、不缩放。见 references/reveal-rules.md
  *  reduced-motion（P2-21）：直接到位——元素仍按 `at` 出现（内容顺序不变），只是不动。 */
-export const enter = (f: number, at: number, rise = 14): React.CSSProperties => {
+export const enter = (f: number, at: number, _rise = 14, dur = 18): React.CSSProperties => {
   if (REDUCED_MOTION) return {opacity: f >= at ? 1 : 0};
-  const p = interpolate(f, [at, at + 18], [0, 1], {...clamp, easing: ease});
-  return {opacity: p, transform: rise ? `translateY(${((1 - p) * rise).toFixed(2)}px)` : undefined};
+  const p = interpolate(f, [at, at + dur], [0, 1], {...clamp, easing: Easing.linear});
+  if (p <= 0) return {opacity: 0};
+  return {clipPath: `inset(-6% ${((1 - p) * 100).toFixed(2)}% -6% -2%)`};
+};
+/** 展开时长：clamp(字数 × 4, 12, 45) 帧；没字的按宽度 / 40。与 scripts/story_acts.py grow_dur() 同一公式。 */
+export const growDur = (e: {text?: string; lines?: string[]; w: number}) => {
+  const n = ((e.lines ?? []).join('') || e.text || '').length;
+  return Math.max(12, Math.min(45, n > 0 ? n * 4 : Math.round(e.w / 40)));
 };
 
 /** 关键词强调权重（0..1）：说到这个词时 8 帧升起，until 后 12 帧落下。 */
@@ -138,7 +144,7 @@ const HiBox: React.FC<{w: number; t?: string; pad?: number; radius?: number}> = 
 };
 
 const Box: React.FC<{e: Elem; f: number; dim: number; style?: React.CSSProperties; children: React.ReactNode; rise?: number}> = ({e, f, dim, style, children, rise}) => (
-  <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, width: e.w, height: e.h, ...enter(f, e.at, rise), ...style}}>
+  <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, width: e.w, height: e.h, ...enter(f, e.at, rise, (e as any).reveal ? 1 : ((e as any).dur ?? growDur(e))), ...style}}>
     <div style={{position: 'absolute', inset: 0, opacity: dim}}>{children}</div>
   </div>
 );
@@ -396,9 +402,10 @@ const countVal = (f: number, e: Elem) => {
 };
 
 const TipView: React.FC<{t: Tip; f: number}> = ({t, f}) => {
-  const o = interpolate(f, [t.at, t.at + 10, t.until - 10, t.until], [0, 1, 1, 0], clamp);
-  if (o <= 0) return null;
-  return <div data-gate-allow="glossary" style={{position: 'absolute', left: t.x, top: t.y, width: t.w, height: t.h, opacity: o, transform: `translateY(${(1 - o) * (t.below ? -8 : 8)}px)`, zIndex: 5}}>
+  const grow = interpolate(f, [t.at, t.at + 10], [0, 1], {...clamp, easing: Easing.linear});
+  const o = interpolate(f, [t.until - 10, t.until], [1, 0], clamp);
+  if (grow <= 0 || o <= 0) return null;
+  return <div data-gate-allow="glossary" style={{position: 'absolute', left: t.x, top: t.y, width: t.w, height: t.h, opacity: o, clipPath: `inset(-6% ${((1 - grow) * 100).toFixed(2)}% -6% -2%)`, zIndex: 5}}>
     <div style={{position: 'absolute', inset: 0, background: C.navy, borderRadius: 14}} />
     <div style={{position: 'absolute', left: 25, top: 18, color: C.white, fontSize: t.size, lineHeight: 1.35, whiteSpace: 'nowrap'}}>{t.lines.map((l, i) => <div key={i}>{l}</div>)}</div>
   </div>;

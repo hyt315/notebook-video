@@ -148,6 +148,14 @@
      "offset": 0
     },
     {
+     "cue": 2,
+     "offset": 12
+    },
+    {
+     "cue": 2,
+     "offset": 24
+    },
+    {
      "cue": 3,
      "offset": 0
     }
@@ -382,6 +390,14 @@
      "offset": 0
     },
     {
+     "cue": 7,
+     "offset": 12
+    },
+    {
+     "cue": 7,
+     "offset": 24
+    },
+    {
      "cue": 8,
      "offset": 0
     }
@@ -413,7 +429,7 @@
    "sfxEvents": [
     {
      "event": "pop",
-     "at": 30
+     "at": 35
     }
    ]
   },
@@ -469,6 +485,14 @@
      "offset": 0
     },
     {
+     "cue": 9,
+     "offset": 12
+    },
+    {
+     "cue": 9,
+     "offset": 24
+    },
+    {
      "cue": 10,
      "offset": 0
     }
@@ -516,7 +540,7 @@
     },
     {
      "event": "pop",
-     "at": 11
+     "at": 26
     }
    ]
   },

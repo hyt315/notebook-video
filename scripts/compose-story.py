@@ -50,7 +50,7 @@ from story_caption import (  # noqa: E402
 from story_time import FPS, frame  # noqa: E402  （帧率真源；时间轴与动作层共用）
 from story_acts import (  # noqa: E402  （动作 / 复现层真源）
     INK_VERBS, SKETCH_VERBS, check_draw, check_reprises, resolve_act_at, resolve_annotate,
-    resolve_ink_acts, resolve_sketch,
+    resolve_ink_acts, resolve_sketch, schedule_reveals,
 )
 from story_layout import (  # noqa: E402  （版式层真源；下列名字是门面 re-export，外部别再从主文件找实现）
     BAND, FLOW_TOTAL_MAX, INK_BOX, LAY, PAGE_MEDIA, RECIPE_BOX, SKETCH_BOX, STORY_MEDIA, TYPE,
@@ -419,7 +419,7 @@ def build(story, comp, p: Problems):
                 a = nl - 1
             # 被关键词点名、且点名早于声明 → 不改；点名晚于出现 → 保持（先出现后强调）
             n = per_line.get(a, 0); per_line[a] = n + 1
-            e["at"] = max(0, line_start[a] - (8 if a == 0 else 2)) + min(n, 3) * 5 if isinstance(a, int) else 0
+            e["at"] = max(0, line_start[a]) + n * 12 if isinstance(a, int) else 0  # 3.5.1：不早于所属句；同句第 n 个再晚 12n 帧
             # 逐字呈现的节奏锁在旁白上：这一句有多少帧，就多少帧放完。
             # 不另配时间轴——否则旁白一快，字还没放完就被下一句盖掉。
             if e.get("reveal") in ("type", "slide"):
@@ -709,6 +709,15 @@ def build(story, comp, p: Problems):
                 if show > fk["until"] - fk["at"]:
                     fk["until"] = min(dur - 4, fk["at"] + show)
         # 音效：只挂真事件
+        # 3.5.1：线稿 / 标注先解析，再统一排程——必须在音效与 beats 之前，否则音效还对着排程前的帧（spec T-P0-07 (6)）
+        sk_out = resolve_sketch(p, sid, sh.get("sketch"), line_start, sh["line_cues"], cues, frm) if sh.get("sketch") else None
+        if sk_out is not None:
+            sk_out["box"] = sh.get("sketch_box") or SKETCH_BOX["left"]
+        ann_out = resolve_annotate(p, sid, sh.get("annotate"), els, line_start)
+        schedule_reveals(els, sk_out, ann_out or [], tips)
+        _last = max([e["at"] for e in els] + [a_["at"] for a_ in (ann_out or [])] + [0])
+        if line_end and _last > line_end[-1]:
+            p.hint(f"{sid}: 这一镜东西太多，旁白讲完了还有东西在开始出现（第 {_last} 帧 > 末句结束第 {line_end[-1]} 帧）——删 1–2 个元素或拆成两镜")
         sfx = []
         for e in els:
             if e["kind"] == "number":
@@ -831,10 +840,6 @@ def build(story, comp, p: Problems):
             rec["media_label"] = " ".join(str(x) for x in [
                 _c.get("catalogue") or "", _c.get("title") or "", _c.get("big") or "", _c.get("note") or ""]).strip()
         out_shots.append(rec)
-        sk_out = resolve_sketch(p, sid, sh.get("sketch"), line_start, sh["line_cues"], cues, frm) if sh.get("sketch") else None
-        if sk_out is not None:
-            sk_out["box"] = sh.get("sketch_box") or SKETCH_BOX["left"]
-        ann_out = resolve_annotate(p, sid, sh.get("annotate"), els, line_start)
         story_ts[sid] = {"layout": sh["layout"], "variant": sh["variant"], "elements": els, "focus": focus_out, "tips": tips,
                          "lines": line_start, "lineEnds": line_end, "think": int(float(sh["content"].get("think", 3)) * FPS) if sh["layout"] == "quiz" else 0,
                          "custom": sh["custom"], "icons": icons}

@@ -92,9 +92,9 @@ const PrimView: React.FC<{p: Prim; prog: number; color: string; sw: number; pain
     strokeLinejoin: 'round' as const,
     fill: 'none',
   };
-  const o = Math.min(1, prog * 1.8);
+  const o = Math.max(0, prog * 2 - 1);  // 3.5.1：闭合形也沿路径描出，填色在描到一半后补上
   const fillLayer = fill === 'none' ? null : p.k === 'path'
-    ? <path d={p.d} fill={fill} stroke="none" opacity={Math.min(1, prog * 1.6)} filter={paint ? `url(#${paint})` : undefined} />
+    ? <path d={p.d} fill={fill} stroke="none" opacity={o} filter={paint ? `url(#${paint})` : undefined} />
     : p.k === 'rect'
       ? <rect x={p.x} y={p.y} width={p.w} height={p.h} rx={p.rx ?? 0} fill={fill} stroke="none" opacity={o} filter={paint ? `url(#${paint})` : undefined} />
       : p.k === 'circle'
@@ -105,8 +105,8 @@ const PrimView: React.FC<{p: Prim; prog: number; color: string; sw: number; pain
     : p.k === 'line'
       ? <line x1={p.x1} y1={p.y1} x2={p.x2} y2={p.y2} {...strokeCommon} {...dash} />
       : p.k === 'rect'
-        ? <rect x={p.x} y={p.y} width={p.w} height={p.h} rx={p.rx ?? 0} {...strokeCommon} opacity={o} />
-        : <circle cx={p.cx} cy={p.cy} r={p.r} {...strokeCommon} opacity={o} />;
+        ? <rect x={p.x} y={p.y} width={p.w} height={p.h} rx={p.rx ?? 0} {...strokeCommon} {...dash} />
+        : <circle cx={p.cx} cy={p.cy} r={p.r} {...strokeCommon} {...dash} />;
   return <>{fillLayer}{strokeLayer}</>;
 };
 
@@ -201,7 +201,11 @@ export const SketchLayer: React.FC<{spec: SketchSpec; f: number; box: {x: number
   const st = stateAt(acts, f);
   const start = spec.persist ? -999 : st.entered;
   if (f < start) return null;
-  const enter = spec.persist ? 1 : interpolate(f, [start, start + 18], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
+  // 3.5.1：按部位依次描出（先各部位、最后底座），整幅 clamp(12 × 部位数, 24, 45) 帧；整体不淡入
+  const nParts = partEntries.length + (def.base ? 1 : 0);
+  const DUR = Math.max(24, Math.min(45, 12 * nParts));
+  const enter = spec.persist ? 1 : (f >= start ? 1 : 0);
+  const partProg = (k: number) => spec.persist ? 1 : interpolate(f, [start + (k * DUR) / nParts, start + ((k + 1) * DUR) / nParts], [0, 1], clamp);
   const exit = st.exited === null ? 0 : interpolate(f, [st.exited, st.exited + 12], [0, 1], clamp);
   const opacity = enter * (1 - exit);
   if (opacity <= 0.01) return null;
@@ -231,8 +235,8 @@ export const SketchLayer: React.FC<{spec: SketchSpec; f: number; box: {x: number
           <svg key={i} viewBox={viewFit.join(' ')}
                style={{position: 'absolute', left: `${i * cw}%`, top: 0, width: `${count > 1 ? cw : 100}%`, height: `${cScale * 100}%`, opacity: cp, overflow: 'visible'}}>
             <defs>{paintFilter(pid, paintSeed)}</defs>
-            {def.base && <PrimGroup prims={def.base} prog={enter} color={ink} sw={base * 0.8} paint={pid} />}
-            {partEntries.map(([id, part]) => {
+            {def.base && <PrimGroup prims={def.base} prog={partProg(partEntries.length)} color={ink} sw={base * 0.8} paint={pid} />}
+            {partEntries.map(([id, part], k) => {
               const dropAt = st.dropped[id];
               const dropP = dropAt === undefined ? 0 : interpolate(f, [dropAt, dropAt + 16], [0, 1], {...clamp, easing: Easing.in(Easing.cubic)});
               if (dropP >= 1) return null;
@@ -244,7 +248,7 @@ export const SketchLayer: React.FC<{spec: SketchSpec; f: number; box: {x: number
               return (
                 <g key={id} opacity={dim * (1 - dropP)}
                    transform={dropP > 0 ? `translate(${ax * 0.06 * dropP} ${24 * dropP}) rotate(${10 * dropP} ${ax} ${ay})` : undefined}>
-                  <PrimGroup prims={prims} prog={enter} color={isPoint ? accent : part.detail ? C.muted : ink}
+                  <PrimGroup prims={prims} prog={partProg(k)} color={isPoint ? accent : part.detail ? C.muted : ink}
                              sw={isPoint ? base * 1.35 : part.detail ? base * 0.72 : base} paint={pid} />
                 </g>
               );

@@ -617,7 +617,7 @@ def lay_recipe(p, sid, recipe, c, variant):
         els, y = [], Y + 40
         for i, t in enumerate(cards[:2]):
             ls, s_, w_, h_ = fit_text(p, f"{sid}.cards[{i}]", str(t), TYPE["body"], 700, 3, lh=1.35)
-            els.append(el(f"card{i + 1}", "card", 900, y, 780, h_ + 64, str(t), s_, "body", 0, lines=ls, lh=1.35, pad=26))
+            els.append(el(f"card{i + 1}", "card", 900, y, 780, h_ + 64, str(t), s_, "body", i, lines=ls, lh=1.35, pad=26))
             y += h_ + 64 + 36
         return els, SKETCH_BOX["left"]
     if recipe == "scene-verdict":
@@ -627,14 +627,14 @@ def lay_recipe(p, sid, recipe, c, variant):
             return [], SKETCH_BOX["center"]
         ls, s_, w_, h_ = fit_text(p, f"{sid}.verdict", v, TYPE["title"], 1200, 1)
         x = BAND["x"] + (BAND["w"] - (w_ + 80)) / 2
-        return [el("verdict", "card", x, 790, w_ + 80, h_ + 60, v, s_, "body", 0, lines=ls, lh=1.3, pad=26)], {"x": 560, "y": 150, "w": 800, "h": 560}
+        return [el("verdict", "card", x, 790, w_ + 80, h_ + 60, v, s_, "body", 99, lines=ls, lh=1.3, pad=26)], {"x": 560, "y": 150, "w": 800, "h": 560}
     if recipe == "before-after":
         els = []
         for i, key in enumerate(("before", "after")):
             lab = "改之前" if key == "before" else "改之后"
             t = c.get(key) or ""
             x = 200 + i * 960
-            els.append(el(f"{key}Label", "text", x, 700, 420, 60, lab, TYPE["title"], "title", 0))
+            els.append(el(f"{key}Label", "text", x, 700, 420, 60, lab, TYPE["title"], "title", i))
             if t:
                 ls, s_, w_, h_ = fit_text(p, f"{sid}.{key}", str(t), TYPE["body"], 520, 2, lh=1.35)
                 els.append(el(key, "card", x, 770, 560, h_ + 50, str(t), s_, "body", 1, lines=ls, lh=1.35, pad=22))
@@ -645,7 +645,7 @@ def lay_recipe(p, sid, recipe, c, variant):
             p.err(f"{sid}: hammer 需要 content.text（全片最该记住的那一句）")
             return [], SKETCH_BOX["corner"]
         ls, s_, w_, h_ = fit_text(p, f"{sid}.text", str(t), 96, 1200, 2, lh=1.15)
-        return [el("text", "text", (X + (W - w_) / 2), 360, w_, h_, str(t), s_, "display", 0, lines=ls, lh=1.15, align="center")], SKETCH_BOX["corner"]
+        return [el("text", "text", (X + (W - w_) / 2), 360, w_, h_, str(t), s_, "display", 99, lines=ls, lh=1.15, align="center")], SKETCH_BOX["corner"]
     return None
 
 

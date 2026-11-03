@@ -24,6 +24,58 @@ import linework_index  # noqa: E402  （必须在 sys.path 之后导入）
 from story_time import frame  # noqa: E402
 
 
+# ---------- 3.5.1 出现排程（references/reveal-rules.md 规则 ③）----------
+REVEAL_GAP = 12          # 同一镜里相邻两次「开始出现」至少隔 12 帧
+REVEAL_CONC = 2          # 同一时刻最多 2 个东西在长
+SKETCH_ENTER_SCHED = 45  # 线稿描出时长按上限 45 帧排（sketch.tsx 实际 clamp(12×部位数, 24, 45)）
+ACT_DUR = 12             # 线稿 point / swap / mark / count
+ANNOT_DUR = {"circle": 14, "underline": 12, "arrow": 12, "note": 24}
+
+
+def grow_dur(e: dict) -> int:
+    """文字 / 卡片沿阅读方向展开的帧数：clamp(字数 × 4, 12, 45)；没字的按宽度 /40。与 auto.tsx growDur 同一公式。"""
+    n = len("".join(e.get("lines") or []) or str(e.get("text") or ""))
+    return max(12, min(45, n * 4 if n > 0 else round(e["w"] / 40)))
+
+
+def schedule_reveals(els: list, sk_out, ann_out: list, tips: list) -> None:
+    """把一镜里所有「开始出现」事件排开：间隔 ≥ REVEAL_GAP，同时在长 ≤ REVEAL_CONC。只会往后推，不会提前。"""
+    ev = []  # (期望帧, 类别序, 时长, 写回对象)
+    if sk_out:
+        for fr in sk_out.get("frames", []):
+            if fr["do"] == "enter":
+                ev.append((fr["at"], 0, SKETCH_ENTER_SCHED, fr))
+            elif fr["do"] in ("point", "swap", "mark", "count"):
+                ev.append((fr["at"], 2, ACT_DUR, fr))
+    for e in els:
+        e["dur"] = int(e.get("revealDur") or 0) or grow_dur(e)
+        ev.append((e["at"], 1, e["dur"], e))
+    for a in ann_out:
+        ev.append((a["at"], 3, ANNOT_DUR.get(a["kind"], 12), a))
+    for t in tips:
+        ev.append((t["at"], 4, 10, t))
+    ev.sort(key=lambda x: (x[0], x[1]))
+    placed = []
+    for want, cls, du, obj in ev:
+        if cls == 3:  # 标注：等它圈的那个元素长完 +2 帧
+            tgt = next((x for x in els if x["x"] == obj["x"] and x["y"] == obj["y"]), None)
+            if tgt:
+                want = max(want, tgt["at"] + tgt["dur"] + 2)
+        s = int(want)
+        if placed:
+            s = max(s, max(a for a, _ in placed) + REVEAL_GAP)
+            ends = sorted(a + d for a, d in placed)
+            if len(ends) >= REVEAL_CONC:
+                s = max(s, ends[-REVEAL_CONC])  # 第 REVEAL_CONC 晚结束的那个长完，才能再开始
+        placed.append((s, du))
+        shift = s - obj["at"]
+        obj["at"] = s
+        if cls == 4:
+            obj["until"] = obj["until"] + shift
+        if cls == 1 and obj.get("revealAt") is not None:
+            obj["revealAt"] = obj["revealAt"] + shift
+
+
 def resolve_act_at(at, line_start, line_cues, cues, frm):
     """把 act 的 at 解析成本镜帧号。
 
