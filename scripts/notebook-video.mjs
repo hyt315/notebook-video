@@ -11,6 +11,8 @@ import {readShotPlan} from './transition-plan.mjs';
 import {acquireRenderLock, canResume, inputFingerprint, lockPathFor, manifestPathFor, projectKeyFor, readManifest, writeManifest} from './render-lock.mjs';
 import {FxStageError, FX_TMP_PREFIX, pruneFxTemp, runFxPipeline} from './fx-pipeline.mjs';
 import {appendRunLog, classifyExit, formatSummary, readRunLog, RUN_LOG_REL, summarize} from './render-log.mjs';
+import {writeSilentNarration} from './silent-audio.mjs';
+import {resolveBrowserExecutable} from './browser-exec.mjs';
 import {killTree} from './kill-tree.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -146,7 +148,9 @@ const npmInvocation = () => {
   const cli = candidates.find((candidate) => fs.existsSync(candidate));
   // 找不到随 Node 安装的 npm-cli.js 时退回 npm.cmd——但 Node 18+ 禁止直接 spawn .cmd（EINVAL），
   // 必须经 shell，所以把 shell 需求一起带出去。
-  return cli ? {command: process.execPath, prefix: [], shell: false} : {command: 'npm.cmd', prefix: [], shell: true};
+  // 找到 npm-cli.js 时要把它的路径放进 prefix（`node <npm-cli.js> ci …`）；
+  // 漏了它就变成 `node ci`，Node 会把 ci 当入口模块找，报 MODULE_NOT_FOUND。
+  return cli ? {command: process.execPath, prefix: [cli], shell: false} : {command: 'npm.cmd', prefix: [], shell: true};
 };
 
 const runNpm = (args, options = {}) => {
@@ -742,17 +746,6 @@ const runRemotionFiltered = (nodeArgs, cwd, {quiet = false, measure = true, pers
 
 // 3.9.0：浏览器路径解析抽出来给 render / still 共用。以前这段埋在 remotionRender 里，
 // `sweep` 要起 still 就得抄一遍——抄第二遍的时候一定会漏掉"缓存存在就别下载"这条。
-const resolveBrowserExecutable = () => {
-  let browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE;
-  if (!browserExecutable && process.platform === 'win32') {
-    const cached = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'remotion-browser', 'chrome-headless-shell', 'win64', 'chrome-headless-shell.exe');
-    if (fs.existsSync(cached)) browserExecutable = cached;
-  }
-  if (!browserExecutable) return null;
-  const resolved = resolvePath(browserExecutable);
-  if (!fs.existsSync(resolved)) fail(`REMOTION_BROWSER_EXECUTABLE does not exist: ${resolved}`);
-  return resolved;
-};
 
 // 统一的 --props 组装：Remotion 的 --props 只接受一次，而 nvFx（fx.args 里）/ hideCaptions（poster）/
 // nvReducedMotion（--reduced-motion）各有来源，必须合并成一个对象再写临时文件传。
@@ -1112,6 +1105,11 @@ const preview = async (argv) => {
   const fxMode = opt('fx', 'off') === 'on' ? 'auto' : 'off';
   const label = shotId ? `shot-${shotId}` : `f${start}-${end}`;
   const output = path.join(project, 'renders', `preview-${label}.mp4`);
+  // 没有旁白就补静音占位：preview 是「看画面」，不该因为还没跑 tts 就卡住。
+  // 与 --stills 走同一条 ffmpeg（scripts/silent-audio.mjs）；正式渲染前仍要跑 notebook-video tts。
+  if (writeSilentNarration(project, (Number(totalFrames || end) / fps + 0.5).toFixed(2))) {
+    console.log('preview：没有 audio/narration.mp3，先用静音占位（只用于预览；正式渲染前跑 notebook-video tts）');
+  }
   await syncProjectAssets([project]);
   const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
   const started = Date.now();
