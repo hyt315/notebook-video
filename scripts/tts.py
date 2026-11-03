@@ -13,7 +13,8 @@
 引擎：
   · edge  微软 Edge 在线语音（pip install edge-tts；需要联网）。词级时间来自 WordBoundary。
   · file  用户自备录音 / 别家 TTS：把音频放到 audio/narration.mp3，再跑本脚本。
-          没有词级对齐时按字数均分（estimated=true），字幕会对齐到句子级。
+          没有词级对齐时按字数均分（estimated=true，标点也占时长）——字幕仍按这个估计时间排，
+          只能大致对上，正式交付请用 edge 引擎或自己对时间。
 
 失败一律 rc=3 并给出**两条可走的路**（装 edge-tts / 换 --engine=file），
 不许悄悄退回静音占位——那正是旧版"成片没人说话"的来源。
@@ -269,6 +270,26 @@ def main() -> int:
             "synthesized_at": datetime.now().isoformat(timespec="seconds"),
             "words": len(words), "lines": len(lines)}
     meta_p.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # 3.5.1：手写场景路线（没有 manifests/fusion.json = 不是 compose 生成的工程）没人会重建字幕，
+    # 不重建 validate-caption-sync 必挂（spec §5 E8）。auto 路线由 compose 按词级时间重排，这里不动。
+    if not (project / "manifests" / "fusion.json").is_file():
+        lines_txt = project / "manifests" / "semantic-caption-lines.txt"
+        cues_out = project / "manifests" / "caption-cues.json"
+        if lines_txt.is_file():
+            cmd = [sys.executable, str(Path(__file__).with_name("build-semantic-captions.py")),
+                   str(project / "audio" / "narration.mp3.json"), str(lines_txt), str(cues_out)]
+            phrases = project / "manifests" / "protected-caption-phrases.txt"
+            if phrases.is_file():
+                cmd += ["--protected-phrases", str(phrases)]
+            r = subprocess.run(cmd, capture_output=True, text=True)
+            if r.returncode != 0:
+                return fail("✗ 字幕没能按新旁白重建：\n" + (r.stderr or r.stdout)[-800:]
+                            + "\n  手动重跑：python scripts/build-semantic-captions.py audio/narration.mp3.json manifests/semantic-caption-lines.txt manifests/caption-cues.json")
+            (project / "src").mkdir(exist_ok=True)
+            shutil.copyfile(cues_out, project / "src" / "caption-cues.json")
+            print(f"tts：手写工程 → 已按词级时间重建字幕 {cues_out.relative_to(project)}（并同步到 src/）")
+        else:
+            print("tts：⚠ 没有 manifests/semantic-caption-lines.txt，字幕没有重建；validate-caption-sync 会失败", file=sys.stderr)
     marker = project / "audio" / ".silent-placeholder"
     if marker.exists():
         marker.unlink()

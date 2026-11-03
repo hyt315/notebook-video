@@ -61,6 +61,45 @@ class TtsFileEngine(unittest.TestCase):
             self.assertIn("--engine=edge", r.stderr)
 
 
+@unittest.skipUnless(FFMPEG, "需要 ffmpeg 生成占位音频")
+class HandwrittenCaptionRebuild(unittest.TestCase):
+    """T-P0-06：手写场景路线跑完 tts 要自动重建字幕，auto 路线不许动。"""
+
+    def _project(self, td: str, *, fusion: bool) -> Path:
+        project = Path(td)
+        (project / "audio").mkdir()
+        (project / "manifests").mkdir()
+        (project / "narration.txt").write_text("你好，世界。\n第二句。\n", encoding="utf-8")
+        (project / "manifests" / "semantic-caption-lines.txt").write_text("你好，世界。\n第二句。\n", encoding="utf-8")
+        if fusion:
+            (project / "manifests" / "fusion.json").write_text("{}", encoding="utf-8")
+        subprocess.run([FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+                        "-i", "anullsrc=r=48000:cl=mono", "-t", "3", "-q:a", "9",
+                        str(project / "audio" / "narration.mp3")], check=True, timeout=60)
+        return project
+
+    def test_handwritten_rebuilds_cues(self):
+        with tempfile.TemporaryDirectory() as td:
+            project = self._project(td, fusion=False)
+            r = subprocess.run([sys.executable, str(TTS), str(project), "--engine=file"],
+                               capture_output=True, text=True, timeout=120)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("已按词级时间重建字幕", r.stdout)
+            cues = project / "manifests" / "caption-cues.json"
+            self.assertTrue(cues.is_file(), "没有产出 caption-cues.json")
+            self.assertEqual(cues.read_bytes(), (project / "src" / "caption-cues.json").read_bytes(),
+                             "src/ 里的字幕副本没同步")
+
+    def test_auto_project_is_left_alone(self):
+        with tempfile.TemporaryDirectory() as td:
+            project = self._project(td, fusion=True)
+            r = subprocess.run([sys.executable, str(TTS), str(project), "--engine=file"],
+                               capture_output=True, text=True, timeout=120)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertNotIn("重建字幕", r.stdout, "auto 工程由 compose 重排，不该在这里重建")
+            self.assertFalse((project / "manifests" / "caption-cues.json").exists())
+
+
 class Retime(unittest.TestCase):
     def test_cues_and_shots_follow_tts(self):
         cs = load_compose()
