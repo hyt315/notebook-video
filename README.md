@@ -24,10 +24,11 @@
 你说「做一支讲哈希表的科普视频」，它就按这里的蓝图、模板和门禁，用 **React + TypeScript + [Remotion](https://www.remotion.dev/)**
 做出一支 30 秒到数分钟的中文讲课视频，并交付 MP4 和整套可改的源码工程。
 
+- **草稿纸讲解**：画面上没有笔，讲到哪，长到哪——每样东西在旁白讲到它时才出现，文字左→右展开，线稿按部位描出，圈注随讲随画；同一时刻最多 2 样在长（规则见 references/reveal-rules.md）。
 - **手账页承载，不是幻灯片**：镜头只有两种——**手账页**（贴一张真实档案图版 / 藏品照片，配放大镜、手写标注和朱印）
   和**组件**（控制台、代码差异、清单、数字行、柱条、结论条……）。**线稿是可选项**，只用来画「标本示意图」：
   一条讲不清概念的剪贴画，比不画更糟——所以它退回页内小图（`content.figure`，画宽 ≤19%），不再当镜头主角。
-- **镜头会跟着讲**：引擎级虚拟摄影机缺省缓推，讲到哪个词就推近到对应组件或线稿部位，换镜用甩镜 / 推穿；推近时给线稿留边，不切断图。
+- **镜头会跟着讲**：引擎级虚拟摄影机缺省缓推，讲到哪个词就推近到对应组件（线稿镜头只做 1.00→1.03 慢推，不切图），换镜用甩镜 / 推穿；推近时给线稿留边，不切断图。
 - **弱模型也能复刻**：7 个融合配方决定「线稿摆哪、卡片多大」，作者只填内容；10 个讲课蓝图（5 个组件路线 + 5 个手作结构族）逐镜写好该用的骨架与组件，加上黄金样例、短流程和一条命令；能客观判断的问题，引擎直接自动修。
 
 - **一本手账一张纸、评审先于成片**：手作皮肤默认 `bgMode: "chapter"`（每章一张纸，章内沿用；`"film"` 全片一张、`"shot"` 逐镜轮换），
@@ -51,7 +52,7 @@
 | **手账页 + 组件** | 两种镜头交替：手账页承载真东西（档案图版、放大镜、手写、朱印），组件负责讲清；线稿可选（仅标本示意图，`content.figure` ≤19% 画宽）；`validate-fusion` 按「手账页 + 组件」配比核对 |
 | **组件场景** | 4 种骨架（Stage / Split / Zoom / Corridor）+ 组件库（`ConsoleWindow`、`DiffView`、`HighlightCode`、`StatRow`、`Funnel`、`ProgressRing`、`KineticNumber`、`StampSeal`、`VerdictBar` 等），配色全部走主题 token |
 | **引擎虚拟镜头** | 每镜缺省缓推；`cinema.focus` 按台词关键词推近到对应组件、镜头横摇；甩镜 / 推穿转场；背景视差；内容太小时自动放大到安全区 60–80%；推近时自动留边，不切断标题 |
-| **对拍音效** | 9 个代码合成的语义音效（CC0，`public/sfx/lib/`），**默认无 BGM**（只有 `treatment.sound.music.use=true` 才加载音乐床，并在音效下闪避）；每条 cue 带 `gain` / `offsetMs`，提前起播让瞬态落在视觉命中帧（±1 帧）；每镜一记、间隔 ≥150 ms；`validate-silence` 核对句间静音与音效电平 |
+| **对拍音效** | 9 个代码合成的语义音效（CC0，`public/sfx/lib/`），**默认无 BGM**（只有 `treatment.sound.music.use=true` 才加载音乐床，并在音效下闪避）；每条 cue 带 `gain` / `offsetMs`，提前起播让瞬态落在视觉命中帧（±1 帧）；每镜一记、间隔 ≥150 ms；`validate-silence` 核对句间静音 |
 | **真实素材** | 截图 / ≤10 秒录屏 / 动图放进 `MediaFrame`（与组件同一套卡片外观，可选浏览器 / 窗口 / 手机外壳，区域推近、描框、旁注、署名徽章）；`prepare-media` 一键转码，`validate-media` 拦糊图与许可缺失 |
 | **弱模型友好** | 7 个融合配方 + 5 个蓝图（concept / code-change / data-compare / process / pitfall），每镜的 `$components` 写明骨架与组件；黄金样例 `examples/`（含 `examples/recipes/`）；未填的 `<<占位符>>` 直接报错 |
 | **一条命令** | `make-video.mjs`：resolve-shots → 门禁 → tsc → 静帧接触表或整片渲染 → `renders/report.md`；Windows 有 `make-video.cmd` |
@@ -67,7 +68,7 @@
 - **手账页成为承载层**。镜头只有两种：手账页（贴真实档案图版 / 藏品照片，配放大镜、手写标注与朱印）和组件（控制台、差异、清单、数字行、柱条、结论条）。线稿退回「页内示意图」，不再当镜头主角。
 - **线稿可选，但仍可解释**。30 个内置线稿、7 种动作保留（`content.figure`，画宽 ≤19%），需要说明「长什么样」时才落在页内；没选题材就不画。`validate-fusion` 改按「手账页 + 组件」配比核对，`validate-glyphs` 仍核对线稿几何不被裁。见 [references/linework.md](references/linework.md)。
 - **TTS 成为正式步骤**。`notebook-video tts <工程>` 默认走 edge-tts，也可 `--engine=file` 用你自己的录音；字幕与镜头按词级时间对齐。没有真实旁白时 `--render` 停在渲染前（静音占位只给 `--stills` 与 `preview`）。
-- **默认无 BGM、音效稀疏**。只有 `treatment.sound.music.use=true` 才加载音乐床；音效库从 16 个收到 9 个，每镜一记、间隔 ≥150 ms，`validate-silence` 核对句间静音与电平。
+- **默认无 BGM、音效稀疏**。只有 `treatment.sound.music.use=true` 才加载音乐床；音效库从 16 个收到 9 个，每镜一记、间隔 ≥150 ms，`validate-silence` 核对句间静音。
 - **渲染锁与断点续渲**。同工程并发渲染互斥；raw 旁写内容指纹，`resume` 只认 `raw-complete` + 指纹一致，断点续渲不会接错片段。
 - **两条新命令**。`clean <工程>`（默认预演、只清白名单、检测到正在渲染就拒绝执行）、`capabilities [--json]`（三档 `full` / `degraded` / `unsupported`，每条缺项给出补它的命令）。
 - **修掉 7 个已复现缺陷**：`sweep` 量不到、未注册定制组件静默出片、代码卡中文豆腐块、单位与柱标签、字幕模式、`treatment` 自相矛盾等；长片与极端输入另抓到并修掉 3 个真崩溃（缺 `value`、空镜、空台词）。
