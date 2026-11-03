@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**Turn one idea into a 16:9 Chinese teaching video: components, line drawings and hand annotations fused in every shot, an engine-level virtual camera that follows the narration, one command to render. Objective gates fix what they can.**
+**Turn one idea into a 16:9 Chinese teaching video: a notebook page carries the real thing, components do the explaining, line drawings are optional — with an engine-level virtual camera that follows the narration, one command to render, and objective gates that fix what they can.**
 
 [![Version](https://img.shields.io/badge/version-3.5.0-1f6feb)](CHANGELOG.md)
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
@@ -25,7 +25,7 @@ ask for "a short explainer on hash tables", and the agent uses the blueprints, t
 multi-minute Chinese teaching video with **React + TypeScript + [Remotion](https://www.remotion.dev/)**. You get the MP4 and the
 full, editable source project.
 
-- **Three fused layers, not slides**: every shot combines a **component layer** that carries the information (consoles, code diffs, checklists, stat rows, bars, verdict strips…), a **line-drawing layer** that lets viewers recognise *what is being talked about* (30 built-in sketches, inked to match the skin), and an **annotation layer** that links the two (hand-drawn circles, underlines, leader lines, handwritten notes). Shots with linework take 30–60 % of the running time, components-only ≤30 %, text-only ≤10 % — and a gate checks it.
+- **A notebook page carries the shot, not slides**: every shot is either a **page** (a real archival plate or specimen photo, a magnifier over it, handwriting and a red seal) or a **component** doing the explaining (consoles, code diffs, checklists, stat rows, bars, verdict strips…). **Line drawings are optional**: they only ever draw a specimen, because a clip-art sketch that fails to explain a concept reads worse than no drawing — so they live inside the page as a figure (`content.figure`, ≤19 % of the drawing width) instead of leading the shot.
 - **The camera follows the narration**: an engine-level virtual camera pushes in by default, moves to the component or sketch part the narration names, and cuts with whip pans or zoom-throughs; push-ins keep margins so the drawing is never cropped.
 - **Reproducible by weaker models**: eight fusion recipes decide where the sketch sits and how big the cards are — the author only fills content. Five teaching blueprints name the skeleton and components for every shot, plus golden examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
 
@@ -54,10 +54,10 @@ One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×108
 | **No shot left unchecked** | `notebook-video sweep <project>` grabs one settled frame per shot and tiles them into `renders/sweep-sheet.jpg` — eight shots in about 60 s, judged by the same empty-space thresholds the render uses. `preview` only covers the opening; on a longer film the tail silently escapes, and this closes that gap |
 | **A delivery is not just an mp4** | A finished render also writes `renders/captions.srt` (the same line breaks burned into the film, not a re-recognition) and `renders/poster.jpg` (a settled frame of `treatment.signature_shot`, with captions suppressed). Standalone: `poster` / `export-srt` / `deliver` |
 | **Compare two cuts** | `eval-project old/ new/` turns a film into comparable numbers (shot-length spread, variety of skeletons / media / transitions, camera coverage, caption density, empty-space readings) and prints the delta. No score: thresholds live in the gates, in one place only |
-| **Three-layer fusion** | Components (information) + line drawings (recognition) + annotations (connection); 30 built-in sketches and 7 actions (enter / point / drop / swap / count / mark / exit), inked to match the skin. `validate-fusion` checks the mix and that the subject of the film appears at least once; `validate-glyphs` checks no sketch is cropped |
+| **Page + components** | Two kinds of shots alternate: a notebook page carrying the real thing (archival plate, magnifier, handwriting, seal) and components doing the explaining. Line drawings are optional specimen figures (`content.figure`, ≤19 % of drawing width); `validate-fusion` checks the page-plus-component mix |
 | **Component scenes** | 4 skeletons (Stage / Split / Zoom / Corridor) and a component library (`ConsoleWindow`, `DiffView`, `HighlightCode`, `StatRow`, `Funnel`, `ProgressRing`, `KineticNumber`, `StampSeal`, `VerdictBar`, …), all coloured from theme tokens |
 | **Virtual camera** | Default slow push-in per shot; `cinema.focus` pushes to the component a keyword names and pans between targets; whip / zoom-through transitions; background parallax; small content is enlarged to 60–80 % of the safe area; push-ins keep margins so titles are never cut |
-| **On-the-beat SFX** | 16 code-synthesised semantic sounds (CC0, `public/sfx/lib/`), **no BGM by default** (a music bed loads only when `treatment.sound.music.use=true`, and ducks under each cue); every cue carries `gain` / `offsetMs` and is pre-rolled so its transient lands on the visual hit (±1 frame); ≥150 ms spacing, ≈24/min cap; `validate-silence` checks inter-sentence silence and SFX level |
+| **On-the-beat SFX** | 9 code-synthesised semantic sounds (CC0, `public/sfx/lib/`), **no BGM by default** (a music bed loads only when `treatment.sound.music.use=true`, and ducks under each cue); every cue carries `gain` / `offsetMs` and is pre-rolled so its transient lands on the visual hit (±1 frame); ≥150 ms spacing, ≈24/min cap; `validate-silence` checks inter-sentence silence and SFX level |
 | **Real media** | Screenshots, ≤10 s recordings and GIFs inside `MediaFrame` (same card look as the components, optional browser / window / device chrome, region zoom, highlight boxes, callouts, credit badge); `prepare-media` transcodes, `validate-media` blocks blurry or unlicensed media |
 | **Weak-model friendly** | 8 fusion recipes + 5 blueprints (concept / code-change / data-compare / process / pitfall) with a per-shot `$components` pick; golden examples in `examples/` (including `examples/recipes/`); unfilled `<<placeholders>>` fail loudly |
 | **One command** | `make-video.mjs`: resolve-shots → gates → tsc → stills contact sheet or full render → `renders/report.md`; `make-video.cmd` on Windows |
@@ -66,13 +66,14 @@ One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×108
 
 ## What's new in 3.5.0
 
-- **Three-layer fusion.** Components carry the information, a line drawing makes the subject recognisable, hand annotations connect the two. 30 built-in sketches, 7 actions, inked to match the skin, with push-ins that keep the drawing in frame. The mix is gated: linework shots 30–60 %, components-only ≤30 %, text-only ≤10 %, and the film's subject must appear at least once. See [references/linework.md](references/linework.md).
-- **Eight fusion recipes.** `sketch-readout`, `component-annotated`, `before-after`, `hammer` and four more decide the layout and where the sketch sits; the author only fills content. See [references/recipes.md](references/recipes.md).
+- **The notebook page carries the shot.** Two kinds of shots: a page (a real archival plate or specimen photo, a magnifier, handwriting, a red seal) and components doing the explaining (consoles, diffs, checklists, stat rows, bars, verdict strips). Line drawings step back to an in-page figure instead of leading the shot.
+- **Line drawings are optional but still explainable.** 30 built-in sketches and 7 actions remain (`content.figure`, ≤19 % of drawing width), used only when a shot has to show what something looks like; no subject, no drawing. `validate-fusion` now checks the page-plus-component mix, and `validate-glyphs` still checks that no sketch is cropped. See [references/linework.md](references/linework.md).
 - **TTS is a real step.** `notebook-video tts <project>` uses edge-tts by default, or `--engine=file` for your own recording; captions and shot timing align to word-level time. Without real narration `--render` stops before rendering (a silent placeholder is only for `--stills` and `preview`).
-- **No BGM by default, sparse SFX.** A music bed loads only when `treatment.sound.music.use=true`; effects sit under the voice, spaced ≥150 ms, and `validate-silence` checks inter-sentence silence and levels.
-- **Seven reproduced defects fixed**: `sweep` measuring nothing, unregistered custom components rendering silently, CJK tofu in code cards, unit and bar labels, caption mode, self-contradictory `treatment`, each with a negative test.
+- **No BGM by default, sparse SFX.** A music bed loads only when `treatment.sound.music.use=true`; the effect library shrank from sixteen cues to nine, one hit per shot, ≥150 ms apart, and `validate-silence` checks inter-sentence silence and levels.
+- **Render lock and resumable renders.** Rendering the same project twice at once is refused; a content fingerprint is written next to the raw output, and `resume` only accepts `raw-complete` plus a matching fingerprint, so a resumed render can never splice the wrong segment.
+- **Two new commands.** `clean <project>` (dry-run by default, whitelist only, refuses while a render is running) and `capabilities [--json]` (three tiers — `full` / `degraded` / `unsupported` — each gap naming the command that fixes it).
+- **Seven reproduced defects fixed**: `sweep` measuring nothing, unregistered custom components rendering silently, CJK tofu in code cards, unit and bar labels, caption mode, self-contradictory `treatment`. Long films and extreme inputs surfaced three real crashes as well (missing `value`, empty shot, empty narration), all fixed.
 
-Everything from 3.4.0 — `preview`, `sweep`, empty-space metrics and the delivery companions — is still here; see [CHANGELOG.md](CHANGELOG.md).
 
 ## Quick start
 
