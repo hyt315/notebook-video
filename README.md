@@ -54,7 +54,7 @@
 | **引擎虚拟镜头** | 每镜缺省缓推；`cinema.focus` 按台词关键词推近到对应组件、镜头横摇；甩镜 / 推穿转场；背景视差；内容太小时自动放大到安全区 60–80%；推近时自动留边，不切断标题 |
 | **对拍音效** | 9 个代码合成的语义音效（CC0，`public/sfx/lib/`），**默认无 BGM**（只有 `treatment.sound.music.use=true` 才加载音乐床，并在音效下闪避）；每条 cue 带 `gain` / `offsetMs`，提前起播让瞬态落在视觉命中帧（±1 帧）；每镜一记、间隔 ≥150 ms；`validate-silence` 核对句间静音 |
 | **真实素材** | 截图 / ≤10 秒录屏 / 动图放进 `MediaFrame`（与组件同一套卡片外观，可选浏览器 / 窗口 / 手机外壳，区域推近、描框、旁注、署名徽章）；`prepare-media` 一键转码，`validate-media` 拦糊图与许可缺失 |
-| **弱模型友好** | 7 个融合配方 + 5 个蓝图（concept / code-change / data-compare / process / pitfall），每镜的 `$components` 写明骨架与组件；黄金样例 `examples/`（含 `examples/recipes/`）；未填的 `<<占位符>>` 直接报错 |
+| **弱模型友好** | 7 个融合配方 + 10 个蓝图（5 个组件路线 + 5 个手作结构族），每镜的 `$components` 写明骨架与组件；黄金样例 `examples/`（含 `examples/recipes/`）；未填的 `<<占位符>>` 直接报错 |
 | **一条命令** | `make-video.mjs`：resolve-shots → 门禁 → tsc → 静帧接触表或整片渲染 → `renders/report.md`；Windows 有 `make-video.cmd` |
 | **交付不只是一个 mp4** | 整片渲完自动再出 `renders/captions.srt`（画面里那套断句，不是重新识别）和 `renders/poster.jpg`（取 `treatment.signature_shot` 的落定帧，且不画字幕）。单独重出：`poster` / `export-srt` / `deliver` |
 | **改完能对比** | `eval-project 旧工程 新工程` 把片子拆成可比的数据（镜长分布、版式 / 介质 / 转场种类、运镜覆盖、字幕密度、空场读数）并给 Δ。**不打分**：阈值只在门禁里存一处 |

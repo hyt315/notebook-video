@@ -28,7 +28,7 @@ full, editable source project.
 - **Draft-paper narration**: no pen on screen — things appear only when the voice-over reaches them and grow in progressively: text unfolds left to right, a sketch is traced part by part, annotations are drawn as they are spoken; at most two things grow at once (rules in references/reveal-rules.md).
 - **A notebook page carries the shot, not slides**: every shot is either a **page** (a real archival plate or specimen photo, a magnifier over it, handwriting and a red seal) or a **component** doing the explaining (consoles, code diffs, checklists, stat rows, bars, verdict strips…). **Line drawings are optional**: they only ever draw a specimen, because a clip-art sketch that fails to explain a concept reads worse than no drawing — so they live inside the page as a figure (`content.figure`, ≤19 % of the drawing width) instead of leading the shot.
 - **The camera follows the narration**: an engine-level virtual camera pushes in by default, moves to the component the narration names (a sketch shot only does a 1.00→1.03 slow push-in, never a crop), and cuts with whip pans or zoom-throughs; push-ins keep margins so the drawing is never cropped.
-- **Reproducible by weaker models**: seven fusion recipes decide where the sketch sits and how big the cards are — the author only fills content. Five teaching blueprints name the skeleton and components for every shot, plus golden examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
+- **Reproducible by weaker models**: seven fusion recipes decide where the sketch sits and how big the cards are — the author only fills content. Ten teaching blueprints (five component routes + five hand-made structure families) name the skeleton and components for every shot, plus golden examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
 
 - **One paper per notebook, review before render**: hand-made skins default to `bgMode: "chapter"` (one paper per chapter; `"film"` keeps one for the whole film, `"shot"` rotates per shot), and decorative `busy` backgrounds stay off regular shots; `resolve-shots` generates `storyboard.md` from the real shot table for the independent review; for hand-made skins `make-video --render` stops until a review round is recorded (drafts pass `--skip-review`); without running TTS, caption timing is estimated at the reading pace `--cps` (default 6.5 chars/s); use `notebook-video tts` to get word-level timing for a real film.
 
@@ -210,7 +210,7 @@ Details: [references/composition-gate.md](references/composition-gate.md), [refe
 notebook-video/
 ├── SKILL.md                     # Skill entry point: the 5-step workflow (what the agent reads)
 ├── manifest.json                # Name, version, licence
-├── blueprints/                  # 5 teaching blueprints (concept / code-change / data-compare / process / pitfall)
+├── blueprints/                  # 10 teaching blueprints (5 component routes + 5 hand-made structure families)
 ├── examples/                    # Golden story.json examples, a real-media example, the weak-model test
 ├── assets/
 │   ├── lecture-template/        # The only project template (Remotion + React + TS)
@@ -235,6 +235,18 @@ notebook-video/
 - **Does the story.json draft look as good as hand-written scenes?** Close, but not identical: draft layouts are drawn by `auto.tsx`. Use hand-written component scenes for delivery.
 - **Is rendering slow?** Check with `--stills` first (key frames only). Full renders default to 1920×1080 delivery.
 - **Are demo videos included?** No. To keep the repository light, rendered demos are not committed; run `--stills` to see the look locally.
+
+## Making the skill package
+
+Do not zip the whole working directory (`.git`, caches and local projects are not skill runtime content). Use the whitelist packager:
+
+```bash
+python scripts/package-skill.py --check-only   # only check the manifest and local links in SKILL.md
+python scripts/package-skill.py                # write dist/notebook-video-skill.zip
+python scripts/package-skill.py --include-fonts --output dist/notebook-video-offline.zip
+```
+
+The default package holds the entry point, runtime scripts, template, blueprints, examples and reference material; it leaves out `.git`, tests, caches, rendered output, release history and the large on-demand fonts. Use `--include-fonts` only when you need a fully offline run.
 
 ## Contributing
 
