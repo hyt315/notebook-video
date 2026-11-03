@@ -273,8 +273,15 @@ _PY_STAGE_CY = r'^STAGE_CX,\s*STAGE_CY\s*=\s*[\d.]+,\s*([\d.]+)'
 _TS_STAGE_CX = r'STAGE = \{[^}]*cx:\s*([\d.]+)'
 _TS_STAGE_CY = r'STAGE = \{[^}]*cy:\s*([\d.]+)'
 _NUM_DUAL_PAIRS = (
-    # 3.3.0 卷页转场时长：合成（src/fx.tsx）⇄ 渲染器拼接窗口（scripts/fx-browser.mjs）。窗口比转场短 → 拼接处露出退回的 slide
-    ('CURL_FRAMES fx.tsx vs fx-browser.mjs', 'assets/lecture-template/src/fx.tsx', r'export const CURL_FRAMES\s*=\s*(\d+)', 'scripts/fx-browser.mjs', r'^export const CURL_FRAMES\s*=\s*(\d+)'),
+    # 3.9.0 行高下限：排版端 SAFE_LH（story_text，P2-24 起从 compose-story 切出）⇄ 渲染端 Lines 的 safeLh（auto.tsx）。
+    # 两边必须同数：排版按更小的 lh 算框高 → 下一行压进上一行的行盒（OverlapGate 硬拦）。
+    ('SAFE_LH story_text vs auto.tsx safeLh', 'scripts/story_text.py', r'^SAFE_LH\s*=\s*([\d.]+)',
+     'assets/lecture-template/src/auto.tsx', r'safeLh\s*=\s*Math\.max\(lh,\s*([\d.]+)\)'),
+
+    # 3.3.0 卷页转场时长：合成（src/fx.tsx）⇄ 转场计划（scripts/transition-plan.mjs，3.9.0 起窗口由它算）。
+    # 窗口比转场短 → 拼接处露出退回的 pageflip。
+    # P2-23：渲染侧真源搬到 transitions/meta.ts（fx.tsx 只 re-export）
+    ('CURL_FRAMES meta.ts vs transition-plan.mjs', 'assets/lecture-template/src/transitions/meta.ts', r'export const CURL_FRAMES\s*=\s*(\d+)', 'scripts/transition-plan.mjs', r'^export const CURL_FRAMES\s*=\s*(\d+)'),
     # 字号绝对地板：data.tsx「反推低于它就不画字」⇄ G-3 地板（判据侧注释自证口径 = MIN_LABEL_FONT）
     ('MIN_LABEL_FONT vs FONT_FLOOR', _TS_DATA, r'export const MIN_LABEL_FONT\s*=\s*([\d.]+)', _PY_PRESENT, r'^FONT_FLOOR\s*=\s*([\d.]+)'),
     # 舞台中心三写（shotkit ⇄ motion ⇄ resolve），两对比对
@@ -295,6 +302,51 @@ _NUM_DUAL_PAIRS = (
     ('FPS vs presentation FPS', _TS_INDEX, r'(?<!\w)FPS\s*=\s*([\d.]+)', _PY_PRESENT, r'^FPS\s*=\s*([\d.]+)'),
     ('FPS vs motion-gaps FPS', _TS_INDEX, r'(?<!\w)FPS\s*=\s*([\d.]+)', _PY_GAPS, r'^FPS\s*=\s*([\d.]+)'),
 )
+
+
+def check_version_metadata() -> list[str]:
+    """版本号只能有**一处**权威：manifest.json。
+
+    SKILL.md 的 frontmatter 是用户第一眼看到的版本，ZIP 里 BUILD-MANIFEST.json 也写这个号；
+    三处各写一遍，迟早漂移（实测漂过：manifest 3.4.0 时模板 package.json 还是 3.3.0）。
+    """
+    problems: list[str] = []
+    try:
+        version = json.loads((SKILL / 'manifest.json').read_text(encoding='utf-8')).get('version')
+    except (OSError, ValueError) as exc:
+        return [f'manifest.json 读不出版本：{exc}']
+    if not version:
+        return ['manifest.json 没有 version 字段']
+    try:
+        head = (SKILL / 'SKILL.md').read_text(encoding='utf-8')[:2000]
+    except OSError as exc:
+        return [f'SKILL.md 读不到：{exc}']
+    m = re.search(r'^version:\s*(\S+)\s*$', head, re.M)
+    if not m:
+        return ['SKILL.md frontmatter 里没有 version:']
+    if m.group(1) != version:
+        problems.append(f'版本漂移：manifest.json {version} vs SKILL.md {m.group(1)}')
+    return problems
+
+
+def check_linework_geometry() -> list[str]:
+    """线稿取景框必须盖得住图形，生成的缺省框必须与 library.ts 同步。
+
+    两个错误都只在画面里出现、不报错：fit 小于内容 → 特写只剩半边；crops.ts 落后于库 →
+    选中新部位时框住的是别处。后者是"生成物没重跑"，和 shots.ts 与 shots.json 不同步是同一类。
+    """
+    sys.path.insert(0, str(SKILL / 'scripts'))
+    import linework_index as li  # 延迟导入：--root 夹具里可能没有 scripts/
+
+    problems: list[str] = []
+    errors, _notes = li.geometry_problems()
+    problems.extend(f'linework geometry: {e}' for e in errors)
+    crops = SKILL / 'assets' / 'lecture-template' / 'src' / 'linework' / 'crops.ts'
+    if not crops.is_file():
+        problems.append(f'缺少 {crops.relative_to(SKILL)}（跑 python scripts/linework_index.py --write-crops）')
+    elif crops.read_text(encoding='utf-8') != li.render_part_crops(li.part_crops()):
+        problems.append('src/linework/crops.ts 与 library.ts 不同步（跑 python scripts/linework_index.py --write-crops）')
+    return problems
 
 
 def check_numeric_dual_source() -> list[str]:
@@ -468,9 +520,11 @@ def main() -> None:
                 problems.append(f"broken link: {p.relative_to(SKILL)} -> {link}")
 
     problems.extend(check_doc_identifiers())
+    problems.extend(check_version_metadata())
     problems.extend(check_enum_dual_source())
     problems.extend(check_canvas_mode_dual_source())
     problems.extend(check_numeric_dual_source())
+    problems.extend(check_linework_geometry())
 
     if problems:
         for problem in problems:

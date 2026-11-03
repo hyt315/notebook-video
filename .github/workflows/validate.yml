@@ -67,6 +67,21 @@ jobs:
         # 「名存实亡的门禁是最危险的缺陷」——这一条保障每道门禁都有"喂坏输入必须拦住"的实证。
         # 脚本自己找模板（`SKILL/assets/lecture-template`），不吃参数——别再传一个没用的路径进来。
         run: python3 scripts/negative-gate-check.py
+      - name: Upload package is reproducible and whitelisted
+        # P2-27：两次构建必须字节一致（否则发布记录里的 SHA 只是偶然值）；白名单外的东西
+        # （tests / .git / node_modules / 缓存）不能混进去；排版链路的模块一个都不能少。
+        run: python3 scripts/dev/package-repro-check.py
+      - name: Render lock is exclusive across processes
+        # P2-27：同工程并发渲染必须被拦。单元测试只覆盖「同进程两次取锁」，
+        # 而真正的风险是两个终端同时跑 render 争用同一个 raw 文件。这里起两个真实 OS 进程，
+        # 验三件事：第二个必须失败、失败时能报出持锁 pid、holder 退出后不留残锁。
+        run: node scripts/dev/render-lock-smoke.mjs
+      - name: Security and licence audit
+        # P2-31：四类能在发布前用机器判的问题——依赖许可有没有记录、字体是否随附 OFL、
+        # 有没有敏感文件进库、源码里有没有硬编码凭据。
+        run: |
+          python3 scripts/dev/security-audit.py
+          python3 scripts/dev/gen-dependency-licences.py --check
       - name: Check overlay coordinates (out-of-canvas fails; "frame or card?" is warn-only)
         # ⚠️ 名字必须与命令一致（复核抓到上一版写着 strict mode 却没传 --strict）。
         # 现状：`OFF-CANVAS` 本身 rc=1；而 `VERIFY-FRAME` 类 WARN 在标准模板上还剩 1 条
@@ -99,6 +114,10 @@ jobs:
             assets/lecture-template/manifests/protected-caption-phrases.txt \
             --budoux-dir assets/lecture-template/node_modules \
             --require-budoux
+      - name: Media semantics behavior test
+        # 单元测试跑在 npm ci 之前，只能用源码契约锁接线；esbuild 装好后再跑一次真正的
+        # planSfx：五皮肤同一镜头，flat/cel 必须保留 UI 音，手作皮肤才映射纸片拟音。
+        run: python3 -m unittest tests.test_media_semantics -v
       - name: Smoke-test project creation
         run: |
           mkdir "$RUNNER_TEMP/notebook-video-smoke"

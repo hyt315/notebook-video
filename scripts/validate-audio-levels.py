@@ -32,6 +32,7 @@ import hashlib
 import json
 import os
 import re
+import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -76,6 +77,50 @@ def ebur128_loudness(path: Path) -> tuple[float | None, str]:
     return (float(m[-1]) if m[-1] != "-inf" else -99.0), ""
 
 
+def _transient_ms(path: Path) -> float | None:
+    """听感「命中点」= **5 ms RMS 最大值**的位置（毫秒）。
+
+    与 scripts/dev/tune-sfx.py 的量法一致。不能用「最大绝对值采样」：
+    chart 是上升扫弦、chapter 是闪音，它们的峰值在尾巴上，用峰值判会误报 140 ms
+    的同步误差（实测 chart：峰值 188 ms，命中点 45.5 ms）。只用 ffmpeg + 标准库。
+    """
+    try:
+        r = subprocess.run(
+            ["ffmpeg", "-v", "error", "-i", str(path), "-f", "s16le", "-ac", "1", "-ar", "48000", "-"],
+            capture_output=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    raw = r.stdout
+    if len(raw) < 8:
+        return None
+    n = len(raw) // 2
+    samples = struct.unpack(f"<{n}h", raw[: n * 2])
+    win = 240  # 5 ms @ 48 kHz
+    best_i, best_v = 0, 0.0
+    for i in range(0, max(1, n - win)):
+        v = 0.0
+        for j in range(i, min(i + win, n)):
+            v += samples[j] * samples[j]
+        if v > best_v:
+            best_v, best_i = v, i
+    return best_i / 48.0
+
+
+def _sync_transient(p0: list[str], f: Path, meta: dict, offset_ms, where: str) -> None:
+    """offsetMs 必须对准文件的真实瞬态：差 > 2 帧（66.7 ms）→ 拦。
+    P2-20 验收「动作音与视觉事件差 ≤2 帧」。量错 offset 的症状是「纸翻了半秒后才听见」，
+    比没有音效更糟，所以这里是 P0。"""
+    if offset_ms is None:
+        return
+    got = _transient_ms(f)
+    if got is None:
+        return  # 解码失败由上面的 measure_fail 覆盖
+    err = abs(got - float(offset_ms))
+    if err > 66.7:  # 2 帧 @30fps
+        p0.append(f"{where} 瞬态在 {got:.1f} ms，但 offsetMs={offset_ms}（差 {err:.0f} ms > 2 帧）"
+                  f"——动作音会偏离视觉事件；用 ffmpeg 找峰值采样位置后改 manifest")
+
+
 def check_library(project: Path, p0: list[str], p1: list[str], checked: list[dict], measure_fail: list[str]) -> None:
     sfx_dir = project / "public" / "sfx"
     man_p = sfx_dir / "sfx-manifest.json"
@@ -112,6 +157,37 @@ def check_library(project: Path, p0: list[str], p1: list[str], checked: list[dic
                 p0.append(f"{e['file']} manifest 响度 {e.get('loudness_lufs_100ms')} LUFS 偏离库目标 {target} 超过容差（库内响度不一致）")
             if pk < PEAK_FLOOR:
                 p0.append(f"{e['file']} 峰值 {pk:.1f} dBFS 低于 {PEAK_FLOOR:.0f} dBFS（素材太轻）")
+        # 瞬态同步（P2-20 验收「动作音与视觉事件差 ≤2 帧」）：
+        # offsetMs 是「文件开头到听感命中点」的距离，引擎按它提前起播。量错了不是音质差，
+        # 是「纸翻了半秒后才听见」——比没有音效更糟。这里拿真实峰值位置对账。
+        _sync_transient(p0, f, e, e.get("offsetMs"), where=e["file"])
+        # 音色变体（P2-20 翻页轮换）：与主文件同一套质量口径
+        for vi, v in enumerate(e.get("variants") or []):
+            vf = project / "public" / v.get("file", "")
+            if not vf.exists():
+                p0.append(f"{ev} 的变体 {v.get('file')} 不存在")
+                continue
+            vh = hashlib.sha256(vf.read_bytes()).hexdigest()
+            if vh != v.get("sha256"):
+                p0.append(f"{v['file']} 的 sha256 与 manifest 不符（变体文件被替换/损坏）")
+            vpk, verr = peak_db(vf)
+            if vpk is None:
+                measure_fail.append(f"{v['file']}: {verr}")
+                continue
+            vlu, verr2 = ebur128_loudness(vf)
+            if vlu is None:
+                measure_fail.append(f"{v['file']}: {verr2}")
+                continue
+            checked.append({"file": v["file"], "peak_db": vpk, "lufs_i": vlu,
+                            "manifest_lufs_100ms": v.get("loudness_lufs_100ms"), "variant_of": ev})
+            if vpk > -0.5:
+                p0.append(f"{v['file']} 峰值 {vpk:.1f} dBFS > -0.5（削波风险）")
+            if vpk < PEAK_FLOOR:
+                p0.append(f"{v['file']} 峰值 {vpk:.1f} dBFS 低于 {PEAK_FLOOR:.0f} dBFS（变体太轻，轮换时会忽大忽小）")
+            if abs(float(v.get("loudness_lufs_100ms", target)) - target) > float(man.get("tolerance_lu", 1.5)):
+                p0.append(f"{v['file']} 响度 {v.get('loudness_lufs_100ms')} LUFS 偏离库目标 {target} 超过容差（变体与主文件响度不一致，轮换会忽大忽小）")
+            _sync_transient(p0, vf, v, v.get("offsetMs") if v.get("offsetMs") is not None else e.get("offsetMs"),
+                            where=v["file"])
     sfx_ts = project / "src" / "sfx.ts"
     if sfx_ts.exists():
         src = sfx_ts.read_text(encoding="utf-8", errors="replace")
@@ -145,6 +221,8 @@ def mix_stats(project: Path) -> dict | None:
     只读工程里的机器可读产物，不解码音频：
       · 密度 = 任意 10 秒窗口内的音效个数上限（sfxEvents 的 at 是镜内帧，加镜起点）；
       · 最近人声间隔 = 每个音效时刻到最近一句人声起止的毫秒距离；
+      · 压人声 = 显式音效时刻正好落在某句旁白的 [start_ms, speech_end_ms] 里面（3.8.0，
+        只统计 sfxEvents；chapter / page 这类自动音效在换镜帧上，实测不与人声重叠）；
       · 混音余量 = 20·log10(1/max(SFX_GAIN))，即最响的一记音效比人声低多少 dB。
     """
     shots_p = project / "manifests" / "shots.json"
@@ -179,6 +257,12 @@ def mix_stats(project: Path) -> dict | None:
             break
         d = min(min(abs(ms - a), abs(ms - b)) for a, b in speech)
         nearest = d if nearest is None else min(nearest, d)
+    # 3.8.0：与「离人声多近」不同，这里要的是「是否盖在说话上」——落在语音区间内部才算。
+    overlap: list[str] = []
+    for t, ev in events:
+        ms = t * 1000.0 / 30.0
+        if any(a < ms < b for a, b in speech):
+            overlap.append(ev)
     atten = None
     sfx_ts = project / "src" / "sfx.ts"
     if sfx_ts.is_file():
@@ -188,6 +272,7 @@ def mix_stats(project: Path) -> dict | None:
             if gains and max(gains) > 0:
                 atten = -20 * __import__("math").log10(max(gains))
     return {"events": len(events), "peak_per_10s": peak10, "nearest_voice_ms": nearest,
+            "voice_overlap": len(overlap), "voice_overlap_events": sorted(set(overlap)),
             "mix_headroom_db": atten, "shots": len(shots)}
 
 def main() -> int:
@@ -283,6 +368,9 @@ def main() -> int:
             print(f"  音效 {mix['events']} 个 / 每 10 秒最多 {mix['peak_per_10s']} 个 / "
                   f"最近人声 {('%.0f ms' % gap) if gap is not None else 'n/a'} / "
                   f"混音余量 {('%.1f dB' % atten) if atten is not None else 'n/a'}")
+            ov = mix["voice_overlap"]
+            names = "、".join(mix["voice_overlap_events"][:4])
+            print(f"  压人声 {ov} 个{('（' + names + '）') if names else ''} —— 落在旁白说话区间里的显式音效")
         print(f"  配乐：{'开（treatment.sound.music.use=true）' if music_on else '关（默认无 BGM）'}")
         for x in p0:
             print(f"  P0 {x}")

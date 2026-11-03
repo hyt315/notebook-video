@@ -37,19 +37,17 @@ BED_LUFS = -30.0         # the optional music bed sits far below everything
 SR = 48000
 
 # event -> (recipe, seed-bank index, description, intended use, options)
+# 3.8.0 瘦身：只留 9 个事件。删掉的 whoosh / click / typing / riser 不再重建
+# （whoosh 已被 page 取代、click 与 highlight 重叠、typing 只服务代码镜、riser 被 earshot 判 no match）。
 PICKS = {
-    "whoosh":    ("whoosh", 25, "a fast clean air whoosh for a slide transition", "shot transition / camera move / handoff", {}),
     #  pop and chart are LAYERED designs (see LAYERS below) - the earlier single-recipe versions read weak
     # under narration (earshot match z 2.49 / 2.47, "weak").
     "pop":       ("layers", "pop", "a punchy round pop with a low thump as an element pops onto the screen", "an element appears (first beat of a shot) / a key number lands", {}),
-    "click":     ("click", 4, "a clean crisp user interface click tap", "a list item, step or toggle lands", {}),
-    "typing":    ("keypress", [0, 6, 7, 8], "a quick run of soft digital keyboard typing ticks", "code / console lines being written", {"burst": True}),
     "success":   ("notify", 13, "a short bright positive success chime, task complete", "check mark, verdict, conclusion lands", {}),
     "error":     ("glitch", 10, "a short low digital error buzz, wrong answer", "a misconception is refuted / wrong value struck", {}),
     "chart":     ("layers", "chart", "a quick rising tonal synth sweep as a bar chart grows", "bars / lines / rings grow", {}),
     "highlight": ("notify", 14, "a light bright ding highlighting a word", "a key word or number is highlighted", {}),
     "chapter":   ("shimmer", 10, "a bright short logo sting chime opening a new chapter", "chapter card / new section", {}),
-    "riser":     ("riser", 1, "a soft short cinematic riser building into a reveal", "builds into a chapter or payoff (ends on the hit)", {"tail": 1.5}),
 }
 
 

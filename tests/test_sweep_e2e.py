@@ -94,5 +94,102 @@ class SweepMeasuresEveryShot(unittest.TestCase):
                                   f"{row.get('id')} 没有 coverage 数据：{row}")
 
 
+
+def gray_stats(path: Path) -> tuple[int, int, float]:
+    """把图解成灰度字节流，返回 (min, max, mean)。不用 numpy/PIL——测试依赖越少越好。"""
+    raw = subprocess.run([FFMPEG, "-v", "error", "-i", str(path), "-f", "rawvideo", "-pix_fmt", "gray", "-"],
+                         capture_output=True, check=True).stdout
+    if not raw:
+        raise AssertionError(f"{path} 解不出像素")
+    lo, hi, total = min(raw), max(raw), sum(raw)
+    return lo, hi, total / len(raw)
+
+
+class FixedFrameSmoke(unittest.TestCase):
+    """P1-15：固定帧冒烟 —— 每镜末帧都必须真渲出来，且不是一块死板的单色。
+
+    为什么不是"渲一张看看"：3.6.2 的第二次事故是 `case 'node'` 里的 CSS 写成了非法的
+    `inset: 0, border: ..., border: ...`，前几镜照常出图、第 566 帧整片崩掉。
+    `--stills` 只截前几镜，front matter 全绿。这条测试把**每一镜的末帧**都渲一遍：
+    崩在中途的 React 错误、空白图层、全透明滤镜，都在这里现形。
+    """
+
+    def test_every_shot_tail_renders_a_real_frame(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        project = Path(tmp.name) / "proj"
+        shutil.copytree(TPL, project,
+                        ignore=shutil.ignore_patterns("node_modules", "renders", "build-test", "*.log"))
+        if not link_node_modules(DEPS, project / "node_modules"):
+            self.skipTest("无法把模板 node_modules 链进临时工程（junction/symlink 不可用）")
+        duration = int(json.loads((TPL / "manifests" / "shots.json").read_text(encoding="utf-8"))["duration"])
+        audio = project / "audio" / "narration.mp3"
+        audio.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run([FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+                        "-i", "anullsrc=r=48000:cl=mono", "-t", f"{duration / 30:.3f}", "-q:a", "9", str(audio)],
+                       check=True, timeout=120)
+        subprocess.run([NODE, str(CLI), "sync", str(project)], check=True,
+                       capture_output=True, text=True, timeout=180)
+
+        # 每镜的真帧号在 resolve-shots 的产物里（sync 会跑它）；模板自带的 shots.json 只有 id 与转场。
+        resolved = json.loads((project / "manifests" / "shots.resolved.json").read_text(encoding="utf-8"))["shots"]
+        out_dir = Path(tmp.name) / "frames"
+        out_dir.mkdir()
+        for shot in resolved:
+            frame = int(shot["to"]) - 1          # 末帧：退场 / 转场 / 收束都在这一段
+            out = out_dir / f"{shot['id']}.jpg"
+            r = subprocess.run([NODE, str(CLI), "poster", str(project), str(out),
+                                f"--frame={frame}", "--scale=0.25"],
+                               capture_output=True, text=True, timeout=300)
+            self.assertEqual(r.returncode, 0,
+                             f"{shot['id']} 第 {frame} 帧渲染失败：\n{r.stdout[-1500:]}\n{r.stderr[-1500:]}")
+            self.assertTrue(out.is_file() and out.stat().st_size > 4000,
+                            f"{shot['id']} 第 {frame} 帧出图太小（{out.stat().st_size if out.is_file() else 0} B）——空白？")
+            lo, hi, mean = gray_stats(out)
+            self.assertGreaterEqual(hi - lo, 24,
+                                    f"{shot['id']} 第 {frame} 帧几乎是单色（{lo}–{hi}，均值 {mean:.0f}）——没画东西")
+            self.assertLess(mean, 250, f"{shot['id']} 第 {frame} 帧几乎全白")
+            self.assertGreater(mean, 8, f"{shot['id']} 第 {frame} 帧几乎全黑")
+
+
+
+class HandmadeSkinSmoke(unittest.TestCase):
+    """手作皮肤（journal）必须能渲出来——缺 NotoSerifSC 时不是"字体回退"，是第 0 帧 NetworkError。
+
+    实测（视觉矩阵）：模板副本直接渲 journal，四镜全部 failed、`sheet: null`，
+    stderr 只有 `NetworkError: A network error occurred`，一个字不提字体。
+    `ensureProjectFonts` 当时只补 LXGW，漏了 serif。这条钉住补齐逻辑。
+    """
+
+    def test_journal_renders_without_manual_font_setup(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        project = Path(tmp.name) / "proj"
+        shutil.copytree(TPL, project,
+                        ignore=shutil.ignore_patterns("node_modules", "renders", "build-test", "*.log"))
+        if not link_node_modules(DEPS, project / "node_modules"):
+            self.skipTest("无法把模板 node_modules 链进临时工程（junction/symlink 不可用）")
+        # 故意先删掉 serif（模板本来也没有，但万一有就复现不了）
+        (project / "public" / "NotoSerifSC-Bold.otf").unlink(missing_ok=True)
+        r = subprocess.run([sys.executable, str(ROOT / "scripts" / "set-skin.py"), str(project), "journal"],
+                           capture_output=True, text=True, timeout=120)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        duration = int(json.loads((TPL / "manifests" / "shots.json").read_text(encoding="utf-8"))["duration"])
+        audio = project / "audio" / "narration.mp3"
+        audio.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run([FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+                        "-i", "anullsrc=r=48000:cl=mono", "-t", f"{duration / 30:.3f}", "-q:a", "9", str(audio)],
+                       check=True, timeout=120)
+        subprocess.run([NODE, str(CLI), "sync", str(project)], check=True,
+                       capture_output=True, text=True, timeout=180)
+        out = Path(tmp.name) / "journal.jpg"
+        r = subprocess.run([NODE, str(CLI), "poster", str(project), str(out), "--frame=60", "--scale=0.25"],
+                           capture_output=True, text=True, timeout=300)
+        self.assertEqual(r.returncode, 0, f"journal 渲染失败：\n{r.stdout[-1500:]}\n{r.stderr[-1500:]}")
+        self.assertTrue(out.is_file() and out.stat().st_size > 4000, "journal 出图为空")
+        self.assertTrue((project / "public" / "NotoSerifSC-Bold.otf").is_file(),
+                        "渲染前必须把 NotoSerifSC 补进工程 public/")
+
+
 if __name__ == "__main__":
     unittest.main()

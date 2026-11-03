@@ -1,5 +1,6 @@
 import React from 'react';
 import {getInputProps, HtmlInCanvas, interpolate, Easing} from 'remotion';
+import {CURL_FRAMES, FX_FALLBACK, PAGETURN_FOLD_DIRECTION, isCurl, type CurlKind} from './transitions/meta';
 import {pageTurn} from '@remotion/effects/page-turn';
 
 // ============================================================================
@@ -15,20 +16,21 @@ import {pageTurn} from '@remotion/effects/page-turn';
 // 纪律：几何参数全是帧的纯函数（interpolate + 固定缓动）；pageTurn 本身无随机 → 同一帧渲两次结果相同。
 // ============================================================================
 
-export type CurlKind = 'pageturn' | 'peel';
+// CurlKind / CURL_FRAMES / PAGETURN_FOLD_DIRECTION / isCurl / FX_FALLBACK 的真源在 transitions/meta.ts
+// （P2-23 解耦：转场元数据一处注册，新增一种转场只改那张表 + 一个实现模块）。这里 re-export 保持旧 API。
+export type {CurlKind};
+export {CURL_FRAMES, PAGETURN_FOLD_DIRECTION, isCurl, FX_FALLBACK};
 
 /** 渲染器探针通过后才为 true（`--props '{"nvFx":"on"}'`）。Studio / 普通 still 缺省 false → 退回旧转场。 */
 export const FX_ENABLED: boolean = (() => {
   try { return (getInputProps() as {nvFx?: string})?.nvFx === 'on'; } catch { return false; }
 })();
 
-/** 不支持 WebGPU 时的退回转场：翻页 → 纸面横移（slide），揭纸 → 新纸落下（drop）。 */
-export const FX_FALLBACK: Record<CurlKind, 'slide' | 'drop'> = {pageturn: 'slide', peel: 'drop'};
+// FX_FALLBACK（无 GPU 退回：翻页→pageflip 折痕翻页，揭纸→drop）与 CURL_FRAMES（22 帧 = 手翻的速度）
+// 已搬到 transitions/meta.ts 的 TRANSITION_META。退回**不等于不翻页**——观众看到的还是「翻过去一张纸」。
 
-/** 翻页比普通转场慢一点：14 帧（0.47 s）翻一页看起来像被风吹走；22 帧（0.73 s）是手翻的速度。 */
-export const CURL_FRAMES = 22;
-
-export const isCurl = (k: string | null | undefined): k is CurlKind => k === 'pageturn' || k === 'peel';
+// PAGETURN_FOLD_DIRECTION（折线方向，近乎竖直、下角领先）与 isCurl 已搬到 transitions/meta.ts。
+// CSS 折页（transitions/pagefold.tsx）与 GPU 卷页（下面的 curlParams）共用那一个方向值。
 
 const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
 const ease = Easing.bezier(0.3, 0, 0.3, 1); // 起手稍慢（掀起页角）、中段匀速、落定柔（实测 0.42/0.22 时中段 8 帧就翻完，看不清卷曲）
@@ -45,7 +47,7 @@ export const curlParams = (kind: CurlKind, p: number) => {
     const t = interpolate(e, [0, 1], [1.24, -0.18], clamp);
     return {foldPosition: [t, t] as [number, number], foldDirection: 315, foldRadius: 110, lightDirection: -45, backPageOpacity: 0.12};
   }
-  return {foldPosition: [interpolate(e, [0, 1], [1.1, -0.16], clamp), 0.5] as [number, number], foldDirection: -78, foldRadius: 150, lightDirection: -40, backPageOpacity: 0.16};
+  return {foldPosition: [interpolate(e, [0, 1], [1.1, -0.16], clamp), 0.5] as [number, number], foldDirection: PAGETURN_FOLD_DIRECTION, foldRadius: 150, lightDirection: -40, backPageOpacity: 0.16};
 };
 
 /**

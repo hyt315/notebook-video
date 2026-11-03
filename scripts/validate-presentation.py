@@ -72,6 +72,14 @@ FONT_LABEL_MIN = 16        # G-3：标注档
 CONTRAST_TEXT = 4.5        # WCAG 2.2 SC 1.4.3 正文
 CONTRAST_LARGE = 3.0       # 大字号（≥24px 或 ≥18.5px 粗体）
 
+# ---- G-18 小屏（360px）语境：桌面原图看着够，缩到手机宽度就不够 ----
+# 视频按 1920 设计，手机播放器宽度约 360 CSS px → 5.33 倍缩。
+# 中文可读下限约 12 CSS px（视网膜屏下物理像素翻倍，仍是最小可读字号）。
+CORE_FONT_FLOOR = 64       # 核心句设计字号地板（= 360px 下 12px）：role=display/hero
+SMALL_SCREEN_W = 360       # 验收口径的缩图宽度
+DESIGN_W = 1920            # 设计画布宽
+SCREEN_READ_BUDGET = 40    # 每镜画面内文字的加权字上限（不含字幕；实测示例 8–30）
+
 # 「彩色填充上的白字」这条只在 --strict 下报（3.9.0）。
 #
 # 它检的是**色板组合**，不是这一片画错了：四套皮肤里 gold / green 承载白字都只有
@@ -422,6 +430,89 @@ def check_readability(project: Path) -> tuple[list, list]:
     return p0, p1
 
 
+
+# ----------------------------------------------------------------------- G-18
+# 小屏（360px）语境：桌面原图看着够 ≠ 手机上读得清。
+#
+# 三条验收（清单 P2-21）：
+#   ① 360px 宽缩图仍能读核心句  → 核心句（role=display/hero）字号 ≥ CORE_FONT_FLOOR
+#   ② 对比度与阅读预算不只看桌面原图 → 阅读预算按「每镜画面文字总量」算；
+#      对比度把「大字 3:1」的豁免按缩图换算（设计 64px 缩到 360px 是 12px = 小字，不能按大字放行）
+#   ③ 减少动态后内容顺序完整 → 不在本检查里（那是渲染侧的 reduced-motion，见 auto.tsx / cinema.tsx）
+#
+# 输入用 `src/story.ts` 的 STORY 表（compose 产物，有结构化的 role/size），
+# 不用正则扫源码——f-string id 那次已经证明源码扫描会漏判。
+def load_story_table(project: Path) -> dict | None:
+    f = project / "src" / "story.ts"
+    if not f.is_file():
+        return None
+    text = f.read_text(encoding="utf-8")
+    key = "export const STORY"
+    if key not in text:
+        return None
+    try:
+        start = text.index("{", text.index(key))
+        return json.loads(text[start:text.rindex("}") + 1])
+    except (ValueError, json.JSONDecodeError):
+        return None
+
+
+def check_small_screen(project: Path) -> tuple[list, list]:
+    p0, p1 = [], []
+    story = load_story_table(project)
+    if story is None:
+        return p0, p1                # 没产物：与 check_readability 同口径，静默跳过
+
+    # ① 核心句地板：role=display/hero 是每镜的主信息，缩到 360px 后必须仍 ≥12px 可读
+    for sid, shot in story.items():
+        for e in shot.get("elements") or []:
+            role = str(e.get("role") or "")
+            size = e.get("size") or 0
+            if role in ("display", "hero") and size and size < CORE_FONT_FLOOR:
+                p0.append({"id": sid, "issue": (
+                    f"{sid}.{e.get('id')}: 核心句（role={role}）字号 {size} < {CORE_FONT_FLOOR} —— "
+                    f"缩到 {SMALL_SCREEN_W}px 宽只有 {size * SMALL_SCREEN_W / DESIGN_W:.1f}px（可读下限 12px）。"
+                    f"要么升到 {CORE_FONT_FLOOR}px 以上，要么把这句话降级成辅助文字（role=muted）")})
+
+    # ② 阅读预算：一屏里观众要读的所有画面文字（不含字幕）的加权字总量。
+    #    小屏下没有「扫一眼就知道全貌」的余地，超过预算就是「读不完就得定格」。
+    for sid, shot in story.items():
+        total = 0.0
+        parts = []
+        for e in shot.get("elements") or []:
+            txt = e.get("text") or ""
+            if e.get("lines"):
+                txt = "".join(e["lines"])
+            wl = weighted_len(txt)
+            if wl > 0:
+                total += wl
+                parts.append(f"{e.get('id')}:{wl:.0f}")
+        if total > SCREEN_READ_BUDGET:
+            p1.append({"id": sid, "issue": (
+                f"{sid}: 画面文字 {total:.0f} 加权字 > 小屏阅读预算 {SCREEN_READ_BUDGET}"
+                f"（{' / '.join(parts[:6])}{' 等' if len(parts) > 6 else ''}）—— "
+                f"手机上一屏读不完；拆镜、删辅助文字，或把次要说明挪进旁白")})
+
+    # ③ 小屏对比度：「大字 3:1」的豁免按缩图换算后不成立。
+    #    设计 64px 缩到 360px 是 12px（小字），WCAG 的「大字」门槛是 24px normal / 18.5px bold——
+    #    也就是说**缩图语境下几乎没有大字**，muted 那类「按 3:1 可接受」的配对要重新按 4.5:1 复核。
+    #    这里只提示不阻断：muted 是装饰性 kicker，本身不是核心信息；但要在小屏口径下被看见。
+    for tf in sorted((project / "src" / "theme").glob("*.tsx")) if (project / "src" / "theme").is_dir() else []:
+        pal = parse_palette(tf)
+        if not pal:
+            continue
+        hexed = {k: v for k, v in pal.items() if isinstance(v, str) and v.startswith("#")}
+        surfaces = ["paper", "paperWarm", "paperBase"]
+        if "muted" in hexed:
+            w = min(((contrast(hexed["muted"], hexed[bg]), bg) for bg in surfaces if bg in hexed), default=None)
+            if w and CONTRAST_LARGE <= w[0] < CONTRAST_TEXT:
+                p1.append({"id": f"theme:{tf.stem}", "issue": (
+                    f"muted on {w[1]} = {w[0]:.2f}:1 —— 桌面按大字 3:1 可接受，但缩到 {SMALL_SCREEN_W}px 后 "
+                    f"muted 的 {46 * SMALL_SCREEN_W / DESIGN_W:.0f}px 只剩 {46 * SMALL_SCREEN_W / DESIGN_W:.1f}px（小字），"
+                    f"小屏口径要 {CONTRAST_TEXT}:1。muted 承载的是注音/注释，手机上读不清就等于没有")})
+    return p0, p1
+
+
 # ------------------------------------------------- G-14/G-15/G-16 讲法字段完整性
 # 编号说明（2026-09-21 修撞号）：这一组原来标成 "G-6"，而 **G-6 是调研报告里"对比层结构闭合"**
 # 的编号（见 references/presentation-gate.md 的"还没做的"）。本组的编号以
@@ -635,6 +726,9 @@ def main() -> int:
     p0 += a
     p1 += b
     a, b = check_evidence(project)      # G-15：`evidence` 被当成 JSX 用出现在场景源码里（v2 简版口径）
+    p0 += a
+    p1 += b
+    a, b = check_small_screen(project)  # G-18：小屏（360px）语境 —— 核心句地板 / 阅读预算 / 小屏对比度
     p0 += a
     p1 += b
 

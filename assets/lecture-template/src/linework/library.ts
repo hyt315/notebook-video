@@ -15,7 +15,7 @@ const d = (path: string, fill: Fill = 'none'): Prim => ({k: 'path', d: path, fil
 export const SKETCHES: Record<string, SketchDef> = {
   rocket: {
     label: '运载火箭',
-    fit: [30, 2, 40, 88],
+    fit: [33, 1, 34, 96],
     parts: {
       payload: {label: '卫星', anchor: [50, 13], detail: false,
         prims: [d('M50 2 C53.5 8 56 14 56 21 H44 C44 14 46.5 8 50 2 Z'),
@@ -47,7 +47,7 @@ export const SKETCHES: Record<string, SketchDef> = {
   },
   bulb: {
     label: '灯泡',
-    fit: [37, 7, 26, 67],
+    fit: [27.6, 7, 44.8, 67],
     parts: {
       glass: {label: '灯泡', prims: [d('M50 8 A22 22 0 0 1 62 48 L58 58 H42 L38 48 A22 22 0 0 1 50 8 Z', 'wash')]},
       base: {label: '灯座', prims: [r(42, 58, 16, 10, 2), l(44, 68, 56, 68), l(45, 73, 55, 73)]},
@@ -154,7 +154,7 @@ export const SKETCHES: Record<string, SketchDef> = {
   },
   wallet: {
     label: '钱包',
-    fit: [17, 31, 66, 42],
+    fit: [17, 23, 74, 50],
     parts: {
       body: {label: '钱包', prims: [r(18, 32, 64, 40, 4)]},
       flap: {label: '翻盖', prims: [d('M18 32 H74 A8 8 0 0 1 82 40 V46 H18 Z', 'wash')]},
@@ -247,7 +247,7 @@ export const SKETCHES: Record<string, SketchDef> = {
   },
   key: {
     label: '钥匙',
-    fit: [15, 35, 66, 24],
+    fit: [15, 35, 66, 30],
     parts: {
       bow: {label: '钥匙柄', prims: [c(30, 50, 14), c(30, 50, 6)]},
       shaft: {label: '钥匙杆', prims: [l(44, 50, 80, 50)]},
@@ -274,7 +274,7 @@ export const SKETCHES: Record<string, SketchDef> = {
   },
   factory: {
     label: '工厂',
-    fit: [17, 10, 54, 71],
+    fit: [17, 5, 59, 76],
     parts: {
       building: {label: '厂房', prims: [d('M18 44 H50 V80 H18 Z', 'wash'), d('M18 44 L34 34 L50 44')]},
       chimney: {label: '烟囱', prims: [r(58, 24, 8, 56)]},
@@ -284,11 +284,25 @@ export const SKETCHES: Record<string, SketchDef> = {
   },
   tree: {
     label: '树',
-    fit: [20, 17, 60, 70],
+    fit: [18.7, 7, 66.7, 80],
     parts: {
       crown: {label: '树冠', prims: [d('M50 8 C62 8 72 18 72 30 C81 32 86 40 84 49 C82 58 73 63 64 61 C60 69 49 72 43 65 C35 69 25 63 25 53 C18 49 18 38 25 32 C25 20 38 8 50 8 Z', 'wash')]},
       trunk: {label: '树干', prims: [r(46, 60, 8, 24)]},
       ground: {label: '地面', prims: [l(24, 86, 76, 86)]},
+    },
+  },
+  chiplog: {
+    // 「节」那支片的主角：船尾抛出去的木板、绳上等距的结。
+    // 三个 part 对应三个动作：船在走 / 绳在放 / 木板被水拖住——所以按 part 分段，不按零件分。
+    label: '测速绳 · 木板与结',
+    fit: [0, 0, 100, 82],
+    parts: {
+      hull: {label: '船尾', anchor: [86, 14], fit: [62, 0, 38, 34], prims: [d('M68 6 L100 2 L100 26 C92 31 84 31 76 26 Z', 'wash'), l(72, 10, 96, 7)]},
+      line: {label: '绳与结', anchor: [48, 44], fit: [22, 22, 60, 38], prims: [d('M78 26 C62 40 44 46 26 58'),
+                                                       c(69, 34, 2.2, 'accent'), c(60, 40, 2.2, 'accent'),
+                                                       c(50, 45, 2.2, 'accent'), c(39, 51, 2.2, 'accent')]},
+      plank: {label: '木板与水面', anchor: [20, 63], fit: [0, 48, 38, 32], prims: [d('M12 56 L30 54 L31 60 L13 62 Z', 'wash'),
+                                                          d('M6 68 C12 65 18 71 25 67'), d('M4 74 C11 71 17 77 24 73')]},
     },
   },
 };

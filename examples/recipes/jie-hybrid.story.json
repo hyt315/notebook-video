@@ -1,0 +1,112 @@
+{
+ "title": "节这个单位是怎么来的（混合版·回归夹具）",
+ "theme": "journal",
+ "kicker": "度量",
+ "header": "节 / KNOT",
+ "headerSub": "HYBRID",
+ "subject_of_film": "节",
+ "mode": "hybrid",
+ "camera": "still",
+ "captions": {
+  "mode": "line"
+ },
+ "chapters": [
+  {
+   "title": "绳上的结",
+   "shots": [
+    {
+     "role": "hook",
+     "layout": "page",
+     "see": "一页手账：右侧画着船尾抛出的木板和绳上等距的结，左侧手写大字一个「节」，旁边盖着航海章",
+     "lines": [
+      "十六世纪的水手，想知道船走多快。",
+      "办法很土：往海里扔一块木板，绳上打结。"
+     ],
+     "content": {
+      "page": "ink",
+      "ink": {
+       "draw": "lib:chiplog",
+       "label": "船尾抛板与测速绳",
+       "parts": [
+        "hull",
+        "line"
+       ],
+       "delay": 40
+      },
+      "big": "节",
+      "note": "一节，原本只是绳上的一个结",
+      "stamp": "航海"
+     }
+    },
+    {
+     "role": "steps",
+     "layout": "flow",
+     "see": "三张纸条依次贴上：打一个结、翻一次沙漏、数结",
+     "lines": [
+      "这个装置要做的事，只有三件。",
+      "打结，翻沙漏，数结。"
+     ],
+     "content": {
+      "title": "水手的三步",
+      "steps": [
+       {
+        "label": "打一个结",
+        "note": "绳上每 47 呎 3 吋一个"
+       },
+       {
+        "label": "翻一次沙漏",
+        "note": "28 秒漏完"
+       },
+       {
+        "label": "数结",
+        "note": "放出去几个，就是几节"
+       }
+      ]
+     }
+    },
+    {
+     "role": "math",
+     "layout": "number",
+     "see": "一个大数字 1.852，下面写着「一节的时速」，右侧三行小注说明换算",
+     "lines": [
+      "算出来，正好落在一个整数上。",
+      "一节，是一点八五二公里每小时。"
+     ],
+     "content": {
+      "value": 1.852,
+      "decimals": 3,
+      "unit": "公里",
+      "label": "一节的时速",
+      "notes": [
+       "47 呎 3 吋 ÷ 28 秒 ≈ 1.7 呎每秒",
+       "一小时约走一海里",
+       "1929 年定为 1852 米"
+      ]
+     }
+    },
+    {
+     "role": "close",
+     "layout": "page",
+     "see": "手账页上只剩木板入水的一小片水面，手写大字「比值」和定义章",
+     "lines": [
+      "所以节不是一个长度，是一个比值。",
+      "名字留下来了，办法早就没了。"
+     ],
+     "content": {
+      "page": "ink",
+      "ink": {
+       "draw": "lib:chiplog",
+       "label": "木板入水的一瞬",
+       "parts": [
+        "plank"
+       ]
+      },
+      "big": "比值",
+      "note": "距离除以时间",
+      "stamp": "定义"
+     }
+    }
+   ]
+  }
+ ]
+}

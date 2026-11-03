@@ -33,75 +33,59 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import linework_index  # noqa: E402  （必须在 sys.path 之后导入）
+import narration_contract  # noqa: E402
 from story_camera import (  # noqa: E402  （必须在 sys.path 之后导入）
     SAFE, ZOOM_MAX, clamp_look, frame_rect, move_frames, partial_clips, to_screen, union,
 )
+from story_text import (  # noqa: E402  （必须在 sys.path 之后导入；文字层真源）
+    MIN_FONT, PUNCT, SAFE_LH, TAIL_PUNCT_RE, cap_chars, fit_text, is_wide,
+    line_len, safe_lh, text_w, units, wrap,
+)
+import story_caption as _cap  # noqa: E402  （字幕层真源；CPS / CHAR_MS 必须读它的当前值）
+from story_caption import (  # noqa: E402
+    COMMA_MS, MAX_CHARS, STOP_MS, legal_breaks, parse_line, setup_break_rule,
+    split_caption, time_cue, tokens,
+)
+from story_time import FPS, frame  # noqa: E402  （帧率真源；时间轴与动作层共用）
+from story_acts import (  # noqa: E402  （动作 / 复现层真源）
+    INK_VERBS, SKETCH_VERBS, check_draw, check_reprises, resolve_act_at, resolve_annotate,
+    resolve_ink_acts, resolve_sketch,
+)
+from story_layout import (  # noqa: E402  （版式层真源；下列名字是门面 re-export，外部别再从主文件找实现）
+    BAND, FLOW_TOTAL_MAX, INK_BOX, LAY, PAGE_MEDIA, RECIPE_BOX, SKETCH_BOX, STORY_MEDIA, TYPE,
+    check_content, clean_unit, el, lay_bars, lay_code, lay_compare, lay_custom, lay_define, lay_flow,
+    lay_list, lay_media, lay_number, lay_page, lay_quiz, lay_recipe, lay_statement, lay_type,
+)
+from story_output import (  # noqa: E402  （写盘层真源）
+    check_customs, js, registered_customs, write_media, write_narration_contract, write_project,
+)
 
-FPS = 30
-CPS = 4.5                      # 中文朗读 / 阅读速度：4–5 字/秒，取 4.5
-CHAR_MS = 1000 / CPS           # ≈ 222 ms
-COMMA_MS, STOP_MS = 150, 300   # 句中逗号 / 句末停顿
+TREATMENT: dict = {}     # main() 读 manifests/treatment.json：signature_shot（招牌镜真推）+ shots[].move（运镜）
+TREATMENT_MOVES: dict = {}   # 由 treatment.shots 展开：{镜号: move}，在 main() 里与 TREATMENT 一起填
 LINE_GAP_MS = 220              # 同镜两行之间
 SHOT_GAP_MS = 320              # 镜与镜之间
 CHAPTER_BREATH_MS = SHOT_GAP_MS  # 不再有章节呼吸 / 章节卡（保持默认组件风格）
 FIRST_LEAD_MS = 700            # 片头
 END_TAIL_F = 42                # 片尾
-MAX_CHARS = 16
-MIN_FONT = 32                  # 手机可读地板（设计像素，1920 宽）
-TYPE = {"display": 76, "title": 46, "body": 36}  # 三档字号；hero 数字另算（同镜仍 ≤3 种）
-BAND = {"x": 200, "y": 214, "w": 1520, "h": 630}  # 内容带（页眉下、字幕上）
+# 字幕行宽 MAX_CHARS / 朗读速度 CPS / 标点停顿 / 术语语法 TERM_RE 的真源在 story_caption.py
+# （P2-24 第二切片）。不可变的从那儿 import；可变的 CPS / CHAR_MS 一律读 story_caption.xxx，
+# 不要在本地留副本——--cps 只改那边的真源。
 ZOOM_MIN_FOCUS = 1.08          # 焦点推近的下限；SAFE / ZOOM_MAX 见 story_camera.py
-PUNCT = "，。！？；：、,.!?;:"
-TAIL_PUNCT_RE = re.compile(r"[，。！？；：、,.!?;:\s]+$")
-TERM_RE = re.compile(r"\{\{([^}|]+)(?:\|([^}]+))?\}\}")
-LAYOUTS = ("statement", "define", "number", "bars", "compare", "code", "flow", "list", "quiz", "custom", "media", "page")
+LAYOUTS = ("statement", "define", "number", "bars", "compare", "code", "flow", "list", "quiz", "custom", "media", "page", "type")
 # 每种版式可以贴的骨架标签（validate-composition 要求相邻不同）：首选在前
 SKELETONS = {"statement": ["Stage", "Zoom"], "define": ["Split", "Stage"], "number": ["Stage", "Zoom"],
              "bars": ["Zoom", "Stage"], "compare": ["Split", "Stage"], "code": ["Zoom", "Stage"],
              "flow": ["Corridor", "Stage"], "list": ["Stage", "Corridor"], "quiz": ["Split", "Stage"], "custom": ["Stage", "Zoom"], "media": ["Zoom", "Stage"],
-             "page": ["Stage", "Stage"]}
+             "page": ["Stage", "Stage"], "type": ["Stage", "Stage"]}
 MEDIA = {"statement": ["text"], "define": ["text"], "number": ["metric", "text"], "bars": ["chart", "metric"],
          "compare": ["metric", "text"], "code": ["code", "text"], "flow": ["graphic", "text"], "list": ["text"],
          "quiz": ["text", "graphic"], "custom": ["graphic", "text"], "media": ["graphic", "console"],
-         "page": ["graphic", "text"]}
+         "page": ["graphic", "text"], "type": ["text"]}
 INTENTS = {"statement": "establish", "define": "push-in", "number": "push-in", "bars": "reveal", "compare": "pull-back",
            "code": "push-in", "flow": "reveal", "list": "establish", "quiz": "push-in", "custom": "reveal", "media": "push-in",
-           "page": "establish"}
+           "page": "establish", "type": "establish"}
 ICON_BUDGET_SHOT, ICON_BUDGET_MIN = 1, 4
-
-# 允许直接上屏的单位（符号 / 公制短单位）。故事里的 `unit` 只该写这一列里的东西；
-# 写成「占比 %」「公斤燃料 / 公斤干重」这类说明句，会把柱顶读数拼成「85占比 %」并折行压到柱子上。
-UNIT_TOKENS = (
-    "%", "‰", "°C", "°", "×", "元", "万元", "亿元", "美元", "公斤", "千克", "克", "吨",
-    "米", "公里", "千米", "厘米", "毫米", "秒", "分钟", "小时", "天", "年", "人", "次",
-    "个", "倍", "度", "瓦", "千瓦", "伏", "安", "GB", "MB", "TB", "KB", "ms", "kg", "km",
-    "cm", "mm", "kWh", "W", "V", "A", "Gbps", "Mbps", "万次", "亿次", "万", "亿",
-)
-UNIT_OK = set(UNIT_TOKENS)
-
-
-def clean_unit(p: "Problems", sid: str, raw) -> str:
-    """把 unit 收敛成一个真正的单位符号。
-
-    规则：只接受 UNIT_TOKENS；带 % / ‰ / ° 的取符号；斜杠或空格分隔的取第一个合法单位；
-    都不行就去掉单位（宁可不写，也不把说明文字拼进读数）。每次降级都报 P1 并给出改法。
-    """
-    u = str(raw or "").strip()
-    if not u or u in UNIT_OK:
-        return u
-    for token in ("%", "‰", "°C", "°", "×"):
-        if token in u:
-            p.hint(f"{sid}: unit={raw!r} 不是单位，读数会拼成「85{u}」。已只保留 {token!r}；"
-                   f"「{u.replace(token, '').strip()}」这类说明请写进 title 或 label。")
-            return token
-    for part in re.split(r"[\s/]+", u):
-        for cand in sorted(UNIT_TOKENS, key=len, reverse=True):
-            if part.startswith(cand):
-                p.hint(f"{sid}: unit={raw!r} 太长，已收敛为 {cand!r}（其余的说明写进 title / label）。")
-                return cand
-    p.hint(f"{sid}: unit={raw!r} 不是可上屏的单位，已去掉 —— unit 只写符号（% / 公斤 / GB…），说明写进 title。")
-    return ""
-
 
 class Problems:
     def __init__(self):
@@ -115,691 +99,18 @@ class Problems:
 
 
 # ---------------------------------------------------------------- text metrics
-def is_wide(ch: str) -> bool:
-    return bool(re.match(r"[\u2e80-\u9fff\u3000-\u303f\uff00-\uffef]", ch))
-
-
-def text_w(s: str, size: float, mono=False) -> float:
-    if mono:
-        return sum((1.0 if is_wide(c) else 0.6) for c in s) * size
-    return sum((1.0 if is_wide(c) else (0.3 if c == " " else 0.56)) for c in s) * size
-
-
-def units(s: str) -> float:
-    """朗读单位：一个汉字 1；连续的英文/数字每 2 个字符算 1（至少 1）。"""
-    n = 0.0
-    for tok in re.findall(r"[A-Za-z0-9.%+\-_/]+|[\u2e80-\u9fff]|.", s):
-        if re.match(r"[A-Za-z0-9]", tok):
-            n += max(1.0, len(tok) / 2)
-        elif is_wide(tok) and tok not in PUNCT:
-            n += 1
-    return n
-
-
-def cap_chars(s: str) -> int:
-    return len(TAIL_PUNCT_RE.sub("", re.sub(r"\s+", "", s)))
-
-
-def line_len(s: str) -> float:
-    """两套门禁口径取严：CaptionFitGate 逐字计（去句末标点）与 validate-presentation 的加权字数（CJK 与全角标点 1、ASCII 0.5）。"""
-    w = sum(1.0 if ord(ch) > 0x2E80 else 0.5 for ch in re.sub(r"\s+", "", s))
-    return max(cap_chars(s), w)
-
-
-def wrap(text: str, size: float, maxw: float, mono=False) -> list[str]:
-    """按宽度折行：中文按字、英文按词，不拆开英文单词 / 数字。"""
-    toks = re.findall(r"[A-Za-z0-9.%+\-_/@()']+|\s+|.", text)
-    lines, cur = [], ""
-    for t in toks:
-        if t.isspace() and not cur:
-            continue
-        if text_w(cur + t, size, mono) <= maxw or not cur:
-            cur += t
-        else:
-            # 行首不放标点
-            if t in PUNCT:
-                cur += t
-                continue
-            # 优先在最近的标点后断行（不把「存起来」劈成「存起 / 来」）
-            k = max(cur.rfind(q) for q in "，、；：,;:")
-            if not mono and k >= 0 and len(cur) - k - 1 <= 6 and k >= len(cur) * 0.45:
-                lines.append(cur[:k + 1].rstrip())
-                cur = cur[k + 1:].lstrip() + t
-                continue
-            lines.append(cur.rstrip())
-            cur = t.lstrip()
-    if cur.strip():
-        lines.append(cur.rstrip())
-    # 避免孤字：末行只剩 ≤2 个字时，从上一行挪字过来（中文排版的基本礼貌）
-    if len(lines) >= 2 and len(TAIL_PUNCT_RE.sub("", lines[-1])) <= 2 and not mono:
-        prev = lines[-2]
-        mt = re.search(r"([A-Za-z0-9.%+\-_/@()']+|[^\sA-Za-z0-9]{1,2})\s*$", prev)
-        k = len(prev) - mt.start() if mt else 2
-        if k < len(prev):
-            lines[-2], lines[-1] = prev[:-k].rstrip(), prev[-k:].lstrip() + lines[-1]
-    return lines or [""]
-
-
-def fit_text(p: Problems, where: str, text: str, size: int, maxw: float, max_lines: int, lh=1.3, mono=False):
-    """先换行，再降字号（不低于 MIN_FONT），仍放不下 → 报错并给出可容纳的字数。"""
-    s = size
-    while True:
-        ls = wrap(text, s, maxw, mono)
-        if len(ls) <= max_lines:
-            if s != size:
-                p.fix(f"{where}: 字号 {size}→{s} 以放进 {max_lines} 行")
-            w = max(text_w(l, s, mono) for l in ls)
-            return ls, s, w, len(ls) * s * lh
-        if s <= MIN_FONT:
-            cap = int(maxw / (MIN_FONT * 1.0)) * max_lines
-            p.err(f"{where}: 「{text[:14]}…」在 {MIN_FONT}px 下仍超过 {max_lines} 行 —— 请删到约 {cap} 个汉字以内，或拆成两镜")
-            return ls[:max_lines], s, maxw, max_lines * s * lh
-        s = max(MIN_FONT, s - 2)
+# 文字层的实现搬到了 story_text.py（P2-24 第一切片）：字宽、折行、孤字调整、字号收敛、
+# 行高地板都归它。这里只从那儿 import 并在模块级别名，既有调用点与 tests 的 `cs.wrap(...)`
+# 全部保持可用；改折行规则时只动 story_text.py，不用在 2300 行里翻。
+# 边界：split_caption 仍留在本文件（它要读 BudouX 规则，属于「字幕怎么切」而不是「字怎么排」）。
 
 
 # ---------------------------------------------------------------- captions
-def parse_line(raw: str):
-    """'{{缓存|L3}}让结果复用' → clean text + terms[(start_char, text, target)]"""
-    out, terms, pos = "", [], 0
-    for m in TERM_RE.finditer(raw):
-        out += raw[pos:m.start()]
-        terms.append({"start": len(out), "text": m.group(1).strip(), "target": (m.group(2) or "").strip() or None})
-        out += m.group(1).strip()
-        pos = m.end()
-    out += raw[pos:]
-    return out, terms
-
-
-# 断点规则与 validate-semantic-breaks 同一份（build-semantic-captions.py 里的 BudouX + 避头尾 + ASCII 词内不断）。
-# 找得到 BudouX（工程 node_modules）就用它挑断点，保证拆出来的行一定过语义断点门禁（弱模型实测补上的）。
-_RULE = {"mod": None, "node": None, "root": None, "cache": {}}
-
-
-def setup_break_rule(project: Path) -> None:
-    import importlib.util, shutil
-    src = Path(__file__).with_name("build-semantic-captions.py")
-    spec = importlib.util.spec_from_file_location("_nv_break_rule", src)
-    if spec is None or spec.loader is None:
-        return
-    mod = importlib.util.module_from_spec(spec)
-    try:
-        spec.loader.exec_module(mod)
-    except SystemExit:
-        return
-    _RULE["mod"] = mod
-    _RULE["node"] = shutil.which("node") or shutil.which("node.exe")
-    try:
-        _RULE["root"] = mod.find_budoux_root(None, [project, Path(__file__).resolve().parents[1] / "assets" / "lecture-template", Path.cwd()])
-    except Exception:
-        _RULE["root"] = None
-
-
-def legal_breaks(text: str):
-    """text（含空格）里允许断开的下标集合；规则模块不可用时返回 None（退回本地启发式）。"""
-    m = _RULE["mod"]
-    if m is None:
-        return None
-    norm = re.sub(r"\s+", "", text)
-    if norm not in _RULE["cache"]:
-        legal = m.punctuation_breaks(norm)
-        if _RULE["root"] and _RULE["node"]:
-            try:
-                legal |= m.budoux_breaks(_RULE["node"], _RULE["root"], norm)
-            except Exception:
-                pass
-        legal -= m.ascii_interior(norm)
-        legal -= m.head_tail_blocked(norm)
-        _RULE["cache"][norm] = legal
-    legal = _RULE["cache"][norm]
-    out, k = set(), 0
-    for i, ch in enumerate(text):
-        if k in legal and i > 0 and not text[i - 1].isspace():
-            out.add(i)
-        if not ch.isspace():
-            k += 1
-    # 空格后的位置等价于空格前
-    for i, ch in enumerate(text):
-        if ch.isspace() and i in out:
-            pass
-    return {i + (1 if i < len(text) and text[i].isspace() else 0) for i in out}
-
-
-def split_caption(text: str, terms: list, protected: list[str]):
-    """>16 字的字幕在合法断点劈开：优先标点，其次最靠近中点的「安全位置」（不在术语 / 英文 / 数字 / 保护短语里）。"""
-    if line_len(text) <= MAX_CHARS:
-        return [(text, terms)]
-    banned = set()
-    for t in terms:
-        banned.update(range(t["start"] + 1, t["start"] + len(t["text"])))
-    for ph in protected:
-        for m in re.finditer(re.escape(ph), text):
-            banned.update(range(m.start() + 1, m.end()))
-    for m in re.finditer(r"[A-Za-z0-9.%_\-]+", text):
-        banned.update(range(m.start() + 1, m.end()))
-    n = len(text)
-    legal = legal_breaks(text)
-    ok = (lambda i: i in legal) if legal is not None else (lambda i: True)
-    cands = [i + 1 for i, ch in enumerate(text[:-1]) if ch in "，、；：,;:" and i + 1 not in banned and ok(i + 1)]
-    if not cands:
-        cands = [i for i in range(2, n - 1) if i not in banned and text[i] not in PUNCT and ok(i)]
-    if not cands:
-        cands = [i for i in range(2, n - 1) if i not in banned and text[i] not in PUNCT]
-    mid = n / 2
-    cut = min(cands, key=lambda i: (line_len(text[:i]) > MAX_CHARS) + (line_len(text[i:]) > MAX_CHARS) * 1 + abs(i - mid) / n)
-    a, b = text[:cut], text[cut:]
-    lead = len(b) - len(b.lstrip())
-    b = b.lstrip()
-    a = a.rstrip()
-    ta = [t for t in terms if t["start"] < cut]
-    tb = [{**t, "start": max(0, t["start"] - cut - lead)} for t in terms if t["start"] >= cut]
-    return split_caption(a, ta, protected) + split_caption(b, tb, protected)
-
-
-def tokens(t: str):
-    out = []
-    for m in re.finditer(r"[A-Za-z0-9.%+\-_/]+|\s+|.", t):
-        s = m.group(0)
-        if s.isspace():
-            if out:
-                out[-1] = (out[-1][0] + s, out[-1][1])
-            continue
-        if s in PUNCT and out:
-            out[-1] = (out[-1][0] + s, out[-1][1])
-            continue
-        out.append((s, m.start()))
-    return out
-
-
-def time_cue(text: str, start_ms: float):
-    """返回 words（part/start/end/charStart）与 cue 结束。按 4.5 字/秒；逗号 +150，句末 +300。"""
-    words, t = [], start_ms + 60
-    for part, cs in tokens(text):
-        core = part.rstrip(PUNCT + " ")
-        d = CHAR_MS * max(1.0, units(core)) * 0.95
-        words.append({"part": part, "start": int(round(t)), "end": int(round(t + d - 10)), "char": cs})
-        t += d
-        if part.rstrip().endswith(tuple("，、；：,;:")):
-            t += COMMA_MS
-        elif part.rstrip().endswith(tuple("。！？.!?")):
-            t += STOP_MS * 0.4
-    return words, int(round(words[-1]["end"]))
-
-
-# ---------------------------------------------------------------- layout geometry
-def el(id_, kind, x, y, w, h, text="", size=0, role="body", appear=0, **kw):
-    d = {"id": id_, "kind": kind, "x": round(x, 1), "y": round(y, 1), "w": round(w, 1), "h": round(h, 1),
-         "text": text, "size": size, "role": role, "appear": appear}
-    d.update(kw)
-    return d
-
-
-def lay_statement(p, sid, c, variant):
-    X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
-    els = []
-    maxw = 1360
-    big = TYPE["display"] - 12  # statement 渲染成默认组件风格的卡片（Callout），不是满屏大字页
-    ls, s, w, h = fit_text(p, f"{sid}.text", c["text"], big, maxw, 3, lh=1.32)
-    kick = c.get("kicker")
-    sub = c.get("sub")
-    sub_h = 0
-    if sub:
-        sls, ss, sw, sub_h = fit_text(p, f"{sid}.sub", sub, TYPE["body"], maxw, 2, lh=1.45)
-    total = h + (70 if kick else 0) + (sub_h + 40 if sub else 0)
-    y = Y + (H - total) / 2
-    left = variant == "left"
-    bx = X + 60 if left else X + (W - w) / 2
-    if kick:
-        kw = text_w(kick, TYPE["body"])
-        els.append(el("kicker", "text", bx if left else X + (W - kw) / 2, y, kw, TYPE["body"] * 1.3, kick, TYPE["body"], "muted", c.get("kickerAt", 0)))
-        y += 70
-    cw = min(W - 80, max(w + 120, 1080))
-    cx = X + 40 if left else X + (W - cw) / 2
-    els.append(el("text", "card", cx, y - 40, cw, h + 80, c["text"], s, "display", 0, lines=ls, align="left" if left else "center", lh=1.32, pad=40))
-    y += h + 40
-    if sub:
-        sx = bx if left else X + (W - sw) / 2
-        els.append(el("sub", "text", sx, y, sw, sub_h, sub, ss, "muted", c.get("subAt", 1), lines=sls, align="left" if left else "center", lh=1.45))
-    return els
-
-
-def lay_define(p, sid, c, variant):
-    X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
-    term = c["term"]
-    ts = 104
-    tw = text_w(term, ts)
-    if tw > 620:
-        ts = max(64, int(ts * 620 / tw)); tw = text_w(term, ts)
-    ls, s, w, h = fit_text(p, f"{sid}.definition", c["definition"], TYPE["title"], 780, 4, lh=1.45)
-    ex = c.get("example")
-    els = []
-    lx, rx = (X + 40, X + 720) if variant != "mirror" else (X + 900, X + 40)
-    y0 = Y + 120
-    els.append(el("term", "text", lx, y0, tw, ts * 1.2, term, ts, "display", 0))
-    if c.get("reading"):
-        els.append(el("reading", "text", lx, y0 + ts * 1.25 + 10, text_w(c["reading"], TYPE["body"]), TYPE["body"] * 1.3, c["reading"], TYPE["body"], "muted", 0))
-    els.append(el("definition", "card", rx, y0, 800, h + 60, c["definition"], s, "body", c.get("definitionAt", 0), lines=ls, lh=1.45, pad=30))
-    if ex:
-        els_, es, ew, eh = fit_text(p, f"{sid}.example", ex, TYPE["body"], 760, 2, lh=1.45)
-        els.append(el("example", "quote", rx, y0 + h + 100, 800, eh + 40, ex, es, "muted", c.get("exampleAt", 1), lines=els_, lh=1.45, pad=20))
-    return els
-
-
-def lay_number(p, sid, c, variant):
-    X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
-    val = float(c["value"])
-    dec = int(c.get("decimals", 0 if float(val).is_integer() else 1))
-    txt = f"{c.get('prefix', '')}{val:.{dec}f}"
-    size = 230
-    unit = clean_unit(p, sid, c.get("unit", ""))
-    nw = text_w(txt, size) * 0.98 + text_w(unit, size * 0.42)
-    if nw > 820:
-        size = int(size * 820 / nw); nw = 820
-    notes = c.get("notes") or []
-    left = variant != "mirror"
-    nx = X + 40 if left else X + W - nw - 40
-    ny = Y + 110
-    els = [el("number", "number", nx, ny, nw, size * 1.0, txt, size, "hero", 0, value=val, decimals=dec,
-              prefix=c.get("prefix", ""), unit=unit, from_=float(c.get("from", 0)), tone=c.get("tone", "orange"))]
-    if c.get("label"):
-        lls, ls_, lw, lh_ = fit_text(p, f"{sid}.label", c["label"], TYPE["title"], 800, 1)
-        els.append(el("label", "text", nx, ny + size * 1.05 + 24, lw, lh_, c["label"], ls_, "body", 0))
-    rx = X + 960 if left else X + 40
-    y = Y + 140
-    for i, n in enumerate(notes[:3]):
-        nls, ns, nw2, nh = fit_text(p, f"{sid}.notes[{i}]", n, TYPE["body"], 520, 2, lh=1.4)
-        els.append(el(f"note{i + 1}", "note", rx, y, 560, nh + 28, n, ns, "body", c.get("notesAt", [0, 1, 2])[i] if isinstance(c.get("notesAt"), list) and i < len(c["notesAt"]) else min(i, 2), lines=nls, lh=1.4))
-        y += nh + 60
-    return els
-
-
-def lay_bars(p, sid, c, variant):
-    X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
-    data = c["data"]
-    if not 2 <= len(data) <= 6:
-        p.err(f"{sid}: bars 需要 2–6 根柱子（现在 {len(data)}）—— 多了请合并成「其他」或拆镜")
-        data = data[:6]
-    els = []
-    title = c.get("title", "")
-    if title:
-        tls, ts, tw, th = fit_text(p, f"{sid}.title", title, TYPE["title"], 1300, 1)
-        els.append(el("title", "text", X + 40, Y + 4, tw, th, title, ts, "title", 0))
-    top, bottom = Y + 130, Y + H - 70
-    n = len(data)
-    gap = 60
-    bw = min(220, (W - 160 - gap * (n - 1)) / n)
-    total = bw * n + gap * (n - 1)
-    x0 = X + (W - total) / 2
-    vmax = max(float(d["value"]) for d in data) or 1
-    unit = clean_unit(p, sid, c.get("unit", ""))
-    hl = c.get("highlight")
-    for i, d in enumerate(data):
-        v = float(d["value"])
-        bh = max(8, (bottom - top - 60) * v / vmax)
-        bx = x0 + i * (bw + gap)
-        lab = str(d["label"])
-        # 柱顶标签必须一行放下：>8 个汉字就报 P1（不自动折行——折下来的第二行会压在柱子上，
-        # 成片 45 秒处「13公斤燃料 / 公斤干重」就是这么糊成两行的）。
-        if len(lab) > 8:
-            p.hint(f"{sid}: 柱标签「{lab}」{len(lab)} 字 > 8 —— 柱顶只放一个短标签，细节写进 title 或台词。")
-        lsz = TYPE["body"]
-        while text_w(lab, lsz) > bw + gap - 10 and lsz > MIN_FONT:
-            lsz -= 2
-        if text_w(lab, lsz) > bw + gap - 10:
-            p.err(f"{sid}: 柱标签「{lab}」太长（{MIN_FONT}px 下宽 {text_w(lab, MIN_FONT):.0f} > {bw + gap - 10:.0f}）—— 缩到 {int((bw + gap - 10) / MIN_FONT)} 个汉字以内")
-        vt = f"{v:g}{unit}"
-        els.append(el(f"bar:{lab}", "bar", bx - gap / 2 + 4, bottom - bh - 56, bw + gap - 8, bh + 56 + 52, lab, lsz, "accent" if lab == hl else "body", c.get("barsAt", 0),
-                      barX=bx, barW=bw, barH=bh, base=bottom, value=v, valueText=vt, idx=i, hot=lab == hl))
-    return els
-
-
-def lay_compare(p, sid, c, variant):
-    X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
-    mode = c.get("mode", "split")
-    els = []
-
-    def panel(key, side, x, w, appear):
-        d = c[side]
-        y = Y + 40
-        parts = []
-        tls, ts, tw, th = fit_text(p, f"{sid}.{side}.title", d.get("title", "之前" if side == "before" else "之后"), TYPE["title"], w - 60, 1)
-        hh = th + 30
-        if d.get("value") is not None:
-            hh += 150
-        items = d.get("items") or []
-        ih = []
-        for i, it in enumerate(items[:4]):
-            ils, isz, iw, iht = fit_text(p, f"{sid}.{side}.items[{i}]", it, TYPE["body"], w - 90, 2, lh=1.35)
-            ih.append((ils, isz, iht))
-            hh += iht + 22
-        return el(key, "panel", x, y, w, max(hh + 70, 300), d.get("title", ""), TYPE["title"], "body", appear,
-                  side=side, title=d.get("title", "之前" if side == "before" else "之后"), value=d.get("value"), unit=clean_unit(p, f"{sid}.{side}", d.get("unit", "")),
-                  decimals=int(d.get("decimals", 0)), items=[{"lines": a, "size": b} for a, b, _ in ih], tone=d.get("tone", "orange" if side == "before" else "green"))
-
-    if mode == "morph":
-        e1 = panel("before", "before", X + 360, 800, 0)
-        e2 = panel("after", "after", X + 360, 800, c.get("morphLine", 1))
-        e2["y"] = e1["y"]
-        h = max(e1["h"], e2["h"]); e1["h"] = e2["h"] = h
-        e1["morphTo"] = "after"; e2["morph"] = True
-        els += [e1, e2]
-    else:
-        w = 660
-        e1 = panel("before", "before", X + 40, w, 0)
-        e2 = panel("after", "after", X + W - w - 40, w, c.get("afterLine", 1))
-        h = max(e1["h"], e2["h"]); e1["h"] = e2["h"] = h
-        els += [e1, e2, el("arrow", "arrow", X + 40 + w + 20, Y + 40 + h / 2 - 30, W - 2 * w - 120, 60, "", 0, "decor", c.get("afterLine", 1))]
-    if c.get("verdict"):
-        vls, vs, vw, vh = fit_text(p, f"{sid}.verdict", c["verdict"], TYPE["body"], 1200, 1)
-        vy = max(e["y"] + e["h"] for e in els if e["kind"] == "panel") + 34
-        els.append(el("verdict", "text", X + (W - vw) / 2, vy, vw, vh, c["verdict"], vs, "accent", c.get("verdictLine", 2)))
-    return els
-
-
-def lay_code(p, sid, c, variant):
-    X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
-    lines = c["code"].rstrip("\n").split("\n")
-    size = TYPE["body"]
-    note = c.get("note")
-    longest = max(len(l.expandtabs(4)) for l in lines)
-    # 代码框按最长行定宽（不留大片空白），右侧注释拿走剩下的宽度
-    boxw = min(1300 if not note else 1060, max(760, int(longest * size * 0.6 + 100))) if note else 1300
-    while longest * size * 0.6 > boxw - 80 and size > MIN_FONT:
-        size -= 2
-    if longest * size * 0.6 > boxw - 80:
-        p.err(f"{sid}: 代码最长一行 {longest} 字符，{MIN_FONT}px 下放不进 {boxw}px —— 每行请 ≤ {int((boxw - 80) / (MIN_FONT * 0.6))} 字符（折行或删减）")
-    lh = size * 1.55
-    maxl = int((H - 110) / lh)
-    if len(lines) > maxl:
-        p.err(f"{sid}: 代码 {len(lines)} 行，屏上最多 {maxl} 行 —— 只保留讲到的那几行（其余用 # ... 代替）")
-        lines = lines[:maxl]
-    boxh = 90 + len(lines) * lh + 30
-    bx, by = X + 20, Y + max(0, (H - boxh) / 2)
-    els = [el("code", "codebox", bx, by, boxw, boxh, c.get("title", ""), size, "body", 0, lang=c.get("lang", ""), lh=lh, nlines=len(lines))]
-    for i, l in enumerate(lines):
-        els.append(el(f"L{i + 1}", "codeline", bx + 30, by + 90 + i * lh, boxw - 60, lh, l, size, "body", 0, n=i + 1))
-    if note:
-        nwid = X + W - (bx + boxw + 40) - 40
-        nls, ns, nw, nh = fit_text(p, f"{sid}.note", note, TYPE["title"], nwid - 50, 4, lh=1.4)
-        els.append(el("note", "note", bx + boxw + 40, by + 20, nwid, nh + 50, note, ns, "accent", c.get("noteAt", 1), lines=nls, lh=1.4))
-    return els
-
-
-def lay_flow(p, sid, c, variant):
-    X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
-    steps = c["steps"]
-    n = len(steps)
-    if not 2 <= n <= 5:
-        p.err(f"{sid}: flow 需要 2–5 步（现在 {n}）")
-        steps = steps[:5]; n = len(steps)
-    els = []
-    title = c.get("title")
-    if title:
-        tls, ts, tw, th = fit_text(p, f"{sid}.title", title, TYPE["title"], 1300, 1)
-        els.append(el("title", "text", X + 40, Y + 4, tw, th, title, ts, "title", 0))
-    arrow = 90
-    nw = (W - 80 - arrow * (n - 1)) / n
-    ny = Y + 190
-    for i, st in enumerate(steps):
-        st = st if isinstance(st, dict) else {"label": st}
-        lls, ls_, lw, lh_ = fit_text(p, f"{sid}.steps[{i}].label", st["label"], TYPE["title"], nw - 40, 2, lh=1.25)
-        hh = lh_ + 60
-        nlines = []
-        if st.get("note"):
-            nlines, ns, nww, nh = fit_text(p, f"{sid}.steps[{i}].note", st["note"], TYPE["body"], nw - 40, 3, lh=1.4)
-            hh += nh + 20
-        x = X + 40 + i * (nw + arrow)
-        els.append(el(f"step{i + 1}", "node", x, ny, nw, max(hh, 200), st["label"], ls_, "accent" if st.get("hot") else "body",
-                      st.get("at", min(i, 99)), lines=lls, note=st.get("note", ""), noteLines=nlines, noteSize=TYPE["body"], hot=bool(st.get("hot"))))
-        if i:
-            els.append(el(f"arrow{i}", "arrow", x - arrow + 10, ny + 70, arrow - 20, 50, "", 0, "decor", st.get("at", min(i, 99))))
-    # 统一节点高度
-    hmax = max(e["h"] for e in els if e["kind"] == "node")
-    for e in els:
-        if e["kind"] == "node":
-            e["h"] = hmax
-    return els
-
-
-def lay_list(p, sid, c, variant):
-    X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
-    items = c["items"]
-    if not 2 <= len(items) <= 5:
-        p.err(f"{sid}: list 需要 2–5 条（现在 {len(items)}）—— 多了拆成两镜")
-        items = items[:5]
-    els = []
-    y = Y + 10
-    title = c.get("title")
-    if title:
-        tls, ts, tw, th = fit_text(p, f"{sid}.title", title, TYPE["title"], 1300, 1)
-        els.append(el("title", "text", X + 80, y, tw, th, title, ts, "title", 0))
-        y += th + 46
-    rows = []
-    for i, it in enumerate(items):
-        ils, isz, iw, ih = fit_text(p, f"{sid}.items[{i}]", it, TYPE["title"] if len(items) <= 3 else TYPE["body"], 1200, 2, lh=1.35)
-        rows.append((ils, isz, ih, it))
-    gap = min(48, (Y + H - y - sum(r[2] + 24 for r in rows)) / max(1, len(rows)))
-    for i, (ils, isz, ih, it) in enumerate(rows):
-        els.append(el(f"item{i + 1}", "item", X + 80, y, 1320, ih + 24, it, isz, "body", i, lines=ils, lh=1.35, n=i + 1, style=c.get("style", "number")))
-        y += ih + 24 + max(16, gap)
-    return els
-
-
-def lay_quiz(p, sid, c, variant):
-    X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
-    els = []
-    qls, qs, qw, qh = fit_text(p, f"{sid}.question", c["question"], TYPE["title"] + 6, 1200, 2, lh=1.3)
-    els.append(el("question", "text", X + 60, Y + 20, qw, qh, c["question"], qs, "title", 0, lines=qls, lh=1.3))
-    y = Y + 20 + qh + 50
-    for i, o in enumerate(c["options"][:4]):
-        ols, os_, ow, oh = fit_text(p, f"{sid}.options[{i}]", o, TYPE["body"], 1000, 1)
-        els.append(el(f"opt{i + 1}", "option", X + 60, y, 1100, oh + 36, o, os_, "body", 0, letter="ABCD"[i], correct=i == int(c.get("answer", 0))))
-        y += oh + 36 + 22
-    els.append(el("timer", "timer", X + 1260, Y + 40, 200, 200, "想一想", TYPE["body"], "accent", 0))
-    return els
-
-
-def lay_custom(p, sid, c, variant):
-    if not c.get("component"):
-        p.err(f"{sid}: custom 版式需要 content.component（src/custom/ 里注册的组件名）")
-    els = []
-    for i, e in enumerate(c.get("elements") or []):
-        if not all(k in e for k in ("id", "x", "y", "w", "h")):
-            p.err(f"{sid}: custom.elements[{i}] 需要 id/x/y/w/h（设计坐标）—— 引擎靠它们做关键词高亮与推近")
-            continue
-        els.append(el(e["id"], "custom", e["x"], e["y"], e["w"], e["h"], e.get("label", ""), int(e.get("size", TYPE["body"])),
-                      e.get("role", "body"), e.get("appear", 0), isText=bool(e.get("isText", True))))
-    return els
-
-
-STORY_MEDIA: dict = {}   # compose() 开头从 story["media"] 填入：id → 条目（含 width/height）
-
-
-def lay_media(p, sid, c, variant):
-    """3.2.0 真实素材：一张截图 / 一段录屏放进 MediaFrame；区域（0–1 相对坐标）变成可被 {{词|区域id}} 点名的元素。"""
-    mid = c.get("media")
-    m = STORY_MEDIA.get(mid)
-    if not m:
-        p.err(f"{sid}: media 版式需要 content.media = 顶层 media 列表里的 id（现有：{sorted(STORY_MEDIA) or '无'}）")
-        return []
-    X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
-    chrome = c.get("chrome", "browser")
-    ch = {"browser": 46, "window": 40}.get(chrome, 0)
-    cap = c.get("caption")
-    fw = W - 380 if cap else W - 120
-    fx = X + (60 if variant != "mirror" else W - fw - 60)
-    fy, fh = Y, H
-    iw, ih = m.get("width") or 16, m.get("height") or 9
-    vw, vh = fw, fh - ch
-    k = min(vw / iw, vh / ih)
-    dw, dh = iw * k, ih * k
-    ox, oy = fx + (vw - dw) / 2, fy + ch + (vh - dh) / 2
-    els = [el("media", "media", fx, fy, fw, fh, mid, 0, "body", 0, media=mid, chrome=chrome,
-              region=c.get("region"), isText=False)]
-    for r in m.get("focusRegions") or []:
-        els.append(el(r["id"], "region", ox + r["x"] * dw, oy + r["y"] * dh, r["w"] * dw, r["h"] * dh, r.get("label", r["id"]), 0, "body",
-                      0, isText=False))
-    if cap:
-        ls, s_, w_, h_ = fit_text(p, f"{sid}.caption", cap, TYPE["title"], 280, 5, lh=1.4)
-        cx = fx + fw + 40 if variant != "mirror" else X + 20
-        els.append(el("caption", "card", cx, fy + 60, 300, h_ + 60, cap, s_, "body", c.get("captionAt", 0), lines=ls, lh=1.4, pad=24))
-    return els
-
-
-# ---------------------------------------------------------------- 手账页 (3.6.0)
-# 语法来自 cell 片（journal 皮肤）：**容器是纸，不是卡片**。整页不产生任何 card / panel / 圆角框。
-# 一页 = 装裱好的真图版（右，占画宽 45%）+ 手写大字（页标题）+ 印章 + 一行手写说明。
-# 为什么另开一族而不是改现有版式：现有 10 个版式的视觉语言是「白卡片 + 圆角 + 边框」，
-# 那是幻灯片的语言；手账页一旦套上卡片框，就退回成 PPT（实测被评审判「像课件」）。
-PAGE_MEDIA = {"x": 960, "y": 96, "w": 860, "h": 800}
-PAGE_LEFT_X, PAGE_TEXT_W = 236, 600
-
-
-def lay_page(p, sid, c, variant):
-    """一页「有人在研究」的记录。
-
-    content:
-      page       plate（默认，真图版页）| loupe（放大镜页）
-      media      真图版 id（manifests/media.json 的条目）
-      catalogue  编目号（如 "Schem. XI"）
-      title      图版名（如 "《显微图谱》1665"）
-      big        手写大字：年份 / 数字 / 一个词（≤8 字）
-      stamp      印章（2–3 字，朱砂）
-      note       手写说明（一行，≤16 字）
-      look       loupe 的镜心（0–1 相对图版，如 [0.25,0.42]）
-      zoom       loupe 放大倍数（默认 2.6；>3 会糊，validate-media 会拦）
-    """
-    page = str(c.get("page") or "plate").strip()
-    mid = c.get("media")
-    if not mid:
-        p.err(f"{sid}: page 版式需要 content.media = manifests/media.json 里的素材 id")
-        return []
-    box = PAGE_MEDIA
-    els = []
-    common = dict(media=mid, catalogue=c.get("catalogue"), title=c.get("title"))
-    if page == "loupe":
-        look = c.get("look") or [0.5, 0.5]
-        try:
-            look = [float(look[0]), float(look[1])]
-        except (TypeError, ValueError, IndexError):
-            p.err(f"{sid}: content.look 要写 [x, y] 两个 0–1 的数（图版上的相对位置）")
-            look = [0.5, 0.5]
-        els.append(el("plate", "loupe", box["x"], box["y"], box["w"], box["h"], "", 0, "body", 0,
-                      look=look, lensAt=int(c.get("lensAt", 34)), zoom=float(c.get("zoom", 2.6)),
-                      r=int(c.get("r", 225)), **common))
-    elif page == "plate":
-        els.append(el("plate", "archive", box["x"], box["y"], box["w"], box["h"], "", 0, "body", 0, **common))
-    else:
-        p.err(f"{sid}: content.page={page!r} 不认识（这一族只有 plate / loupe；标本速写用 layout=statement + sketch）")
-        return []
-
-    # 左侧：手写大字当页标题。手账的标题是写上去的，不是排出来的。
-    big = c.get("big")
-    big_w = 0.0
-    y = 250
-    if big:
-        size = 88
-        while text_w(str(big), size) > PAGE_TEXT_W and size > 56:
-            size -= 4
-        if text_w(str(big), size) > PAGE_TEXT_W:
-            p.hint(f"{sid}: content.big={big!r} 太长（手写大字 ≤8 字）；把剩下的意思写进 note")
-        big_w = text_w(str(big), size)
-        # appear 是「第几句」不是帧号（compose 在这里换算成帧）：大字跟第一句一起写上去
-        els.append(el("big", "lettering", PAGE_LEFT_X, y, big_w, size * 1.2, str(big), size, "display", 0, perChar=6))
-    # 印章：大字右侧 60px；没有大字就贴左上
-    stamp = c.get("stamp")
-    if stamp:
-        sx = PAGE_LEFT_X + (big_w + 60 if big else 0)
-        if sx > 860:
-            sx = 860
-        # 印章压在第一句末尾：字写完 → 盖章，一个动作接一个动作
-        els.append(el("stamp", "stamp", sx, y + 2, 104, 104, str(stamp), 0, "body", 0))
-    # 手写说明：大字下方一行
-    note = c.get("note")
-    if note:
-        nsize = 64
-        while text_w(str(note), nsize) > PAGE_TEXT_W + 60 and nsize > 44:
-            nsize -= 4
-        if text_w(str(note), nsize) > PAGE_TEXT_W + 60:
-            p.hint(f"{sid}: content.note={note!r} 太长（一行手写说明 ≤16 字）")
-        # 说明写在第二句（图版已经看过了，再补一句「这是第几篇」）；只有一句时跟第一句
-        els.append(el("note", "handnote", PAGE_LEFT_X, 430, max(200.0, text_w(str(note), nsize)), nsize * 1.3,
-                      str(note), nsize, "title", 1))
-    # 页内示意图（可选）：手账页空白处随手画的一张小题图，配一行手写名。
-    # 这是 a2e 那套线稿在本 skill 里唯一合适的位置：它不解释概念，只帮观众认出「说的是哪件东西」。
-    # 尺寸硬压 340（画宽 18%）：再大就变成"线稿当解释图"，实测比不画更差。
-    fig = c.get("figure")
-    if fig:
-        if not isinstance(fig, dict) or not fig.get("draw"):
-            p.err(f"{sid}: content.figure 要写 {{\"draw\": \"lib:<名字>\", \"label\": \"<这东西叫什么>\"}}")
-        else:
-            w = min(360, max(220, int(fig.get("size", 340))))
-            els.append(el("figure", "figure", PAGE_LEFT_X, 546, w, w, "", 0, "body", 1,
-                          draw=fig.get("draw"), label=fig.get("label"), parts=fig.get("parts"),
-                          figAt=int(fig.get("at", 1))))
-    return els
-
-
-# ---------------------------------------------------------------- recipes (3.5.0)
-# 八个融合配方的**版面**。内容 schema 尽量小：弱模型只填「卡片说什么 / 结论是什么」，
-# 线稿怎么摆、卡片多大、引线从哪拉，都由这里算。
-SKETCH_BOX = {
-    "left": {"x": 150, "y": 200, "w": 620, "h": 650},
-    "right": {"x": 1150, "y": 200, "w": 620, "h": 650},
-    "center": {"x": 560, "y": 170, "w": 800, "h": 700},
-    "corner": {"x": 1480, "y": 700, "w": 280, "h": 280},
-}
-RECIPE_BOX = {
-    "data-with-object": {"x": 1440, "y": 690, "w": 300, "h": 300},
-    "list-icons": {"x": 1250, "y": 210, "w": 420, "h": 420},
-    "component-annotated": {"x": 1500, "y": 720, "w": 240, "h": 240},
-}
-
-
-def lay_recipe(p, sid, recipe, c, variant):
-    """返回 (els, sketch_box) 或 None（None = 沿用原版式，只加一块小线稿）。"""
-    X, Y, W = BAND["x"], BAND["y"], BAND["w"]
-    if recipe == "sketch-readout":
-        cards = c.get("cards") or ([c["text"]] if c.get("text") else [])
-        if not cards:
-            p.err(f"{sid}: sketch-readout 需要 content.cards（1–2 条读数卡）")
-            return [], SKETCH_BOX["left"]
-        els, y = [], Y + 40
-        for i, t in enumerate(cards[:2]):
-            ls, s_, w_, h_ = fit_text(p, f"{sid}.cards[{i}]", str(t), TYPE["body"], 700, 3, lh=1.35)
-            els.append(el(f"card{i + 1}", "card", 900, y, 780, h_ + 64, str(t), s_, "body", 0, lines=ls, lh=1.35, pad=26))
-            y += h_ + 64 + 36
-        return els, SKETCH_BOX["left"]
-    if recipe == "scene-verdict":
-        v = c.get("verdict") or c.get("text") or ""
-        if not v:
-            p.err(f"{sid}: scene-verdict 需要 content.verdict（一句结论）")
-            return [], SKETCH_BOX["center"]
-        ls, s_, w_, h_ = fit_text(p, f"{sid}.verdict", v, TYPE["title"], 1200, 1)
-        x = BAND["x"] + (BAND["w"] - (w_ + 80)) / 2
-        return [el("verdict", "card", x, 790, w_ + 80, h_ + 60, v, s_, "body", 0, lines=ls, lh=1.3, pad=26)], {"x": 560, "y": 150, "w": 800, "h": 560}
-    if recipe == "before-after":
-        els = []
-        for i, key in enumerate(("before", "after")):
-            lab = "改之前" if key == "before" else "改之后"
-            t = c.get(key) or ""
-            x = 200 + i * 960
-            els.append(el(f"{key}Label", "text", x, 700, 420, 60, lab, TYPE["title"], "title", 0))
-            if t:
-                ls, s_, w_, h_ = fit_text(p, f"{sid}.{key}", str(t), TYPE["body"], 520, 2, lh=1.35)
-                els.append(el(key, "card", x, 770, 560, h_ + 50, str(t), s_, "body", 1, lines=ls, lh=1.35, pad=22))
-        return els, {"x": 660, "y": 120, "w": 600, "h": 520}
-    if recipe == "hammer":
-        t = c.get("text") or ""
-        if not t:
-            p.err(f"{sid}: hammer 需要 content.text（全片最该记住的那一句）")
-            return [], SKETCH_BOX["corner"]
-        ls, s_, w_, h_ = fit_text(p, f"{sid}.text", str(t), 96, 1200, 2, lh=1.15)
-        return [el("text", "text", (X + (W - w_) / 2), 360, w_, h_, str(t), s_, "display", 0, lines=ls, lh=1.15, align="center")], SKETCH_BOX["corner"]
-    return None
-
-
-LAY = {"media": lay_media, "page": lay_page, "statement": lay_statement, "define": lay_define, "number": lay_number, "bars": lay_bars, "compare": lay_compare,
-       "code": lay_code, "flow": lay_flow, "list": lay_list, "quiz": lay_quiz, "custom": lay_custom}
+# 字幕层搬到了 story_caption.py（P2-24 第二切片）：术语解析、>16 字怎么劈、断点来源、
+# 每句时长、朗读速度都归它。这里只 import 回来，`cs.split_caption(...)` / `cs.time_cue(...)`
+# 这类既有用法保持可用。
+# 注意 CPS / CHAR_MS 是运行期可变的（--cps），**只能**经 story_caption.set_cps() 改，
+# 本文件不再保留副本——否则 CLI 看着生效、字幕时长却没变。
 
 
 # ---------------------------------------------------------------- linking
@@ -828,7 +139,7 @@ def match_element(term: str, target, els):
 def sub_rect(e, term):
     """statement / define 段落里的某个短语 → 它在折行后的矩形（逐字估宽）。"""
     lines = e.get("lines") or [e["text"]]
-    size, lh = e["size"], e.get("lh", 1.3)
+    size, lh = e["size"], e.get("lh", SAFE_LH)
     for li, line in enumerate(lines):
         k = line.find(term)
         if k < 0:
@@ -845,7 +156,74 @@ def sub_rect(e, term):
 # 已切到 story_camera.py：纯函数组，单独可测。这里只保留调用。
 
 # ---------------------------------------------------------------- main compose
+def signature_shot_id(p: "Problems") -> str | None:
+    """从 treatment.signature_shot 里取出镜号（"S4：…" / "招牌镜头 S4：…"）。
+
+    treatment 与 story 是两份文件，作者写一处忘另一处是常态；取不到就返回 None，
+    auto 排版照旧，不额外打扰（validate-treatment 自己会报）。
+    """
+    t = TREATMENT.get("signature_shot")
+    if not t:
+        return None
+    m = re.search(r"\bS(\d+)\b", str(t))
+    return f"S{m.group(1)}" if m else None
+
+
+def sweep_track(els, base):
+    """招牌镜的横移：找出同一行里并排放的元素，给出 (起幅 look, 落幅 look)。
+
+    为什么需要它：一行 4 个节点并排的流程镜，在 16:9 里任何真推都会切断邻居的文字
+    （安全框放不下「整行 + 一截」），但镜头沿这行扫过去既合法又有力——这正是
+    treatment.move 里 pan-follow 的意思。返回 None = 这镜没有可横移的并排结构。
+
+    起幅对准最左的元素、落幅对准最右的元素；两端都用 frame_rect 收口，
+    保证「停住的时候」没有字被切断（运镜途中扫过是正常的，停留点不能切）。
+    """
+    cand = [e for e in els if e["kind"] not in ("arrow", "timer", "codebox", "title")
+            and e.get("w", 0) > 0 and e.get("h", 0) > 0]
+    if len(cand) < 2:
+        return None
+    # 按行分组：纵向中心相差不到半个元素高就算同一行
+    rows: list[list[dict]] = []
+    for e in sorted(cand, key=lambda e: e["y"]):
+        cy = e["y"] + e["h"] / 2
+        for row in rows:
+            if abs((row[0]["y"] + row[0]["h"] / 2) - cy) < e["h"] * 0.6:
+                row.append(e)
+                break
+        else:
+            rows.append([e])
+    rows = [r for r in rows if len(r) >= 2]
+    if not rows:
+        return None
+    row = max(rows, key=lambda r: len(r))
+    row.sort(key=lambda e: e["x"])
+    first, last = row[0], row[-1]
+    if last["x"] - first["x"] < 220:      # 挤在一起的两块，扫起来看不出位移
+        return None
+    # 起幅 / 落幅 = 对准最左 / 最右元素，倍率取「能扫出最大位移、且两端都不切字」的那个。
+    # 为什么必须放大倍率才扫得动：s=1.01 时画面比设计稿只宽出 10px，clamp_look 把视点锁死在
+    # 正中，位移恒为 0；倍率越大，视点才越能离开中心。但每档都要校验停留点不切字。
+    scy = (SAFE[1] + SAFE[3]) / 2       # 安全框中心在 529，略高于画面中心（与 frame_rect 同源）
+    best, best_span = None, 0.0
+    s = max(1.0, base["s"])
+    while s <= ZOOM_MAX + 1e-9:
+        def aim(e, s=s):
+            x, y = clamp_look(e["x"] + e["w"] / 2, e["y"] + e["h"] / 2 - (scy - 540) / s, s)
+            return {"x": round(x, 1), "y": round(y, 1), "s": round(s, 3)}
+        a, b = aim(first), aim(last)
+        span = abs((b["x"] - a["x"]) * s)
+        if span > best_span and not partial_clips((a["x"], a["y"]), a["s"], els) \
+                and not partial_clips((b["x"], b["y"]), b["s"], els):
+            best, best_span = (a, b), span
+        s = round(s + 0.02, 3)
+    if best is None or best_span < 300:    # 扫不开 = 观众看不出来，不如不扫
+        return None
+    return best
+
+
 def compose(story: dict, p: Problems):
+    sig_id = signature_shot_id(p)
     glossary = story.get("glossary") or {}
     STORY_MEDIA.clear()
     for m in story.get("media") or []:
@@ -893,7 +271,14 @@ def compose(story: dict, p: Problems):
             content = sh.get("content") or {}
             recipe = sh.get("recipe")
             # 这四类配方自带版面，不跑原版式（原版式会要求 content.text 等必填项，弱模型会被无关报错挡住）
-            els = [] if recipe in ("sketch-readout", "scene-verdict", "before-after", "hammer") else LAY[lay](p, sid, content, variant)
+            if recipe in ("sketch-readout", "scene-verdict", "before-after", "hammer"):
+                els = []
+            elif check_content(p, sid, lay, content):
+                els = LAY[lay](p, sid, content, variant)
+            else:
+                # 校验已报错（main 见 errors 就 return 1，不会写盘）；给一个占位元素，
+                # 避免后面 build 对「空镜」做额外假设——把可读错误和生产崩溃分开。
+                els = [el("text", "text", 240, 400, 480, 90, sid, TYPE["body"], "body", 0, lh=SAFE_LH)]
             sketch_box = SKETCH_BOX.get((sh.get("sketch") or {}).get("place") or "left") if sh.get("sketch") else None
             if recipe:
                 r = lay_recipe(p, sid, recipe, content, variant)
@@ -907,7 +292,7 @@ def compose(story: dict, p: Problems):
             sk_raw = sh.get("sketch")
             if sk_raw and not sketch_box:
                 sketch_box = SKETCH_BOX["left"]
-            if lay not in ("custom", "bars", "statement") and els:
+            if lay not in ("custom", "bars", "statement", "type") and els:
                 u = union(els)
                 dy = BAND["y"] + (BAND["h"] - u["h"]) / 2 - u["y"]
                 if abs(dy) > 8:
@@ -952,6 +337,10 @@ def compose(story: dict, p: Problems):
                           "first_in_chapter": si == 0, "els": els, "line_cues": line_cues, "terms": terms_all, "content": content,
                           "start_ms": shot_start_ms, "icons": int(sh.get("icons", 0)), "custom": content.get("component"),
                           "role": sh.get("role") or ch.get("role"), "recipe": recipe, "sketch": sk_raw,
+                          # 有意复现（P2-19）：recallOf=回扣先前那张图，variantOf=同一主题物的另一态。
+                          # 两者都表示「这镜是故意再现的」，门禁据此放行；没有它们的同图同局部同动作才是无意重复。
+                          "recallOf": sh.get("recallOf") or content.get("recallOf"),
+                          "variantOf": sh.get("variantOf") or content.get("variantOf"),
                           "sketch_box": sketch_box, "annotate": sh.get("annotate") or content.get("annotate"),
                           "see": sh.get("see"),
                           "page": (content or {}).get("page") if lay == "page" else None,
@@ -963,15 +352,13 @@ def compose(story: dict, p: Problems):
             if si == 0:
                 chapter_first.append(sid)
             prev_layout, prev_variant = lay, variant
+    check_reprises(p, shots)
     total_ms = cues[-1]["speech_end_ms"] + END_TAIL_F * 1000 / FPS if cues else 0
     return {"shots": shots, "cues": cues, "total_ms": total_ms, "glossary": glossary, "protected": protected, "chapter_first": chapter_first}
 
 
-def frame(ms):
-    return int(round(ms * FPS / 1000))
-
-
 def build(story, comp, p: Problems):
+    sig_id = signature_shot_id(p)   # treatment 点名的招牌镜：这一镜真推（见下方相机路径）
     shots, cues = comp["shots"], comp["cues"]
     glossary = comp["glossary"]
     total = frame(comp["total_ms"])
@@ -984,7 +371,7 @@ def build(story, comp, p: Problems):
     ROLE_MOVE = {"hook": "引入", "pre": "定位", "breakdown": "拆分/合并", "example": "传递", "misconception": "反证", "recap": "收束"}
     LAY_MOVE = {"statement": "收束", "define": "定位", "number": "引入", "bars": "反证", "compare": "对比", "code": "定位",
                 "flow": "拆分/合并", "list": "累积", "quiz": "反证", "custom": "传递", "media": "定位",
-                "page": "定位"}
+                "page": "定位", "type": "定位"}
     moves = []
     for k, sh in enumerate(shots):
         m = ROLE_MOVE.get(sh.get("role") or "", LAY_MOVE[sh["layout"]])
@@ -1004,6 +391,13 @@ def build(story, comp, p: Problems):
         line_start = [frame(cues[ix[0]]["start_ms"]) - frm for ix in sh["line_cues"]]
         line_end = [frame(cues[ix[-1]]["speech_end_ms"]) - frm for ix in sh["line_cues"]]
         nl = len(line_start)
+        # 页内墨图的动作：@n → 本镜帧号（要等 cues 排完，所以不在 lay_page 里做）
+        for e in els:
+            raw_acts = e.pop("inkActs", None)
+            if raw_acts:
+                e["frames"] = resolve_ink_acts(
+                    p, sid, raw_acts, line_start, sh["line_cues"], cues, frm,
+                    e.get("draw"), dur, e.get("parts") if isinstance(e.get("parts"), list) else None)
         # 元素出现帧：appear = 第几句；同句错峰 5 帧（≤8）
         per_line = {}
         for e in els:
@@ -1013,6 +407,99 @@ def build(story, comp, p: Problems):
             # 被关键词点名、且点名早于声明 → 不改；点名晚于出现 → 保持（先出现后强调）
             n = per_line.get(a, 0); per_line[a] = n + 1
             e["at"] = max(0, line_start[a] - (8 if a == 0 else 2)) + min(n, 3) * 5 if isinstance(a, int) else 0
+            # 逐字呈现的节奏锁在旁白上：这一句有多少帧，就多少帧放完。
+            # 不另配时间轴——否则旁白一快，字还没放完就被下一句盖掉。
+            if e.get("reveal") in ("type", "slide"):
+                _a = a if isinstance(a, int) else 0
+                _a = max(0, min(_a, nl - 1))
+                e["revealAt"] = e["at"] + 2
+                e["revealDur"] = max(10, min(72, int(line_end[_a] - line_start[_a]) - 4))
+        # afterBig：不占 appear 的「跟在大字后面」时序。
+        # 手账页上「写完一行 → 落章」是两拍；若都用 appear=0，两拍会被压进同一帧，
+        # 开场前 3 秒就只剩一个节拍（validate-opening O4 判 P0）。
+        # 这里按大字真正写完的那一帧来盖：big 是 lettering，perChar=6，写完 ≈ at + 6*(n-1) + 10。
+        for e in els:
+            anchor_id = e.get("afterBig")
+            if not anchor_id:
+                continue
+            host = next((x for x in els if x["id"] == anchor_id and x["kind"] == "lettering"), None)
+            if host is None:
+                continue
+            nch = len(str(host.get("text") or ""))
+            e["at"] = int(host["at"]) + max(10, 6 * (nch - 1)) + 10
+            if e.get("afterBig"):
+                del e["afterBig"]
+        # markAppear：下划线要跟着旁白起笔，不能跟字的出现同一帧。
+        # 纸上的强调是笔的动作——讲到那一句才划，划完就留着，不来回跳。
+        for e in els:
+            ia = e.pop("inkAt", None)
+            if ia:
+                e["at"] = max(int(e.get("at") or 0), int(ia))
+        for e in els:
+            ma = e.pop("markAppear", None)
+            if ma is None:
+                continue
+            idx = int(ma) if isinstance(ma, int) else 1
+            idx = max(0, min(idx, nl - 1))
+            e["mark"] = int(line_start[idx]) + 8
+        # flow / list 的并列项在自己的那一句里扎堆出现（一句字幕里塞 4 个节点，n 只摊开 15 帧），
+        # 观众看到的是「一下全冒出来」——而流程镜的意义恰恰是一步一步走。
+        #
+        # 为什么不再按「字幕行」分组：一行只有 1 句字幕、却要放 4 个节点时（flow 的常态），
+        # 按行分组会把 4 个节点全塞进这一句里，末尾那个只能贴到 dur-20 才出现——
+        # 上一版成片里 step4「今天/住户」到 259/279 帧才冒头，箭头也就画不完（只剩一横杠）。
+        # 并列项本来就是一个整体，应当跨整镜铺开：起点在首句字幕起后（第一项跟着标题走），
+        # 终点在镜尾前留出 SETTLE 帧让最后一张被读得完。
+        PEER_SETTLE = 40
+        # 本镜「全部字幕句」的本地起帧（不是 story.json 的 lines 组——S4 写了 2 条 lines，
+        # 旁白却读成 4 句；并列项要跟的是后者）。
+        _cue_all = [ci_ for ix in sh["line_cues"] for ci_ in ix]
+        cue_locals_peer = [frame(cues[ci_]["start_ms"]) - frm for ci_ in _cue_all]
+        for group in ("node", "item"):
+            peers = [e for e in els if e["kind"] == group]
+            if len(peers) < 2:
+                continue
+            # 首项不能和标题同时冒头：标题 at=2 入场，首项至少晚 8 帧接力。
+            t0 = max(0, line_start[0] - 8)
+            if any(e["kind"] == "text" for e in els):
+                t0 = max(t0, 10)
+            # 排布策略，按「字幕句数 vs 并列项数」二分：
+            #   (a) 句数 >= 项数：一项一句，跟着旁白走。这是**最好**的读法——说到「先是植物」
+            #       时第二张纸正好贴上，声音和画面同一拍。S4 有 4 句字幕 4 个节点，属于这类。
+            #   (b) 句数 <  项数：隔一句塞不下，就只能跨整镜均摊（旧逻辑），并留 SETTLE 帧收尾。
+            # 早先一律走 (b)，结果 S4 的四个节点被均摊成 79 帧一格（2.6 秒一张），
+            # 观众看到第 32 秒时画面里还只有三张，会误以为流程只有三步。
+            #
+            # 用 cue_list（**全部字幕句**）而不是 line_start（story.json 的 lines 组）：
+            # story 里 S4 只写了 2 条 lines，但 TTS 把它读成了 4 句字幕；
+            # 拿 2 去比 4 个节点会永远走 (b)，节点就永远跟不上旁白。
+            n_cue = len(cue_locals_peer) if cue_locals_peer else len(line_start)
+            if n_cue >= len(peers):
+                for i, e in enumerate(peers):
+                    # 第 i 项落到它该跟的那一句上（n_cue 句分给 n 项，最后一项跟最后一句）
+                    j = round(i * (n_cue - 1) / max(1, len(peers) - 1))
+                    e["at"] = int(max(t0, cue_locals_peer[j] - 2))
+            else:
+                # 终点不再贴近镜尾（dur - 40）：三张卡片摊到 141/181 帧，
+                # 观众看到第 23 秒时画面里还是只有两张，最后一张只剩 1 秒可读。
+                # 结构型版面（flow / list）要**先立起来再讲**，所以压到前 42%。
+                t1 = max(t0 + 8 * len(peers), min(dur - PEER_SETTLE, dur * 0.42))
+                step = (t1 - t0) / max(1, len(peers) - 1)
+                for i, e in enumerate(peers):
+                    e["at"] = int(round(t0 + i * step))
+            if group == "node":
+                # 箭头跟着它指向的那个节点出现：节点错峰铺开后，箭头留在原位就会先于节点冒出来
+                for e in els:
+                    if e["kind"] != "arrow":
+                        continue
+                    m = re.fullmatch(r"arrow(\d+)", e["id"])
+                    if not m:
+                        continue
+                    target = next((x for x in peers if x["id"] == f"step{int(m.group(1)) + 1}"), None)
+                    if target is not None:
+                        # arrow{i} 画在 step{i-1} 和 step{i} 之间：跟着右侧那个节点一起画，
+                        # 「上一格的箭头指向下一格，下一格同时出现」才是流程镜该有的读法。
+                        e["at"] = max(0, target["at"] - 4)
         # 关键词 → 元素 / 子矩形
         focus = []
         for tm in sh["terms"]:
@@ -1058,9 +545,11 @@ def build(story, comp, p: Problems):
             p.fix(f"{sid}.{e['id']}: 同屏强调元素 >3，降为正文")
         # ---------- 相机路径 ----------
         content_els = list(els)
-        U = union(content_els)
-        band_fill = (U["w"] * U["h"]) / (BAND["w"] * BAND["h"])
-        over, _ = frame_rect(U, els, max_s=1.18 if band_fill < 0.6 else 1.06)
+        # 空镜是合法状态（纯配方镜、或版式校验失败后的占位镜）：没有内容可取景时用整幅内容带，
+        # 不能让 union([]) 抛 min() empty——那会把「作者写漏一个字段」变成「整片崩在栈里」。
+        U = union(content_els) if content_els else dict(BAND)
+        band_fill = (U["w"] * U["h"]) / (BAND["w"] * BAND["h"]) if content_els else 1.0
+        over, _ = frame_rect(U, content_els, max_s=1.18 if band_fill < 0.6 else 1.06)
         path = []
         if prev_gaze is not None and focus:
             # 视线连续：本镜第一个出现的元素放在上一镜最后注视的屏幕位置附近，再滑到全景
@@ -1093,7 +582,7 @@ def build(story, comp, p: Problems):
                 path.append({"at": start + d, **tgt})
                 cur = tgt; last_at = start + d
             nxt = focus[i + 1]["at"] if i + 1 < len(focus) else dur
-            until = min(nxt - 4, fk["at"] + max(60, int(len(fk["term"]) * CHAR_MS * FPS / 1000) + 45), dur - 4)
+            until = min(nxt - 4, fk["at"] + max(60, int(len(fk["term"]) * _cap.CHAR_MS * FPS / 1000) + 45), dur - 4)
             focus_out.append({"id": fk["id"], "at": fk["at"], "until": until, "term": fk["term"], "sub": fk["rect"] if fk["sub"] else None, "cam": bool(tgt)})
             # 回全景：下一焦点离得远（> 75 帧）才回，否则直接移到下一个
             if tgt and nxt - until > 75:
@@ -1108,6 +597,61 @@ def build(story, comp, p: Problems):
             prev_gaze = (sx + sw / 2, sy + sh_ / 2)
         else:
             prev_gaze = (960, 520)
+        # 3.6.2 招牌镜：treatment.signature_shot 点名的那一镜，给一个「看得见的运镜」。
+        # 为什么要有这条：auto 版式的运镜是统一 1.03 的呼吸推，一镜到底等于静帧；
+        # 于是「写了招牌镜」和「版式做不到」互相打架——作者只能去改 treatment 逃避门禁。
+        # 两条路，先试真推，推不进就横移：
+        #   ① 真推：推最大的那个元素到 1.18 倍（有独占大主体的镜，如 page 的图版、单面板）；
+        #   ② 横移：一行并排的元素（flow / list / compare）在 16:9 里推不得（推一点就切断邻居），
+        #      但可以「镜头沿流程扫过去」——位移 300–1300px，这正是 treatment 里 pan-follow 的语义。
+        if sig_id and sid == sig_id and not sh.get("sketch"):
+            main = max((e for e in els if e["kind"] not in ("arrow", "timer", "codebox")),
+                       key=lambda e: e["w"] * e["h"], default=None)
+            tgt = None
+            if main is not None:
+                try:
+                    # min_s 用门禁线（12%）而不是 1.18：一字排开的并列结构常常只放得下 1.15 左右，
+                    # 死守 1.18 会让「本来能过门禁的镜」被判失败，白退到横移。
+                    tgt, _ = frame_rect(main, els, max_s=1.24, min_s=1.12)
+                except (ValueError, KeyError):
+                    tgt = None
+            if tgt and tgt["s"] >= 1.12:
+                # 关键：起幅先回到「全景基准」。本镜的 anchor 推近往往已经 1.1 左右，
+                # 从 1.1 再推到 1.15 观众只感到 4%，等于没推。招牌镜的演出应该是
+                # 「先看全，再慢慢推近」——所以把全景放在开头，推近放在中段并保持到镜尾。
+                wide = {"x": 960.0, "y": 540.0, "s": 1.0}
+                land = max(20, int(dur * 0.55))
+                start = max(2, land - move_frames(wide, tgt))
+                if last_at <= 2 and start >= 6:
+                    # 本镜前面还没有别的运镜：重置 path 为全景起幅，全程 1.0 到 start 再推
+                    path = [{"at": 0, **wide}, {"at": start, **wide}]
+                    cur = wide; last_at = 0
+                else:
+                    path.append({"at": max(last_at + 1, 1), **cur})
+                    path.append({"at": start, **wide})
+                    cur = wide
+                path.append({"at": land, **tgt})
+                cur = tgt; last_at = land
+                p.fix(f"{sid}: 招牌镜 → 全景 1.00× 起，慢推到 {main['id']}（{tgt['s']:.2f}×）")
+            else:
+                sweep = sweep_track(els, over)
+                if sweep:
+                    a, b = sweep
+                    d = move_frames(a, b)
+                    start = max(last_at + 4, int(dur * 0.3))
+                    if start + d < dur - 6:
+                        path.append({"at": start, **cur}) if start > last_at + 2 else None
+                        path.append({"at": start + d, **a})
+                        path.append({"at": min(dur - 4, start + d + max(30, int(dur * 0.35))), **b})
+                        cur = b; last_at = min(dur - 4, start + d + max(30, int(dur * 0.35)))
+                        span = abs((b["x"] - a["x"]) * b["s"])
+                        p.fix(f"{sid}: 招牌镜 → 推不进（会切邻居），改横移扫镜（{span:.0f}px）")
+                    else:
+                        p.hint(f"{sid}: treatment.signature_shot 点名了本镜，但本镜又推不进也横移不开——"
+                               f"把招牌镜换成有并列元素或独占大主体的镜")
+                else:
+                    p.hint(f"{sid}: treatment.signature_shot 点名了本镜，但本镜只有一个静的主体——"
+                           f"换成有并列元素（flow / list / compare）或有独占大主体的镜")
         # 结尾不留 >1.2 秒的「无新事件」：最后一个事件到镜尾太远 → 收束推近（慢推 3%）
         events = [e["at"] for e in els] + [f["at"] for f in focus_out] + line_end
         tail_gap = dur - max(events)
@@ -1144,7 +688,7 @@ def build(story, comp, p: Problems):
                     p.hint(f"{sid}: 术语「{term}」的释义气泡放不下（四周都是文字）—— 已省略；想要它就在台词里直接解释")
                     continue
                 tx, ty, below = place
-                show = max(75, int(cap_chars(txt) / CPS * FPS))
+                show = max(75, int(cap_chars(txt) / _cap.CPS * FPS))
                 tips.append({"term": term, "x": round(tx, 1), "y": round(ty, 1), "w": round(W_, 1), "h": round(H_, 1), "lines": tls, "size": ts,
                              "at": fk["at"] + 6, "until": min(dur - 2, fk["at"] + 6 + show), "below": below})
                 if show > fk["until"] - fk["at"]:
@@ -1181,6 +725,13 @@ def build(story, comp, p: Problems):
         used_skel = skel
         # 慢推意图（场景层 ShotCamera）：真的会动 ≥0.02
         cam = {"intent": INTENTS[sh["layout"]], "at": 6, "dur": max(30, min(90, dur - 10)), "from": 1.0, "to": 1.025}
+        # treatment.shots 写了 move 就以它为准：两份文件（导演意图 / 实际镜头表）本该一致，
+        # 各写一套只会让 validate-treatment 天天报「写了不兑现」，作者于是去改门禁而不是改片。
+        want = TREATMENT_MOVES.get(sid)
+        if want in ("establish", "push-in", "pull-back", "pan-follow", "reveal", "still"):
+            if want != cam["intent"]:
+                cam["intent"] = want
+                p.fix(f"{sid}: treatment 写 move={want} → 本镜运镜按它走（原按版式给 {INTENTS[sh['layout']]}）")
         if cam["intent"] == "pull-back":
             cam.update({"from": 1.03, "to": 1.0})
         if cam["intent"] == "reveal":
@@ -1190,7 +741,52 @@ def build(story, comp, p: Problems):
         if sh.get("sketch"):
             cam = {"intent": "establish", "at": 6, "dur": max(30, min(90, dur - 10)), "from": 1.0, "to": 1.012}
         beats = [{"cue": ci_, "offset": 0} for ix in sh["line_cues"] for ci_ in ix]
+        # beats 不能只数字幕：镜内元素也是真画面变化（大字写完、盖章、放上手绘小图）。
+        # 只看 cue 时，S1 这种「一句字幕读 3 秒、画面里却连着三个动作」的开场会被判成
+        # 「前 3 秒只有 2 个节拍」（validate-opening O4 直接 P0），而屏幕上的画面明明是动的。
+        # 这里把镜内元素的 at（本地帧）补成一拍：挂到「它前一条字幕」上，offset 取与那句起点的差。
+        # 不能一律挂首个 cue —— 元素若在第二句才出现，offset 就会大过那一句的时长，
+        # validate-presentation 判「元素在旁白讲完后才出现 = 与台词脱节」（S1/S4/S6 实测 P0×7）。
+        cue_list = [ci_ for ix in sh["line_cues"] for ci_ in ix]
+        cue_locals = [frame(cues[ci_]["start_ms"]) - frm for ci_ in cue_list]
+        cue_dur = [frame(cues[ci_]["speech_end_ms"]) - frame(cues[ci_]["start_ms"]) for ci_ in cue_list]
+        for e_ in (sh.get("els") or []):
+            at_ = e_.get("at")
+            if not isinstance(at_, int) or at_ <= 2:
+                continue
+            if any(abs(at_ - cl) < 12 for cl in cue_locals):
+                continue
+            # 归属：at_ 之前最近的那条字幕（第一句之前则归第一句，offset 夹到 0）
+            owner = 0
+            for i_, cl in enumerate(cue_locals):
+                if cl <= at_:
+                    owner = i_
+            off = max(0, at_ - cue_locals[owner])
+            # 超过该句时长就不算这一句的节拍（那是下一句之后的事，交给下一句的 cue 记）
+            if cue_dur and off > cue_dur[owner]:
+                continue
+            beats.append({"cue": cue_list[owner], "offset": off})
+        # 排序键必须落在「绝对帧」上：用 ms 排会因为 offset 是帧、start_ms 是毫秒而错序
+        # （S1 实测 75 排到了 49 前面）。统一先换成绝对帧再排。
+        for b in beats:
+            b["_abs"] = frame(cues[int(b["cue"])]["start_ms"]) + int(b.get("offset", 0))
+        beats.sort(key=lambda b: b["_abs"])
+        dedup = []
+        for b in beats:
+            if dedup and b["_abs"] - dedup[-1]["_abs"] < 3:
+                continue
+            dedup.append(b)
+        beats = dedup
+        for b in beats:
+            b.pop("_abs", None)
         a = {"x": round(U["x"], 1), "y": round(U["y"], 1), "w": round(U["w"], 1), "h": round(U["h"], 1)}
+        # camera:"still" → 相机冻结在一帧不动。
+        # 注意：只写 drift:"none" 是不够的——引擎有 path 时直接走 pathCamAt，drift 根本不参与。
+        # 之前那点"一直在晃"就是 path 里的 1.0→1.025 慢推 + x 偏 20px 造成的。
+        # 静止片里，动效只允许来自「笔画、压章、翻页、逐字」，不允许来自画框。
+        if str(story.get("camera") or "") == "still":
+            path = [{"at": 0, "x": 960.0, "y": 540.0, "s": 1.0}]
+            focus_out = []
         # 3.5.0：线稿镜头不做推近 / 取景收紧——线稿在画面边上，任何 >1.05 的缩放都会把它顶出画框。
         if sh.get("sketch"):
             path = [{"at": 0, "x": 960.0, "y": 540.0, "s": 1.0}]
@@ -1201,8 +797,13 @@ def build(story, comp, p: Problems):
                "hero": {"name": sh["layout"], "size": int(max(U["w"], U["h"]) * 0.5), "kind": "text"}, "zones": 3, "bottomFill": True,
                "cover": "paper", "entry": "fade", "beats": beats, "move": moves[k],
                "evidence": "AutoShot", "hold": 40, "noMisconception": True, "why": "auto 版式：内容由 story.json 给出",
-               "transition": "zoom" if sh["first_in_chapter"] and k > 0 else ("fade" if k > 0 else "auto"),
-               "cinema": {"drift": "none", "fit": "none", "path": path}, "sfxEvents": sfx}
+               # 镜间转场：story 写了就一律用它；没写就是 "auto" —— 交给引擎按皮肤决定，
+               # 而皮肤的缺省是翻页（pageturn / 无 GPU 时 pageflip）。
+               # 3.9.0 之前这里缺省写 fade，把皮肤的翻页默认值**覆盖掉了**：
+               # 于是只要 story 没显式写 "pageturn"，全片就没有一处翻页。默认值只能有一处。
+               "transition": (str(story.get("transition")) if (story.get("transition") and k > 0) else "auto"),
+               "cinema": {"drift": "none", "fit": "none", "path": path,
+                          **({"still": True} if str(story.get("camera") or "") == "still" else {})}, "sfxEvents": sfx}
         if sh["layout"] == "quiz":
             rec["misconception"] = sh["content"].get("question"); rec.pop("noMisconception")
         # 手账页：把「拍到的是什么」也记进来。rec 的 "media" 已被骨架占用（graphic/text），
@@ -1238,73 +839,11 @@ def build(story, comp, p: Problems):
     return out_shots, story_ts, total
 
 
-def resolve_act_at(at, line_start, line_cues, cues, frm):
-    """把 act 的 at 解析成本镜帧号。
-
-    支持：数字（本镜帧）/ "@L1"（第 1 句开始）/ "@L1.3"（第 1 句第 3 个字音开始）。
-    解析不了返回 None（调用方报 P1，不猜）。
-    """
-    if isinstance(at, (int, float)):
-        return int(at)
-    m = re.match(r"^@L?(\d+)(?:\.(\d+))?$", str(at or "").strip())
-    if not m:
-        return None
-    li = int(m.group(1)) - 1
-    if not (0 <= li < len(line_start)):
-        return None
-    if not m.group(2):
-        return int(line_start[li])
-    wi = int(m.group(2)) - 1
-    for ci in line_cues[li]:
-        words = cues[ci]["words"]
-        if 0 <= wi < len(words):
-            return frame(words[wi]["start"]) - frm
-        wi -= len(words)
-    return int(line_start[li])
-
-
-SKETCH_VERBS = ("enter", "point", "drop", "swap", "count", "mark", "exit")
-
-
-def resolve_sketch(p, sid, sk, line_start, line_cues, cues, frm):
-    """校验 + 换算 sketch.acts；返回可直接进 story.ts 的对象。"""
-    if not isinstance(sk, dict) or not sk.get("draw"):
-        p.err(f"{sid}: sketch 需要 draw（lib:<名字> / shapes:[…] / trace:<media id>）")
-        return None
-    frames = []
-    for i, a in enumerate(sk.get("acts") or []):
-        verb = a.get("do")
-        if verb not in SKETCH_VERBS:
-            p.err(f"{sid}: sketch.acts[{i}].do={verb!r} 不是七个动词之一（{' / '.join(SKETCH_VERBS)}）")
-            continue
-        at = resolve_act_at(a.get("at"), line_start, line_cues, cues, frm)
-        if at is None:
-            p.hint(f"{sid}: sketch.acts[{i}].at={a.get('at')!r} 解析不了 —— 用数字帧、@L1 或 @L1.3")
-            continue
-        frames.append({"at": max(0, at), "do": verb, "target": a.get("target"), "n": a.get("n"), "mark": a.get("mark")})
-    out = {k: v for k, v in sk.items() if k != "acts"}
-    out["frames"] = frames
-    return out
-
-
-def resolve_annotate(p, sid, ann, els, line_start):
-    """annotate:[{target, kind, text}] → 带矩形与帧号的叠加层。"""
-    out = []
-    for i, a in enumerate(ann or []):
-        kind = a.get("kind")
-        if kind not in ("circle", "underline", "arrow", "note"):
-            p.hint(f"{sid}: annotate[{i}].kind={kind!r} 不是 circle / underline / arrow / note 之一")
-            continue
-        target = a.get("target")
-        e = next((x for x in els if x["id"] == target), None)
-        if not e:
-            p.hint(f"{sid}: annotate[{i}].target={target!r} 找不到画面元素 —— 写元素 id（可用：{', '.join(x['id'] for x in els[:8])}）")
-            continue
-        li = int(a.get("line", 0))
-        at = int(line_start[min(li, max(0, len(line_start) - 1))]) if line_start else 0
-        out.append({"kind": kind, "x": e["x"], "y": e["y"], "w": e["w"], "h": e["h"], "at": at,
-                    "text": a.get("text", ""), "seed": f"{sid}-{target}"})
-    return out
+# ---------------------------------------------------------------- acts / reprises / draw
+# 动作与复现层搬到了 story_acts.py（P2-24 第三切片）：@L1.3 换算、两套动词表、content.ink.acts
+# 校验、跨镜复现判定（P2-19）、线稿规格的构建期核对（P1-09）都归它。
+# 为什么先切这层：lay_page 直接调 resolve_ink_acts / check_draw；不先切，版式层就没法独立。
+# 帧号换算只走 story_time.frame；本文件不再定义 FPS / frame。
 
 
 def tts_words(proj: Path) -> list[dict] | None:
@@ -1381,160 +920,17 @@ def retime_to_tts(comp: dict, words: list[dict], p: "Problems") -> bool:
             sh["start_ms"] = max(prev + 1, int(sh.get("start_ms", prev + 1)))
         prev = int(sh["start_ms"])
     last_end = max((c["speech_end_ms"] for c in cues), default=0)
-    comp["total_ms"] = max(int(comp.get("total_ms", 0)), last_end + END_TAIL_F * 1000 // FPS)
+    # 有真实音频时间就**以它为准**（可以缩短）：compose 的估算是按 4.5 字/秒排的，
+    # 而口播的实际语速常常到 5 字/秒以上，照估算值播出会留十几秒画面空转。
+    if last_end:
+        comp["total_ms"] = last_end + END_TAIL_F * 1000 // FPS
     p.hint(f"按 TTS 词级时间重排：{len(cues)} 句字幕 / {len(comp['shots'])} 镜（时间来自 audio/narration.meta.json）")
     return True
 
 
-def js(v) -> str:
-    return json.dumps(v, ensure_ascii=False, separators=(",", ":"))
-
-
-CUSTOM_KEY_RE = re.compile(r"(?m)^\s*([A-Za-z_$][\w$]*)\s*(?::|,|$)")
-
-
-def registered_customs(proj: Path) -> set[str]:
-    """读 `src/custom/index.ts` 的 CUSTOM 表，返回已注册的组件名。
-
-    为什么不用正则扫全文：注册表里还有 import、注释、以及 `RequestLane,` 这种简写；
-    只取 `export const CUSTOM = { … }` 这一层花括号里的键，才是真正能渲染的名字。
-    """
-    f = proj / "src" / "custom" / "index.ts"
-    if not f.is_file():
-        return set()
-    text = f.read_text(encoding="utf-8")
-    m = re.search(r"export const CUSTOM\b[^=]*=\s*\{", text)
-    if not m:
-        return set()
-    i, depth, start = m.end(), 1, m.end()
-    while i < len(text) and depth:
-        if text[i] == "{":
-            depth += 1
-        elif text[i] == "}":
-            depth -= 1
-        i += 1
-    return set(CUSTOM_KEY_RE.findall(text[start:i - 1]))
-
-
-def check_customs(p: Problems, proj: Path, story_ts: dict) -> None:
-    """P0：story.json 引用了未注册的定制组件 → 构建期停止。
-
-    旧行为是渲染期用一行红字顶替（成片 74 秒处真的出过这行红字），既没有门禁也不出片失败。
-    现在在写盘前拦：说清组件名、哪几镜、注册文件、照抄哪个范例。
-    """
-    need = sorted({v.get("custom") for v in story_ts.values() if v.get("custom")})
-    if not need:
-        return
-    # 只有"完整工程"里才有注册表可核对。compose 也常被用来往空目录做一次干跑
-    # （负向夹具 / 只算帧数），那里没有 src/index.tsx —— 此时不冒充"查过了"，给一条提示，
-    # 运行期还有 cancelRender 兜底。
-    if not (proj / "src" / "index.tsx").is_file():
-        p.hint(
-            f"这个目录还不是完整工程（没有 src/index.tsx），无法核对定制组件 {', '.join(need)} 是否注册；"
-            f"写进真实工程后 compose 会再查一次。"
-        )
-        return
-    have = registered_customs(proj)
-    reg = proj / "src" / "custom" / "index.ts"
-    for name in need:
-        if name in have:
-            continue
-        shots = [sid for sid, v in story_ts.items() if v.get("custom") == name]
-        p.err(
-            f"{'、'.join(shots)}：定制组件 {name} 未注册 —— 在 {reg} 的 CUSTOM 表里加一行 `{name},`。"
-            f"组件本体照抄 src/custom/RequestLane.tsx：新建 src/custom/{name}.tsx，"
-            f"导出 `const {name}: React.FC<CustomProps>`；story.json 里写 \"component\":\"{name}\"。"
-            f"（未注册的定制组件以前会渲染成一行红字继续出片，现在直接停止。）"
-        )
-
-
-def write_project(story, comp, out_shots, story_ts, total, proj: Path):
-    (proj / "manifests").mkdir(parents=True, exist_ok=True)
-    (proj / "audio").mkdir(exist_ok=True)
-    (proj / "src").mkdir(exist_ok=True)
-    cues = comp["cues"]
-    cdoc = {"source": "audio/narration.mp3.json", "lead_ms": 60, "segmentation": "semantic",
-            "break_rule": f"compose-story (silent, {CPS} chars/s, ≤{MAX_CHARS} chars per line)", "cues": cues}
-    txt = json.dumps(cdoc, ensure_ascii=False, indent=1) + "\n"
-    (proj / "manifests" / "caption-cues.json").write_text(txt, encoding="utf-8")
-    (proj / "src" / "caption-cues.json").write_text(txt, encoding="utf-8")
-    # 有 TTS 的 meta 时，audio/narration.mp3.json 是**真实词级时间**，compose 不许覆盖它
-    # （覆盖后字幕会退回"按 4.5 字/秒估算"，与音频脱同步，而且看不出来）。
-    if not (proj / "audio" / "narration.meta.json").is_file():
-        words = [w for c in cues for w in c["words"]]
-        (proj / "audio" / "narration.mp3.json").write_text(json.dumps(words, ensure_ascii=False) + "\n", encoding="utf-8")
-    (proj / "narration.txt").write_text("\n".join(c["text"] for c in cues) + "\n", encoding="utf-8")
-    (proj / "manifests" / "protected-caption-phrases.txt").write_text("# compose-story：术语表与 protect 列表，字幕不许切开\n" + "\n".join(comp["protected"]) + "\n", encoding="utf-8")
-    (proj / "manifests" / "semantic-caption-lines.txt").write_text("\n".join(c["text"] for c in cues) + "\n", encoding="utf-8")
-    # 3.5.0：融合门禁要读的东西（主题物 / 每镜配方 / 有没有线稿 / 关掉声音看到什么）。
-    # 写进工程而不是让门禁回头找 story.json：工程可能被单独拷走 / 手改，story 不一定在旁边。
-    rec_by = {r["id"]: r for r in out_shots}
-    shots_f = {}
-    for sid, st in story_ts.items():
-        sk = st.get("sketch") or {}
-        rec = rec_by.get(sid) or {}
-        shots_f[sid] = {
-            "see": rec.get("see") or "", "recipe": rec.get("recipe"), "layout": rec.get("layout", st.get("layout")),
-            "sketch": bool(sk), "annotate": bool(st.get("annotate")),
-            "sketch_label": " ".join(str(x) for x in [sk.get("label", ""), *((sk.get("parts") or {}).values())]),
-            "sketch_draw": sk.get("draw", ""),
-            # 3.6.0：手账页（承载）与它的真图版。validate-fusion 靠这三个字段判断
-            # 「讲细胞却一张细胞图都没有」以及「全片都是手账页、概念没讲清」。
-            "page": rec.get("page"), "media_id": rec.get("media_id"),
-            "media_label": rec.get("media_label") or "",
-        }
-    fusion = {"subject_of_film": story.get("subject_of_film", ""), "subject_why": story.get("subject_why", ""),
-              "shots": shots_f}
-    (proj / "manifests" / "fusion.json").write_text(json.dumps(fusion, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    sdoc = {"$comment": "AUTO-GENERATED by scripts/compose-story.py from story.json — 改内容请改 story.json 后重跑",
-            "duration": total, "theme": story.get("theme", "flat"), "canvas": "16:9", "shots": out_shots}
-    (proj / "manifests" / "shots.json").write_text(json.dumps(sdoc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    chapters = [c.get("title", "") for c in story["chapters"]]
-    # 3.5.0 · captions.mode：line（默认，整行随 TTS 句子出现）/ typewriter（逐字，保留可选）。
-    # 写进 film.ts，引擎侧（index.tsx）优先读它；老工程没有这个导出时按皮肤默认走。
-    cap_mode = str((story.get("captions") or {}).get("mode", "line")).lower()
-    reveal = "line" if cap_mode in ("line", "") else "type"
-    film = ("// AUTO-GENERATED by scripts/compose-story.py — 禁止手改（改 story.json）。\n"
-            f"export const COPY = {js({'chapterTitles': chapters, 'chromeKicker': story.get('kicker', 'NOTEBOOK-VIDEO'), 'header': story.get('header', story.get('title', '')), 'headerSub': story.get('headerSub', '')})} as const;\n"
-            f"export const CHAPTER_SHOTS = {js(comp['chapter_first'])} as const;\n"
-            f"export const CAPTION_REVEAL = '{reveal}' as const;\n"
-            "")
-    (proj / "src" / "film.ts").write_text(film, encoding="utf-8")
-    st = ("// AUTO-GENERATED by scripts/compose-story.py — 禁止手改（改 story.json）。\n"
-          "import type {StoryShot} from './auto';\n"
-          f"export const STORY: Record<string, StoryShot> = {js(story_ts)};\n")
-    (proj / "src" / "story.ts").write_text(st, encoding="utf-8")
-    customs = sorted({v["custom"] for v in story_ts.values() if v.get("custom")})
-    lines = ["// AUTO-GENERATED by scripts/compose-story.py — 每镜都由引擎的 AutoShot 渲染（版式 + 关键词同步 + 门禁）。",
-             "// 手写定制画面放在 src/custom/，在 src/custom/index.ts 注册，story.json 里用 layout:\"custom\" 引用。",
-             "import React from 'react';", "import {AutoShot} from './auto';", "import {SHOTS} from './shots';", ""]
-    for s in out_shots:
-        lines.append(f"const {s['id']}: React.FC<{{f: number}}> = ({{f}}) => <AutoShot id=\"{s['id']}\" f={{f}} />;")
-    lines.append("")
-    lines.append("export const SCENES: Record<keyof typeof SHOTS, React.FC<{f: number}>> = {" + ", ".join(s["id"] for s in out_shots) + "};")
-    lines.append(f"export const SCENES_VERSION = 'auto-scenes · {len(out_shots)} shots · custom: {', '.join(customs) or 'none'}';")
-    (proj / "src" / "scenes.tsx").write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-
-def write_media(story, proj: Path) -> None:
-    """story.json 顶层 media → public/media/ + manifests/media.json，再交给 prepare-media.py 探测 / 转码 / 同步 src/media.json。"""
-    import shutil
-    import subprocess
-    mdir = proj / "public" / "media"
-    mdir.mkdir(parents=True, exist_ok=True)
-    items = []
-    for m in story["media"]:
-        src = Path(story["_dir"]) / m["file"]
-        ext = src.suffix.lower()
-        kind = "image" if ext in (".png", ".jpg", ".jpeg", ".webp") else "gif" if ext == ".gif" else "video"
-        if src.is_file():
-            shutil.copyfile(src, mdir / f"{m['id']}{ext}")
-        e = {k: v for k, v in m.items() if k not in ("file", "width", "height")}
-        e.update(file=f"{m['id']}{ext}", kind=m.get("kind", kind), source=m.get("source", "user"), muted=m.get("muted", True))
-        items.append(e)
-    (proj / "manifests" / "media.json").write_text(json.dumps({"items": items}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    subprocess.run([sys.executable, str(Path(__file__).with_name("prepare-media.py")), str(proj)])
-
+# ---------------------------------------------------------------- output
+# 写盘层搬到了 story_output.py（P2-24 第五切片）：manifest / src/*.ts(x) / media / 旁白契约。
+# 这里只 import 回来当门面，main() 的调用点不变。
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -1560,9 +956,18 @@ def main() -> int:
         if not isinstance(cps, (int, float)) or not 1.0 <= float(cps) <= 9.0:
             print(f"cps={cps!r} 超出 1–9 字/秒（validate-presentation 的成人读速上限是 9）", file=sys.stderr)
             return 2
-        global CPS, CHAR_MS
-        CPS, CHAR_MS = float(cps), 1000 / float(cps)
+        _cap.set_cps(cps)
     setup_break_rule(Path(a.project))
+    # treatment.signature_shot 决定哪一镜真推（3.6.2）；没有 treatment 就是 None，行为不变
+    global TREATMENT, TREATMENT_MOVES
+    tp = Path(a.project) / "manifests" / "treatment.json"
+    try:
+        TREATMENT = json.loads(tp.read_text(encoding="utf-8")) if tp.is_file() else {}
+    except (ValueError, OSError):
+        TREATMENT = {}
+    # treatment.shots[].move → {镜号: 运镜}：导演层写了就按它走（见 build() 里的 cam 段）
+    TREATMENT_MOVES = {s.get("id"): s.get("move") for s in (TREATMENT.get("shots") or [])
+                       if isinstance(s, dict) and s.get("id") and s.get("move")}
     p = Problems()
     cap_mode = str((story.get("captions") or {}).get("mode", "line")).lower()
     if cap_mode not in ("line", "typewriter", "type"):
@@ -1603,7 +1008,7 @@ def main() -> int:
     if p.errors:
         return 1
     if not a.check:
-        write_project(story, comp, out_shots, story_ts, total, Path(a.project))
+        write_project(story, comp, out_shots, story_ts, total, Path(a.project), p)
         if story.get("media"):
             write_media(story, Path(a.project))
     return 0

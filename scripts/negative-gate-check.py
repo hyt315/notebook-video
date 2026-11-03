@@ -16,7 +16,7 @@
   · `gates_compose.py`  3.2.0 那批：compose-story / 自动修 / 音效元数据 / 背景库 / 评审拦截
   · 本文件              其余用例 + 入口。加普通夹具写这里；加 compose/story 夹具写 gates_compose.py。
 """
-import io, json, os, re, shutil, subprocess, sys, tempfile  # 夹具仍直接用这些标准库
+import io, json, os, pathlib, re, shutil, subprocess, sys, tempfile  # 夹具仍直接用这些标准库
 
 from gatelib import (  # noqa: E402  公共壳：临时工程 / 跑脚本 / 断言 / 汇总
     PY, SKILL, SRC, TPL, case, cleanup, mkproj, resolve, results, run, summary,
@@ -1301,6 +1301,48 @@ _r = run([PY, os.path.join(SKILL, 'scripts/compose-story.py'),
 case('FUS1 全组件 + 主题物「火箭」从未出现 → validate-fusion P0', [
     ('must_pass', 'compose-story', _r),
     ('must_block:火箭', 'validate-fusion', run([PY, os.path.join(SKILL, 'scripts/validate-fusion.py'), _td])),
+])
+cleanup(_td)
+
+# ---- 3.7.0 · 呈现模式：全组件 / 全非组件 / 混合，三套配额 ----
+# 模式不是风格开关，是门禁契约。三条负向各自钉住一处越界。
+def _mk_story(src: str, out_dir: str, **patch) -> str:
+    """复制一份 story，改顶层键，写到 out_dir/story.json。"""
+    import json as _j
+    d = _j.loads((pathlib.Path(SKILL) / src).read_text(encoding='utf-8'))
+    d.update(patch)
+    sp = pathlib.Path(out_dir) / 'story.json'
+    sp.write_text(_j.dumps(d, ensure_ascii=False), encoding='utf-8')
+    return str(sp)
+
+
+_td = tempfile.mkdtemp(prefix='nv-mode-')
+# subject 换成 abstract：这条要钉的是「模式与做法不符」（P1），不能被主题物缺失的 P0 抢走判定
+_sp = _mk_story('examples/regress/rocket-components-only.story.json', _td, mode='freeform',
+                subject_of_film='abstract', subject_why='这条夹具只验模式契约，不讲具体东西。')
+_r = run([PY, os.path.join(SKILL, 'scripts/compose-story.py'), _sp, os.path.join(_td, 'p1')])
+case('MODE1 声明 freeform 却整片都是卡片 → 点名「名不副实」', [
+    ('must_pass', 'compose-story', _r),
+    ('must_warn:名不副实', 'validate-fusion', run([PY, os.path.join(SKILL, 'scripts/validate-fusion.py'), os.path.join(_td, 'p1')])),
+])
+cleanup(_td)
+
+_td = tempfile.mkdtemp(prefix='nv-mode-')
+_sp = _mk_story('examples/recipes/cork-page.story.json', _td, mode='component')
+_r = run([PY, os.path.join(SKILL, 'scripts/compose-story.py'), _sp, os.path.join(_td, 'p1')])
+case('MODE2 声明 component 却整片都是手账页 → 点名「别声明一套做另一套」', [
+    ('must_pass', 'compose-story', _r),
+    ('must_warn:别声明一套做另一套', 'validate-fusion', run([PY, os.path.join(SKILL, 'scripts/validate-fusion.py'), os.path.join(_td, 'p1')])),
+])
+cleanup(_td)
+
+_td = tempfile.mkdtemp(prefix='nv-mode-')
+_sp = _mk_story('examples/regress/rocket-components-only.story.json', _td, mode='slides')
+_r = run([PY, os.path.join(SKILL, 'scripts/compose-story.py'), _sp, os.path.join(_td, 'p1')])
+case('MODE3 mode 写了不认识的值 → P0 拦下，并列出三个合法值', [
+    ('must_pass', 'compose-story', _r),
+    ('must_block:不认识', 'validate-fusion', run([PY, os.path.join(SKILL, 'scripts/validate-fusion.py'), os.path.join(_td, 'p1')])),
+    ('must_block:hybrid', 'validate-fusion', run([PY, os.path.join(SKILL, 'scripts/validate-fusion.py'), os.path.join(_td, 'p1')])),
 ])
 cleanup(_td)
 

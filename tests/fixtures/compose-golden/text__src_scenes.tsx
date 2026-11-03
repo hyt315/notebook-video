@@ -11,5 +11,5 @@ const S4: React.FC<{f: number}> = ({f}) => <AutoShot id="S4" f={f} />;
 const S5: React.FC<{f: number}> = ({f}) => <AutoShot id="S5" f={f} />;
 const S6: React.FC<{f: number}> = ({f}) => <AutoShot id="S6" f={f} />;
 
-export const SCENES: Record<keyof typeof SHOTS, React.FC<{f: number}>> = {S1, S2, S3, S4, S5, S6};
+export const SCENES: Partial<Record<keyof typeof SHOTS, React.FC<{f: number}>>> = {S1, S2, S3, S4, S5, S6};
 export const SCENES_VERSION = 'auto-scenes · 6 shots · custom: none';

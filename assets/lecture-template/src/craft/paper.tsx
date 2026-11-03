@@ -13,6 +13,7 @@ import React from 'react';
 import {noise2D} from '@remotion/noise';
 import {THEME} from '../theme/active';
 import {FibreOverlay, TapeStrip} from '../theme/craft-common';
+import {useSvgId} from '../uid';
 import {prog} from './ink';
 
 const C = THEME.palette;
@@ -82,11 +83,12 @@ export type WashBlobProps = {
 
 /** 水彩淡彩：三遍半透明叠色（每遍轮廓略不同 → 边缘积色变深），外加颗粒纹理。 */
 export const WashBlob: React.FC<WashBlobProps> = ({f, at, dur = 26, cx, cy, rx, ry = rx * 0.82, color = C.blue, opacity = 0.34, seed = 'wash', sweep = 0}) => {
+  const svgUid = useSvgId('wash');   // hook 要在 return 之前；默认 seed 都叫 wash，DOM id 必须再加实例前缀
   const p = prog(f, at, dur);
   if (p <= 0) return null;
   const grow = 0.25 + 0.75 * Math.sqrt(p);
   const W = rx * 2.6, H = ry * 2.6, ox = cx - W / 2, oy = cy - H / 2;
-  const id = `wash-${seed}`;
+  const id = `${svgUid}-${seed}`;
   const passes = [0, 1, 2].map((k) => noisyRing(W / 2, H / 2, rx * grow * (1 - k * 0.05), ry * grow * (1 - k * 0.05), 0.16 + 0.03 * k, `${seed}${k}`));
   const sweepClip = sweep > 0 ? `inset(0 ${(1 - Math.min(1, p * 1.3)) * 100 * sweep}% 0 0)` : undefined;
   return <svg style={{position: 'absolute', left: ox, top: oy, overflow: 'visible', clipPath: sweepClip}} width={W} height={H} aria-hidden>
@@ -123,9 +125,11 @@ export type CutPaperProps = {
 };
 
 export const CutPaper: React.FC<CutPaperProps> = ({f, at = 0, d, color = THEME.craft?.accent ?? C.orange, inset = 0, stepped = true, backlit = 0, id: cid = 'cp'}) => {
+  const svgUid = useSvgId('cut');    // hook 要在 return 之前；cid 缺省都一样，DOM id 必须再加实例前缀
   const ff = stepped ? Math.floor(f / 2.5) * 2.5 : f;
   const p = prog(ff, at, 8);
   if (p <= 0) return null;
+  const cutId = `${svgUid}-${cid}`;
   const pop = p < 1 ? 1.06 - 0.06 * p : 1;
   return <svg style={{position: 'absolute', left: 0, top: 0, overflow: 'visible', transformOrigin: 'center', transform: `scale(${pop})`, opacity: Math.min(1, p * 3)}} width={1920} height={1080} aria-hidden>
     {backlit > 0 && <path d={d} fill="#ffd27a" opacity={backlit} filter="blur(18px)" />}
@@ -134,9 +138,9 @@ export const CutPaper: React.FC<CutPaperProps> = ({f, at = 0, d, color = THEME.c
     <path d={d} fillRule="evenodd" fill={color} />
     <path d={d} fillRule="evenodd" fill="none" stroke="rgba(255,240,220,0.5)" strokeWidth={1.2} transform="translate(-0.8,-0.8)" />
     {inset > 0 && <>
-      <defs><clipPath id={`cut-${cid}`}><path d={d} clipRule="evenodd" fillRule="evenodd" /></clipPath></defs>
+      <defs><clipPath id={cutId}><path d={d} clipRule="evenodd" fillRule="evenodd" /></clipPath></defs>
       {/* 双轮廓：在边内 inset px 处剪一道 3px 细缝（先用纸色描 2×(inset+1.5) 宽，再用原色描 2×(inset−1.5) 宽，只保留形内） */}
-      <g clipPath={`url(#cut-${cid})`}>
+      <g clipPath={`url(#${cutId})`}>
         <path d={d} fill="none" stroke={C.paperBase} strokeWidth={2 * (inset + 1.5)} strokeLinejoin="round" />
         <path d={d} fill="none" stroke={color} strokeWidth={2 * Math.max(0, inset - 1.5)} strokeLinejoin="round" />
       </g>
@@ -151,10 +155,17 @@ export const Seal: React.FC<{f: number; at: number; x: number; y: number; size?:
     const t = Math.min(1, (f - at) / 3);
     const s = 1.35 - 0.35 * t;
     const chars = [...text].slice(0, 4);
-    const fs = chars.length <= 1 ? size * 0.62 : chars.length === 2 ? size * 0.4 : size * 0.36;
+    const pad = size * 0.08;
+    const inner = size - 2 * pad;
+    // 字号必须按「可用内框 / 行列数」算，不能拍脑袋定比例：
+    // 2 字竖排时 size*0.4 的字号 × 2 行 ≈ 内框高度，字一挤就会字形互相压住
+    // （实测 124px 章里「胡克」两字重叠 2266px²，渲染直接被 OverlapGate 拦下）。
+    const cols = chars.length > 2 ? 2 : 1;
+    const rows = Math.ceil(chars.length / cols);
+    const fs = Math.min(size * 0.62, Math.floor(inner / Math.max(cols, rows) * 1.02));
     return <div style={{position: 'absolute', left: x, top: y, width: size, height: size, transform: `rotate(${rot}deg) scale(${s})`, opacity: 0.5 + 0.45 * t,
       border: `${Math.max(4, size / 20)}px solid ${color}`, borderRadius: size * 0.06, color, display: 'grid', placeItems: 'center',
-      gridTemplateColumns: chars.length > 2 ? '1fr 1fr' : '1fr', fontFamily: 'NotoSerifSC,Kai', fontWeight: 900, fontSize: fs, lineHeight: 1, padding: size * 0.08,
+      gridTemplateColumns: cols > 1 ? '1fr 1fr' : '1fr', fontFamily: 'NotoSerifSC,Kai', fontWeight: 900, fontSize: fs, lineHeight: 1, padding: pad,
       maskImage: `radial-gradient(circle at 30% 70%, rgba(0,0,0,0.75), #000 60%)`}}>
       {chars.map((c, i) => <span key={i}>{c}</span>)}
     </div>;

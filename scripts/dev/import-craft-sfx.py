@@ -35,13 +35,11 @@ SR = 48000
 TARGET = -18.0
 
 # event: (kenney file, keep_ms, fade_out_ms, ladder LUFS, description, intended use)
+# 3.8.0 瘦身：只剩 page / place / stamp。snip、rustle、latch 已删除（papercut 专用、极少显式点名）。
 CRAFT = {
-    "page":   ("bookFlip2.ogg", 520, 160, -26.0, "a real paper page flip", "craft skins: a new sheet / page turn (replaces whoosh on transitions)"),
+    "page":   ("bookFlip2.ogg", 520, 160, -26.0, "a real paper page flip", "craft skins: a new sheet / page turn (a pageturn always has paper)"),
     "place":  ("bookPlace1.ogg", 300, 120, -26.5, "a sheet or card laid down on paper", "craft skins: a paper piece / photo lands (replaces pop)"),
-    "snip":   ("knifeSlice.ogg", 360, 120, -26.0, "a quick blade cut", "papercut: a cut / a piece removed"),
     "stamp":  ("bookClose.ogg", 380, 140, -25.0, "a soft heavy thump", "a seal is pressed / a verdict lands (replaces success in craft skins)"),
-    "rustle": ("cloth2.ogg", 420, 160, -28.5, "a dry paper-like rustle", "craft skins: small paper handling / tick (replaces click)"),
-    "latch":  ("metalClick.ogg", 220, 80, -27.5, "a small metal click", "a loupe lands / an instrument clicks into place"),
 }
 
 

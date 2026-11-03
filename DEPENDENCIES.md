@@ -57,3 +57,60 @@ Remotion is **source-available, not open source**. Individuals, non-profits and 
 (including commercially); a for-profit organisation with 4 or more employees needs a Remotion Company License
 (https://www.remotion.dev/license, https://www.remotion.dev/docs/license/pricing). This repository's Apache-2.0 licence covers our code only and does not
 change Remotion's terms; generated projects carry `REMOTION-LICENSE-NOTICE.md`.
+
+<!-- BEGIN GENERATED LICENCES -->
+
+## 直接依赖许可（自动生成，勿手改）
+
+| 包 | 锁定版本 | 许可 | 类型 |
+|---|---|---|---|
+| `@cto.af/linebreak` | 4.0.3 | MIT | 运行时 |
+| `@remotion/cli` | 4.0.539 | Remotion License（npm 元数据为 UNLICENSED，以仓库 LICENSE.md 为准） | 运行时 |
+| `@remotion/effects` | 4.0.539 | Remotion License（含 EffectCraft MIT 改编，见包内 THIRD_PARTY_LICENSES.md） | 运行时 |
+| `@remotion/layout-utils` | 4.0.539 | MIT | 运行时 |
+| `@remotion/media` | 4.0.539 | 见包内 LICENSE | 运行时 |
+| `@remotion/noise` | 4.0.539 | MIT | 运行时 |
+| `@remotion/paths` | 4.0.539 | MIT | 运行时 |
+| `@remotion/shapes` | 4.0.539 | MIT | 运行时 |
+| `@remotion/transitions` | 4.0.539 | UNLICENSED | 运行时 |
+| `@shikijs/langs` | 4.5.0 | MIT | 运行时 |
+| `@visx/axis` | 4.0.0 | MIT | 运行时 |
+| `@visx/grid` | 4.0.0 | MIT | 运行时 |
+| `@visx/shape` | 4.0.0 | MIT | 运行时 |
+| `budoux` | 0.9.2 | Apache-2.0 | 运行时 |
+| `d3-dsv` | 3.0.1 | ISC | 运行时 |
+| `d3-force` | 3.0.0 | ISC | 运行时 |
+| `d3-geo` | 3.1.1 | ISC | 运行时 |
+| `d3-hierarchy` | 3.1.2 | ISC | 运行时 |
+| `d3-sankey` | 0.12.3 | BSD-3-Clause | 运行时 |
+| `d3-scale` | 4.0.2 | ISC | 运行时 |
+| `d3-shape` | 3.2.0 | ISC | 运行时 |
+| `diff` | 9.0.0 | BSD-3-Clause | 运行时 |
+| `flubber` | 0.4.2 | MIT | 运行时 |
+| `katex` | 0.18.7 | MIT | 运行时 |
+| `lucide-react` | 1.59.0 | ISC | 运行时 |
+| `opentype.js` | 2.0.0 | MIT | 运行时 |
+| `perfect-freehand` | 1.2.3 | MIT | 运行时 |
+| `qrcode` | 1.5.4 | MIT | 运行时 |
+| `react` | 19.3.0 | MIT | 运行时 |
+| `react-dom` | 19.3.0 | MIT | 运行时 |
+| `remotion` | 4.0.539 | Remotion License（公司规模超过阈值需商业授权） | 运行时 |
+| `roughjs` | 4.6.6 | MIT | 运行时 |
+| `shiki` | 4.5.0 | MIT | 运行时 |
+| `simple-icons` | 16.35.0 | CC0-1.0 | 运行时 |
+| `topojson-client` | 3.1.0 | ISC | 运行时 |
+| `world-atlas` | 2.0.2 | ISC | 运行时 |
+| `@types/d3-dsv` | 3.0.7 | MIT | 构建/类型 |
+| `@types/d3-force` | 3.0.10 | MIT | 构建/类型 |
+| `@types/d3-geo` | 3.1.1 | MIT | 构建/类型 |
+| `@types/d3-hierarchy` | 3.1.7 | MIT | 构建/类型 |
+| `@types/d3-sankey` | 0.12.5 | MIT | 构建/类型 |
+| `@types/d3-scale` | 4.0.9 | MIT | 构建/类型 |
+| `@types/d3-shape` | 3.2.0 | MIT | 构建/类型 |
+| `@types/qrcode` | 1.5.6 | MIT | 构建/类型 |
+| `@types/react` | 19.3.0 | MIT | 构建/类型 |
+| `typescript` | 5.9.3 | Apache-2.0 | 构建/类型 |
+
+传递依赖共 524 个，许可以上表为准的同一 lockfile 为准；全量清单：`node -e "const l=require('./assets/lecture-template/package-lock.json');for(const[k,v]of Object.entries(l.packages))if(k)console.log(v.license||'?',k)"`。
+
+<!-- END GENERATED LICENCES -->

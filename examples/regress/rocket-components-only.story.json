@@ -1,20 +1,91 @@
 {
-  "title": "火箭为什么要分级（全组件版·回归夹具）",
-  "theme": "flat",
-  "kicker": "回归",
-  "header": "火箭 / ROCKET",
-  "headerSub": "COMPONENTS ONLY",
-  "subject_of_film": "火箭",
-  "captions": {"mode": "line"},
-  "chapters": [
+ "title": "火箭为什么要分级（全组件版·回归夹具）",
+ "theme": "flat",
+ "kicker": "回归",
+ "header": "火箭 / ROCKET",
+ "headerSub": "COMPONENTS ONLY",
+ "subject_of_film": "火箭",
+ "captions": {
+  "mode": "line"
+ },
+ "chapters": [
+  {
+   "title": "为什么不是一整根",
+   "shots": [
     {
-      "title": "为什么不是一整根",
-      "shots": [
-        {"role": "hook", "layout": "statement", "lines": ["先看一枚完整的火箭。", "它其实分成好几节。"], "content": {"text": "一枚完整的火箭"}},
-        {"role": "breakdown", "layout": "bars", "lines": ["第一级最重。", "占了八成多。"], "content": {"title": "起飞质量占比", "unit": "%", "data": [{"label": "第一级", "value": 85}, {"label": "第二级", "value": 10}, {"label": "载荷", "value": 3}]}},
-        {"role": "example", "layout": "compare", "lines": ["不分级，全程推着空壳。", "分级，烧完一节扔一节。"], "content": {"before": {"title": "不分级", "items": ["空壳也要加速", "死重一路带着"]}, "after": {"title": "分级", "items": ["烧完就分离", "只推有用的部分"]}}},
-        {"role": "recap", "layout": "statement", "lines": ["记住这一句。", "分级，是为了扔掉死重。"], "content": {"text": "分级，是为了扔掉死重"}}
+     "role": "hook",
+     "layout": "statement",
+     "lines": [
+      "先看一枚完整的火箭。",
+      "它其实分成好几节。"
+     ],
+     "content": {
+      "text": "一枚完整的火箭"
+     }
+    },
+    {
+     "role": "breakdown",
+     "layout": "bars",
+     "lines": [
+      "第一级最重。",
+      "占了八成多。"
+     ],
+     "content": {
+      "title": "起飞质量占比",
+      "unit": "%",
+      "data": [
+       {
+        "label": "第一级",
+        "value": 85
+       },
+       {
+        "label": "第二级",
+        "value": 10
+       },
+       {
+        "label": "载荷",
+        "value": 3
+       }
       ]
+     }
+    },
+    {
+     "role": "example",
+     "layout": "compare",
+     "lines": [
+      "不分级，全程推着空壳。",
+      "分级，烧完一节扔一节。"
+     ],
+     "content": {
+      "before": {
+       "title": "不分级",
+       "items": [
+        "空壳也要加速",
+        "死重一路带着"
+       ]
+      },
+      "after": {
+       "title": "分级",
+       "items": [
+        "烧完就分离",
+        "只推有用的部分"
+       ]
+      }
+     }
+    },
+    {
+     "role": "recap",
+     "layout": "statement",
+     "lines": [
+      "记住这一句。",
+      "分级，是为了扔掉死重。"
+     ],
+     "content": {
+      "text": "分级，是为了扔掉死重"
+     }
     }
-  ]
+   ]
+  }
+ ],
+ "mode": "component"
 }

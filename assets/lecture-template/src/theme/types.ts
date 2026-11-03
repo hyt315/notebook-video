@@ -74,9 +74,10 @@ export interface ChromeProps {
   local: number;
 }
 
-/** 3.3.0：皮肤的「材质」声明 —— 给 craft 组件（src/craft/）读，旧皮肤不用写。 */
+/** 3.3.0：皮肤的 craft **能力配置** —— 线稿色、字体、缺省转场。
+ *  flat / cel 也会声明它；拥有配置不等于“手作媒介”，审美判断统一走 theme/medium.ts。 */
 export interface ThemeCraft {
-  /** 媒介名（写进 treatment.json 的 medium 应与之对应） */
+  /** 媒介名（treatment.json 的 medium 应与之对应）。手作审美与拟音只认 isHandmadeMedium。 */
   medium: 'journal' | 'papercut' | 'archive' | string;
   /** 卡片上叠的纸纤维纹理强度 0–1（public/craft/fibre-tile.png） */
   fibre: number;

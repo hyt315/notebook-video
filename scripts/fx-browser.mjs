@@ -14,7 +14,8 @@
 //   重复平铺，2560×1440 帧里出现 780×380 的格子）。所以开 fx 时渲染一律 concurrency=1（FX_CONCURRENCY）。
 //
 // 结论缓存在 <project>/renders/.fx-probe.json（键 = 浏览器 + 参数 + Remotion 版本），make-video 读它写报告。
-// 任何一步不通 → {on:false, reason}，调用方照常渲染（pageturn / peel 在合成里自动退回 slide / drop）。
+// 任何一步不通 → {on:false, reason}，调用方照常渲染（pageturn 退回纯 CSS 的 pageflip 折痕翻页，
+// peel 退回 drop；两者都不需要 WebGPU，片子照样有翻页）。
 
 import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
@@ -28,50 +29,20 @@ import {fileURLToPath} from 'node:url';
 export const FX_PROBE_COMPOSITION = 'NotebookVideoFxProbe';
 /** 开 fx 时的渲染并发（见文件头 ⚠）。 */
 export const FX_CONCURRENCY = 1;
+/**
+ * 探针的上限（毫秒）。通过时要 25–30 秒（起一次完整版 Chromium 画一帧）；
+ * 没有完整版 Chromium 时 Remotion 会去下载 Chrome for Testing，网络不通就永远不返回——
+ * `render` 于是卡在「Rendering at concurrency N」后面。探针失败是可接受的结局（退回 pageflip），
+ * 所以到点就杀，由调用方（notebook-video.mjs 的 runStill）执行。
+ */
+export const FX_PROBE_TIMEOUT_MS = 150_000;
 /** 软件 GPU（无显卡的 Linux 服务器 / 容器）上实测能画出 pageTurn 的参数组。 */
 export const SOFTWARE_GPU_FLAGS = ['--use-angle=vulkan', '--use-vulkan=swiftshader', '--enable-unsafe-swiftshader'];
 
-/** 工程是否用到卷页：分镜表显式写了 pageturn / peel，或当前皮肤的缺省转场是它们。 */
-export const projectUsesCurl = (project) => {
-  const read = (p) => { try { return fs.readFileSync(p, 'utf8'); } catch { return ''; } };
-  const shots = read(path.join(project, 'src', 'shots.ts'));
-  if (/transition\s*:\s*['"](pageturn|peel)['"]/.test(shots)) return true;
-  const active = read(path.join(project, 'src', 'theme', 'active.ts'));
-  const m = active.match(/from\s+['"]\.\/([\w-]+)['"]/);
-  if (!m) return false;
-  const skin = read(path.join(project, 'src', 'theme', `${m[1]}.tsx`));
-  return /transition\s*:\s*['"](pageturn|peel)['"]/.test(skin);
-};
-
-/** 卷页转场时长（帧），与 src/fx.tsx 的 CURL_FRAMES 同值（tests/test_fx.py 交叉校验）。 */
-export const CURL_FRAMES = 22;
-
-/**
- * 成片里可能出现卷页的帧窗 [[a, b], …]（含两端）：分镜表显式 pageturn / peel，或皮肤缺省是卷页且该镜写 auto 类。
- * **宁多勿少**：多拼一个窗口只是那 22 帧换完整版 Chrome 再渲一遍（同一合成、同一帧 → 同样的画面，章节首镜照样是 drop）；
- * 少拼一个则那一处留着退回后的 slide。读 src/shots.ts（引擎真正吃的那份）。
- */
-export const curlWindows = (project, total = Infinity) => {
-  const read = (p) => { try { return fs.readFileSync(p, 'utf8'); } catch { return ''; } };
-  const shots = read(path.join(project, 'src', 'shots.ts'));
-  const active = read(path.join(project, 'src', 'theme', 'active.ts')).match(/from\s+['"]\.\/([\w-]+)['"]/);
-  const skin = active ? read(path.join(project, 'src', 'theme', `${active[1]}.tsx`)) : '';
-  const skinCurl = /transition\s*:\s*['"](pageturn|peel)['"]/.test(skin);
-  const out = [];
-  for (const line of shots.split('\n')) {
-    const from = line.match(/\bfrom\s*:\s*(\d+)/);
-    if (!from || !/\bid\s*:/.test(line)) continue;
-    const a = Number(from[1]);
-    if (a === 0) continue; // 首镜没有转场
-    const tr = (line.match(/\btransition\s*:\s*['"]([\w-]+)['"]/) ?? [])[1] ?? 'auto';
-    const curl = tr === 'pageturn' || tr === 'peel' || (skinCurl && ['auto', 'cut', 'reveal', 'handoff'].includes(tr));
-    if (curl) out.push([a, Math.min(total - 1, a + CURL_FRAMES - 1)]);
-  }
-  out.sort((x, y) => x[0] - y[0]);
-  const merged = [];
-  for (const w of out) { const last = merged.at(-1); if (last && w[0] <= last[1] + 1) last[1] = Math.max(last[1], w[1]); else merged.push([...w]); }
-  return merged;
-};
+// 转场计划（哪几帧要卷页）在 scripts/transition-plan.mjs：读 manifests/shots.resolved.json，
+// 不再逐行正则扫 src/shots.ts（那份是生成物，格式化一变就悄悄漏窗口）。这里只做转出，保持既有 API。
+import {curlPlan, curlWindows, projectUsesCurl, warnFallback} from './transition-plan.mjs';
+export {CURL_FRAMES, curlWindows, projectUsesCurl} from './transition-plan.mjs';
 
 /**
  * 把完整版 Chrome 渲的卷页片段按帧号拼回快速渲染的整片（split + trim + concat，按帧号精确；只重编码这一遍）。
@@ -195,9 +166,13 @@ export const judgeProbe = (png) => {
 export const resolveFx = async ({project, remotionVersion = '', runStill, env = process.env, force = false}) => {
   const cacheFile = path.join(project, 'renders', '.fx-probe.json');
   const save = (r) => { try { fs.mkdirSync(path.dirname(cacheFile), {recursive: true}); fs.writeFileSync(cacheFile, JSON.stringify({...r, at: new Date().toISOString()}, null, 2) + '\n'); } catch { /* 只读工程也照常渲染 */ } return r; };
-  if (/^(off|0|false|no)$/i.test(env.NOTEBOOK_VIDEO_FX ?? '')) return save({on: false, used: projectUsesCurl(project), reason: 'NOTEBOOK_VIDEO_FX=off（手动关闭）', args: []});
-  const used = projectUsesCurl(project);
-  if (!used && !force) return save({on: false, used, reason: '本片没有用到 pageturn / peel', args: []});
+  if (/^(off|0|false|no)$/i.test(env.NOTEBOOK_VIDEO_FX ?? '')) return save({on: false, used: curlPlan(project).boundaries.some((b) => b.curl), reason: 'NOTEBOOK_VIDEO_FX=off（手动关闭）', args: []});
+  const plan = curlPlan(project);
+  warnFallback(project, plan.problems);
+  // 计划来源写进缓存：报告里能看出这次是按结构化分镜表算的窗口，还是旧的正则兜底。
+  const planInfo = {source: plan.source, theme: plan.theme, craftTransition: plan.craftTransition, curlShots: plan.boundaries.filter((b) => b.curl).length};
+  const used = planInfo.curlShots > 0;
+  if (!used && !force) return save({on: false, used, plan: planInfo, reason: '本片没有用到 pageturn / peel', args: []});
   const browser = findFxBrowser(env);
   const linux = process.platform === 'linux';
   const flags = env.NOTEBOOK_VIDEO_FX_FLAGS !== undefined ? env.NOTEBOOK_VIDEO_FX_FLAGS.split(/\s+/).filter(Boolean) : (linux ? SOFTWARE_GPU_FLAGS : []);
@@ -214,14 +189,14 @@ export const resolveFx = async ({project, remotionVersion = '', runStill, env = 
   let res;
   try { res = await runStill([FX_PROBE_COMPOSITION, out, '--frame=0', ...args.filter((a) => !a.startsWith('--props='))]); } catch (e) { res = {code: 1, out: String(e?.message ?? e)}; }
   const ms = Date.now() - t0;
-  const base = {key, probed: true, used, browser: browser ?? '(Remotion chrome-for-testing 自动下载)', flags, remotionVersion, probeMs: ms};
+  const base = {key, probed: true, used, plan: planInfo, browser: browser ?? '(Remotion chrome-for-testing 自动下载)', flags, remotionVersion, probeMs: ms};
   if (res.code || !fs.existsSync(out)) {
     const hint = /No WebGPU adapter/.test(res.out ?? '') ? '浏览器没有 WebGPU 适配器' : /HTML in Canvas|CanvasDrawElement/i.test(res.out ?? '') ? '浏览器不支持 HTML-in-canvas（需 Chrome ≥ 149）' : '探针渲染失败';
-    return save({...base, on: false, reason: `${hint}；${browser ? '' : '没找到完整版 Chromium（设 NOTEBOOK_VIDEO_FX_BROWSER 或 npx playwright install chromium）；'}已退回 slide / drop`, args: []});
+    return save({...base, on: false, reason: `${hint}；${browser ? '' : '没找到完整版 Chromium（设 NOTEBOOK_VIDEO_FX_BROWSER 或 npx playwright install chromium）；'}已退回折痕翻页（pageflip）`, args: []});
   }
   let verdict;
   try { verdict = judgeProbe(decodePng(fs.readFileSync(out))); } catch (e) { verdict = {ok: false, why: `探针图读不出：${e.message}`}; }
-  if (!verdict.ok) return save({...base, on: false, reason: `${verdict.why}；已退回 slide / drop`, args: []});
+  if (!verdict.ok) return save({...base, on: false, reason: `${verdict.why}；已退回折痕翻页（pageflip）`, args: []});
   return save({...base, on: true, reason: 'WebGPU 卷页探针通过', args});
 };
 
@@ -239,16 +214,29 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nv-fx-test-'));
   fs.mkdirSync(path.join(tmp, 'src', 'theme'), {recursive: true});
   fs.writeFileSync(path.join(tmp, 'src', 'theme', 'active.ts'), "import {THEME} from './journal';\nexport {THEME};\n");
-  fs.writeFileSync(path.join(tmp, 'src', 'theme', 'journal.tsx'), "craft: {transition: 'pageturn'}");
-  const usedSkin = projectUsesCurl(tmp);
-  fs.writeFileSync(path.join(tmp, 'src', 'theme', 'journal.tsx'), "craft: {transition: 'slide'}");
+  const skinFile = path.join(tmp, 'src', 'theme', 'journal.tsx');
+  const shotsFile = path.join(tmp, 'src', 'shots.ts');
+  const setSkin = (kind) => fs.writeFileSync(skinFile, `craft: {transition: '${kind}'}`);
+  // ① 分镜表只写 auto：用不用卷页完全由皮肤决定（旧工程没有 manifest，走 shots.ts 兜底）
+  fs.writeFileSync(shotsFile, "export const SHOTS = {\n  S1: {id:'S1',from:0,to:100,transition:'auto'},\n  S2: {id:'S2',from:100,to:200,transition:'auto'},\n};\n");
+  setSkin('slide');
   const unused = projectUsesCurl(tmp);
-  fs.writeFileSync(path.join(tmp, 'src', 'shots.ts'), "S2: {transition:'peel'}");
+  setSkin('pageturn');
+  const usedSkin = projectUsesCurl(tmp);
+  // ② 皮肤是 slide，但分镜显式写了 pageturn / peel：显式优先
+  fs.writeFileSync(shotsFile, "export const SHOT_TOTAL = 400;\nexport const SHOTS = {\n  S1: {id:'S1',from:0,to:100,transition:'cut'},\n  S2: {id:'S2',from:100,to:200,transition:'pageturn'},\n  S3: {id:'S3',from:200,to:300,transition:'slide'},\n  S4: {id:'S4',from:300,to:310,transition:'peel'},\n  S5: {id:'S5',from:310,to:400},\n};\n");
+  setSkin('slide');
   const usedShot = projectUsesCurl(tmp);
-  fs.writeFileSync(path.join(tmp, 'src', 'shots.ts'), "export const SHOTS = {\n  S1: {id:'S1',from:0,to:100,transition:'cut'},\n  S2: {id:'S2',from:100,to:200,transition:'pageturn'},\n  S3: {id:'S3',from:200,to:300,transition:'slide'},\n  S4: {id:'S4',from:300,to:310,transition:'peel'},\n  S5: {id:'S5',from:310,to:400},\n};\n");
   const winSlide = curlWindows(tmp, 400); // 皮肤缺省 slide：只有显式的 S2、S4
-  fs.writeFileSync(path.join(tmp, 'src', 'theme', 'journal.tsx'), "craft: {transition: 'pageturn'}");
+  setSkin('pageturn');
   const winCurl = curlWindows(tmp, 400); // 皮肤缺省 pageturn：S5（auto）也算，S4/S5 窗口相接 → 合并
+  // ③ 有了 manifests/shots.resolved.json 就按结构化输入算，shots.ts 的排版不再影响结果
+  fs.mkdirSync(path.join(tmp, 'manifests'), {recursive: true});
+  fs.writeFileSync(path.join(tmp, 'manifests', 'shots.resolved.json'), JSON.stringify({duration: 400, theme: 'journal',
+    shots: [{id: 'S1', from: 0, to: 100, transition: 'auto'}, {id: 'S2', from: 100, to: 200, transition: 'peel'}]}));
+  const planSource = curlPlan(tmp).source;
+  const winManifest = curlWindows(tmp, 400);
+  fs.rmSync(path.join(tmp, 'manifests'), {recursive: true, force: true});
   const sp = spliceArgs('raw.mp4', ['a.mp4', 'b.mp4'], [[100, 121], [300, 331]], 'out.mp4');
   const fc = sp[sp.indexOf('-filter_complex') + 1];
   const wrapper = writeChromeWrapper('/bin/echo', SOFTWARE_GPU_FLAGS, tmp);
@@ -264,9 +252,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const icdWrapped = fs.readFileSync(writeChromeWrapper(path.join(tmp, 'cft', 'chrome'), SOFTWARE_GPU_FLAGS, tmp), 'utf8').includes('export VK_ICD_FILENAMES=');
   const icdSkipped = !fs.readFileSync(writeChromeWrapper(path.join(tmp, 'cft', 'chrome'), [], tmp), 'utf8').includes('VK_ICD_FILENAMES');
   fs.rmSync(tmp, {recursive: true, force: true, maxRetries: 5, retryDelay: 120});
-  const result = {good: good.ok, flat: flat.ok, empty: empty.ok, usedSkin, unused, usedShot, echoed, winSlide, winCurl, fc, icdWrapped, icdSkipped};
+  const result = {good: good.ok, flat: flat.ok, empty: empty.ok, usedSkin, unused, usedShot, planSource, winManifest, echoed, winSlide, winCurl, fc, icdWrapped, icdSkipped};
   console.log(JSON.stringify(result));
   const pass = icdWrapped && icdSkipped && good.ok && !flat.ok && !empty.ok && usedSkin && !unused && usedShot
+    && planSource === 'manifest' && JSON.stringify(winManifest) === '[[100,121]]'
     && JSON.stringify(winSlide) === '[[100,121],[300,321]]' && JSON.stringify(winCurl) === '[[100,121],[300,331]]'
     && fc === '[0:v]split=3[m0][m1][m2];[m0]trim=start_frame=0:end_frame=100,setpts=PTS-STARTPTS[p0];[1:v]trim=end_frame=22,setpts=PTS-STARTPTS[w0];[m1]trim=start_frame=122:end_frame=300,setpts=PTS-STARTPTS[p1];[2:v]trim=end_frame=32,setpts=PTS-STARTPTS[w1];[m2]trim=start_frame=332,setpts=PTS-STARTPTS[p2];[p0][w0][p1][w1][p2]concat=n=5:v=1:a=0[v]'
     && (!echoChecked || echoed === '--headless=new --enable-features=Vulkan,CanvasDrawElement --window-size=3840,2160 --use-angle=vulkan --use-vulkan=swiftshader --enable-unsafe-swiftshader');

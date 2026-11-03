@@ -320,6 +320,22 @@ def main() -> int:
         r3 = run(sys.executable, str(vb), str(proj), "--shots")
         check("背景分配：相邻镜重复给出 P1 提示", r3.returncode == 0 and "相邻镜重复" in r3.stdout, f"rc={r3.returncode}")
 
+    # ---- 线稿几何：改了 path 忘了改 fit，特写就会框住半边（渲染期一声不响） ----
+    with tempfile.TemporaryDirectory() as td4:
+        src = (ROOT / "assets/lecture-template/src/linework/library.ts").read_text(encoding="utf-8")
+        broken = src.replace("fit: [62, 0, 38, 34]", "fit: [70, 6, 18, 18]")
+        if broken == src:
+            check("线稿几何：缩小的 fit 被拦", False, "夹具失效：chiplog.hull 的 fit 变了")
+        else:
+            bad_lib = Path(td4) / "library.ts"
+            bad_lib.write_text(broken, encoding="utf-8")
+            good = run(sys.executable, str(ROOT / "scripts/linework_index.py"), "--geometry")
+            bad = run(sys.executable, str(ROOT / "scripts/linework_index.py"), "--geometry", str(bad_lib))
+            check("线稿几何：模板通过", good.returncode == 0, f"rc={good.returncode}")
+            check("线稿几何：缩小的 fit 被拦",
+                  bad.returncode == 1 and "没盖住" in (bad.stderr or ""),
+                  f"rc={bad.returncode}")
+
     failed = [r for r in results if not r[1]]
     if not failed:
         print(f"SELFTEST PASS (all {len(results)} checks passed)")

@@ -25,6 +25,8 @@ export type SketchPart = {
   anchor?: [number, number];
   /** 细节件（窗、按钮、指示灯）：线更细、颜色偏暖灰（三档线的第三档） */
   detail?: boolean;
+  /** 单部位特写时的取景框；不写就沿用整图 fit（多部位组合也始终用整图 fit）。 */
+  fit?: [number, number, number, number];
 };
 
 export type SketchDef = {
@@ -52,7 +54,8 @@ export type SketchSpec = {
   id: string;
   draw: string;            // lib:<名字> | shapes:[...] | trace:<media id>
   label?: string;
-  parts?: Record<string, string>;
+  /** Record = point 标注的自定义名；string[] = 只画这些部位（墨图页用）。两种含义不能混在一个结构里。 */
+  parts?: Record<string, string> | string[];
   acts?: Array<{at: string | number; do: SketchAct['do']; target?: string; n?: number; mark?: SketchAct['mark']; text?: string}>;
   place?: 'left' | 'right' | 'center' | 'corner';
   keep?: boolean;

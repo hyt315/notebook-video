@@ -182,3 +182,50 @@ Paper Shaders 与程序生成的图由本仓库生成，随仓库以 Apache-2.0 
 | `cel/main` | 漫画角饰·常规 *(legacy)* | main | AI 生成（3.2.0） | Apache-2.0 | 见 `manifests/visual-assets.json` |
 | `cel/chapter` | 漫画角饰·章节 *(legacy)* | chapter | AI 生成（3.2.0） | Apache-2.0 | 见 `manifests/visual-assets.json` |
 | `cel/quiet` | 漫画角饰·安静 *(legacy)* | quiet | AI 生成（3.2.0） | Apache-2.0 | 见 `manifests/visual-assets.json` |
+
+---
+
+## 选纸：从「按角色轮换」到「按内容 + 版式」
+
+3.4.0 起每张背景多了一个 `use` 块（`manifests/backgrounds.json`）：
+
+```json
+"use": {
+  "layouts": ["page", "component"],   // 这张纸能承载哪些版式
+  "tone": "warm",                     // 冷暖（连续性参考）
+  "fits": ["science", "craft"],       // 适合哪些题材
+  "note": "点阵极淡、满幅均匀，真图版与组件都不抢"
+}
+```
+
+### 三个判定，按顺序生效
+
+1. **版式**（最硬）：`page` = 手账页（要放真图版 + 大字 + 印章，必须中心干净、边角不抢）；
+   `component` = 组件镜（卡片盖住中间，容得下中等纹理）；`chapter` = 纯字卡（可以最花）。
+   一镜如果是手账页，**就算它刚好开了一章**也按 page 挑纸——章节首镜不降级。
+   这条实测抓过一个真 bug：S1 是 page，却因为是章节首镜拿到了 `cel/speedlines`（全幅集中线），
+   真图版直接废掉。
+2. **题材**（可选）：`story.json` 顶层写 `"topic": "science"`，compose 写进 `shots.json`，
+   resolve 只在 `use.fits` 命中的纸里挑；命中为空则退回只按版式（不报错，但也不保证贴题）。
+   可用值：`science` / `craft` / `eastern` / `concept` / `story`。
+3. **角色 + 轮换**：`main` / `chapter` / `quiet`，同 `bgMode`（手作三族默认一章一张纸，
+   flat / cel 逐镜换）。永不与上一镜同一张。
+
+### 为什么不用「按背景自动调色」
+
+算过：卡片色 `#fbf6ea`（lum 0.96）对最暗的纸（`papercut/chapter` 0.66）明度比只有 **1.42**。
+而 49 张纸的 `zone_mean_lum` 全部落在 0.66–0.97，**没有一张暗到需要浅墨**。
+也就是说：卡片的可读性从来不是靠「换个更亮的色」解决的，靠的是**描边 + 阴影 + 纸条卡片**
+（`paperCard` 的 1px 墨边 + 三层阴影）。硬做「背景→调色」只会把已经成立的视觉弄花。
+真正的失配发生在**选错纸**，不在配色。
+
+### 换皮肤要三处一起改
+
+```bash
+python scripts/set-skin.py <工程> journal --rebuild
+```
+
+皮肤有两个来源：`src/theme/active.ts`（渲染端 import 它）与 `manifests/shots.json` 的 `theme`
+（背景库按它挑图）。只改一处会渲出「A 皮肤的组件 + B 皮肤的纸」——**没有任何门禁看得见的坏组合**。
+`set-skin.py` 一次写全三处（`active.ts` + `story.json` + `shots.json`），`--rebuild` 顺手重跑
+compose + resolve。resolve 现在一律以 `active.ts` 为准，不同步时只提示、不阻断。

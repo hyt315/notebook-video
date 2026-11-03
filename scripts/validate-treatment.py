@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -25,6 +26,7 @@ FAMILIES = ("medium-metaphor", "kishotenketsu", "mystery", "scale-ladder", "expe
 # 3.3.0：treatment 的景别 / 运镜要在镜头表里兑现（references/camera-language.md §2）
 MOVES = ("establish", "push-in", "pull-back", "pan-follow", "reveal", "micro-orbit", "still")
 SIGNATURE_PUSH_MIN = 0.12   # 招牌镜头至少真推 12%（缩放变化，或 cinema.focus 的 zoom）
+SIGNATURE_SHIFT_MIN = 120.0 # 或者屏幕位移 ≥120px（横移 / 拉远）：招牌镜的另一个合法做法
 FRAMING_RULES = {           # 景别 → 实际取景（镜头表 keys 的缩放 / 主体占画高）
     "全": "最松处缩放 ≤ 1.05",
     "中": "最松处缩放 ≤ 1.20",
@@ -58,10 +60,18 @@ def active_skin(proj: Path) -> str:
 
 
 def camera_of(shot: dict) -> dict:
-    """镜头表（shots.resolved.json）里一镜的实际取景：起幅 / 峰值缩放、推拉幅度、主体占画高。"""
-    keys = [k for k in (shot.get("keys") or []) if isinstance(k.get("s"), (int, float))]
+    """镜头表（shots.resolved.json）里一镜的实际取景：起幅 / 峰值缩放、推拉幅度、主体占画高。
+
+    数据源按引擎真实生效顺序取：index.tsx 的 `camFor` 是
+    `cinemaCamAt(s.cinema, local, s.duration, i, s.keys)` —— **cinema.path 优先，keys 只是兜底**。
+    auto 版式（compose-story 产出的片）把运镜全写在 cinema.path 里，keys 是模板遗留的装饰值；
+    只读 keys 会把「明明推了 15%」的镜判成「只推 3%」。
+    """
+    cine = shot.get("cinema") or {}
+    path = [k for k in (cine.get("path") or []) if isinstance(k.get("s"), (int, float))]
+    keys = path or [k for k in (shot.get("keys") or []) if isinstance(k.get("s"), (int, float))]
     ss = [float(k["s"]) for k in keys] or [1.0]
-    focus = [f for f in ((shot.get("cinema") or {}).get("focus") or []) if not f.get("settle")]
+    focus = [f for f in (cine.get("focus") or []) if not f.get("settle")]
     fz = max([float(f.get("zoom") or 1.0) for f in focus] + [1.0])
     start, peak = ss[0], max(ss) * fz
     push = max(max(ss) / max(min(ss), 1e-6), fz) - 1.0
@@ -69,8 +79,14 @@ def camera_of(shot: dict) -> dict:
     size = hero.get("size") if isinstance(hero.get("size"), (int, float)) else None
     frac = size * peak / 1080.0 if size else 0.0
     graphic_only = not ({"text", "code", "console"} & set(shot.get("media") or []))
-    return {"start": start, "low": min(ss), "peak": peak, "push": push, "frac": frac, "insert": bool(shot.get("insert")),
-            "graphic_only": graphic_only, "has_keys": bool(keys), "intent": shot.get("cameraIntent")}
+    # 位移：招牌镜不一定靠推近，横移 / 拉远同样是有力的镜头动作（见 shift 说明）
+    track = [k for k in keys if isinstance(k.get("x"), (int, float)) and isinstance(k.get("y"), (int, float))]
+    shift = 0.0
+    for a, b in zip(track, track[1:]):
+        shift = max(shift, math.hypot((a["x"] - b["x"]) * b["s"], (a["y"] - b["y"]) * b["s"]))
+    return {"start": start, "low": min(ss), "peak": peak, "push": push, "shift": shift, "frac": frac,
+            "insert": bool(shot.get("insert")), "graphic_only": graphic_only, "has_keys": bool(keys),
+            "intent": shot.get("cameraIntent")}
 
 
 def framing_ok(framing: str, c: dict) -> bool:
@@ -116,8 +132,15 @@ def check_camera(t: dict, resolved: list[dict]) -> tuple[list[str], list[str]]:
     sig = signature_id(t, ids)
     if sig and sig in real:
         c = camera_of(real[sig])
-        if c["has_keys"] and not c["insert"] and c["push"] < SIGNATURE_PUSH_MIN - 1e-9:
-            hard.append(f"招牌镜头 {sig} 实际只推了 {c['push']:.0%}（要 ≥ {SIGNATURE_PUSH_MIN:.0%}：keys 的缩放变化或 cinema.focus 的 zoom）—— 招牌镜头写了慢推就要真推")
+        # 招牌镜要「看得见的运镜」，但不是只有推近一种。
+        # 为什么放开：treatment.move 的词汇表本来就有 pan-follow / reveal / pull-back（MOVES），
+        # 把招牌镜锁死在「必须推 ≥12%」与它自相矛盾——一个全景流程镜（一行 4 个节点并排）
+        # 在 16:9 里任何 ≥12% 的推近都必然切断相邻节点的文字，那是构图物理限制，不是作者的错。
+        # 所以认三条路：真推 ≥12%、屏幕位移 ≥120px（横移/拉远）、或 cinema.focus 的 zoom。
+        if c["has_keys"] and not c["insert"] and c["push"] < SIGNATURE_PUSH_MIN - 1e-9 \
+                and c["shift"] < SIGNATURE_SHIFT_MIN - 1e-9:
+            hard.append(f"招牌镜头 {sig} 既没真推（{c['push']:.0%} < {SIGNATURE_PUSH_MIN:.0%}）也没有实质位移（{c['shift']:.0f}px < {SIGNATURE_SHIFT_MIN:.0f}px）"
+                        f"—— 招牌镜要么慢推到主体上，要么横移扫过去，不能一个静帧到底")
     elif sig and ids:
         soft.append(f"signature_shot 指向的 {sig} 不在镜头表里")
     return hard, soft

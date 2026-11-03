@@ -1,0 +1,116 @@
+{
+ "title": "节这个单位是怎么来的（全非组件版·回归夹具）",
+ "theme": "journal",
+ "kicker": "度量",
+ "header": "节 / KNOT",
+ "headerSub": "FREEFORM ONLY",
+ "subject_of_film": "节",
+ "mode": "freeform",
+ "camera": "still",
+ "captions": {
+  "mode": "line"
+ },
+ "chapters": [
+  {
+   "title": "绳上的结",
+   "shots": [
+    {
+     "role": "hook",
+     "layout": "page",
+     "lines": [
+      "十六世纪的水手，想知道船走多快。",
+      "他们往海里扔一块木板，绳上每隔一段打一个结。"
+     ],
+     "content": {
+      "page": "ink",
+      "ink": {
+       "draw": "lib:chiplog",
+       "label": "船尾抛板与测速绳",
+       "parts": [
+        "hull",
+        "line"
+       ],
+       "delay": 40
+      },
+      "big": "节",
+      "note": "一节，原本只是绳上的一个结",
+      "stamp": "航海"
+     }
+    },
+    {
+     "role": "steps",
+     "layout": "type",
+     "lines": [
+      "这个装置要做的事，只有三件。",
+      "打一个结。翻一次沙漏。数结。"
+     ],
+     "content": {
+      "rows": [
+       {
+        "text": "打一个结",
+        "note": "每 47 呎 3 吋一个"
+       },
+       {
+        "text": "翻一次沙漏",
+        "note": "28 秒漏完"
+       },
+       {
+        "text": "数结",
+        "note": "放出去几个，就是几节"
+       }
+      ]
+     }
+    },
+    {
+     "role": "math",
+     "layout": "type",
+     "lines": [
+      "算一遍就明白，为什么它能当速度用。",
+      "距离除以时间，结果正好落在一节上。"
+     ],
+     "content": {
+      "rows": [
+       {
+        "text": "47.25 ÷ 28",
+        "note": "呎 ÷ 秒",
+        "reveal": "type"
+       },
+       {
+        "text": "= 1.69",
+        "note": "呎每秒",
+        "reveal": "slide"
+       },
+       {
+        "text": "≈ 1 节",
+        "note": "一小时一海里",
+        "reveal": "slide",
+        "mark": 1
+       }
+      ]
+     }
+    },
+    {
+     "role": "close",
+     "layout": "page",
+     "lines": [
+      "所以节不是一个长度，是一个比值。",
+      "名字留下来了，办法早就没了。"
+     ],
+     "content": {
+      "page": "ink",
+      "ink": {
+       "draw": "lib:chiplog",
+       "label": "木板入水的一瞬",
+       "parts": [
+        "plank"
+       ]
+      },
+      "big": "比值",
+      "note": "距离除以时间",
+      "stamp": "定义"
+     }
+    }
+   ]
+  }
+ ]
+}

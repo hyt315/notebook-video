@@ -106,7 +106,11 @@ class RotationTest(unittest.TestCase):
                 self.assertTrue(all(x != y for x, y in zip(files, files[1:])), (theme, files))
                 self.assertEqual(files, [r["bgFile"] for r in b])
                 self.assertTrue(all(r["bg"].startswith(theme + "/") for r in a))
-                self.assertGreaterEqual(len(set(files)), min(len(files), 5), (theme, files))
+                # 轮换必须真的换：8 镜里至少出现 4 张不同的纸。
+                # 原来钉的是 5。3.4.0 加入 use.layouts 后，每族「能承载这一镜版式」的纸变少
+                # （papercut 只有 4 张放得下图版），硬要 5 只会逼人把「窗花角」塞给图版页——
+                # 拿门禁逼出坏画面。真正吃重的是上面两条：相邻不重复、同种子同结果。
+                self.assertGreaterEqual(len(set(files)), min(len(files), 4), (theme, files))
             finally:
                 shutil.rmtree(d)
 
@@ -137,16 +141,30 @@ class RotationTest(unittest.TestCase):
             shutil.rmtree(d)
 
     def test_role_pools(self):
-        d = project("papercut", mutate=lambda doc: doc.update(bgMode="shot"))
-        try:
-            _, out, _ = self.resolve(d)
-            lib = {e["id"]: e for e in LIB["backgrounds"]}
-            chapters = rs.chapter_starts(d, out)
-            for r in out:
-                role = "chapter" if r["id"] in chapters else ("quiet" if (r.get("zones") or 0) >= 4 else "main")
-                self.assertIn(role, lib[r["bg"]]["roles"], r["id"])
-        finally:
-            shutil.rmtree(d)
+        """3.4.0 的新契约：**能不能承载这种版式**优先于「角色池」。
+
+        早先这里断言「bg 的 roles 含这一镜算出来的 role」。加入 use.layouts 之后，
+        role 只在版式定了之后才细分（手账页永远按 main/quiet 挑干净纸，不会因为
+        「它刚好开了一章」被派去做章节卡），所以旧断言会误报。
+        真正要守的不变量是：**这一镜拿到的纸，必须认这一镜的版式**。
+        """
+        for theme in ("papercut", "journal", "archive", "flat", "cel"):
+            d = project(theme, mutate=lambda doc: doc.update(bgMode="shot"))
+            try:
+                _, out, p = self.resolve(d)
+                self.assertEqual(p, [], theme)
+                lib = {e["id"]: e for e in LIB["backgrounds"]}
+                for r in out:
+                    e = lib[r["bg"]]
+                    self.assertEqual(e.get("skin"), theme, r["id"])
+                    ls = (e.get("use") or {}).get("layouts")
+                    if ls:
+                        lay = str(r.get("layout") or "")
+                        cls = "page" if lay.startswith("page") else (
+                            "chapter" if lay.startswith(("statement", "define", "quiz")) else "component")
+                        self.assertIn(cls, ls, (theme, r["id"], r["bg"], cls, ls))
+            finally:
+                shutil.rmtree(d)
 
     def test_bg_rotate_false_and_no_library_keep_330_behaviour(self):
         for kw in ({"library": False}, {"mutate": lambda doc: doc.update(bgRotate=False)}):

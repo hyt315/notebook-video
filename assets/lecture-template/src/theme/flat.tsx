@@ -123,7 +123,7 @@ export const THEME: Theme = {
   // 笔触口径：干净等宽描边、圆角端点、皮肤主色淡填——产品插画线稿，不是手绘抖动。
   craft: {
     medium: 'flat', fibre: 0, inkLine: palette.ink, handFamily: 'Kai', bodyFamily: 'Kai',
-    accent: palette.orange, transition: 'fade',
+    accent: palette.orange, transition: 'pageturn',
   },
   paperShadow,
   backgrounds: BACKGROUNDS,

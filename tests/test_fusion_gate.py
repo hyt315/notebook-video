@@ -53,6 +53,60 @@ class FusionGate(unittest.TestCase):
             self.assertEqual(g.returncode, 0, g.stdout + g.stderr)
             self.assertIn("手账页只占 0%", g.stdout)
 
+    # ---- 3.7.0 · 三种呈现模式共用一套约束，但配额不同 ----
+    def _run_mode(self, td: str, story: dict, mode: str):
+        story = dict(story, mode=mode)
+        sp = Path(td) / f"{mode}.json"
+        sp.write_text(json.dumps(story, ensure_ascii=False), encoding="utf-8")
+        proj = Path(td) / mode
+        r = build(sp, proj)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        return subprocess.run([sys.executable, str(GATE), str(proj)], capture_output=True, text=True, timeout=60)
+
+    def test_mode_switches_thresholds(self):
+        """同一份全组件片：hybrid 会嫌「没有承载」，component 不嫌——配额随模式走。"""
+        base = json.loads((ROOT / "examples" / "regress" / "rocket-components-only.story.json").read_text(encoding="utf-8"))
+        base["subject_of_film"] = "abstract"
+        base["subject_why"] = "这条只验模式契约，不讲具体东西。"
+        with tempfile.TemporaryDirectory() as td:
+            g_hy = self._run_mode(td, base, "hybrid")
+            g_co = self._run_mode(td, base, "component")
+            self.assertIn("手账页只占 0%", g_hy.stdout)
+            self.assertNotIn("手账页只占 0%", g_co.stdout)
+            # component 的组件下限是 60%，必须比 hybrid 的 25% 更严
+            self.assertIn("60%", g_co.stdout)
+
+    def test_component_mode_passes_when_subject_named(self):
+        """全组件片没有纸可贴：主题物只要在某镜的 see 里被点名，就不该判 P0。"""
+        story = json.loads((ROOT / "examples" / "regress" / "rocket-components-only.story.json").read_text(encoding="utf-8"))
+        story["mode"] = "component"
+        story["chapters"][0]["shots"][0]["see"] = "三张卡片并列，标题分别写着火箭的三段规格"
+        with tempfile.TemporaryDirectory() as td:
+            sp = Path(td) / "story.json"
+            sp.write_text(json.dumps(story, ensure_ascii=False), encoding="utf-8")
+            r = build(sp, Path(td) / "proj")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            g = subprocess.run([sys.executable, str(GATE), str(Path(td) / "proj")], capture_output=True, text=True, timeout=60)
+            self.assertIn("P0=0", g.stdout, g.stdout)
+
+    def test_freeform_mode_rejects_multi_card_layouts(self):
+        """声明 freeform 却整片是卡片：必须被点名，不能默默按 hybrid 判。"""
+        base = json.loads((ROOT / "examples" / "regress" / "rocket-components-only.story.json").read_text(encoding="utf-8"))
+        base["subject_of_film"] = "abstract"
+        base["subject_why"] = "只验模式契约。"
+        with tempfile.TemporaryDirectory() as td:
+            g = self._run_mode(td, base, "freeform")
+            self.assertIn("名不副实", g.stdout, g.stdout)
+
+    def test_freeform_recipe_passes(self):
+        """全非组件样板：手账页 50% + 直书 50%，零卡片 → P0=0 P1=0。"""
+        with tempfile.TemporaryDirectory() as td:
+            r = build(ROOT / "examples" / "recipes" / "jie-freeform.story.json", td)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            g = subprocess.run([sys.executable, str(GATE), td], capture_output=True, text=True, timeout=60)
+            self.assertIn("P0=0 P1=0", g.stdout, g.stdout)
+            self.assertIn("模式 freeform", g.stdout)
+
     def test_abstract_exempt_with_reason(self):
         with tempfile.TemporaryDirectory() as td:
             story = json.loads((ROOT / "examples" / "regress" / "rocket-components-only.story.json").read_text(encoding="utf-8"))

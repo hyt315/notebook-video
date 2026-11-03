@@ -49,6 +49,7 @@ import {planSfx, bedDuckAt, SFX_BED, BED_GAIN} from './sfx';
 import {MUSIC_ON} from './audio-config';
 import {CINEMA, cinemaCamAt, cinemaMask, cinemaTransform, parallaxTransform, resolveTransition, transitionFrames, transitionStyle, WhipBlur, whipOffset} from './cinema';
 import {FxProbe, PageCurl, curlShadow, isCurl} from './fx';
+import {PageFold} from './transitions/pagefold';
 import {SHOTS, SHOT_IDS, SHOT_TOTAL, SFX_DENSITY} from './shots';
 import {SCENES} from './scenes';
 import {FontFaces} from './fonts';
@@ -306,6 +307,11 @@ const TRANS=CINEMA.transition; // 镜间转场帧数（替代旧版 10 帧交叉
 const shotIndexAt=(f:number)=>{let idx=0;for(let i=0;i<SHOT_IDS.length;i++){ if(f>=SHOTS[SHOT_IDS[i]].from) idx=i; }return idx;};
 const camFor=(i:number,local:number)=>{const s:any=(SHOTS as any)[SHOT_IDS[i]];return cinemaCamAt(s.cinema,local,s.duration,i,s.keys);};
 const transFor=(i:number)=>{const s:any=(SHOTS as any)[SHOT_IDS[i]];return resolveTransition(s.transition,i,(CHAPTER_STARTS as readonly number[]).includes(s.from));};
+
+// 3.9.0 · 折痕翻页（没有 WebGPU 时的纯 CSS 版）已抽到 transitions/pagefold.tsx（P2-23 解耦）。
+// 折线几何（FOLD_K / FOLD_DEG / FOLD_SPAN）与 PageFold 组件都在那里；折线方向与 GPU 卷页
+// 共用 transitions/meta.ts 的 PAGETURN_FOLD_DIRECTION，预览（CSS）与成片（GPU）永远同向。
+
 const FinalDemo=()=>{
   // 只挂载活动镜头（性能契约）：由分镜表决定当前是哪一镜；转场期间额外挂上一镜的末帧。
   const f=q(useCurrentFrame());
@@ -314,6 +320,7 @@ const FinalDemo=()=>{
   const s=SHOTS[id];
   const local=f-s.from;
   const prevId=idx>0?SHOT_IDS[idx-1]:null;
+  // SCENES 是 Partial（镜数可以少于模板默认 8 镜）：取不到就渲染空镜，而不是把 undefined 当成组件
   const Scene=SCENES[id];
   const PrevScene=prevId?SCENES[prevId]:null;
   const kind=transFor(idx);
@@ -333,18 +340,29 @@ const FinalDemo=()=>{
       <div data-gate-allow="handoff" data-curl={curl} style={{position:'absolute',inset:0,zIndex:130}}>
         <PageCurl kind={curl} p={p} paper={THEME.palette.paperBase} density={MODES['16:9'].scale*(typeof window!=='undefined'?window.devicePixelRatio||1:1)}>
           <AbsoluteFill style={{transform:parallaxTransform(camFor(idx-1,SHOTS[prevId].duration-1)),transformOrigin:'960px 540px'}}><ShotBackground id={prevId}/></AbsoluteFill>
-          {world(camFor(idx-1,SHOTS[prevId].duration-1),<PrevScene f={SHOTS[prevId].duration-1}/>)}
+          {world(camFor(idx-1,SHOTS[prevId].duration-1),PrevScene?<PrevScene f={SHOTS[prevId].duration-1}/>:null)}
         </PageCurl>
       </div>
     )}
     {curl&&(()=>{const sh=curlShadow(curl,p);return sh?<div aria-hidden style={{position:'absolute',inset:0,zIndex:129,pointerEvents:'none',...sh}}/>:null;})()}
-    {!curl&&PrevScene&&prevId&&out&&out.opacity>0.01&&(
-      <div data-gate-allow="handoff" style={{position:'absolute',inset:0,zIndex:130,opacity:out.opacity,transform:out.transform,transformOrigin:'960px 540px',filter:out.blur>0.3?'url(#nv-whip-out)':undefined}}>
-        {world(camFor(idx-1,SHOTS[prevId].duration-1),<PrevScene f={SHOTS[prevId].duration-1}/>)}
+    {!curl&&PrevScene&&prevId&&out&&out.opacity>0.01&&(kind==='pageflip'?(
+      // 真翻页：折痕扫过纸面。几何全在 PageFold 里，这里只喂「上一镜那一整页」。
+      <div data-gate-allow="handoff" style={{position:'absolute',inset:0,zIndex:130}}>
+        <PageFold p={p} paper={THEME.palette.paperBase} backPage={<AbsoluteFill><ShotBackground id={prevId}/></AbsoluteFill>}>
+          <AbsoluteFill><ShotBackground id={prevId}/></AbsoluteFill>
+          {world(camFor(idx-1,SHOTS[prevId].duration-1),PrevScene?<PrevScene f={SHOTS[prevId].duration-1}/>:null)}
+        </PageFold>
       </div>
-    )}
+    ):(
+      <div data-gate-allow="handoff" style={{position:'absolute',inset:0,zIndex:130,opacity:out.opacity,transform:out.transform,transformOrigin:out.origin??'960px 540px',background:out.bg,boxShadow:out.shadow,filter:out.blur>0.3?'url(#nv-whip-out)':undefined}}>
+        {/* 翻起来的那一页要带着它自己的纸——只带内容的话，看起来像一张白卡在飞，
+            而不是「这一页纸」。背景一起带上，翻过去的才是同一张手账。 */}
+        {out.bg&&<AbsoluteFill><ShotBackground id={prevId}/></AbsoluteFill>}
+        {world(camFor(idx-1,SHOTS[prevId].duration-1),PrevScene?<PrevScene f={SHOTS[prevId].duration-1}/>:null)}
+      </div>
+    ))}
     {f<s.to&&<div {...(inTrans?{'data-gate-allow':'handoff'}:{})} style={{position:'absolute',inset:0,opacity:inn.opacity,transform:inn.transform,transformOrigin:'960px 540px',filter:inn.blur>0.3?'url(#nv-whip-in)':undefined}}>
-      {world(cam,<Scene f={local}/>)}
+      {world(cam,Scene?<Scene f={local}/>:null)}
     </div>}
   </>;
 };
@@ -380,8 +398,10 @@ const Backdrop=()=>{
   const curId=SHOT_IDS[idx];
   const prevId=idx>0?SHOT_IDS[idx-1]:curId;
   const kind=transFor(idx);
-  // 卷页转场时旧背景跟着上一页一起卷走（FinalDemo 的 PageCurl 里），这里只画新背景，不交叉淡化。
-  const p=!isCurl(kind)&&bgKeyFor(prevId)!==bgKeyFor(curId)?Math.max(0,1-local/TRANS):0;
+  // 翻页（GPU 卷页与 CSS 折页都一样）时旧背景跟着那一页一起走，这里只画新背景。
+  // 折页漏判的话，新页上还会叠着旧纸 14 帧——两张纸的纹理叠在一起，像印刷套色没对准。
+  const carried=isCurl(kind)||kind==='pageflip';
+  const p=!carried&&bgKeyFor(prevId)!==bgKeyFor(curId)?Math.max(0,1-local/TRANS):0;
   const tf=parallaxTransform(camFor(idx,local),whipOffset(kind,local/TRANS));
   return <AbsoluteFill style={{transform:tf,transformOrigin:'960px 540px'}}>
     <ShotBackground id={curId}/>

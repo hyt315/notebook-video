@@ -187,6 +187,10 @@ if (!flag('no-gates')) {
     ['validate-presentation.py', [project], true],
     // 3.5.0 中文字面：字体栈里必须在泛型族之前有一个带 CJK 字面的族（代码卡豆腐块的根因）
     ['validate-glyphs.py', [project], true],
+    // 3.6.2 元素种类：compose-story 产出的每个 kind，auto.tsx 的 ElemView 里必须有 case。
+    // 实测漏过一次：flow 的 node 没有分支 → 节点整镜不画；补上分支时 CSS 写错又让整片在
+    // 第 566 帧炸掉（React #130）。--stills 只截前几镜，前一条门禁全都不看这里。
+    ['validate-elem-kinds.py', [project], true],
     // 3.5.0 画面三层：主题物必须出现、配比不能回到「全是组件」（P0 只有主题物一条）
     ['validate-fusion.py', [project], true],
     ['validate-frame-props.py', [project], true],
@@ -266,8 +270,8 @@ const fxNote = () => {
   try {
     const fx = JSON.parse(fs.readFileSync(path.join(project, 'renders', '.fx-probe.json'), 'utf8'));
     if (!fx.used) return [];
-    return fx.on ? [`- 真卷页（pageturn / peel）：已开启（${fx.browser}；探针 ${fx.probeMs ?? '?'} ms）`]
-      : [`- **P1 真卷页未开启**：${fx.reason}。本片的 pageturn / peel 已自动退回 slide / drop；要开：装完整版 Chromium（\`npx playwright install chromium\` 或设 NOTEBOOK_VIDEO_FX_BROWSER），再跑 \`node scripts/notebook-video.mjs fx-probe <工程> --force\`（见 references/fx-effects.md）`];
+    return fx.on ? [`- 翻页：GPU 卷页已开启（${fx.browser}；探针 ${fx.probeMs ?? '?'} ms）`]
+      : [`- **P1 卷页降级**：${fx.reason}。本片的翻页已改用纯 CSS 的折痕版（pageflip）——**仍然是翻页**，只是没有纸的卷曲和纸背透光；要开：装完整版 Chromium（\`npx playwright install chromium\`，国内加 \`PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright\`），再跑 \`node scripts/notebook-video.mjs fx-probe <工程> --force\`（见 references/fx-effects.md）`];
   } catch { return []; }
 };
 const writeReport = (frames, sheets, extra = '') => {

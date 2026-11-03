@@ -60,10 +60,16 @@ const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) => {
 const Grade: React.FC = () => <div style={{position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 190,
   boxShadow: `inset 0 0 200px rgba(80,30,10,${aesthetic.gradeVignette})`}} />;
 
-// 字幕 = 一条深红横批（比画面里的红深一档，米色字 ≥ 7:1），两端燕尾，像贴上去的对联条。
-const SubtitleChrome = PaperSubtitle({ink: '#fff6e6', halo: 'transparent', size: 72, letterSpacing: 3, bottom: 30,
-  plate: {background: '#8f1216', padding: '10px 60px 14px', boxShadow: '2px 4px 6px rgba(60,10,5,0.35)',
-    clipPath: 'polygon(0 0, 100% 0, calc(100% - 26px) 50%, 100% 100%, 0 100%, 26px 50%)'}});
+// 字幕 = 一张米纸横条，字是刻出来的红（红只做线色，不做面）。
+// 为什么不再用「深红横批 + 米色字」：纸这一族里已经有三个红——朱砂印章、页内速写的红线、
+// 页眉的红色序号。再来一条**实心大红条**横贯底部，红就从「点缀」变成「主色」，
+// 印章那枚唯一的朱砂立刻失去分量（实测成片：画面最重的元素变成字幕条，像警告横幅）。
+// 改成米纸底 + 红字 + 上下两道细红刻线：同一套颜色关系（红是刻痕，不是色块），重量回到主体上。
+const SubtitleChrome = PaperSubtitle({ink: '#8f1216', halo: 'transparent', size: 72, letterSpacing: 3, bottom: 30,
+  plate: {background: '#fdf6e8', padding: '8px 60px 12px',
+    borderTop: '3px solid #8f1216', borderBottom: '3px solid #8f1216',
+    clipPath: 'polygon(0 0, 100% 0, calc(100% - 22px) 50%, 100% 100%, 0 100%, 22px 50%)',
+    boxShadow: '0 2px 5px rgba(60,10,5,0.18)'}});
 
 // 章节标识：左上一枚红色方印（序号）+ 宋体章名；无技术页眉。
 const Chrome: Theme['Chrome'] = (p) => {

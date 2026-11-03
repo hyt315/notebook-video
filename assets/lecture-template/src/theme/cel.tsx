@@ -110,7 +110,15 @@ const SubtitleChrome: Theme['SubtitleChrome'] = ({mode, children}) =>
   </div>;
 
 // 页眉底板：漫画旁白框（白底 + 3px 墨边 + 墨色硬影），压在右上角速度线 / 爆炸星上也清楚可读。
+// 宽度必须同时避开左右两块装饰：右上装饰从 x=1540 开始，左上章节框占 92–484。
+// 因此可用宽度 = 画布宽 − 右侧露出的装饰 − 章节框右缘 − 两侧各 28px 间隙；
+// 只改 right 只能证明右缘安全，超长标题仍会从左侧压进章节框。
+const CEL_HEADER_RIGHT = 1920 - 1540 + 28;              // 右缘 1512，与装饰留 28px
+const CEL_CHAPTER_RIGHT = 92 + 392;                     // 公共 Chrome 的章节框固定几何
+const CEL_HEADER_MAX_W = 1920 - CEL_HEADER_RIGHT - CEL_CHAPTER_RIGHT - 28; // 1000px
 const headerPlate: React.CSSProperties = {
+  right: CEL_HEADER_RIGHT,
+  maxWidth: CEL_HEADER_MAX_W,
   background: palette.white, border: `3px solid ${palette.ink}`, boxShadow: `4px 4px 0 ${palette.ink}`, padding: '10px 18px 9px',
 };
 
@@ -150,7 +158,7 @@ export const THEME: Theme = {
   // 3.5.0：cel 的线稿是「粗一档描边 + 平涂色块」，与吉祥物同一套语言。
   craft: {
     medium: 'cel', fibre: 0, inkLine: palette.ink, handFamily: 'Kai', bodyFamily: 'Kai',
-    accent: palette.orange, transition: 'zoom',
+    accent: palette.orange, transition: 'pageturn',
   },
   paperShadow,
   backgrounds: BACKGROUNDS,

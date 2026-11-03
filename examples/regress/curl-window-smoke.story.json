@@ -1,0 +1,144 @@
+{
+ "title": "卷页窗口与拼接回归",
+ "theme": "flat",
+ "kicker": "回归",
+ "header": "卷页 / CURL",
+ "headerSub": "WINDOW SPLICE",
+ "subject_of_film": "节",
+ "mode": "component",
+ "camera": "still",
+ "captions": {
+  "mode": "line"
+ },
+ "protect": [
+  "一海里",
+  "1852"
+ ],
+ "chapters": [
+  {
+   "title": "窗口边界",
+   "shots": [
+    {
+     "role": "hook",
+     "layout": "number",
+     "see": "大数字 1852，说明一海里的固定长度",
+     "lines": [
+      "先给结论：一海里等于 1852 米。"
+     ],
+     "content": {
+      "value": 1852,
+      "unit": "米",
+      "label": "一海里",
+      "tone": "orange"
+     }
+    },
+    {
+     "role": "breakdown",
+     "layout": "list",
+     "see": "三张纸卡列出一海里的三个换算",
+     "lines": [
+      "记住三个换算关系。"
+     ],
+     "content": {
+      "title": "三个数",
+      "items": [
+       "1 节 = 1 海里 / 小时",
+       "1 海里 = 1852 米",
+       "1 节 ≈ 1.852 公里 / 小时"
+      ]
+     }
+    },
+    {
+     "role": "steps",
+     "layout": "flow",
+     "see": "三个步骤把定义换算成日常单位",
+     "lines": [
+      "换算要按顺序做。"
+     ],
+     "content": {
+      "title": "换算三步",
+      "steps": [
+       {
+        "label": "写定义",
+        "note": "速度是距离除以时间"
+       },
+       {
+        "label": "统一单位",
+        "note": "海里换成米"
+       },
+       {
+        "label": "换时速",
+        "note": "得到公里每小时"
+       }
+      ]
+     }
+    },
+    {
+     "role": "compare",
+     "layout": "compare",
+     "see": "左右对比节与公里每小时的使用场景",
+     "lines": [
+      "海上与陆地的单位不同。"
+     ],
+     "content": {
+      "before": {
+       "title": "节",
+       "items": [
+        "对应海图格子",
+        "航海与航空常用"
+       ]
+      },
+      "after": {
+       "title": "公里每小时",
+       "items": [
+        "陆地日常单位",
+        "和海图对不上"
+       ]
+      }
+     }
+    },
+    {
+     "role": "data",
+     "layout": "bars",
+     "see": "三根柱条比较十节二十节三十节",
+     "lines": [
+      "速度越高，换算值越大。"
+     ],
+     "content": {
+      "title": "节换算成公里每小时",
+      "unit": "公里",
+      "data": [
+       {
+        "label": "10 节",
+        "value": 18.5
+       },
+       {
+        "label": "20 节",
+        "value": 37
+       },
+       {
+        "label": "30 节",
+        "value": 55.6
+       }
+      ]
+     }
+    },
+    {
+     "role": "close",
+     "layout": "number",
+     "see": "收束数字 1.852，回到一节的定义",
+     "lines": [
+      "最后收束：一节约为 1.852 公里每小时。"
+     ],
+     "content": {
+      "value": 1.852,
+      "decimals": 3,
+      "unit": "公里",
+      "label": "一节",
+      "tone": "blue"
+     }
+    }
+   ]
+  }
+ ]
+}

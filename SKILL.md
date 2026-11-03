@@ -1,6 +1,6 @@
 ---
 name: notebook-video
-version: 3.4.0
+version: 3.8.0
 description: Turn a topic into a Chinese 16:9 teaching video (flat / cel component themes, or the journal / papercut / archive hand-made skins driven by a metaphor-first director layer) with React, TypeScript and Remotion. Two kinds of shots alternate: a **notebook page** (`layout: "page"`) that carries the real thing — a mounted archival plate, a magnifier over it, handwriting and a red seal on paper — and **components** (flows, comparisons, bars, numbers, code) that do the explaining. Line drawings are optional (specimen sketches only), because a clip-art sketch explaining a concept reads worse than no drawing. Weak-model friendly: five teaching blueprints with per-shot component picks, golden examples, a five-step workflow and one cross-platform command (`node scripts/make-video.mjs <project>`, `make-video.cmd` on Windows) that resolves shots, runs hard gates with objective auto-fixes (no clipped titles, font floor, text contrast, ≤16-character captions at 4.5 chars/s, no dead tails, blurry-media check) and renders stills or the MP4. Tuned semantic sound effects land on the visual hit; no BGM by default. Every topic first searches Wikimedia Commons / Openverse for licence-filtered real media with automatic on-screen credits. TTS narration (edge-tts or your own recording) drives caption and shot timing; no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
 ---
 
@@ -13,27 +13,36 @@ description: Turn a topic into a Chinese 16:9 teaching video (flat / cel compone
 | **手账页** | **承载**：把要讲的那个真东西摆到眼前 | 一页纸：装裱好的原版图版 / 标本、手写页眉、朱红印章、一行手写说明、放大镜 | `layout: "page"` + `content.page` = `plate` / `loupe` |
 | **组件** | **讲解**：把概念拆开、对比、算清 | 流程、对比、清单、柱条、大数字、代码 | `flow` / `compare` / `list` / `bars` / `number` / `code` |
 
-- 手账页占 **25–75%**，组件 **≥25%**；两个都没有 → `validate-fusion` 报 P1。
-- 主题里的那个东西全片**至少出现一次**（手账页的图版说明 / 标本速写 / `see` 任一处），否则判 **P0**。
+- **三种呈现模式**（`story.json` 顶层 `"mode"`），配比不同，`validate-fusion` 按模式判：
+
+| mode | 手账页 | 组件（含直书） | 什么时候用 |
+|---|---|---|---|
+| `hybrid`（默认） | 20–75% | ≥25% | 有物可看、也有结构要讲——绝大多数片 |
+| `component`（全组件） | ≤12% | ≥60% | 内容本身就是结构（流程 / 对比 / 清单 / 数据），没有实物可拍 |
+| `freeform`（全非组件） | ≥40% | 多框组件 ≤10% | 有物可看，或抽象但有几何可画；只有手账页 + 直书页 |
+
+  模式是**门禁契约**，不是风格开关：声明 `component` 却整片是手账页，会被点名「别声明一套做另一套」。
+- 主题里的那个东西全片**至少出现一次**（手账页图版说明 / 墨图标签 / 标本速写 / `see` → 全组件片还认组件镜的 `title`），否则判 **P0**。
 - 手账页的容器是**纸**，不是卡片：不要给它套圆角框，也不要把图版做成"浏览器截图卡片"。
 - 手账页写法见 [references/journal-page.md](references/journal-page.md)；最好的一支参考片是 [examples/cell-notebook](examples/cell-notebook/README.md)（49 秒 / 8 镜 / 真图版 + 放大镜 + 印章）；组件配方见 [references/recipes.md](references/recipes.md)。
 
 **线稿是可选件，只做标本速写**（一件东西 + 尺寸线 + 手写名）。不要用简笔线稿去「解释」概念——
 实测那种画面像剪贴画，比不画更差。`validate-fusion` 对「文字 + 简笔线稿」超过 20% 判 P1。线稿写法见 [references/linework.md](references/linework.md)。
 
-组件仍然是信息的主体：每一镜都要有真组件（控制台、代码差异、清单、数字行、漏斗、进度环、印章、结论条……），
-由引擎虚拟摄影机推近 / 跟随 / 横摇。**常规镜头不要做满屏大字的「文字页」**——一句话也要放进卡片（`Callout` / `StampBanner`）里；
-例外是每片 2–3 个**锤子帧**（整章最该被记住的一句，满屏单独出现 1.5–2.5 秒），规则见 [references/pacing-rhythm.md](references/pacing-rhythm.md)。
+组件是信息的主体，但**不是唯一的载体**：有真东西可看时用 `page`（手账页），只有一组关系要讲时用 `type`（直书页：靠字号、行距、对齐做层级，一个框都不出）。
+直书页是「省掉框」，不是「省掉内容」——每行 ≤10 字、≤5 行，全片 ≤40%；超了就成一本排版册。写法见 [references/journal-page.md](references/journal-page.md)。
+另外，每片留 2–3 个**锤子帧**（整章最该被记住的一句，满屏单独出现 1.5–2.5 秒），规则见 [references/pacing-rhythm.md](references/pacing-rhythm.md)。
 锤子帧怎么做：组件路线用 `StampBanner`（或 `Callout` 放大到 displayL）独占一镜；手作路线用 `HandLettering` 手写满屏一句，或 `Seal` 印章大字——都放在媒介里，不是白底大字。
 只有 16:9；五个皮肤：`flat`（默认）、`cel`，以及 3.3.0 的手作皮肤 `journal`（手账水彩）/ `papercut`（红色剪纸）/ `archive`（档案灯台）。
 TTS 是正式步骤：`notebook-video tts <工程>`（默认 edge-tts；也可 `--engine=file` 用你自己的录音），字幕与镜头按**词级时间**对齐；没有真实旁白时 `--render` 会停在渲染前（静音占位只给 `--stills` / `preview`）。默认无 BGM，音效稀疏。
 
 ## 先选路线
 
-| 题目 | 路线 |
-|---|---|
-| 软件、产品、代码、操作教程 | **组件为主**：`flat` / `cel` + 下面第 1–5 步；需要「看真东西」时插 1–2 页手账 |
-| 科普、自然、历史、"为什么"类问题 | **手账为主**：`journal` / `papercut` / `archive`，先走第 0 步导演层；手账页承载 + 组件讲概念 |
+| 题目 | `mode` | 路线 |
+|---|---|---|
+| 软件、产品、代码、操作教程（没有实物可拍） | `component` | `flat` / `cel` + 下面第 1–5 步 |
+| 科普、自然、历史、"为什么"（有真东西可看） | `hybrid` | `journal` / `papercut` / `archive`，先走第 0 步导演层；手账页承载 + 组件讲概念 |
+| 单位、几何、算法、纯结构（没实物但有形可画） | `freeform` | `journal`：手账页 + 直书页，多框组件 ≤10% |
 
 **不论哪条路线，每个选题都先搜一次 Commons / Openverse**（真东西几乎总能让片子更好）：
 `python scripts/commons-search.py search "<英文关键词>" --project ./my-video`，能用的 `add` 进来，交付前 `credits` 生成 `CREDITS.md`。
@@ -75,7 +84,20 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 ```
 
 手作路线换成 `--style=journal`（或 `papercut` / `archive`），会按需下载 Noto Serif SC Bold（字幕字体，OFL）。
-手作皮肤的镜间转场缺省是**真翻页**（journal / archive `pageturn`、papercut `peel`，WebGPU）：渲染器先画一张探针验收，机器画不了就自动退回 `slide` / `drop` 并在报告里记 P1，不会渲染失败（[references/fx-effects.md](references/fx-effects.md)）。
+
+**翻页是缺省，不是选项。** 任何皮肤、任何 story，只要不写 `transition`，镜间一律翻页：
+`pageturn`（纸被卷起来，WebGPU）→ 画不了就退到 `pageflip`（纯 CSS 的折痕翻页，无依赖），
+两者**同向**（近乎竖直的折线、下角领先，从右往左翻）。所以 story 里**不需要**写
+`"transition": "pageturn"`，写了反而会把自定义皮肤的选择固定死。
+`whip`（甩镜）/ `zoom` / `slide` / `drop` 仍可用，但都要显式写。
+
+**翻页一定有纸声**（`page` 拟音，转场第 3 帧命中）。它是动作音，不是标点：
+`sfxDensity: sparse` 只削标点，不削动作；换章那一镜 chapter 与 page 并存，不会互相吃掉。
+
+渲染器先画一张探针验收 WebGPU 卷页；通过就换完整版 Chromium 只渲转场那 22 帧，再按帧号拼回快速渲染的整片
+（`transition-plan.mjs` 的 `curlWindows` 定窗口 + `fx-browser.mjs` 的 `spliceArgs` 拼回）。缺完整版 Chromium 时探针失败，全片照常出，
+翻页自动降级成折痕版并在报告里记 P1（[references/fx-effects.md](references/fx-effects.md)）。
+装浏览器：`npx playwright install chromium`（国内加 `PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright`）。
 
 工程里已有一部完整的示例片（8 镜）。**照着改，不要从零写**：
 
@@ -108,7 +130,15 @@ node "<SKILL_DIR>/scripts/make-video.mjs" ./my-video --render ./my-video/final.m
 ```
 
 Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做：resolve-shots（自动修）→ 门禁 → tsc → 静帧接触表 / 渲染 → 抽帧报告 `renders/report.md`；`--render` 后若装了 RapidOCR，会用 `validate-ocr.py` 抽字幕帧 OCR，核对字幕真的读得出（没装就跳过并提示）。
+
+**旁白顺序（auto 草稿路线）**：`compose-story` 先写出 `narration.txt` → 你跑 `notebook-video tts <工程>` 生成音频 → `make-video` 里第二次 compose 按词级时间重排字幕与镜头。
+**改了 story 必须重跑 compose 再 tts**：`story.json` 比 `narration.txt` 新时 tts 会直接停下，告诉你先跑 compose——
+否则它会读上一版旁白，**出半截音频而且不报错**。自己手写 narration（不跟 story 走）时加 `--allow-stale`。
 **先看 `--stills` 静帧，再渲整片**（整片渲染要先征得用户同意）。手作皮肤 `treatment.json` 的 `review.rounds` 为空时 `--render` 会停下（先做独立评审；草稿用 `--skip-review` 显式跳过）。`--render` 默认 1920×1080；响度目标 −16 LUFS（静音旁白片与真人声片相同）。
+
+**渲染中途失败别整片重渲**：`notebook-video render <工程> <输出> --resume`。raw 中间产物只在**成功交付后**才删除，
+所以渲染/响度/封装任一环节失败都能接着做；输入（场景、素材、音频、story）没变就跳过整片渲染，直接做响度与封装。
+渲染若**一动不动**（不是慢），看门狗会在 8 分钟无输出时中止并给出下一步（`REMOTION_STALL_MS` 可调）。
 
 **改完一版想确认"有没有变好"**：`node "<SKILL_DIR>/scripts/notebook-video.mjs" eval-project 旧工程 新工程`。
 它把片子拆成可比的数据（镜长分布、版式/介质/转场种类、运镜覆盖、字幕密度、空场读数）并给出 Δ。
@@ -128,9 +158,11 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 不要拿几何中点当封面：中点经常正好压在最后一拍上，封面里会出现半截正在被写的字（cell 的 S5 就踩过两次）。
 
 **看动起来对不对，别直接渲整片**：`node "<SKILL_DIR>/scripts/notebook-video.mjs" preview ./my-video --seconds=30`
-（默认 0.5 倍分辨率、关翻页；30 秒约 40 秒出片，同时给接触片和响度读数。单镜验：`--shot=S6`。
-`--fx=on` 才带翻页——它会切完整版 Chromium（预览 0.5x 下约 1.8 秒/帧，交付分辨率约 3 秒/帧），
-所以别拿它渲 30 秒窗口，**要看翻页就只截转场那 30 来帧**：
+（默认 0.5 倍分辨率；**翻页预览里就有**——不开 fx 时走纯 CSS 的折痕翻页，速度不受影响。
+30 秒约 40 秒出片，同时给接触片和响度读数。单镜验：`--shot=S6`。
+`--fx=on` 是把翻页升级成 GPU 卷页（纸真的弯起来、带纸背透光），它会切完整版 Chromium
+（预览 0.5x 下约 1.8 秒/帧，交付分辨率约 3 秒/帧），所以别拿它渲 30 秒窗口，
+**要看卷页就只截转场那 30 来帧**：
 `--from=<跨镜边界前一秒> --seconds=1.2 --fx=on`（实测 61 秒出片）。
 跨镜边界在 `manifests/shots.resolved.json` 的 `from` 里，除以帧率就是秒。带翻页时不给全片耗时推算，
 因为只有转场帧走 WebGPU，线性外推会得假数字。）
@@ -177,6 +209,17 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" sweep ./my-video --json   # 给脚
 **硬门禁（客观）**：取景不切断标题 / 标签（推近自动留边、回退倍数）；字号地板；文字对比度 ≥4.5:1；背景库每张都有来源与许可、亮底、字幕区对比度够（`validate-backgrounds.py`）；字幕每行 ≤16 字、读速（组件路线 ≤4.5 字/秒、手作路线 6.5 字/秒）；
 画面不静止超过约 1 秒（镜尾 >1.5 秒无事件自动补收束慢推）；音画同步；音效文件 sha256 与增益 / 提前量和 manifest 一致。
 **软建议（主观，只提示）**：同屏强调数、每镜字号种类、装饰预算、快慢交替、留白。
+
+**引擎不能保证的（P2-22，说清楚免得当成事实核查器）**：故事里的**事实、数字、历史说法是否正确**。
+门禁能验结构、时长、画面、引用格式、可读性、复现，唯独验不了「这句话对不对」——那是人工审读的事。
+`validate-facts.py` 只保证**标注本身合法**（引用的来源存在、类比不被当机制事实、AI 生成的 see/ink
+描述不当来源），并把「含数字/年份的未标注文本」列成审读清单（`--review`）供人工核对。
+**可核验断言**（数字、年份、机制）要么写 `claim: {kind:"fact", source:"<sources 里的 id>"}`，
+要么明确标成 `claim: {kind:"analogy"}`（解释性比喻，不能当机制事实）。**过渡句、观点、比喻不必逐条标注**——
+所以这不是无差别硬门禁：缺标注只提示（P1），标注自己说不通才拦（P0）。
+
+**人工审读节点**：出片前跑一次 `validate-facts PROJECT --review`，把清单里的数字/年份逐条核对。
+AI 生成的图（`content.ink` / `content.figure` 的 label）是**说明性文字**，不是事实来源。
 **开场**：`validate-opening.py` 管前 3 秒——第 0 帧就有东西在发生、首条字幕 ≤1 s、片名不当第一镜、前 3 秒 ≥3 拍、第一句不是泛问句（`--video` 还会读像素复核）。
 
 **音效**：只挂在真事件上；每条 cue 按 manifest 的 `offsetMs` 提前起播，让瞬态落在视觉命中帧；间隔 ≥150 ms；默认**无 BGM**（只有 `treatment.sound.music.use=true` 才加载音乐床，并在音效下闪避）。密度由片级 `sfxDensity` 决定：缺省 `sparse`（每镜一记：换章的镜给章节声、其余给末拍，误区镜另留反转音），写 `"sfxDensity": "normal"` 回到「一拍一个」。旁白是 TTS 生成的，音效必须压在人声下，所以默认就该克制。

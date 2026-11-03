@@ -69,6 +69,18 @@ python ./my-film/scripts/tts-openai-compatible.py ./my-film   # 脚本由 new-pr
 base64 长度/哈希，再对 WAV 做一次自相关基频估计——男声 `白桦`（整段中位 ≈140 Hz）与女声
 `冰糖`（≈258 Hz）差得足够远，参数被忽略时这个差异会立刻消失。
 
+## Stale narration is a content question, not a clock question (3.8.0)
+
+`compose-story` writes `manifests/narration.contract.json`: the SHA-256 of the normalized narration text, a line/text snapshot, and the character count. `tts.py` compares the current `narration.txt` against that hash before synthesising.
+
+Why not mtime: re-saving an old draft makes it *newer* than `narration.txt` and slips past a timestamp check, while `git checkout` or copying a project refreshes mtimes and trips it for no reason. A mismatch now prints the first differing line on both sides and the exact commands to fix it.
+
+- Writing narration by hand: pass `--allow-stale`; it prints a loud notice and records `allow_stale: true` in `narration.meta.json`.
+- Projects without a contract keep the old mtime check as a fallback and say so.
+- `narration.meta.json` records `text_sha256`, `timeline` (`measured` / `estimated`), voice, rate and any backup path, so the audio itself is traceable to a text version.
+- `--engine=file` only has **estimated** timings (evenly divided by character count). It refuses to overwrite an existing measured timeline unless you add `--force-estimate`, and any rewrite is backed up to `narration.mp3.json.bak-<timestamp>` and logged.
+- When compose rewrites `narration.txt` while an older audio exists, it prints a hint: the subtitles follow the new text but the voice is still the previous take.
+
 ## Standard delivery pace
 
 Raw synthesis with a patient teaching prompt lands near 305 characters per minute, which viewers on short-video platforms read as slow. Prompt wording cannot control pace precisely (any "faster" instruction overshoots past 400), so pace is fixed deterministically after synthesis: run the bundled `<PROJECT_DIR>/scripts/speed-post.py PROJECT_DIR 1.10`, which applies `atempo=1.10` (pitch unchanged), re-normalizes loudness, and divides every timestamp in `narration.mp3.json` and `manifests/chapters.json` by the same factor. The result is 336 characters per minute, verified across full productions. Every downstream consumer (captions, scene boundaries, sound tables) stays self-consistent because they all derive from the scaled timing files. Run it once, immediately after synthesis and before building captions; never re-run it on already-scaled output.
@@ -127,9 +139,10 @@ narration and re-running `resolve-shots` moves the sounds with the picture.
 
 ## Sound vocabulary (SFX library events)
 
-`whoosh` transition · `pop` appear · `click` tap/step · `typing` code/console · `success` check/verdict ·
-`error` misconception refuted · `chart` bars/lines grow · `highlight` key word/number · `chapter` chapter sting ·
-`riser` builds into a chapter or payoff. Optional `bed.ogg` music bed (quiet pad loop).
+`pop` appear · `chart` bars/lines grow · `highlight` key word/number / generic tick · `success` check/verdict ·
+`error` misconception refuted · `chapter` chapter sting · `page` a sheet is turned (every pageturn) ·
+`place` / `stamp` the hand-made equivalents of pop / success. Optional `bed.ogg` music bed (quiet pad loop).
+Nine events total (3.8.0 slimmed 16 → 9); anything else is not a valid `sfx` event name.
 
 Do not place effects on invisible actions or every small movement; the planner already drops cues closer than 6 frames.
 

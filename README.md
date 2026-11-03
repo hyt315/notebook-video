@@ -228,6 +228,18 @@ notebook-video/
 - **渲染慢吗？** 先用 `--stills` 看静帧（只渲关键帧）；整片缺省按 1920×1080 交付。
 - **仓库里有演示视频吗？** 没有。为保持仓库轻量，演示成片不入库；用 `--stills` 在本地出静帧即可看到效果。
 
+## 制作技能上传包
+
+不要把整个工作目录直接打包（`.git`、缓存和本地工程都不是技能运行内容）。用白名单打包器：
+
+```bash
+python scripts/package-skill.py --check-only   # 只检查清单与 SKILL.md 本地链接
+python scripts/package-skill.py                # 生成 dist/notebook-video-skill.zip
+python scripts/package-skill.py --include-fonts --output dist/notebook-video-offline.zip
+```
+
+默认包只含入口、运行脚本、模板、蓝图、示例与参考资料；不含 `.git`、测试、缓存、渲染产物、发行历史和按需下载的大字体。需要完全离线运行时再使用 `--include-fonts`。
+
 ## 参与贡献
 
 欢迎 Issue 与 Pull Request，流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。提交前请跑：

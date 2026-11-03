@@ -119,7 +119,7 @@ def compute_fit(anchor: dict | None, band: dict, keys: list[dict], mode) -> dict
 
 
 REGIONS = ("left", "right", "top", "bottom", "center", "top-left", "top-right", "bottom-left", "bottom-right")
-TRANSITIONS = ("auto", "cut", "reveal", "handoff", "whip", "whip-left", "whip-right", "zoom", "fade", "hard", "slide", "drop", "pageturn", "peel")
+TRANSITIONS = ("auto", "cut", "reveal", "handoff", "whip", "whip-left", "whip-right", "zoom", "fade", "hard", "slide", "drop", "pageturn", "peel", "pageflip")
 
 
 def region_rect(r: str, band: dict) -> dict:
@@ -152,6 +152,8 @@ def resolve_cinema(s: dict, sid: str, frm: int, duration: int, cues: list, probl
         problems.append(f"{sid}: cinema.drift 必须是 auto / none / 数字")
         drift = "auto"
     out: dict = {"drift": drift}
+    if c.get("still"):
+        out["still"] = True
     fit_mode = c.get("fit", "auto")
     if fit_mode not in ("auto", "none"):
         problems.append(f"{sid}: cinema.fit 必须是 auto / none")
@@ -348,6 +350,54 @@ def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems
     sheet = None          # chapter / film 模式下当前沿用的那张纸
     calm = [e for e in mine if "main" in (e.get("roles") or []) and not e.get("busy")] or [e for e in mine if not e.get("busy")] or mine
 
+    # 「这张图能不能承载这种版式」——由库里的 use.layouts 声明（人工定，量不出来：
+    # centre_std 只反映中心纹理，边角装饰完全量不到 —— papercut/hongzhi 中心 std 只有 0.0059，
+    # 但红边极抢，放真图版就废）。没写 use 的旧库一律视为「哪种都行」，行为与 3.3.0 一致。
+    def admits(e: dict, layout_cls: str) -> bool:
+        use = e.get("use") or {}
+        ls = use.get("layouts")
+        return (not ls) or (layout_cls in ls)
+
+    # 题材：story.json 的 topic（经 compose 写进 shots.json）。
+    # 写了就优先挑 use.fits 命中该题材的纸——这是「按内容选纸」的唯一入口，
+    # 不写则完全按版式 + 角色轮换（与 3.3.0 一致）。
+    want_topic = str(shots_doc.get("topic") or "").strip()
+
+    def fits_topic(e: dict) -> bool:
+        if not want_topic:
+            return True
+        return want_topic in ((e.get("use") or {}).get("fits") or [])
+
+    # 空命中只报一次（全片一条，否则每镜一条会刷屏）。
+    # 静默回落是选材最大的隐患：「选错纸」看起来「挺好看」，适配度就这么被磨没了。
+    topic_state = {"warned": False}
+
+    def note_topic_miss() -> None:
+        if want_topic and not topic_state["warned"]:
+            topic_state["warned"] = True
+            problems.append(
+                f"topic={want_topic!r} 在背景库里没有 use.fits 命中，已退回按版式 + 角色选纸。"
+                f" 要么给背景库补这个题材的 fits，要么改掉 story 的 topic。"
+            )
+
+    def layout_class(r: dict) -> str:
+        """这一镜**画面形态**属于哪一类（决定它需要什么样的纸）。
+
+        版式优先于「是不是章节首镜」：一镜如果本身是手账页（要放真图版 + 大字 + 印章），
+        就算它刚好开了一章，也不能按章节卡去挑花纸——实测 bug：S1 是 page 但因为是章节首镜，
+        拿到了 cel/speedlines（全幅集中线）与 flat/chapter（带吉祥物），图版直接废掉。
+        章节的「视觉重音」交给转场和章节卡去给，不靠牺牲这一镜的纸。
+        """
+        lay = str(r.get("layout") or "")
+        if lay.startswith("page"):
+            return "page"
+        # 只有**纯字卡**才算章节卡。不能把「开了一章」当理由：一章的第一镜往往就是内容镜
+        # （清单 / 流程），给它配章节卡那种花纸，画面会盖过内容（实测 cel 的 list 拿到 speedlines，
+        # flat 的 flow 拿到带吉祥物的 chapter）。章节的视觉重音交给转场去给。
+        if lay.startswith(("statement", "define", "quiz")):
+            return "chapter"
+        return "component"
+
     def file_of(e: dict) -> str:
         f = str(e["file"])
         return f[len("public/"):] if f.startswith("public/") else f
@@ -355,6 +405,9 @@ def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems
     for i, r in enumerate(out):
         bg = r.get("bg")
         choice = None
+        # P2-18：选材要能解释。以前只能看结果（bg=journal/ruled），看不出「为什么不是另一张」。
+        # why 是一句人话，写进 shots.json 的 bgWhy，`--explain` 逐镜打印。
+        why = ""
         if bg is not None:
             if bg in BG_ROLES:
                 choice = every.get(f"{theme}/{bg}")       # legacy 那张；库里没有就交给引擎按变体名画
@@ -367,23 +420,66 @@ def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems
                 elif e.get("skin") != theme:
                     problems.append(f"{r['id']}: bg={bg!r} 属于 {e.get('skin')} 皮肤，当前皮肤是 {theme}")
                 else:
+                    # 显式指定照用（用户说了算），但**不适合这一镜**时必须出声：
+                    # use.layouts 是「这张纸承载得了什么画面」的契约，绕过去不提示，
+                    # 就会重演「图版页拿到全幅集中线」而没人知道为什么。
+                    lcls = layout_class(r)
+                    ls = (e.get("use") or {}).get("layouts") or []
+                    if ls and lcls not in ls:
+                        problems.append(
+                            f"{r['id']}: 显式 bg={bg!r} 按库里的 use.layouts 适合 {ls}，而这一镜是 {lcls} 类；"
+                            f"仍按你的指定使用。若画面被背景压住，换纸或删掉 bg 让引擎自动选。"
+                        )
                     choice = e
+                    why = f"explicit · story 里写了 bg={bg!r}" + ("（与这一镜的版式不匹配，已提示）" if ls and lcls not in ls else "")
         elif rotate and mode in ("chapter", "film"):
             if sheet is None or (mode == "chapter" and r["id"] in chapters):
                 prev_sheet = file_of(sheet) if sheet is not None else None
-                fresh = [e for e in calm if file_of(e) != prev_sheet] or calm
+                # 章节模式下一张纸要撑满整章（含图版页），所以**必须**是能承载 page 的那几张。
+                # 早先还要求「page 与 component 都认」，结果每族只剩 1–2 张可选，
+                # 整本书从头到尾一张纸（实测 journal/archive 八镜全是同一张），比换纸更难看。
+                paper = [e for e in calm if admits(e, "page")] or calm
+                # 有题材时先取「题材 + 版式」都认的那几张；取空了就退回只按版式。
+                by_topic = [e for e in paper if fits_topic(e)]
+                if not by_topic:
+                    note_topic_miss()
+                paper = by_topic or paper
+                fresh = [e for e in paper if file_of(e) != prev_sheet] or paper
                 sheet = min(fresh, key=lambda e: (last_used.get(e["id"], -1), hashlib.sha1(f"{seed}:{i}:{e['id']}".encode()).hexdigest()))
+                why = (f"{mode} 模式 · 章节首镜换纸：{len(paper)} 张能承载 page 的纸里选最久没用过的"
+                       + (f"，且契合 topic={want_topic}" if want_topic and by_topic else ""))
+            else:
+                why = f"{mode} 模式 · 沿用本章已定的一张（媒介连续性）"
             choice = sheet
             r["bgAuto"] = True
         elif rotate:
-            role = "chapter" if r["id"] in chapters else ("quiet" if (r.get("zones") or 0) >= 4 else "main")
-            cands = [e for e in mine if role in (e.get("roles") or []) and not (role == "main" and e.get("busy"))] or [e for e in mine if not e.get("busy")] or mine
+            lcls = layout_class(r)
+            # 角色（chapter / quiet / main）只在已定版式之后再细分：
+            # page 镜永远按 main/quiet 挑「干净纸」，不会被章节首镜的身份拖去挑花纸。
+            role = "chapter" if lcls == "chapter" else ("quiet" if (r.get("zones") or 0) >= 4 else "main")
+            lcls = layout_class(r)
+            # 先按「这种版式承载得了」筛，再按题材优选，筛空了逐级退回——
+            # 宁可退回，也不能让某一镜没有背景。
+            by_role = [e for e in mine if role in (e.get("roles") or []) and not (role == "main" and e.get("busy"))]
+            base = [e for e in by_role if admits(e, lcls)] or [e for e in mine if admits(e, lcls)] or by_role or mine
+            cands = [e for e in base if fits_topic(e)]
+            if not cands:
+                note_topic_miss()
+            cands = cands or base
             fresh = [e for e in cands if file_of(e) != prev_file] or cands
             choice = min(fresh, key=lambda e: (last_used.get(e["id"], -1), hashlib.sha1(f"{seed}:{i}:{e['id']}".encode()).hexdigest()))
+            r["bgLayout"] = lcls
             r["bgAuto"] = True
+            last = last_used.get(choice["id"])
+            why = (f"auto · role={role} layout={lcls} · {len(cands)} 张候选"
+                   + (f"（题材 {want_topic} 命中 {len([e for e in base if fits_topic(e)])} 张）" if want_topic else "")
+                   + (f"，最久没用过（上次 S{last + 1}）" if last is not None else "，从没用过优先")
+                   + (f"；已避开上一镜的 {prev_file}" if prev_file and file_of(choice) != prev_file else ""))
         if choice is not None:
             r["bg"] = choice["id"]
             r["bgFile"] = file_of(choice)
+            if why:
+                r["bgWhy"] = why
             last_used[choice["id"]] = i
             prev_file = r["bgFile"]
         else:
@@ -396,6 +492,16 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
     cues = cues_doc["cues"]
     shots = shots_doc.get("shots", [])
     problems: list[str] = []
+    # 皮肤的**唯一真源**是 active.ts（渲染端 import 的就是它）。
+    # shots.json 的 theme 只当声明，两者不一致时**按 active.ts 走**——注意这不是错误：
+    # 下面所有下游（背景库、resolved 的 theme、storyboard）都用这个 theme，不会渲出
+    # 「A 皮肤的组件 + B 皮肤的纸」。所以只在 main() 里打一行提示，不进 problems（不阻断构建）。
+    # 早先把它当错误，结果测试夹具与旧工程（两者本来就不同步）全被判失败：
+    # 门禁应该抓「真正会出错的事」，不能抓「两个键写法不同但结果正确」。
+    declared = shots_doc.get("theme")
+    actual = _active_skin(project, None)
+    theme = actual or declared or "cel"
+    shots_doc["theme"] = theme
     out: list[dict] = []
     cursor = 0
     # 第一遍：求每镜的 from（= 其首句 cue 的起始帧；首镜固定 0）
@@ -492,7 +598,9 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
         # 音效覆盖（见 src/sfx.ts）。不写就不出键，旧分镜表解析结果逐字节不变。
         if s.get("sfx") is not None:
             sfx = s["sfx"]
-            events = {"whoosh", "pop", "click", "typing", "success", "error", "chart", "highlight", "chapter", "riser", "page", "place", "snip", "stamp", "rustle", "latch"}
+            # 3.8.0 瘦身：16 → 9。删掉 whoosh / click / typing / riser / snip / latch / rustle，
+            # 理由见 src/sfx.ts 顶部注释；旧分镜表若写了这些名字，这里会明确报错而不是出无声。
+            events = {"pop", "success", "error", "chart", "highlight", "chapter", "page", "place", "stamp"}
             if sfx != "none" and not (isinstance(sfx, list) and all(isinstance(o, dict) and o.get("event") in events and ("beat" in o or "at" in o) for o in sfx)):
                 problems.append(f"{sid}: sfx 必须是 \"none\" 或 [{{event, beat|at, vol?}}]，event ∈ {sorted(events)}")
             else:
@@ -546,7 +654,15 @@ TEMPLATE_STORYBOARD_HEAD = "# 时间码分镜：GitHub 开源三部曲 EP0（官
 FRAMING_SHORT = {"全": "最松 ≤1.05", "中": "最松 ≤1.20", "近": "峰值 ≥1.20", "特写": "峰值 ≥1.35", "插入": "插入镜"}
 
 
-def _active_skin(project: Path, fallback: str) -> str:
+def _active_skin(project: Path, fallback: str | None = None) -> str | None:
+    """从 src/theme/active.ts 读实际渲染用的皮肤。读不到返回 fallback。
+
+    为什么需要读它：皮肤的**真源**是 active.ts（渲染端 import 的是它），
+    而背景库按 shots.json 的 `theme` 挑图。这两处一旦不一致，出来的片就是
+    「flat 的组件 + journal 的纸」这种最坏组合，而且**没有任何门禁看得见**
+    （实测：2026-10-31 想跨皮肤对照，只改了 active.ts，五族渲出来全是点阵纸）。
+    所以这里统一由 active.ts 定皮肤，shots.json 的 theme 只当声明与兜底。
+    """
     a = project / "src" / "theme" / "active.ts"
     m = re.search(r"from\s+'\./(\w+)'", a.read_text(encoding="utf-8")) if a.is_file() else None
     return m.group(1) if m else fallback
@@ -581,6 +697,11 @@ def storyboard_text(project: Path, shots_doc: dict, out: list[dict], cues: list[
         "| 镜 | 起–止 (s) | 景别 | 运镜 | 意图缩放 | 实际缩放 | 转场 | 背景 | 主要组件 | 字幕摘要 |",
         "|---|---|---|---|---|---|---|---|---|---|",
     ]
+    # 老工程显式写了非翻页转场：照用（尊重显式声明），但在分镜表里点一句怎么对齐新缺省。
+    # 只写进 storyboard，不进 problems——这是迁移提示，不是缺陷。
+    legacy = [r["id"] for r in out if r.get("transition") in ("fade", "zoom", "whip", "whip-left", "whip-right")]
+    if legacy:
+        lines.append(f"- ⚠ {len(legacy)} 镜显式写了非翻页转场（{', '.join(legacy[:8])}）。缺省已是翻页：要统一语言，删掉这些 transition 字段（或不写、写 auto）即可。")
     for r in out:
         t = tshots.get(r["id"], {})
         ks = [float(k["s"]) for k in (r.get("keys") or []) if isinstance(k.get("s"), (int, float))] or [1.0]
@@ -624,14 +745,25 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("project")
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--explain", action="store_true",
+                    help="逐镜打印「为什么选这张背景/纸」（P2-18）：角色、版式、候选数、轮换与题材")
     args = ap.parse_args()
     project = Path(args.project).resolve()
     if not project.is_dir():
         print(f"项目目录不存在：{project}", file=sys.stderr)
         return 2
     text, out, problems = resolve(project)
+    # 皮肤两处不同步时只提示，不阻断：下游已全部按 active.ts 走（见 resolve() 里的说明）。
+    _sj = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8"))
+    _decl, _act = _sj.get("theme"), _active_skin(project, None)
+    if _decl is not None and _act and _decl != _act:
+        print(f"  · 提示：shots.json theme={_decl!r} 与 active.ts={_act!r} 不同步，"
+              f"本次按 active.ts 走；要消掉这条请跑 set-skin.py {project.name} {_act}")
     for r in out:
         print(f"  {r['id']:>6} {r['from']:>5}–{r['to']:<5} {r['duration']:>5}f  {r['skeleton']:<8} {r['chapter']}")
+        if args.explain:
+            bg = r.get("bg") or "（引擎按变体名画）"
+            print(f"         纸 {bg:<22} {r.get('bgWhy') or '无背景库 / 未轮换'}")
     if problems:
         for p in problems:
             print(f"  ! {p}", file=sys.stderr)
@@ -642,7 +774,9 @@ def main() -> int:
     target = project / "src" / "shots.ts"
     with io.open(target, "w", encoding="utf-8", newline="") as fh:
         fh.write(text)
-    theme_id = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8")).get("theme", "cel")
+    # 这里必须用 active.ts 的皮肤，不能重读 shots.json：上面 resolve() 只改了内存里的
+    # shots_doc["theme"]，文件里可能还是旧值，重读会把「皮肤的纸」写错进 resolved。
+    theme_id = _active_skin(project, json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8")).get("theme", "cel"))
     resolved = {"duration": out[-1]["to"] if out else 0, "theme": theme_id, "shots": out}
     shots_doc = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8"))
     resolved["sfxDensity"] = sfx_density(shots_doc, problems)

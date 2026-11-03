@@ -2,7 +2,9 @@ import {THEME} from './theme/active';
 import React from 'react';
 import {Easing, interpolate, spring} from 'remotion';
 import {camAt, STAGE, TEXT_ZOOM_MAX} from './shotkit';
-import {FX_ENABLED, FX_FALLBACK, CURL_FRAMES} from './fx';
+import {FX_ENABLED} from './fx';
+import {REDUCED_MOTION} from './reduced-motion';
+import {FX_FALLBACK, transitionFramesOf, type TransitionKind as MetaTransitionKind} from './transitions/meta';
 
 // ============================================================================
 // cinema.tsx · 引擎级虚拟摄影机
@@ -40,9 +42,12 @@ export type CinemaSpec = {
   pan?: {worldW: number; at: number; dur: number; dir?: 'ltr' | 'rtl'} | null;
   /** compose-story 预算的相机路径（关键词推近 / 视线连续 / 限速）。有它就不用 fit/drift/focus。 */
   path?: readonly PathKey[];
+  /** true = 完全静止：连 pathCamAt 的微漂移（±0.5% 缩放 / ±5px 位移）也关掉。 */
+  still?: boolean;
 };
 export type PathKey = {at: number; x: number; y: number; s: number};
-export type TransitionKind = 'whip' | 'whip-left' | 'whip-right' | 'zoom' | 'fade' | 'hard' | 'slide' | 'drop' | 'pageturn' | 'peel';
+// TransitionKind 的真源在 transitions/meta.ts（P2-23：转场元数据一处注册）。re-export 保持旧 API。
+export type TransitionKind = MetaTransitionKind;
 
 /** 默认值：观感调好的常数，普通作者不需要改。 */
 export const CINEMA = {
@@ -109,12 +114,13 @@ export type CamState = {x: number; y: number; s: number; tx: number; fw?: number
  */
 export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: number, idx: number, sceneKeys?: readonly any[], zoomMax = TEXT_ZOOM_MAX): CamState => {
   const sp = spec ?? {};
-  if (sp.path && sp.path.length) return pathCamAt(sp.path, f, duration, sceneKeys, zoomMax);
+  if (sp.path && sp.path.length) return pathCamAt(sp.path, f, duration, sceneKeys, zoomMax, !!sp.still);
   const sc = sceneKeys && sceneKeys.length ? camAt(sceneKeys as any, f) : {x: STAGE.cx, y: STAGE.cy, s: 1, rotY: 0};
   const capS = Math.max(1, zoomMax / Math.max(1, sc.s)); // 引擎缩放上限（与场景缩放相乘后 ≤ zoomMax）
   // ---- 0. fit（基准取景）+ 1. drift（围绕基准取景慢推/横移）----
   const fit = sp.fit ?? {x: STAGE.cx, y: STAGE.cy, s: 1};
-  const amt = sp.drift === 'none' ? 0 : typeof sp.drift === 'number' ? Math.max(0, Math.min(0.08, sp.drift)) : CINEMA.driftAmt;
+  // reduced-motion：相机完全静止（drift / 微漂移全关）
+  const amt = REDUCED_MOTION ? 0 : sp.drift === 'none' ? 0 : typeof sp.drift === 'number' ? Math.max(0, Math.min(0.08, sp.drift)) : CINEMA.driftAmt;
   const pat = driftPattern(idx);
   const t = smooth(f, 0, Math.max(30, duration));
   const ds = pat.pull ? 1 + amt * (1 - t) : 1 + amt * t;
@@ -178,7 +184,7 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
  * 叠加一层**永不停止的微漂移**（缩放 ±0.5%、位移 ±5px，周期 4–5 秒）+ 全镜 1.5% 慢推：
  * 推近后不会冻结，任何静止段都不超过 1 秒。fw（遮罩权重）随推近倍数上升。
  */
-export const pathCamAt = (path: readonly PathKey[], f: number, duration: number, sceneKeys?: readonly any[], zoomMax = TEXT_ZOOM_MAX): CamState => {
+export const pathCamAt = (path: readonly PathKey[], f: number, duration: number, sceneKeys?: readonly any[], zoomMax = TEXT_ZOOM_MAX, still = false): CamState => {
   const sc = sceneKeys && sceneKeys.length ? camAt(sceneKeys as any, f) : {s: 1};
   const capS = Math.max(1, zoomMax / Math.max(1, sc.s));
   let k = path[0];
@@ -193,10 +199,13 @@ export const pathCamAt = (path: readonly PathKey[], f: number, duration: number,
       break;
     }
   }
-  const push = 1 + 0.015 * Math.min(1, Math.max(0, f / Math.max(30, duration)));
-  const ms = 1 + 0.005 * Math.sin((f / 140) * Math.PI * 2);
+  // still：这三下微动全关。它们本来是为了「画面永不完全静止」，但静止片里
+  // 观众看到的就是画面在呼吸——那正是要消掉的东西。动效改由笔、章、翻页、逐字提供。
+  const push = still ? 1 : 1 + 0.015 * Math.min(1, Math.max(0, f / Math.max(30, duration)));
+  const ms = still ? 1 : 1 + 0.005 * Math.sin((f / 140) * Math.PI * 2);
   const ss = Math.min(capS, Math.max(1, s * push * ms));
-  const dx = 5 * Math.sin((f / 150) * Math.PI * 2 + 0.7) / ss, dy = 3.5 * Math.cos((f / 125) * Math.PI * 2) / ss;
+  const dx = still ? 0 : 5 * Math.sin((f / 150) * Math.PI * 2 + 0.7) / ss;
+  const dy = still ? 0 : 3.5 * Math.cos((f / 125) * Math.PI * 2) / ss;
   const c = clampLook(x + dx, y + dy, ss);
   return {x: c.x, y: c.y, s: ss, tx: 0, fw: Math.max(0, Math.min(1, (ss - 1.02) / 0.04))};
 };
@@ -226,29 +235,49 @@ export const parallaxTransform = (c: CamState, whipX = 0) => {
   return `translate(${dx}px,${dy}px) scale(${s})`;
 };
 
-/** 自动转场：首镜无；章节首镜 zoom；其余 whip，左右交替。显式写的照用（cut/reveal 视作 auto，hard = 硬切）。 */
-export const resolveTransition = (declared: string | undefined, idx: number, isChapter: boolean, fx: boolean = FX_ENABLED): TransitionKind | null => {
+/**
+ * 自动转场：首镜无；其余**一律翻页**（皮肤的 craft.transition，缺省 pageturn → 无 GPU 时 pageflip）。
+ * 显式写的照用（hard = 硬切；whip / zoom / slide / drop 也仍然保留，但要写才生效）。
+ * 3.9.0 之前 auto 落到「章节首镜 zoom / 其余 whip」，于是 story 不写 pageturn 的片子一处翻页都没有。
+ * `_isChapter` 仍留在签名里（调用方按位置传参），但章节首镜不再特殊——翻到新一章和翻到下一页是同一个动作。
+ * 下划线前缀是 TS 对「保留但不用」的约定写法，不要再加 void 语句占位。
+ */
+export const resolveTransition = (declared: string | undefined, idx: number, _isChapter: boolean, fx: boolean = FX_ENABLED): TransitionKind | null => {
   if (idx === 0) return null;
+  // reduced-motion（P2-21）：转场一律退化为 fade —— 保「换镜」的语义，去掉卷页/甩镜的剧烈运动。
+  // 不用 hard：hard 是「切断」，fade 是「换过来」，后者才和翻页同义。
+  if (REDUCED_MOTION) return 'fade';
   const d = declared ?? 'auto';
   if (d === 'hard') return 'hard';
   if (d === 'fade' || d === 'zoom' || d === 'whip-left' || d === 'whip-right' || d === 'slide' || d === 'drop') return d;
-  // 3.3.0：真卷页。渲染器没开 fx（浏览器没有 WebGPU / HTML-in-canvas）→ 退回 slide / drop，片子照样出。
-  if (d === 'pageturn' || d === 'peel') return fx ? d : FX_FALLBACK[d];
+  // 3.3.0：真卷页。渲染器没开 fx（浏览器没有 WebGPU / HTML-in-canvas）→ 走 FX_FALLBACK，片子照样出。
+  // 3.7.0 起 pageturn 退回的不是 slide（那是「横移」），而是 pageflip（纯 CSS 折痕翻页）：
+  // 卷页是「纸在弯」，折页是「纸沿一条折痕翻过去」——后者不要 GPU，而观众看到的是同一件事。
+  if (d === 'pageturn') return fx ? d : FX_FALLBACK.pageturn;
+  if (d === 'peel') return fx ? d : FX_FALLBACK.peel;
   if (d === 'whip') return idx % 2 ? 'whip-left' : 'whip-right';
   // 3.3.0：手作皮肤的媒介内转场（纸在本子上横移 = 一张长卷上的横移镜头；新纸放下来 = drop）。
-  // 皮肤声明了 craft.transition 时，auto 用它；章节首镜一律 drop（换一张纸）。
-  // 3.3.0：手账 / 档案缺省 pageturn（翻到下一页），剪纸缺省 peel（从底板上揭起）；无 fx 时同上退回。
+  // 皮肤声明了 craft.transition 时，auto 用它。
+  // 3.9.0：所有皮肤的 craft.transition 都是 pageturn（papercut 是 peel），所以 auto = 翻页。
   const craft = THEME.craft?.transition;
-  if (craft === 'pageturn' || craft === 'peel') return isChapter ? 'drop' : fx ? craft : FX_FALLBACK[craft];
-  if (craft === 'slide' || craft === 'drop') return isChapter ? 'drop' : craft;
-  if (isChapter) return 'zoom';
-  return idx % 2 ? 'whip-left' : 'whip-right';
+  if (craft === 'pageturn') return fx ? craft : FX_FALLBACK.pageturn;
+  if (craft === 'peel') return fx ? craft : FX_FALLBACK.peel;
+  if (craft === 'slide' || craft === 'drop') return craft;
+  // 3.9.0：没有声明媒介转场的皮肤也一律翻页。
+  // 这是「笔记本影片」的基本语法——换一页就是翻一页，不该由每个 story 或每套皮肤重新决定；
+  // 之前 auto 落到 whip / zoom，于是只要 story 没显式写 pageturn，观众就看不到翻页。
+  // whip（甩镜）与 zoom 保留为**显式**选项，写 transition 才用。
+  // 章节首镜不再单独 zoom：翻页片里「翻到新一章」和「翻到下一页」是同一个动作，
+  // 中途插一个 zoom 会把观众从本子里拽出来。
+  return 'pageflip';
 };
 
-export type TransStyle = {transform: string; opacity: number; blur: number};
+export type TransStyle = {transform: string; opacity: number; blur: number; origin?: string; bg?: string; shadow?: string};
 
-/** 转场时长（帧）：卷页 CURL_FRAMES，其余 CINEMA.transition。 */
-export const transitionFrames = (kind: TransitionKind | null): number => (kind === 'pageturn' || kind === 'peel' ? CURL_FRAMES : CINEMA.transition);
+/** 转场时长（帧）：注册表 transitions/meta.ts 是唯一真源（P2-23）。
+ *  以前 pageflip 的 22 在这里硬编码，与 fx.tsx 的 CURL_FRAMES 是两个独立的 22——
+ *  改一处漏一处时，卷页窗口盖不住整段折痕翻页。 */
+export const transitionFrames = (kind: TransitionKind | null): number => transitionFramesOf(kind);
 
 /**
  * 转场样式：p ∈ [0,1] 为转场进度（镜头边界后 CINEMA.transition 帧）。
@@ -260,6 +289,12 @@ export const transitionStyle = (kind: TransitionKind, p: number, role: 'in' | 'o
   if (kind === 'fade') return role === 'out' ? {transform: 'none', opacity: 1 - e, blur: 0} : {transform: 'none', opacity: 1, blur: 0};
   // pageturn / peel：两层都不动，卷页由 index.tsx 的 PageCurl（WebGPU）画在上一镜那一层上。
   if (kind === 'pageturn' || kind === 'peel') return {transform: 'none', opacity: 1, blur: 0};
+  // pageflip：折痕斜着扫过整页，露出下面那一页。
+  // **不要再退回 rotateY。** 绕竖直边缘转整页，两个方向都读不成翻页：
+  //   绕右缘 → 整页均匀收窄，看着像被人从右边抽走；绕左缘 → 近大远小把右缘顶出画面，看着像朝观众扑来。
+  // 观众认的翻页是「一条折痕 + 翻过去那半张的纸背」，那需要沿斜线折叠，不是 3D 转一张卡片。
+  // 几何在 index.tsx 的 PageFold（两层 + 135° 硬边遮罩），这里只负责把两层都摆平。
+  if (kind === 'pageflip') return {transform: 'none', opacity: 1, blur: 0};
   // slide：上一镜与本镜像同一张长纸上的两段，一起向左横移（镜头沿纸面平移，不模糊、不淡出）。
   if (kind === 'slide') return role === 'out' ? {transform: `translateX(${-1500 * e}px)`, opacity: 1, blur: 0} : {transform: `translateX(${1500 * (1 - e)}px)`, opacity: 1, blur: 0};
   // drop：一张新纸从上方落下盖住旧纸（旧内容压暗淡出，新内容带一点落定过冲）。
@@ -278,7 +313,8 @@ export const transitionStyle = (kind: TransitionKind, p: number, role: 'in' | 'o
   return {transform: `translateX(${-dir * 900 * (1 - e)}px)`, opacity: Math.min(1, 0.15 + e * 1.4), blur: 60 * (1 - e) * blurBell + 18 * (1 - e)};
 };
 
-/** 方向模糊滤镜（SVG feGaussianBlur，只在 X 方向）。id 唯一，按帧给 stdDeviation。 */
+/** 方向模糊滤镜（SVG feGaussianBlur，只在 X 方向）。id 唯一，按帧给 stdDeviation。
+ *  svg-id: singleton —— 进 / 出各一枚、固定在合成层，不随镜头重复（见 index.tsx 的 url(#nv-whip-*)）。 */
 export const WhipBlur: React.FC<{id: string; amount: number}> = ({id, amount}) => (
   <svg width={0} height={0} style={{position: 'absolute'}} aria-hidden>
     <filter id={id} x="-20%" y="-5%" width="140%" height="110%" colorInterpolationFilters="sRGB">
@@ -353,7 +389,10 @@ export const KineticNumber: React.FC<{
         <span style={{fontFamily: 'Clash,Space,Kai', fontWeight: 700, fontSize: size, color, fontVariantNumeric: 'tabular-nums', letterSpacing: -size * 0.02}}>
           {prefix}{countUp(f, at, to, {from, dur, decimals})}
         </span>
-        {suffix && <span style={{fontFamily: 'Clash,Space,Kai', fontWeight: 700, fontSize: size * 0.5, color, marginLeft: size * 0.04}}>{suffix}</span>}
+        {/* 单位：字号必须与 compose 预留宽度一致（那边按 0.42 算 nw），
+            用 0.5 会实际比预留宽 → 单位压到数字最后一位上（1.852“公里”就是这么叠的）。
+            间距 0.10：0.04 时「2」和「公」几乎贴在一起，读起来像一个数。 */}
+        {suffix && <span style={{fontFamily: 'Clash,Space,Kai', fontWeight: 700, fontSize: size * 0.42, color, marginLeft: size * 0.10, letterSpacing: 0}}>{suffix}</span>}
         <div style={{position: 'absolute', left: 0, bottom: -size * 0.06, height: Math.max(6, size * 0.045), width: `${(bar * 100).toFixed(2)}%`, background: color, borderRadius: 99, opacity: 0.85}} />
       </div>
       {label && <div style={{marginTop: size * 0.14, fontSize: labelSize ?? Math.max(30, size * 0.2), fontWeight: 700, color: ink ?? color, opacity: interpolate(f, [land - 6, land + 8], [0, 1], clamp)}}>{label}</div>}

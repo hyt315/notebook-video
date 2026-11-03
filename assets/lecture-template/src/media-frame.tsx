@@ -11,6 +11,7 @@
 import React from 'react';
 import {Freeze, Img, OffthreadVideo, Sequence, interpolate, Easing, staticFile, useCurrentFrame} from 'remotion';
 import {THEME} from './theme/active';
+import {useSvgId} from './uid';
 import MEDIA_DOC from './media.json';
 
 const C = THEME.palette;
@@ -42,6 +43,7 @@ export type MediaFrameProps = {
 const CHROME_H = {browser: 46, window: 40, device: 0, none: 0} as const;
 
 export const MediaFrame: React.FC<MediaFrameProps> = ({f, id, x, y, w, h, chrome = 'browser', fit = 'contain', at = 0, focus, focusAt = 0, focusUntil, focusZoom, highlight = [], highlightAt = 0, callouts = [], label}) => {
+  const svgUid = useSvgId('mf');     // 高亮遮罩的 mask id：同一素材在两镜里同时挂载时不能撞（P1-08）
   const m = MEDIA[id];
   if (!m) throw new Error(`MediaFrame: manifests/media.json 里没有 id="${id}"（先跑 prepare-media）`);
   const inP = interpolate(f, [at, at + 18], [0, 1], {...clamp, easing: ease});
@@ -110,7 +112,7 @@ export const MediaFrame: React.FC<MediaFrameProps> = ({f, id, x, y, w, h, chrome
               return {rid, x0, y0, w: x1 - x0, h: y1 - y0, ok: (iw2 * ih2) / ((x1 - x0) * (y1 - y0)) >= 0.9};
             }).filter((b) => b.ok);
             if (!vis.length || hiW <= 0.01) return null;
-            const mid = `mf-hi-${id}`;
+            const mid = `${svgUid}-hi`;
             return <>
               <svg width={vw} height={vh} style={{position: 'absolute', left: 0, top: 0, opacity: hiW}}>
                 <defs><mask id={mid}><rect width={vw} height={vh} fill="#fff" />{vis.map((b) => <rect key={b.rid} x={b.x0} y={b.y0} width={b.w} height={b.h} rx={12} fill="#000" />)}</mask></defs>
