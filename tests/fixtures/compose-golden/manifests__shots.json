@@ -49,7 +49,7 @@
    "zones": 3,
    "bottomFill": true,
    "cover": "paper",
-   "entry": "fade",
+   "entry": "build",
    "beats": [
     {
      "cue": 0,
@@ -141,7 +141,7 @@
    "zones": 3,
    "bottomFill": true,
    "cover": "paper",
-   "entry": "fade",
+   "entry": "build",
    "beats": [
     {
      "cue": 2,
@@ -248,7 +248,7 @@
    "zones": 3,
    "bottomFill": true,
    "cover": "paper",
-   "entry": "fade",
+   "entry": "build",
    "beats": [
     {
      "cue": 4,
@@ -383,7 +383,7 @@
    "zones": 3,
    "bottomFill": true,
    "cover": "paper",
-   "entry": "fade",
+   "entry": "build",
    "beats": [
     {
      "cue": 7,
@@ -478,7 +478,7 @@
    "zones": 3,
    "bottomFill": true,
    "cover": "paper",
-   "entry": "fade",
+   "entry": "build",
    "beats": [
     {
      "cue": 9,
@@ -588,7 +588,7 @@
    "zones": 3,
    "bottomFill": true,
    "cover": "paper",
-   "entry": "fade",
+   "entry": "build",
    "beats": [
     {
      "cue": 11,

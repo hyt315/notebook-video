@@ -824,7 +824,7 @@ def build(story, comp, p: Problems):
                "from": frm, "to": to, "cues": [sh["line_cues"][0][0], sh["line_cues"][-1][-1]],
                "media": MEDIA[sh["layout"]], "live": ["AutoShot"], "camera": cam, "anchor": a, "contentBand": BAND,
                "hero": {"name": sh["layout"], "size": int(max(U["w"], U["h"]) * 0.5), "kind": "text"}, "zones": 3, "bottomFill": True,
-               "cover": "paper", "entry": "fade", "beats": beats, "move": moves[k],
+               "cover": "paper", "entry": "build", "beats": beats, "move": moves[k],
                "evidence": "AutoShot", "hold": 40, "noMisconception": True, "why": "auto 版式：内容由 story.json 给出",
                # 镜间转场：story 写了就一律用它；没写就是 "auto" —— 交给引擎按皮肤决定，
                # 而皮肤的缺省是翻页（pageturn / 无 GPU 时 pageflip）。

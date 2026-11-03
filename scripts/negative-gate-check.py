@@ -1329,6 +1329,10 @@ cleanup(_td)
 
 _td = tempfile.mkdtemp(prefix='nv-mode-')
 _sp = _mk_story('examples/recipes/cork-page.story.json', _td, mode='component')
+# 原夹具3 镜，正好落在「镜头 ≤3 不判配比」里；补到 4 镜，这条才真的在钉配比判据
+_d4 = json.loads(pathlib.Path(_sp).read_text(encoding='utf-8'))
+_d4['chapters'][0]['shots'].append(dict(_d4['chapters'][0]['shots'][-1]))
+pathlib.Path(_sp).write_text(json.dumps(_d4, ensure_ascii=False), encoding='utf-8')
 _r = run([PY, os.path.join(SKILL, 'scripts/compose-story.py'), _sp, os.path.join(_td, 'p1')])
 case('MODE2 声明 component 却整片都是手账页 → 点名「别声明一套做另一套」', [
     ('must_pass', 'compose-story', _r),
@@ -1343,6 +1347,36 @@ case('MODE3 mode 写了不认识的值 → P0 拦下，并列出三个合法值'
     ('must_pass', 'compose-story', _r),
     ('must_block:不认识', 'validate-fusion', run([PY, os.path.join(SKILL, 'scripts/validate-fusion.py'), os.path.join(_td, 'p1')])),
     ('must_block:hybrid', 'validate-fusion', run([PY, os.path.join(SKILL, 'scripts/validate-fusion.py'), os.path.join(_td, 'p1')])),
+])
+cleanup(_td)
+
+# ---- 3.5.1 · T-P1-05：build 入场方式与配比阈值的负向对照 ----
+# (1) 入场方式写不认识的值仍要判 P0——build 只是新增合法值，不是把枚举放开了。
+#     entry 由 shots.json 决定（手写工程路径），compose 会把它写死，所以走 mkproj 夹具。
+def _mut_entry(d):
+    for _sh in d['shots']:
+        _sh['entry'] = 'pop'                      # 既不是 rise/slide/fade/zoom，也不是 build
+    return d
+td, rc0, out0 = mkproj(_mut_entry)
+case('EN1 入场方式写 pop → validate-composition 判 P0 并列出合法值', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_block:未知入场方式', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+# (2) 12 镜工程手账页 0% 仍要判 P1——「镜头 ≤3 不判」只放过样例，不放过成片。
+_td = tempfile.mkdtemp(prefix='nv-mix-')
+_sp = _mk_story('examples/regress/rocket-components-only.story.json', _td,
+                mode='hybrid', subject_of_film='abstract', subject_why='这条夹具只验配比阈值。')
+_d = json.loads(pathlib.Path(_sp).read_text(encoding='utf-8'))
+_src = _d['chapters'][0]['shots']
+while sum(len(_c['shots']) for _c in _d['chapters']) < 12:
+    _d['chapters'][0]['shots'].append(dict(_src[0]))
+pathlib.Path(_sp).write_text(json.dumps(_d, ensure_ascii=False), encoding='utf-8')
+_r = run([PY, os.path.join(SKILL, 'scripts/compose-story.py'), _sp, os.path.join(_td, 'p1')])
+case('MIX1 12 镜工程手账页 0% → validate-fusion 仍判 P1（不因镜头 ≤3 放过）', [
+    ('must_pass', 'compose-story', _r),
+    ('must_warn:手账页只占', 'validate-fusion', run([PY, os.path.join(SKILL, 'scripts/validate-fusion.py'), os.path.join(_td, 'p1')])),
 ])
 cleanup(_td)
 

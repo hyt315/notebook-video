@@ -39,7 +39,7 @@ from pathlib import Path
 SKELETONS = {"Stage", "Corridor", "Split", "Zoom"}
 INTENTS = {"establish", "push-in", "pull-back", "pan-follow", "reveal", "micro-orbit", "still"}
 TRANSITIONS = {"auto", "cut", "handoff", "reveal", "whip", "whip-left", "whip-right", "zoom", "fade", "hard", "slide", "drop", "pageturn", "peel"}   # 引擎级转场（src/cinema.tsx）回归；auto = 章节首镜 zoom、其余 whip
-ENTRIES = {"rise", "slide", "fade", "zoom"}
+ENTRIES = {"rise", "slide", "fade", "zoom", "build"}  # 3.5.1：build = 边讲边长（草稿纸），不是整镜入场
 MEDIA_KINDS = {"chart", "console", "code", "graphic", "text", "metric"}
 
 MIN_SKELETONS = 3
@@ -551,8 +551,8 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     if len(set(transitions)) < MIN_TRANSITIONS:
         p1.append({"id": "-", "issue": f"全片仅 {len(set(transitions))} 种转场，建议 ≥{MIN_TRANSITIONS} 种"})
     entries = [s.get("entry", "rise") for s in shots]
-    if len(set(entries)) < MIN_ENTRIES:
-        p1.append({"id": "-", "issue": f"全片仅 {len(set(entries))} 种入场方式，建议 ≥{MIN_ENTRIES} 种"})
+    if len(set(entries) - {"build"}) < MIN_ENTRIES and set(entries) != {"build"}:
+        p1.append({"id": "-", "issue": f"全片仅 {len(set(entries) - {'build'})} 种入场方式，建议 ≥{MIN_ENTRIES} 种"})
 
     # ---- P1-12 状态变化间隔（汇总，带帧区间归因）----
     runs = []
@@ -578,10 +578,11 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
         p1.append({"id": "-", "issue": f"{len(near)} 处变化间隔在 3–4s（慢章节正常范围，但连成片会让节奏偏平）；若这些区段画面完全静止，按 motion-design 补一次呼吸：{detail}"})
 
     # ---- P1 组件词汇多样性（阈值用 DeepSeek 与 SWE-2 两条成片实测校准）----
-    # 结构件豁免：骨架/外壳/相机/底托/小标签本来就该反复出现，要求它们多样化是荒谬的。
+    # 结构件与标注豁免：骨架/外壳/相机/底托/小标签/标注本来就该反复出现，要求它们多样化是荒谬的。
     STRUCTURAL = {"StageFrame", "Corridor", "SplitStage", "ZoomStage", "PhaseRail",
                   "ShotCamera", "CoverPanel", "LineIcon", "CheckBadge", "PillTag",
-                  "StampBanner", "FitCard", "CardHead", "Shot"}
+                  "StampBanner", "FitCard", "CardHead", "Shot",
+                  "AutoShot", "SketchLayer", "InkCircle", "Underline", "HandNote", "HandLettering", "InkPath"}
     used: dict[str, set] = {}
     for s in shots:
         for name in (s.get("live") or []):

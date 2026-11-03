@@ -92,6 +92,7 @@ def main() -> int:
 
     p0: list[str] = []
     p1: list[str] = []
+    notes: list[str] = []   # 说明性输出，不算缺陷、不进 P1 计数
     mode = str(fusion.get("mode") or "hybrid").lower()
     if mode not in MODES:
         p0.append(f"mode={mode!r} 不认识：只支持 {' / '.join(MODES)}。"
@@ -152,38 +153,41 @@ def main() -> int:
         p1.append("story 没有写 subject_of_film（主题里的那个东西）—— 没有它就无法判断「讲细胞却没有一张细胞图」。"
                   "写一个名词，或写 abstract / software + subject_why。")
 
-    lo, hi = rule["page"]
-    if page_share < lo:
-        p1.append(f"[{mode}] 手账页只占 {page_share:.0%} < {lo:.0%}：全片没有「承载」——观众看不到真的东西，只看到卡片在讲。"
-                  f"挑 1–2 镜写成 `\"layout\":\"page\"`（plate 放真图版 / ink 画墨图）。"
-                  + ("" if mode != "component" else
-                     f" 全组件模式本来就不该有手账页，所以这条只在**你想留一页当锚点**时才需要处理；"
-                     f"确实一页都不要，把 page 压到 0 即可（上限 {hi:.0%} 仍生效）。"))
-    if page_share > hi:
-        if mode == "component":
-            p1.append(f"[全组件] 手账页占 {page_share:.0%} > {hi:.0%}：mode 写的是 component，却塞了手账页。"
-                      f"要么把这几镜改回 flow / compare / list（组件片不该靠纸承载），"
-                      f"要么把 mode 改成 hybrid——两种都可以，但别声明一套做另一套。")
-        else:
-            p1.append(f"[{mode}] 手账页占 {page_share:.0%} > {hi:.0%}：变成翻图册了，概念没有讲清的部分。"
-                      f"把讲「为什么 / 差多少 / 分几步」的镜头换回 flow / compare / bars / number。")
-    if component_share < rule["comp"]:
-        p1.append(f"[{mode}] 组件（含直书）只占 {component_share:.0%} < {rule['comp']:.0%}：概念靠什么讲？"
-                  f"手账页负责「看」，组件负责「懂」；至少 {rule['comp']:.0%} 片长要是推理或直书版面。")
-    if sketch_as_explainer > 0.20:
-        p1.append(f"「文字 + 简笔线稿」镜头占 {sketch_as_explainer:.0%} > 20%：实测这类画面比不画更差（像剪贴画）。"
-                  f"要么改成手账页放真素材，要么删掉 sketch 只留文字。")
-    if rule["comp_ceiling"] is not None:
-        multi = max(0.0, component_share - typeface_share)
-        if multi > rule["comp_ceiling"]:
-            p1.append(f"[全非组件] 多框组件占 {multi:.0%} > {rule['comp_ceiling']:.0%}：mode 声明的是 freeform，"
-                      f"意思是「不用卡片讲」。真要留一处对比可以，但超过 {rule['comp_ceiling']:.0%} 就名不副实——"
-                      f"要么删掉换成直书并列，要么把 mode 改成 hybrid。")
-    if typeface_share > rule["typeface"]:
-        p1.append(f"[{mode}] 直书页占 {typeface_share:.0%} > {rule['typeface']:.0%}：直书省掉了框，但没有东西可看——"
-                  f"全片都这样会变成一本排版册。给一半镜头放回图（手账页）或纸条卡。")
-    if text_share > 0.10:
-        p1.append(f"纯文字镜头占 {text_share:.0%} > 10%（锤子帧不计）：字卡说不出「东西长什么样」。")
+    if len(shots) > 3:
+        lo, hi = rule["page"]
+        if page_share < lo:
+            p1.append(f"[{mode}] 手账页只占 {page_share:.0%} < {lo:.0%}：全片没有「承载」——观众看不到真的东西，只看到卡片在讲。"
+                      f"挑 1–2 镜写成 `\"layout\":\"page\"`（plate 放真图版 / ink 画墨图）。"
+                      + ("" if mode != "component" else
+                         f" 全组件模式本来就不该有手账页，所以这条只在**你想留一页当锚点**时才需要处理；"
+                         f"确实一页都不要，把 page 压到 0 即可（上限 {hi:.0%} 仍生效）。"))
+        if page_share > hi:
+            if mode == "component":
+                p1.append(f"[全组件] 手账页占 {page_share:.0%} > {hi:.0%}：mode 写的是 component，却塞了手账页。"
+                          f"要么把这几镜改回 flow / compare / list（组件片不该靠纸承载），"
+                          f"要么把 mode 改成 hybrid——两种都可以，但别声明一套做另一套。")
+            else:
+                p1.append(f"[{mode}] 手账页占 {page_share:.0%} > {hi:.0%}：变成翻图册了，概念没有讲清的部分。"
+                          f"把讲「为什么 / 差多少 / 分几步」的镜头换回 flow / compare / bars / number。")
+        if component_share < rule["comp"]:
+            p1.append(f"[{mode}] 组件（含直书）只占 {component_share:.0%} < {rule['comp']:.0%}：概念靠什么讲？"
+                      f"手账页负责「看」，组件负责「懂」；至少 {rule['comp']:.0%} 片长要是推理或直书版面。")
+        if sketch_as_explainer > 0.20:
+            p1.append(f"「文字 + 简笔线稿」镜头占 {sketch_as_explainer:.0%} > 20%：实测这类画面比不画更差（像剪贴画）。"
+                      f"要么改成手账页放真素材，要么删掉 sketch 只留文字。")
+        if rule["comp_ceiling"] is not None:
+            multi = max(0.0, component_share - typeface_share)
+            if multi > rule["comp_ceiling"]:
+                p1.append(f"[全非组件] 多框组件占 {multi:.0%} > {rule['comp_ceiling']:.0%}：mode 声明的是 freeform，"
+                          f"意思是「不用卡片讲」。真要留一处对比可以，但超过 {rule['comp_ceiling']:.0%} 就名不副实——"
+                          f"要么删掉换成直书并列，要么把 mode 改成 hybrid。")
+        if typeface_share > rule["typeface"]:
+            p1.append(f"[{mode}] 直书页占 {typeface_share:.0%} > {rule['typeface']:.0%}：直书省掉了框，但没有东西可看——"
+                      f"全片都这样会变成一本排版册。给一半镜头放回图（手账页）或纸条卡。")
+        if text_share > 0.10:
+            p1.append(f"纯文字镜头占 {text_share:.0%} > 10%（锤子帧不计）：字卡说不出「东西长什么样」。")
+    else:
+        notes.append("镜头 ≤3：样例 / 片段不判配比")
     if len(hammer) > 3:
         p1.append(f"锤子帧 {len(hammer)} 个 > 3（{', '.join(hammer)}）：口号化，删到 ≤3。")
 
@@ -207,7 +211,7 @@ def main() -> int:
                       f"例：『一页手账，右边是 1665 年原版铜版画，放大镜压在上面』。")
 
     if a.json:
-        print(json.dumps({"mode": mode, "p0": p0, "p1": p1,
+        print(json.dumps({"mode": mode, "p0": p0, "p1": p1, "notes": notes,
                           "shares": {"page": round(page_share, 3), "sketch": round(sketch_share, 3),
                                      "component": round(component_share, 3), "typeface": round(typeface_share, 3), "text": round(text_share, 3),
                                      "annotated": round(annotated_share, 3),
@@ -221,6 +225,8 @@ def main() -> int:
             print(f"  P0 {x}")
         for x in p1:
             print(f"  P1 {x}")
+        for x in notes:
+            print(f"  ·· {x}")
         print(f"结论：P0={len(p0)} P1={len(p1)} → {'PASS' if not p0 else 'FAIL'}")
     return 1 if p0 else 0
 
