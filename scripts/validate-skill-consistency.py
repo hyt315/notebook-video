@@ -407,8 +407,19 @@ def main() -> None:
     if (SKILL / 'CANDIDATE-VALIDATION.md').exists():
         problems.append('one-run environment validation report remains inside the reusable skill')
 
+    # 「泄漏进源码」= 会被提交的目录。本机 npm ci 装出来的 node_modules 在 .gitignore 里，
+    # 不进包、不进仓库，不该判红——否则任何人照着 README 装一次依赖，自检就挂。
+    # git 不可用或不在仓库里时保持旧行为（一律算泄漏）。
+    def shipped(path: Path) -> bool:
+        try:
+            r = subprocess.run(['git', '-C', str(SKILL), 'check-ignore', '-q', str(path)],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return r.returncode != 0          # 0 = 被忽略 → 不算泄漏
+        except Exception:
+            return True
+
     for generated_dir in ('node_modules', '.tools', '.cache', 'renders'):
-        leaked = [path for path in SKILL.rglob(generated_dir) if path.is_dir()]
+        leaked = [path for path in SKILL.rglob(generated_dir) if path.is_dir() and shipped(path)]
         if leaked:
             problems.append(f"generated dependency/cache directory leaked into source: {leaked[0].relative_to(SKILL)}")
 
