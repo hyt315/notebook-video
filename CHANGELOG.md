@@ -1,18 +1,69 @@
 # Changelog
 
-All notable changes are recorded here. The project follows semantic versioning.
+All notable changes are recorded here. The project follows semantic versioning. Current release: **3.5.1**.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
-> **版本号有两套，别混。** 对外可引用的版本只有本文件里的条目（3.3.0 / 3.4.0 / 3.5.0）。
+> **版本号有两套，别混。** 对外可引用的版本只有本文件里的条目（3.3.0 / 3.4.0 / 3.5.0 / 3.5.1）。
 > 3.3.0 曾把内部 3.3.0–3.7.0 的多轮迭代合并为一次公开发布；3.5.0 于 2026-11-03 原地更新，
 > 把内部 3.6.0–3.8.0 的迭代一并并入这次发布。所以源码注释与 `references/` 里高于 3.5.0 的号
 > 仍然是**内部迭代号**，不对应任何对外发布。
 >
-> **Two numbering lines — do not mix them.** Cite only the versions listed below (3.3.0, 3.4.0, 3.5.0).
+> **Two numbering lines — do not mix them.** Cite only the versions listed below (3.3.0, 3.4.0, 3.5.0, 3.5.1).
 > 3.3.0 folded several internal iterations into one public release; 3.5.0 was updated in place on
 > 2026-11-03 to fold in internal iterations 3.6.0–3.8.0. A higher number in source comments or
 > `references/` is therefore still an internal iteration, not a release.
+
+## [3.5.1] - 2026-11-03
+
+> 3.5.1 — 草稿纸讲解：讲到哪，长到哪。
+> 3.5.1 — Draft-paper narration: things appear only when the voice reaches them and grow in.
+
+修好 3.5.0 的配方与线稿链路，并把「出现方式」统一成一套规则。
+Fixes the recipe and linework pipeline of 3.5.0, and unifies how things appear into a single rule set.
+
+### 修复 / Fixed
+
+- 线稿镜头改为 1.00→1.03 慢推、运镜意图轮换，不再被 validate-shot-motion 判「不算运镜」；取景计算算上线稿框。
+  Sketch shots now do a 1.00→1.03 slow push-in with rotating camera intents, so `validate-shot-motion` no longer calls them "no camera move"; framing now takes the sketch box into account.
+- 字幕保护短语自动收（主题物、线稿名称与部位里出现在台词中的词）；仍为空时 compose 给出提示、说清怎么补。4 个配方样例现在都能出静帧。
+  Protected caption phrases are collected automatically (the subject, sketch names and parts that appear in the narration); when none are found, compose says so and explains how to fix it. All four recipe examples now produce stills.
+- `fusion.json` 的 `recipe` 取到真值，锤子帧计数与相关判据开始生效。
+  `fusion.json` now records the real `recipe`, so the hammer-frame count and its rules actually apply.
+- 手写场景工程跑完 `tts` 后自动按词级时间重建字幕，validate-caption-sync 不再必挂。
+  After `tts`, hand-written projects rebuild their captions from word-level timing, so `validate-caption-sync` no longer fails by default.
+- `preview` 在新工程上自动用静音占位；静帧失败时分清是缺字体、门禁还是渲染报错。
+  `preview` fills in a silent placeholder on a fresh project; a failed still now says whether fonts are missing, a gate stopped it, or the renderer errored.
+
+### 草稿纸讲解（出现规则）/ Draft-paper narration (reveal rules)
+
+- auto 路线：文字和卡片左→右展开（字数 × 4 帧，12–45 帧），线稿按部位依次描出（方框、圆圈也描），配方元素按句出现，锤子句在旁白说到它时才写出来。
+  On the auto route, text and cards unfold left to right (characters × 4 frames, 12–45 frames), a sketch is traced part by part (boxes and circles too), recipe elements appear per sentence, and the hammer line is written only when the narration gets there.
+- 新增出现排程：同一镜相邻两样东西开始出现至少隔 12 帧，同时最多 2 样在长，只往后推不提前。
+  A reveal scheduler keeps at least 12 frames between consecutive starts in a shot, at most two things growing at once, and only ever delays rather than pre-empts.
+- 模板 `enterAt()` 与 `MagnifyInset` 改为展开 / 描框，不再淡入上浮。
+  The template's `enterAt()` and `MagnifyInset` now unfold / draw a frame instead of fading in and floating up.
+- 新文档 `references/reveal-rules.md`；删除「结构先满」「一句话也要放进卡片」「同句错峰 ≤8 帧」等相反口径。
+  New document `references/reveal-rules.md`; the contradictory advice ("fill the structure first", "every sentence must go in a card", "stagger within a sentence ≤8 frames") is gone.
+- 新脚本 `scripts/measure-reveal.py`：静态出现检查 + 镜内生长比 G（只报告，不拦）。
+  New script `scripts/measure-reveal.py`: static reveal checks plus an in-shot growth ratio G (report only, never blocks).
+
+### 变更 / Changed
+
+- 移除没有实现的 `photo-traced` 配方（现为 7 个配方）；写了会直接报错并给出替代写法。
+  The never-implemented `photo-traced` recipe is removed (there are now 7); writing it fails immediately and points at the alternative.
+- `annotate` 支持 `"at": "@L2"`（与 sketch.acts 同写法）；旧的 `line`（0 起数）仍可用并提示改写。`sketch.acts` 不写时默认在第 1 句描出。
+  `annotate` accepts `"at": "@L2"` (same syntax as `sketch.acts`); the old `line` (0-based) still works and is flagged for rewriting. When `sketch.acts` is omitted, the sketch is traced at the first sentence.
+- 线稿 `point` 名字字号 27 → 32。
+  The `point` label size on a sketch goes from 27 to 32.
+- 门禁：入场方式新增 `build`（边讲边长）；标注组件与 AutoShot 不再算「高频复用」；≤3 镜的样例不判构成配比。「混音余量」更名为「增益余量」（判据不变）。
+  Gates: a new `build` entry mode (growing while speaking); annotation components and `AutoShot` no longer count as "over-used"; samples with ≤3 shots are not judged on composition ratios. "Mix headroom" is renamed "gain headroom" (same rule).
+- 补记 3.5.0 的一处行为变化：flat / cel 的字幕缺省由逐字改为整行（3.5.1 维持整行）。
+  Records a behaviour change from 3.5.0: flat / cel captions default to whole lines instead of per character (3.5.1 keeps whole lines).
+- 文档数字与名称对齐：references 篇数（以 INDEX 为准）、validate-silence 只查静音；SKILL 开篇写入第一原则「草稿纸讲解：画面上没有笔，讲到哪长到哪」；DEPENDENCIES 登记 edge-tts（LGPL-3.0，运行时检测，不随技能分发，需联网）。
+  Documentation counts and names line up: the references tally follows INDEX, `validate-silence` only checks silence; SKILL opens with the first principle "draft-paper narration: no pen on screen, things appear as they are spoken"; DEPENDENCIES registers edge-tts (LGPL-3.0, detected at run time, not redistributed, needs network).
+- `sfx-manifest.json` 恢复缩进（内容不变）；模板 package.json 版本对齐。
+  `sfx-manifest.json` gets its indentation back (content unchanged); the template's package.json version is aligned.
 
 ## [3.5.0] - 2026-11-03
 
