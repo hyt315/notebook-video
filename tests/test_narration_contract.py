@@ -154,7 +154,8 @@ class FileEngineTimelineTest(unittest.TestCase):
             self.assertEqual(len(backups), 1, "改写时间轴必须留备份")
             meta = json.loads((p / "audio" / "narration.meta.json").read_text(encoding="utf-8"))
             self.assertEqual(meta["timeline"], "estimated")
-            self.assertEqual(meta["backup"], str(backups[0]))
+            # Windows 短路径（RUNNER~1）vs 长路径（runneradmin）：解析后比较
+            self.assertEqual(Path(meta["backup"]).resolve(), backups[0].resolve())
             self.assertIn("按字数均分", r.stdout, "估计时间轴必须在输出里说清楚")
 
 
