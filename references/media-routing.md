@@ -244,7 +244,7 @@ wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的�
 | `ProgressRing`（fxkit） | 进度环（dashoffset 填充 + 中央标签） | **只有一个**百分比 | 多份额对比→`Chart`；有前后值→`MetricGrid` | ① | 参考片 S5 |
 | `DiffView`（fxkit） | 补丁 diff（红删绿加，逐行滑入；`before`/`after` 由 jsdiff 算行） | 讲"改了什么" | 不是补丁语义（无增无删）时别用 | ② | 参考片 S3 |
 | `SkeletonCard`（fxkit） | 骨架→内容（等待 beats 先占位） | 已知要等（拉取 / 计算有过程） | 内容本来就该立刻出现时别用 | ③ | 参考片 S7 |
-| `StaggerList`（fxkit） | 级联列表（逐行滑入 + 微旋转） | 只是"逐行出现"、防 bullets 堆砌 | 同句内错峰 ≤8 帧（18–30 帧会读成"一个个淡出来"）；要完成态→`Checklist` | ① | 参考片 S4 |
+| `StaggerList`（fxkit） | 级联列表（逐行滑入 + 微旋转） | 只是"逐行出现"、防 bullets 堆砌 | 同句内相邻至少 12 帧（见 [reveal-rules.md](reveal-rules.md)）；要完成态→`Checklist` | ① | 参考片 S4 |
 | `ConsoleWindow`（media） | 控制台 / 终端窗口介质 | 表现"正在跑"、命令行 | 必须给 `h`，否则高度由内容撑；带行号高亮的代码→`HighlightCode` | ② | 参考片 S1 |
 | `MetricGrid`（media） | 指标网格（before→after **替换**，数字滚动） | 有前后值成对 | 只有一个值→`StatRow` | ② | 参考片 S8 |
 | `StampBanner`（media） | 结论吸底条（三段式落定 + 底色闪） | 砸一句结论、吸底 | 一镜别砸两条 | 未展示 | 参考片 S1 S5 S8 |
@@ -361,7 +361,7 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet   # 只要接触表
 | 念一句口号 | `JumpInText`（逐字跳入） / `ShimmerText`（闪光，`components/`） | `StampBanner` | 全片最多 1–2 处（钩子与收尾）；讲解中段用会显浮夸 |
 | 报一个大数字 | `StatRow`（`components/`，数字随帧滚动） | `MetricGrid`（有前后值时） | 数字已在 `MetricGrid` 里滚动时别重复 |
 | 对比两方（对等） | `SplitStage` | `StatRow`（不等权时，`components/`） | 两方不是同一维度时别用 Split |
-| 列一份清单 | `Checklist`（带完成态，`toolkit.tsx`） | `StaggerList` | 项 >6 会溢出；`StaggerList` 错峰必须 ≤8 帧 |
+| 列一份清单 | `Checklist`（带完成态，`toolkit.tsx`） | `StaggerList` | 项 >6 会溢出；`StaggerList` 的 `stagger` 取 12（相邻开始至少 12 帧） |
 | 演示一段流程 | `Corridor` | `PathDraw`（描线生长，`components/`） | 站点 <3 个时改用 `StaggerList` |
 | 一个主体持续演化 | `StageFrame`（≥5 拍） | `Corridor` | 只有 2–3 拍时别用（状态机撑不起来） |
 | 证明"这是官方/真实" | `HighlightCode` 的窗口壳（`components/`） | — | 纯代码路线不做实拍框；能用代码画清的别用实拍（实拍只能走可选生图附加路线） |

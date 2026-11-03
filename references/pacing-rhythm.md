@@ -26,7 +26,7 @@ With a chapter-segmented TTS adapter, give each paragraph its own style instruct
 
 ## Chapter breathing
 
-Between chapters insert a breath of 0.5–1 second: the outgoing scene completes its exit, the paper stays briefly empty except chrome, then the incoming chapter's first element pops. Do not butt the last element of one chapter directly against the first element of the next. The `chapter` sting and the `page` flip mark this breath.
+Between chapters insert a breath of 0.5–1 second: the outgoing scene completes its exit, the paper stays briefly empty except chrome, then the incoming chapter's first element starts growing in (see reveal-rules.md). Do not butt the last element of one chapter directly against the first element of the next. The `chapter` sting and the `page` flip mark this breath.
 
 ## Ending beat
 

@@ -67,7 +67,7 @@ Read only what the current production needs. **写任何场景之前，先读前
 > 7. 每镜必须有 `camera.intent`（7 选 1）与 `anchor`；含文字的镜头放大 `s ≤ 1.35`。
 > 8. 声明了运镜就**必须真的动**：`max(s) − min(s) ≥ 0.02` 或 `|Δx| + |Δy| ≥ 20`（把 `still` 改名成 `push-in` 不算运镜）。
 > 9. 元素出现帧绑到"讲到它的那一句"（`SHOTS.Sx.beats`），**禁止镜头开头一次铺完**。
-> 10. 入场统一 `enterAt()`：22 帧 + 22px 上浮 + 0.975→1；同句内错峰 **≤8 帧**（18–30 帧会读成"一个个淡出来"，不是"成串落下"）。
+> 10. 出现统一用模板的 `enterAt()`（3.5.1：左→右展开 22 帧，不淡入、不上浮）。同一句里的多个元素，相邻两个开始出现**至少隔 12 帧**，同一时刻最多 2 个在长；见 [reveal-rules.md](reveal-rules.md)。
 > 11. 帧参数名：`fxkit` 全部传 `frame={f}`；`media / kit / stagekit / skeletons / insert / shotkit` 传 `f={f}`。**传错不报错，只会整体错位**——这是本技能最高频的真实事故（`validate-frame-props.py` 会抓）。
 > 12. 卡片高度必须用 `fitH()` 算，禁止手写"看着差不多"的固定高度（渲染期 `CardFitGate` 会拦下真裁切）。
 > 13. 给槽内组件传宽度前先算 `mainW = w − pad×2 − railW − 18`。

@@ -218,7 +218,7 @@ const S4ProRepo: React.FC<{f: number}> = ({f}) => {
         </div>
       </FitCard>
       <div style={{position: 'absolute', left: 1180, top: 690, width: 520}}>
-        <StaggerList x={0} y={0} w={520} frame={f} start={at(1, 60)} stagger={6} items={[
+        <StaggerList x={0} y={0} w={520} frame={f} start={at(1, 60)} stagger={12} items={[
           {text: '让人一眼看懂', sub: 'README', color: C.blueInk},
           {text: '让人放心使用', sub: 'LICENSE', color: C.greenInk},
         ]} />

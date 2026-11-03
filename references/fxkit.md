@@ -30,7 +30,7 @@ import {FitCard, Typewriter, StampSeal, Funnel, ChatThread, ProgressRing, Stagge
 
 > **写列表错峰（v2.11 校准）**：`StaggerList` 默认 `stagger=6`。实测 18–30 帧的错峰在中文旁白下会读成
 > "一个个淡出来"，观众看不到"成串落下"，还会让后几张卡在旁白已经讲下一句时才出现（用户会报"四项只看到三项"）。
-> **同句内错峰 ≤8 帧**；真正需要长间隔的是叙事节拍，那应该由 `beats` 决定，不是由 `stagger` 决定。
+> **同句内相邻开始至少隔 12 帧**（见 [reveal-rules.md](reveal-rules.md)）；真正需要长间隔的是叙事节拍，那应该由 `beats` 决定，不是由 `stagger` 决定。
 
 ## 本轮动效升级（v3，多时钟）
 

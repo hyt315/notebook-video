@@ -223,7 +223,7 @@ export const ProgressRing:React.FC<{
 
 export const StaggerList:React.FC<{
   x:number;y:number;w:number;items:{icon?:string;text:string;sub?:string;color:string}[];start?:number;stagger?:number;frame?:number;exitStart?:number;
-}> = ({x,y,w,items,start=0,stagger=6,frame,exitStart})=>{
+}> = ({x,y,w,items,start=0,stagger=12,frame,exitStart})=>{
   const f = useF(frame);
   return <div style={{position:'absolute',left:x,top:y,width:w,...exitStyle(f,exitStart)}}>
     {items.map((it,i)=>{
