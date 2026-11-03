@@ -1,5 +1,6 @@
 {
   "title": "三级火箭的质量",
+  "protect": ["第一级"],
   "theme": "flat",
   "subject_of_film": "火箭",
   "chapters": [{"title": "看数字", "shots": [

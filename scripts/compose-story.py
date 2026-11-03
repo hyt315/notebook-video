@@ -237,7 +237,19 @@ def compose(story: dict, p: Problems):
                 STORY_MEDIA[m["id"]].update(width=int(w_), height=int(h_))
             except Exception:
                 p.hint(f"media {m.get('id')}: 读不出尺寸（文件不存在或没装 ffprobe）—— 按 16:9 排版")
-    protected = sorted(set(list(glossary.keys()) + list(story.get("protect") or [])), key=len, reverse=True)
+    # 3.5.1：保护短语自动收——主题物 + 线稿 / 墨图 / 页内示意图的 label 与 parts 值，只收台词原文里真出现的词（spec §5 E4）
+    _said = "".join(parse_line(str(l_))[0] for ch_ in (story.get("chapters") or []) for s_ in (ch_.get("shots") or []) for l_ in (s_.get("lines") or []))
+    _cand = [str(story.get("subject_of_film") or "")]
+    for ch_ in story.get("chapters") or []:
+        for s_ in ch_.get("shots") or []:
+            for sk_ in (s_.get("sketch"), (s_.get("content") or {}).get("ink"), (s_.get("content") or {}).get("figure")):
+                if isinstance(sk_, dict):
+                    _pv = sk_.get("parts")
+                    _cand += [str(sk_.get("label") or "")] + [str(v_) for v_ in (_pv.values() if isinstance(_pv, dict) else [])]
+    auto_protect = [w_ for w_ in dict.fromkeys(_cand) if 2 <= len(w_) <= 8 and w_ in _said]
+    protected = sorted(set(list(glossary.keys()) + list(story.get("protect") or []) + auto_protect), key=len, reverse=True)
+    if not protected:
+        p.hint("字幕保护短语为空（validate-semantic-breaks 会因此拦下）：在 story.json 顶层写 \"protect\": [\"……\"]（字幕里不能被切开的词，至少 1 个，必须原样出现在台词里），或在台词里用 {{术语}} 标出")
     chapters = story.get("chapters") or []
     if not chapters:
         p.err("story.json 需要 chapters:[{title, shots:[...]}]")

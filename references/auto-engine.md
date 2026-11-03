@@ -18,6 +18,8 @@
 
 `role`（可选）∈ hook / pre / breakdown / example / misconception / recap —— 决定叙事动作（`move`），蓝图已填好。
 
+**保护短语（3.5.1）**：字幕断句时不能切开的词。compose 自动收这几样东西里**真出现在台词里**的词：`subject_of_film`、每个线稿 / 墨图（`content.ink`）/ 页内示意图（`content.figure`）的 `label` 与 `parts` 的值（2–8 个字）。收完还是空的，compose 直接报错，请在 story.json 顶层写 `"protect": ["词1", "词2"]`。
+
 ## 字幕与时间（无 TTS）
 
 | 规则 | 值 | 修法 |

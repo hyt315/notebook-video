@@ -1,5 +1,6 @@
 {
   "title": "服务器慢在哪一行",
+  "protect": ["请求代码"],
   "theme": "flat",
   "subject_of_film": "software",
   "subject_why": "这一题讲的是代码里的一次调用，画面主体是代码卡，不需要画具体物体。",

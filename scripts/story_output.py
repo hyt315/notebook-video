@@ -137,6 +137,7 @@ def write_project(story, comp, out_shots, story_ts, total, proj: Path, p=None):
     # 3.5.0：融合门禁要读的东西（主题物 / 每镜配方 / 有没有线稿 / 关掉声音看到什么）。
     # 写进工程而不是让门禁回头找 story.json：工程可能被单独拷走 / 手改，story 不一定在旁边。
     rec_by = {r["id"]: r for r in out_shots}
+    comp_by = {s_["sid"]: s_ for s_ in (comp.get("shots") or [])}  # 3.5.1：recipe 在 compose 的镜头记录里，out_shots 没有这个键（spec §5 E6）
     _ink_label = {}
     _see_of = {}
     _n = 0
@@ -157,7 +158,7 @@ def write_project(story, comp, out_shots, story_ts, total, proj: Path, p=None):
         shots_f[sid] = {
             # see 只写在 story 的镜头上，out_shots 里没有（它到 presentation 阶段才带）。
             # 只读 rec 会让「全组件片靠 see 点名主题物」这条永远拿不到证据。
-            "see": _see_of.get(sid) or rec.get("see") or "", "recipe": rec.get("recipe"),
+            "see": _see_of.get(sid) or rec.get("see") or "", "recipe": (comp_by.get(sid) or {}).get("recipe"),
             "layout": rec.get("layout", st.get("layout")),
             "sketch": bool(sk), "annotate": bool(st.get("annotate")),
             "sketch_label": " ".join(str(x) for x in [sk.get("label", ""), *((sk.get("parts") or {}).values())]),

@@ -1,5 +1,6 @@
 {
   "title": "带一本书出门",
+  "protect": ["笔记"],
   "theme": "flat",
   "subject_of_film": "书",
   "chapters": [{"title": "三件事", "shots": [
