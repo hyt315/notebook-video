@@ -216,14 +216,14 @@ def check_library(project: Path, p0: list[str], p1: list[str], checked: list[dic
 
 
 def mix_stats(project: Path) -> dict | None:
-    """成片的音效密度 / 与人声的最近间隔 / 混音余量（3.5.0）。
+    """成片的音效密度 / 与人声的最近间隔 / 增益余量（3.5.0）。
 
     只读工程里的机器可读产物，不解码音频：
       · 密度 = 任意 10 秒窗口内的音效个数上限（sfxEvents 的 at 是镜内帧，加镜起点）；
       · 最近人声间隔 = 每个音效时刻到最近一句人声起止的毫秒距离；
       · 压人声 = 显式音效时刻正好落在某句旁白的 [start_ms, speech_end_ms] 里面（3.8.0，
         只统计 sfxEvents；chapter / page 这类自动音效在换镜帧上，实测不与人声重叠）；
-      · 混音余量 = 20·log10(1/max(SFX_GAIN))，即最响的一记音效比人声低多少 dB。
+      · 增益余量 = 20·log10(1/max(SFX_GAIN))：最大那档音效增益比 1.0 低多少 dB。它不是响度——素材本身多响、人声多响都没算进去（3.5.1 说明；真响度对比放 3.6）。
     """
     shots_p = project / "manifests" / "shots.json"
     cues_p = project / "manifests" / "caption-cues.json"
@@ -338,7 +338,7 @@ def main() -> int:
         if mix["peak_per_10s"] > 4:
             p1.append(f"音效密度 {mix['peak_per_10s']} 个/10 秒 > 4 —— sparse 的密度上限是 4（sfx.density 可调，但默认要稀疏）")
         if mix["mix_headroom_db"] is not None and mix["mix_headroom_db"] < 6:
-            p1.append(f"音效最响一记只比人声低 {mix['mix_headroom_db']:.1f} dB < 6 dB —— 会抢话；调低 SFX_GAIN")
+            p1.append(f"音效最大增益只比 1.0 低 {mix['mix_headroom_db']:.1f} dB < 6 dB（这是增益，不是实测响度）—— 调低 SFX_GAIN")
     else:
         p1.append("没有 shots.json / caption-cues.json：音效密度与人声间隔无法统计（先跑 compose + resolve）")
 
@@ -367,7 +367,7 @@ def main() -> int:
             atten = mix["mix_headroom_db"]
             print(f"  音效 {mix['events']} 个 / 每 10 秒最多 {mix['peak_per_10s']} 个 / "
                   f"最近人声 {('%.0f ms' % gap) if gap is not None else 'n/a'} / "
-                  f"混音余量 {('%.1f dB' % atten) if atten is not None else 'n/a'}")
+                  f"增益余量 {('%.1f dB' % atten) if atten is not None else 'n/a'}")
             ov = mix["voice_overlap"]
             names = "、".join(mix["voice_overlap_events"][:4])
             print(f"  压人声 {ov} 个{('（' + names + '）') if names else ''} —— 落在旁白说话区间里的显式音效")
