@@ -363,6 +363,7 @@ def build(story, comp, p: Problems):
     glossary = comp["glossary"]
     total = frame(comp["total_ms"])
     out_shots, story_ts = [], {}
+    sk_seen = 0  # 3.5.1：已经排过的线稿镜头数，用来轮换 camera.intent（spec §5 E3）
     prev_gaze = None
     seen_gloss = set()
     used_skel = None
@@ -547,7 +548,9 @@ def build(story, comp, p: Problems):
         content_els = list(els)
         # 空镜是合法状态（纯配方镜、或版式校验失败后的占位镜）：没有内容可取景时用整幅内容带，
         # 不能让 union([]) 抛 min() empty——那会把「作者写漏一个字段」变成「整片崩在栈里」。
-        U = union(content_els) if content_els else dict(BAND)
+        sk_box = sh.get("sketch_box") if sh.get("sketch") else None
+        _u_els = content_els + ([{"x": sk_box["x"], "y": sk_box["y"], "w": sk_box["w"], "h": sk_box["h"]}] if sk_box else [])
+        U = union(_u_els) if _u_els else dict(BAND)
         band_fill = (U["w"] * U["h"]) / (BAND["w"] * BAND["h"]) if content_els else 1.0
         over, _ = frame_rect(U, content_els, max_s=1.18 if band_fill < 0.6 else 1.06)
         path = []
@@ -736,10 +739,11 @@ def build(story, comp, p: Problems):
             cam.update({"from": 1.03, "to": 1.0})
         if cam["intent"] == "reveal":
             cam.update({"to": 1.03})
-        # 3.5.0：有线稿的镜头不推近。线稿画在画面边上（角落 / 左侧），一推近就被裁出画外
-        # （实测锤子帧的小火箭被 1.5× 推近顶到画框外）。线稿层自己不动，镜头只做极轻的呼吸。
+        # 3.5.1：线稿镜头只做 1.00→1.03 的慢推（不切图），intent 在 establish / push-in / reveal 间轮换，
+        # 否则 validate-shot-motion 判「不算运镜」和「全片 1 种意图」（spec §5 E3）。
         if sh.get("sketch"):
-            cam = {"intent": "establish", "at": 6, "dur": max(30, min(90, dur - 10)), "from": 1.0, "to": 1.012}
+            cam = {"intent": ("establish", "push-in", "reveal")[sk_seen % 3], "at": 6, "dur": max(30, min(90, dur - 10)), "from": 1.0, "to": 1.03}
+            sk_seen += 1
         beats = [{"cue": ci_, "offset": 0} for ix in sh["line_cues"] for ci_ in ix]
         # beats 不能只数字幕：镜内元素也是真画面变化（大字写完、盖章、放上手绘小图）。
         # 只看 cue 时，S1 这种「一句字幕读 3 秒、画面里却连着三个动作」的开场会被判成
@@ -789,7 +793,7 @@ def build(story, comp, p: Problems):
             focus_out = []
         # 3.5.0：线稿镜头不做推近 / 取景收紧——线稿在画面边上，任何 >1.05 的缩放都会把它顶出画框。
         if sh.get("sketch"):
-            path = [{"at": 0, "x": 960.0, "y": 540.0, "s": 1.0}]
+            path = [{"at": 0, "x": 960.0, "y": 540.0, "s": 1.0}, {"at": max(31, dur - 12), "x": 960.0, "y": 540.0, "s": 1.03}]
             focus_out = []
         rec = {"id": sid, "chapter": sh["chapter"], "skeleton": skel, "layout": f"{sh['layout']}{('-' + sh['variant']) if sh['variant'] else ''}",
                "from": frm, "to": to, "cues": [sh["line_cues"][0][0], sh["line_cues"][-1][-1]],
