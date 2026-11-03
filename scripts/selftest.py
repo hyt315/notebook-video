@@ -20,6 +20,10 @@ import sys
 import tempfile
 from pathlib import Path
 
+# Windows 控制台默认 cp1252 编不了中文，先兜住（CI / 本地都适用）
+for _s in (sys.stdout, sys.stderr):
+    _s.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = Path(__file__).resolve().parents[1]
 NODE = shutil.which("node") or shutil.which("node.exe")
 results: list[tuple[str, bool, str]] = []

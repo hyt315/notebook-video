@@ -144,6 +144,8 @@ jobs:
     # T-P2-01：Windows 上跑 R0 的子集（不跑渲染）。
     # 本机实测一直只在 Windows 上做过，CI 补上这条让那份结论可复现。
     runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@v5
