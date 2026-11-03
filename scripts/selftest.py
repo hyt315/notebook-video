@@ -35,7 +35,8 @@ def check(name: str, ok: bool, detail: str = "") -> None:
 
 
 def run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
-    return subprocess.run(list(args), cwd=cwd or ROOT, capture_output=True, text=True)
+    return subprocess.run(list(args), cwd=cwd or ROOT, capture_output=True,
+                          text=True, encoding="utf-8", errors="replace")
 
 
 def expect_blocked(name: str, args: list[str], cwd: Path | None = None) -> None:
@@ -173,7 +174,8 @@ def main() -> int:
     _keypat = _re.compile(r"sk-[A-Za-z0-9]{16,}")
     try:
         _tracked = subprocess.run(["git", "ls-files"], cwd=ROOT,
-                                  capture_output=True, text=True).stdout.splitlines()
+                                  capture_output=True, text=True,
+                                  encoding="utf-8", errors="replace").stdout.splitlines()
     except Exception:
         _tracked = []
     if _tracked:
