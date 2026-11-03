@@ -265,7 +265,7 @@ def check_draw(p, sid, where, spec):
 def resolve_sketch(p, sid, sk, line_start, line_cues, cues, frm):
     """校验 + 换算 sketch.acts；返回可直接进 story.ts 的对象。"""
     if not isinstance(sk, dict) or not sk.get("draw"):
-        p.err(f"{sid}: sketch 需要 draw（lib:<名字> / shapes:[…] / trace:<media id>）")
+        p.err(f"{sid}: sketch 需要 draw（lib:<名字> / shapes:[…]）")
         return None
     # 线稿名与部位名必须在**构建期**核对：名字错了引擎只会画空或画整图（P1-09），
     # 成片看起来「少了一张图」，却在渲染日志里只留一行 warn。

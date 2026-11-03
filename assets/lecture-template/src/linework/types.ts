@@ -52,7 +52,7 @@ export type SketchAct = {
 
 export type SketchSpec = {
   id: string;
-  draw: string;            // lib:<名字> | shapes:[...] | trace:<media id>
+  draw: string;            // lib:<名字> | shapes:[...]
   label?: string;
   /** Record = point 标注的自定义名；string[] = 只画这些部位（墨图页用）。两种含义不能混在一个结构里。 */
   parts?: Record<string, string> | string[];

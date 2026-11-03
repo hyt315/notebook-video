@@ -299,7 +299,11 @@ def compose(story: dict, p: Problems):
                 elif recipe in RECIPE_BOX:
                     sketch_box = RECIPE_BOX[recipe]
                 else:
-                    p.hint(f"{sid}: recipe={recipe!r} 未知 —— 按组件路线走（有效：sketch-readout / component-annotated / scene-verdict / before-after / list-icons / photo-traced / data-with-object / hammer）")
+                    if recipe == "photo-traced":
+                        p.err(f"{sid}: recipe='photo-traced' 在 3.5.1 已移除（没有实现）——照片请用 layout: media，再用 annotate 圈出讲到的地方")
+                        recipe = None
+                        continue
+                    p.hint(f"{sid}: recipe={recipe!r} 未知 —— 按组件路线走（有效：sketch-readout / component-annotated / scene-verdict / before-after / list-icons / data-with-object / hammer）")
                     recipe = None
             sk_raw = sh.get("sketch")
             if sk_raw and not sketch_box:

@@ -166,7 +166,7 @@ export const resolveSketchDef = (spec: SketchSpec): SketchDef | null => {
   const draw = String(spec.draw ?? '');
   if (draw.startsWith('lib:')) return SKETCHES[draw.slice(4)] ?? null;
   if (draw.startsWith('shapes:')) return shapesToDef(draw.slice(7));
-  return null; // trace: 由照片配方单独处理
+  return null;
 };
 
 export const SketchLayer: React.FC<{spec: SketchSpec; f: number; box: {x: number; y: number; w: number; h: number}; scale?: number}> = ({spec, f, box, scale = 1}) => {
