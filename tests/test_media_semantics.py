@@ -24,13 +24,19 @@ TPL = ROOT / "assets" / "lecture-template"
 SFX = TPL / "src" / "sfx.ts"
 
 
-def esbuild_bin() -> Path | None:
+def esbuild_pkg() -> Path | None:
+    """返回装 esbuild 的 node_modules 目录（不是可执行文件）。
+
+    注意别去调 `node_modules/esbuild/bin/esbuild`：那个路径在 Linux 上可能是
+    ELF 原生二进制（不是 JS shim），`node <elf>` 会报 "Invalid or unexpected token"。
+    走 JS API（require('esbuild').buildSync）两端都稳。
+    """
     deps = os.environ.get("NOTEBOOK_VIDEO_NODE_MODULES")
     candidates = []
     if deps:
-        candidates.append(Path(deps) / "esbuild" / "bin" / "esbuild")
-    candidates.append(TPL / "node_modules" / "esbuild" / "bin" / "esbuild")
-    return next((p for p in candidates if p.is_file()), None)
+        candidates.append(Path(deps) / "esbuild")
+    candidates.append(TPL / "node_modules" / "esbuild")
+    return next((p for p in candidates if p.is_dir()), None)
 
 
 class ThemeDeclarationsTest(unittest.TestCase):
@@ -54,7 +60,7 @@ class PlanSfxBehaviorTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.node = shutil.which("node")
-        cls.esbuild = esbuild_bin()
+        cls.esbuild = esbuild_pkg()
         if not cls.node or not cls.esbuild:
             raise unittest.SkipTest("node/esbuild unavailable (run after npm ci, or set NOTEBOOK_VIDEO_NODE_MODULES)")
         cls.tmp = Path(tempfile.mkdtemp(prefix="nv-medium-sfx-"))
@@ -70,18 +76,33 @@ class PlanSfxBehaviorTest(unittest.TestCase):
             "const explicit = {event:'pop', beat:0};\n"
             "plans.explicit = planSfx([{...shot, sfxAuto:false, sfx:[explicit]}],[0],180,'normal',{craft:{medium:'journal'}})"
             ".map(c => `${c.event}@${c.hit}`);\n"
+            "// 第二镜带翻页转场：翻页纸声属于动作拟音，五个皮肤共用同一条代码路径\n"
+            "const two = [shot, {...shot, id:'S2', from:120, to:240, duration:120, transition:'pageturn'}];\n"
+            "plans.foley = Object.fromEntries(themes.map(([name, theme]) => [name, "
+            "planSfx(two,[0],240,'normal',theme).filter(c => c.event === 'page').map(c => `page@${c.hit}`)]));\n"
             "console.log(JSON.stringify(plans));\n",
             encoding="utf-8",
         )
         out = cls.tmp / "bundle.cjs"
-        build = subprocess.run(
-            [cls.node, str(cls.esbuild), str(entry), "--bundle", "--platform=node",
-             "--format=cjs", "--packages=external", "--jsx=automatic", "--log-level=error", f"--outfile={out}"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=TPL,
+        cfg = {
+            "entryPoints": [str(entry)],
+            "bundle": True,
+            "platform": "node",
+            "format": "cjs",
+            "packages": "external",
+            "jsx": "automatic",
+            "outfile": str(out),
+            "logLevel": "error",
+        }
+        script = (
+            f"const esbuild = require({json.dumps(str(cls.esbuild))});\n"
+            f"esbuild.buildSync({json.dumps(cfg)});\n"
         )
+        build = subprocess.run([cls.node, "-e", script], capture_output=True, text=True,
+                               encoding="utf-8", errors="replace", cwd=TPL)
         if build.returncode:
             raise AssertionError(build.stdout + build.stderr)
-        node_modules = cls.esbuild.parents[2]
+        node_modules = cls.esbuild.parent
         run = subprocess.run([cls.node, str(out)], capture_output=True, text=True,
                              encoding="utf-8", errors="replace", timeout=60,
                              env={**os.environ, "NODE_PATH": str(node_modules)})
@@ -102,11 +123,11 @@ class PlanSfxBehaviorTest(unittest.TestCase):
         self.assertEqual(self.plans["explicit"], ["pop@10"])
 
     def test_non_first_shot_keeps_page_foley_for_every_skin(self):
-        # 上面已证明自动标点映射；翻页纸声属于动作拟音，不受媒介名单影响。
-        # 这里直接核对接线，行为由 planSfx 的 page 分支在五皮肤上共用同一条代码路径。
-        src = SFX.read_text(encoding="utf-8")
-        self.assertIn("if (!isFirst && PAGE_TURN_TRANSITIONS.has(s.transition ?? 'auto'))", src)
-        self.assertIn("out.push({event: 'page', at: PAGE_HIT});", src)
+        # 翻页纸声是**动作拟音**，不跟着媒介名单变：五个皮肤都该在第二镜翻页处听到纸声。
+        # 判据写行为（跑一遍 planSfx），不再比对源码字符串——P2-23 把 Set 换成 isPageTurnKind()
+        # 之后，旧的字符串锚点就假失败了，而行为其实没变。
+        for skin in ("flat", "cel", "journal", "papercut", "archive"):
+            self.assertEqual(self.plans["foley"][skin], ["page@123"], skin)
 
 
 if __name__ == "__main__":
