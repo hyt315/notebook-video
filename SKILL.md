@@ -1,10 +1,18 @@
 ---
 name: notebook-video
 version: 3.5.0
-description: Turn a topic into a Chinese 16:9 teaching video (flat / cel component themes, or the journal / papercut / archive hand-made skins driven by a metaphor-first director layer) with React, TypeScript and Remotion. Two kinds of shots alternate: a **notebook page** (`layout: "page"`) that carries the real thing — a mounted archival plate, a magnifier over it, handwriting and a red seal on paper — and **components** (flows, comparisons, bars, numbers, code) that do the explaining. Line drawings are optional (specimen sketches only), because a clip-art sketch explaining a concept reads worse than no drawing. Weak-model friendly: five teaching blueprints with per-shot component picks, golden examples, a five-step workflow and one cross-platform command (`node scripts/make-video.mjs <project>`, `make-video.cmd` on Windows) that resolves shots, runs hard gates with objective auto-fixes (no clipped titles, font floor, text contrast, ≤16-character captions at 4.5 chars/s, no dead tails, blurry-media check) and renders stills or the MP4. Tuned semantic sound effects land on the visual hit; no BGM by default. Every topic first searches Wikimedia Commons / Openverse for licence-filtered real media with automatic on-screen credits. TTS narration (edge-tts or your own recording) drives caption and shot timing; no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
+description: Turn a topic into a Chinese 16:9 teaching video. Draft-paper narration comes first: there is no pen on screen, and everything appears only when the voice-over reaches it and grows in progressively — text unfolds along the reading direction, sketches trace part by part, annotations are drawn as they are spoken, at most two things grow at once. (flat / cel component themes, or the journal / papercut / archive hand-made skins driven by a metaphor-first director layer) with React, TypeScript and Remotion. Two kinds of shots alternate: a **notebook page** (`layout: "page"`) that carries the real thing — a mounted archival plate, a magnifier over it, handwriting and a red seal on paper — and **components** (flows, comparisons, bars, numbers, code) that do the explaining. Line drawings are optional (specimen sketches only), because a clip-art sketch explaining a concept reads worse than no drawing. Weak-model friendly: five teaching blueprints with per-shot component picks, golden examples, a five-step workflow and one cross-platform command (`node scripts/make-video.mjs <project>`, `make-video.cmd` on Windows) that resolves shots, runs hard gates with objective auto-fixes (no clipped titles, font floor, text contrast, ≤16-character captions at 4.5 chars/s, no dead tails, blurry-media check) and renders stills or the MP4. Tuned semantic sound effects land on the visual hit; no BGM by default. Every topic first searches Wikimedia Commons / Openverse for licence-filtered real media with automatic on-screen credits. TTS narration (edge-tts or your own recording) drives caption and shot timing; no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
 ---
 
-# notebook-video · 讲清一件事：手账页承载 + 组件讲解
+# notebook-video · 草稿纸讲解：讲到哪，长到哪（手账页承载 + 组件讲解）
+
+**第一原则 · 草稿纸讲解**：画面像一张边讲边写的草稿纸。画面上**没有笔**；每样东西都在旁白讲到它时才出现，一点点长出来，不整块弹出，同一时刻不冒出一堆。下面的「手账页 / 组件 / 直书页」管的是**画什么**，草稿纸讲解管的是**什么时候、怎么出现**；两者冲突时，按草稿纸讲解。
+
+**出现规则**（auto 路线由引擎自动做到；手写场景路线照着写。全文见 [references/reveal-rules.md](references/reveal-rules.md)）：
+1. **跟着旁白**：一样东西在讲到它的那句话开始时才开始出现，不提前。
+2. **长出来**：文字和卡片左→右展开，用时 = 字数 × 4 帧（最少 12、最多 45 帧）；线稿按部位依次描出，整幅 24–45 帧；圈注 14 帧，下划线和箭头 12 帧，手写小字 24 帧。手账页上的真图版、照片、截图可以整件「贴上」，但也要等讲到它的那句。
+3. **不扎堆**：同一镜里，相邻两样东西开始出现至少隔 12 帧（0.4 秒）；同一时刻最多 2 样在长。
+4. **不预铺**：镜头切进来时，纸上只有已经讲过的东西；开镜头 6 帧内最多 1 样东西开始出现。
 
 画面由两种东西分工，**交替出现**：
 
@@ -57,6 +65,8 @@ TTS 是正式步骤：`notebook-video tts <工程>`（默认 edge-tts；也可 `
 （`InkPath` / `HandNote` / `HandLettering` / `WashBlob` / `CutPaper` / `Loupe` / `PinnedPhoto` / `ArchivePhoto` …）。
 开场钩子、节奏、运镜分别见 [references/narrative-hook.md](references/narrative-hook.md)、[references/pacing-rhythm.md](references/pacing-rhythm.md)、[references/camera-language.md](references/camera-language.md)。
 **手作路线只必读 4 份**：[director-method.md](references/director-method.md)、[craft-kit.md](references/craft-kit.md)、[camera-language.md](references/camera-language.md)、`references/theme-<皮肤>.md`；其余按需查（`lecture-composition.md` 等仅限组件路线）。
+
+**auto 路线（story.json）必读 2 份**：[auto-engine.md](references/auto-engine.md)、[reveal-rules.md](references/reveal-rules.md)；用到配方 / 线稿时再读 [recipes.md](references/recipes.md)、[linework.md](references/linework.md)。
 先做 3 张风格帧（`--stills`），像了再做全片；**整片渲染前**由新会话只看联系表 + 自动生成的 `storyboard.md` + `treatment.json` 做七项独立评审，写进 `review.rounds`（手作皮肤没评审时 `make-video --render` 会停下，草稿用 `--skip-review` 显式跳过）。
 
 ## 第 1 步 · 选一个蓝图
@@ -119,7 +129,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 - 一镜 1–3 句，一句一个意思；字幕超 16 字由 `build-semantic-captions.py` 在合法断点自动拆（不拆词、英文、数字）。
 - 要观众「看那里」时，在镜头表写 `cinema.focus`（推近到那个组件的矩形）；不写也有缺省缓推。
 - 相邻两镜换骨架；一镜一个概念；关键数字用 `KineticNumber` 数过去。
-- 背景（3.3.0 / 3.3.0）：手作皮肤默认 `bgMode: "chapter"`（每章一张纸、章内沿用），flat / cel 默认 `"shot"`（逐镜轮换）；全片一张纸写 `"bgMode": "film"`，完全不轮换写 `"bgRotate": false`。不写就自动选——每个皮肤有 8–11 张风格各异的亮底背景（手账：横线本 / 方格 / 点阵 / 牛皮纸 / 水彩纸 / 便签墙 / 旧书页 / 坐标纸；剪纸：红纸衬边 / 宣纸 / 窗花 / 祥云 / 挂笺 / 洒金…；档案：档案袋 / 旧报纸 / 古地图 / 卡片目录 / 胶片 / 展柜布面…），逐镜模式按镜头角色挑、相邻两镜不重复，装饰重的（`busy`）不进常规镜。某一镜要特定的纸，就写 `"bg": "oldpage"`；清单与许可见 [references/background-library.md](references/background-library.md)。
+- 背景（3.3.0）：手作皮肤默认 `bgMode: "chapter"`（每章一张纸、章内沿用），flat / cel 默认 `"shot"`（逐镜轮换）；全片一张纸写 `"bgMode": "film"`，完全不轮换写 `"bgRotate": false`。不写就自动选——每个皮肤有 8–11 张风格各异的亮底背景（手账：横线本 / 方格 / 点阵 / 牛皮纸 / 水彩纸 / 便签墙 / 旧书页 / 坐标纸；剪纸：红纸衬边 / 宣纸 / 窗花 / 祥云 / 挂笺 / 洒金…；档案：档案袋 / 旧报纸 / 古地图 / 卡片目录 / 胶片 / 展柜布面…），逐镜模式按镜头角色挑、相邻两镜不重复，装饰重的（`busy`）不进常规镜。某一镜要特定的纸，就写 `"bg": "oldpage"`；清单与许可见 [references/background-library.md](references/background-library.md)。
 - 帧参数名：`fxkit` 组件传 `frame={f}`，其余模块传 `f={f}`（传错不报错只会错位，`validate-frame-props.py` 会抓）。
 
 ## 第 4 步 · 一条命令
@@ -131,7 +141,7 @@ node "<SKILL_DIR>/scripts/make-video.mjs" ./my-video --render ./my-video/final.m
 
 Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做：resolve-shots（自动修）→ 门禁 → tsc → 静帧接触表 / 渲染 → 抽帧报告 `renders/report.md`；`--render` 后若装了 RapidOCR，会用 `validate-ocr.py` 抽字幕帧 OCR，核对字幕真的读得出（没装就跳过并提示）。
 
-**旁白顺序（auto 草稿路线）**：`compose-story` 先写出 `narration.txt` → 你跑 `notebook-video tts <工程>` 生成音频 → `make-video` 里第二次 compose 按词级时间重排字幕与镜头。
+**旁白顺序（auto 路线）**：`compose-story` 先写出 `narration.txt` → 你跑 `notebook-video tts <工程>` 生成音频 → `make-video` 里第二次 compose 按词级时间重排字幕与镜头。
 **改了 story 必须重跑 compose 再 tts**：`story.json` 比 `narration.txt` 新时 tts 会直接停下，告诉你先跑 compose——
 否则它会读上一版旁白，**出半截音频而且不报错**。自己手写 narration（不跟 story 走）时加 `--allow-stale`。
 **先看 `--stills` 静帧，再渲整片**（整片渲染要先征得用户同意）。手作皮肤 `treatment.json` 的 `review.rounds` 为空时 `--render` 会停下（先做独立评审；草稿用 `--skip-review` 显式跳过）。`--render` 默认 1920×1080；响度目标 −16 LUFS（静音旁白片与真人声片相同）。
@@ -170,7 +180,7 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 预览结束会打一行 `FillGate coverage`：每镜 `cells`（48 格占用）/ `blank`（全空的列）/ `largest`（最大单体占画面）/ `widest`（最大横向跨度），
 `largest<0.06` 判「主体过小」，但有两条豁免：`widest≥0.45`（面积小但横跨够的条状主体——标尺、格带、时间轴）
 和 `blank=0` 且 `cells≥24`（照片+引线+网格这类多个中等元素拼成一个主体，没有单个"大件"）。
-`blank≥3/8` 判「横向空洞」。被判空时**不要放大卡片凑面积**，按 [references/composition-gate.md](references/composition-gate.md) §3.8.0 的两条写法改：结构先满再演过程、空洞处补一层属于主体的东西。
+`blank≥3/8` 判「横向空洞」。被判空时**不要放大卡片凑面积**，按 [references/composition-gate.md](references/composition-gate.md) 的写法改：空洞处补一层属于主体的东西。**不要为了让开头满而把东西提前摆上**——FillGate 量的是每镜最完整的那一帧，开头空着是草稿纸的正常状态。
 
 **片子比 30 秒长时，别看开头就下结论。** `preview --seconds=30` 只覆盖前六镜，cell 的 S7/S8 就是这么漏的
 （补跑 `--from=32` 才发现 S7 右下角空 30%）。全片一次量完用 `sweep`——每镜截一张落定态、拼成一张体检表，八镜约 60 秒：
@@ -225,15 +235,15 @@ AI 生成的图（`content.ink` / `content.figure` 的 label）是**说明性文
 
 **音效**：只挂在真事件上；每条 cue 按 manifest 的 `offsetMs` 提前起播，让瞬态落在视觉命中帧；间隔 ≥150 ms；默认**无 BGM**（只有 `treatment.sound.music.use=true` 才加载音乐床，并在音效下闪避）。密度由片级 `sfxDensity` 决定：缺省 `sparse`（每镜一记：换章的镜给章节声、其余给末拍，误区镜另留反转音），写 `"sfxDensity": "normal"` 回到「一拍一个」。旁白是 TTS 生成的，音效必须压在人声下，所以默认就该克制。
 
-## 可选 · auto 草稿（story.json）
+## 可选 · auto 路线（story.json）
 
-赶时间时可以先用 `node scripts/make-video.mjs my-story.json ./draft --stills` 从蓝图直接出草稿（`compose-story.py` 自动排版、关键词同步、字幕定时）。
+赶时间时可以先用 `node scripts/make-video.mjs my-story.json ./draft --stills` 从蓝图直接出片（`compose-story.py` 自动排版、关键词同步、字幕定时）。
 它用这几种版式：**`page`**（手账页，`content.page` = `plate` / `loupe`）、`define` / `number` / `bars` / `compare` / `code` / `flow` / `list` / `quiz` / `custom` / `media`；`statement` 只渲染成一张卡片，不是缺省版式。
-正式交付仍建议改写成第 2–3 步的组件场景。细节见 [references/auto-engine.md](references/auto-engine.md)；示例 `examples/*.story.json`。
+要用配方和线稿就走这条路线；要逐镜手调版面，再改写成第 2–3 步的手写场景。细节见 [references/auto-engine.md](references/auto-engine.md)；示例 `examples/*.story.json`。
 
 ## 文档
 
-全部 44 篇正文的索引按「你接下来要做什么」分组，见 [references/INDEX.md](references/INDEX.md)（索引本身不计入 44）。
+全部 50 篇正文的索引按「你接下来要做什么」分组，见 [references/INDEX.md](references/INDEX.md)（索引本身不计入 50）。
 作者通常只读 4 篇（见上文「手作路线只必读 4 份」），其余按需查。
 
 - 自检：`node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-skill`、`python scripts/selftest.py`、`python scripts/negative-gate-check.py`
