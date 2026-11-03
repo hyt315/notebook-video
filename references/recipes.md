@@ -33,9 +33,10 @@
 ## ② `component-annotated` 组件为主 + 线稿批注
 
 - 版面：原版式占 70%，右下角一块小线稿；`annotate` 叠在组件上。
-- 必填：任意组件版式 + `annotate:[{target, kind, text}]`（`kind` = `circle` / `underline` / `arrow` / `note`）。
+- 必填：任意组件版式 + `annotate:[{target, kind, text, at}]`（`kind` = `circle` / `underline` / `arrow` / `note`，`at` 与 `sketch.acts` 同一写法：数字帧 / `@L1` / `@L1.3`）。
+  旧写法 `line`（0 起数）仍能用，compose 会提示改写。
 - 什么时候用：屏幕里、代码里发生的事（终端报错、代码行、图表异常）。
-- 例：`"annotate":[{"target":"L3","kind":"circle","text":"就是这一行"}]`。
+- 例：`"annotate":[{"target":"L3","kind":"circle","text":"就是这一行","at":"@L2"}]`。
 
 ## ③ `scene-verdict` 情境线稿 + 结论卡
 

@@ -274,7 +274,7 @@ export const SketchLayer: React.FC<{spec: SketchSpec; f: number; box: {x: number
             <div style={{
               position: 'absolute', left: `${textX}%`, top: `${ay - 5}%`,
               transform: `translate(${toLeft ? '-100%' : '0'}, -50%) scale(${0.94 + 0.06 * pointP})`,
-              fontFamily: THEME.craft?.handFamily ?? 'Kai', fontSize: 27, fontWeight: 700, color: accent,
+              fontFamily: THEME.craft?.handFamily ?? 'Kai', fontSize: 32, fontWeight: 700, color: accent,
               background: `${C.paper}E6`, padding: '1px 7px', borderRadius: 6, whiteSpace: 'nowrap', opacity: pointP,
             }}>{label}</div>
           </>

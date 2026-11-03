@@ -275,6 +275,8 @@ def resolve_sketch(p, sid, sk, line_start, line_cues, cues, frm):
     if problems:
         return None
     frames = []
+    if not (sk.get("acts") or []):
+        sk = dict(sk, acts=[{"at": "@L1", "do": "enter"}])  # 3.5.1：acts 不写 = 第 1 句开始时描出（不再整镜静态出现）
     for i, a in enumerate(sk.get("acts") or []):
         verb = a.get("do")
         if verb not in SKETCH_VERBS:
@@ -294,8 +296,8 @@ def resolve_sketch(p, sid, sk, line_start, line_cues, cues, frm):
     return out
 
 
-def resolve_annotate(p, sid, ann, els, line_start):
-    """annotate:[{target, kind, text}] → 带矩形与帧号的叠加层。"""
+def resolve_annotate(p, sid, ann, els, line_start, line_cues=None, cues=None, frm=None):
+    """annotate:[{target, kind, text, at}] → 带矩形与帧号的叠加层。"""
     out = []
     for i, a in enumerate(ann or []):
         kind = a.get("kind")
@@ -307,8 +309,16 @@ def resolve_annotate(p, sid, ann, els, line_start):
         if not e:
             p.hint(f"{sid}: annotate[{i}].target={target!r} 找不到画面元素 —— 写元素 id（可用：{', '.join(x['id'] for x in els[:8])}）")
             continue
-        li = int(a.get("line", 0))
-        at = int(line_start[min(li, max(0, len(line_start) - 1))]) if line_start else 0
+        if a.get("at") is not None:
+            at = resolve_act_at(a.get("at"), line_start, line_cues or [], cues or [], frm or 0)
+            if at is None:
+                p.hint(f"{sid}: annotate[{i}].at={a.get('at')!r} 解析不了 —— 用 @L1 或 @L1.3")
+                continue
+        else:
+            li = int(a.get("line", 0))
+            at = int(line_start[min(li, max(0, len(line_start) - 1))]) if line_start else 0
+            if "line" in a:
+                p.hint(f"{sid}: annotate[{i}].line 是 0 起数的旧写法 —— 改成 \"at\": \"@L{li + 1}\"（与 sketch.acts 同一写法）")
         out.append({"kind": kind, "x": e["x"], "y": e["y"], "w": e["w"], "h": e["h"], "at": at,
                     "text": a.get("text", ""), "seed": f"{sid}-{target}"})
     return out

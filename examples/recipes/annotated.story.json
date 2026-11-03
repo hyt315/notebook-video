@@ -8,7 +8,7 @@
     {"role": "hook", "layout": "code", "recipe": "component-annotated",
      "lines": ["先看这段请求代码。", "慢就慢在这一行。"],
      "sketch": {"draw": "lib:server", "label": "服务器", "place": "corner", "acts": [{"at": "@L1", "do": "enter"}]},
-     "annotate": [{"target": "L3", "kind": "circle", "text": "每次都要查库"}, {"target": "L4", "kind": "underline", "line": 1}],
+     "annotate": [{"target": "L3", "kind": "circle", "text": "每次都要查库"}, {"target": "L4", "kind": "underline", "at": "@L2"}],
      "content": {"title": "app.py", "lang": "python", "code": "def load(user_id):\n    row = db.query(user_id)\n    return row\n# 每次请求都走一遍"}}
   ]}]
 }

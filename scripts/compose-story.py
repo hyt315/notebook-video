@@ -717,7 +717,7 @@ def build(story, comp, p: Problems):
         sk_out = resolve_sketch(p, sid, sh.get("sketch"), line_start, sh["line_cues"], cues, frm) if sh.get("sketch") else None
         if sk_out is not None:
             sk_out["box"] = sh.get("sketch_box") or SKETCH_BOX["left"]
-        ann_out = resolve_annotate(p, sid, sh.get("annotate"), els, line_start)
+        ann_out = resolve_annotate(p, sid, sh.get("annotate"), els, line_start, sh["line_cues"], cues, frm)
         schedule_reveals(els, sk_out, ann_out or [], tips)
         _last = max([e["at"] for e in els] + [a_["at"] for a_ in (ann_out or [])] + [0])
         if line_end and _last > line_end[-1]:

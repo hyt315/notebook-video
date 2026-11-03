@@ -142,6 +142,60 @@ class SketchValidationTest(unittest.TestCase):
             self.assertNotIn(None, fr.values(), f"帧里不能出现 null 值：{fr}")
         self.assertNotIn("acts", out)
 
+    def test_missing_acts_defaults_to_enter_on_line1(self):
+        # T-P1-04：acts 不写 = 第 1 句开始时描出，不再是整镜静态出现
+        p = self.Collector()
+        out = acts.resolve_sketch(p, "S1", {"draw": "lib:bulb"},
+                                  [21, 88], [[0]], [{"words": [{"start": 0}]}], 0)
+        self.assertIsNotNone(out)
+        self.assertEqual(out["frames"], [{"at": 21, "do": "enter"}],
+                         "缺省应当等同 [{\"at\": \"@L1\", \"do\": \"enter\"}]")
+
+
+class AnnotateSyntaxTest(unittest.TestCase):
+    """T-P1-04：annotate 支持 at（与 sketch.acts 同写法），旧 line（0 起数）只提示不删。"""
+
+    class Collector:
+        def __init__(self):
+            self.errors, self.hints = [], []
+
+        def err(self, m): self.errors.append(m)
+        def fix(self, m): pass
+        def hint(self, m): self.hints.append(m)
+
+    ELS = [{"id": "L3", "x": 1, "y": 2, "w": 3, "h": 4}]
+    LINE_START = [10, 60]
+    LINE_CUES = [[0], [1]]
+    CUES = [{"words": [{"start": 0.5}]}, {"words": [{"start": 2.0}]}]
+
+    def test_at_l2_lands_on_line2(self):
+        p = self.Collector()
+        out = acts.resolve_annotate(p, "S1", [{"target": "L3", "kind": "circle", "at": "@L2"}],
+                                    self.ELS, self.LINE_START, self.LINE_CUES, self.CUES, 0)
+        self.assertEqual([a["at"] for a in out], [60])
+        self.assertEqual(p.hints, [], "新写法不该出提示")
+
+    def test_old_line_still_works_and_hints(self):
+        p = self.Collector()
+        out = acts.resolve_annotate(p, "S1", [{"target": "L3", "kind": "circle", "line": 1}],
+                                    self.ELS, self.LINE_START, self.LINE_CUES, self.CUES, 0)
+        self.assertEqual([a["at"] for a in out], [60], "旧写法必须与 at:@L2 同值")
+        self.assertTrue(any("0 起数的旧写法" in h for h in p.hints), f"没提示改写：{p.hints}")
+
+    def test_bad_at_is_skipped_with_hint(self):
+        p = self.Collector()
+        out = acts.resolve_annotate(p, "S1", [{"target": "L3", "kind": "circle", "at": "later"}],
+                                    self.ELS, self.LINE_START, self.LINE_CUES, self.CUES, 0)
+        self.assertEqual(out, [], "解析不了的 at 不能猜")
+        self.assertTrue(any("解析不了" in h for h in p.hints), f"没提示：{p.hints}")
+
+    def test_signature_keeps_old_positional_callers(self):
+        # 旧调用点只传 5 个参数，新参数必须有缺省值且不炸
+        p = self.Collector()
+        out = acts.resolve_annotate(p, "S1", [{"target": "L3", "kind": "circle"}],
+                                    self.ELS, self.LINE_START)
+        self.assertEqual([a["at"] for a in out], [10])
+
 
 class PackageIncludesModulesTest(unittest.TestCase):
     def test_package_collects_acts_and_time(self):
