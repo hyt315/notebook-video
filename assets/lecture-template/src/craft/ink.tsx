@@ -208,11 +208,16 @@ export const MagnifyInset: React.FC<{
   label?: string; labelAt?: [number, number];
   seed?: string;
 }> = ({f, at, box, rotate = 0, radius = 8, lead, label, labelAt, seed = 'mag'}) => {
-  const op = interpolate(f, [at, at + 20], [0, 1], {...clamp, easing: Easing.bezier(0.16, 1, 0.3, 1)});
+  // 3.5.1 草稿纸：框沿边描出 16 帧，描完才铺淡底；不淡入（references/reveal-rules.md）
+  if (f < at) return null;
   return <>
     <div style={{position: 'absolute', left: box.x, top: box.y, width: box.w, height: box.h,
-      border: `4px solid ${C.ink}`, borderRadius: radius, background: `${C.gold}2e`,
-      transform: `rotate(${rotate}deg)`, opacity: op}} />
+      borderRadius: radius, background: f >= at + 16 ? `${C.gold}2e` : 'transparent',
+      transform: `rotate(${rotate}deg)`}} />
+    <svg style={{position: 'absolute', left: box.x - 4, top: box.y - 4, width: box.w + 8, height: box.h + 8, overflow: 'visible', transform: `rotate(${rotate}deg)`}}>
+      <rect x={2} y={2} width={box.w + 4} height={box.h + 4} rx={radius} fill="none" stroke={C.ink} strokeWidth={4}
+            pathLength={1} strokeDasharray={1} strokeDashoffset={1 - prog(f, at, 16)} />
+    </svg>
     {lead && <InkPath d={lead} p={prog(f, at + 8, 22)} size={4} color={THEME.craft?.accent ?? C.orange} seed={`${seed}-lead`} />}
     {label && labelAt && <HandNote f={f} at={at + 26} x={labelAt[0]} y={labelAt[1]} text={label} size={CRAFT_TYPE.title} />}
   </>;

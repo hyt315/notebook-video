@@ -20,7 +20,7 @@ import {SHOTS} from './shots';
 //
 // 两条时序铁律：
 //   1. 元素出现帧绑定到"讲到它的那一句"（SHOTS.Sx.beats），禁止开头一次性铺完；
-//   2. 入场统一 enterAt()：22 帧 easeOut + 上浮 + 微缩放。
+//   2. 出现统一 enterAt()：左→右展开 22 帧，线性（3.5.1 草稿纸；见 references/reveal-rules.md）。
 //
 // 几何：内容留在 [80,1840] × [80,930]；带平移的镜头再内缩平移预算。
 // ============================================================================
@@ -31,10 +31,11 @@ const easeOut = (f: number, a: number, b: number, from = 0, to = 1) => interpola
 const easeIO = (f: number, a: number, b: number, from = 0, to = 1) => interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.inOut(Easing.cubic)});
 
 const IN = 22;
-/** 入场：22 帧 easeOut + 22px 上浮 + 0.975→1 微缩放。所有元素统一用它。 */
+/** 出现（3.5.1 草稿纸）：左→右展开 22 帧，线性；不淡入、不上浮、不缩放。所有元素统一用它。见 references/reveal-rules.md */
 const enterAt = (f: number, at: number): React.CSSProperties => {
-  const p = easeOut(f, at, at + IN);
-  return {opacity: p, transform: `translateY(${(1 - p) * 22}px) scale(${0.975 + 0.025 * p})`};
+  const p = interpolate(f, [at, at + IN], [0, 1], {...clamp, easing: Easing.linear});
+  if (p <= 0) return {opacity: 0};
+  return {clipPath: `inset(-4% ${((1 - p) * 100).toFixed(2)}% -4% -2%)`};
 };
 // 原来这里还有一个 exitAt()，本文件从未调用（tsc TS6133）：各镜的离场要么交给
 // RevealMask/ShotCamera，要么写成行内表达式，没有一处用得上它。

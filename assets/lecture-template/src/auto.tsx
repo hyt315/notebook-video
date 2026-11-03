@@ -28,7 +28,6 @@ import {ArchivePhoto, LoupeMedia} from './craft/media';
 
 const C = THEME.palette;
 const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
-const ease = Easing.bezier(0.16, 1, 0.3, 1);
 
 export type Elem = {
   id: string; kind: string; x: number; y: number; w: number; h: number; text: string; size: number; role: string;
@@ -456,7 +455,7 @@ export const AutoShot: React.FC<{id: string; f: number}> = ({id, f}) => {
     const Comp = shot.custom ? CUSTOM[shot.custom] : undefined;
     const props: CustomProps = {
       f, shot, C,
-      el: (eid) => { const e = els.find((x) => x.id === eid); return {in: e ? interpolate(f, [e.at, e.at + 18], [0, 1], {...clamp, easing: ease}) : 0, hi: hiWeight(shot, eid, f), el: e}; },
+      el: (eid) => { const e = els.find((x) => x.id === eid); return {in: e ? interpolate(f, [e.at, e.at + (e.dur ?? growDur(e))], [0, 1], {...clamp, easing: Easing.linear}) : 0, hi: hiWeight(shot, eid, f), el: e}; },
       line: (i) => shot.lines[Math.max(0, Math.min(i, shot.lines.length - 1))] ?? 0,
     };
     return <div style={{position: 'absolute', inset: 0}}>
