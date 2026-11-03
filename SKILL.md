@@ -166,6 +166,7 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 `--from=<跨镜边界前一秒> --seconds=1.2 --fx=on`（实测 61 秒出片）。
 跨镜边界在 `manifests/shots.resolved.json` 的 `from` 里，除以帧率就是秒。带翻页时不给全片耗时推算，
 因为只有转场帧走 WebGPU，线性外推会得假数字。）
+想量「是不是边讲边长」：`python scripts/measure-reveal.py <工程> renders/preview-*.mp4`（只报告，不拦；读法见 references/reveal-rules.md）。
 预览结束会打一行 `FillGate coverage`：每镜 `cells`（48 格占用）/ `blank`（全空的列）/ `largest`（最大单体占画面）/ `widest`（最大横向跨度），
 `largest<0.06` 判「主体过小」，但有两条豁免：`widest≥0.45`（面积小但横跨够的条状主体——标尺、格带、时间轴）
 和 `blank=0` 且 `cells≥24`（照片+引线+网格这类多个中等元素拼成一个主体，没有单个"大件"）。
