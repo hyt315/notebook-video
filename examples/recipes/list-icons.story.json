@@ -11,16 +11,16 @@
      "content": {"verdict": "三样就够"}},
     {"role": "recap", "layout": "list", "recipe": "list-icons",
      "lines": ["出门前记住三件事。", "书、笔记、还有一支笔。"],
-     "sketch": {"id": "book", "draw": "lib:book", "label": "书", "place": "corner", "acts": [{"at": "@L1", "do": "enter"}, {"at": "@L2", "do": "point", "target": "spine"}]},
+     "sketch": {"id": "book", "draw": "lib:book", "label": "书", "place": "corner", "acts": [{"at": "@L1", "do": "enter"}]},
      "content": {"title": "出门清单", "items": ["带一本书", "带一本笔记", "带一支笔"], "style": "check"}},
     {"role": "example", "layout": "compare", "recipe": "before-after",
      "lines": ["只带书，想到的记不下来。", "带上笔记，随手就能写。"],
      "sketch": {"id": "book", "draw": "lib:book", "label": "书", "place": "center",
                 "acts": [{"at": "@L1", "do": "enter"}, {"at": "@L1", "do": "point", "target": "right"}, {"at": "@L2", "do": "mark", "target": "right", "mark": "check"}]},
      "content": {"before": "只带书：想法记不住", "after": "带笔记：随手写下来"}},
-    {"role": "recap", "layout": "statement", "recipe": "hammer",
+    {"role": "recap", "layout": "statement", "recipe": "hammer", "recallOf": "S2",
      "lines": ["记住这一句。", "书、笔记、笔。"],
-     "sketch": {"id": "book", "draw": "lib:book", "label": "书", "place": "corner", "acts": [{"at": "@L2", "do": "enter"}]},
+     "sketch": {"id": "book", "draw": "lib:book", "label": "三样", "place": "corner", "acts": [{"at": "@L2", "do": "enter"}]},
      "content": {"text": "书、笔记、笔"}}
   ]}]
 }
