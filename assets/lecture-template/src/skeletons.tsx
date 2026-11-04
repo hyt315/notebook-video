@@ -109,18 +109,20 @@ export const Corridor: React.FC<{
         <div style={{position: 'absolute', left: x, top: 0, opacity: easeOut(f, startBanner.at, startBanner.at + 14), fontSize: 26, fontWeight: 700, color: C.muted}}>{startBanner.text}</div>
       )}
       <svg width={1920} height={460} viewBox="0 0 1920 460" style={{position: 'absolute', left: 0, top: 40}}>
-        <line x1={pts[0]} y1={laneY} x2={pts[n - 1]} y2={laneY} stroke={C.line} strokeWidth={10} strokeLinecap="round" />
         <line x1={pts[0]} y1={laneY} x2={cx} y2={laneY} stroke={C.blue} strokeWidth={10} strokeLinecap="round" />
         {pts.map((px, i) => {
           const s = stations[i];
           const at = s.at;
+          if (f < at - 12) return null;   // 3.5.2：不预铺——还没讲到就不画这块空地
           const on = f >= at;
           const color = s.color ?? C.blue;
           const ring = pulse(f, at, 16);            // 到达脉冲：0→1→0
           const checkP = easeOut(f, at, at + 12);      // 对勾描线
           return (
             <g key={s.label}>
-              <circle cx={px} cy={laneY} r={52} fill={C.paperBase} stroke={on ? color : C.line} strokeWidth={3.5} />
+              {/* 3.5.2：站点圈沿边描出（12 帧），不是先摆空心圈再填色 */}
+              <circle cx={px} cy={laneY} r={52} fill={f >= at ? C.paperBase : 'none'} stroke={on ? color : C.line} strokeWidth={3.5}
+                strokeDasharray={2 * Math.PI * 52} strokeDashoffset={(1 - easeOut(f, at - 12, at)) * 2 * Math.PI * 52} />
               {ring > 0 && <circle cx={px} cy={laneY} r={52 + 26 * ring} fill="none" stroke={color} strokeWidth={3} opacity={0.28 * (1 - ring)} />}
               {on && (
                 <path

@@ -297,7 +297,8 @@ const S7Agent: React.FC<{f: number}> = ({f}) => {
       <ZoomStage x={210} y={220} w={1000} h={560} f={f} focus={{fx: 0.5, fy: 0.5}} zoom={1.24}
         contentW={920} contentH={340}
         at={{focus: at(0), annotate: at(0) + 40, back: at(0) + 96}} label="让智能体陪你走完全程">
-        <div style={{position: 'absolute', inset: 0, padding: 30, background: C.paper}}>
+        {/* 3.5.2：纸面在讲到的前 8 帧才展开，不再开镜就摆一张空纸 */}
+        <div style={{position: 'absolute', inset: 0, padding: 30, background: C.paper, ...enterAt(f, at(0) - 8)}}>
           <CardHead icon="user" text="与智能体协作" />
           <div style={{position: 'absolute', left: 30, top: 92}}>
             <ChatThread x={0} y={0} w={920} frame={f} msgs={[
@@ -308,8 +309,9 @@ const S7Agent: React.FC<{f: number}> = ({f}) => {
           </div>
         </div>
       </ZoomStage>
-      <div style={{position: 'absolute', left: 1250, top: 320, width: 510}}>
-        <SkeletonCard x={0} y={0} w={510} h={200} frame={f} start={at(0, 20)} revealAt={at(0, 80)} rows={2}>
+      {/* 3.5.2：卡片整张在讲到时展开，不再先摆 60 帧灰色骨架条 */}
+      <div style={{position: 'absolute', left: 1250, top: 320, width: 510, ...enterAt(f, at(0, 80))}}>
+        <SkeletonCard x={0} y={0} w={510} h={200} frame={f} start={at(0, 80)} revealAt={at(0, 80)} rows={2}>
           <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
             <CheckBadge size={28} />
             <div>
