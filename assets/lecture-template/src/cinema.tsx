@@ -376,18 +376,20 @@ export const KineticNumber: React.FC<{
   f: number; at: number; to: number; from?: number; dur?: number; decimals?: number;
   prefix?: string; suffix?: string; size?: number; color?: string; ink?: string; label?: string; labelSize?: number;
   align?: 'left' | 'center' | 'right'; style?: React.CSSProperties;
-}> = ({f, at, to, from = 0, dur = 30, decimals = 0, prefix = '', suffix = '', size = 200, color = '#f08a24', ink, label, labelSize, align = 'left', style}) => {
+  /** 3.5.2 草稿纸：不弹簧放大、不滚动计数，直接写出终值；出现方式交给外层 */
+  draft?: boolean;
+}> = ({f, at, to, from = 0, dur = 30, decimals = 0, prefix = '', suffix = '', size = 200, color = '#f08a24', ink, label, labelSize, align = 'left', style, draft = false}) => {
   const enter = spring({frame: f - at, fps: 30, config: {damping: 13, stiffness: 160, mass: 0.7}});
-  const o = interpolate(f, [at, at + 6], [0, 1], clamp);
+  const o = draft ? 1 : interpolate(f, [at, at + 6], [0, 1], clamp);
   const land = at + dur;
-  const sc = (0.55 + 0.45 * enter) * landPop(f, land, 0.18);
+  const sc = draft ? 1 : (0.55 + 0.45 * enter) * landPop(f, land, 0.18);
   const bar = interpolate(f, [land - 2, land + 12], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
   const origin = align === 'center' ? '50% 70%' : align === 'right' ? '100% 70%' : '0% 70%';
   return (
     <div style={{display: 'inline-flex', flexDirection: 'column', alignItems: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start', opacity: o, ...style}}>
       <div style={{position: 'relative', transform: `scale(${sc.toFixed(4)})`, transformOrigin: origin, lineHeight: 0.92, whiteSpace: 'nowrap'}}>
         <span style={{fontFamily: 'Clash,Space,Kai', fontWeight: 700, fontSize: size, color, fontVariantNumeric: 'tabular-nums', letterSpacing: -size * 0.02}}>
-          {prefix}{countUp(f, at, to, {from, dur, decimals})}
+          {prefix}{countUp(draft ? at + dur : f, at, to, {from, dur, decimals})}
         </span>
         {/* 单位：字号必须与 compose 预留宽度一致（那边按 0.42 算 nw），
             用 0.5 会实际比预留宽 → 单位压到数字最后一位上（1.852“公里”就是这么叠的）。

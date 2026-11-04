@@ -64,8 +64,9 @@ export const enter = (f: number, at: number, _rise = 14, dur = 18): React.CSSPro
   return {clipPath: `inset(-6% ${((1 - p) * 100).toFixed(2)}% -6% -2%)`};
 };
 /** 展开时长：clamp(字数 × 4, 12, 45) 帧；没字的按宽度 / 40。与 scripts/story_acts.py grow_dur() 同一公式。 */
-export const growDur = (e: {text?: string; lines?: string[]; w: number}) => {
+export const growDur = (e: {text?: string; lines?: string[]; w: number; kind?: string}) => {
   const n = ((e.lines ?? []).join('') || e.text || '').length;
+  if (e.kind === 'codeline') return Math.max(12, Math.min(24, n > 0 ? Math.round(n * 1.5) : 12));  // 3.5.2，与 story_acts.grow_dur 同式
   return Math.max(12, Math.min(45, n > 0 ? n * 4 : Math.round(e.w / 40)));
 };
 
@@ -248,14 +249,15 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
       </Box>;
     }
     case 'number':
-      return <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, opacity: dim}}>
-        <KineticNumber f={f} at={e.at} from={e.from_ ?? 0} to={e.value} decimals={e.decimals} prefix={e.prefix} suffix={e.unit} size={e.size} color={tt.fill} ink={tt.ink} dur={30} />
+      // 3.5.2：整串左→右展开、直接写终值（不弹簧放大、不滚动计数）
+      return <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, opacity: dim, ...enter(f, e.at, 0, Math.max(12, Math.min(45, `${e.prefix ?? ''}${e.value}${e.unit ?? ''}`.length * 4)))}}>
+        <KineticNumber f={f} at={e.at} from={e.from_ ?? 0} to={e.value} decimals={e.decimals} prefix={e.prefix} suffix={e.unit} size={e.size} color={tt.fill} ink={tt.ink} dur={30} draft />
       </div>;
     case 'bar': {
       const g = interpolate(f, [e.at + e.idx * 4, e.at + e.idx * 4 + 24], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
       const hot = e.hot || w > 0.3;
       const lx = e.barX - e.x;
-      return <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, width: e.w, height: e.h, opacity: interpolate(f, [e.at, e.at + 10], [0, 1], clamp) * dim}}>
+      return <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, width: e.w, height: e.h, opacity: dim, ...enter(f, e.at, 0, 12)}}>
         <HiBox w={w} pad={2} />
         <div style={{position: 'absolute', left: lx, width: e.barW, bottom: 52, height: e.barH * g, background: hot ? C.orange : C.lineBlue, borderRadius: '10px 10px 0 0'}} />
         <div style={{position: 'absolute', left: 0, right: 0, bottom: 52 + e.barH * g + 8, textAlign: 'center', fontSize: e.size, fontWeight: 700, color: hot ? C.orangeInk : C.ink, opacity: g, fontFamily: 'Space,Kai'}}>{e.valueText}</div>
@@ -269,8 +271,8 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
         <div style={{position: 'absolute', left: 0, right: 0, top: 76, height: 2, background: C.line}} />
       </Box>;
     case 'codeline': {
-      const p = interpolate(f, [e.at + 6 + e.n * 2, e.at + 14 + e.n * 2], [0, 1], clamp);
-      return <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, width: e.w, height: e.h, opacity: p * dim}}>
+      // 3.5.2：代码行和别的文字一样左→右展开，时长取排程写进来的 dur（不再自己定 8 帧淡入）
+      return <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, width: e.w, height: e.h, opacity: dim, ...enter(f, e.at, 0, (e as any).dur ?? growDur(e))}}>
         <HiBox w={w} pad={4} radius={8} />
         <div style={{position: 'relative', fontFamily: CODE_FONT, fontSize: e.size, lineHeight: `${e.h}px`, whiteSpace: 'pre', fontWeight: bold}}>
           {codeTokens(e.text).map((t, i) => <span key={i} style={{color: t.c}}>{t.t}</span>)}
