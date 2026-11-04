@@ -6,6 +6,7 @@ G 部分需要真视频，放端到端验收里量，不在这里造假帧。
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -74,6 +75,29 @@ class StaticMetrics(unittest.TestCase):
 
 
 class HandwrittenProject(unittest.TestCase):
+    def test_shots_resolved_only_project_reports_growth(self):
+        """3.5.2：手写工程的 from/to 只在 shots.resolved.json 里，也要能算出生长比且退出码 0。"""
+        ffmpeg = shutil.which("ffmpeg")
+        if not ffmpeg:
+            self.skipTest("需要 ffmpeg 生成合成视频")
+        with tempfile.TemporaryDirectory() as td:
+            proj = Path(td) / "proj"
+            (proj / "manifests").mkdir(parents=True)
+            (proj / "manifests" / "shots.resolved.json").write_text(json.dumps({"shots": [
+                {"id": "S1", "from": 0, "to": 45},
+                {"id": "S2", "from": 45, "to": 90},
+            ]}), encoding="utf-8")
+            mp4 = Path(td) / "clip.mp4"
+            r = subprocess.run([ffmpeg, "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+                                "-i", "color=c=white:s=320x180:r=30:d=3", "-pix_fmt", "yuv420p", str(mp4)],
+                               capture_output=True, text=True, timeout=120)
+            self.assertEqual(r.returncode, 0, r.stderr[-400:])
+            r = subprocess.run([sys.executable, str(TOOL), str(proj), str(mp4)],
+                               capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180)
+            self.assertEqual(r.returncode, 0, r.stdout[-400:] + r.stderr[-400:])
+            self.assertIn("REVEAL growth: median=", r.stdout)
+            self.assertNotIn("Traceback", r.stderr)
+
     def test_project_without_story_ts_is_skipped(self):
         with tempfile.TemporaryDirectory() as td:
             r = subprocess.run([sys.executable, str(TOOL), td], capture_output=True, text=True, timeout=60)

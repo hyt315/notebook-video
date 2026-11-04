@@ -139,7 +139,10 @@ def read_frames(mp4: Path, wanted: dict[int, str]) -> dict[str, bytes]:
 
 
 def growth_rows(project: Path, mp4: Path) -> list[dict]:
-    man = project / "manifests" / "shots.json"
+    # 3.5.2：手写场景工程的 from/to 只在 shots.resolved.json 里；auto 工程两份都有
+    man = project / "manifests" / "shots.resolved.json"
+    if not man.is_file():
+        man = project / "manifests" / "shots.json"
     if not man.is_file():
         print(f"REVEAL growth: 没有 {man.relative_to(project)}，跳过", file=sys.stderr)
         return []
@@ -147,6 +150,9 @@ def growth_rows(project: Path, mp4: Path) -> list[dict]:
     wanted: dict[int, str] = {}
     plan = []
     for s in shots:
+        if "from" not in s or "to" not in s:
+            print(f"REVEAL growth: {s.get('id', '?')} 没有 from/to，跳过", file=sys.stderr)
+            continue
         a, b = int(s["from"]), int(s["to"]) - 2
         if b - a < MIN_SHOT:
             continue
@@ -192,7 +198,14 @@ def main() -> int:
         print("REVEAL static: shots=%(shots)d same>1:%(same>1)d gap<12:%(gap<12)d "
               "conc>2:%(conc>2)d pre>1:%(pre>1)d afterEnd:%(afterEnd)d" % summary)
 
-    grown = growth_rows(project, mp4) if mp4 else []
+    grown = []
+    if mp4 is not None and not mp4.is_file():
+        print(f"REVEAL growth: 找不到 {mp4}，跳过生长比", file=sys.stderr)
+    elif mp4 is not None:
+        try:
+            grown = growth_rows(project, mp4)
+        except Exception as exc:  # 只报告不拦：任何意外都不能让退出码变成非 0
+            print(f"REVEAL growth: 算不出来（{type(exc).__name__}: {exc}），跳过", file=sys.stderr)
     if grown:
         vals = sorted(r["growth"] for r in grown)
         for r in grown:
