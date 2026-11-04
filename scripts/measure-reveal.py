@@ -173,14 +173,63 @@ def growth_rows(project: Path, mp4: Path) -> list[dict]:
     return rows
 
 
+OPACITY_RE = re.compile(r"opacity:\s*(?:interpolate|ease|pop|p\b|op\w*)")
+# 组件声明：只认 React.FC / 箭头组件 / 函数组件；`const C = THEME.palette` 这类常量不认
+COMP_RE = re.compile(r"(?:export\s+)?(?:const|function)\s+([A-Z][A-Za-z0-9]*)\s*(?::\s*React\.FC|<|=?\s*\()")
+
+
+def opacity_audit(project: Path | None) -> int:
+    """列出仍用「透明度」做出现的组件（3.5.2 · 只报告，不拦）。
+
+    判据：一行里有 `opacity: <时钟函数或进度变量>`，且它前后几行的同一个 style 里没有 clipPath
+    ——有 clipPath 说明它是「展开」而不是「淡入」，`opacity: dim` 这类退后也仍然会被列出来，
+    所以这份清单是**人工过一遍**的候选，不是违规判定。
+    """
+    roots = []
+    if project is not None and (project / "src").is_dir():
+        roots = sorted((project / "src").glob("*.tsx"))
+    if not roots:
+        tpl = Path(__file__).resolve().parents[1] / "assets" / "lecture-template" / "src"
+        roots = sorted(tpl.glob("*.tsx"))
+    hits = []
+    for f in roots:
+        try:
+            lines = f.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        comp = "(模块级)"
+        for i, line in enumerate(lines):
+            m = COMP_RE.search(line)
+            if m and m.group(1) != m.group(1).upper():   # 全大写的是常量（IN / C / R），不是组件
+                comp = m.group(1)
+            if OPACITY_RE.search(line):
+                window = "\n".join(lines[max(0, i - 3):i + 4])
+                if "clipPath" in window:
+                    continue
+                hits.append((f.name, i + 1, comp))
+    for name, ln, comp in hits:
+        print(f"  {name}:{ln}  {comp}")
+    print(f"OPACITY-AUDIT n={len(hits)}")
+    return len(hits)
+
+
 def main() -> int:
-    args = [a for a in sys.argv[1:] if a != "--json"]
+    audit = "--opacity-audit" in sys.argv[1:]
+    args = [a for a in sys.argv[1:] if a not in ("--json", "--opacity-audit")]
     as_json = "--json" in sys.argv[1:]
+    if audit:
+        # 只报告：不给工程就用仓库模板的 src/，永远退出 0
+        opacity_audit(Path(args[0]) if args else None)
+        return 0
     if not args:
         print(__doc__.split("用法：")[1].split("两部分")[0].strip(), file=sys.stderr)
         return 0
-    project = Path(args[0])
+    project = Path(args[0]) if args else None
     mp4 = Path(args[1]) if len(args) > 1 else None
+
+    if project is None:
+        print(__doc__.split("用法：")[1].split("两部分")[0].strip(), file=sys.stderr)
+        return 0
 
     rows = static_rows(project)
     if not rows:

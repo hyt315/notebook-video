@@ -98,6 +98,14 @@ class HandwrittenProject(unittest.TestCase):
             self.assertIn("REVEAL growth: median=", r.stdout)
             self.assertNotIn("Traceback", r.stderr)
 
+    def test_opacity_audit_lists_fades_and_exits_zero(self):
+        """3.5.2：--opacity-audit 只报告——列出仍用透明度入场的组件，退出码恒 0。"""
+        r = subprocess.run([sys.executable, str(TOOL), "--opacity-audit"],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
+        self.assertEqual(r.returncode, 0, r.stderr[-400:])
+        self.assertRegex(r.stdout, r"OPACITY-AUDIT n=\d+")
+        self.assertIn("StageFrame", r.stdout, "stagekit 的整块上浮淡入应当被列出来")
+
     def test_project_without_story_ts_is_skipped(self):
         with tempfile.TemporaryDirectory() as td:
             r = subprocess.run([sys.executable, str(TOOL), td], capture_output=True, text=True, timeout=60)
