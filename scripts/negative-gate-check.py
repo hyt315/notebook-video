@@ -1221,6 +1221,22 @@ case('CG 一致性 · MIN_LABEL_FONT 单独漂移（数值双真源交叉校验�
 ])
 cleanup(td_skill)
 
+# CH · 3.5.2 补的 growDur 公式双源锁：整仓副本里只改 TS 侧代码行系数（1.5 → 2 帧/字），
+# Python 排程侧不动 → 一致性检查必须点名这一对漂移。排程按 1.5 写 dur、渲染按 2 展开，
+# 代码行会在镜尾前长不完，正是 3.5.2 修掉的那类错。
+td_skill = mk_skill_copy()
+atp = os.path.join(td_skill, 'assets/lecture-template/src/auto.tsx')
+_at = io.open(atp, encoding='utf-8').read()
+if 'Math.round(n * 1.5)' not in _at:
+    raise SystemExit('CH 夹具锚点没找到：auto.tsx 的 codeline 系数写法变了')
+io.open(atp, 'w', encoding='utf-8', newline='').write(
+    _at.replace('Math.round(n * 1.5)', 'Math.round(n * 2)', 1))
+case('CH 一致性 · growDur 代码行系数单独漂移（数值双真源交叉校验）', [
+    ('must_block:numeric dual-source drift: growDur codeline rate', 'validate-skill-consistency',
+     run([PY, os.path.join(SKILL, 'scripts/validate-skill-consistency.py'), '--root', td_skill])),
+])
+cleanup(td_skill)
+
 # ---- 3.5.0 · 未注册的定制组件：构建期必须停（旧版渲染成一行红字继续出片） ----
 def mk_custom_proj():
     td = tempfile.mkdtemp(prefix='nv-custom-')

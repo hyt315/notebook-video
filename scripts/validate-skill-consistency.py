@@ -301,6 +301,28 @@ _NUM_DUAL_PAIRS = (
     ('FPS vs resolve FPS', _TS_INDEX, r'(?<!\w)FPS\s*=\s*([\d.]+)', _PY_RESOLVE, r'^FPS\s*=\s*([\d.]+)'),
     ('FPS vs presentation FPS', _TS_INDEX, r'(?<!\w)FPS\s*=\s*([\d.]+)', _PY_PRESENT, r'^FPS\s*=\s*([\d.]+)'),
     ('FPS vs motion-gaps FPS', _TS_INDEX, r'(?<!\w)FPS\s*=\s*([\d.]+)', _PY_GAPS, r'^FPS\s*=\s*([\d.]+)'),
+
+    # 3.5.2：补上「同一份公式 / 同一个上限」在 Python 与 TS 各写一遍、却没人盯的四组。
+    # 只比数值，不改任何判据；有人只改一边（例如把代码行 1.5 帧/字改成 2）时 CI 会先报漂移。
+    # 语义差异要说明：MAX_CHARS / CAPTION_MAX_CHARS 逐字计，LINE_MAX 是加权字（ASCII 记 0.5），
+    # 三者只锁「16 这个上限」相同，不把它们合成一个函数。
+    ('MAX_CHARS vs LINE_MAX', 'scripts/story_caption.py', r'^MAX_CHARS\s*=\s*([\d.]+)',
+     _PY_PRESENT, r'^LINE_MAX\s*=\s*([\d.]+)'),
+    ('CAPTION_MAX_CHARS vs MAX_CHARS', _TS_INDEX, r'const CAPTION_MAX_CHARS\s*=\s*([\d.]+)',
+     'scripts/story_caption.py', r'^MAX_CHARS\s*=\s*([\d.]+)'),
+    ('CPS vs CPS_COMPONENT', 'scripts/story_caption.py', r'^CPS\s*=\s*([\d.]+)',
+     'scripts/silent-timing.py', r'^CPS_COMPONENT\s*=\s*([\d.]+)'),
+    # grow_dur (story_acts.py) ⇄ growDur (auto.tsx)：排程按它写 dur，渲染按它展开，差一倍就长不完。
+    ('growDur min', 'scripts/story_acts.py', r'return max\((\d+), min\(45, n \* 4',
+     'assets/lecture-template/src/auto.tsx', r'return Math\.max\((\d+), Math\.min\(45, n > 0 \? n \* 4'),
+    ('growDur max', 'scripts/story_acts.py', r'return max\(12, min\((\d+), n \* 4',
+     'assets/lecture-template/src/auto.tsx', r'return Math\.max\(12, Math\.min\((\d+), n > 0 \? n \* 4'),
+    ('growDur chars-per-frame', 'scripts/story_acts.py', r'n \* (\d+) if n > 0',
+     'assets/lecture-template/src/auto.tsx', r'n > 0 \? n \* (\d+) :'),
+    ('growDur codeline max', 'scripts/story_acts.py', r'return max\(12, min\((\d+), round\(n \* 1\.5\)',
+     'assets/lecture-template/src/auto.tsx', r'return Math\.max\(12, Math\.min\((\d+), n > 0 \? Math\.round\(n \* 1\.5\)'),
+    ('growDur codeline rate', 'scripts/story_acts.py', r'round\(n \* ([\d.]+)\)',
+     'assets/lecture-template/src/auto.tsx', r'Math\.round\(n \* ([\d.]+)\)'),
 )
 
 

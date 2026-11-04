@@ -94,9 +94,10 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-p
 
 - `assets/lecture-template` is the only project template (the 3.1.x `--classic` warm-ivory example was
   removed in 3.2.0; the flag now fails with a pointer to `--style`).
-- Two skins, chosen once at kickoff: `flat` (default) and `cel`. Themes swap palette,
-  card skin, background decoration and subtitle chrome only — every coordinate, type scale, motion
-  contract and gate is shared.
+- Five skins, chosen once at kickoff: `flat` (default) and `cel` are the component themes;
+  `journal` / `papercut` / `archive` are the hand-made skins driven by the director layer.
+  Themes swap palette, card skin, background decoration and subtitle chrome only — every
+  coordinate, type scale, motion contract and gate is shared.
 - **Text-safety colours (`*Ink`).** Every accent ships as a pair: the original (`blue`, `orange`,
   `green`, `gold`, `red`) and a WCAG-derived ink variant (`blueInk`, `orangeInk`, …) for the same hue.
   Fills and strokes keep the original; **text (`color:`) always uses the ink variant** — the original

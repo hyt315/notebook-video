@@ -20,6 +20,7 @@ import process from 'node:process';
 import {fileURLToPath} from 'node:url';
 import {writeSilentNarration} from './silent-audio.mjs';
 import {browserArgs} from './browser-exec.mjs';
+import {collectP1} from './p1-hints.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const IS_WIN = process.platform === 'win32';
@@ -210,7 +211,11 @@ if (!flag('no-gates')) {
     ['validate-backgrounds.py', [project], true],
     ['validate-backgrounds.py', [project, '--shots'], true],
     ['validate-caption-sync.py', [path.join(project, 'audio', 'narration.mp3.json'), path.join(project, 'manifests', 'caption-cues.json')], true],
-    ['validate-semantic-breaks.py', [path.join(project, 'manifests', 'caption-cues.json'), path.join(project, 'manifests', 'protected-caption-phrases.txt')], true],
+    // 交付路径必须带 --require-budoux：与 CLI 的 validate-semantic-breaks 收口同一语义。
+    // 缺 BudouX 时脚本默认 SKIPPED + rc=0，短语规则没跑却报通过；技能自带 assets/vendor 兜底，
+    // 正常安装一定能找到，只有包真的坏了才会硬失败。
+    ['validate-semantic-breaks.py', [path.join(project, 'manifests', 'caption-cues.json'),
+      path.join(project, 'manifests', 'protected-caption-phrases.txt'), '--require-budoux'], true],
     // 手写场景的结构门禁（骨架 / 组件多样性）：auto 版式由引擎保证结构，这里只作参考
     ['validate-composition.py', [project], HAND],
   ];
@@ -222,9 +227,8 @@ if (!flag('no-gates')) {
     // 把 P1 明细收进报告。手写场景工程不走 compose-story，`rep` 一直是初始值
     // （fixes / hints 都是空数组），于是报告里「建议（不拦）」永远是 0 条 ——
     // 而实测一场交付有 22 条 P1，它们只在终端滚过去了，写进文件的一条都没有。
-    // 数字说了"有建议"却看不到是什么，跟"跳过冒充通过"是同一类毛病。
-    const p1 = [...(r.out || '').matchAll(/^\s*P1\s*[-\w]*:\s*(.+)$/gm)]
-      .map((m) => `${g.replace(/\.py$/, '')}：${m[1].trim()}`);
+    // 3.5.2：收集逻辑挪到 p1-hints.mjs，认全三种明细行（原正则只认带编号 + 半角冒号的一种）。
+    const p1 = collectP1(r.out, g);
     if (p1.length) rep.hints.push(...p1);
     if (r.code && hard) { console.log(r.out.split('\n').filter((l) => /P0|✗|FAIL|Error|错误/.test(l)).slice(0, 12).join('\n')); die(`${g} 未通过`); }
   }

@@ -16,8 +16,9 @@ All notable changes are recorded here. The project follows semantic versioning. 
 
 ## [未发布 / Unreleased]
 
-> 3.5.2 发布后的文档收尾：只改文案、文档与自检脚本，渲染路径一行没动，发布物不受影响。
-> Post-3.5.2 documentation cleanup: copy, docs and the self-check only — the render path is untouched.
+> 3.5.2 发布后的收尾：**不改任何门禁判据、不改渲染画面、不改既有能力**；只补回该有的校验、
+> 让已有的建议看得见、修掉文档里已经漂移的说法。
+> Post-3.5.2 cleanup: **no gate verdict, render output or existing capability changes** — only restoring a missing check, surfacing advisories that were already produced, and fixing stale documentation.
 
 ### 修正 / Fixes
 
@@ -28,10 +29,22 @@ All notable changes are recorded here. The project follows semantic versioning. 
 - `CROSS-PLATFORM-ADAPTATION.md` 改为指向维护中的 [references/cross-platform-compatibility.md](references/cross-platform-compatibility.md)：原文写「themes flat + cel」「构建环境是 Linux、Windows 只做静态审计」，两条都已不成立。
   `CROSS-PLATFORM-ADAPTATION.md` now points at the maintained contract; its "flat + cel" and "built on Linux, Windows only statically audited" claims were both out of date.
 
+- `make-video.mjs` 交付路径补上 `--require-budoux`：缺 BudouX 时 `validate-semantic-breaks.py` 原本只是 SKIPPED + rc=0，短语规则没跑却算通过；CLI 的 `validate-semantic-breaks` 早已收口为交付语义，直调脚本的这一处漏了。技能自带 `assets/vendor/budoux` 随包分发，正常安装一定能找到，只有包真坏了才会硬失败。
+  The delivery path in `make-video.mjs` now passes `--require-budoux`, matching the CLI's contract; a missing BudouX model can no longer report a phrase-rule pass without running it. The bundled `assets/vendor/budoux` ships with the package, so a healthy install is unaffected.
+- 报告里的「建议（不拦）」不再漏收：原正则只认 `P1 <编号>:` 一种写法，门禁实际有三种明细行，多数 P1 只在终端滚过去、没写进 `renders/report.md`。同一工程实测建议从 20 条变 30 条。**判据、退出码、是否拦片一行未改**。
+  `renders/report.md` now collects all three P1 line formats: one project's advisory count went from 20 to 30. No verdict, exit code or blocking behaviour changed.
+- 文档止血（不改规格）：`presentation-gate.md` 指向不存在的「SKILL.md 的 The gates」节、`composition-gate.md` 的 `SKILL.md:251` 行号失效、真峰值 −1 → −1.5 dBTP（以渲染端 `TP=-1.5` 为准）、`handwritten-scenes.md` 的「Two skins」→ 五套皮肤。
+  Four stale documentation details corrected: a broken "The gates" pointer, a dead `SKILL.md` line number, the true-peak target (−1 → −1.5 dBTP) and the skin count (two → five).
+
 ### 工具链 / Tooling
 
 - `validate-skill-consistency.py` 补上「用户可见处的版本号」核对：两版 README 的静态徽章、README 里「本版新增」的标题、模板 `package.json` 与 `package-lock.json` 的自身版本。把徽章改坏会直接 `CONSISTENCY ERROR: 版本漂移`（已用 9.9.9 实测拦下）。
   The consistency check now verifies every user-visible version stamp — both README badges, the "what's new" heading, and the template's `package.json` / `package-lock.json` — so a stale badge fails CI (verified by setting 9.9.9 and watching it block).
+
+- `validate-skill-consistency.py` 补 **8 组数值双源配对**：16 字上限、`CPS`、以及 `grow_dur` ⇄ `growDur` 公式的五个常量（12 / 45 / 4 / 24 / 1.5）。只加检查、不改任何取值；`negative-gate-check.py` 新增 CH 用例，把 TS 侧代码行系数改成 2 帧/字，一致性检查必须点名漂移。
+  Eight numeric dual-source pairs added (the 16-character limit, `CPS`, and the five constants of the reveal-duration formula). Values are untouched; a new negative fixture proves that changing only one side is caught.
+- P1 收集挪成 `scripts/p1-hints.mjs` 的纯函数，`tests/test_p1_hints.py` 用 Node 子进程跑真实实现、7 条用例锁住三种明细行与「汇总行不能收」。
+  P1 collection is now a pure function in `scripts/p1-hints.mjs`, covered by seven tests that exercise the real Node implementation and assert that summary lines are not mistaken for hints.
 
 ## [3.5.2] - 2026-11-04
 
