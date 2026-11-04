@@ -60,20 +60,21 @@ One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×108
 | **Virtual camera** | Default slow push-in per shot; `cinema.focus` pushes to the component a keyword names and pans between targets; whip / zoom-through transitions; background parallax; small content is enlarged to 60–80 % of the safe area; push-ins keep margins so titles are never cut |
 | **On-the-beat SFX** | 9 code-synthesised semantic sounds (CC0, `public/sfx/lib/`), **no BGM by default** (a music bed loads only when `treatment.sound.music.use=true`, and ducks under each cue); every cue carries `gain` / `offsetMs` and is pre-rolled so its transient lands on the visual hit (±1 frame); ≥150 ms spacing, ≈24/min cap; `validate-silence` checks inter-sentence silence |
 | **Real media** | Screenshots, ≤10 s recordings and GIFs inside `MediaFrame` (same card look as the components, optional browser / window / device chrome, region zoom, highlight boxes, callouts, credit badge); `prepare-media` transcodes, `validate-media` blocks blurry or unlicensed media |
-| **Weak-model friendly** | 7 fusion recipes + 5 blueprints (concept / code-change / data-compare / process / pitfall) with a per-shot `$components` pick; golden examples in `examples/` (including `examples/recipes/`); unfilled `<<placeholders>>` fail loudly |
+| **Weak-model friendly** | 7 fusion recipes + 10 blueprints (5 component routes + 5 hand-made structure families) with a per-shot `$components` pick; golden examples in `examples/` (including `examples/recipes/`); unfilled `<<placeholders>>` fail loudly |
 | **One command** | `make-video.mjs`: resolve-shots → gates → tsc → stills contact sheet or full render → `renders/report.md`; `make-video.cmd` on Windows |
 | **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤4.5 chars/s reading speed, frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
 | **Deterministic** | Every animation is a pure function of the frame (no `Math.random`, CSS animation or timers); no image-generation model, no online API required |
 
-## What's new in 3.5.0
+## What's new in 3.5.2
 
-- **The notebook page carries the shot.** Two kinds of shots: a page (a real archival plate or specimen photo, a magnifier, handwriting, a red seal) and components doing the explaining (consoles, diffs, checklists, stat rows, bars, verdict strips). Line drawings step back to an in-page figure instead of leading the shot.
-- **Line drawings are optional but still explainable.** 30 built-in sketches and 7 actions remain (`content.figure`, ≤19 % of drawing width), used only when a shot has to show what something looks like; no subject, no drawing. `validate-fusion` now checks the page-plus-component mix, and `validate-glyphs` still checks that no sketch is cropped. See [references/linework.md](references/linework.md).
-- **TTS is a real step.** `notebook-video tts <project>` uses edge-tts by default, or `--engine=file` for your own recording; captions and shot timing align to word-level time. Without real narration `--render` stops before rendering (a silent placeholder is only for `--stills` and `preview`).
-- **No BGM by default, sparse SFX.** A music bed loads only when `treatment.sound.music.use=true`; the effect library shrank from sixteen cues to nine, one hit per shot, ≥150 ms apart, and `validate-silence` checks inter-sentence silence.
-- **Render lock and resumable renders.** Rendering the same project twice at once is refused; a content fingerprint is written next to the raw output, and `resume` only accepts `raw-complete` plus a matching fingerprint, so a resumed render can never splice the wrong segment.
-- **Two new commands.** `clean <project>` (dry-run by default, whitelist only, refuses while a render is running) and `capabilities [--json]` (three tiers — `full` / `degraded` / `unsupported` — each gap naming the command that fixes it).
-- **Seven reproduced defects fixed**: `sweep` measuring nothing, unregistered custom components rendering silently, CJK tofu in code cards, unit and bar labels, caption mode, self-contradictory `treatment`. Long films and extreme inputs surfaced three real crashes as well (missing `value`, empty shot, empty narration), all fixed.
+- **Reveals actually finish.** Everything finishes growing 4 frames before the cut; when a shot cannot fit it, the unfold compresses to 12 frames first, and compose then says to drop an element or split the shot.
+- **Annotations stop jumping the gun.** An annotation starts 2 frames after the thing it annotates has been scheduled *and* finished growing (3.5.1 used the pre-shift frame).
+- **Code lines, bars and numbers grow in.** Code lines unfold left to right at 1.5 frames per character (12–24), bar frames grow from the baseline, numbers unfold as a whole string and write the final value — no opacity fades, spring pops or rolling counts.
+- **No more pre-filled scaffolding.** S7's grey skeleton binds to the beat that speaks of it, and the paper no longer sits there from the first frame; Corridor drops the grey track and traces station rings on arrival; empty caption bars between sentences are gone.
+- **Measurable.** `measure-reveal.py` now handles hand-written projects (`from` / `to` read from `shots.resolved.json`) and always exits 0; `--opacity-audit` lists components that still fade in (report only).
+- **Docs and examples.** New [references/draftpaper-design.md](references/draftpaper-design.md) (layout, colour, component pairing), 51 documents in the index; four stale reveal descriptions are gone; the three single-shot recipe examples became four-shot clips, with the annotated circle moved onto the line it actually marks.
+
+3.5.1 unified how things appear into draft-paper narration (no pen on screen, everything grows in as it is spoken — see [references/reveal-rules.md](references/reveal-rules.md)); 3.5.0 brought the notebook page, a real TTS step and the render lock. See [CHANGELOG.md](CHANGELOG.md) for every release.
 
 
 ## Quick start
@@ -222,7 +223,7 @@ notebook-video/
 ├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; .cmd / .sh wrappers
 │   └── dev/                     # Maintainer tools (SFX library build and tuning)
 ├── references/                  # Author manuals and specs (camera, layouts, themes, linework, recipes, SFX, captions, gates, cross-platform)
-├── tests/                       # 26 offline unit tests (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
+├── tests/                       # 569 offline unit tests (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 

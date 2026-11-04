@@ -14,6 +14,25 @@ All notable changes are recorded here. The project follows semantic versioning. 
 > 2026-11-03 to fold in internal iterations 3.6.0–3.8.0. A higher number in source comments or
 > `references/` is therefore still an internal iteration, not a release.
 
+## [未发布 / Unreleased]
+
+> 3.5.2 发布后的文档收尾：只改文案、文档与自检脚本，渲染路径一行没动，发布物不受影响。
+> Post-3.5.2 documentation cleanup: copy, docs and the self-check only — the render path is untouched.
+
+### 修正 / Fixes
+
+- README 的「本版新增」段补到 3.5.2。此前停在 3.5.0，整版 3.5.1 从没进过 README；英文版功能表里的蓝图数 5 → 10（实际是 5 组件路线 + 5 手作结构族），两版目录树的单测数 26 → 569。
+  README's "what's new" now matches 3.5.2 (it still said 3.5.0, so 3.5.1 never appeared); the English feature table says ten blueprints instead of five, and both directory trees say 569 unit tests instead of 26.
+- `manifest.json` 的 `updated_at` 从 2026-11-01 修到 2026-11-04。
+  `manifest.json` `updated_at` corrected to 2026-11-04.
+- `CROSS-PLATFORM-ADAPTATION.md` 改为指向维护中的 [references/cross-platform-compatibility.md](references/cross-platform-compatibility.md)：原文写「themes flat + cel」「构建环境是 Linux、Windows 只做静态审计」，两条都已不成立。
+  `CROSS-PLATFORM-ADAPTATION.md` now points at the maintained contract; its "flat + cel" and "built on Linux, Windows only statically audited" claims were both out of date.
+
+### 工具链 / Tooling
+
+- `validate-skill-consistency.py` 补上「用户可见处的版本号」核对：两版 README 的静态徽章、README 里「本版新增」的标题、模板 `package.json` 与 `package-lock.json` 的自身版本。把徽章改坏会直接 `CONSISTENCY ERROR: 版本漂移`（已用 9.9.9 实测拦下）。
+  The consistency check now verifies every user-visible version stamp — both README badges, the "what's new" heading, and the template's `package.json` / `package-lock.json` — so a stale badge fails CI (verified by setting 9.9.9 and watching it block).
+
 ## [3.5.2] - 2026-11-04
 
 > 3.5.2 — 把「讲到哪长到哪」从「开始帧对得上」推进到「真的长完、先后对」。
