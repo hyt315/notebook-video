@@ -1,24 +1,24 @@
 # Changelog
 
-All notable changes are recorded here. The project follows semantic versioning. Current release: **3.5.2**.
+All notable changes are recorded here. The project follows semantic versioning. Current release: **3.5.3**.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
-> **版本号有两套，别混。** 对外可引用的版本只有本文件里的条目（3.3.0 / 3.4.0 / 3.5.0 / 3.5.1 / 3.5.2）。
+> **版本号有两套，别混。** 对外可引用的版本只有本文件里的条目（3.3.0 / 3.4.0 / 3.5.0 / 3.5.1 / 3.5.2 / 3.5.3）。
 > 3.3.0 曾把内部 3.3.0–3.7.0 的多轮迭代合并为一次公开发布；3.5.0 于 2026-11-03 原地更新，
 > 把内部 3.6.0–3.8.0 的迭代一并并入这次发布。所以源码注释与 `references/` 里高于 3.5.0 的号
 > 仍然是**内部迭代号**，不对应任何对外发布。
 >
-> **Two numbering lines — do not mix them.** Cite only the versions listed below (3.3.0, 3.4.0, 3.5.0, 3.5.1, 3.5.2).
+> **Two numbering lines — do not mix them.** Cite only the versions listed below (3.3.0, 3.4.0, 3.5.0, 3.5.1, 3.5.2, 3.5.3).
 > 3.3.0 folded several internal iterations into one public release; 3.5.0 was updated in place on
 > 2026-11-03 to fold in internal iterations 3.6.0–3.8.0. A higher number in source comments or
 > `references/` is therefore still an internal iteration, not a release.
 
-## [未发布 / Unreleased]
+## [3.5.3] - 2026-11-04
 
-> 3.5.2 发布后的收尾：**不改任何门禁判据、不改渲染画面、不改既有能力**；只补回该有的校验、
+> 3.5.3 — 小版本优化：**不改任何门禁判据、不改渲染画面、不改既有能力**；只补回该有的校验、
 > 让已有的建议看得见、修掉文档里已经漂移的说法。
-> Post-3.5.2 cleanup: **no gate verdict, render output or existing capability changes** — only restoring a missing check, surfacing advisories that were already produced, and fixing stale documentation.
+> 3.5.3 — A small quality-focused release: no gate verdict, render output or existing capability changes — only restoring a missing check, surfacing advisories that were already produced, and fixing stale documentation.
 
 ### 修正 / Fixes
 
@@ -45,6 +45,15 @@ All notable changes are recorded here. The project follows semantic versioning. 
   Eight numeric dual-source pairs added (the 16-character limit, `CPS`, and the five constants of the reveal-duration formula). Values are untouched; a new negative fixture proves that changing only one side is caught.
 - P1 收集挪成 `scripts/p1-hints.mjs` 的纯函数，`tests/test_p1_hints.py` 用 Node 子进程跑真实实现、7 条用例锁住三种明细行与「汇总行不能收」。
   P1 collection is now a pure function in `scripts/p1-hints.mjs`, covered by seven tests that exercise the real Node implementation and assert that summary lines are not mistaken for hints.
+
+### 验收 / Verification
+
+- 单元 / 自检：576 个测试 OK（3 skipped）· 自检 22/22 · `validate-skill` rc=0 · 一致性检查 rc=0。
+  576 tests OK (3 skipped) · self-test 22/22 · `validate-skill` and consistency rc=0.
+- 负向门禁：116 个用例 / 183 条断言全过；新增的 CH 用例证明「只改双源的一边」会被点名。
+  Negative gates: 116 cases / 183 assertions, all green; the new CH case proves one-sided drift is caught.
+- 渲染：`data-with-object --stills` rc=0，8 张静帧与 3.5.2 基线**逐字节相同**；报告建议 20 → 30 条、误收汇总行 0 条。判据、退出码、是否拦片未变。
+  Rendering: `--stills` rc=0, all 8 stills **byte-identical** to the 3.5.2 baseline; report advisories went 20 → 30 with zero summary lines misread. No verdict, exit code or blocking change.
 
 ## [3.5.2] - 2026-11-04
 

@@ -4,7 +4,7 @@
 
 **Turn one idea into a 16:9 Chinese teaching video: a notebook page carries the real thing, components do the explaining, line drawings are optional — with an engine-level virtual camera that follows the narration, one command to render, and objective gates that fix what they can.**
 
-[![Version](https://img.shields.io/badge/version-3.5.2-1f6feb)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.5.3-1f6feb)](CHANGELOG.md)
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
@@ -65,17 +65,16 @@ One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×108
 | **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤4.5 chars/s reading speed, frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
 | **Deterministic** | Every animation is a pure function of the frame (no `Math.random`, CSS animation or timers); no image-generation model, no online API required |
 
-## What's new in 3.5.2
+## What's new in 3.5.3
 
-- **Reveals actually finish.** Everything finishes growing 4 frames before the cut; when a shot cannot fit it, the unfold compresses to 12 frames first, and compose then says to drop an element or split the shot.
-- **Annotations stop jumping the gun.** An annotation starts 2 frames after the thing it annotates has been scheduled *and* finished growing (3.5.1 used the pre-shift frame).
-- **Code lines, bars and numbers grow in.** Code lines unfold left to right at 1.5 frames per character (12–24), bar frames grow from the baseline, numbers unfold as a whole string and write the final value — no opacity fades, spring pops or rolling counts.
-- **No more pre-filled scaffolding.** S7's grey skeleton binds to the beat that speaks of it, and the paper no longer sits there from the first frame; Corridor drops the grey track and traces station rings on arrival; empty caption bars between sentences are gone.
-- **Measurable.** `measure-reveal.py` now handles hand-written projects (`from` / `to` read from `shots.resolved.json`) and always exits 0; `--opacity-audit` lists components that still fade in (report only).
-- **Docs and examples.** New [references/draftpaper-design.md](references/draftpaper-design.md) (layout, colour, component pairing), 51 documents in the index; four stale reveal descriptions are gone; the three single-shot recipe examples became four-shot clips, with the annotated circle moved onto the line it actually marks.
+> A small quality-focused release: **no gate verdict, render output or existing capability changes** — only restoring a missing check and making advisories that were already produced visible.
 
-3.5.1 unified how things appear into draft-paper narration (no pen on screen, everything grows in as it is spoken — see [references/reveal-rules.md](references/reveal-rules.md)); 3.5.0 brought the notebook page, a real TTS step and the render lock. See [CHANGELOG.md](CHANGELOG.md) for every release.
+- **The phrase rule can no longer "pass" without running.** The delivery path in `make-video` now passes `--require-budoux`; a missing BudouX model used to be reported as SKIPPED with exit code 0. A compact model ships with the package, so a healthy install is unaffected.
+- **Advisories are no longer dropped.** Validators print P1 lines in three formats and the collector only recognised one, so most hints scrolled past in the terminal instead of landing in `renders/report.md`. One project went from 20 to 30 advisories, with zero summary lines misread as hints.
+- **Eight numeric dual-source pairs.** The 16-character limit, reading speed and the reveal-duration constants (12 / 45 / 4 / 24 / 1.5) live in both Python and TypeScript; changing only one side now fails CI by name.
+- **Documentation cleanup.** Broken pointers, a dead line number, the true-peak target and the skin count are corrected; README badges, blueprint count and test count are aligned.
 
+3.5.2 moved "grow as it is spoken" from "start frames line up" to "it really finishes, in the right order" (reveal scheduling, the auto engine growing code lines / bars / numbers, removing pre-filled scaffolding, and the new design spec). See [CHANGELOG.md](CHANGELOG.md) for every release.
 
 ## Quick start
 
@@ -223,7 +222,7 @@ notebook-video/
 ├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; .cmd / .sh wrappers
 │   └── dev/                     # Maintainer tools (SFX library build and tuning)
 ├── references/                  # Author manuals and specs (camera, layouts, themes, linework, recipes, SFX, captions, gates, cross-platform)
-├── tests/                       # 569 offline unit tests (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
+├── tests/                       # 576 offline unit tests (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 

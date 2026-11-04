@@ -4,7 +4,7 @@
 
 **把一个知识点变成一支 16:9 中文讲课视频：手账页承载真东西、组件负责讲清，线稿可选；引擎虚拟镜头跟着讲，一条命令出片，客观门禁自动修。**
 
-[![Version](https://img.shields.io/badge/version-3.5.2-1f6feb)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.5.3-1f6feb)](CHANGELOG.md)
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
@@ -63,16 +63,16 @@
 | **门禁与自动修** | 硬门禁只管客观问题（取景切字、字号地板、对比度 ≥4.5:1、字幕每行 ≤16 字、读速（组件路线 ≤4.5 字/秒，手作路线 6.5 字/秒）、画面静止、音画同步、音效电平），能修的自动修；主观项只给建议 |
 | **确定可复现** | 所有动画都是帧号的纯函数（不用 `Math.random`、CSS 动画、计时器）；不依赖生图模型，不需要在线 API |
 
-## 3.5.2 新增
+## 3.5.3 新增
 
-- **出现真的长完**：每样东西在切镜前 4 帧长完；一镜放不下时先把展开压到 12 帧，仍放不下由 compose 提示「删 1–2 个元素或拆镜」，不再有切走了还在长的情况。
-- **圈注不再抢跑**：圈注等它标的东西**排定以后**长完 2 帧才起手（以前用的是被推迟前的帧，圈落在 104 帧、目标实际已推到 161 帧）。
-- **代码行 / 柱 / 数字改成长出来**：代码行按 1.5 帧/字（12–24 帧）左→右展开，柱从基线长出，数字整串展开、直接写终值——透明度淡入、弹簧放大、滚动计数都去掉了。
-- **模板不再预铺**：S7 的灰骨架条绑到讲到它的那一拍，纸面不再开镜就摆一张空的；Corridor 删掉整条灰轨道，站点圈改成沿边描出；句间不再出现没字的字幕条。
-- **量得出来了**：`measure-reveal.py` 支持手写工程（`from` / `to` 读 `shots.resolved.json`）、退出码恒 0；新增 `--opacity-audit` 列出仍在用透明度入场的组件（只报告，不拦）。
-- **文档与样例补齐**：新增 [references/draftpaper-design.md](references/draftpaper-design.md)（版式 / 配色 / 组件搭配），文档索引 51 篇；`references/` 里 4 处旧出现口径清零；三个单镜配方样例扩成 4 镜小片，`annotated` 的圈改到真正要圈的那一行。
+> 小版本优化：**不改任何门禁判据、不改渲染画面、不改既有能力**，只把该有的检查补回来、让已有的建议看得见。
 
-3.5.1 把「出现方式」统一成草稿纸讲解（画面上没有笔，讲到哪长到哪，规则见 [references/reveal-rules.md](references/reveal-rules.md)）；3.5.0 带来手账页承载层、TTS 正式步骤与渲染锁。逐版改动见 [CHANGELOG.md](CHANGELOG.md)。
+- **短语规则不再「没跑却算通过」**：`make-video` 交付路径补上 `--require-budoux`；缺 BudouX 时原先只是 SKIPPED + 退出码 0。技能自带精简模型随包分发，正常安装不受影响。
+- **建议不再漏收**：门禁的 P1 有三种写法，原正则只认一种，多数建议只在终端滚过去、没进 `renders/report.md`。同一工程实测建议 20 → 30 条，误收汇总行 0 条。
+- **8 组数值双源锁**：16 字上限、读速与展开时长公式（12 / 45 / 4 / 24 / 1.5）在 Python 与 TS 各写一遍，现在只改一边 CI 就点名漂移。
+- **文档止血**：断指针、失效行号、真峰值与皮肤数四处漂移修正；README 徽章、蓝图数与单测数对齐。
+
+3.5.2 把「讲到哪长到哪」推进到「真的长完、先后对」（出现排程、auto 引擎长出来、模板去预铺、新增设计规范）；逐版改动见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 快速开始
 
@@ -218,7 +218,7 @@ notebook-video/
 ├── scripts/                     # make-video、notebook-video CLI、compose / resolve、各门禁、自检；.cmd / .sh 包装
 │   └── dev/                     # 维护者工具（音效库构建与调校）
 ├── references/                  # 作者手册与规格（镜头、版式、主题、线稿、配方、音效、字幕、门禁、跨平台）
-├── tests/                       # 569 个离线单元测试（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 融合配方 / TTS / 静音 / 门禁 / 评审 …）
+├── tests/                       # 576 个离线单元测试（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 融合配方 / TTS / 静音 / 门禁 / 评审 …）
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 
