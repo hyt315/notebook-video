@@ -232,6 +232,8 @@ const Subtitle=({off=false}:{off?:boolean})=>{
   const words=cue?cue.words.filter((w:any)=>(line?cue.startFrame:w.startFrame)<=f+lead):[];
   // 3.3.0：一个字都还没出来时不画字幕（否则纸色光晕会先出现一团空白）
   if(!cue||!targetChars||!words.length)return null;
+  // 3.5.2：type 模式外框跟着第一个字出现——以前外框提前满不透明度画出，句间会出现空字幕条
+  if(!line&&f<(cue.words[0]?.startFrame??cue.startFrame))return null;
   // 占位层与可见层用**同一套**分词加空格规则渲染。旧版占位层只放 cue.text，而可见层会在
   // 中英文词之间补 \u00a0 —— 于是「三个 AI 技能」这类句子可见宽度大于占位宽度，最后一个字
   // 顶进字幕框的右侧装饰点。现在两层字符完全一致，占位宽 = 最终宽。
@@ -253,9 +255,10 @@ const Subtitle=({off=false}:{off?:boolean})=>{
   };
   if(line){
     const p=interpolate(f,[cue.startFrame-lead,cue.startFrame-lead+LINE_FADE],[0,1],clamp);
-    return <THEME.SubtitleChrome mode={mode}>
-      <span data-caption-line style={{position:'relative',display:'inline-block',opacity:p}}>{renderWords(allWords,false)}</span>
-    </THEME.SubtitleChrome>;
+    // 3.5.2：外框也用同一个 p 控制，不再先画空盒子
+    return <div style={{opacity:p}}><THEME.SubtitleChrome mode={mode}>
+      <span data-caption-line style={{position:'relative',display:'inline-block'}}>{renderWords(allWords,false)}</span>
+    </THEME.SubtitleChrome></div>;
   }
   return <THEME.SubtitleChrome mode={mode}>
     <span style={{position:'relative'}}>
