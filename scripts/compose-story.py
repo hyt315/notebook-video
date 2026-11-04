@@ -718,7 +718,9 @@ def build(story, comp, p: Problems):
         if sk_out is not None:
             sk_out["box"] = sh.get("sketch_box") or SKETCH_BOX["left"]
         ann_out = resolve_annotate(p, sid, sh.get("annotate"), els, line_start, sh["line_cues"], cues, frm)
-        schedule_reveals(els, sk_out, ann_out or [], tips)
+        _late = schedule_reveals(els, sk_out, ann_out or [], tips, shot_len=dur)
+        for _name, _end, _lim in _late:
+            p.hint(f"{sid}: {_name} 要到第 {_end} 帧才长完，可这一镜第 {_lim} 帧前就该全部长完——删 1–2 个元素、拆成两镜，或把这句旁白写长一点")
         _last = max([e["at"] for e in els] + [a_["at"] for a_ in (ann_out or [])] + [0])
         if line_end and _last > line_end[-1]:
             p.hint(f"{sid}: 这一镜东西太多，旁白讲完了还有东西在开始出现（第 {_last} 帧 > 末句结束第 {line_end[-1]} 帧）——删 1–2 个元素或拆成两镜")
