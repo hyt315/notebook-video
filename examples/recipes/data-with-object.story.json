@@ -4,9 +4,23 @@
   "theme": "flat",
   "subject_of_film": "火箭",
   "chapters": [{"title": "看数字", "shots": [
+    {"role": "hook", "layout": "statement", "recipe": "scene-verdict",
+     "lines": ["火箭起飞时有多重？", "大部分重量都在下面。"],
+     "sketch": {"id": "rocket", "draw": "lib:rocket", "label": "火箭", "place": "center",
+                "acts": [{"at": "@L1", "do": "enter"}, {"at": "@L2", "do": "point", "target": "stage1"}]},
+     "content": {"verdict": "越往下越重"}},
     {"role": "breakdown", "layout": "bars", "recipe": "data-with-object",
      "lines": ["三级质量差得很远。", "第一级占了八成多。"],
-     "sketch": {"draw": "lib:rocket", "label": "火箭", "place": "corner", "acts": [{"at": "@L1", "do": "enter"}, {"at": "@L2", "do": "count", "n": 3}]},
-     "content": {"title": "起飞质量占比", "unit": "%", "highlight": "第一级", "data": [{"label": "第一级", "value": 85}, {"label": "第二级", "value": 10}, {"label": "载荷", "value": 3}]}}
+     "sketch": {"id": "rocket", "draw": "lib:rocket", "label": "火箭", "place": "corner", "acts": [{"at": "@L1", "do": "enter"}, {"at": "@L2", "do": "count", "n": 3}]},
+     "content": {"title": "起飞质量占比", "unit": "%", "highlight": "第一级", "data": [{"label": "第一级", "value": 85}, {"label": "第二级", "value": 10}, {"label": "载荷", "value": 3}]}},
+    {"role": "example", "layout": "compare", "recipe": "before-after",
+     "lines": ["不分级，空壳一路带着飞。", "分级，烧完就扔掉。"],
+     "sketch": {"id": "rocket", "draw": "lib:rocket", "label": "火箭", "place": "center",
+                "acts": [{"at": "@L1", "do": "enter"}, {"at": "@L1", "do": "point", "target": "stage1"}, {"at": "@L2", "do": "swap", "target": "stage1"}]},
+     "content": {"before": "一整根：空壳也要入轨", "after": "分级：烧完一节扔一节"}},
+    {"role": "recap", "layout": "statement", "recipe": "hammer",
+     "lines": ["记住这一句。", "重量多半在第一级。"],
+     "sketch": {"id": "rocket", "draw": "lib:rocket", "label": "火箭", "place": "corner", "acts": [{"at": "@L2", "do": "enter"}]},
+     "content": {"text": "重量多半在第一级"}}
   ]}]
 }

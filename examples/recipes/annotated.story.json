@@ -5,10 +5,25 @@
   "subject_of_film": "software",
   "subject_why": "这一题讲的是代码里的一次调用，画面主体是代码卡，不需要画具体物体。",
   "chapters": [{"title": "看代码", "shots": [
-    {"role": "hook", "layout": "code", "recipe": "component-annotated",
+    {"role": "hook", "layout": "statement", "recipe": "scene-verdict",
+     "lines": ["接口一慢，用户就在等。", "先别急着加机器。"],
+     "sketch": {"id": "server", "draw": "lib:server", "label": "服务器", "place": "center",
+                "acts": [{"at": "@L1", "do": "enter"}, {"at": "@L2", "do": "point", "target": "unit1"}]},
+     "content": {"verdict": "慢的地方，往往只有一行"}},
+    {"role": "breakdown", "layout": "code", "recipe": "component-annotated",
      "lines": ["先看这段请求代码。", "慢就慢在这一行。"],
-     "sketch": {"draw": "lib:server", "label": "服务器", "place": "corner", "acts": [{"at": "@L1", "do": "enter"}]},
-     "annotate": [{"target": "L3", "kind": "circle", "text": "每次都要查库"}, {"target": "L4", "kind": "underline", "at": "@L2"}],
-     "content": {"title": "app.py", "lang": "python", "code": "def load(user_id):\n    row = db.query(user_id)\n    return row\n# 每次请求都走一遍"}}
+     "sketch": {"id": "server", "draw": "lib:server", "label": "服务器", "place": "corner", "acts": [{"at": "@L1", "do": "enter"}]},
+     "annotate": [{"target": "L2", "kind": "circle", "text": "每次都要查库"}, {"target": "L4", "kind": "underline", "at": "@L2"}],
+     "content": {"title": "app.py", "lang": "python", "code": "def load(user_id):\n    row = db.query(user_id)\n    return row\n# 每次请求都走一遍"}},
+    {"role": "example", "layout": "compare", "recipe": "before-after",
+     "lines": ["每次都查库，越用越慢。", "先查缓存，没有再查库。"],
+     "sketch": {"id": "server", "draw": "lib:server", "label": "服务器", "place": "center",
+                "acts": [{"at": "@L1", "do": "enter"}, {"at": "@L1", "do": "point", "target": "unit2"}, {"at": "@L2", "do": "mark", "target": "unit2", "mark": "check"}]},
+     "content": {"before": "每次请求都查一次库", "after": "先查缓存，命中就返回"}},
+    {"role": "recap", "layout": "statement", "recipe": "hammer",
+     "lines": ["记住这一句。", "慢在重复查库。"],
+     "sketch": {"id": "server", "draw": "lib:server", "label": "服务器", "place": "corner",
+                "acts": [{"at": "@L2", "do": "enter"}, {"at": "@L2.3", "do": "point", "target": "unit3"}]},
+     "content": {"text": "慢在重复查库"}}
   ]}]
 }
