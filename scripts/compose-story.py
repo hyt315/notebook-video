@@ -727,9 +727,9 @@ def build(story, comp, p: Problems):
         # 3.5.2：纸上只写关键词——整句交给旁白（设计规范 · 版式第 7 条）。只提示，不改退出码。
         for _e in els:
             _txt = "".join(_e.get("lines") or []) or str(_e.get("text") or "")
-            _cap = 24 if _e.get("kind") == "quote" else 10   # 引文 ≤24 字，其余 ≤10 字
-            if _e.get("kind") in ("text", "card", "note", "quote") and len(_txt) > _cap and not _e.get("reveal"):
-                p.hint(f"{sid}: 纸上「{_txt[:12]}…」有 {len(_txt)} 字——纸上只写关键词和数字（每处 ≤{_cap} 字），整句交给旁白")
+            _cap_max = 24 if _e.get("kind") == "quote" else 10   # 引文 ≤24 字，其余 ≤10 字（别叫 _cap：那是 story_caption 的模块别名）
+            if _e.get("kind") in ("text", "card", "note", "quote") and len(_txt) > _cap_max and not _e.get("reveal"):
+                p.hint(f"{sid}: 纸上「{_txt[:12]}…」有 {len(_txt)} 字——纸上只写关键词和数字（每处 ≤{_cap_max} 字），整句交给旁白")
         sfx = []
         for e in els:
             if e["kind"] == "number":
