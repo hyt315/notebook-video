@@ -8,7 +8,7 @@ description: Turn a topic into a Chinese 16:9 teaching video. Draft-paper narrat
 
 **第一原则 · 草稿纸讲解**：画面像一张边讲边写的草稿纸。画面上**没有笔**；每样东西都在旁白讲到它时才出现，一点点长出来，不整块弹出，同一时刻不冒出一堆。下面的「手账页 / 组件 / 直书页」管的是**画什么**，草稿纸讲解管的是**什么时候、怎么出现**；两者冲突时，按草稿纸讲解。
 
-**出现规则**（auto 路线由引擎自动做到；手写场景路线照着写。全文见 [references/reveal-rules.md](references/reveal-rules.md)）：
+**出现规则**（auto 路线由引擎自动做到；手写场景路线照着写。全文见 [references/reveal-rules.md](references/reveal-rules.md)；版式、配色与组件搭配见 [references/draftpaper-design.md](references/draftpaper-design.md)）：
 1. **跟着旁白**：一样东西在讲到它的那句话开始时才开始出现，不提前。
 2. **长出来**：文字和卡片左→右展开，用时 = 字数 × 4 帧（最少 12、最多 45 帧）；线稿按部位依次描出，整幅 24–45 帧；圈注 14 帧，下划线和箭头 12 帧，手写小字 24 帧。手账页上的真图版、照片、截图可以整件「贴上」，但也要等讲到它的那句。
 3. **不扎堆**：同一镜里，相邻两样东西开始出现至少隔 12 帧（0.4 秒）；同一时刻最多 2 样在长。
@@ -243,7 +243,7 @@ AI 生成的图（`content.ink` / `content.figure` 的 label）是**说明性文
 
 ## 文档
 
-全部 50 篇正文的索引按「你接下来要做什么」分组，见 [references/INDEX.md](references/INDEX.md)（索引本身不计入 50）。
+全部 51 篇正文的索引按「你接下来要做什么」分组，见 [references/INDEX.md](references/INDEX.md)（索引本身不计入 51）。
 作者通常只读 4 篇（见上文「手作路线只必读 4 份」），其余按需查。
 
 - 自检：`node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-skill`、`python scripts/selftest.py`、`python scripts/negative-gate-check.py`
