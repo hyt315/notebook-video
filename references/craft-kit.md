@@ -39,7 +39,7 @@
 | `HandNote` | 钢笔批注：引线先长到目标，字再从左往右写出 | `f at x y text to?`；纸色光晕保证 ≥7:1 |
 | `HandLettering` | 一行中文（≤10 字）沿字形轮廓描墨、再填墨 | `f at text x y size perChar` |
 | `Dimension` | 尺寸线：主线 16 帧 → 两端刻度各 6 帧 → 标注。刻度方向按主线自动垂直，横竖斜都成立 | `f at from to tick=24 label labelAt` |
-| `MagnifyInset` | 局部放大：一个框淡入 20 帧 + 引线 22 帧长过去 + 标注；把主体里的**一个单元**拎到旁边 | `f at box={x,y,w,h} rotate radius lead label labelAt` |
+| `MagnifyInset` | 局部放大：方框沿边描出 16 帧，描完再铺淡底；引线 22 帧长过去 + 标注；把主体里的**一个单元**拎到旁边 | `f at box={x,y,w,h} rotate radius lead label labelAt` |
 
 辅助：`prog(f, at, dur)`（帧 → 0..1，墨水缓动）、`samplePath(d, n)`、`easeInk`、`CRAFT_TYPE`（字号阶梯）。
 

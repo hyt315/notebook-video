@@ -47,8 +47,8 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
    同长同曲线会读成"一个刚体弹出"。
 2. **入场与出场曲线不同**：出场快而急（`Easing.in(Easing.quad)`，约为入场时长的 60%），
    入场慢而稳（`Easing.bezier(0.16,1,0.3,1)`）。这是最容易被感知到的一条。
-3. **不要只动透明度**：每个淡入都配 10–24px 位移或 2–6% 缩放。30fps 下纯淡入只有
-   约 30 个可辨中间态，且没有空间线索。
+3. **不用透明度做出现**：组件出现一律按 [reveal-rules.md](reveal-rules.md) 左→右展开或沿路径描出；
+   透明度只用于退后（变暗）与退场。
 4. **数值用 `tabular-nums` + 固定小数位**（`fontVariantNumeric:'tabular-nums'`，
    `minimumFractionDigits === maximumFractionDigits`）。否则数字每帧改变宽度、整格横向抖动
    ——这是"看起来不丝滑"最常见的真实原因。

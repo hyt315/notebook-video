@@ -70,13 +70,16 @@
 import {SHOTS} from './shots';
 import {ShotCamera, CoverPanel} from './shotkit';
 import {StageFrame, PhaseRail} from './stagekit';
+import {Easing, interpolate} from 'remotion';
 
 const C = THEME.palette;
+const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
 const IN = 22;
-/** 入场：22 帧 easeOut + 上浮 + 微缩放。所有元素都用它。 */
+/** 出现（3.5.1 草稿纸）：左→右展开 22 帧，线性；不淡入、不上浮、不缩放。所有元素统一用它。见 references/reveal-rules.md */
 const enterAt = (f: number, at: number): React.CSSProperties => {
-  const p = easeOut(f, at, at + IN);
-  return {opacity: p, transform: `translateY(${(1 - p) * 22}px) scale(${0.975 + 0.025 * p})`};
+  const p = interpolate(f, [at, at + IN], [0, 1], {...clamp, easing: Easing.linear});
+  if (p <= 0) return {opacity: 0};
+  return {clipPath: `inset(-4% ${((1 - p) * 100).toFixed(2)}% -4% -2%)`};
 };
 
 const S1: React.FC<{f: number}> = ({f}) => {
