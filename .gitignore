@@ -6,6 +6,7 @@ __pycache__/
 renders/
 *.mp4
 narration.mp3
+.silent-placeholder
 *.mov
 *.webm
 *.zip

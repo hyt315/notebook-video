@@ -68,6 +68,14 @@ const hideConsoleArgs = () => (IS_WIN && fs.existsSync(HIDE_CONSOLE_SHIM) ? ['--
 const nodeRemotion = (argv, opts) => run(process.execPath, [...hideConsoleArgs(), ...argv], opts);
 const step = (t) => console.log(`\n── ${t}`);
 const die = (m) => { console.error(`\n✗ ${m}`); process.exit(1); };
+// 3.5.2：浏览器路径指错时一行报错（不打印堆栈）
+const browserArgsOrDie = () => {
+  try {
+    return browserArgs();
+  } catch (error) {
+    return die(error.message);
+  }
+};
 
 // 3.5.0 · 成片必须有真实旁白：静音占位只允许用于 --stills / preview。
 // 旧版无条件写静音占位，于是"成片"可以是一个没人说话的空壳，而所有门禁照样全绿。
@@ -301,7 +309,7 @@ if (flag('stills')) {
   const pngs = [];
   for (const x of frames) {
     const out = path.join(dir, `f${String(x.f).padStart(5, '0')}.png`);
-    const r = await nodeRemotion([cli, 'still', bundle, 'NotebookVideoFilm', out, `--frame=${x.f}`, '--scale=0.5', ...browserArgs()], {cwd: project, capture: true});
+    const r = await nodeRemotion([cli, 'still', bundle, 'NotebookVideoFilm', out, `--frame=${x.f}`, '--scale=0.5', ...browserArgsOrDie()], {cwd: project, capture: true});
     if (r.code) {
       console.log(r.out.split('\n').filter((l) => /Error|Gate|overflow|溢出|越出/.test(l)).slice(0, 6).join('\n'));
       // 缺字体时 Chrome 抛的是 NetworkError（cancelRender），报错里一个字都不提字体——

@@ -36,6 +36,15 @@ const fail = (message, code = 1) => {
   process.exit(code);
 };
 
+// 3.5.2：REMOTION_BROWSER_EXECUTABLE 指错路径时一行报错，不打印整段堆栈
+const browserExecutableOrFail = () => {
+  try {
+    return resolveBrowserExecutable();
+  } catch (error) {
+    return fail(error.message);
+  }
+};
+
 const resolvePath = (value, base = process.cwd()) => path.resolve(base, value);
 const ensureParent = (target) => fs.mkdirSync(path.dirname(target), {recursive: true});
 const isNonEmptyFile = (target) => fs.existsSync(target) && fs.statSync(target).isFile() && fs.statSync(target).size > 0;
@@ -219,7 +228,7 @@ const capabilities = async () => {
     ? fs.readdirSync(fontsDir).filter((f) => /\.(ttf|otf)$/i.test(f))
     : [];
   const hasSerif = fontFiles.some((f) => /serif/i.test(f));
-  const browser = resolveBrowserExecutable();
+  const browser = browserExecutableOrFail();
   const budoux = fs.existsSync(path.join(SKILL_DIR, 'assets', 'lecture-template', 'node_modules', 'budoux'));
 
   const hard = Object.entries(bins).filter(([, v]) => !v.ok).map(([k]) => k);
@@ -798,7 +807,7 @@ const remotionRender = async ({project, composition, output, frames, concurrency
   // Browser resolution: explicit env wins, then the local Remotion cache that
   // `prepare-browser` already populated — never trigger a fresh 100MB+ shell
   // download when a cached copy exists on this machine.
-  const browserExecutable = resolveBrowserExecutable();
+  const browserExecutable = browserExecutableOrFail();
   if (browserExecutable && !fx.on) nodeArgs.push(`--browser-executable=${browserExecutable}`);
   // 返回 FillGate 的实测结果：`render` 不看，`sweep` 要拿它打全片表。
   // 之前这里丢掉了返回值，于是 sweep 只能再读一次终端输出——那就是第二个真源。
@@ -1225,7 +1234,7 @@ const renderStill = async ({project, output, frame, scale}) => {
   nodeArgs.push(remotionCli, 'render', REMOTION_ENTRY_POINT, 'NotebookVideoFilm', seqDir, `--frames=${frame}-${frame}`, '--sequence', '--image-format=png', `--scale=${scale}`, '--log=verbose');
   // ⚠ 必须放在 remotion 子命令参数里（nodeArgs 末尾），不是 node 自己的参数——
   // 放前面 node 会报 `bad option: --browser-executable=…` 然后 rc=9，而且八镜会连报八次。
-  const browser = resolveBrowserExecutable();
+  const browser = browserExecutableOrFail();
   if (browser) nodeArgs.push(`--browser-executable=${browser}`);
   try {
     const r = await runRemotionFiltered(nodeArgs, project, {quiet: true});
@@ -1617,7 +1626,7 @@ const showcase = async (args) => {
     const frame = Number(opt('frame', 72));
     const scale = Number(opt('scale', 1));
     const nodeArgs = [...hideConsoleArgs(), remotionCli, 'still', REMOTION_ENTRY_POINT, 'NotebookVideoCraftSheet', out, `--frame=${frame}`, `--scale=${scale}`];
-    const browser = resolveBrowserExecutable();
+    const browser = browserExecutableOrFail();
     if (browser) nodeArgs.push(`--browser-executable=${browser}`);
     await run(process.execPath, nodeArgs, {cwd: project});
     console.log(`Craft sheet written: ${out} — 读它判断当前皮肤下的手作组件（references/craft-kit.md）。`);
@@ -1706,7 +1715,7 @@ const poster = async (argv) => {
   if (reducedMotion) props.nvReducedMotion = 'on';
   const nodeArgs = [...hideConsoleArgs(), remotionCli, 'still', REMOTION_ENTRY_POINT, 'NotebookVideoFilm', out,
     `--frame=${frame}`, `--scale=${scale}`, buildPropsArg(props)];
-  const browser = resolveBrowserExecutable();
+  const browser = browserExecutableOrFail();
   if (browser) nodeArgs.push(`--browser-executable=${browser}`);
   await run(process.execPath, nodeArgs, {cwd: project});
   console.log(`Poster written: ${out} — 第 ${frame} 帧（${why}），字幕已隐去。`);

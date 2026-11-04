@@ -11,13 +11,18 @@ const WIN_CACHE = () =>
 
 /** 返回可执行文件绝对路径；都没有返回 null（Remotion 会自己下载）。 */
 export function resolveBrowserExecutable(resolvePath = (p) => path.resolve(process.cwd(), p)) {
-  let browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE;
-  if (!browserExecutable && process.platform === 'win32') {
-    const cached = WIN_CACHE();
-    if (fs.existsSync(cached)) browserExecutable = cached;
+  const browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE;
+  if (browserExecutable) {
+    const resolved = resolvePath(browserExecutable);
+    // 3.5.2：补回 3.5.0 的存在性检查——指错路径要明确报错，不能把坏路径交给 Remotion
+    if (!fs.existsSync(resolved)) throw new Error(`REMOTION_BROWSER_EXECUTABLE does not exist: ${resolved}`);
+    return resolved;
   }
-  if (!browserExecutable) return null;
-  return resolvePath(browserExecutable);
+  if (process.platform === 'win32') {
+    const cached = WIN_CACHE();
+    if (fs.existsSync(cached)) return cached;
+  }
+  return null;
 }
 
 /** 直接给 CLI 用的参数：找到就带 --browser-executable，找不到就空数组。 */

@@ -1380,6 +1380,23 @@ case('MIX1 12 镜工程手账页 0% → validate-fusion 仍判 P1（不因镜头
 ])
 cleanup(_td)
 
+# ---- 3.5.2 · T-P1-02：显式指定的浏览器路径指错时要报错，不能把坏路径交给 Remotion ----
+_old_browser = os.environ.get('REMOTION_BROWSER_EXECUTABLE')
+os.environ['REMOTION_BROWSER_EXECUTABLE'] = os.path.join(tempfile.gettempdir(), 'nv-no-such-chrome.exe')
+try:
+    _url = pathlib.Path(SKILL, 'scripts', 'browser-exec.mjs').as_uri()
+    case('BR1 REMOTION_BROWSER_EXECUTABLE 指错路径 → 报 does not exist 且退出非 0', [
+        ('must_block:does not exist', 'browser-exec', run([
+            'node', '-e',
+            "import('%s').then(m => m.resolveBrowserExecutable())"
+            ".catch(e => { console.error(e.message); process.exit(1); })" % _url])),
+    ])
+finally:
+    if _old_browser is None:
+        os.environ.pop('REMOTION_BROWSER_EXECUTABLE', None)
+    else:
+        os.environ['REMOTION_BROWSER_EXECUTABLE'] = _old_browser
+
 import gates_compose  # noqa: E402,F401
 
 sys.exit(summary())
