@@ -1,18 +1,82 @@
 # Changelog
 
-All notable changes are recorded here. The project follows semantic versioning. Current release: **3.5.1**.
+All notable changes are recorded here. The project follows semantic versioning. Current release: **3.5.2**.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
-> **版本号有两套，别混。** 对外可引用的版本只有本文件里的条目（3.3.0 / 3.4.0 / 3.5.0 / 3.5.1）。
+> **版本号有两套，别混。** 对外可引用的版本只有本文件里的条目（3.3.0 / 3.4.0 / 3.5.0 / 3.5.1 / 3.5.2）。
 > 3.3.0 曾把内部 3.3.0–3.7.0 的多轮迭代合并为一次公开发布；3.5.0 于 2026-11-03 原地更新，
 > 把内部 3.6.0–3.8.0 的迭代一并并入这次发布。所以源码注释与 `references/` 里高于 3.5.0 的号
 > 仍然是**内部迭代号**，不对应任何对外发布。
 >
-> **Two numbering lines — do not mix them.** Cite only the versions listed below (3.3.0, 3.4.0, 3.5.0, 3.5.1).
+> **Two numbering lines — do not mix them.** Cite only the versions listed below (3.3.0, 3.4.0, 3.5.0, 3.5.1, 3.5.2).
 > 3.3.0 folded several internal iterations into one public release; 3.5.0 was updated in place on
 > 2026-11-03 to fold in internal iterations 3.6.0–3.8.0. A higher number in source comments or
 > `references/` is therefore still an internal iteration, not a release.
+
+## [3.5.2] - 2026-11-04
+
+> 3.5.2 — 把「讲到哪长到哪」从「开始帧对得上」推进到「真的长完、先后对」。
+> 3.5.2 — Moves "grow as it is spoken" from "the start frames line up" to "it really finishes, in the right order".
+
+### 更正 / Corrections
+
+- 更正 3.5.1 的说法「4 个配方样例现在都能出静帧」：3.5.1 实际只有 rocket-fusion 能出，annotated、data-with-object、list-icons 三个单镜样例被运镜门禁（全片 ≥4 次运镜、≥3 种镜头意图）拦下。3.5.2 把它们扩成 4 镜小片，门禁未做任何放宽。
+  Correction to 3.5.1: only rocket-fusion produced stills; the three single-shot recipe examples were blocked by the camera-motion gate. 3.5.2 expands them to four shots; the gate is unchanged.
+
+### 修复 / Fixes
+
+- 出现排程：标注等它标的东西**排定以后**长完 2 帧才开始（原来用的是目标被推迟前的帧）；每样东西在切镜前 4 帧长完，放不下先把展开压到 12 帧，仍放不下由 compose 提示删元素或拆镜。代码行按 1.5 帧/字、12–24 帧展开。
+  Reveal scheduling: annotations wait for their (already scheduled) target; everything finishes 4 frames before the cut, compressing to 12 frames first; code lines unfold at 1.5 frames per character (12–24).
+- `measure-reveal.py` 支持手写场景工程（读 `shots.resolved.json`），找不到视频或算不出来时只提示，退出码恒为 0。
+  `measure-reveal.py` now works on hand-written projects and always exits 0.
+- auto 引擎：代码行、柱状图外框、数字改为左→右展开 / 从基线长出 / 直接写终值；不再用透明度淡入、弹簧放大、滚动计数。
+  auto engine: code lines, bar frames and numbers unfold / grow from the baseline / write the final value directly; no opacity fades, spring pops or rolling counts.
+- 模板去预铺：S7 的灰色骨架条绑到讲到它的那一拍；Corridor 删掉整条灰轨道，站点圈改成沿边描出。
+  Template no longer pre-fills: S7's grey skeleton appears only when spoken; Corridor drops the grey track and traces station rings on arrival.
+- 句间不再画没有字的字幕条（外框跟着文字一起出现）。
+  No more empty caption bars between sentences.
+- 补回 3.5.1 丢掉的 `REMOTION_BROWSER_EXECUTABLE` 存在性检查：指错路径一行报错，不再把坏路径交给 Remotion。
+  Restores the `REMOTION_BROWSER_EXECUTABLE` existence check lost in 3.5.1.
+
+### 变更 / Changed
+
+- 新增 `references/draftpaper-design.md`（草稿纸讲解设计规范：出现、版式、配色、组件搭配、怎么量），文档索引 51 篇。
+  New `references/draftpaper-design.md` (draft-paper design spec); the reference index is now 51 documents.
+- `references/` 里 4 处旧出现口径（「easeOut + 上浮」「一个框淡入」「22 帧淡入」「每个淡入都配位移」）清零，`scene-authoring.md` 的 `enterAt` 示例换成模板的真实实现。
+  Four stale reveal descriptions in `references/` are gone; `scene-authoring.md` now shows the template's real `enterAt`.
+- compose 新增提示：纸上每处 ≤10 字（引文 ≤24），整句交给旁白。只提示，不改退出码。
+  compose now hints when a piece of paper text exceeds ten characters (24 for quotes).
+- `measure-reveal.py --opacity-audit`：列出仍用透明度入场的组件（只报告，退出码恒 0）。
+  `measure-reveal.py --opacity-audit` lists components that still fade in (report only).
+- 三个单镜配方样例扩成 4 镜小片（第 2 镜是配方主镜）；annotated 的圈从 `return row` 改圈 `row = db.query(...)` 那一行，和批注「每次都要查库」对上。
+  The three single-shot recipe examples become four-shot clips; the annotated circle now sits on the query line.
+- SKILL 描述里的蓝图数 five → ten（实际是 5 组件路线 + 5 手作结构族）。
+  The blueprint count in the SKILL description goes from five to ten.
+- 「混音余量」在 3.5.1 已更名为「增益余量」，本条只是补记。
+  (Recorded for completeness: "mix headroom" was renamed "gain headroom" in 3.5.1.)
+
+### 已知不足 / Known gap
+
+- 模板生长比：八镜 G = 0.89 / 0.70 / 0.83 / 0.80 / 0.85 / 0.68 / 0.56 / 0.78，中位 0.80（目标 ≥0.80 达成），但 **S7 = 0.56 未达每镜 ≥0.60**。S7 的节拍是 `[0, 100, 116]`，第一个节拍就在第 0 帧，取景框和第一条对话按「绑词」必须开镜即在；试过把取景框也绑到 `at(0) - 8`（算出 −8，等于开镜就在），实测无变化，已撤回。这是「绑词」与「生长比」在这类开镜即正文的镜头上的固有冲突，留到 3.6 的版面门禁一起解决。
+  Template growth ratio: eight shots at 0.89 / 0.70 / 0.83 / 0.80 / 0.85 / 0.68 / 0.56 / 0.78, median 0.80 (target met). **S7 = 0.56 misses the per-shot 0.60**; its beats start at frame 0, so the viewport and the first chat line must be there at the cut. Binding the viewport to `at(0) - 8` computes −8 and changes nothing; that attempt was reverted. Deferred to the 3.6 layout gate.
+
+### 补记 3.5.1 的计划外改动 / Unlisted 3.5.1 changes, recorded now
+
+- `validate-skill-consistency.py`：被 git 忽略的 `node_modules` / `.cache` 不再算「泄漏进源码」（理由：本地 `npm ci` 后自检会误报）。属门禁放宽。
+  Git-ignored `node_modules`/`.cache` no longer count as leaked (a gate relaxation; local `npm ci` caused false failures).
+- `tests/test_narration_contract.py`：备份路径断言改为 `resolve()` 后比较（Windows 短路径 `RUNNER~1`）。语义等价。
+  A backup-path assertion now compares resolved paths (Windows short names); semantics unchanged.
+- `scripts/browser-exec.mjs`：抽出浏览器解析，静帧也带 `--browser-executable`；当时丢了存在性检查，3.5.2 已补回。
+  Browser resolution moved to `scripts/browser-exec.mjs`; the existence check lost then is restored in 3.5.2.
+- `npmInvocation` 漏传 `npm-cli.js` 的修复（原来跑成 `node ci`，Node 把 `ci` 当模块名找）。
+  The `npmInvocation` fix (it used to run `node ci`).
+- `scripts/silent-audio.mjs`：静音占位共用一份；`preview` 在新工程上自动补静音。
+  A shared silent-audio helper; `preview` fills in a silent placeholder on a fresh project.
+- `StaggerList` 默认错开 6 → 12 帧，与「相邻开始至少 12 帧」一致。
+  `StaggerList` default stagger 6 → 12 frames.
+- `examples/recipes/annotated.story.json` 的 `annotate[].line` 旧写法改为 `at: "@L2"`。
+  The annotated example switched to `at: "@L2"`.
 
 ## [3.5.1] - 2026-11-03
 
