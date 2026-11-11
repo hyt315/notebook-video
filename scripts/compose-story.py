@@ -66,7 +66,13 @@ TREATMENT_MOVES: dict = {}   # 由 treatment.shots 展开：{镜号: move}，在
 LINE_GAP_MS = 220              # 同镜两行之间
 SHOT_GAP_MS = 320              # 镜与镜之间
 CHAPTER_BREATH_MS = SHOT_GAP_MS  # 不再有章节呼吸 / 章节卡（保持默认组件风格）
-FIRST_LEAD_MS = 700            # 片头
+FIRST_LEAD_MS = 700            # 片头（flat / cel）
+# 3.5.4：手作皮肤冷开——validate-opening 对手作皮肤硬性要求「第一个可见事件 ≤ 6 帧」（O1），
+# 而 auto 路线的节拍都挂在字幕上、最早只能落在第一句起点：700 ms = 第 21 帧，于是任何手作 story
+# 走 auto 路线都必挂 O1（随包手作示例全挂的根因之一）。手作皮肤把第一句提前到 150 ms（第 4.5 帧）。
+# flat / cel 不变（O1 对它们只是提示，且已交付片的时间轴不能动）。
+FIRST_LEAD_MS_HANDMADE = 150
+HANDMADE_SKINS = ("journal", "papercut", "archive")
 END_TAIL_F = 42                # 片尾
 # 字幕行宽 MAX_CHARS / 朗读速度 CPS / 标点停顿 / 术语语法 TERM_RE 的真源在 story_caption.py
 # （P2-24 第二切片）。不可变的从那儿 import；可变的 CPS / CHAR_MS 一律读 story_caption.xxx，
@@ -992,7 +998,14 @@ def main() -> int:
         _cap.set_cps(cps)
     setup_break_rule(Path(a.project))
     # treatment.signature_shot 决定哪一镜真推（3.6.2）；没有 treatment 就是 None，行为不变
-    global TREATMENT, TREATMENT_MOVES
+    global TREATMENT, TREATMENT_MOVES, FIRST_LEAD_MS
+    _act = Path(a.project) / "src" / "theme" / "active.ts"
+    try:
+        _m = re.search(r"from\s+'\./(\w+)'", _act.read_text(encoding="utf-8"))
+        if _m and _m.group(1) in HANDMADE_SKINS:
+            FIRST_LEAD_MS = FIRST_LEAD_MS_HANDMADE
+    except OSError:
+        pass
     tp = Path(a.project) / "manifests" / "treatment.json"
     try:
         TREATMENT = json.loads(tp.read_text(encoding="utf-8")) if tp.is_file() else {}
