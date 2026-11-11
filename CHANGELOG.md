@@ -21,6 +21,12 @@ All notable changes are recorded here. The project follows semantic versioning. 
 
 ### 修正 / Fixes
 
+- **整片渲染时卡片会整镜消失**（P0）：对比卡（panel）入场后把非法的 `opacity: NaN` 写进样式，浏览器保留上一帧的旧值，于是从第 0 帧连续渲时整镜卡片不见了（hash 示例 S5 的 25.5–30 秒只剩字幕），单帧 still 和联系表却看起来正常。现在不透明度永远是有效数字；副作用是这类卡片的「非焦点变淡」第一次真正生效。新增 `scripts/dev/frame-purity.mjs`（同一帧「连续渲」和「单帧渲」逐像素比）和 CI 的 `purity-smoke`。
+  Panel cards could vanish for a whole shot in a full render (opacity was written as NaN and the browser kept the previous frame's value), while stills looked fine. Fixed; the intended "dim when not in focus" now actually applies. Added a continuous-vs-still pixel check and a CI smoke test.
+- 逐字展开时不再把字切成半个：展开边退到字与字之间（GlyphSnap），起止时间和落定画面不变。
+  Text reveals no longer cut a character in half; the wipe edge snaps to character boundaries. Timing and final frames are unchanged.
+- 画面层等主题字体加载好之后才挂上（FontGate），避免先按回退字体量字宽、记进缓存，导致同一帧两种渲法字号不同。对实际画面没有可见推迟。
+  The film layer now mounts only after the theme fonts are ready, so text is never measured with a fallback font. No visible delay.
 - 随包 14 个 story 示例原有 7 个过不了自己的硬门禁。正例修到能过（cork-page 补第 4 镜并删掉空心「书」线稿；jie-* 补 `protect`；git-pr 补一镜；curl-window-smoke 放大数字镜）；手作示例自带导演层 `examples/recipes/<名>.treatment.json`，`make-video` 新建工程时自动沿用；故意的负例 `rocket-components-only` 移到 `examples/negative/` 并登记预期判据。
   Seven of the 14 bundled story examples failed their own hard gates. Positive ones are fixed; hand-made examples ship their own treatment, picked up by `make-video` for a new project; the deliberate negative moves to `examples/negative/` with its expected verdict.
 - 手作皮肤在 auto 路线下第一句提前到 150 ms：节拍挂在字幕上、最早只能落在第 21 帧，任何手作 story 都必挂 `validate-opening` O1。flat / cel 时间轴不变。
@@ -47,8 +53,8 @@ All notable changes are recorded here. The project follows semantic versioning. 
 
 - `examples/cell-notebook` 标为「仅文档」（无 story.json、无素材），不再称作可直接跑的最好参考片；可运行的同题材精简版是 `examples/recipes/cork-page.story.json`。
   `examples/cell-notebook` is marked documentation-only; the runnable counterpart is `examples/recipes/cork-page.story.json`.
-- preview 耗时注明测量机器（作者开发机约 40 秒；2 核 Linux 实测约 5 分钟）；单测数改为实际值 582（`unittest discover` 实跑数）；更正过时的 CI 注释；删除根目录 / docs 的过程文件（`RELEASE_NOTES_3.3.0.md`、`CROSS-PLATFORM-ADAPTATION.md` 指针页、`docs/3.5.2-执行记录.md` 与证据图、`examples/weak-model-test/stills-before-fix.jpg`）。
-  Preview timings now name the machine; the unit-test count is the real 582; a stale CI comment is corrected; process files are removed from the repo root and docs/.
+- preview 耗时注明测量机器（作者开发机约 40 秒；2 核 Linux 实测约 5 分钟）；单测数改为实际值 592（`unittest discover` 实跑数）；更正过时的 CI 注释；删除根目录 / docs 的过程文件（`RELEASE_NOTES_3.3.0.md`、`CROSS-PLATFORM-ADAPTATION.md` 指针页、`docs/3.5.2-执行记录.md` 与证据图、`examples/weak-model-test/stills-before-fix.jpg`）。
+  Preview timings now name the machine; the unit-test count is the real 592; a stale CI comment is corrected; process files are removed from the repo root and docs/.
 
 ## [3.5.3] - 2026-11-04
 

@@ -67,6 +67,7 @@
 
 > 止血小版本：**不改门禁判据、不改视觉风格**；让测试、示例和文档说的都是真的。
 
+- **整片渲染不再丢镜**：对比卡入场后写了非法的不透明度，从第 0 帧连续渲时整镜卡片会消失（单帧 still 看不出）；已修，并加「连续渲 vs 单帧渲」逐像素检查（`scripts/dev/frame-purity.mjs`、CI purity-smoke）。同时：逐字展开不再把字切成半个；画面层等字体就绪再挂载。
 - **随包示例全部能过自己的门禁**：14 个 story 示例里原有 7 个过不了硬门禁（手作皮肤示例全挂）。正例逐个修好（手作示例自带导演层 `<名>.treatment.json`），故意的负例移到 `examples/negative/` 并登记预期判据；CI 新增「全部正例过门禁、负例必须被拦」。
 - **手作皮肤冷开**：auto 路线下手作皮肤的第一句提前到 150 ms，不再必挂开场门禁 O1；flat / cel 时间轴不变。
 - **缺素材给命令，不给 React 报错**：story 引用了没登记的素材时，`make-video` 直接给出要运行的 `commons-search` 命令。
@@ -229,7 +230,7 @@ notebook-video/
 ├── scripts/                     # make-video、notebook-video CLI、compose / resolve、各门禁、自检；.cmd / .sh 包装
 │   └── dev/                     # 维护者工具（音效库构建与调校）
 ├── references/                  # 作者手册与规格（镜头、版式、主题、线稿、配方、音效、字幕、门禁、跨平台）
-├── tests/                       # 582 个离线单元测试（少数在缺可选依赖时自动跳过）（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 融合配方 / TTS / 静音 / 门禁 / 评审 …）
+├── tests/                       # 592 个离线单元测试（少数在缺可选依赖时自动跳过）（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 融合配方 / TTS / 静音 / 门禁 / 评审 …）
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 
