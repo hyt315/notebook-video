@@ -105,6 +105,11 @@ jobs:
         run: |
           npm ci --prefer-offline --no-audit --no-fund
           npm run typecheck
+      - name: Every positive example passes the gates
+        # 3.5.4：随包 story 示例曾有一半过不了自己的硬门禁，CI 从没跑过它们。
+        # examples/**/*.story.json（negative/ 除外）逐个新建工程 → compose → 全部构建期门禁 → tsc；
+        # examples/negative/ 里登记的负例反向检查：必须被拦，且命中登记的判据。node_modules 软链模板的。
+        run: python3 scripts/dev/check-examples.py -j 2
       - name: Re-run the phrase rule with BudouX available
         # ⚠️ 必须排在这里，不能提前：BudouX 装在模板的 `node_modules` 里，而那要等上面的 `npm ci`；
         # 而 `npm ci` 又必须排在「Validate skill and template」之后 —— 那一步断言仓库树
