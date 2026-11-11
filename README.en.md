@@ -233,7 +233,7 @@ notebook-video/
 ├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; .cmd / .sh wrappers
 │   └── dev/                     # Maintainer tools (SFX library build and tuning)
 ├── references/                  # Author manuals and specs (camera, layouts, themes, linework, recipes, SFX, captions, gates, cross-platform)
-├── tests/                       # 586 offline unit tests (a few skip when an optional dependency is missing) (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
+├── tests/                       # 582 offline unit tests (a few skip when an optional dependency is missing) (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 

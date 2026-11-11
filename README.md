@@ -229,7 +229,7 @@ notebook-video/
 ├── scripts/                     # make-video、notebook-video CLI、compose / resolve、各门禁、自检；.cmd / .sh 包装
 │   └── dev/                     # 维护者工具（音效库构建与调校）
 ├── references/                  # 作者手册与规格（镜头、版式、主题、线稿、配方、音效、字幕、门禁、跨平台）
-├── tests/                       # 586 个离线单元测试（少数在缺可选依赖时自动跳过）（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 融合配方 / TTS / 静音 / 门禁 / 评审 …）
+├── tests/                       # 582 个离线单元测试（少数在缺可选依赖时自动跳过）（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 融合配方 / TTS / 静音 / 门禁 / 评审 …）
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 

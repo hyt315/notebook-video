@@ -47,8 +47,8 @@ All notable changes are recorded here. The project follows semantic versioning. 
 
 - `examples/cell-notebook` 标为「仅文档」（无 story.json、无素材），不再称作可直接跑的最好参考片；可运行的同题材精简版是 `examples/recipes/cork-page.story.json`。
   `examples/cell-notebook` is marked documentation-only; the runnable counterpart is `examples/recipes/cork-page.story.json`.
-- preview 耗时注明测量机器（作者开发机约 40 秒；2 核 Linux 实测约 5 分钟）；单测数改为实际值 586；更正过时的 CI 注释；删除根目录 / docs 的过程文件（`RELEASE_NOTES_3.3.0.md`、`CROSS-PLATFORM-ADAPTATION.md` 指针页、`docs/3.5.2-执行记录.md` 与证据图、`examples/weak-model-test/stills-before-fix.jpg`）。
-  Preview timings now name the machine; the unit-test count is the real 586; a stale CI comment is corrected; process files are removed from the repo root and docs/.
+- preview 耗时注明测量机器（作者开发机约 40 秒；2 核 Linux 实测约 5 分钟）；单测数改为实际值 582（`unittest discover` 实跑数）；更正过时的 CI 注释；删除根目录 / docs 的过程文件（`RELEASE_NOTES_3.3.0.md`、`CROSS-PLATFORM-ADAPTATION.md` 指针页、`docs/3.5.2-执行记录.md` 与证据图、`examples/weak-model-test/stills-before-fix.jpg`）。
+  Preview timings now name the machine; the unit-test count is the real 582; a stale CI comment is corrected; process files are removed from the repo root and docs/.
 
 ## [3.5.3] - 2026-11-04
 
