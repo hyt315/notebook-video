@@ -4,6 +4,7 @@ import {THEME} from './theme/active';
 import {isHandmadeMedium} from './theme/medium';
 import {KineticNumber, drawOn} from './cinema';
 import {REDUCED_MOTION} from './reduced-motion';
+import {GROW_VAR} from './glyph-snap';
 import {STORY} from './story';
 import {CUSTOM} from './custom';
 import {MediaFrame} from './media-frame';
@@ -61,7 +62,11 @@ export const enter = (f: number, at: number, _rise = 14, dur = 18): React.CSSPro
   if (REDUCED_MOTION) return {opacity: f >= at ? 1 : 0};
   const p = interpolate(f, [at, at + dur], [0, 1], {...clamp, easing: Easing.linear});
   if (p <= 0) return {opacity: 0};
-  return {clipPath: `inset(-6% ${((1 - p) * 100).toFixed(2)}% -6% -2%)`};
+  // 3.5.4：展开中带上 --nv-grow，GlyphSnap（src/glyph-snap.tsx）据此把展开边退到字与字之间，
+  // 不再把字切成半个。落定（p=1）不带——落定态 DOM 与 3.5.3 完全相同。
+  const style: React.CSSProperties = {clipPath: `inset(-6% ${((1 - p) * 100).toFixed(2)}% -6% -2%)`};
+  if (p < 1) (style as Record<string, string>)[GROW_VAR] = p.toFixed(4);
+  return style;
 };
 /** 展开时长：clamp(字数 × 4, 12, 45) 帧；没字的按宽度 / 40。与 scripts/story_acts.py grow_dur() 同一公式。 */
 export const growDur = (e: {text?: string; lines?: string[]; w: number; kind?: string}) => {
@@ -287,7 +292,12 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
       const t2 = tone(e.tone);
       const num = e.value != null ? countVal(f, e) : null;
       const en = enter(f, e.at, 14);
-      return <div data-auto-el={e.id} {...(isAfter || e.morphTo ? {'data-gate-allow': 'morph'} : {})} style={{position: 'absolute', left: e.x, top: e.y, width: e.w, height: e.h, transform: `${en.transform ?? ''} rotate(${HANDMADE_MEDIUM && !isAfter ? tiltOf(e.id) : 0}deg)`, opacity: Math.min(Number(en.opacity), op) * dim}}>
+      // 3.5.4 P0：enter() 入场后只返回 {clipPath}、不带 opacity。旧写法 `Math.min(Number(en.opacity), op)`
+      // 在入场后得到 NaN → React 把 "NaN" 写进 inline style → 浏览器拒收非法值、**保留上一帧的旧值**。
+      // 单帧 still 的旧值是空（=1，卡片在），从 f0 连续渲时旧值是入场前写下的 0（卡片整段消失）——
+      // 同一帧的画面取决于这个标签页之前渲过哪些帧。入场后按 1 计，opacity 永远是有限数。
+      const enOp = typeof en.opacity === 'number' ? en.opacity : 1;
+      return <div data-auto-el={e.id} {...(isAfter || e.morphTo ? {'data-gate-allow': 'morph'} : {})} style={{position: 'absolute', left: e.x, top: e.y, width: e.w, height: e.h, transform: `${en.transform ?? ''} rotate(${HANDMADE_MEDIUM && !isAfter ? tiltOf(e.id) : 0}deg)`, opacity: Math.min(enOp, op) * dim}}>
         <InkFrame w={w} pad={4} t={e.tone} />
         <div style={{...paperCard, position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
           borderTop: HANDMADE_MEDIUM ? `5px solid ${t2.fill}` : `8px solid ${t2.fill}`,
