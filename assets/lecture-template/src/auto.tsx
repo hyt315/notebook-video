@@ -4,6 +4,7 @@ import {THEME} from './theme/active';
 import {isHandmadeMedium} from './theme/medium';
 import {KineticNumber, drawOn} from './cinema';
 import {REDUCED_MOTION} from './reduced-motion';
+import {GROW_VAR} from './glyph-snap';
 import {STORY} from './story';
 import {CUSTOM} from './custom';
 import {MediaFrame} from './media-frame';
@@ -61,7 +62,11 @@ export const enter = (f: number, at: number, _rise = 14, dur = 18): React.CSSPro
   if (REDUCED_MOTION) return {opacity: f >= at ? 1 : 0};
   const p = interpolate(f, [at, at + dur], [0, 1], {...clamp, easing: Easing.linear});
   if (p <= 0) return {opacity: 0};
-  return {clipPath: `inset(-6% ${((1 - p) * 100).toFixed(2)}% -6% -2%)`};
+  // 3.5.4：展开中带上 --nv-grow，GlyphSnap（src/glyph-snap.tsx）据此把展开边退到字与字之间，
+  // 不再把字切成半个。落定（p=1）不带——落定态 DOM 与 3.5.3 完全相同。
+  const style: React.CSSProperties = {clipPath: `inset(-6% ${((1 - p) * 100).toFixed(2)}% -6% -2%)`};
+  if (p < 1) (style as Record<string, string>)[GROW_VAR] = p.toFixed(4);
+  return style;
 };
 /** 展开时长：clamp(字数 × 4, 12, 45) 帧；没字的按宽度 / 40。与 scripts/story_acts.py grow_dur() 同一公式。 */
 export const growDur = (e: {text?: string; lines?: string[]; w: number; kind?: string}) => {

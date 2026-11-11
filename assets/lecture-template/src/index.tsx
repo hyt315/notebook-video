@@ -45,6 +45,7 @@ import {ClippingGate} from './clipping-gate';
 import {FillGate} from './fill-gate';
 import {CanvasBoundsGate} from './canvas-bounds-gate';
 import {MascotGate} from './mascot-gate';
+import {GlyphSnap} from './glyph-snap';
 import {planSfx, bedDuckAt, SFX_BED, BED_GAIN} from './sfx';
 import {MUSIC_ON} from './audio-config';
 import {CINEMA, cinemaCamAt, cinemaMask, cinemaTransform, parallaxTransform, resolveTransition, transitionFrames, transitionStyle, WhipBlur, whipOffset} from './cinema';
@@ -466,7 +467,7 @@ const FilmLayout:React.FC<{hideCaptions?:boolean}>=({hideCaptions})=>{
             口径与实测见 references/composition-gate.md §5.2 / §6。 */}
         <CanvasBoundsGate mode="warn"/>
         {/* FillGate 默认 warn：P0-4 是"观感线"，为它打断整片渲染不划算；出水进日志、可复查 */}
-        <FillGate mode="warn" watch={WATCH}/><MascotGate watch={WATCH}/><Backdrop/>
+        <FillGate mode="warn" watch={WATCH}/><MascotGate watch={WATCH}/><GlyphSnap/><Backdrop/>
         {<><Chrome/><FinalDemo/></>}
         <Grade/>
         <Subtitle off={hideCaptions}/></>}
