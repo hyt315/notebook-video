@@ -1,0 +1,179 @@
+{
+  "$about": "cork-page.story.json 配套的导演层（4 镜精简版，取自 examples/cell-notebook/treatment.json）。make-video 新建工程时自动拷到 manifests/treatment.json；手作皮肤必填，validate-treatment 检查。commons.used 先留空：hooke-plate 要联网用 commons-search.py add 取一次（make-video 会给出命令），取到后把 \"hooke-plate\" 写回 used。招牌镜放在 S2：auto 版式下 page（图版 / 放大镜）镜头吃不到招牌镜的真推，放大镜的「推」由镜内 2.6 倍放大承担。",
+  "topic": "“细胞”这个词为什么叫细胞",
+  "question": "“细胞”这个词，最早是什么意思？",
+  "metaphor": {
+    "idea": "一个词就是一间屋子的名字：胡克给软木里一间间空着的小盒子起了名（cell = 小房间），屋里本该住着的“生命”，他当时并没看见——名字说的是墙。",
+    "why_unique": "只有“细胞”这个词的来历是“先有墙、后有住户”：换成原子、基因、分子等邻近的词，命名都不是来自一间空屋子，这个隐喻立刻不成立。"
+  },
+  "medium": {
+    "skin": "journal",
+    "why": "这是一件“有人第一次看见”并当场记下来的事：手账的纸、钢笔批注、水彩淡彩和贴进本子的真铜版画，本身就是 1665 年博物学家记录观察的方式；水彩可以把空格“刷成房间”，再被抽干，只剩墨线的墙。"
+  },
+  "native_move": {
+    "what": "放大镜压在 Micrographia 1665 年真铜版画 Schem. XI 的 Fig. B 上，镜片里的小盒子被水彩一间间刷成彩色的“房间”；之后在 S7 颜色被抽干，只剩墨线画的墙。",
+    "at_sec": 13.0,
+    "why_only_this_medium": "水彩会晕开、会干、也能被洗掉，墨线不会——“房间被涂满又被抽空、墙还在”只有颜料与墨的物质差别演得出；组件式的高亮框或发光描边做不出“颜色退去而墙留下”。"
+  },
+  "candidates": [
+    {
+      "id": "A",
+      "shape": "错误直觉被推翻：开头一枚软木塞 + 问句 → 课本里的“生命单位”被演得很像真的 → 1665 原书与原图 → 放大镜里盒子刷成房间（招牌）→ 数出 60 间、12 亿间 → 颜色抽干只剩墙 → 回到软木塞，薄片上多了格子，回答“小房间”。",
+      "family": "medium-metaphor"
+    },
+    {
+      "id": "B",
+      "shape": "词源倒推：从今天的手机“cell phone”、监狱“cell”出发，一路倒推到拉丁语 cella，再落到胡克的软木；结尾回到手机。",
+      "family": "mystery"
+    },
+    {
+      "id": "C",
+      "shape": "一页手账日记：以胡克第一人称写观察日记，逐条批注，结尾翻到下一页留空给“住户”。",
+      "family": "scale-ladder"
+    }
+  ],
+  "chosen": "A",
+  "chosen_why": "观众真有“细胞=生命单位”的直觉，A 能先把它演得像真的再用原图推翻；首尾同一枚软木塞，结尾只多一处变化（薄片上的小房间），直接回答开头的问题。B 绕到手机太远、C 第一人称需要编造胡克的话，不符合只用已核事实的约束。",
+  "logline": "“细胞”这个名字，最早说的是软木里一间间空着的小房间——胡克看见的是墙。",
+  "arc": {
+    "setup": "一枚软木塞和一个问题：“细胞”最早是什么意思？多数人以为它天生就指生命单位。",
+    "turn": "1665 年胡克削下一片软木，放大镜下是“许许多多的小盒子”，他叫它们 cells（拉丁语 cella＝小房间）；数下去一立方英寸超过十二亿间——可房间全是空的。",
+    "ending": "回到软木塞：名字最早说的是墙围出的小房间。"
+  },
+  "turn_to_you_sec": 25.8,
+  "ending_echo": {
+    "opening_image": "1665 年图版装在手账页上，左边手写 1665、盖「胡克」印",
+    "one_change": "同一张图版在放大镜下变成一格格小房间，数字落成十二亿多"
+  },
+  "benchmark": {
+    "works": [
+      "Micrographia（1665）原书版式与 Schem. XI 铜版画",
+      "博物学家野外手账 / 自然笔记绘本（水彩淡彩 + 钢笔批注）"
+    ],
+    "learn": [
+      "构图：真图版占画面一半以上，批注在留白处，不压图",
+      "节奏：动作先于字幕，揭示后留 2–3 秒呼吸",
+      "配色逻辑：纸色底 + 墨 + 一种朱砂强调，水彩只做淡彩"
+    ],
+    "not_learn": [
+      "不复刻任何绘本的具体画面或角色",
+      "不用古风书法字体做字幕（字幕用 Noto Serif SC）",
+      "不加背景音乐旋律"
+    ]
+  },
+  "avoid": [
+    "暗底发光线",
+    "粒子",
+    "金色/冰蓝科技风",
+    "电子 BGM",
+    "名词→定义→升华模板"
+  ],
+  "shots": [
+    {
+      "id": "S1",
+      "framing": "全",
+      "move": "establish",
+      "why": "交代出处：1665、第十八篇、真铜版画装在页上；先看原书，图版位置在 S3 不动"
+    },
+    {
+      "id": "S2",
+      "framing": "中",
+      "move": "push-in",
+      "why": "招牌镜头：cella（小房间）与 cell（软木格子）并排，先看全再慢推到 cella——名字先于发现，是全片的转折"
+    },
+    {
+      "id": "S3",
+      "framing": "近",
+      "move": "reveal",
+      "why": "放大镜压上同一张图版，镜里一格格小盒子显出来；图版位置不动，放大由镜内 2.6 倍承担"
+    },
+    {
+      "id": "S4",
+      "framing": "中",
+      "move": "push-in",
+      "why": "数得出来的证据：一立方英寸软木里十二亿多间，数字落定后收束"
+    }
+  ],
+  "signature_shot": "S2：cella 与 cell 并排，从全景慢推到 cella（小房间）",
+  "commons": {
+    "queries": [
+      "Hooke Micrographia cork Schem"
+    ],
+    "used": []
+  },
+  "facts": [
+    {
+      "claim": "1665 年胡克在《显微图谱》（Micrographia）中记录软木",
+      "url": "https://www.gutenberg.org/ebooks/15491",
+      "quote": "LONDON, Printed by Jo. Martyn, and Ja. Allestry, Printers to the ROYAL SOCIETY ... M DC LX V. / Observ. XVIII. Of the Schematisme or Texture of Cork"
+    },
+    {
+      "claim": "胡克用小刀削下一片极薄的软木放到显微镜下",
+      "url": "https://www.gutenberg.org/ebooks/15491",
+      "quote": "I with the same sharp Penknife, cut off from the former smooth surface an exceeding thin piece of it"
+    },
+    {
+      "claim": "他看见“许许多多的小盒子”",
+      "url": "https://www.gutenberg.org/ebooks/15491",
+      "quote": "these pores, or cells, were not very deep, but consisted of a great many little Boxes"
+    },
+    {
+      "claim": "他把它们叫作 cells",
+      "url": "https://www.gutenberg.org/ebooks/15491",
+      "quote": "these pores, or cells, were not very deep"
+    },
+    {
+      "claim": "拉丁语 cella＝小房间",
+      "url": "https://www.etymonline.com/word/cell",
+      "quote": "from Latin cella \"small room, store room, hut,\""
+    },
+    {
+      "claim": "十八分之一英寸里约六十间",
+      "url": "https://www.gutenberg.org/ebooks/15491",
+      "quote": "there were usually about threescore of these small Cells placed end-ways in the eighteenth part of an Inch in length"
+    },
+    {
+      "claim": "一立方英寸超过十二亿间（1,259,712,000）",
+      "url": "https://www.gutenberg.org/ebooks/15491",
+      "quote": "and in a Cubick Inch, above twelve hundred Millions, or 1259712000."
+    },
+    {
+      "claim": "这些房间是空的、软木细胞是死的（只剩壁）",
+      "url": "https://www.nature.com/articles/s41598-019-55193-9",
+      "quote": "Cork was described as an alveolar material composed of dead and empty closed cells."
+    },
+    {
+      "claim": "胡克本人也写到软木里固体很少、大部分是空腔与“墙”",
+      "url": "https://www.gutenberg.org/ebooks/15491",
+      "quote": "it had a very little solid substance, in comparison of the empty cavity that was contain'd between ... the Interstitia, or walls (as I may so call them)"
+    }
+  ],
+  "facts_note": "不使用“以修道院僧房命名”的说法：原书没有，胡克的比喻是蜂巢（The Plant Cell 2024, doi:10.1093/plcell/koae244 指出 no monks or monasteries are found anywhere in Hooke's writings on cells）。1/18 英寸≈1.41 毫米、1 英寸＝2.54 厘米为单位换算。",
+  "sound": {
+    "bed": "皮肤自带的纸面底噪（无旋律、无电子 BGM）",
+    "foley": [
+      "刀口划过软木塞：短促的擦纸声",
+      "\"空房间？\"与结尾的手写：Commons PD 铅笔声 Pencil scratchings",
+      "纸条放下 / 换纸：Kenney CC0 纸声（皮肤自动替换 UI 音效）",
+      "印章按下：Kenney CC0 敲击声"
+    ],
+    "silence": "10.9–12.5 秒（\"放到显微镜下\"之后、放大镜落下之前全静）",
+    "silence_before_native_move_sec": 1.6,
+    "most_important_sound": "12.5 秒放大镜落定在铜版画上：一声轻的木头磕纸（全片唯一的低频重音，其余音效都让开）",
+    "music": {
+      "use": false,
+      "why": "素材库尚未接入，留白优于凑数",
+      "mood_curve": []
+    },
+    "foley_per_medium": [
+      "画线（InkPath）：铅笔划纸",
+      "晕染（WashBlob）：湿笔刷",
+      "放大镜（LoupeMedia）：木头轻磕纸面",
+      "纸条 / 照片（PinnedPhoto / ArchivePhoto）：纸张落下",
+      "印章（Seal）：印泥按压"
+    ]
+  },
+  "review": {
+    "rounds": []
+  }
+}

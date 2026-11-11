@@ -3,6 +3,16 @@
   "theme": "journal",
   "subject_of_film": "细胞",
   "subject_why": "这一题的主角是 1665 年那张真图版：先看原书，再放大看格子，最后才落到「细胞」这个名字。",
+  "protect": [
+    "胡克",
+    "cella"
+  ],
+  "media_hints": {
+    "hooke-plate": {
+      "commons": "File:Micrographia Schem 11.jpg",
+      "why": "胡克《显微图谱》1665 年软木图版（公有领域）；跑一次 commons-search.py add 即入库并自动署名"
+    }
+  },
   "chapters": [
     {
       "title": "一个词",
@@ -12,7 +22,7 @@
           "layout": "page",
           "lines": [
             "1665 年，胡克削下一片软木。",
-            "放到显微镜下。"
+            "削成薄片，凑近了看。"
           ],
           "content": {
             "page": "plate",
@@ -21,12 +31,7 @@
             "title": "《显微图谱》1665",
             "big": "1665",
             "stamp": "胡克",
-            "note": "第十八篇 · 软木",
-            "figure": {
-              "draw": "lib:book",
-              "label": "《显微图谱》",
-              "size": 300
-            }
+            "note": "第十八篇 · 软木"
           }
         },
         {
@@ -76,6 +81,24 @@
               0.42
             ],
             "zoom": 2.6
+          }
+        },
+        {
+          "role": "close",
+          "layout": "number",
+          "lines": [
+            "他还算过一笔账。",
+            "一立方英寸软木里，有十二亿多个小格。"
+          ],
+          "content": {
+            "value": 12,
+            "unit": "亿",
+            "label": "一立方英寸软木里的小格",
+            "tone": "orange",
+            "notes": [
+              "1,259,712,000 间",
+              "每一间都是空的"
+            ]
           }
         }
       ]

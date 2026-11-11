@@ -6,7 +6,6 @@
  "headerSub": "WINDOW SPLICE",
  "subject_of_film": "节",
  "mode": "component",
- "camera": "still",
  "captions": {
   "mode": "line"
  },
@@ -29,7 +28,11 @@
       "value": 1852,
       "unit": "米",
       "label": "一海里",
-      "tone": "orange"
+      "tone": "orange",
+      "notes": [
+       "1 节 = 1 海里 / 小时",
+       "1852 米是国际约定"
+      ]
      }
     },
     {
@@ -135,7 +138,11 @@
       "decimals": 3,
       "unit": "公里",
       "label": "一节",
-      "tone": "blue"
+      "tone": "blue",
+      "notes": [
+       "10 节 ≈ 18.5 公里 / 小时",
+       "1852 米 ÷ 1000"
+      ]
      }
     }
    ]

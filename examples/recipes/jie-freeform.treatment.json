@@ -1,0 +1,149 @@
+{
+  "$about": "jie-freeform.story.json 配套的导演层（回归夹具）。make-video 新建工程时自动拷到 manifests/treatment.json；手作皮肤必填，validate-treatment 检查。",
+  "topic": "「节」这个速度单位是怎么来的",
+  "question": "船速为什么叫「节」？",
+  "metaphor": {
+    "idea": "节就是绳上的一个结：速度被做成了一根能数的绳子——放出去几个结，船就走了几节。",
+    "why_unique": "换成「速度表」「仪表盘」都只给结果；只有「绳上的结」能同时解释名字从哪来、为什么它是一个比值。"
+  },
+  "medium": {
+    "skin": "journal",
+    "why": "这是一段航海日志里的旧办法：手账纸、墨线小图和手写算式本身就是证据，观众看到的是水手当年在纸上记下的东西。"
+  },
+  "native_move": {
+    "what": "墨线画出船尾抛下的木板和测速绳，绳上的结一个个被数出来，最后落成一个手写的「节」字。",
+    "at_sec": 3.0,
+    "why_only_this_medium": "组件只能给出一个数值；墨线能把「绳、结、沙漏」这套实物画出来，名字的来历才看得见。"
+  },
+  "candidates": [
+    {
+      "id": "A",
+      "family": "origin-story",
+      "shape": "水手的问题 → 抛板测速的装置 → 算一遍 → 名字留下、办法消失。"
+    },
+    {
+      "id": "B",
+      "family": "lecture-arc",
+      "shape": "先给定义（1 节 = 1 海里/小时），再倒回去讲来历。"
+    },
+    {
+      "id": "C",
+      "family": "mystery",
+      "shape": "先给一行航海日志「航速 6 节」，再倒推这个「节」是怎么数出来的。"
+    }
+  ],
+  "chosen": "A",
+  "chosen_why": "观众关心的是「为什么叫节」，来历本身就是答案；先给定义会把名字的来历降成脚注。C 的倒推需要先让观众认得一行日志，夹具篇幅不够。",
+  "logline": "节原本是测速绳上的一个结：放出去几个结，船就走了几节——名字留下来了，办法早就没了。",
+  "arc": {
+    "setup": "十六世纪的水手想知道船走多快。",
+    "turn": "往海里扔一块木板，数绳上的结、翻一次沙漏，结数就是速度。",
+    "ending": "节不是长度，是距离除以时间的比值。"
+  },
+  "turn_to_you_sec": 20,
+  "ending_echo": {
+    "opening_image": "船尾抛下的木板与绳上的结",
+    "one_change": "结尾同一块木板入水，旁边写着「比值」并盖上「定义」的印"
+  },
+  "benchmark": {
+    "works": [
+      "航海博物馆的抛板测速展板"
+    ],
+    "learn": [
+      "一镜只讲一件事",
+      "实物先于定义"
+    ],
+    "not_learn": [
+      "不复刻任何博物馆的视觉识别",
+      "不用电子 BGM"
+    ]
+  },
+  "avoid": [
+    "暗底发光线",
+    "粒子",
+    "金色/冰蓝科技风",
+    "电子 BGM",
+    "名词→定义→升华模板"
+  ],
+  "shots": [
+    {
+      "id": "S1",
+      "framing": "全",
+      "move": "establish",
+      "why": "墨线画出抛板与测速绳：先给实物，问题才成立"
+    },
+    {
+      "id": "S2",
+      "framing": "中",
+      "move": "push-in",
+      "why": "招牌镜头：三件事逐行写出，推近到「翻一次沙漏」——计时是这套办法的关键"
+    },
+    {
+      "id": "S3",
+      "framing": "中",
+      "move": "reveal",
+      "why": "算式逐行写出，最后一行落在「≈ 1 节」上"
+    },
+    {
+      "id": "S4",
+      "framing": "全",
+      "move": "pull-back",
+      "why": "收束：回到木板入水的一瞬，写上「比值」"
+    }
+  ],
+  "signature_shot": "S2：三件事逐行写出，慢推到「翻一次沙漏」那一行",
+  "commons": {
+    "queries": [
+      "chip log knot",
+      "ship log line sandglass"
+    ],
+    "used": []
+  },
+  "facts": [
+    {
+      "claim": "节的名字来自测速绳（chip log）的测量办法",
+      "url": "https://en.wikipedia.org/wiki/Chip_log",
+      "quote": "The word knot, to mean nautical mile per hour, derives from this measurement method."
+    },
+    {
+      "claim": "1 节 = 1 海里/小时 = 1.852 公里/小时；国际海里 1852 米",
+      "url": "https://en.wikipedia.org/wiki/Knot_(unit)",
+      "quote": "The knot is a unit of speed equal to one nautical mile per hour, exactly 1.852 km/h ... The length of the internationally agreed nautical mile is 1852 m."
+    },
+    {
+      "claim": "绳结间距 47 呎 3 吋，现行公认 28 秒沙漏",
+      "url": "https://en.wikipedia.org/wiki/Knot_(unit)",
+      "quote": "Knots tied at a distance of 47 feet 3 inches (14.4018 m) from each other ... (28-second sand-glass is the currently accepted timing)"
+    },
+    {
+      "claim": "抛板测速最早的印刷记载是 1574 年（十六世纪）",
+      "url": "https://en.wikipedia.org/wiki/Chip_log",
+      "quote": "The first known description of the device in print is in A Regiment for the Sea by William Bourne, in 1574."
+    }
+  ],
+  "facts_note": "回归夹具只讲来历，事实引维基百科 Knot (unit) / Chip log 词条原文；正式片请换成一手出处。",
+  "sound": {
+    "bed": "皮肤自带的纸面底噪（无旋律）",
+    "foley": [
+      "墨线画绳：铅笔划纸",
+      "盖印：印泥按压",
+      "翻页：纸声"
+    ],
+    "silence": "第一镜木板入水之前留 0.5 秒静默",
+    "silence_before_native_move_sec": 0.5,
+    "most_important_sound": "收束镜「定义」印章按下的那一声",
+    "music": {
+      "use": false,
+      "why": "回归夹具，留白优于凑数",
+      "mood_curve": []
+    },
+    "foley_per_medium": [
+      "墨线（InkPath）：铅笔划纸",
+      "印章（Seal）：印泥按压",
+      "纸卡：纸张落下"
+    ]
+  },
+  "review": {
+    "rounds": []
+  }
+}

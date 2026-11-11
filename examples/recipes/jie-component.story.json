@@ -9,6 +9,10 @@
  "captions": {
   "mode": "line"
  },
+ "protect": [
+  "一海里",
+  "公里每小时"
+ ],
  "chapters": [
   {
    "title": "一个速度单位",
