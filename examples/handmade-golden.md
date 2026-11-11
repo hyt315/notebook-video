@@ -22,4 +22,4 @@ node scripts/notebook-video.mjs new-project ./my-video --style=journal
 
 详细方法见 `references/director-method.md`。
 
-手作皮肤 + 手账页的完整参考片是 [examples/cell-notebook](cell-notebook/README.md)（auto 路线，看它的 storyboard.md 学「讲到哪长到哪」）。
+手作皮肤 + 手账页的完整参考片是 [examples/cell-notebook](cell-notebook/README.md)——**仅文档**（导演层 + 分镜 + 旁白，不含 story.json 与素材，不能直接跑），看它的 storyboard.md 学「讲到哪长到哪」。能直接跑的精简版是 [recipes/cork-page.story.json](recipes/cork-page.story.json)。

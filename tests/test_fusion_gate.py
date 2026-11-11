@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -27,7 +28,7 @@ def build(story: Path, out: Path) -> subprocess.CompletedProcess:
 class FusionGate(unittest.TestCase):
     def test_components_only_rocket_fails(self):
         with tempfile.TemporaryDirectory() as td:
-            r = build(ROOT / "examples" / "regress" / "rocket-components-only.story.json", td)
+            r = build(ROOT / "examples" / "negative" / "rocket-components-only.story.json", td)
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             g = subprocess.run([sys.executable, str(GATE), td], capture_output=True, text=True, timeout=60)
             self.assertEqual(g.returncode, 1, g.stdout + g.stderr)
@@ -42,7 +43,11 @@ class FusionGate(unittest.TestCase):
             g = subprocess.run([sys.executable, str(GATE), td], capture_output=True, text=True, timeout=60)
             self.assertEqual(g.returncode, 0, g.stdout + g.stderr)
             self.assertIn("P0=0 P1=0", g.stdout)
-            self.assertRegex(g.stdout, r"手账页 6\d%")
+            # 3.5.4：cork-page 从 3 镜（页/对比/页 = 67%）补到 4 镜（页/对比/页/数字 = 50%）以满足
+            # 全片 ≥4 次运镜的硬门禁；本条的意图是「手账页承载至少一半」，不是锁死某个百分比。
+            m = re.search(r"手账页 (\d+)%", g.stdout)
+            self.assertTrue(m, g.stdout)
+            self.assertGreaterEqual(int(m.group(1)), 50, g.stdout)
 
     def test_linework_alone_is_not_enough(self):
         """全片只有线稿、没有手账页：P0 过（主题物出现了），但要被报「没有承载」。"""
@@ -65,7 +70,7 @@ class FusionGate(unittest.TestCase):
 
     def test_mode_switches_thresholds(self):
         """同一份全组件片：hybrid 会嫌「没有承载」，component 不嫌——配额随模式走。"""
-        base = json.loads((ROOT / "examples" / "regress" / "rocket-components-only.story.json").read_text(encoding="utf-8"))
+        base = json.loads((ROOT / "examples" / "negative" / "rocket-components-only.story.json").read_text(encoding="utf-8"))
         base["subject_of_film"] = "abstract"
         base["subject_why"] = "这条只验模式契约，不讲具体东西。"
         with tempfile.TemporaryDirectory() as td:
@@ -78,7 +83,7 @@ class FusionGate(unittest.TestCase):
 
     def test_component_mode_passes_when_subject_named(self):
         """全组件片没有纸可贴：主题物只要在某镜的 see 里被点名，就不该判 P0。"""
-        story = json.loads((ROOT / "examples" / "regress" / "rocket-components-only.story.json").read_text(encoding="utf-8"))
+        story = json.loads((ROOT / "examples" / "negative" / "rocket-components-only.story.json").read_text(encoding="utf-8"))
         story["mode"] = "component"
         story["chapters"][0]["shots"][0]["see"] = "三张卡片并列，标题分别写着火箭的三段规格"
         with tempfile.TemporaryDirectory() as td:
@@ -91,7 +96,7 @@ class FusionGate(unittest.TestCase):
 
     def test_freeform_mode_rejects_multi_card_layouts(self):
         """声明 freeform 却整片是卡片：必须被点名，不能默默按 hybrid 判。"""
-        base = json.loads((ROOT / "examples" / "regress" / "rocket-components-only.story.json").read_text(encoding="utf-8"))
+        base = json.loads((ROOT / "examples" / "negative" / "rocket-components-only.story.json").read_text(encoding="utf-8"))
         base["subject_of_film"] = "abstract"
         base["subject_why"] = "只验模式契约。"
         with tempfile.TemporaryDirectory() as td:
@@ -109,7 +114,7 @@ class FusionGate(unittest.TestCase):
 
     def test_abstract_exempt_with_reason(self):
         with tempfile.TemporaryDirectory() as td:
-            story = json.loads((ROOT / "examples" / "regress" / "rocket-components-only.story.json").read_text(encoding="utf-8"))
+            story = json.loads((ROOT / "examples" / "negative" / "rocket-components-only.story.json").read_text(encoding="utf-8"))
             story["subject_of_film"] = "abstract"
             story["subject_why"] = "这一题讲的是复利这个观念，没有可画的具体东西。"
             sp = Path(td) / "story.json"

@@ -55,14 +55,19 @@ jobs:
           node scripts/notebook-video.mjs validate-backgrounds assets/lecture-template --min-per-skin journal=8,papercut=8,archive=8,flat=4,cel=4
           node scripts/notebook-video.mjs validate-backgrounds assets/lecture-template --shots
           node scripts/notebook-video.mjs validate-caption-sync assets/lecture-template/audio/narration.mp3.json assets/lecture-template/manifests/caption-cues.json
-          # ⚠️ 这里刻意**不走 CLI** 而直调脚本：CLI 的 `validate-semantic-breaks` 已收口为交付语义
-          # （自动注入 --require-budoux，缺 BudouX 即 rc≠0），而本步骤排在 `npm ci` 之前、BudouX 还没装，
-          # 只能以"跳过并告警"的形式跑；真正的 enforced 校验在下面「Re-run the phrase rule」一步（带 --require-budoux）。
+          # 3.5.4 更正：BudouX 已随包放在 assets/vendor，脚本找得到它，所以这一步在 `npm ci` 之前
+          # **就已经强制执行**短语规则（日志里是 "phrase rule: enforced (BudouX from …/assets/vendor)"），
+          # 不是旧注释说的"跳过并告警"。下面「Re-run the phrase rule」一步再用模板 node_modules 里的 BudouX
+          # 带 --require-budoux 跑一遍，验的是 npm 装出来的那份也能用。
           python3 scripts/validate-semantic-breaks.py assets/lecture-template/manifests/caption-cues.json assets/lecture-template/manifests/protected-caption-phrases.txt
       - name: Unit tests (Commons pipeline, director gate, OCR check, background library, page-turn fx)
         # 3.3.0：离线单元测试（标准库 unittest，夹具在 tests/fixtures/，不访问网络）。
         # test_ocr.py 的端到端用例需要 RapidOCR，CI 没装就自动 skip；纯函数部分照常跑。
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Every test file really runs (no 0-test files)
+        # 3.5.4：test_craft_paper.py / test_skill.py 曾在 discover 下收集到 0 条、CI 照样绿。
+        # 逐文件数 unittest 用例，任何文件 0 条或导入失败即失败。
+        run: python3 scripts/dev/check-test-collection.py
       - name: Run the negative fixtures (every gate must really block)
         # 「名存实亡的门禁是最危险的缺陷」——这一条保障每道门禁都有"喂坏输入必须拦住"的实证。
         # 脚本自己找模板（`SKILL/assets/lecture-template`），不吃参数——别再传一个没用的路径进来。
@@ -101,10 +106,15 @@ jobs:
         run: |
           npm ci --prefer-offline --no-audit --no-fund
           npm run typecheck
+      - name: Every positive example passes the gates
+        # 3.5.4：随包 story 示例曾有一半过不了自己的硬门禁，CI 从没跑过它们。
+        # examples/**/*.story.json（negative/ 除外）逐个新建工程 → compose → 全部构建期门禁 → tsc；
+        # examples/negative/ 里登记的负例反向检查：必须被拦，且命中登记的判据。node_modules 软链模板的。
+        run: python3 scripts/dev/check-examples.py -j 2
       - name: Re-run the phrase rule with BudouX available
-        # ⚠️ 必须排在这里，不能提前：BudouX 装在模板的 `node_modules` 里，而那要等上面的 `npm ci`；
-        # 而 `npm ci` 又必须排在「Validate skill and template」之后 —— 那一步断言仓库树
-        # 没有 node_modules。所以在更早那一步里，"语义断句"这条只能以**跳过并告警**的形式跑过。
+        # ⚠️ 必须排在这里：`--budoux-dir` 指向模板的 `node_modules`，要等上面的 `npm ci`；
+        # 而 `npm ci` 又必须排在「Validate skill and template」之后 —— 那一步断言仓库树没有 node_modules。
+        # （更早那一步用的是 assets/vendor 里随包的 BudouX，同样是强制执行；这里验 npm 装出来的那份。）
         # ⚠️ 这里**必须带 `--require-budoux`**（2026-09-22 加）：不带开关时"找不到 BudouX"只是
         # SKIPPED + rc=0 —— 看起来通过、其实那条短语规则根本没跑。交付路径上一律要它把跳过变成失败，
         # 这样"没跑"就不可能冒充"检查过了"。（本地跑夹具目录时不要带这个开关。）

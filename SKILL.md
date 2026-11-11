@@ -1,7 +1,7 @@
 ---
 name: notebook-video
-version: 3.5.3
-description: Turn a topic into a Chinese 16:9 teaching video. Draft-paper narration comes first: there is no pen on screen, and everything appears only when the voice-over reaches it and grows in progressively — text unfolds along the reading direction, sketches trace part by part, annotations are drawn as they are spoken, at most two things grow at once. (flat / cel component themes, or the journal / papercut / archive hand-made skins driven by a metaphor-first director layer) with React, TypeScript and Remotion. Two kinds of shots alternate: a **notebook page** (`layout: "page"`) that carries the real thing — a mounted archival plate, a magnifier over it, handwriting and a red seal on paper — and **components** (flows, comparisons, bars, numbers, code) that do the explaining. Line drawings are optional (specimen sketches only), because a clip-art sketch explaining a concept reads worse than no drawing. Weak-model friendly: ten teaching blueprints (five component-route + five hand-made structure families) with per-shot component picks, golden examples, a five-step workflow and one cross-platform command (`node scripts/make-video.mjs <project>`, `make-video.cmd` on Windows) that resolves shots, runs hard gates with objective auto-fixes (no clipped titles, font floor, text contrast, ≤16-character captions at 4.5 chars/s, no dead tails, blurry-media check) and renders stills or the MP4. Tuned semantic sound effects land on the visual hit; no BGM by default. Every topic first searches Wikimedia Commons / Openverse for licence-filtered real media with automatic on-screen credits. TTS narration (edge-tts or your own recording) drives caption and shot timing; no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
+version: 3.5.4
+description: Turn a topic into a Chinese 16:9 teaching video with React, TypeScript and Remotion. Draft-paper narration, no pen on screen; each element appears only when the voice-over reaches it and grows in progressively. Notebook pages (the `page` layout with real archival media, a magnifier, handwriting, a red seal) alternate with explaining components (flow, compare, bars, numbers, code). Themes are flat / cel components, or journal / papercut / archive hand-made skins with a director layer. Weak-model friendly, with teaching blueprints, golden examples and one command (`node scripts/make-video.mjs`, `make-video.cmd` on Windows) that runs hard gates with auto-fixes and renders stills or the MP4. Real media from Wikimedia Commons / Openverse with on-screen credits; TTS (edge-tts or your own recording) drives caption timing; semantic SFX, no BGM, no image-generation model. Use when the user asks to 做科普视频, 讲解视频, 概念讲解, 代码讲解, 数据对比视频, 流程讲解, 踩坑提醒, 产品讲解, 30 秒到数分钟的中文讲解短片, 或把一段文字讲解做成 MP4.
 ---
 
 # notebook-video · 草稿纸讲解：讲到哪，长到哪（手账页承载 + 组件讲解）
@@ -32,7 +32,7 @@ description: Turn a topic into a Chinese 16:9 teaching video. Draft-paper narrat
   模式是**门禁契约**，不是风格开关：声明 `component` 却整片是手账页，会被点名「别声明一套做另一套」。
 - 主题里的那个东西全片**至少出现一次**（手账页图版说明 / 墨图标签 / 标本速写 / `see` → 全组件片还认组件镜的 `title`），否则判 **P0**。
 - 手账页的容器是**纸**，不是卡片：不要给它套圆角框，也不要把图版做成"浏览器截图卡片"。
-- 手账页写法见 [references/journal-page.md](references/journal-page.md)；最好的一支参考片是 [examples/cell-notebook](examples/cell-notebook/README.md)（49 秒 / 8 镜 / 真图版 + 放大镜 + 印章）；组件配方见 [references/recipes.md](references/recipes.md)。
+- 手账页写法见 [references/journal-page.md](references/journal-page.md)；参考片 [examples/cell-notebook](examples/cell-notebook/README.md) **仅文档**（导演层 + 分镜 + 旁白，不含 story.json 与素材，不能直接跑）；能直接跑的手账页配方是 [examples/recipes/cork-page.story.json](examples/recipes/cork-page.story.json)（4 镜，自带导演层，素材按提示用 commons-search 取一次）；组件配方见 [references/recipes.md](references/recipes.md)。
 
 **线稿是可选件，只做标本速写**（一件东西 + 尺寸线 + 手写名）。不要用简笔线稿去「解释」概念——
 实测那种画面像剪贴画，比不画更差。`validate-fusion` 对「文字 + 简笔线稿」超过 20% 判 P1。线稿写法见 [references/linework.md](references/linework.md)。
@@ -169,11 +169,11 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 
 **看动起来对不对，别直接渲整片**：`node "<SKILL_DIR>/scripts/notebook-video.mjs" preview ./my-video --seconds=30`
 （默认 0.5 倍分辨率；**翻页预览里就有**——不开 fx 时走纯 CSS 的折痕翻页，速度不受影响。
-30 秒约 40 秒出片，同时给接触片和响度读数。单镜验：`--shot=S6`。
+30 秒窗口的耗时看机器：作者开发机约 40 秒，2 核 / 8 GB 的 Linux 实测约 5 分钟（含打包）；同时给接触片和响度读数。单镜验：`--shot=S6`。
 `--fx=on` 是把翻页升级成 GPU 卷页（纸真的弯起来、带纸背透光），它会切完整版 Chromium
 （预览 0.5x 下约 1.8 秒/帧，交付分辨率约 3 秒/帧），所以别拿它渲 30 秒窗口，
 **要看卷页就只截转场那 30 来帧**：
-`--from=<跨镜边界前一秒> --seconds=1.2 --fx=on`（实测 61 秒出片）。
+`--from=<跨镜边界前一秒> --seconds=1.2 --fx=on`（作者开发机实测 61 秒出片，慢机器上会长数倍）。
 跨镜边界在 `manifests/shots.resolved.json` 的 `from` 里，除以帧率就是秒。带翻页时不给全片耗时推算，
 因为只有转场帧走 WebGPU，线性外推会得假数字。）
 想量「是不是边讲边长」：`python scripts/measure-reveal.py <工程> renders/preview-*.mp4`（只报告，不拦；读法见 references/reveal-rules.md）。

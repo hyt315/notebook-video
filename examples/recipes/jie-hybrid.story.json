@@ -6,10 +6,13 @@
  "headerSub": "HYBRID",
  "subject_of_film": "节",
  "mode": "hybrid",
- "camera": "still",
  "captions": {
   "mode": "line"
  },
+ "protect": [
+  "十六世纪",
+  "公里每小时"
+ ],
  "chapters": [
   {
    "title": "绳上的结",

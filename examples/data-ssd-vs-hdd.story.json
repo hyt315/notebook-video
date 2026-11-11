@@ -4,7 +4,7 @@
  "theme": "flat",
  "kicker": "数据对比",
  "header": "SSD vs HDD",
- "headerSub": "GOLDEN EXAMPLE · DATA",
+ "headerSub": "DATA",
  "glossary": {"随机读": "跳着读很多个小文件"},
  "chapters": [
   {"title": "问题", "shots": [

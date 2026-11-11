@@ -4,7 +4,7 @@
 
 **把一个知识点变成一支 16:9 中文讲课视频：手账页承载真东西、组件负责讲清，线稿可选；引擎虚拟镜头跟着讲，一条命令出片，客观门禁自动修。**
 
-[![Version](https://img.shields.io/badge/version-3.5.3-1f6feb)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.5.4-1f6feb)](CHANGELOG.md)
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
@@ -58,10 +58,21 @@
 | **一条命令** | `make-video.mjs`：resolve-shots → 门禁 → tsc → 静帧接触表或整片渲染 → `renders/report.md`；Windows 有 `make-video.cmd` |
 | **交付不只是一个 mp4** | 整片渲完自动再出 `renders/captions.srt`（画面里那套断句，不是重新识别）和 `renders/poster.jpg`（取 `treatment.signature_shot` 的落定帧，且不画字幕）。单独重出：`poster` / `export-srt` / `deliver` |
 | **改完能对比** | `eval-project 旧工程 新工程` 把片子拆成可比的数据（镜长分布、版式 / 介质 / 转场种类、运镜覆盖、字幕密度、空场读数）并给 Δ。**不打分**：阈值只在门禁里存一处 |
-| **先看 30 秒再渲全片** | `notebook-video preview <工程>` 只渲一段（缺省前 30 秒、半分辨率）并出接触片和响度读数；`--shot=S6` 只看一镜。改一版看一版不必等整片，实测 30 秒片段约 40 秒出片 |
+| **先看 30 秒再渲全片** | `notebook-video preview <工程>` 只渲一段（缺省前 30 秒、半分辨率）并出接触片和响度读数；`--shot=S6` 只看一镜。改一版看一版不必等整片。30 秒片段耗时随机器差异很大：作者开发机约 40 秒；2 核 / 8 GB 的 Linux aarch64 实测渲染约 170 秒、含打包约 5 分钟 |
 | **全片一镜不漏** | `notebook-video sweep <工程>` 每镜截一张落定态、拼成一张体检表（`renders/sweep-sheet.jpg`），八镜约 60 秒跑完，判空场用的是渲染期同一套阈值。`preview` 只看开头，片子长了尾巴容易漏——这一步补的就是它 |
 | **门禁与自动修** | 硬门禁只管客观问题（取景切字、字号地板、对比度 ≥4.5:1、字幕每行 ≤16 字、读速（组件路线 ≤4.5 字/秒，手作路线 6.5 字/秒）、画面静止、音画同步、音效电平），能修的自动修；主观项只给建议 |
 | **确定可复现** | 所有动画都是帧号的纯函数（不用 `Math.random`、CSS 动画、计时器）；不依赖生图模型，不需要在线 API |
+
+## 3.5.4 新增
+
+> 止血小版本：**不改门禁判据、不改视觉风格**；让测试、示例和文档说的都是真的。
+
+- **随包示例全部能过自己的门禁**：14 个 story 示例里原有 7 个过不了硬门禁（手作皮肤示例全挂）。正例逐个修好（手作示例自带导演层 `<名>.treatment.json`），故意的负例移到 `examples/negative/` 并登记预期判据；CI 新增「全部正例过门禁、负例必须被拦」。
+- **手作皮肤冷开**：auto 路线下手作皮肤的第一句提前到 150 ms，不再必挂开场门禁 O1；flat / cel 时间轴不变。
+- **缺素材给命令，不给 React 报错**：story 引用了没登记的素材时，`make-video` 直接给出要运行的 `commons-search` 命令。
+- **死测试复活**：两个从未被收集的测试文件改成真实运行，CI 检查每个测试文件至少跑到 1 条。
+- **SKILL.md 描述压到 1024 字以内**并修好 frontmatter 的 YAML（原纯标量里有「: 」，严格解析器读不出），加长度门禁。
+- **小毛刺**：联系表 ffmpeg 重名报错、uuid@9 弃用与 npm audit 2 个 moderate、样例页眉的「GOLDEN EXAMPLE」角标、过时的 CI 注释与根目录过程文件。
 
 ## 3.5.3 新增
 
@@ -207,7 +218,7 @@ notebook-video/
 ├── SKILL.md                     # 技能入口：5 步流程（Agent 读这个）
 ├── manifest.json                # 名称、版本、许可
 ├── blueprints/                  # 10 个讲课蓝图（组件路线 5 + 手作结构族 5）
-├── examples/                    # 黄金样例 story.json、真实素材样例、弱模型测试
+├── examples/                    # 正例 story.json（CI 要求全部过门禁）、真实素材样例、弱模型测试；negative/ 故意的负例；cell-notebook/ 仅文档
 ├── assets/
 │   ├── lecture-template/        # 唯一的工程模板（Remotion + React + TS）
 │   │   ├── src/                 # 引擎（index / cinema / sfx）、组件、主题、门禁、custom/ 逃生口
@@ -218,7 +229,7 @@ notebook-video/
 ├── scripts/                     # make-video、notebook-video CLI、compose / resolve、各门禁、自检；.cmd / .sh 包装
 │   └── dev/                     # 维护者工具（音效库构建与调校）
 ├── references/                  # 作者手册与规格（镜头、版式、主题、线稿、配方、音效、字幕、门禁、跨平台）
-├── tests/                       # 576 个离线单元测试（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 融合配方 / TTS / 静音 / 门禁 / 评审 …）
+├── tests/                       # 582 个离线单元测试（少数在缺可选依赖时自动跳过）（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 融合配方 / TTS / 静音 / 门禁 / 评审 …）
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 

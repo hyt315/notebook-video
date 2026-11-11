@@ -105,6 +105,13 @@ if (!fs.existsSync(path.join(project, 'src', 'index.tsx'))) {
   step(`新建工程 ${project}（${style}）`);
   const r = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'new-project', project, `--style=${style}`]);
   if (r.code) die('new-project 失败');
+  // 3.5.4：示例自带导演层（STORY 旁边的 <名>.treatment.json）时，新工程直接用它，
+  // 不然模板示例片的 treatment（别的选题、招牌镜 S4）会套到这支片上，手作皮肤的门禁按错的导演层判。
+  const sibling = storyPath && storyPath.replace(/\.story\.json$/i, '.treatment.json');
+  if (sibling && sibling !== storyPath && fs.existsSync(sibling)) {
+    fs.copyFileSync(sibling, path.join(project, 'manifests', 'treatment.json'));
+    step(`沿用示例自带的导演层 ${path.basename(sibling)} → manifests/treatment.json`);
+  }
 }
 fs.mkdirSync(path.join(project, 'renders'), {recursive: true});
 
@@ -130,6 +137,38 @@ const reportJson = path.join(project, 'renders', 'compose-report.json');
 const comp = await py('compose-story.py', [storyPath, project, '--report', reportJson]);
 if (comp.code) die('compose-story 有修不了的问题（见上面的 ✗，每条都写了怎么改）');
 rep = JSON.parse(fs.readFileSync(reportJson, 'utf8'));
+
+// 2b. 3.5.4 素材前置检查：story 引用的 media id 必须已登记在 manifests/media.json。
+//     旧版缺素材时一路绿到渲染，才在 React 里抛「craft media: ……没有 id」——用户看到的是渲染栈。
+//     这里提前给出可直接执行的命令；只看门禁（不出图）时只提示，--stills / --render 才停。
+{
+  const refs = new Set();
+  const walk = (v, key) => {
+    if (Array.isArray(v)) { v.forEach((x) => walk(x)); return; }
+    if (v && typeof v === 'object') { for (const [k, x] of Object.entries(v)) walk(x, k); return; }
+    if (key === 'media' && typeof v === 'string' && v) refs.add(v);
+  };
+  for (const ch of story.chapters ?? []) for (const sh of ch.shots ?? []) walk(sh.content ?? {});
+  let have = new Set();
+  try { have = new Set((JSON.parse(fs.readFileSync(path.join(project, 'manifests', 'media.json'), 'utf8')).items ?? []).map((m) => m.id)); } catch { /* 没有 media.json = 一张都没登记 */ }
+  for (const m of story.media ?? []) have.add(m.id);
+  const missing = [...refs].filter((id) => !have.has(id));
+  if (missing.length) {
+    const hints = story.media_hints ?? {};
+    const q = (s) => (/[\s"]/.test(s) ? `"${s.replace(/"/g, '\\"')}"` : s);
+    const cs = `${IS_WIN ? 'python' : 'python3'} ${q(path.join(SCRIPT_DIR, 'commons-search.py'))}`;
+    const cmds = missing.map((id) => {
+      const h = hints[id] ?? {};
+      return h.commons
+        ? `    ${cs} add ${q(project)} ${q(h.commons)} --id ${id}`
+        : `    ${cs} search ${q(h.query ?? id)} --project ${q(project)}   # 选一条，再：\n    ${cs} add ${q(project)} "File:<选中的文件名>" --id ${id}`;
+    });
+    const msg = [`缺素材：story 引用了 ${missing.map((x) => `"${x}"`).join('、')}，但 manifests/media.json 里没有登记。先运行：`, ...cmds,
+      '  （或把自备图片写进 story.json 顶层 "media": [{"id": …, "file": …}]，或 prepare-media.py --add）'].join('\n');
+    if (flag('stills') || renderOut) die(msg);
+    console.log(`  ⚠ ${msg}\n  （本次只跑门禁不出图，继续；--stills / --render 前必须补齐）`);
+  }
+}
 
 // 3. 旁白：已存在（tts 或用户自备）就绝不动它；没有才补静音占位，且只允许 used for --stills / preview。
 const narrationPath = path.join(project, 'audio', 'narration.mp3');
@@ -272,7 +311,10 @@ const sheet = async (pngs, out) => {
   const n = rows * cols;
   const scaleF = Array.from({length: n}, (_, i) => `[${i}]scale=640:360[v${i}]`).join(';');
   const layout = Array.from({length: n}, (_, i) => `${(i % cols) ? Array.from({length: i % cols}, () => 'w0').join('+') : '0'}_${Math.floor(i / cols) ? Array.from({length: Math.floor(i / cols)}, () => 'h0').join('+') : '0'}`).join('|');
-  return run('ffmpeg', ['-y', '-loglevel', 'error', ...inputs, ...blank, '-filter_complex', `${scaleF};${Array.from({length: n}, (_, i) => `[v${i}]`).join('')}xstack=inputs=${n}:layout=${layout}`, out]);
+  return run('ffmpeg', ['-y', '-loglevel', 'error', ...inputs, ...blank, '-filter_complex', `${scaleF};${Array.from({length: n}, (_, i) => `[v${i}]`).join('')}xstack=inputs=${n}:layout=${layout}`,
+    // 3.5.4：补位格是 lavfi color（无限长的流），xstack 于是一直出帧，image2 写同名文件第二帧就报
+    // 「Cannot write more than one file with the same name」。联系表只要一帧。
+    '-frames:v', '1', out]);
 };
 const cli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
 // 3.3.0 真卷页：render / fx-probe 把结论写在 renders/.fx-probe.json。本片用到 pageturn / peel 却没开成 → P1（片子照出，转场已退回 slide / drop）。

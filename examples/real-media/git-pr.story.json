@@ -5,6 +5,7 @@
  "kicker": "GIT 协作",
  "header": "PULL REQUEST",
  "headerSub": "REAL MEDIA DEMO",
+ "protect": ["主分支", "合并按钮"],
  "media": [
   {"id": "pr-page", "file": "pr-placeholder.png", "source": "user", "credit": "脚本生成的占位图",
    "focusRegions": [{"id": "diff", "label": "改动", "x": 0.0125, "y": 0.31, "w": 0.6875, "h": 0.17},
@@ -16,6 +17,9 @@
     "content": {"media": "pr-page", "chrome": "browser", "caption": "绿色是新增，红色是删除"}},
    {"role": "example", "layout": "list", "lines": ["合并之前，先过三关。"],
     "content": {"title": "合并前检查", "items": ["测试全部通过", "至少一人审过", "没有冲突"], "style": "check"}},
+   {"role": "compare", "layout": "compare", "lines": ["跳过检查直接合，坏的是主分支。"],
+    "content": {"title": "为什么要先过三关", "before": {"title": "直接合并", "items": ["主分支可能跑不起来", "别人跟着返工"], "tone": "orange"},
+                "after": {"title": "过完三关再合", "items": ["主分支一直能跑", "问题留在 PR 里"], "tone": "blue"}}},
    {"role": "recap", "layout": "media", "variant": "mirror", "lines": ["都通过了，再点 {{合并按钮|merge}}。"],
     "content": {"media": "pr-page", "chrome": "browser", "caption": "合并是最后一步"}}
   ]}

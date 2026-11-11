@@ -4,7 +4,7 @@
 
 **Turn one idea into a 16:9 Chinese teaching video: a notebook page carries the real thing, components do the explaining, line drawings are optional — with an engine-level virtual camera that follows the narration, one command to render, and objective gates that fix what they can.**
 
-[![Version](https://img.shields.io/badge/version-3.5.3-1f6feb)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.5.4-1f6feb)](CHANGELOG.md)
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
@@ -51,7 +51,7 @@ One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×108
 
 | Capability | Details |
 | --- | --- |
-| **Look at 30 seconds first** | `notebook-video preview <project>` renders one window (first 30 s, half resolution by default) plus a contact sheet and a loudness readout; `--shot=S6` narrows it to a single shot. Checking a revision no longer costs a full render — a 30 s window lands in about 40 s |
+| **Look at 30 seconds first** | `notebook-video preview <project>` renders one window (first 30 s, half resolution by default) plus a contact sheet and a loudness readout; `--shot=S6` narrows it to a single shot. Checking a revision no longer costs a full render. Timing varies a lot by machine: about 40 s for a 30 s window on the author's dev machine, about 170 s of rendering (about 5 min including bundling) on a 2-core / 8 GB Linux aarch64 box |
 | **No shot left unchecked** | `notebook-video sweep <project>` grabs one settled frame per shot and tiles them into `renders/sweep-sheet.jpg` — eight shots in about 60 s, judged by the same empty-space thresholds the render uses. `preview` only covers the opening; on a longer film the tail silently escapes, and this closes that gap |
 | **A delivery is not just an mp4** | A finished render also writes `renders/captions.srt` (the same line breaks burned into the film, not a re-recognition) and `renders/poster.jpg` (a settled frame of `treatment.signature_shot`, with captions suppressed). Standalone: `poster` / `export-srt` / `deliver` |
 | **Compare two cuts** | `eval-project old/ new/` turns a film into comparable numbers (shot-length spread, variety of skeletons / media / transitions, camera coverage, caption density, empty-space readings) and prints the delta. No score: thresholds live in the gates, in one place only |
@@ -64,6 +64,17 @@ One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×108
 | **One command** | `make-video.mjs`: resolve-shots → gates → tsc → stills contact sheet or full render → `renders/report.md`; `make-video.cmd` on Windows |
 | **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤4.5 chars/s reading speed, frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
 | **Deterministic** | Every animation is a pure function of the frame (no `Math.random`, CSS animation or timers); no image-generation model, no online API required |
+
+## What's new in 3.5.4
+
+> A stop-the-bleeding release: **no gate verdict or visual style changes** — the tests, examples and docs now tell the truth.
+
+- **Every bundled example passes its own gates.** Seven of the 14 story examples (all hand-made-skin ones) used to fail the hard gates. Positive examples are fixed (hand-made ones ship their own `<name>.treatment.json`); the deliberate negative moves to `examples/negative/` with its expected verdict; CI now requires every positive example to pass and every negative to be blocked.
+- **Cold open for hand-made skins.** In the auto route the first line of a hand-made skin now starts at 150 ms, so the opening gate O1 no longer fails by construction; flat / cel timing is unchanged.
+- **Missing media gets a command, not a React error.** When a story references unregistered media, `make-video` prints the `commons-search` command to run.
+- **Dead tests revived.** Two test files that were never collected now really run, and CI checks every test file runs at least one test.
+- **SKILL.md description under 1024 characters**, with the frontmatter fixed to be valid YAML (the plain scalar contained ": "), plus a length gate.
+- **Small fixes.** Contact-sheet ffmpeg duplicate-name error, uuid@9 deprecation and two moderate npm audit findings, the "GOLDEN EXAMPLE" stamp in example headers, a stale CI comment and process files in the repo root.
 
 ## What's new in 3.5.3
 
@@ -211,7 +222,7 @@ notebook-video/
 ├── SKILL.md                     # Skill entry point: the 5-step workflow (what the agent reads)
 ├── manifest.json                # Name, version, licence
 ├── blueprints/                  # 10 teaching blueprints (5 component routes + 5 hand-made structure families)
-├── examples/                    # Golden story.json examples, a real-media example, the weak-model test
+├── examples/                    # Positive story.json examples (CI requires all to pass the gates), real-media, weak-model test; negative/ deliberate negatives; cell-notebook/ docs only
 ├── assets/
 │   ├── lecture-template/        # The only project template (Remotion + React + TS)
 │   │   ├── src/                 # Engine (index / cinema / sfx), components, themes, gates, custom/ escape hatch
@@ -222,7 +233,7 @@ notebook-video/
 ├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; .cmd / .sh wrappers
 │   └── dev/                     # Maintainer tools (SFX library build and tuning)
 ├── references/                  # Author manuals and specs (camera, layouts, themes, linework, recipes, SFX, captions, gates, cross-platform)
-├── tests/                       # 576 offline unit tests (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
+├── tests/                       # 582 offline unit tests (a few skip when an optional dependency is missing) (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 

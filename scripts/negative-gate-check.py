@@ -327,7 +327,7 @@ def mk_skill_copy():
     shutil.copytree(SKILL, td, dirs_exist_ok=True, ignore=ignore)
     # 大文件跳过拷贝，但**补占位空文件**：否则链接检查会先报"broken link"，
     # 夹具就变成"因为别的原因失败"了（第一版的假通过）。
-    for rel in ('examples/real-media/pr-placeholder.png', 'examples/weak-model-test/stills-before-fix.jpg',
+    for rel in ('examples/real-media/pr-placeholder.png',
                 # 每主题三张背景（一致性检查只查 is_file，占位空文件即可）
                 *[f'assets/lecture-template/public/bg/bg-{t}-{v}.jpg' for t in ('flat', 'cel', 'journal', 'papercut', 'archive') for v in ('main', 'chapter', 'quiet')]):
         q = os.path.join(td, rel)
@@ -1313,7 +1313,7 @@ cleanup(_td)
 # ---- 3.5.0 · 画面三层：讲火箭却没有火箭 → P0 ----
 _td = tempfile.mkdtemp(prefix='nv-fusion-')
 _r = run([PY, os.path.join(SKILL, 'scripts/compose-story.py'),
-          os.path.join(SKILL, 'examples/regress/rocket-components-only.story.json'), _td])
+          os.path.join(SKILL, 'examples/negative/rocket-components-only.story.json'), _td])
 case('FUS1 全组件 + 主题物「火箭」从未出现 → validate-fusion P0', [
     ('must_pass', 'compose-story', _r),
     ('must_block:火箭', 'validate-fusion', run([PY, os.path.join(SKILL, 'scripts/validate-fusion.py'), _td])),
@@ -1334,7 +1334,7 @@ def _mk_story(src: str, out_dir: str, **patch) -> str:
 
 _td = tempfile.mkdtemp(prefix='nv-mode-')
 # subject 换成 abstract：这条要钉的是「模式与做法不符」（P1），不能被主题物缺失的 P0 抢走判定
-_sp = _mk_story('examples/regress/rocket-components-only.story.json', _td, mode='freeform',
+_sp = _mk_story('examples/negative/rocket-components-only.story.json', _td, mode='freeform',
                 subject_of_film='abstract', subject_why='这条夹具只验模式契约，不讲具体东西。')
 _r = run([PY, os.path.join(SKILL, 'scripts/compose-story.py'), _sp, os.path.join(_td, 'p1')])
 case('MODE1 声明 freeform 却整片都是卡片 → 点名「名不副实」', [
@@ -1357,7 +1357,7 @@ case('MODE2 声明 component 却整片都是手账页 → 点名「别声明一�
 cleanup(_td)
 
 _td = tempfile.mkdtemp(prefix='nv-mode-')
-_sp = _mk_story('examples/regress/rocket-components-only.story.json', _td, mode='slides')
+_sp = _mk_story('examples/negative/rocket-components-only.story.json', _td, mode='slides')
 _r = run([PY, os.path.join(SKILL, 'scripts/compose-story.py'), _sp, os.path.join(_td, 'p1')])
 case('MODE3 mode 写了不认识的值 → P0 拦下，并列出三个合法值', [
     ('must_pass', 'compose-story', _r),
@@ -1382,7 +1382,7 @@ cleanup(td)
 
 # (2) 12 镜工程手账页 0% 仍要判 P1——「镜头 ≤3 不判」只放过样例，不放过成片。
 _td = tempfile.mkdtemp(prefix='nv-mix-')
-_sp = _mk_story('examples/regress/rocket-components-only.story.json', _td,
+_sp = _mk_story('examples/negative/rocket-components-only.story.json', _td,
                 mode='hybrid', subject_of_film='abstract', subject_why='这条夹具只验配比阈值。')
 _d = json.loads(pathlib.Path(_sp).read_text(encoding='utf-8'))
 _src = _d['chapters'][0]['shots']
