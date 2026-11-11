@@ -29,7 +29,7 @@ ROOT_FILES = ("SKILL.md", "README.md", "README.en.md", "LICENSE", "NOTICE", "DEP
               "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", "manifest.json")
 RUNTIME_DIRS = ("agents", "assets", "blueprints", "examples", "references", "scripts")
 REQUIRED = ROOT_FILES + ("scripts/notebook-video.mjs", "assets/lecture-template/package.json")
-SKIP_DIRS = {".git", ".github", ".pytest_cache", "__pycache__", "node_modules", "renders", "dist", "build", ".bundle"}
+SKIP_DIRS = {".git", ".github", ".pytest_cache", "__pycache__", "node_modules", "renders", "dist", "build", ".bundle", ".remotion"}
 SKIP_SUFFIXES = {".pyc", ".pyo", ".log", ".tmp", ".mp4", ".mov", ".webm", ".zip"}
 SKIP_NAMES = {".DS_Store", "Thumbs.db"}
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")

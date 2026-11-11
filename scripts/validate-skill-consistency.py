@@ -28,7 +28,7 @@ if '--budoux-dir' in sys.argv:
     if _i + 1 >= len(sys.argv):
         raise SystemExit('--budoux-dir needs a path')
     BUDOUX_DIR = sys.argv[_i + 1]
-IGNORED_PARTS = {"node_modules", ".git", ".cache", ".tools", "renders", "__pycache__"}
+IGNORED_PARTS = {"node_modules", ".git", ".cache", ".tools", "renders", "__pycache__", ".remotion"}
 TEXT_SUFFIXES = {'.md', '.py', '.sh', '.cmd', '.mjs', '.json', '.yaml', '.yml', '.tsx', '.cjs'}
 
 
@@ -502,7 +502,7 @@ def main() -> None:
         except Exception:
             return True
 
-    for generated_dir in ('node_modules', '.tools', '.cache', 'renders'):
+    for generated_dir in ('node_modules', '.tools', '.cache', 'renders', '.remotion'):
         leaked = [path for path in SKILL.rglob(generated_dir) if path.is_dir() and shipped(path)]
         if leaked:
             problems.append(f"generated dependency/cache directory leaked into source: {leaked[0].relative_to(SKILL)}")

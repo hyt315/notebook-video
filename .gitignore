@@ -25,6 +25,8 @@ Thumbs.db
 *.env
 audit-report.txt
 .doctor/
+# Remotion 首次渲染时把 chrome-headless-shell（约 220 MB）下载到运行目录
+.remotion/
 
 # Fonts are downloaded on demand (node scripts/notebook-video.mjs fonts)
 assets/fonts/*.ttf

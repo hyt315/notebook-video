@@ -14,6 +14,13 @@ All notable changes are recorded here. The project follows semantic versioning. 
 > 2026-11-03 to fold in internal iterations 3.6.0–3.8.0. A higher number in source comments or
 > `references/` is therefore still an internal iteration, not a release.
 
+## [Unreleased]
+
+### 修复 / Fixed
+
+- 在仓库根目录跑 `purity-smoke` 等渲染命令时，Remotion 会把 chrome-headless-shell（约 220 MB）下载到 `.remotion/`，它既没进 `.gitignore`，自检也不认它是生成目录，一次 `git add -A` 就会入库。现在三处都把 `.remotion/` 当生成目录：`.gitignore`、`validate-skill-consistency.py`、`package-skill.py`。
+- Running render commands such as `purity-smoke` from the repo root made Remotion download chrome-headless-shell (about 220 MB) into `.remotion/`, which was neither git-ignored nor treated as a generated directory, so one `git add -A` would commit it. `.gitignore`, `validate-skill-consistency.py` and `package-skill.py` now all treat `.remotion/` as generated.
+
 ## [3.5.4] - 2026-11-11
 
 > 3.5.4 — 止血小版本：**不改门禁判据、不改视觉风格**。让测试、示例和文档说的都是真的。
