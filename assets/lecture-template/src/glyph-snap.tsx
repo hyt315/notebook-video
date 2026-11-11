@@ -16,6 +16,7 @@
 //   · 每一帧对**每个**展开中的元素都重算、重写，不读任何上一帧留下的值；
 //   · 落定 / 未入场的元素不碰：它们的 clip-path 由 React 按 props 写（属性一变 React 就会覆盖）；
 //   · 字体没就绪时先 delayRender 等字体，再量——否则 still 的第一帧会按回退字体量出错的字框。
+//     「就绪」按展开中元素**实际用到的每个 font** 判（pendingFonts），不只看 document.fonts.status。
 //   scripts/dev/frame-purity.mjs 逐像素比对「连续渲」与「单帧渲」，守的就是这条。
 // ============================================================================
 import {useLayoutEffect} from 'react';
@@ -80,15 +81,43 @@ const snapAll = () => {
   });
 };
 
+/**
+ * 展开中元素里实际用到、但还没加载的字体（CSS font 简写）。
+ * 3.5.4 修正：document.fonts.status === 'loaded' 只说明「此刻没有在途的加载」，不说明「这些字用的字重已就绪」。
+ * 例：数字镜的 Clash 700 不在 FontGate 的预载清单里，单帧 still 里第一次排版时它还是 unloaded——
+ * 此时按回退字体量出的字框和连续渲（早已加载）不同，展开边落点就不同（purity-smoke S4 f597–605 实测）。
+ * 所以量字框之前，先把这些元素真正用到的每个 font 都 load 完。
+ */
+const pendingFonts = (): string[] => {
+  const need = new Set<string>();
+  document.querySelectorAll<HTMLElement>('[style*="--nv-grow"]').forEach((root) => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const text = (n as Text).data;
+      const host = (n as Text).parentElement;
+      if (!host || !text.trim()) continue;
+      const cs = getComputedStyle(host);
+      const font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      try { if (!document.fonts.check(font, text)) need.add(font); } catch { /* 非法简写：忽略 */ }
+    }
+  });
+  return [...need];
+};
+
 /** 挂在成片根上（FilmLayout），每帧一次。不渲染任何东西。 */
 export const GlyphSnap = () => {
   const frame = useCurrentFrame();
   useLayoutEffect(() => {
     if (!document.querySelector('[style*="--nv-grow"]')) return;
-    if (document.fonts.status === 'loaded') { snapAll(); return; }
+    const missing = pendingFonts();
+    if (document.fonts.status === 'loaded' && missing.length === 0) { snapAll(); return; }
     let live = true;
     const handle = delayRender('glyph-snap: waiting for fonts', {timeoutInMilliseconds: 60000});
-    document.fonts.ready.then(() => { if (live) snapAll(); }).finally(() => continueRender(handle));
+    Promise.all(missing.map((font) => document.fonts.load(font)))
+      .then(() => document.fonts.ready)
+      .then(() => { if (live) snapAll(); })
+      .catch(() => { /* 字体真缺时 AssetGate 会报错；这里不挡渲染 */ })
+      .finally(() => continueRender(handle));
     return () => { live = false; };
   }, [frame]);
   return null;
