@@ -81,10 +81,12 @@ const q=(f:number)=>{const step=BASE_FPS/MOTION_FPS;return Math.floor(f/step)*st
 const pop=(f:number,start:number,stiffness=132)=>spring({frame:f-start,fps:BASE_FPS,config:{damping:17,stiffness,mass:.86}});
 
 // 3.5.4：主题字体一次性加载（AssetGate 与 FontGate 共用同一份清单）。
+// 含 700 Clash：数字镜（KineticNumber）用它；不预载时单帧 still 量字框那一刻它还没加载，GlyphSnap 的展开边
+// 与连续渲不同（purity-smoke S4 f597–605 实测）。只加这一个字重：顺手预载 Space 700 会改变章节标题的排版（实测）。
 // ⚠️ 先等一帧并强制一次样式计算再 load：FontFaces 的 <style> 刚插入时 @font-face 还没注册进
 // document.fonts，此刻 load() 匹配不到任何字体、立即 resolve（实测：各 face 仍是 unloaded）。
 // 3.5.3 之所以没事，是画面层同一次提交就挂上了、排版用到这些字体才触发加载；FontGate 不先挂画面层，必须自己触发。
-const loadThemeFonts=()=>new Promise<void>((r)=>requestAnimationFrame(()=>r())).then(()=>{void document.body.offsetHeight;}).then(()=>Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash'),document.fonts.load('500 40px Space'),document.fonts.load('400 40px Caveat'),...(THEME.craft?.fonts??[]).map(fd=>document.fonts.load(fd)),document.fonts.ready]));
+const loadThemeFonts=()=>new Promise<void>((r)=>requestAnimationFrame(()=>r())).then(()=>{void document.body.offsetHeight;}).then(()=>Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash'),document.fonts.load('700 40px Clash'),document.fonts.load('500 40px Space'),document.fonts.load('400 40px Caveat'),...(THEME.craft?.fonts??[]).map(fd=>document.fonts.load(fd)),document.fonts.ready]));
 // 3.5.4 FontGate：字体就绪之前**不挂载画面层**。
 // 为什么：章节卡标题（fitChineseTextOnNLines）等组件在 render 里同步量字宽，而量字宽的两层缓存
 // （fittext.tsx 的 widthCache、@remotion/layout-utils 的 wordCache）会把**字体就绪前**的回退字体宽度

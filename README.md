@@ -208,7 +208,7 @@ python scripts/commons-search.py credits ./my-video   # → CREDITS.md
 | 构建期（Python） | `resolve-shots`、`validate-composition`、`validate-shot-motion`、`validate-frame-props`、`validate-presentation`、`validate-caption-sync`、`validate-semantic-breaks`、`validate-layering`、`validate-visual-plan`、`validate-fusion`、`validate-glyphs`、`validate-silence`、`validate-audio-levels`、`validate-media` | 相邻两镜同版式、内容太小、帧参数名写错、对比度不足、字幕超 16 字或读不完、线稿配比失衡或主题物缺席、线稿被裁、句间没有静音或音效压不住人声、音效增益与库不一致、素材会糊 |
 | 渲染期（浏览器内） | `OverlapGate`、`ClippingGate`、`CanvasBoundsGate`、`FillGate`、`CaptionFitGate`、`MascotGate` | 文字互相压、图形被裁、越出画布、字幕溢出 |
 | 成片 | `validate-video`、`validate-motion-gaps` | 尺寸 / 编码 / 色彩标记不对、画面静止过久 |
-| 技能自检 | `validate-skill-consistency`、`selftest`、`negative-gate-check` | 文档写了不存在的组件、断链；每道门禁喂坏输入必须拦住 |
+| 技能自检 | `validate-skill-consistency`、`selftest`、`negative-gate-check`、`dev/check-examples`、`dev/check-test-collection`、`dev/purity-smoke` | 文档写了不存在的组件、断链；每道门禁喂坏输入必须拦住；正例过门禁、负例被拦；测试文件没被收集；连续渲与单帧渲画面不同 |
 
 细节：[references/composition-gate.md](references/composition-gate.md)、[references/presentation-gate.md](references/presentation-gate.md)、[references/quality-checklist.md](references/quality-checklist.md)。
 

@@ -25,7 +25,7 @@ All notable changes are recorded here. The project follows semantic versioning. 
   Panel cards could vanish for a whole shot in a full render (opacity was written as NaN and the browser kept the previous frame's value), while stills looked fine. Fixed; the intended "dim when not in focus" now actually applies. Added a continuous-vs-still pixel check and a CI smoke test.
 - 逐字展开时不再把字切成半个：展开边退到字与字之间（GlyphSnap），起止时间和落定画面不变。
   Text reveals no longer cut a character in half; the wipe edge snaps to character boundaries. Timing and final frames are unchanged.
-- 画面层等主题字体加载好之后才挂上（FontGate），避免先按回退字体量字宽、记进缓存，导致同一帧两种渲法字号不同。对实际画面没有可见推迟。
+- 画面层等主题字体加载好之后才挂上（FontGate），避免先按回退字体量字宽、记进缓存，导致同一帧两种渲法字号不同；数字镜用的 Clash 700 一并预载（否则单帧渲时展开边落点不同）。对实际画面没有可见推迟。
   The film layer now mounts only after the theme fonts are ready, so text is never measured with a fallback font. No visible delay.
 - 随包 14 个 story 示例原有 7 个过不了自己的硬门禁。正例修到能过（cork-page 补第 4 镜并删掉空心「书」线稿；jie-* 补 `protect`；git-pr 补一镜；curl-window-smoke 放大数字镜）；手作示例自带导演层 `examples/recipes/<名>.treatment.json`，`make-video` 新建工程时自动沿用；故意的负例 `rocket-components-only` 移到 `examples/negative/` 并登记预期判据。
   Seven of the 14 bundled story examples failed their own hard gates. Positive ones are fixed; hand-made examples ship their own treatment, picked up by `make-video` for a new project; the deliberate negative moves to `examples/negative/` with its expected verdict.
