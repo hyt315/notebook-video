@@ -1,18 +1,54 @@
 # Changelog
 
-All notable changes are recorded here. The project follows semantic versioning. Current release: **3.5.3**.
+All notable changes are recorded here. The project follows semantic versioning. Current release: **3.5.4**.
 
 本文件的每个条目为**中英双文**（中文在上、English 在下），条目按版本倒序排列。
 
-> **版本号有两套，别混。** 对外可引用的版本只有本文件里的条目（3.3.0 / 3.4.0 / 3.5.0 / 3.5.1 / 3.5.2 / 3.5.3）。
+> **版本号有两套，别混。** 对外可引用的版本只有本文件里的条目（3.3.0 / 3.4.0 / 3.5.0 / 3.5.1 / 3.5.2 / 3.5.3 / 3.5.4）。
 > 3.3.0 曾把内部 3.3.0–3.7.0 的多轮迭代合并为一次公开发布；3.5.0 于 2026-11-03 原地更新，
 > 把内部 3.6.0–3.8.0 的迭代一并并入这次发布。所以源码注释与 `references/` 里高于 3.5.0 的号
 > 仍然是**内部迭代号**，不对应任何对外发布。
 >
-> **Two numbering lines — do not mix them.** Cite only the versions listed below (3.3.0, 3.4.0, 3.5.0, 3.5.1, 3.5.2, 3.5.3).
+> **Two numbering lines — do not mix them.** Cite only the versions listed below (3.3.0, 3.4.0, 3.5.0, 3.5.1, 3.5.2, 3.5.3, 3.5.4).
 > 3.3.0 folded several internal iterations into one public release; 3.5.0 was updated in place on
 > 2026-11-03 to fold in internal iterations 3.6.0–3.8.0. A higher number in source comments or
 > `references/` is therefore still an internal iteration, not a release.
+
+## [3.5.4] - 2026-11-11
+
+> 3.5.4 — 止血小版本：**不改门禁判据、不改视觉风格**。让测试、示例和文档说的都是真的。
+> 3.5.4 — A stop-the-bleeding release: no gate verdict or visual style changes; tests, examples and docs now tell the truth.
+
+### 修正 / Fixes
+
+- 随包 14 个 story 示例原有 7 个过不了自己的硬门禁。正例修到能过（cork-page 补第 4 镜并删掉空心「书」线稿；jie-* 补 `protect`；git-pr 补一镜；curl-window-smoke 放大数字镜）；手作示例自带导演层 `examples/recipes/<名>.treatment.json`，`make-video` 新建工程时自动沿用；故意的负例 `rocket-components-only` 移到 `examples/negative/` 并登记预期判据。
+  Seven of the 14 bundled story examples failed their own hard gates. Positive ones are fixed; hand-made examples ship their own treatment, picked up by `make-video` for a new project; the deliberate negative moves to `examples/negative/` with its expected verdict.
+- 手作皮肤在 auto 路线下第一句提前到 150 ms：节拍挂在字幕上、最早只能落在第 21 帧，任何手作 story 都必挂 `validate-opening` O1。flat / cel 时间轴不变。
+  Hand-made skins start the first line at 150 ms in the auto route; before, O1 failed by construction. Flat / cel timing is unchanged.
+- story 引用了未登记的素材时，`make-video` 提前给出可执行的 `commons-search` 命令（`--stills` / `--render` 前停下），不再等到渲染时抛 React 错误。
+  Unregistered media referenced by a story now produces a runnable `commons-search` command up front instead of a React error at render time.
+- `tests/test_craft_paper.py`（pytest 风格裸函数）和 `tests/test_skill.py`（只有 `main()`）在 `unittest discover` 下一条都没跑过；改为 `TestCase`，断言对齐已改名的 `HANDMADE_MEDIUM`。
+  Two test files were never collected by unittest; both now run, with assertions aligned to the renamed `HANDMADE_MEDIUM`.
+- `SKILL.md` 的 description 1805 → 985 字符（规范上限 1024，触发词保留）；原纯标量里含「: 」，严格 YAML 解析直接报错。
+  The `SKILL.md` description is now 985 characters (limit 1024) and the frontmatter is valid YAML again.
+- 联系表 ffmpeg「Cannot write more than one file with the same name」（补位格是无限长的 lavfi 流，现只出一帧；输出图逐字节不变）。
+  Contact-sheet ffmpeg duplicate-name error fixed; the output image is byte-identical.
+- 样例 story 的页眉不再写「GOLDEN EXAMPLE」（会被带进成片）。
+  Example headers no longer carry a "GOLDEN EXAMPLE" stamp that would end up in the film.
+
+### 工具链 / Tooling
+
+- CI 新增：每个测试文件至少收集到 1 条（`scripts/dev/check-test-collection.py`）；全部正例过门禁、负例必须按登记判据被拦（`scripts/dev/check-examples.py`）；`validate-skill` 与单测检查 description 长度和 YAML 合法性。
+  CI now checks that every test file runs at least one test, that every positive example passes the gates and every negative is blocked, and that the skill description is valid and within 1024 characters.
+- `uuid` 经 overrides 升到 ^11.1.1（budoux → google-auth-library → gaxios 链），消掉弃用告警和 npm audit 的 2 个 moderate；渲染依赖不变。
+  `uuid` is overridden to ^11.1.1, clearing the deprecation warning and two moderate audit findings; render dependencies are unchanged.
+
+### 文档 / Docs
+
+- `examples/cell-notebook` 标为「仅文档」（无 story.json、无素材），不再称作可直接跑的最好参考片；可运行的同题材精简版是 `examples/recipes/cork-page.story.json`。
+  `examples/cell-notebook` is marked documentation-only; the runnable counterpart is `examples/recipes/cork-page.story.json`.
+- preview 耗时注明测量机器（作者开发机约 40 秒；2 核 Linux 实测约 5 分钟）；单测数改为实际值 586；更正过时的 CI 注释；删除根目录 / docs 的过程文件（`RELEASE_NOTES_3.3.0.md`、`CROSS-PLATFORM-ADAPTATION.md` 指针页、`docs/3.5.2-执行记录.md` 与证据图、`examples/weak-model-test/stills-before-fix.jpg`）。
+  Preview timings now name the machine; the unit-test count is the real 586; a stale CI comment is corrected; process files are removed from the repo root and docs/.
 
 ## [3.5.3] - 2026-11-04
 

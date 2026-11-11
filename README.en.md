@@ -4,7 +4,7 @@
 
 **Turn one idea into a 16:9 Chinese teaching video: a notebook page carries the real thing, components do the explaining, line drawings are optional — with an engine-level virtual camera that follows the narration, one command to render, and objective gates that fix what they can.**
 
-[![Version](https://img.shields.io/badge/version-3.5.3-1f6feb)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.5.4-1f6feb)](CHANGELOG.md)
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
@@ -64,6 +64,17 @@ One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×108
 | **One command** | `make-video.mjs`: resolve-shots → gates → tsc → stills contact sheet or full render → `renders/report.md`; `make-video.cmd` on Windows |
 | **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤4.5 chars/s reading speed, frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
 | **Deterministic** | Every animation is a pure function of the frame (no `Math.random`, CSS animation or timers); no image-generation model, no online API required |
+
+## What's new in 3.5.4
+
+> A stop-the-bleeding release: **no gate verdict or visual style changes** — the tests, examples and docs now tell the truth.
+
+- **Every bundled example passes its own gates.** Seven of the 14 story examples (all hand-made-skin ones) used to fail the hard gates. Positive examples are fixed (hand-made ones ship their own `<name>.treatment.json`); the deliberate negative moves to `examples/negative/` with its expected verdict; CI now requires every positive example to pass and every negative to be blocked.
+- **Cold open for hand-made skins.** In the auto route the first line of a hand-made skin now starts at 150 ms, so the opening gate O1 no longer fails by construction; flat / cel timing is unchanged.
+- **Missing media gets a command, not a React error.** When a story references unregistered media, `make-video` prints the `commons-search` command to run.
+- **Dead tests revived.** Two test files that were never collected now really run, and CI checks every test file runs at least one test.
+- **SKILL.md description under 1024 characters**, with the frontmatter fixed to be valid YAML (the plain scalar contained ": "), plus a length gate.
+- **Small fixes.** Contact-sheet ffmpeg duplicate-name error, uuid@9 deprecation and two moderate npm audit findings, the "GOLDEN EXAMPLE" stamp in example headers, a stale CI comment and process files in the repo root.
 
 ## What's new in 3.5.3
 
@@ -222,7 +233,7 @@ notebook-video/
 ├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; .cmd / .sh wrappers
 │   └── dev/                     # Maintainer tools (SFX library build and tuning)
 ├── references/                  # Author manuals and specs (camera, layouts, themes, linework, recipes, SFX, captions, gates, cross-platform)
-├── tests/                       # 576 offline unit tests (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
+├── tests/                       # 586 offline unit tests (a few skip when an optional dependency is missing) (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 
