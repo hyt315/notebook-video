@@ -58,7 +58,7 @@
 | **一条命令** | `make-video.mjs`：resolve-shots → 门禁 → tsc → 静帧接触表或整片渲染 → `renders/report.md`；Windows 有 `make-video.cmd` |
 | **交付不只是一个 mp4** | 整片渲完自动再出 `renders/captions.srt`（画面里那套断句，不是重新识别）和 `renders/poster.jpg`（取 `treatment.signature_shot` 的落定帧，且不画字幕）。单独重出：`poster` / `export-srt` / `deliver` |
 | **改完能对比** | `eval-project 旧工程 新工程` 把片子拆成可比的数据（镜长分布、版式 / 介质 / 转场种类、运镜覆盖、字幕密度、空场读数）并给 Δ。**不打分**：阈值只在门禁里存一处 |
-| **先看 30 秒再渲全片** | `notebook-video preview <工程>` 只渲一段（缺省前 30 秒、半分辨率）并出接触片和响度读数；`--shot=S6` 只看一镜。改一版看一版不必等整片，实测 30 秒片段约 40 秒出片 |
+| **先看 30 秒再渲全片** | `notebook-video preview <工程>` 只渲一段（缺省前 30 秒、半分辨率）并出接触片和响度读数；`--shot=S6` 只看一镜。改一版看一版不必等整片。30 秒片段耗时随机器差异很大：作者开发机约 40 秒；2 核 / 8 GB 的 Linux aarch64 实测渲染约 170 秒、含打包约 5 分钟 |
 | **全片一镜不漏** | `notebook-video sweep <工程>` 每镜截一张落定态、拼成一张体检表（`renders/sweep-sheet.jpg`），八镜约 60 秒跑完，判空场用的是渲染期同一套阈值。`preview` 只看开头，片子长了尾巴容易漏——这一步补的就是它 |
 | **门禁与自动修** | 硬门禁只管客观问题（取景切字、字号地板、对比度 ≥4.5:1、字幕每行 ≤16 字、读速（组件路线 ≤4.5 字/秒，手作路线 6.5 字/秒）、画面静止、音画同步、音效电平），能修的自动修；主观项只给建议 |
 | **确定可复现** | 所有动画都是帧号的纯函数（不用 `Math.random`、CSS 动画、计时器）；不依赖生图模型，不需要在线 API |
@@ -207,7 +207,7 @@ notebook-video/
 ├── SKILL.md                     # 技能入口：5 步流程（Agent 读这个）
 ├── manifest.json                # 名称、版本、许可
 ├── blueprints/                  # 10 个讲课蓝图（组件路线 5 + 手作结构族 5）
-├── examples/                    # 黄金样例 story.json、真实素材样例、弱模型测试
+├── examples/                    # 正例 story.json（CI 要求全部过门禁）、真实素材样例、弱模型测试；negative/ 故意的负例；cell-notebook/ 仅文档
 ├── assets/
 │   ├── lecture-template/        # 唯一的工程模板（Remotion + React + TS）
 │   │   ├── src/                 # 引擎（index / cinema / sfx）、组件、主题、门禁、custom/ 逃生口

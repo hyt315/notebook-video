@@ -51,7 +51,7 @@ One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×108
 
 | Capability | Details |
 | --- | --- |
-| **Look at 30 seconds first** | `notebook-video preview <project>` renders one window (first 30 s, half resolution by default) plus a contact sheet and a loudness readout; `--shot=S6` narrows it to a single shot. Checking a revision no longer costs a full render — a 30 s window lands in about 40 s |
+| **Look at 30 seconds first** | `notebook-video preview <project>` renders one window (first 30 s, half resolution by default) plus a contact sheet and a loudness readout; `--shot=S6` narrows it to a single shot. Checking a revision no longer costs a full render. Timing varies a lot by machine: about 40 s for a 30 s window on the author's dev machine, about 170 s of rendering (about 5 min including bundling) on a 2-core / 8 GB Linux aarch64 box |
 | **No shot left unchecked** | `notebook-video sweep <project>` grabs one settled frame per shot and tiles them into `renders/sweep-sheet.jpg` — eight shots in about 60 s, judged by the same empty-space thresholds the render uses. `preview` only covers the opening; on a longer film the tail silently escapes, and this closes that gap |
 | **A delivery is not just an mp4** | A finished render also writes `renders/captions.srt` (the same line breaks burned into the film, not a re-recognition) and `renders/poster.jpg` (a settled frame of `treatment.signature_shot`, with captions suppressed). Standalone: `poster` / `export-srt` / `deliver` |
 | **Compare two cuts** | `eval-project old/ new/` turns a film into comparable numbers (shot-length spread, variety of skeletons / media / transitions, camera coverage, caption density, empty-space readings) and prints the delta. No score: thresholds live in the gates, in one place only |
@@ -211,7 +211,7 @@ notebook-video/
 ├── SKILL.md                     # Skill entry point: the 5-step workflow (what the agent reads)
 ├── manifest.json                # Name, version, licence
 ├── blueprints/                  # 10 teaching blueprints (5 component routes + 5 hand-made structure families)
-├── examples/                    # Golden story.json examples, a real-media example, the weak-model test
+├── examples/                    # Positive story.json examples (CI requires all to pass the gates), real-media, weak-model test; negative/ deliberate negatives; cell-notebook/ docs only
 ├── assets/
 │   ├── lecture-template/        # The only project template (Remotion + React + TS)
 │   │   ├── src/                 # Engine (index / cinema / sfx), components, themes, gates, custom/ escape hatch

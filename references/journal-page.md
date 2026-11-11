@@ -9,7 +9,7 @@
 3.5.0 试过「30 个简笔线稿 + 自动标注」：每镜都能画出一件东西，但成片比对下来，
 线稿像剪贴画——它能说明「这里有个火箭」，说不清「这枚火箭为什么这样」。
 
-真正抓住人的是另一条路（见 [examples/cell-notebook](../examples/cell-notebook/README.md)：49 秒讲「细胞为什么叫细胞」，导演层与分镜已归档）：
+真正抓住人的是另一条路（见 [examples/cell-notebook](../examples/cell-notebook/README.md)：49 秒讲「细胞为什么叫细胞」，导演层与分镜已归档，**仅文档**、不能直接跑；可运行的精简版是 `examples/recipes/cork-page.story.json`）：
 
 | | 线稿当解释图 | 手账页 |
 |---|---|---|

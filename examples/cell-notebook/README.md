@@ -1,6 +1,7 @@
-# 黄金样例 ·《细胞为什么叫细胞》（cell 片）
+# 参考片（仅文档）·《细胞为什么叫细胞》（cell 片）
 
-这是目前最好的一支参考片：49.1 秒 / 8 镜 / `journal` 皮肤 / 2560×1440。
+> **仅文档，不能直接运行。** 本目录没有 story.json，也不含素材与成片；它记录的是一支 49.1 秒 / 8 镜 / `journal` 皮肤 / 2560×1440 成片的导演层与分镜，用来学方法。
+> 想直接跑一支同题材的片子：`node scripts/make-video.mjs examples/recipes/cork-page.story.json <工程> --stills`（4 镜精简版，自带导演层；缺图版时 make-video 会给出要先运行的 commons-search 命令）。
 它证明了一件事——**讲解视频的说服力来自「真东西 + 手写的证据」，不是来自更多笔画。**
 
 本目录只放**导演层与分镜**（不含素材与成片，素材见文末）：
@@ -46,7 +47,7 @@
              "look": [0.25, 0.42], "zoom": 2.6}}
 ```
 
-完整三镜（含中间一镜 `compare` 讲 cella→cell 的词义）见 `examples/recipes/cork-page.story.json`。
+可运行的四镜版（图版 → `compare` 讲 cella→cell 的词义 → 放大镜 → 十二亿间）见 `examples/recipes/cork-page.story.json`，配套导演层 `examples/recipes/cork-page.treatment.json`。
 
 ## 素材与署名
 
