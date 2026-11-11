@@ -4,7 +4,7 @@
  "theme": "flat",
  "kicker": "概念讲解",
  "header": "哈希表 / HASH TABLE",
- "headerSub": "GOLDEN EXAMPLE · CONCEPT",
+ "headerSub": "CONCEPT",
  "glossary": {"桶": "存放数据的格子，按编号排好"},
  "chapters": [
   {"title": "一个现象", "shots": [
