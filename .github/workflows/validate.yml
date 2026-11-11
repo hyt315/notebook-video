@@ -118,6 +118,11 @@ jobs:
         # 单元测试跑在 npm ci 之前，只能用源码契约锁接线；esbuild 装好后再跑一次真正的
         # planSfx：五皮肤同一镜头，flat/cel 必须保留 UI 音，手作皮肤才映射纸片拟音。
         run: python3 -m unittest tests.test_media_semantics -v
+      - name: Rendering is a pure function of the frame (continuous vs single-frame)
+        # 3.5.4 P0 的回归锁：3.5.3 从 f0 连续渲时 S5 整镜消失、单帧 still 却正常（panel 把 opacity:NaN
+        # 写进 inline style，浏览器保留上一帧的旧值）。这里用 concept-hash-table 现搭工程，在带卡片的
+        # 镜头交接处取 2 个短窗口（交接前 12 帧 → 后 44 帧，0.2x），连续渲与单帧渲逐像素比。约 2–3 分钟。
+        run: node scripts/dev/purity-smoke.mjs --windows=2 --scale=0.2
       - name: Smoke-test project creation
         run: |
           mkdir "$RUNNER_TEMP/notebook-video-smoke"

@@ -81,6 +81,7 @@ const serveUrl = await bundler.bundle({
   publicDir: path.join(root, 'public'),
   rootDir: root,
 });
+if (!browserExecutable) await renderer.ensureBrowser();   // CI 首次运行：下载 Remotion 的 headless shell
 const browser = await renderer.openBrowser('chrome', {browserExecutable, chromiumOptions: {}});
 let rc = 0;
 try {
