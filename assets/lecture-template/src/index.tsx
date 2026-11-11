@@ -79,7 +79,17 @@ const captions=((cueData as any).cues as any[]).map(c=>({...c,startFrame:msFrame
 const q=(f:number)=>{const step=BASE_FPS/MOTION_FPS;return Math.floor(f/step)*step};
 const pop=(f:number,start:number,stiffness=132)=>spring({frame:f-start,fps:BASE_FPS,config:{damping:17,stiffness,mass:.86}});
 
-const AssetGate=()=>{const [handle]=useState(()=>delayRender('waiting for fonts',{timeoutInMilliseconds:120000}));useEffect(()=>{let live=true;Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash'),document.fonts.load('500 40px Space'),document.fonts.load('400 40px Caveat'),...(THEME.craft?.fonts??[]).map(fd=>document.fonts.load(fd)),document.fonts.ready]).then(()=>{if(!live)return;const missing=(THEME.craft?.fonts??[]).filter(fd=>!document.fonts.check(fd,'细胞'));if(missing.length){cancelRender(new Error(`Theme font missing: ${missing.join(', ')} — run: node scripts/notebook-video.mjs fonts --serif, then new-project/sync again (Noto Serif SC, OFL)`));return}continueRender(handle)}).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);return null};
+// 3.5.4：主题字体一次性加载（AssetGate 与 FontGate 共用同一份清单）。
+const loadThemeFonts=()=>Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash'),document.fonts.load('500 40px Space'),document.fonts.load('400 40px Caveat'),...(THEME.craft?.fonts??[]).map(fd=>document.fonts.load(fd)),document.fonts.ready]);
+// 3.5.4 FontGate：字体就绪之前**不挂载画面层**。
+// 为什么：章节卡标题（fitChineseTextOnNLines）等组件在 render 里同步量字宽，而量字宽的两层缓存
+// （fittext.tsx 的 widthCache、@remotion/layout-utils 的 wordCache）会把**字体就绪前**的回退字体宽度
+// 永久记下。单帧 still 的第一次 render 必然早于字体就绪，连续渲染的第 N 镜却在字体就绪之后——
+// 于是同一帧两种渲法量出不同字号（渲染结果取决于历史帧，与 3.5.4 P0 同类）。现在画面层只在
+// 字体就绪后才挂载，所有量测都在真字体上做；就绪标志是单调的（只会 false→true），两种渲法截图时都为 true。
+let FONTS_OK=false;
+const useFontGate=()=>{const [ok,setOk]=useState(FONTS_OK);const [handle]=useState(()=>FONTS_OK?null:delayRender('FontGate: theme fonts before mounting the film',{timeoutInMilliseconds:120000}));useEffect(()=>{if(ok){if(handle!==null)continueRender(handle);return}let live=true;loadThemeFonts().then(()=>{FONTS_OK=true;if(live)setOk(true)}).catch(()=>{/* AssetGate 会 cancelRender 并给出可读的报错 */});return()=>{live=false}},[ok,handle]);return ok};
+const AssetGate=()=>{const [handle]=useState(()=>delayRender('waiting for fonts',{timeoutInMilliseconds:120000}));useEffect(()=>{let live=true;loadThemeFonts().then(()=>{if(!live)return;const missing=(THEME.craft?.fonts??[]).filter(fd=>!document.fonts.check(fd,'细胞'));if(missing.length){cancelRender(new Error(`Theme font missing: ${missing.join(', ')} — run: node scripts/notebook-video.mjs fonts --serif, then new-project/sync again (Noto Serif SC, OFL)`));return}continueRender(handle)}).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);return null};
 
 // CardFitGate：卡片防出格门。逐桶（15 帧）扫描已挂载场景：每个含文字的叶元素，
 // 用 offset 链（天然无视 transform 位移动画）累加其相对"最近卡片祖先"
@@ -439,12 +449,13 @@ const Sound=()=>{
 const WATCH=(()=>{const out:number[]=[];SHOT_IDS.forEach((id:string)=>{const s:any=(SHOTS as any)[id];out.push(s.from-1,s.from,s.from+1,s.to-1,s.to);out.push(s.to-12);(s.beats||[]).forEach((b:number)=>out.push(s.from+b));(s.keys||[]).forEach((k:any)=>out.push(s.from+k.f));});return out;})();
 const FilmLayout:React.FC<{hideCaptions?:boolean}>=({hideCaptions})=>{
   const mode=MODES['16:9'];
+  const fontsOk=useFontGate();
   return <CanvasContext.Provider value={{canvas:'16:9',mode}}>
     <AbsoluteFill style={{overflow:'hidden',background:C.paperBase}}>
       {/* data-design-root：FillGate 靠它把「输出像素」折回「设计像素」（ratio 实测，不假设 --scale）。
     缺了它 FillGate 会静默 return —— 门禁装了等于没装，所以这个属性是门禁契约的一部分。 */}
       <div data-design-root style={{position:'absolute',left:0,top:0,width:mode.designW,height:mode.designH,transform:`scale(${mode.scale})`,transformOrigin:'0 0',fontFamily:'Kai,sans-serif',color:C.ink,overflow:'hidden'}}>
-        <FontFaces bg={C.paperBase}/><AssetGate/><CaptionFitGate/><CardFitGate/><OverlapGate mode="block" watch={WATCH}/><ClippingGate mode="block" watch={WATCH}/>
+        <FontFaces bg={C.paperBase}/><AssetGate/><Sound/>{fontsOk&&<><CaptionFitGate/><CardFitGate/><OverlapGate mode="block" watch={WATCH}/><ClippingGate mode="block" watch={WATCH}/>
         {/* CanvasBoundsGate（v2 简版）：只判「**含文字的叶元素**的墨迹 rect 越出画布」。
             片子这条取 warn 而不是 block（2026-09-22 改，与接触表那条**不再同档**）：
             v2 的判据实测来源全是接触表，它在**片子**上还没有抓到过真缺陷；
@@ -455,10 +466,10 @@ const FilmLayout:React.FC<{hideCaptions?:boolean}>=({hideCaptions})=>{
             口径与实测见 references/composition-gate.md §5.2 / §6。 */}
         <CanvasBoundsGate mode="warn"/>
         {/* FillGate 默认 warn：P0-4 是"观感线"，为它打断整片渲染不划算；出水进日志、可复查 */}
-        <FillGate mode="warn" watch={WATCH}/><MascotGate watch={WATCH}/><Sound/><Backdrop/>
+        <FillGate mode="warn" watch={WATCH}/><MascotGate watch={WATCH}/><Backdrop/>
         {<><Chrome/><FinalDemo/></>}
         <Grade/>
-        <Subtitle off={hideCaptions}/>
+        <Subtitle off={hideCaptions}/></>}
       </div>
     </AbsoluteFill>
   </CanvasContext.Provider>;
