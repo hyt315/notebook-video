@@ -326,6 +326,31 @@ _NUM_DUAL_PAIRS = (
 )
 
 
+def check_skill_description() -> list[str]:
+    """3.5.4：SKILL.md 的 description ≤ 1024 字符（Agent Skills 规范上限），且纯标量里不能有「: 」。
+
+    事故：description 长到 1805 字符；不加引号的纯标量里还夹着「comes first: there is」，
+    严格 YAML 解析直接报错，frontmatter 整个读不出来。详见 tests/test_skill_frontmatter.py。
+    """
+    try:
+        text = (SKILL / 'SKILL.md').read_text(encoding='utf-8')
+    except OSError as exc:
+        return [f'SKILL.md 读不到：{exc}']
+    fm = re.match(r'---\n(.*?)\n---\n', text, re.S)
+    if not fm:
+        return ['SKILL.md 没有 frontmatter']
+    m = re.search(r'^description:\s?(.*)$', fm.group(1), re.M)
+    if not m:
+        return ['SKILL.md frontmatter 里没有 description:']
+    d = m.group(1)
+    problems = []
+    if len(d) > 1024:
+        problems.append(f'SKILL.md description {len(d)} 字符 > 1024（规范上限）')
+    if d[:1] not in ('"', "'", '|', '>') and (': ' in d or ' #' in d):
+        problems.append('SKILL.md description 是不加引号的纯标量，含「: 」或「 #」会让 YAML 解析失败')
+    return problems
+
+
 def check_version_metadata() -> list[str]:
     """版本号只能有**一处**权威：manifest.json。
 
@@ -590,6 +615,7 @@ def main() -> None:
                 problems.append(f"broken link: {p.relative_to(SKILL)} -> {link}")
 
     problems.extend(check_doc_identifiers())
+    problems.extend(check_skill_description())
     problems.extend(check_version_metadata())
     problems.extend(check_enum_dual_source())
     problems.extend(check_canvas_mode_dual_source())
