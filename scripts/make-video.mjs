@@ -311,7 +311,10 @@ const sheet = async (pngs, out) => {
   const n = rows * cols;
   const scaleF = Array.from({length: n}, (_, i) => `[${i}]scale=640:360[v${i}]`).join(';');
   const layout = Array.from({length: n}, (_, i) => `${(i % cols) ? Array.from({length: i % cols}, () => 'w0').join('+') : '0'}_${Math.floor(i / cols) ? Array.from({length: Math.floor(i / cols)}, () => 'h0').join('+') : '0'}`).join('|');
-  return run('ffmpeg', ['-y', '-loglevel', 'error', ...inputs, ...blank, '-filter_complex', `${scaleF};${Array.from({length: n}, (_, i) => `[v${i}]`).join('')}xstack=inputs=${n}:layout=${layout}`, out]);
+  return run('ffmpeg', ['-y', '-loglevel', 'error', ...inputs, ...blank, '-filter_complex', `${scaleF};${Array.from({length: n}, (_, i) => `[v${i}]`).join('')}xstack=inputs=${n}:layout=${layout}`,
+    // 3.5.4：补位格是 lavfi color（无限长的流），xstack 于是一直出帧，image2 写同名文件第二帧就报
+    // 「Cannot write more than one file with the same name」。联系表只要一帧。
+    '-frames:v', '1', out]);
 };
 const cli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
 // 3.3.0 真卷页：render / fx-probe 把结论写在 renders/.fx-probe.json。本片用到 pageturn / peel 却没开成 → P1（片子照出，转场已退回 slide / drop）。
