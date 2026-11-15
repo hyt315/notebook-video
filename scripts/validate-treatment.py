@@ -184,8 +184,11 @@ def check(proj: Path) -> tuple[list[str], list[str], str]:
         elif placeholder(v):
             hard.append(f"{k} 还留着 <<…>> 占位")
     cands = t.get("candidates") or []
+    # 候选个数是形式要求（写满三个再选是思考工具），不拦渲染：记 P1。chosen 指向候选、候选写完仍是 P0。
     if len(cands) != 3:
-        hard.append(f"候选结构要恰好 3 个（现在 {len(cands)} 个）—— 第一个想到的往往是陈词滥调，写满三个再选")
+        soft.append(f"候选结构建议恰好 3 个（现在 {len(cands)} 个）—— 第一个想到的往往是陈词滥调，写满三个再选")
+    if not cands:
+        pass
     elif t.get("chosen") not in {c.get("id") for c in cands}:
         hard.append(f"chosen={t.get('chosen')!r} 不是候选 id 之一")
     elif any(placeholder(c) or not c.get("shape") for c in cands):
@@ -245,7 +248,8 @@ def check(proj: Path) -> tuple[list[str], list[str], str]:
         except ValueError:
             pass
     if not searches:
-        hard.append("还没搜过 Commons —— python scripts/commons-search.py search \"<关键词>\" --project <工程>（找不到也要搜过）")
+        # 形式性要求：断网时不该卡死出片，记 P1（用到的素材必须登记仍是 P0，见下）。
+        soft.append("还没搜过 Commons —— python scripts/commons-search.py search \"<关键词>\" --project <工程>（找不到也要搜过）")
     media = proj / "manifests" / "media.json"
     ids = set()
     if media.is_file():

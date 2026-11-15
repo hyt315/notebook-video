@@ -230,7 +230,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" sweep ./my-video --json   # 给脚
 
 **人工审读节点**：出片前跑一次 `validate-facts PROJECT --review`，把清单里的数字/年份逐条核对。
 AI 生成的图（`content.ink` / `content.figure` 的 label）是**说明性文字**，不是事实来源。
-**开场**：`validate-opening.py` 管前 3 秒——第 0 帧就有东西在发生、首条字幕 ≤1 s、片名不当第一镜、前 3 秒 ≥3 拍、第一句不是泛问句（`--video` 还会读像素复核）。
+**开场**：`validate-opening.py` 管前 3 秒——第 0 帧就有东西在发生、首条字幕 ≤1 s、片名不当第一镜、前 3 秒 ≥3 拍、第一句不是泛问句——这几条写法规则记 P1；`--video` 的像素复核（第 0 帧空纸、开场画面不动）在手作皮肤记 P0。
 
 **音效**：只挂在真事件上；每条 cue 按 manifest 的 `offsetMs` 提前起播，让瞬态落在视觉命中帧；间隔 ≥150 ms；默认**无 BGM**（只有 `treatment.sound.music.use=true` 才加载音乐床，并在音效下闪避）。密度由片级 `sfxDensity` 决定：缺省 `sparse`（每镜一记：换章的镜给章节声、其余给末拍，误区镜另留反转音），写 `"sfxDensity": "normal"` 回到「一拍一个」。旁白是 TTS 生成的，音效必须压在人声下，所以默认就该克制。
 

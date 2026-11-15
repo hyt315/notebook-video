@@ -66,15 +66,24 @@ class TreatmentGate(unittest.TestCase):
         t["metaphor"]["idea"] = "<<只属于这个题的隐喻>>"
         self.assertEqual(self.run_gate(project("papercut", {**t, "medium": {"skin": "papercut", "why": "w"}})), 1)
 
-    def test_two_candidates_block(self):
+    def test_two_candidates_is_p1_not_block(self):
+        # 候选个数是形式性要求：记 P1，不拦
         t = {**GOOD, "candidates": GOOD["candidates"][:2]}
-        self.assertEqual(self.run_gate(project("journal", t)), 1)
+        self.assertEqual(self.run_gate(project("journal", t)), 0)
+        d = project("journal", t)
+        try:
+            hard, soft, _ = vt.check(d)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+        self.assertFalse(any("恰好 3 个" in h for h in hard), hard)
+        self.assertTrue(any("恰好 3 个" in s for s in soft), soft)
 
     def test_skin_mismatch_blocks(self):
         self.assertEqual(self.run_gate(project("archive", GOOD)), 1)
 
-    def test_commons_must_be_searched(self):
-        self.assertEqual(self.run_gate(project("journal", GOOD, searched=False)), 1)
+    def test_commons_not_searched_is_p1(self):
+        # 断网时不卡死：没搜过 Commons 记 P1
+        self.assertEqual(self.run_gate(project("journal", GOOD, searched=False)), 0)
 
     def test_used_media_must_exist(self):
         self.assertEqual(self.run_gate(project("journal", GOOD, media_ids=())), 1)

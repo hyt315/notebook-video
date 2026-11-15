@@ -48,11 +48,13 @@ class StaticOpening(unittest.TestCase):
         r = self.run_check("journal", **COLD)
         self.assertEqual(r["p0"], [], r)
 
-    def test_cell_v1_opening_is_blocked_for_craft(self):
+    def test_cell_v1_opening_is_flagged_p1_for_craft(self):
+        # 开场写法规则（O1–O5）是形式性要求：手作皮肤也只记 P1，不拦出片
         shots = [{"id": "S1", "from": 0, "beatsAbs": [18, 79], "hero": {"name": "软木塞", "kind": "graphic"}}]
         cues = [{"text": "「细胞」这个词，", "start_ms": 600}]
         r = self.run_check("journal", shots, cues)
-        codes = {x[:2] for x in r["p0"]}
+        self.assertEqual(r["p0"], [], r)
+        codes = {x[:2] for x in r["p1"]}
         self.assertEqual(codes, {"O1", "O4", "O5"}, r)
 
     def test_flat_only_warns(self):
@@ -65,9 +67,10 @@ class StaticOpening(unittest.TestCase):
     def test_title_card_first_shot(self):
         shots = [{"id": "S1", "from": 0, "beatsAbs": [0, 30, 60], "hero": {"name": "细胞为什么叫细胞", "kind": "text"}}]
         r = self.run_check("papercut", shots, COLD["cues"])
-        self.assertTrue(any(x.startswith("O3") for x in r["p0"]), r)
+        self.assertTrue(any(x.startswith("O3") for x in r["p1"]), r)
+        self.assertEqual(r["p0"], [], r)
         shots[0]["hero"] = {"name": "x", "kind": "title"}
-        self.assertTrue(any(x.startswith("O3") for x in self.run_check("papercut", shots, COLD["cues"])["p0"]))
+        self.assertTrue(any(x.startswith("O3") for x in self.run_check("papercut", shots, COLD["cues"])["p1"]))
 
     def test_banned_openers(self):
         for text in ("你知道吗？咖啡渍有一圈深边", "大家好，今天", "今天我们来了解二维码", "“细胞”这个词最早"):

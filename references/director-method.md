@@ -103,7 +103,7 @@ python scripts/commons-search.py search "<关键词>" --type audio --project ./m
 python scripts/commons-search.py search "<关键词>" --source openverse --project ./my-video
 ```
 真东西（1665 年的铜版画、第一张 X 光片、真实的显微照片、一段历史录音）几乎总能让片子更好。
-搜过就会记进 `manifests/commons-log.json`；门禁要求手作皮肤至少搜过一次。找到能用的就 `add` 进来，放进
+搜过就会记进 `manifests/commons-log.json`；门禁会提示（P1）手作皮肤至少搜过一次；断网不卡出片。找到能用的就 `add` 进来，放进
 `ArchivePhoto` / `PinnedPhoto` / `LoupeMedia`（见 [craft-kit.md](craft-kit.md)），署名自动上屏。没找到也没关系——写清搜了什么。
 
 ## 事实（`facts`）
@@ -129,11 +129,13 @@ python scripts/commons-search.py search "<关键词>" --source openverse --proje
 | 检查 | 手作皮肤 | flat / cel |
 |---|---|---|
 | treatment.json 存在、必填字段非空、不留 `<<…>>` | P0 | P1 |
-| 恰好 3 个候选，`chosen` 指向其中之一 | P0 | P1 |
+| `chosen` 指向候选之一、候选的 `shape` 写完 | P0 | P1 |
+| 恰好 3 个候选（思考工具，不拦渲染） | P1 | P1 |
 | `medium.skin` 与工程的皮肤一致 | P0 | P1 |
 | `native_move.at_sec` 在片长内 | P0 | P1 |
 | 每个 `facts` 有 http(s) 链接和引文 | P0 | P1 |
-| 搜过 Commons（`commons-log.json` 至少一次）且 `commons.used` 都在 media.json 里 | P0 | P1 |
+| `commons.used` 都在 media.json 里 | P0 | P1 |
+| 搜过 Commons（`commons-log.json` 至少一次；断网时不拦） | P1 | P1 |
 | `turn_to_you_sec` 落在片长 35–55% | P1 | P1 |
 | 镜头表每镜有理由；运镜 ≥4 种；有 `signature_shot` | P1 | P1 |
 | 招牌镜头实推 ≥ 12%（对照 shots.resolved.json） | P0 | P1 |

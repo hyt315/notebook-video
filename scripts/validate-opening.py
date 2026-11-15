@@ -16,7 +16,8 @@ YouTube 把"30 秒后还剩多少观众"单列为 Intro 指标，并建议把精
 像素检查（--video，要 ffmpeg；没有就 SKIPPED）：
   O6 第 0 / 15 / 45 / 90 帧：非背景像素占比 > 8%（第 0 帧就有主体）
   O7 相邻两张（0→15、15→45、45→90）画面有变化（平均差 > 1.5 / 255）
-档位：手作皮肤（journal / papercut / archive）记 P0，flat / cel 记 P1（老工程向后兼容）。
+档位：O1–O5 是开场写法规则（形式性），所有皮肤都记 P1；像素检查 O6/O7（第 0 帧空纸、开场画面不动）
+是客观测量，手作皮肤（journal / papercut / archive）记 P0，flat / cel 记 P1。
 只用标准库（像素检查调用 ffmpeg 输出 rawvideo）。退出码：0 通过，1 有 P0，2 用法错误。
 """
 from __future__ import annotations
@@ -173,11 +174,12 @@ def check(proj: Path, video: Path | None = None) -> dict:
     cc = load(proj / "manifests" / "caption-cues.json") or {}
     issues = static_checks(rs.get("shots") or [], cc.get("cues") or [], story_title(proj))
     pixel = "not requested"
+    measured: list[str] = []
     if video is not None:
-        more, pixel = pixel_checks(video)
-        issues += more
+        measured, pixel = pixel_checks(video)
     craft = skin in CRAFT
-    return {"skin": skin, "p0": issues if craft else [], "p1": [] if craft else issues, "pixel": pixel}
+    # O1–O5（写法规则）一律 P1；O6/O7（像素实测）手作皮肤 P0。
+    return {"skin": skin, "p0": measured if craft else [], "p1": issues + ([] if craft else measured), "pixel": pixel}
 
 
 def main(argv: list[str]) -> int:
@@ -190,7 +192,7 @@ def main(argv: list[str]) -> int:
     if "--json" in argv:
         print(json.dumps(r, ensure_ascii=False, indent=1))
     else:
-        print(f"validate-opening · 皮肤 {r['skin']}{'（手作皮肤：开场不合格即停）' if r['skin'] in CRAFT else '（只提示）'} · 像素检查 {r['pixel']}")
+        print(f"validate-opening · 皮肤 {r['skin']}{'（手作皮肤：像素实测不合格即停，写法规则只提示）' if r['skin'] in CRAFT else '（只提示）'} · 像素检查 {r['pixel']}")
         for x in r["p0"]:
             print(f"  ✗ P0 {x}")
         for x in r["p1"]:
