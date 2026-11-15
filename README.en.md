@@ -136,8 +136,8 @@ All blueprints follow the same teaching arc: **hook → one key term → break i
 
 Two routes:
 
-- **Hand-written component scenes (recommended for delivery)**: `shots.json` + `scenes.tsx` in the project directory, adapted from the template's 8-shot example film. Manual: [references/scenes.md#handwritten-scenes](references/scenes.md#handwritten-scenes).
-- **story.json draft (quick first cut)**: `node scripts/make-video.mjs examples/concept-hash-table.story.json ./draft --stills`; `compose-story.py` lays out, times and frames the shots. See [references/technique.md#auto-engine](references/technique.md#auto-engine).
+- **Hand-written component scenes (escape hatch for shot-by-shot layout)**: `shots.json` + `scenes.tsx` in the project directory, adapted from the template's 8-shot example film. Manual: [references/scenes.md#handwritten-scenes](references/scenes.md#handwritten-scenes).
+- **story.json + blueprint (main route)**: `node scripts/make-video.mjs examples/concept-hash-table.story.json ./draft --stills`; `compose-story.py` lays out, times and frames the shots. See [references/technique.md#auto-engine](references/technique.md#auto-engine).
 
 ## Real media
 
@@ -224,7 +224,7 @@ notebook-video/
 - **Does it use an image-generation model?** No, and image generation is not a default route. Scenes are drawn by components; use screenshots / recordings when a real interface matters.
 - **Portrait or 4:3?** No. The only canvas is 16:9; the earlier 4:3 / 3:4 canvases, the `paper` / `sticker` skins and the `--classic` example project are gone, and older projects are not supported.
 - **My topic needs a one-off diagram.** Copy `src/custom/RequestLane.tsx`, write your component and register it in `src/custom/index.ts`.
-- **Does the story.json draft look as good as hand-written scenes?** Close, but not identical: draft layouts are drawn by `auto.tsx`. Use hand-written component scenes for delivery.
+- **Does story.json look as good as hand-written scenes?** Close, but not identical: its layouts are drawn by `auto.tsx`. Start with story.json + a blueprint; switch to hand-written component scenes when you need shot-by-shot layout control.
 - **Is rendering slow?** Check with `--stills` first (key frames only). Full renders default to 1920×1080 delivery.
 - **Are demo videos included?** No. To keep the repository light, rendered demos are not committed; run `--stills` to see the look locally.
 

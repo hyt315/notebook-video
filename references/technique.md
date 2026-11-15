@@ -15,7 +15,7 @@ auto 路线（story.json → compose）的引擎行为、运行环境、Windows 
 
 <a id="auto-engine"></a>
 
-> 注：auto 草稿路线是可选的快速起稿工具；正式出片推荐手写组件场景（默认组件风格）（见 SKILL.md）。`statement` 不再是默认版式，它渲染成一张 默认组件风格的卡片而不是满屏大字页；没有章节卡 / 章节进度条。
+> 注：auto 路线（story.json + 蓝图 + `make-video`）是**主路线**；要逐镜手调版面时再改写成手写场景（逃生舱，见 SKILL.md）。`statement` 不再是默认版式，它渲染成一张 默认组件风格的卡片而不是满屏大字页；没有章节卡 / 章节进度条。
 
 ## auto 引擎：story.json → 成片
 
@@ -1126,8 +1126,8 @@ AI 生成的图（`content.ink` / `content.figure` 的 label）是**说明性文
 
 **音效**：只挂在真事件上；每条 cue 按 manifest 的 `offsetMs` 提前起播，让瞬态落在视觉命中帧；间隔 ≥150 ms；默认**无 BGM**（只有 `treatment.sound.music.use=true` 才加载音乐床，并在音效下闪避）。密度由片级 `sfxDensity` 决定：缺省 `sparse`（每镜一记：换章的镜给章节声、其余给末拍，误区镜另留反转音），写 `"sfxDensity": "normal"` 回到「一拍一个」。旁白是 TTS 生成的，音效必须压在人声下，所以默认就该克制。
 
-### 可选 · auto 路线（story.json）
+### auto 路线（story.json，主路线）
 
-赶时间时可以先用 `node scripts/make-video.mjs my-story.json ./draft --stills` 从蓝图直接出片（`compose-story.py` 自动排版、关键词同步、字幕定时）。
+用 `node scripts/make-video.mjs my-story.json ./draft --stills` 从蓝图直接出片（`compose-story.py` 自动排版、关键词同步、字幕定时）。
 它用这几种版式：**`page`**（手账页，`content.page` = `plate` / `loupe`）、`define` / `number` / `bars` / `compare` / `code` / `flow` / `list` / `quiz` / `custom` / `media`；`statement` 只渲染成一张卡片，不是缺省版式。
 要用配方和线稿就走这条路线；要逐镜手调版面，再改写成第 2–3 步的手写场景。细节见 [references/technique.md#auto-engine](technique.md#auto-engine)；示例 `examples/*.story.json`。

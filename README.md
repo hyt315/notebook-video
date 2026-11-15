@@ -134,8 +134,8 @@ scripts\make-video.cmd .\my-video --render .\my-video\final.mp4
 
 两条路线：
 
-- **手写组件场景（推荐，正式出片）**：工程目录里的 `shots.json` + `scenes.tsx`，照模板自带的 8 镜示例片改。手册：[references/scenes.md#handwritten-scenes](references/scenes.md#handwritten-scenes)。
-- **story.json 草稿（快速起稿）**：`node scripts/make-video.mjs examples/concept-hash-table.story.json ./draft --stills`，由 `compose-story.py` 自动排版、定时、算镜头。说明：[references/technique.md#auto-engine](references/technique.md#auto-engine)。
+- **手写组件场景（逃生舱：逐镜手调版面）**：工程目录里的 `shots.json` + `scenes.tsx`，照模板自带的 8 镜示例片改。手册：[references/scenes.md#handwritten-scenes](references/scenes.md#handwritten-scenes)。
+- **story.json + 蓝图（主路线）**：`node scripts/make-video.mjs examples/concept-hash-table.story.json ./draft --stills`，由 `compose-story.py` 自动排版、定时、算镜头。说明：[references/technique.md#auto-engine](references/technique.md#auto-engine)。
 
 ## 真实素材
 
@@ -220,7 +220,7 @@ notebook-video/
 - **要用生图模型吗？** 不用，也不支持把生图作为默认路线。画面由组件绘制，需要真实界面时用截图 / 录屏。
 - **能做竖屏或 4:3 吗？** 不能，只有 16:9；早期的 4:3 / 3:4 画布、`paper` / `sticker` 皮肤与 `--classic` 示例工程已删除，旧工程不再支持。
 - **题目需要一张专属的图怎么办？** 照 `src/custom/RequestLane.tsx` 写一个组件，在 `src/custom/index.ts` 注册即可。
-- **story.json 草稿和手写场景一样好看吗？** 接近但不等同。草稿版式由 `auto.tsx` 绘制；正式交付建议走手写组件场景。
+- **story.json 和手写场景一样好看吗？** 接近但不等同：story.json 的版式由 `auto.tsx` 绘制。默认走 story.json + 蓝图；要逐镜手调版面时再改写成手写组件场景。
 - **渲染慢吗？** 先用 `--stills` 看静帧（只渲关键帧）；整片缺省按 1920×1080 交付。
 - **仓库里有演示视频吗？** 没有。为保持仓库轻量，演示成片不入库；用 `--stills` 在本地出静帧即可看到效果。
 

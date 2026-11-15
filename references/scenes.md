@@ -373,7 +373,7 @@ mainH = h − pad×2 − headH − stampH − (stamp ? 14 : 0) − (header ? 14 
 
 ## 手写场景路线（完整作者手册）
 
-> **默认路线是 story.json + `make-video.mjs`**（见 SKILL.md）。本页保留给要手写 `scenes.tsx` 的工程：
+> **默认路线是 story.json + `make-video.mjs`**（见 SKILL.md）。本页是逃生舱：给要逐镜手调、手写 `scenes.tsx` 的工程：
 > 引擎、门禁、主题都通用；只是排版、关键词同步、相机路径要自己写。
 
 
