@@ -116,9 +116,11 @@
           }
         ]
       },
+      "bgLayout": "component",
       "bgAuto": true,
-      "bg": "flat/sunrise",
-      "bgFile": "bg/lib/flat-sunrise.webp"
+      "bg": "flat/mesh-dawn",
+      "bgFile": "bg/lib/flat-mesh-dawn.webp",
+      "bgWhy": "auto · role=quiet layout=component · 4 张候选，从没用过优先"
     },
     {
       "id": "S2",
@@ -225,9 +227,11 @@
           }
         ]
       },
+      "bgLayout": "component",
       "bgAuto": true,
-      "bg": "flat/chapter",
-      "bgFile": "bg/bg-flat-chapter.jpg"
+      "bg": "flat/sunrise",
+      "bgFile": "bg/lib/flat-sunrise.webp",
+      "bgWhy": "auto · role=main layout=component · 6 张候选，从没用过优先；已避开上一镜的 bg/lib/flat-mesh-dawn.webp"
     },
     {
       "id": "S3",
@@ -338,9 +342,11 @@
           }
         ]
       },
+      "bgLayout": "component",
       "bgAuto": true,
-      "bg": "flat/mesh-dawn",
-      "bgFile": "bg/lib/flat-mesh-dawn.webp"
+      "bg": "flat/dotgrid",
+      "bgFile": "bg/lib/flat-dotgrid.webp",
+      "bgWhy": "auto · role=quiet layout=component · 4 张候选，从没用过优先；已避开上一镜的 bg/lib/flat-sunrise.webp"
     },
     {
       "id": "S4",
@@ -450,9 +456,11 @@
           }
         ]
       },
+      "bgLayout": "component",
       "bgAuto": true,
-      "bg": "flat/shapes",
-      "bgFile": "bg/lib/flat-shapes.webp"
+      "bg": "flat/mesh-mint",
+      "bgFile": "bg/lib/flat-mesh-mint.webp",
+      "bgWhy": "auto · role=quiet layout=component · 4 张候选，从没用过优先；已避开上一镜的 bg/lib/flat-dotgrid.webp"
     },
     {
       "id": "S5",
@@ -562,9 +570,11 @@
           }
         ]
       },
+      "bgLayout": "component",
       "bgAuto": true,
-      "bg": "flat/sunrise",
-      "bgFile": "bg/lib/flat-sunrise.webp"
+      "bg": "flat/quiet",
+      "bgFile": "bg/bg-flat-quiet.jpg",
+      "bgWhy": "auto · role=quiet layout=component · 4 张候选，从没用过优先；已避开上一镜的 bg/lib/flat-mesh-mint.webp"
     },
     {
       "id": "S6",
@@ -673,9 +683,11 @@
           }
         ]
       },
+      "bgLayout": "component",
       "bgAuto": true,
-      "bg": "flat/mesh-mint",
-      "bgFile": "bg/lib/flat-mesh-mint.webp"
+      "bg": "flat/main",
+      "bgFile": "bg/bg-flat-main.jpg",
+      "bgWhy": "auto · role=main layout=component · 6 张候选，从没用过优先；已避开上一镜的 bg/bg-flat-quiet.jpg"
     },
     {
       "id": "S7",
@@ -771,9 +783,11 @@
           "fillAfter": 0.865
         }
       },
+      "bgLayout": "component",
       "bgAuto": true,
-      "bg": "flat/main",
-      "bgFile": "bg/bg-flat-main.jpg"
+      "bg": "flat/shapes",
+      "bgFile": "bg/lib/flat-shapes.webp",
+      "bgWhy": "auto · role=main layout=component · 6 张候选，从没用过优先；已避开上一镜的 bg/bg-flat-main.jpg"
     },
     {
       "id": "S8",
@@ -872,9 +886,11 @@
           "fillAfter": 0.865
         }
       },
+      "bgLayout": "component",
       "bgAuto": true,
-      "bg": "flat/dotgrid",
-      "bgFile": "bg/lib/flat-dotgrid.webp"
+      "bg": "flat/mesh-dawn",
+      "bgFile": "bg/lib/flat-mesh-dawn.webp",
+      "bgWhy": "auto · role=main layout=component · 6 张候选，最久没用过（上次 S1）；已避开上一镜的 bg/lib/flat-shapes.webp"
     }
   ],
   "sfxDensity": "sparse",
