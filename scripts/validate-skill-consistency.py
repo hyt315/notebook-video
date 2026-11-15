@@ -56,7 +56,7 @@ def reusable_file(path: Path) -> bool:
 #   · **提到已删除的名字时不要加反引号**：本技能里反引号 = "这是可直接使用的标识符"。
 #     写历史对照（"X 已于 v3.1 删除"）时用纯文本写名字，检查就不会误报，读者也不会以为它还能用。
 # ---------------------------------------------------------------------------
-DOC_IDENT_SKIP_FILES = {'CHANGELOG.md'}
+DOC_IDENT_SKIP_FILES = {"CHANGELOG.md", "CHANGELOG-legacy.md"}
 DOC_IDENT_WHITELIST = {
     "NOTEBOOK_VIDEO_FONT_BASE_URL",  # env var read in scripts/notebook-video.mjs (ensureFonts)
     # 平台 / 框架 API（Remotion、React、Web）
@@ -604,6 +604,8 @@ def main() -> None:
     for p in SKILL.rglob('*.md'):
         if not reusable_file(p):
             continue
+        if p.relative_to(SKILL).parts[:2] == ('docs', 'history'):
+            continue                      # 归档的历史记录：链接按当时的目录结构写，不再维护
         text = p.read_text(encoding='utf-8')
         for match in re.finditer(r'\[[^\]]+\]\(([^)]+)\)', text):
             link = match.group(1).split('#')[0]
