@@ -351,6 +351,44 @@ def check_skill_description() -> list[str]:
     return problems
 
 
+# ---------------------------------------------------------------------------
+# 过程词 / 内部版本号守护（思路借自 lemo-opuscar tools/release.py 的 PROCESS_WORDS，MIT，此处重写）
+# 面向 agent 的指令文档（SKILL.md、references/）只写"现在怎么做"，不写版本史、事故复述、
+# 评审过程。那些写进 CHANGELOG.md 或不发布的 MAINTAINING.md。依赖库自己的版本号不算（见豁免）。
+# ---------------------------------------------------------------------------
+PROCESS_WORDS = ('踩过', '事故', '上一版', '那一轮', '复核第二轮', r'(?:提交|commit) [0-9a-f]{7}\b')
+INTERNAL_VERSION = (r'(?<![\w@./\-])v?[1-3]\.\d+\.(?:\d+|x)(?![\w.])',   # 3.6.0 / v3.1.1 / 3.1.x
+                    r'(?<![\w@./\-])v[1-3]\.\d+(?![\w.])')                 # v3.7 / v2.10
+VERSION_OK_NEAR = ('perfect-freehand', 'opentype.js', 'shaders@', 'SC 1.4.3')           # 依赖库版本，不是本技能的版本
+_PROCESS_RE = re.compile('|'.join(PROCESS_WORDS))
+_VERSION_RE = re.compile('|'.join(INTERNAL_VERSION))
+
+
+def process_word_hits(text: str) -> list[str]:
+    """返回 `行号: 片段` 列表；空列表 = 干净。"""
+    hits = []
+    for n, line in enumerate(text.splitlines(), 1):
+        m = _PROCESS_RE.search(line)
+        if m:
+            hits.append(f'{n}: 过程词「{m.group(0)}」')
+        for v in _VERSION_RE.finditer(line):
+            if not any(ok in line for ok in VERSION_OK_NEAR):
+                hits.append(f'{n}: 内部版本号「{v.group(0).strip()}」')
+    return hits
+
+
+def check_process_words() -> list[str]:
+    problems = []
+    docs = [SKILL / 'SKILL.md'] + sorted((SKILL / 'references').rglob('*.md'))
+    for doc in docs:
+        if not doc.is_file():
+            continue
+        for hit in process_word_hits(doc.read_text(encoding='utf-8', errors='ignore')):
+            problems.append(f'process wording in agent doc {doc.relative_to(SKILL)}:{hit}'
+                            '（版本史 / 事故复述写进 CHANGELOG.md 或 MAINTAINING.md）')
+    return problems
+
+
 def check_linework_geometry() -> list[str]:
     """线稿取景框必须盖得住图形，生成的缺省框必须与 library.ts 同步。
 
@@ -554,6 +592,7 @@ def main() -> None:
 
     problems.extend(check_doc_identifiers())
     problems.extend(check_skill_description())
+    problems.extend(check_process_words())
     problems.extend(check_enum_dual_source())
     problems.extend(check_canvas_mode_dual_source())
     problems.extend(check_numeric_dual_source())
