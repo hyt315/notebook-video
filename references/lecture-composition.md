@@ -11,11 +11,11 @@
   - [4. Frame-accurate speech sync](#4-frame-accurate-speech-sync)
   - [5. Demonstrative animation](#5-demonstrative-animation)
   - [6. Series component reuse](#6-series-component-reuse)
-- [Skeletons, media and camera (v2.10)](#skeletons-media-and-camera-v210)
+- [Skeletons, media and camera](#skeletons-media-and-camera)
 - [Working the template](#working-the-template)
 - [Self-check before rendering](#self-check-before-rendering)
 
-## Skeletons, media and camera (v2.10)
+## Skeletons, media and camera
 
 The six rules below describe the visual language. Three further layers decide **how a scene is framed
 and what medium it uses**, and they are enforced by machine gates:

@@ -40,7 +40,7 @@ description: Turn a topic into a Chinese 16:9 teaching video with React, TypeScr
 直书页是「省掉框」，不是「省掉内容」——每行 ≤10 字、≤5 行，全片 ≤40%；超了就成一本排版册。写法见 [references/journal-page.md](references/journal-page.md)。
 另外，每片留 2–3 个**锤子帧**（整章最该被记住的一句，满屏单独出现 1.5–2.5 秒），规则见 [references/pacing-rhythm.md](references/pacing-rhythm.md)。
 锤子帧怎么做：组件路线用 `StampBanner`（或 `Callout` 放大到 displayL）独占一镜；手作路线用 `HandLettering` 手写满屏一句，或 `Seal` 印章大字——都放在媒介里，不是白底大字。
-只有 16:9；五个皮肤：`flat`（默认）、`cel`，以及 3.3.0 的手作皮肤 `journal`（手账水彩）/ `papercut`（红色剪纸）/ `archive`（档案灯台）。
+只有 16:9；五个皮肤：`flat`（默认）、`cel`，以及手作皮肤 `journal`（手账水彩）/ `papercut`（红色剪纸）/ `archive`（档案灯台）。
 TTS 是正式步骤：`notebook-video tts <工程>`（默认 edge-tts；也可 `--engine=file` 用你自己的录音），字幕与镜头按**词级时间**对齐；没有真实旁白时 `--render` 会停在渲染前（静音占位只给 `--stills` / `preview`）。默认无 BGM，音效稀疏。
 
 ## 先选路线
@@ -128,7 +128,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 - 一镜 1–3 句，一句一个意思；字幕超 16 字由 `build-semantic-captions.py` 在合法断点自动拆（不拆词、英文、数字）。
 - 要观众「看那里」时，在镜头表写 `cinema.focus`（推近到那个组件的矩形）；不写也有缺省缓推。
 - 相邻两镜换骨架；一镜一个概念；关键数字用 `KineticNumber` 数过去。
-- 背景（3.3.0）：手作皮肤默认 `bgMode: "chapter"`（每章一张纸、章内沿用），flat / cel 默认 `"shot"`（逐镜轮换）；全片一张纸写 `"bgMode": "film"`，完全不轮换写 `"bgRotate": false`。不写就自动选——每个皮肤有 8–11 张风格各异的亮底背景（手账：横线本 / 方格 / 点阵 / 牛皮纸 / 水彩纸 / 便签墙 / 旧书页 / 坐标纸；剪纸：红纸衬边 / 宣纸 / 窗花 / 祥云 / 挂笺 / 洒金…；档案：档案袋 / 旧报纸 / 古地图 / 卡片目录 / 胶片 / 展柜布面…），逐镜模式按镜头角色挑、相邻两镜不重复，装饰重的（`busy`）不进常规镜。某一镜要特定的纸，就写 `"bg": "oldpage"`；清单与许可见 [references/background-library.md](references/background-library.md)。
+- 背景：手作皮肤默认 `bgMode: "chapter"`（每章一张纸、章内沿用），flat / cel 默认 `"shot"`（逐镜轮换）；全片一张纸写 `"bgMode": "film"`，完全不轮换写 `"bgRotate": false`。不写就自动选——每个皮肤有 8–11 张风格各异的亮底背景（手账：横线本 / 方格 / 点阵 / 牛皮纸 / 水彩纸 / 便签墙 / 旧书页 / 坐标纸；剪纸：红纸衬边 / 宣纸 / 窗花 / 祥云 / 挂笺 / 洒金…；档案：档案袋 / 旧报纸 / 古地图 / 卡片目录 / 胶片 / 展柜布面…），逐镜模式按镜头角色挑、相邻两镜不重复，装饰重的（`busy`）不进常规镜。某一镜要特定的纸，就写 `"bg": "oldpage"`；清单与许可见 [references/background-library.md](references/background-library.md)。
 - 帧参数名：`fxkit` 组件传 `frame={f}`，其余模块传 `f={f}`（传错不报错只会错位，`validate-frame-props.py` 会抓）。
 
 ## 第 4 步 · 一条命令
@@ -142,7 +142,7 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 
 **旁白顺序（auto 路线）**：`compose-story` 先写出 `narration.txt` → 你跑 `notebook-video tts <工程>` 生成音频 → `make-video` 里第二次 compose 按词级时间重排字幕与镜头。
 **改了 story 必须重跑 compose 再 tts**：`story.json` 比 `narration.txt` 新时 tts 会直接停下，告诉你先跑 compose——
-否则它会读上一版旁白，**出半截音频而且不报错**。自己手写 narration（不跟 story 走）时加 `--allow-stale`。
+否则它会读旧的旁白，**出半截音频而且不报错**。自己手写 narration（不跟 story 走）时加 `--allow-stale`。
 **先看 `--stills` 静帧，再渲整片**（整片渲染要先征得用户同意）。手作皮肤 `treatment.json` 的 `review.rounds` 为空时 `--render` 会停下（先做独立评审；草稿用 `--skip-review` 显式跳过）。`--render` 默认 1920×1080；响度目标 −16 LUFS（静音旁白片与真人声片相同）。
 
 **渲染中途失败别整片重渲**：`notebook-video render <工程> <输出> --resume`。raw 中间产物只在**成功交付后**才删除，
@@ -164,7 +164,7 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 
 单独用：`notebook-video poster <工程> [out.jpg] [--shot=S4|--frame=759]`、`notebook-video export-srt <cues.json> <out.srt>`；
 两样一起重出用 `notebook-video deliver <工程>`（改封面构图、换字幕都不必再渲整片）。
-不要拿几何中点当封面：中点经常正好压在最后一拍上，封面里会出现半截正在被写的字（cell 的 S5 就踩过两次）。
+不要拿几何中点当封面：中点经常正好压在最后一拍上，封面里会出现半截正在被写的字。
 
 **看动起来对不对，别直接渲整片**：`node "<SKILL_DIR>/scripts/notebook-video.mjs" preview ./my-video --seconds=30`
 （默认 0.5 倍分辨率；**翻页预览里就有**——不开 fx 时走纯 CSS 的折痕翻页，速度不受影响。

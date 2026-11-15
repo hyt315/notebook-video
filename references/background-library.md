@@ -1,12 +1,12 @@
-# 背景库 · Background library（3.3.0）
+# 背景库 · Background library
 
-> 3.3.0 之前每个皮肤只有 `main / chapter / quiet` 三张背景，一条片子来回就那三张。3.3.0 起每个手作皮肤（journal / papercut / archive）
+> 每个皮肤原有 `main / chapter / quiet` 三张锁定背景；背景库再给每个手作皮肤（journal / papercut / archive）
 > 新增 8 张、flat / cel 各新增 5 张风格各异、符合皮肤媒介的背景，旧的三张原样保留并入库（标 legacy）。
-> Every craft skin gains 8 backgrounds and flat / cel gain 5 each; the three 3.3.0 rasters stay, marked legacy.
+> Every craft skin gains 8 backgrounds and flat / cel gain 5 each; the three original rasters stay, marked legacy.
 
 ## 1. 怎么用 / Usage
 
-### 换纸粒度 `bgMode`（3.3.0）/ How often the paper changes
+### 换纸粒度 `bgMode`/ How often the paper changes
 
 `manifests/shots.json` 顶层的 `bgMode` 决定多久换一次背景：
 
@@ -14,10 +14,10 @@
 |---|---|---|
 | `"chapter"` | 只在章节首镜换纸，章内所有镜头沿用同一张；跨章不与上一章同一张 | journal / papercut / archive（手作皮肤：全片是"一本手账"，逐镜换纸会打断媒介连续性） |
 | `"film"` | 全片一张纸 | —（想要最强的"一本书"感时手动写） |
-| `"shot"` | 逐镜轮换（下面的规则，3.3.0–3.3.0 的行为） | flat / cel |
+| `"shot"` | 逐镜轮换（下面的规则） | flat / cel |
 
 - `chapter` / `film` 模式下那张纸要撑满章内的常规镜头，所以只从 `roles` 含 `main`、且没有标 `busy` 的背景里挑。
-- **改回逐镜轮换：** 顶层写 `"bgMode": "shot"`。**完全不轮换（3.3.0 行为）：** `"bgRotate": false`（优先级高于 `bgMode`）。
+- **改回逐镜轮换：** 顶层写 `"bgMode": "shot"`。**完全不轮换：** `"bgRotate": false`（优先级高于 `bgMode`）。
 - 显式写了 `bg` 的镜头永远用它自己的，只影响那一镜，章内其他镜头照样沿用章节纸。
 - `validate-backgrounds --shots` 只在 `bgMode=shot` 时把"相邻两镜同一张"记 P1；`chapter` / `film` 模式同章同纸是设计如此，不报。
 
@@ -42,12 +42,12 @@
 ```jsonc
 { "id": "S3", "bg": "ruled" }            // 简写：本皮肤的 journal/ruled
 { "id": "S4", "bg": "journal/oldpage" }  // 全名
-{ "id": "S5", "bg": "quiet" }            // 3.3.0 的三张之一（main / chapter / quiet），照旧可用
+{ "id": "S5", "bg": "quiet" }            // 原有三张之一（main / chapter / quiet），照旧可用
 ```
 
 写了不存在的名字或别的皮肤的背景，`resolve-shots` 直接报错并列出本皮肤可选的名字。
 
-**关掉轮换（回到 3.3.0 行为）：** `manifests/shots.json` 顶层写 `"bgRotate": false`。没有 `manifests/backgrounds.json` 的旧工程
+**关掉轮换：** `manifests/shots.json` 顶层写 `"bgRotate": false`。没有 `manifests/backgrounds.json` 的旧工程
 本来就不轮换，`resolve-shots` 的输出逐字节不变。
 
 **看一眼全部背景：** `python scripts/dev/bg-gallery.py out.jpg`（需要 numpy + pillow；每张图都按 96 px 交付字号压一行墨色字幕，不加衬底，即门禁量的最坏情况）。
@@ -55,8 +55,8 @@
 ### 引擎怎么画 / How the engine draws it
 
 `resolve-shots` 把选中的库 id 写进 `src/shots.ts` 的 `bg`，文件路径写进 `bgFile`；`src/index.tsx` 的 `Backdrop`
-有 `bgFile` 就直接铺这张 2560×1440 的图（`objectFit: cover`，底色 `palette.paperBase`），没有就按 3.3.0 的 `main / chapter / quiet` 走 `THEME.Background`。
-相邻两镜背景不同时交叉淡化 10 帧，背景随摄影机视差移动——与 3.3.0 相同。`Theme` 接口没有变。
+有 `bgFile` 就直接铺这张 2560×1440 的图（`objectFit: cover`，底色 `palette.paperBase`），没有就按原有的 `main / chapter / quiet` 走 `THEME.Background`。
+相邻两镜背景不同时交叉淡化 10 帧，背景随摄影机视差移动。`Theme` 接口没有变。
 
 ## 2. 门禁 / Gates
 
@@ -80,13 +80,13 @@
 按用户「不造轮子」的原则，优先级：
 
 1. **Paper Shaders**（[paper-design/shaders](https://github.com/paper-design/shaders)，`@paper-design/shaders@0.0.82`，Apache-2.0）——纸纹（冷压水彩纸、长纤维宣纸、
-   帘纹纸、旧纸 foxing、揉皱折痕）、mesh 渐变、点阵、半调网点。它是 WebGL：3.3.0 因为逐帧 WebGL 在纯 CPU（SwiftShader）上太贵而暂缓。
-   3.3.0 的做法是**离线预渲一次**：`scripts/dev/prerender-paper-shaders.py` 用无头 Chromium 把 `scripts/dev/paper-shaders.spec.json` 里每个着色器
+   帘纹纸、旧纸 foxing、揉皱折痕）、mesh 渐变、点阵、半调网点。它是 WebGL：因为逐帧 WebGL 在纯 CPU（SwiftShader）上太贵而暂缓。
+   做法是**离线预渲一次**：`scripts/dev/prerender-paper-shaders.py` 用无头 Chromium 把 `scripts/dev/paper-shaders.spec.json` 里每个着色器
    以静态参数（speed 0、固定 seed）渲成 2560×1440 PNG，再由生成器合成、压成 WebP 入库。**渲染期零 WebGL、零新 npm 依赖**。
 2. **Wikimedia Commons 的公有领域 / CC0 纹理**（用 `scripts/commons-search.py` 搜，CC0 / PD 优先）：牛皮纸（Coyau，PD）、
    粗麻布（Poly Haven「Hessian 380」，CC0）、1630 年荷兰古地图（PD）。生成器取图时重新核对 Commons 页面上的许可，变了就拒绝。
 3. **确定性程序生成**（numpy + pillow，固定 seed，2× 超采样抗锯齿）：横线 / 方格 / 坐标纸、便签、剪纸窗花 / 祥云 / 挂笺 / 洒金、
-   档案袋扣绳、报纸版式（灰条，不含真实文字，避免 OCR 门禁误读）、胶片齿孔、账簿栏线、漫画分格 / 集中线 / 网点。纸底复用 3.3.0 的 `make-craft-textures.py`。
+   档案袋扣绳、报纸版式（灰条，不含真实文字，避免 OCR 门禁误读）、胶片齿孔、账簿栏线、漫画分格 / 集中线 / 网点。纸底复用 `make-craft-textures.py`。
 
 重建（只有维护者需要；普通用户永远不跑）：
 
@@ -166,9 +166,9 @@ Paper Shaders 与程序生成的图由本仓库生成，随仓库以 Apache-2.0 
 | `flat/dotgrid` | 点阵 | quiet / main | Paper Shaders 预渲 | Apache-2.0 | `ps-dotgrid` · @paper-design/shaders@0.0.82 |
 | `flat/sunrise` | 暖角渐变 | chapter / main | Paper Shaders 预渲 | Apache-2.0 | `ps-grain-sun` · @paper-design/shaders@0.0.82 |
 | `flat/shapes` | 几何角饰 | chapter / main | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1405 |
-| `flat/main` | 天空吉祥物·常规 *(legacy)* | main | AI 生成（3.2.0） | Apache-2.0 | 见 `manifests/visual-assets.json` |
-| `flat/chapter` | 天空吉祥物·章节 *(legacy)* | chapter | AI 生成（3.2.0） | Apache-2.0 | 见 `manifests/visual-assets.json` |
-| `flat/quiet` | 天空吉祥物·安静 *(legacy)* | quiet | AI 生成（3.2.0） | Apache-2.0 | 见 `manifests/visual-assets.json` |
+| `flat/main` | 天空吉祥物·常规 *(legacy)* | main | AI 生成 | Apache-2.0 | 见 `manifests/visual-assets.json` |
+| `flat/chapter` | 天空吉祥物·章节 *(legacy)* | chapter | AI 生成 | Apache-2.0 | 见 `manifests/visual-assets.json` |
+| `flat/quiet` | 天空吉祥物·安静 *(legacy)* | quiet | AI 生成 | Apache-2.0 | 见 `manifests/visual-assets.json` |
 
 ### cel
 
@@ -179,15 +179,15 @@ Paper Shaders 与程序生成的图由本仓库生成，随仓库以 Apache-2.0 
 | `cel/panels` | 分格边 | main / chapter | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1503 |
 | `cel/screentone` | 渐变网点 | main / quiet | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1504 |
 | `cel/sunburst` | 放射光 | chapter | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1505 |
-| `cel/main` | 漫画角饰·常规 *(legacy)* | main | AI 生成（3.2.0） | Apache-2.0 | 见 `manifests/visual-assets.json` |
-| `cel/chapter` | 漫画角饰·章节 *(legacy)* | chapter | AI 生成（3.2.0） | Apache-2.0 | 见 `manifests/visual-assets.json` |
-| `cel/quiet` | 漫画角饰·安静 *(legacy)* | quiet | AI 生成（3.2.0） | Apache-2.0 | 见 `manifests/visual-assets.json` |
+| `cel/main` | 漫画角饰·常规 *(legacy)* | main | AI 生成 | Apache-2.0 | 见 `manifests/visual-assets.json` |
+| `cel/chapter` | 漫画角饰·章节 *(legacy)* | chapter | AI 生成 | Apache-2.0 | 见 `manifests/visual-assets.json` |
+| `cel/quiet` | 漫画角饰·安静 *(legacy)* | quiet | AI 生成 | Apache-2.0 | 见 `manifests/visual-assets.json` |
 
 ---
 
 ## 选纸：从「按角色轮换」到「按内容 + 版式」
 
-3.4.0 起每张背景多了一个 `use` 块（`manifests/backgrounds.json`）：
+每张背景多了一个 `use` 块（`manifests/backgrounds.json`）：
 
 ```json
 "use": {

@@ -50,7 +50,7 @@ Default to half the available logical CPUs, clamped to 2–6 workers. Higher con
 
 To pick a worker count, run a short `preview` window two or three times with different `REMOTION_CONCURRENCY` values and compare the `Done in Ns` line (a 30-second window is enough — the opening is representative for throughput). Export `REMOTION_CONCURRENCY` with the fastest setting to reuse it. Do this once per machine or after a major environment change; benchmark a representative dense range manually if the opening is unusually simple.
 
-## 5.5 Where the time goes (3.8.0)
+## 5.5 Where the time goes
 
 Every `render` appends one line to `<project>/renders/render-log.jsonl`: stage milliseconds, frames, concurrency, scale, whether the page-curl path ran and how many segments it rendered, whether `--resume` was used, and the state of the run (`ok` / `cancelled` / `stalled` / `process-error`). Failures are logged too — the `stage` field is the breakpoint.
 

@@ -101,7 +101,7 @@
 - 没写部位级 `fit` 时用 `src/linework/crops.ts` 里的缺省框（`python scripts/linework_index.py --write-crops` 生成，
   按真实包围盒留 12% 边，短边不小于 16）。改了 `library.ts` 就要重跑一次，`validate-skill` 会检查两者是否同步。
 
-## 8. 笔法（仿 a2e 的线稿技巧，3.5.0 修正）
+## 8. 笔法（仿 a2e 的线稿技巧）
 
 前一版线稿看起来像剪贴画，根因不是形状不够多，而是**线只有一档、标注压在物体上、每个部位都同样用力**。
 现在的口径：

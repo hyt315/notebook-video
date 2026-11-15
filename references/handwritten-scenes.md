@@ -1,6 +1,6 @@
 # 手写场景路线（完整作者手册）
 
-> 3.2.0 起，**默认路线是 story.json + `make-video.mjs`**（见 SKILL.md）。本页保留给要手写 `scenes.tsx` 的工程：
+> **默认路线是 story.json + `make-video.mjs`**（见 SKILL.md）。本页保留给要手写 `scenes.tsx` 的工程：
 > 引擎、门禁、主题都通用；只是排版、关键词同步、相机路径要自己写。
 
 
@@ -56,7 +56,7 @@ Read only what the current production needs. **写任何场景之前，先读前
 
 ## 开工前 20 行授权契约
 
-> **只记这 20 行；它与后面任何参考冲突时，以这段为准。** 每一条都对应一个真实事故。
+> **只记这 20 行；它与后面任何参考冲突时，以这段为准。** 每一条都对应一类真实问题。
 >
 > 1. 先跑 `new-project` 复制模板，绝不从记忆重建引擎。
 > 2. 分镜表只写语义：`cues` 里**绝不写帧号**，帧号由 `resolve-shots.py` 推。
@@ -67,12 +67,12 @@ Read only what the current production needs. **写任何场景之前，先读前
 > 7. 每镜必须有 `camera.intent`（7 选 1）与 `anchor`；含文字的镜头放大 `s ≤ 1.35`。
 > 8. 声明了运镜就**必须真的动**：`max(s) − min(s) ≥ 0.02` 或 `|Δx| + |Δy| ≥ 20`（把 `still` 改名成 `push-in` 不算运镜）。
 > 9. 元素出现帧绑到"讲到它的那一句"（`SHOTS.Sx.beats`），**禁止镜头开头一次铺完**。
-> 10. 出现统一用模板的 `enterAt()`（3.5.1：左→右展开 22 帧，不淡入、不上浮）。同一句里的多个元素，相邻两个开始出现**至少隔 12 帧**，同一时刻最多 2 个在长；见 [reveal-rules.md](reveal-rules.md)。
-> 11. 帧参数名：`fxkit` 全部传 `frame={f}`；`media / kit / stagekit / skeletons / insert / shotkit` 传 `f={f}`。**传错不报错，只会整体错位**——这是本技能最高频的真实事故（`validate-frame-props.py` 会抓）。
+> 10. 出现统一用模板的 `enterAt()`（左→右展开 22 帧，不淡入、不上浮）。同一句里的多个元素，相邻两个开始出现**至少隔 12 帧**，同一时刻最多 2 个在长；见 [reveal-rules.md](reveal-rules.md)。
+> 11. 帧参数名：`fxkit` 全部传 `frame={f}`；`media / kit / stagekit / skeletons / insert / shotkit` 传 `f={f}`。**传错不报错，只会整体错位**——这是最常见的错误（`validate-frame-props.py` 会抓）。
 > 12. 卡片高度必须用 `fitH()` 算，禁止手写"看着差不多"的固定高度（渲染期 `CardFitGate` 会拦下真裁切）。
 > 13. 给槽内组件传宽度前先算 `mainW = w − pad×2 − railW − 18`。
 > 14. 绝对定位构件的 `x/y` 相对**最近的定位祖先**，与文档流标题共用容器原点会精确重叠；**flex 子项若只含绝对定位子元素，必须显式给宽高**，否则宽度塌成 0、多张卡会叠在同一点。
-> 15. 不铺整幅底托（3.2.0 删除：它把背景四角的吉祥物洗成幽灵）；局部 `tone='wash'` 底托必须 `z={-1}` 且径向羽化，正 z 会把整镜内容压成半透明。
+> 15. 不铺整幅底托（它会把背景四角的吉祥物洗成幽灵）；局部 `tone='wash'` 底托必须 `z={-1}` 且径向羽化，正 z 会把整镜内容压成半透明。
 > 16. 下 1/4 必须填满（底边接近 y=876）；面板下半空洞就是 PPT。**判据在渲染期 `FillGate`**（实测信息元素的最低边，不是读 `shots.json` 里那个声明字段——见 `references/composition-gate.md` 的 P0-4 降级说明）。
 > 17. 页眉 / 章节卡 / 字幕放在 `ShotCamera` **之外**。
 > 18. 写场景文件后按顺序跑 `resolve-shots.py` → 构建期门禁，**P0 必须 = 0** 才允许渲染。
@@ -92,8 +92,8 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./notebook-video-proje
 node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-project
 ```
 
-- `assets/lecture-template` is the only project template (the 3.1.x `--classic` warm-ivory example was
-  removed in 3.2.0; the flag now fails with a pointer to `--style`).
+- `assets/lecture-template` is the only project template (the old `--classic` warm-ivory example is gone;
+  the flag now fails with a pointer to `--style`).
 - Five skins, chosen once at kickoff: `flat` (default) and `cel` are the component themes;
   `journal` / `papercut` / `archive` are the hand-made skins driven by the director layer.
   Themes swap palette, card skin, background decoration and subtitle chrome only — every
@@ -105,7 +105,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-p
   both halves (inks must pass, and any palette key used as `color:` is measured), and `headerAccent` /
   `headerSub` count as text positions too. Details: [references/theme-system.md](theme-system.md).
 - One locked canvas at native 30 fps: 2560×1440 (16:9), authored in the 1920×1080 design space.
-  4:3 / 3:4 canvases and the `paper` / `sticker` skins were removed in 3.2.0; projects made with
+  4:3 / 3:4 canvases and the `paper` / `sticker` skins were removed; projects made with
   them are not supported.
 - Create the project in an empty directory so stale files from an earlier run cannot survive.
 

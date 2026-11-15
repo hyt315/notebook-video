@@ -75,7 +75,7 @@ import {Easing, interpolate} from 'remotion';
 const C = THEME.palette;
 const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
 const IN = 22;
-/** 出现（3.5.1 草稿纸）：左→右展开 22 帧，线性；不淡入、不上浮、不缩放。所有元素统一用它。见 references/reveal-rules.md */
+/** 出现（草稿纸）：左→右展开 22 帧，线性；不淡入、不上浮、不缩放。所有元素统一用它。见 references/reveal-rules.md */
 const enterAt = (f: number, at: number): React.CSSProperties => {
   const p = interpolate(f, [at, at + IN], [0, 1], {...clamp, easing: Easing.linear});
   if (p <= 0) return {opacity: 0};
@@ -133,7 +133,7 @@ mainH = h − pad×2 − headH − stampH − (stamp ? 14 : 0) − (header ? 14 
 1. **元素出现帧绑到节拍**：`enterAt(f, at(i))`，不要用 `popS(f, 0)` 或镜头开头的固定帧。
 2. **容器里不要混用**"文档流内的标题"和"绝对定位组件"——两者都从容器原点起，会精确重叠。
    给绝对定位组件显式 `y`，或把标题也绝对定位。
-3. **不铺整幅底托**（3.2.0，见 [media-routing.md](media-routing.md) §4.2）：背景中央本就是安全区；
+3. **不铺整幅底托**（见 [media-routing.md](media-routing.md) §4.2）：背景中央本就是安全区；
    局部底托若用 `tone='wash'`，必须 `z={-1}`、`boxShadow:'none'`、径向渐变。正 z 会把整镜内容压成半透明。
 
 ---
@@ -142,7 +142,7 @@ mainH = h − pad×2 − headH − stampH − (stamp ? 14 : 0) − (header ? 14 
 
 | # | 症状 | 真因 | 修法 |
 |---|---|---|---|
-| 1 | 动画整体错位、`Frame NaN` | 给 **fxkit** 组件传了 `f`（它的参数叫 `frame`），`f` 被静默忽略 → 回落到全局帧 | fxkit 传 `frame={f}`；v2.10 新模块传 `f={f}`；跑 `validate-frame-props.py` |
+| 1 | 动画整体错位、`Frame NaN` | 给 **fxkit** 组件传了 `f`（它的参数叫 `frame`），`f` 被静默忽略 → 回落到全局帧 | fxkit 传 `frame={f}`；其它模块传 `f={f}`；跑 `validate-frame-props.py` |
 | 2 | 镜头一动，边缘内容被裁掉 | 平移会整层移动内容，`s=1.0` 时必然露边 | 平移量须由缩放覆盖：`maxPanX=960(1−1/s)`；`pan-follow` 自带 `from≥1.06` |
 | 3 | 一屏字叠成一团 | 文档流标题 + 绝对定位组件都从容器原点起 | 给组件显式 `y`，或把标题绝对定位 |
 | 4 | 整镜内容发灰/半透明 | 底托用了**正 z-index**，压住所有 `z-index:auto` 的场景元素 | 底托 `z={-1}` |

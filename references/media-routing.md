@@ -1,6 +1,6 @@
 # 内容 → 视觉介质 路由
 
-> 状态：**v2.10 生效**。落地件：`assets/lecture-template/src/media.tsx`、`fxkit.tsx`、`kit.tsx`。
+> 状态：**生效**。落地件：`assets/lecture-template/src/media.tsx`、`fxkit.tsx`、`kit.tsx`。
 > 门禁：`scripts/validate-composition.py`（介质多样性 ≥3 种）。
 
 ## 目录
@@ -16,7 +16,7 @@
 
 ## 1. 要解决的问题
 
-v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为全是同一种介质：卡片 + 文字**。
+早期版本的四个场景之所以像 PPT，**不是因为没用图片，而是因为全是同一种介质：卡片 + 文字**。
 
 反过来，真正让视频不像 PPT 的，是**同一支片子里出现了不同的视觉介质**。
 这一层解决的就是"这段内容该用什么形式表达"。
@@ -27,7 +27,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 ## 2. 路由表
 
 > **每行只给一个「首选」**，其余标注了「何时才用」。一行里并列三个平级选项，等于没给建议——
-> 上一版的实测教训：路由表里有名字的组件照样一件不用（23 件从未出现在任何画面里，其中 **21 件早已登记在本表**）。
+> 实测教训：路由表里有名字的组件照样一件不用（23 件从未出现在任何画面里，其中 **21 件早已登记在本表**）。
 > **加组件 = 换掉一件**；总数上限见 [dependency-policy.md](dependency-policy.md) §8。
 > 本表管"这段内容该配哪个件"；**"一共有些什么件、每件的用途/边界/接触表页/真实使用记录"只看 [§5.1 组件权威索引](#51-组件权威索引53-件--选型只查这一处)**。
 
@@ -58,7 +58,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 | 收尾引导 | 二维码 | **`QrCode`（`components/`，qrcode）**。纯计算不联网 |
 | 收束 / 漏斗 | 漏斗 / 进度 | `Funnel` `ProgressRing`（fxkit） |
 | 场景衔接 | 运镜 + 转场 | **`SceneTransitions`（components，**全部 20 种官方转场已登记**，不必再手写）**、`shotkit` + `insert`（3 式手写转场）。转场名 = 官方包名去掉连字符：`fade` `slide` `wipe` `flip` `clockWipe` `iris` `dissolve` `ripple` `zoomBlur` `filmBurn` `bookFlip` `swap` `crosswarp` `crossZoom` `zoomInOut` `dreamyZoom` `blurSlide` `linearBlur` `pushCut` `none`（= `PRESENTATIONS` 的键）。**11 种是 WebGL 着色器式**（blurSlide / crossZoom / crosswarp / dissolve / dreamyZoom / filmBurn / linearBlur / ripple / swap / zoomBlur / zoomInOut；`pathfx.tsx` 的 `PRESENTATIONS` 里就是这么分组的），**`bookFlip` 属几何式**（纯 CSS/SVG，与 fade/slide/wipe/clockWipe/iris/flip/pushCut/none 一组）。本机无头渲染**实测全部可用**（`diag-upgrade` 页⑥ 逐格截在转场中点，25%/50%/75% 三帧各不同）；`flip` 在 50% 处正好侧对镜头（那一格看着是空的属正常），要看效果就截 25% / 75%。`none` 是硬切。**`@remotion/transitions` 里 `Math.random` 0 处**，全部帧驱动 |
-| 快速运镜 / 冲刺 | 速度感 | **本技能不提供运动模糊件**（v3.1.1 已删 `@remotion/motion-blur` 依赖及其两个再导出：全仓库零引用，"速度峰值"也从来不在七种合法运镜意图里）。快甩靠**帧内位移 + 速度线**表达，不要手绘模糊去凑 |
+| 快速运镜 / 冲刺 | 速度感 | **本技能不提供运动模糊件**（已删 `@remotion/motion-blur` 依赖及其两个再导出：全仓库零引用，"速度峰值"也从来不在七种合法运镜意图里）。快甩靠**帧内位移 + 速度线**表达，不要手绘模糊去凑 |
 | 让画面"活一点" | 有机抖动 | **`NoiseJitter`（components，noise2D 同种子同结果）** |
 | 文字排版 | 反推字号 | **`FitTextBox` / `fitChineseTextOnNLines`（components/fittext）** ← 治卡片文字被裁的正解。图元标签（treemap 格子 / 气泡 / 扇区）用 **`fitNodeLabel`**：宽度与高度**都要**过，反推字号低于 13px 就**降级不画字**并进图例 |
 | 逐条揭示 | 遮罩擦除 | **`ClipReveal`（components，clip-path 按帧推进；旧件 `RevealMask` 在 `insert.tsx`）** |
@@ -79,7 +79,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 
 **A↔B 的关系**：B 结束时必须回到 A 的同一状态，观众不丢上下文。
 
-**注意**：v2.9 的 `recipes/EvidenceBridge.tsx` 就是这个思路的图片版实现，可回收使用。
+**注意**：早期的 `recipes/EvidenceBridge.tsx` 就是这个思路的图片版实现，可回收使用。
 
 ## 4. 背景契约（**必读**）
 
@@ -90,7 +90,7 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 
 但**内容压到装饰上时，文字会被吃掉**。所以契约是：
 
-> **内容压在装饰区之上时，必须坐在 `CoverPanel` 上**（v3.0.1 起 `BackgroundMute` 已删除）。
+> **内容压在装饰区之上时，必须坐在 `CoverPanel` 上**（`BackgroundMute` 已删除）。
 
 ### 4.2 机制
 
@@ -104,20 +104,20 @@ v2.8 的四个场景之所以像 PPT，**不是因为没用图片，而是因为
 </CoverPanel>
 ```
 
-**3.2.0 起没有成片级整幅底托。** 三张背景变体（main / chapter / quiet）的中央约 70% 都是安静的安全区，
+**没有成片级整幅底托。** 三张背景变体（main / chapter / quiet）的中央约 70% 都是安静的安全区，
 装饰只在四边与四角；整幅半透明 wash 会把四角的吉祥物和装饰洗成"幽灵"，所以模板的 `Shot` 外壳已经删掉它。
 内容真压到装饰区时，只给**那一块**垫 `tone='paper'` 的底托。
 
-**z 序铁律（实测踩过，务必照做）**：底托（`CoverPanel`）必须落在**背景之上、内容之下**（`z={-1}`）。
+**z 序铁律（务必照做）**：底托（`CoverPanel`）必须落在**背景之上、内容之下**（`z={-1}`）。
 
 - 若确实要用 `tone='wash'` 垫一块局部底色，必须用**负 z**（`z={-1}`）。
   ⚠️ **不要用正 z**：CSS 里正 `z-index` 稳定压过所有 `z-index: auto` 的元素，
   而场景里的构件绝大多数就是 auto —— 实测把 wash 设到 `z=5` 时，整镜内容被压成 15% 不透明，
   全片看起来"大片空白"，排查了很久才发现。
 - 局部卡片 `tone='paper'` 用默认 `z={42}`（它是内容的**父节点**，所以不冲突）。
-- wash **不能是硬边矩形**（见下节），要去掉描边环并羽化四边；而且不要铺满整幅（3.2.0 规则）。
+- wash **不能是硬边矩形**（见下节），要去掉描边环并羽化四边；而且不要铺满整幅。
 
-### 4.2.1 底托必须羽化，不能是硬边矩形（历史记录：3.1.x 的整幅 wash，3.2.0 已删除）
+### 4.2.1 底托必须羽化，不能是硬边矩形
 
 wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的接缝（实测：在 38 秒处
 底托下沿横切过爆炸贴，形成一条明显的水平分界线）。用径向渐变让四边柔化进背景装饰：
@@ -165,24 +165,24 @@ wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的�
 | 模块 | 内容 | 约定 |
 |---|---|---|
 | `src/kit.tsx` | `PillTag` `LineIcon`(26 字形) `CheckBadge` `TYPE` | 主题无关原子，工程侧同样可引用 |
-| **`src/components/`** | **新封装层（唯一入口 `./components`，27 件 = 本层实现 27，v3.1.1 起无库再导出）：`Accordion` `Tabs` `ControlStack` `OverlayFrame` `NetworkGraph` `HighlightCode` `MathBlock` `TopicIcon` `IconWall` `Chart` `StatRow` `TreeView` `GeoView` `SankeyChart` `QrCode` `SketchFx` `FocusFx` `GlowFrame` `ShimmerText` `ClipReveal` `NoiseJitter` `VerdictBar` `PathDraw` `MorphShape` `ShapeDraw` `SceneTransitions` `FitTextBox`**（+ `SHAPES` / `PRESENTATIONS` / `fitChineseTextOnNLines` 等工具；件数口径见 [fxkit.md](fxkit.md)） | **帧参数名统一是 `f`**；颜色只读 `THEME`；见 [dependency-policy.md](dependency-policy.md) §7 |
+| **`src/components/`** | **新封装层（唯一入口 `./components`，27 件 = 本层实现 27，无库再导出）：`Accordion` `Tabs` `ControlStack` `OverlayFrame` `NetworkGraph` `HighlightCode` `MathBlock` `TopicIcon` `IconWall` `Chart` `StatRow` `TreeView` `GeoView` `SankeyChart` `QrCode` `SketchFx` `FocusFx` `GlowFrame` `ShimmerText` `ClipReveal` `NoiseJitter` `VerdictBar` `PathDraw` `MorphShape` `ShapeDraw` `SceneTransitions` `FitTextBox`**（+ `SHAPES` / `PRESENTATIONS` / `fitChineseTextOnNLines` 等工具；件数口径见 [fxkit.md](fxkit.md)） | **帧参数名统一是 `f`**；颜色只读 `THEME`；见 [dependency-policy.md](dependency-policy.md) §7 |
 | `src/fxkit.tsx` | 9 件（`FitCard` `Typewriter` `StampSeal` `Funnel` `ChatThread` `ProgressRing` `StaggerList` `DiffView` `SkeletonCard`） | **帧参数名是 `frame`** |
 | `src/media.tsx` | `ConsoleWindow` `MetricGrid` `StampBanner` | **帧参数名是 `f`** |
-| `src/stagekit.tsx` | `StageFrame` `PhaseRail` `useStageMachine`（Attach 已于 v3.1 删除） | `f` |
+| `src/stagekit.tsx` | `StageFrame` `PhaseRail` `useStageMachine`（Attach 已删除） | `f` |
 | `src/skeletons.tsx` | `Corridor` `SplitStage` `ZoomStage` | `f` |
 | `src/insert.tsx` | `RevealMask` `useHandoff` `TRANSITIONS` | `f` |
 | `src/shotkit.tsx` | `ShotCamera` `CoverPanel` `safeCheck` | `f` |
-| `src/index.tsx` | 引擎层，**对场景不导出任何组件**（3.2.0 起只有 16:9 一个 Composition `NotebookVideoFilm`，`Film4x3` / `Film3x4` 已删除）：`Paper` / `Subtitle` / `Chrome` 是**模块私有 `const`**（未 `export`，场景文件 import 不到，只能用引擎自己的画面）；曾经那 6 件"反 PPT 交互件"定义在本文件内部、零 export 且零渲染，**已于 v3.1 删除**（见 [quality-checklist.md](quality-checklist.md) 的历史注） | 引擎层 |
+| `src/index.tsx` | 引擎层，**对场景不导出任何组件**（只有 16:9 一个 Composition `NotebookVideoFilm`，`Film4x3` / `Film3x4` 已删除）：`Paper` / `Subtitle` / `Chrome` 是**模块私有 `const`**（未 `export`，场景文件 import 不到，只能用引擎自己的画面）；曾经那 6 件"反 PPT 交互件"定义在本文件内部、零 export 且零渲染，**已删除**（见 [quality-checklist.md](quality-checklist.md) 的历史注） | 引擎层 |
 | `src/toolkit.tsx` | 修辞工具件：`Callout` `Checklist` `JumpInText` | 工具层 |
 
-> **⚠️ 布局陷阱（实测踩过）**：同一容器里**不要混用"文档流内的标题"和"绝对定位组件"**。
+> **⚠️ 布局陷阱**：同一容器里**不要混用"文档流内的标题"和"绝对定位组件"**。
 > 绝对定位组件的 `x/y` 是相对容器原点的，而文档流内的标题也占着容器顶部——
 > 两者会**精确重叠**（实测：走廊场景的"整个过程对你是透明的"和列表第一行叠成了一团乱字）。
 > 修法二选一：给绝对定位组件显式 `y`（让它排在标题下方），或把标题也改成绝对定位。
 
-> **⚠️ 帧参数名不一致是一个真实陷阱**：`fxkit` 用 `frame`，v2.10 新增模块用 `f`。
+> **⚠️ 帧参数名不一致是一个真实陷阱**：`fxkit` 用 `frame`，其它模块用 `f`。
 > 给 fxkit 组件传 `f={f}` 会被静默忽略，组件回落到 `useCurrentFrame()`（全局帧），
-> 于是动画时间轴整体错位（实测踩过：`Frame NaN` 与"动画早播/晚播"）。
+> 于是动画时间轴整体错位（症状：`Frame NaN` 与"动画早播/晚播"）。
 > **给 fxkit 传 `frame={f}`，给新模块传 `f={f}`。** 拿不准就查上表。
 
 ## 5.1 组件权威索引（53 件 · 选型只查这一处）
@@ -191,7 +191,7 @@ wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的�
 > `showcase.tsx` 只保留接触表的版面与版本串（`SHOWCASE_VERSION` —— 它**不在任何画面上渲染**，只是给人读的），源码注释只解释实现——**件数、用途、何时用/别用、接触表页号、
 > 使用记录一律以本表为准**。要改组件先改这里，别在别处另起一份清单（本仓库吃过"文档抄文档、数字一路漂"的亏）。
 
-**口径**（逐件点算，可复现）：各模块**对外 `export` 的 React 组件** = `src/components/` 27 件（本层实现 27；v3.1.1 删掉 PieDraw 与两个库再导出后，这一层已无再导出）
+**口径**（逐件点算，可复现）：各模块**对外 `export` 的 React 组件** = `src/components/` 27 件（本层实现 27；删掉 PieDraw 与两个库再导出后，这一层已无再导出）
 + 其余 8 个模块 26 件（`kit` 3 / `fxkit` 9 / `media` 3 / `stagekit` 2 / `skeletons` 3 / `insert` 1 / `shotkit` 2 / `toolkit` 3）。
 **不算件的**：渲染期门禁（`SlotGuard` 与四道 `*Gate`）、主题包件（`Paper` / `Background` / `Grade` / `SubtitleChrome`，
 以及 cel 皮肤导出的 `Burst`）、各模块的大写常量与 type-only 导出。
@@ -292,7 +292,7 @@ wash **不能用纯色矩形**——硬边会在下沿留一条肉眼可见的�
 **另一个口径别混用**：旧模块**对外 export** 是 26 件（`components/index.ts` 的「53 件地板」注释），
 差 8 件是因为接触表没有把它们逐件渲染 —— `showcase.tsx` 的 `SHOWCASE_VERSION` 串与本节都按"实际渲染"这一个口径）
 + 第 ⑤ 页 6 种运镜意图 + 第 ⑥ 页四种骨架（`StageFrame` 只在标题里点名、未渲染）
-+ 新封装层 10 页（第 ⑨–⑱ 页，25 件：⑨–⑰ 的 24 件 + ⑱ 的 `FocusFx` 整页专属）+ v3.1 新能力 3 页（图表变体 / 层级与关系 / 弹层与形状）全部渲染一遍。
++ 新封装层 10 页（第 ⑨–⑱ 页，25 件：⑨–⑰ 的 24 件 + ⑱ 的 `FocusFx` 整页专属）+ 新能力 3 页（图表变体 / 层级与关系 / 弹层与形状）全部渲染一遍。
 **接触表没覆盖的 10 件**逐件列在 §5.1 的「两处缺口」里（哪些不该进接触表、哪些该进没进，那里都写了）。
 
 ```text
@@ -301,7 +301,7 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet   # 只要接触表
 ```
 
 > 交付规格说明：composition 原生画布是 1920×1080，那支 mp4 是**交付物**（组件接触表成片），
-> 所以渲染时按 4/3 放大到 2560×1440、补一条静音 AAC 音轨、回写色彩四项（v3.1.1 之前这条命令按默认参数跑，
+> 所以渲染时按 4/3 放大到 2560×1440、补一条静音 AAC 音轨、回写色彩四项（这条命令曾按默认参数跑，
 > 出的是 1920×1080 / 无音轨 / 无色彩标记的调试版，会把交付文件静默换成调试版）。
 
 **为什么需要它**：读 props 文档很难想象构件长什么样；让执行 AI **看图选型**，
@@ -324,7 +324,7 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet   # 只要接触表
   `-vf "select='eq(mod(n,30),6)+eq(mod(n,30),21)',scale=640:-1,tile=6x6"` →
   每页取**第 6 与第 21 帧**两张中段图（36 帧 = 18 页正好铺满 6×6）。第 ⑪ 页的第 21 帧实测
   正好是第 3 个转场的 50% 处——wipe 的中态在接触表 JPG 里直接看得见；顺带每页都多了一张中段图，
-  其它"页中段才有动作"的格也受益。（踩过的坑：先用 `-ss 0.2 + fps=2` 做偏移抽样，实测落点
+  其它"页中段才有动作"的格也受益。（注意：先用 `-ss 0.2 + fps=2` 做偏移抽样，实测落点
   偏到第 12/27 帧——seek 与 fps 取整叠加不可靠，才换成按帧号 select，**别再改回去**。）
 
 核验口径：想看 `flip` 这类"50% 处侧对镜头"的转场，仍按 §5.1 `SceneTransitions` 行的提示截 25% / 75%；
@@ -341,7 +341,7 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet   # 只要接触表
 
 ---
 
-## 修辞动作 → 组件（v3.0.1）
+## 修辞动作 → 组件
 
 上面那张表路由的是**内容类型**（数据 / 流程 / 对比…）。这一张路由的是**你此刻要做的修辞动作**——
 "我要强调这一点""我要念一句口号""我要表现两者的关系"。写场景前先在这里查一遍：

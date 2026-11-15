@@ -45,11 +45,11 @@
 - Inserted modules finish fully behind the front lip with no residual fragment.
 - Temporary components exit completely; no half corner remains.
 - Dynamic shadow changes only when paper lifts.
-- In the official engine (3.3.0), paper uses its locked lift-linked contact/environment shadow recipe; no component invents a conflicting shadow.
-- In the official engine (3.3.0), display, title, body, label and micro copy use its locked type scale.
-- In the official engine (3.3.0), system glyphs and emoji are not used as production icons; use its locked line-icon language.
-- In the official engine (3.3.0), the whole-film grade is static and restrained; no animated grain or moving light texture.
-- In the official engine (3.3.0), ordinary production edits stay inside `COPY`, narration, semantic captions, visual plan, registered image assets, timing and topic-specific scene objects.
+- In the official engine, paper uses its locked lift-linked contact/environment shadow recipe; no component invents a conflicting shadow.
+- In the official engine, display, title, body, label and micro copy use its locked type scale.
+- In the official engine, system glyphs and emoji are not used as production icons; use its locked line-icon language.
+- In the official engine, the whole-film grade is static and restrained; no animated grain or moving light texture.
+- In the official engine, ordinary production edits stay inside `COPY`, narration, semantic captions, visual plan, registered image assets, timing and topic-specific scene objects.
 - Data dashes move only during a real transfer and in the correct direction.
 - Text-bearing paper has visible padding on all sides.
 - Exact Chinese text and real brand assets are preserved.
@@ -67,7 +67,7 @@
 - Main-slot fill gate (render path): **no `SlotGuard` warnings** — the main slot of `StageFrame` hands over the whole remaining height (`h − pad×2 − header − stamp`), so the content must fill it (target ≥60%; the guard reports the occupancy every rendered frame and speaks up below 35%). A one-line content in a full-height slot is the measured failure mode (11%). Width is still yours to budget: `mainW = w − pad×2 − railW − 18`.
 - Motion: progress-like bars animate `scaleX` (never `width`); numeric readouts use `tabular-nums` with fixed fraction digits; every element's multi-property entrance uses different clocks (see motion-design.md).
 - Anti-PPT Functional Components: 技术概念（检索 / 记忆 / 上下文 / 契约 / 嵌入 / 安全）**不要**用一整排等大的要点卡去讲，要用**真的随旁白变化**的构件。可选件从真实存在的里面挑：`ConsoleWindow`（`media.tsx`）、`MetricGrid`（`media.tsx`）、`Funnel` / `ProgressRing` / `ChatThread`（`fxkit.tsx`）、`Chart` / `TreeView` / `NetworkGraph` / `ControlStack`（`src/components/`）。
-  > 历史注：本条曾经点名 BrainwaveEEG / VectorRadarSonar / BM25TokenRibbon / HookMountBay / RedactionScanner / ChipContract 六件并要求 MUST use —— 那六件定义在 `index.tsx` 内部、**零 export、且没有任何一处 JSX 渲染过**，按本技能自己的「零引用」判据正是待删除项，已于 v3.1 删除。**不要再把不可达的名字写成硬要求。**
+  > 历史注：本条曾经点名 BrainwaveEEG / VectorRadarSonar / BM25TokenRibbon / HookMountBay / RedactionScanner / ChipContract 六件并要求 MUST use —— 那六件定义在 `index.tsx` 内部、**零 export、且没有任何一处 JSX 渲染过**，按本技能自己的「零引用」判据正是待删除项，已删除。**不要再把不可达的名字写成硬要求。**
 
 ## Subtitle
 
@@ -112,7 +112,7 @@ Do not update the skill from a design proposal. Update only after the user appro
 Unless the user asks for less, deliver:
 
 1. narration and time-coded storyboard (derived from the shot table);
-2. a visual plan — for v2.9 this is the shot table itself: skeleton, media, live components, camera intent, anchor, zones, bottom-fill, transition, entry, beats;
+2. a visual plan — this is the shot table itself: skeleton, media, live components, camera intent, anchor, zones, bottom-fill, transition, entry, beats;
 3. semantic part manifest with layer and exit contracts;
 4. `visual-assets.json` with source, prompt summary, crop policy and rights for every raster;
 5. Chinese narration plus word timing JSON;

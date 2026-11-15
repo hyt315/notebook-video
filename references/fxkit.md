@@ -1,6 +1,6 @@
 # fxkit：固定动效组件库（反 PPT 专用）
 
-`assets/lecture-template/src/fxkit.tsx`，v3.1 共 9 件，只做 transform/opacity 位移
+`assets/lecture-template/src/fxkit.tsx`，共 9 件，只做 transform/opacity 位移
 （内部只用 remotion 原生 `spring`/`interpolate`——这是实现选择，不是"不许引库"的意思），
 cel 皮肤锁定（2.5px 墨线 + 硬偏移阴影 + 纯平填充，无渐变无模糊阴影），
 30fps 确定性（无随机数）。依赖边界见 [dependency-policy.md](dependency-policy.md)。用法：
@@ -9,7 +9,7 @@ cel 皮肤锁定（2.5px 墨线 + 硬偏移阴影 + 纯平填充，无渐变无�
 import {FitCard, Typewriter, StampSeal, Funnel, ChatThread, ProgressRing, StaggerList, DiffView, SkeletonCard, fitH} from './fxkit';
 ```
 
-> **⚠️ 帧参数名（实测踩过，必读）**：fxkit 的帧参数叫 **`frame`**，而 v2.10 新增模块
+> **⚠️ 帧参数名（必读）**：fxkit 的帧参数叫 **`frame`**，而模块
 > （`shotkit` / `stagekit` / `media` / `skeletons` / `insert`）的帧参数叫 **`f`**。
 > 给 fxkit 组件传 `f={f}` 会被**静默忽略**，组件回落到 `useCurrentFrame()`（全局帧），
 > 于是动画整体错位，甚至抛 `Frame NaN`。**fxkit 传 `frame={f}`，新模块传 `f={f}`。**
@@ -28,7 +28,7 @@ import {FitCard, Typewriter, StampSeal, Funnel, ChatThread, ProgressRing, Stagge
 | `f={f}` | `components/`（**新封装层全部**）、`media`（`ConsoleWindow` `MetricGrid` `StampBanner`）、`stagekit`（`StageFrame` `PhaseRail`）、`skeletons`（`Corridor` `SplitStage` `ZoomStage`）、`insert`（`RevealMask`）、`shotkit`（`ShotCamera` `CoverPanel`） |
 | 不收帧参数 | `kit` 的 `PillTag/LineIcon/CheckBadge`、`CoverPanel`、`PhaseRail`（从 `ctx` 取）、`ShotCamera`（内部自取） |
 
-> **写列表错峰（v2.11 校准）**：`StaggerList` 默认 `stagger=6`。实测 18–30 帧的错峰在中文旁白下会读成
+> **写列表错峰**：`StaggerList` 默认 `stagger=6`。实测 18–30 帧的错峰在中文旁白下会读成
 > "一个个淡出来"，观众看不到"成串落下"，还会让后几张卡在旁白已经讲下一句时才出现（用户会报"四项只看到三项"）。
 > **同句内相邻开始至少隔 12 帧**（见 [reveal-rules.md](reveal-rules.md)）；真正需要长间隔的是叙事节拍，那应该由 `beats` 决定，不是由 `stagger` 决定。
 
@@ -79,7 +79,7 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet
 > [media-routing.md §5.1 组件权威索引](media-routing.md#51-组件权威索引53-件--选型只查这一处)。
 > 下面只留口径说明与参数要点。
 
-> **「件」的口径**（按 `src/components/index.ts` 的对外 `export` 逐项点算）：**大写 React 组件 27** = 本层实现 27（v3.1.1 起**无库再导出**：CameraMotionBlur / Trail 已随 `@remotion/motion-blur` 一起删除，PieDraw 已删）；大写常量 8（`TOPIC_ICONS` `TOPIC_ICON_TONE` `CHART_BOX` `MIN_LABEL_FONT` `FOCUS_MODES` `SHAPES` `PRESENTATIONS` `COMPONENTS_VERSION`）、小写函数/钩子 18、type-only 导出 22（`GeoMarker` / `GeoProjection` 是 v3.1 加的两个）都**不算件**。下表只列常用项 21 个（未列的 6 个：`MathBlock` `GeoView` `SankeyChart` `QrCode` `SketchFx` `FocusFx`），完整清单以 `index.ts` 为准；`index.ts` 里的 `COMPONENTS_VERSION` 串与本节已同步（`components-3.2.0 · 27 件`）。
+> **「件」的口径**（按 `src/components/index.ts` 的对外 `export` 逐项点算）：**大写 React 组件 27** = 本层实现 27（**无库再导出**：CameraMotionBlur / Trail 已随 `@remotion/motion-blur` 一起删除，PieDraw 已删）；大写常量 8（`TOPIC_ICONS` `TOPIC_ICON_TONE` `CHART_BOX` `MIN_LABEL_FONT` `FOCUS_MODES` `SHAPES` `PRESENTATIONS` `COMPONENTS_VERSION`）、小写函数/钩子 18、type-only 导出 22（`GeoMarker` / `GeoProjection` 是后加的两个）都**不算件**。下表只列常用项 21 个（未列的 6 个：`MathBlock` `GeoView` `SankeyChart` `QrCode` `SketchFx` `FocusFx`），完整清单以 `index.ts` 为准；`index.ts` 里的 `COMPONENTS_VERSION` 串与本节已同步（`components-3.2.0 · 27 件`）。
 
 见 [dependency-policy.md](dependency-policy.md)。**场景从这里 import，不要直接 import 原始库。**
 帧参数名统一 `f`；颜色只读 `THEME`；登记在 [media-routing.md](media-routing.md) 两张路由表里。
@@ -88,7 +88,7 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet
 |---|---|---|
 | `Accordion` | 手风琴（纯 div）：展开项随帧累积 | `f,items[{title,body,tone}],startAt,step,width,rowH,bodyRows` |
 | `Tabs` | 标签页（纯 div）：激活项由帧号决定 | `f,tabs[{key,label,title,body,points,verdict,tone}],startAt,step,width,height` |
-| `HighlightCode` | 语法高亮（Shiki，语法色由当前主题调色板生成）+ 行号 + 逐行聚焦（v3.1 起 toolkit 里已无同名件；与历史件同名不同物，导入时以 `src/components/` 的 `HighlightCode` 为准） | `f,code,language,startAt,lineStep,width,height,title` |
+| `HighlightCode` | 语法高亮（Shiki，语法色由当前主题调色板生成）+ 行号 + 逐行聚焦（toolkit 里已无同名件；与历史件同名不同物，导入时以 `src/components/` 的 `HighlightCode` 为准） | `f,code,language,startAt,lineStep,width,height,title` |
 | `TopicIcon` / `IconWall` | 题材性图标（simple-icons 品牌 + lucide-react 线条，笔画重量已对齐 LineIcon） | `name,size,color,strokeWidth` / `f,names,startAt,step,columns,tile` |
 | `Chart` | 图表：刻度与布局由 d3 算，坐标轴/网格/线/面积/柱由 @visx 画，颜色由 THEME 定；7 个 `variant`（line/area/stack/stackExpand/stream/radar/pie） | `f,data,csv,series,labels,variant,startAt,width,height,title,showBars,tone,innerRadius` |
 | `StatRow` | 指标卡一行，数字随帧滚动 | `f,startAt,items,width,height` |
@@ -109,7 +109,7 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet
 
 ## 修辞工具件（`src/toolkit.tsx`，3 件）
 
-这 3 件自成一个模块（v3.0.1 从 `index.tsx` 迁出——此前**没有 `export`，场景文件物理上 import 不到**）。
+这 3 件自成一个模块（从 `index.tsx` 迁出，有 `export`，场景文件可直接 import）。
 **帧参数名与 fxkit 一致：`frame`。**
 选型别按外观挑，走 `media-routing.md` 的**「修辞动作 → 组件」表**：先想"我此刻要做的修辞动作是什么"。
 下表只列**关键 props**（够选型用），不是完整签名——每个组件都另有 `style`，字符类组件另有 `fontFamily` / `fontWeight` / `letterSpacing` 等；要精确签名直接读 `src/toolkit.tsx`。
@@ -131,7 +131,7 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet
 
 1. **高度必须算出来**：所有文字容器高度经 `fitH()` 计算，禁止手写
    "看着差不多" 的固定高度。S3（170px 装 208px 内容）和 S5
-   （400px 装 430px 内容）的出格事故根因都是这一条。
+   （400px 装 430px 内容）的出格问题根因都是这一条。
 2. **坐标看祖先**：`x/y` 永远相对于最近的 positioned 祖先。放在
    `Paper` 卡片内部时是"卡片相对坐标"；只有直接放在场景根 div 下
    才是场景坐标。S4 印章曾因写成场景坐标而飞出屏（渲染不报错）。

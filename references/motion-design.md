@@ -1,6 +1,6 @@
 # Motion design contract
 - **Anti-PPT 的构件从真实存在的里面挑**：`ConsoleWindow`（`media.tsx`）、`MetricGrid`（`media.tsx`）、`Funnel` / `ProgressRing` / `ChatThread`（`fxkit.tsx`）、`Chart` / `TreeView` / `NetworkGraph` / `ControlStack`（`src/components/`）。
-  > 历史注：本节曾列出 6 件专门为 Anti-PPT 设计的插图件（脑波仪 / 雷达声呐 / BM25 标尺 / 挂载坞 / 脱敏扫描 / 芯片契约）——它们定义在 `index.tsx` 内部、**零 export、且从未被任何一处 JSX 渲染过**，按本技能自己的「零引用」判据已于 v3.1 删除。**不要再写它们。**
+  > 历史注：本节曾列出 6 件专门为 Anti-PPT 设计的插图件（脑波仪 / 雷达声呐 / BM25 标尺 / 挂载坞 / 脱敏扫描 / 芯片契约）——它们定义在 `index.tsx` 内部、**零 export、且从未被任何一处 JSX 渲染过**，按本技能自己的「零引用」判据已删除。**不要再写它们。**
 
 ## Contents
 
@@ -36,7 +36,7 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 - Complete exit: move the entire component outside the canvas or remove it after it is fully out; never leave a clipped corner.
 - Character reaction: move separate arms, face or body parts; do not wobble one flattened character image.
 
-## Motion polish: multi-clock motion (v3.0.0)
+## Motion polish: multi-clock motion
 
 **根因诊断**：模板里每个组件原本都是「一个元素的、一个属性、一条曲线、动完永久静止」。
 所有看起来丝滑的开源库都在动**同一元素的多个属性、用不同的时钟**，并且画面里永远有
@@ -71,9 +71,9 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 
 ## Shot camera (镜头受限配方与出界证明)
 
-**v2.10 起取代旧的 Camera Micro-Framing Invariant。** 旧铁律把相机锁在 `x ∈ [945,975]`、`s ∈ [1.00,1.018]`
+**取代旧的 Camera Micro-Framing Invariant。** 旧铁律把相机锁在 `x ∈ [945,975]`、`s ∈ [1.00,1.018]`
 （景别变化 1.8%，等同定焦），而且是**全片一条关键帧轨道**，所以每个镜头不可能有自己的取景；
-同时按 v2.8.0 源码复算，`CAM_KEYS_P`（轨道已随 v2.9.0 删除）10 个关键帧 `s` 超旧上限 1.018（16:9 设计空间口径），
+同时按旧源码复算，`CAM_KEYS_P`（轨道已删除）10 个关键帧 `s` 超旧上限 1.018（16:9 设计空间口径），
 真正可见窗出画的是 8 个关键帧、最大 383px，且无人发现。两个极端都来自同一件事：**没有校验**。
 
 现行规则：
@@ -99,7 +99,7 @@ Never stack plain text bullets inside generic rectangular boxes. Every explanati
 ## Locked motion pack
 
 - Spring presets: use `popS(f, start, preset)` with `SPRINGS` — `snappy` for small UI ticks and code lines, `soft` (identical to the legacy `pop`) for cards and lists, `bouncy` for callouts and celebratory beats. Do not hand-tune new damping/stiffness values per scene.
-- Scene transitions: the vocabulary is `cut | handoff | reveal`. `reveal` is implemented by `RevealMask` (`src/insert.tsx`) and is driven by the shot table's `transition` field — **never write the `reveal` prop by hand**, it is generated into `shots.ts` by `resolve-shots.py`. `handoff` requires a `carrier` shared with the next shot. `whip` / `paper-turn` were removed in v3.0.1 (zero uses in two shipped films, and a single-frame whip is unreadable at 30fps). **No scene overlap, ever**: the outgoing scene must reach opacity 0 before the incoming one starts.
+- Scene transitions: the vocabulary is `cut | handoff | reveal`. `reveal` is implemented by `RevealMask` (`src/insert.tsx`) and is driven by the shot table's `transition` field — **never write the `reveal` prop by hand**, it is generated into `shots.ts` by `resolve-shots.py`. `handoff` requires a `carrier` shared with the next shot. `whip` / `paper-turn` were removed (zero uses in two shipped films, and a single-frame whip is unreadable at 30fps). **No scene overlap, ever**: the outgoing scene must reach opacity 0 before the incoming one starts.
 - Camera script: build keyframe tracks in the `camera` field of `manifests/shots.json` (expanded by `resolve-shots.py`) instead of raw keyframe tables; it guarantees first/last frame coverage. The same easing and exponential lag follow-focus apply.
 - Stop-motion accent: `useSteppedFrame(15)` quantizes a component to 15fps so each pose holds two output frames. Reserve it for occasional hand-made charm; never apply it to subtitles, transfers or the camera.
 - Component motion stays inside the locked library: `Checklist` rows slide in with staggered `soft` springs, `HighlightCode` lines enter with `snappy` springs, `PathDraw` animates its dash flow only during transfer.

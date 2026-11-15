@@ -1,6 +1,6 @@
 # 场景骨架与分镜表
 
-> 状态：**v2.10 生效**。落地件：`assets/lecture-template/src/stagekit.tsx`（Stage）、
+> 状态：**生效**。落地件：`assets/lecture-template/src/stagekit.tsx`（Stage）、
 > `skeletons.tsx`（Corridor / Split / Zoom）；门禁：`scripts/validate-composition.py`。
 
 ## 目录
@@ -14,8 +14,8 @@
 
 ## 1. 要解决的问题
 
-v2.8 的四个场景**结构同构**：`SceneContribute` / `SceneShip` / `SceneSkills` 三处近乎逐行相同
-（`Paper` + 涂鸦字 + 标题 + 编号列表 + 底部贴标），另有一整套 `*P` 竖屏复制品共 8 份（竖屏画布已于 3.2.0 删除）。
+早期版本的四个场景**结构同构**：`SceneContribute` / `SceneShip` / `SceneSkills` 三处近乎逐行相同
+（`Paper` + 涂鸦字 + 标题 + 编号列表 + 底部贴标），另有一整套 `*P` 竖屏复制品共 8 份（竖屏画布已删除）。
 **换内容不换结构 = 四个 PPT 页。** 这不是 AI 偷懒，是模板只给了这一种结构。
 
 解法不是加 157 张镜头卡（维护债 >> 收益），而是**四种构图本来就不同的骨架**。
@@ -74,7 +74,7 @@ const phases = [
 
 **`PhaseRail` 要把状态机显式画出来**——观众能看见主体在推进，这是"主线演化"和"卡片轮播"在观感上的分水岭。
 
-**"附着信息"用贴标做**（Attach 已于 v3.1 删除，改用 `PillTag` / `StampBanner` / `Callout`）：原本要新开一张说明卡的，改成挂在主体附近的贴标。
+**"附着信息"用贴标做**（Attach 已删除，改用 `PillTag` / `StampBanner` / `Callout`）：原本要新开一张说明卡的，改成挂在主体附近的贴标。
 只有"主体装不下的、且与主体无物理关系的信息"才允许独立成卡。
 
 ## 3.5 时序铁律：讲到哪，出现到哪
@@ -91,7 +91,7 @@ const at = (i: number, d = 0) => (b[i] ?? 0) + d;
 items.map((x, i) => <项 style={enterAt(f, at(2) + i * 12)} />)  // 同句内相邻至少隔 12 帧
 ```
 
-**出现统一用 `enterAt()`**：3.5.1 起是左→右展开 22 帧（线性），不淡入、不上浮、不缩放。
+**出现统一用 `enterAt()`**：是左→右展开 22 帧（线性），不淡入、不上浮、不缩放。
 不要每个元素各写一套曲线。同一句内相邻元素开始出现至少隔 12 帧，同一时刻最多 2 个在长；
 跨句的元素**必须**跨拍出现。整镜末尾留 18 帧干净淡出。规则全文见 [reveal-rules.md](reveal-rules.md)。
 

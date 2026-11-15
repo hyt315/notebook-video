@@ -23,7 +23,7 @@
 `gates_compose.py` 都是这么来的）。"只用 Python 标准库"说的是**不许引第三方包**——
 把一个 1500 行的文件拆成几个小文件，不违反这条，也不需要授权。
 
-### `assets/vendor/` 是唯一允许分发第三方代码的地方（3.9.0）
+### `assets/vendor/` 是唯一允许分发第三方代码的地方
 
 正常情况下第三方库只进 `node_modules`，仓库里不留副本（见 `NOTICE` 第 8 条）。
 唯一例外是**技能自己要用、但 `npm install` 拿不到**的东西——因为技能不发行 `node_modules`：
@@ -80,14 +80,14 @@
 | `budoux` | **中文按词组断行** | Google 出品；`loadDefaultSimplifiedChineseParser().parse(text)` 返回词组数组。用于**标题**断行（正文中文可任意字断行） |
 | `@cto.af/linebreak` | **UAX #14 断行算法**（避头尾 + "拉丁/数字串内部不断"的正解） | `new Rules({string:true}).breaks(text)` → 每个断点带 `position`。MIT、60 KB、**UAX #14 / Unicode 17**、2026-03 发版、依赖树干净（`@cto.af/unicode-trie-runtime` → `fflate`，都是现代在维护的包）、纯函数无 timer/random。此前 `fittext.tsx` 手写两张字符表做避头尾，实测只是粗糙近似且**错在中英混排**：10 条真实文本里它允许 **36 个非法断点**（`在G\|itHub`、`hyt\|315`、`第三个A\|I技能`、`S\|1：`…），换 UAX #14 后 **36 → 0**（纯中文用例两者完全一致）。⚠️ **选包口径**（用户 2026-09-21 定的原则：依赖要通用、能用新的就不用旧的）：先用的是 foliojs 的 `linebreak@1.1.0`，但它**钉死 `base64-js@0.0.8`（2014 年）**、且 2022 年后没再发版 → 换成 `@cto.af/linebreak`（自述是前者那包的 refresh），实测两包在同一批文本上**断点逐一相同**，换包零行为变化（同名页面重渲逐字节一致）。另外：**不要回头试 `Intl.Segmenter({granularity:"line"})`**——`line` 粒度不在 ECMA-402 规范内，Node 24 直接抛 `RangeError` |
 
-> **3.2.0 移除**（Phase 3「能用成熟开源件就不手写」）：12 个 `@radix-ui/*` 包、`react-syntax-highlighter`（+ `@types/react-syntax-highlighter`）、`react-icons`。
+> **已移除**（Phase 3「能用成熟开源件就不手写」）：12 个 `@radix-ui/*` 包、`react-syntax-highlighter`（+ `@types/react-syntax-highlighter`）、`react-icons`。
 > Radix 那四件（`Accordion` / `Tabs` / `ControlStack` / `OverlayFrame`）渲染期没有交互，Radix 只贡献 ARIA 外壳，
 > 却带来 Portal 落到画布外、floating-ui **异步**定位（实测 8 轮渲染才稳）、Slider 的 ResizeObserver 测量三个确定性风险 → 改成纯 `<div>`，位置与状态全部由帧号算出。
 > 随之显式声明了 `@types/react`（devDependency）：它以前是 Radix 的传递依赖，删掉 Radix 后 `tsc` 会找不到 React 类型。
 
-> **实测**：这张表的 **10 个**依赖已在独立验证工程 `demo-video` 里逐个渲染验证（目录树 / 地球 / 流量图 / CSV / 手绘 / 二维码 / 公式 / 中文词组断行 / 关系网 / UAX #14 断行），全部能在各皮肤下正确读 `THEME`（当时验证时为四套，3.2.0 起保留 flat / cel 两套）。
+> **实测**：这张表的 **10 个**依赖已在独立验证工程 `demo-video` 里逐个渲染验证（目录树 / 地球 / 流量图 / CSV / 手绘 / 二维码 / 公式 / 中文词组断行 / 关系网 / UAX #14 断行），全部能在各皮肤下正确读 `THEME`（当时验证时为四套，保留 flat / cel 两套）。
 > **两个地图数据包（2026-09-22 加）的验证口径不同**：它们不是独立组件，而是 `GeoView` 的实现细节，所以不进 `demo-video`——验证落在**本模板自己的接触表 ⑬ 页**（`node scripts/notebook-video.mjs showcase <proj>`，然后 Read 那张接触表看图上的陆地轮廓与标记点）。
-> **体积**：10 个包 + 传递依赖合计约 **12 MB**（12 MB 是 2026-09-21 对当时表里 8 个包的实测值；后来补进 `d3-force` 与 `@cto.af/linebreak`——自述 60 KB——量级不变。其中 `katex` 4.6 MB 与 `budoux` 3.2 MB 是大头，且几乎全是字体与模型数据）。地图那两个再加 **8.2 MB**（`world-atlas` 整包；实际进 bundle 的只有 `land-110m.json` 的 55 KB）+ **68 KB**（`topojson-client`）。相比之下 Chrome 无头浏览器 270 MB——**这点体积可以忽略**。（3.2.0 的图标两包：`lucide-react` 约 36 MB、`simple-icons` 约 17 MB，都按命名导出 tree-shake，进 bundle 的只有用到的字形；比被换掉的 `react-icons` 85 MB 还小。）
+> **体积**：10 个包 + 传递依赖合计约 **12 MB**（12 MB 是 2026-09-21 对当时表里 8 个包的实测值；后来补进 `d3-force` 与 `@cto.af/linebreak`——自述 60 KB——量级不变。其中 `katex` 4.6 MB 与 `budoux` 3.2 MB 是大头，且几乎全是字体与模型数据）。地图那两个再加 **8.2 MB**（`world-atlas` 整包；实际进 bundle 的只有 `land-110m.json` 的 55 KB）+ **68 KB**（`topojson-client`）。相比之下 Chrome 无头浏览器 270 MB——**这点体积可以忽略**。（图标两包：`lucide-react` 约 36 MB、`simple-icons` 约 17 MB，都按命名导出 tree-shake，进 bundle 的只有用到的字形；比被换掉的 `react-icons` 85 MB 还小。）
 
 > **这两个包给"新建工程"增加步骤吗？——不增加，一步都没有。**
 > `new-project` 复制模板时 `package.json` 里已经带着这两行，`npm install` / `npm ci` 一次到位；数据在**打包期**随 `import` 进 bundle，所以：
@@ -104,11 +104,11 @@
 | `@remotion/shapes` | 参数化几何图形：圆 / 椭圆 / 矩形 / 三角 / 多边形 / 星 / Pie / 心形 / 箭头 / 对话气泡 / 星芒，`make*()` 直接给出 path 字符串 |
 | `@remotion/layout-utils` | `measureText`（实测文字宽高，**准确且严格线性**：已验证 46px 时 44 字 = 2024px）、`fillTextBox`。**治卡片裁切的正解**。⚠️ **不要用 `fitTextOnNLines` 处理中文**，见第 5.1 节 |
 | `@remotion/noise` | `noise2D/3D`：给同一 seed 得到同一结果，可做有机抖动、自然呼吸而不破坏可复现性 |
-| `@remotion/effects`（3.3.0） | 画布特效（WebGL2 / WebGPU）。本模板只用 `pageTurn()` 做手作皮肤的真翻页 / 揭纸转场（`src/fx.tsx`）；它要 WebGPU，缺省 Headless Shell 画不了，所以由渲染器探针决定开不开，详见 [fx-effects.md](fx-effects.md)。`fractalNoise()` 评估过，不进渲染期（同文件 §4） |
+| `@remotion/effects` | 画布特效（WebGL2 / WebGPU）。本模板只用 `pageTurn()` 做手作皮肤的真翻页 / 揭纸转场（`src/fx.tsx`）；它要 WebGPU，缺省 Headless Shell 画不了，所以由渲染器探针决定开不开，详见 [fx-effects.md](fx-effects.md)。`fractalNoise()` 评估过，不进渲染期（同文件 §4） |
 
 > 选型理由：这五个与渲染引擎同厂，**按帧驱动设计**，不存在"库自带时间动画"的冲突，是引入成本最低、
 > 风险最小的一类扩展。加依赖时优先考虑这一族。
-> （曾经还有第六个 `@remotion/motion-blur`——v3.1.1 删了：它的两个再导出件**零引用**，
+> （曾经还有第六个 `@remotion/motion-blur`——已删：它的两个再导出件**零引用**，
 > 而唯一想用它表达的"速度峰值"并不在七种合法运镜意图里，装它等于给自己开一个不该用的后门。）
 
 > **两个名字很像的包，别搞混（也别说错）**：`@remotion/media` 与 `@remotion/media-utils`。
@@ -150,11 +150,11 @@
 | `lucide-react` + `simple-icons` | `LineIcon`（kit）、`TopicIcon` / `IconWall` | ✅ 接触表 ⑩⑫；参考片 S3 S7（`CardHead`） |
 | `diff` | `DiffView` 的 `before` / `after` 模式 + `diffToLines()` | ✅ 接触表 ② |
 | `flubber` | `MorphShape`（默认引擎） | ✅ 接触表 ⑪ |
-| （无依赖，3.2.0 起） | `ControlStack`（六种控件，帧 → 状态的显式表）、`OverlayFrame`（dialog / popover / tooltip / menu，钉在给定坐标）、`Accordion`、`Tabs` | ✅ 接触表 ⑨⑫⑰ |
+| （无依赖） | `ControlStack`（六种控件，帧 → 状态的显式表）、`OverlayFrame`（dialog / popover / tooltip / menu，钉在给定坐标）、`Accordion`、`Tabs` | ✅ 接触表 ⑨⑫⑰ |
 | `@remotion/shapes` / `@remotion/paths` | `SHAPES`（含 callout / arrow / heart）+ `PathDraw showArrow`（`getTangentAtLength` 沿线朝向）；`@remotion/shapes` 的 Pie 不再封装（饼图/份额改走 `Chart variant="pie"` 与 `ProgressRing`） | ✅ 接触表 ⑩⑪⑰ |
 
 **全部封装完成、全部有渲染记录、全部登记进路由表**——「零引用」判据无一触发。
-（v3.1.1 补记：`@remotion/motion-blur` 这一行**已整行删除**——它封装出来的两个名字从未进过任何画面，
+（补记：`@remotion/motion-blur` 这一行**已整行删除**——它封装出来的两个名字从未进过任何画面，
 连接触表都没上，属于本条判据的正面案例；Pie 也不再封装，理由见上一行。）
 
 > **关于 budoux 的诚实结论**：它是**辅助不是保证**。实测它对"反推"「并返回」这类词也会切错
@@ -164,7 +164,7 @@
 > **教训留档**（这条清单本来是"待办"）：技能曾累积 23 件"从未出现在任何画面里"的组件，
 > 起因正是"装了/建了却没人用"。**引入依赖 ≠ 获得能力**——封装成组件 + 登记进路由表 + 真的渲染过，三件都做到才算。
 
-### 4.5 代码高亮：Shiki（3.2.0 起；替换 `react-syntax-highlighter` / PrismLight）
+### 4.5 代码高亮：Shiki（替换 `react-syntax-highlighter` / PrismLight）
 
 `src/components/shiki.ts` 是唯一的高亮入口，`HighlightCode` 只消费它算出的 token：
 
@@ -199,7 +199,7 @@
 
 ### 5.1 已知地雷：库不一定适配中文
 
-引库不是无脑照搬。**上线前必须用中文实测过**，因为有些库是按拉丁文假设写的。已踩过的：
+引库不是无脑照搬。**上线前必须用中文实测过**，因为有些库是按拉丁文假设写的。已知的坑：
 
 | 库 / API | 问题 | 处置 |
 |---|---|---|
@@ -230,7 +230,7 @@
 2. **只读皮肤**：颜色 / 边框 / 圆角 / 阴影只能从 `THEME` 取，不得硬编码。
 3. **帧驱动**：动画是 `f(帧号)` 的纯函数。禁止 CSS transition、`setTimeout`、`Math.random()`。
 4. **高度算出来**：文字容器高度用 `fitH()` 或 `fitTextOnNLines()` 得出，禁止手写"看着差不多"。
-5. **图标限定**（3.2.0 起）：两个包，各管一段，**不许混着用同一个意思**：
+5. **图标限定**：两个包，各管一段，**不许混着用同一个意思**：
    - `lucide-react` ＝ 线条图标。`LineIcon`（kit，26 个 kind）与 `TopicIcon` 的线条字形都来自它，
      同一套 24 视窗描边语法。`LineIcon` 的 `strokeWidth` 仍按旧的 32 视窗口径传（默认 2.2），内部换算为 ×24/32；
      `TopicIcon` 默认 1.65，两者混排笔画重量一致。
@@ -240,8 +240,8 @@
    图标**只用 THEME 给的 color**，不许用自带 fill 或多色。`react-icons` 已移除（Font Awesome 品牌是 CC BY 4.0，需署名）。
 6. **进路由表**：新组件必须同时登记进 [media-routing.md](media-routing.md) 的「内容→介质」与
    「修辞动作→组件」两张表，否则会重演"组件在仓库里吃灰"的老问题。
-7. **弹层不 Portal、不异步定位**（3.2.0 起）：`OverlayFrame` 是父容器里的一个绝对定位 `<div>`，左上角 = 给定的 `(x, y)`
-   （popover / tooltip / menu 再向下留 12px，有引线时 2px）。以前用 Radix 时踩过的两个坑正是去掉它的理由：
+7. **弹层不 Portal、不异步定位**：`OverlayFrame` 是父容器里的一个绝对定位 `<div>`，左上角 = 给定的 `(x, y)`
+   （popover / tooltip / menu 再向下留 12px，有引线时 2px）。用 Radix 时的两个坑正是去掉它的理由：
    Portal 默认挂 `document.body`（画布之外），以及 floating-ui 的 `computePosition` 在微任务里才 resolve（实测 8 轮渲染才稳）。
    **不要再为弹层引入任何会测量或 Portal 的库**；需要锚点相对定位时，自己算坐标。
    **Toast 不要引**：它带 `duration` 计时器，与帧驱动正面冲突。
@@ -252,9 +252,9 @@
 
 **纪律：加一件 = 换掉一件。** 新效果优先做成既有组件的**参数或变体**（`Paper variant="glow"`、
 `FitCard tilt={...}`），**不要为新效果新开组件**——否则"引入社区效果"会把库顶到 30 件以上，重演吃灰。
-（v3.1.1 起 `src/components/` 是 **27 件**：删掉 PieDraw 与 `@remotion/motion-blur` 的那两个再导出。）
+（`src/components/` 是 **27 件**：删掉 PieDraw 与 `@remotion/motion-blur` 的那两个再导出。）
 
-**不要设一个拍脑袋的数字上限。** v3.1 实测过一遍：库的地板由两部分撑住，砍不动——
+**不要设一个拍脑袋的数字上限。** 实测过一遍：库的地板由两部分撑住，砍不动——
 
 | 类别 | 件数 | 为什么砍不动 |
 |---|---|---|
@@ -262,7 +262,7 @@
 | 表意件（修辞动作各一件） | 42 | 逐对核对后，真正"同一修辞动作、两套实现"的只有 4–5 对，且每对都各有一点对方没有的能力 |
 
 - **故本节的合规判据是「零引用」而不是「总数」**：任何组件只要**从未出现在任何画面里**（参考片或接触表），
-  就是待删除项。v3.1 按这条清掉了 23 件。
+  就是待删除项。按这条清掉过 23 件。
 - 想让库"更窄"而不是"更小"：走 [media-routing.md](media-routing.md) 的**单一首选**——每行只给一个建议，
   其余标注「何时才用」。一行并列三个平级选项 = 没给建议。
 

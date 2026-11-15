@@ -12,9 +12,9 @@
 - [Mix and export](#mix-and-export)
 - [Re-voicing without re-timing](#re-voicing-without-re-timing)
 
-## 3.5.1 status
+## Status
 
-Since 3.5.0 the skill ships `scripts/tts.py`: `notebook-video tts <project>` uses **edge-tts** (detected at run time, not bundled; install with `pip install edge-tts`) or `--engine=file` for your own recording. edge-tts calls Microsoft's online speech service, so it needs network access and its output is subject to that service's terms — check them yourself before publishing commercially. `--engine=file` has no word timing: it spreads the audio evenly over the characters (punctuation included), so captions are only approximately aligned. Hand-written projects get their captions rebuilt automatically after `tts` (3.5.1). The provider-neutral contract below still applies if you use another provider.
+The skill ships `scripts/tts.py`: `notebook-video tts <project>` uses **edge-tts** (detected at run time, not bundled; install with `pip install edge-tts`) or `--engine=file` for your own recording. edge-tts calls Microsoft's online speech service, so it needs network access and its output is subject to that service's terms — check them yourself before publishing commercially. `--engine=file` has no word timing: it spreads the audio evenly over the characters (punctuation included), so captions are only approximately aligned. Hand-written projects get their captions rebuilt automatically after `tts` . The provider-neutral contract below still applies if you use another provider.
 
 ## Provider-neutral TTS contract
 
@@ -73,7 +73,7 @@ python ./my-film/scripts/tts-openai-compatible.py ./my-film   # 脚本由 new-pr
 base64 长度/哈希，再对 WAV 做一次自相关基频估计——男声 `白桦`（整段中位 ≈140 Hz）与女声
 `冰糖`（≈258 Hz）差得足够远，参数被忽略时这个差异会立刻消失。
 
-## Stale narration is a content question, not a clock question (3.8.0)
+## Stale narration is a content question, not a clock question
 
 `compose-story` writes `manifests/narration.contract.json`: the SHA-256 of the normalized narration text, a line/text snapshot, and the character count. `tts.py` compares the current `narration.txt` against that hash before synthesising.
 
@@ -146,7 +146,7 @@ narration and re-running `resolve-shots` moves the sounds with the picture.
 `pop` appear · `chart` bars/lines grow · `highlight` key word/number / generic tick · `success` check/verdict ·
 `error` misconception refuted · `chapter` chapter sting · `page` a sheet is turned (every pageturn) ·
 `place` / `stamp` the hand-made equivalents of pop / success. Optional `bed.ogg` music bed (quiet pad loop).
-Nine events total (3.8.0 slimmed 16 → 9); anything else is not a valid `sfx` event name.
+Nine events total (slimmed from 16); anything else is not a valid `sfx` event name.
 
 Do not place effects on invisible actions or every small movement; the planner already drops cues closer than 6 frames.
 

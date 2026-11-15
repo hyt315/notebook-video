@@ -1,6 +1,6 @@
 # Theme system: shared contract
 
-Status: LOCKED. Five themes ship with the skill: `flat` (default, calm modern edu illustration) and `cel` (bold comic / manga) from 3.2.0, plus the hand-made skins `journal` / `papercut` / `archive` from 3.3.0. All are implemented in `assets/lecture-template/src/theme/`. A production selects its theme once at kickoff via `new-project ./dir [--style=flat|cel|journal|papercut|archive]` and then reads only its own contract:
+Status: LOCKED. Five themes ship with the skill: `flat` (default, calm modern edu illustration) and `cel` (bold comic / manga), plus the hand-made skins `journal` / `papercut` / `archive`. All are implemented in `assets/lecture-template/src/theme/`. A production selects its theme once at kickoff via `new-project ./dir [--style=flat|cel|journal|papercut|archive]` and then reads only its own contract:
 
 - flat (default) → `theme-flat.md`
 - cel → `theme-cel.md`
@@ -10,7 +10,7 @@ Status: LOCKED. Five themes ship with the skill: `flat` (default, calm modern ed
 
 Route: 软件 / 产品 / 代码 / 图表类选题走组件路线（flat / cel）；科普、自然、历史、"为什么"类选题走手作路线（journal / papercut / archive），手作路线先写 `treatment.json`（见 `director-method.md`）。本节以前只列了两套皮肤，Agent 读到会以为手作三套不存在——2026-10-30 修正。
 
-The former `paper` and `sticker` themes were removed in 3.2.0, and the warm-ivory `--classic` example project in 3.2.0; projects created with them are not supported. The palette token names `paper` / `paperWarm` / `paperBase`, the `Paper` card component and `CoverPanel tone="paper"` are generic card-surface names kept by both remaining themes — they do not refer to the removed theme.
+The former `paper` and `sticker` themes were removed, as was the warm-ivory `--classic` example project; projects created with them are not supported. The palette token names `paper` / `paperWarm` / `paperBase`, the `Paper` card component and `CoverPanel tone="paper"` are generic card-surface names kept by both remaining themes — they do not refer to the removed theme.
 
 ## Shared engine chrome (every theme)
 
@@ -18,7 +18,7 @@ The former `paper` and `sticker` themes were removed in 3.2.0, and the warm-ivor
 - Chapter card: left 92, top 74, width 392, height 90, z=150. Technical header: right 88, top 70, z=140.
 - Subtitle: one centered line, WenKai Lite 44px, letterSpacing 1.6, 1334px safe width; per-word reveal with 0.9-frame per-character stagger and a 180ms lead; trailing punctuation hidden. The theme's `SubtitleChrome` supplies only the container.
 - Fonts: LXGW WenKai Lite Regular/Medium for CJK; Clash Display / Space Grotesk / Caveat for Latin accents. All faces are bundled in `public/` and declared once in `src/fonts.tsx` (used by the film and the showcase). Each Latin family also carries a `unicode-range`-limited WenKai face, so a stack such as `'Clash,Space'` renders Chinese with WenKai instead of a system font (no tofu on machines without CJK fonts, Windows included). Avoid readable text below 17px.
-- Backdrop: each theme ships three locked 2560×1440 backgrounds, `main` / `chapter` / `quiet`, all with a calm central ~70% safe area and decoration only at edges and corners. The engine picks one per shot (`bgVariantFor` in `index.tsx`): first shot of a chapter → `chapter`; `zones ≥ 4` → `quiet`; otherwise `main`; a shot-table `bg` field overrides the rule. Adjacent shots on different variants cross-fade over the 10-frame handoff. There is no full-frame translucent wash behind shots (3.2.0 removed it: it ghosted the corner characters). **3.3.0:** the three rasters are now the `legacy` entries of a per-skin background library (`manifests/backgrounds.json`, 8 more per craft skin, 5 more for flat / cel); when the project has the library, `resolve-shots` assigns every shot one library background by role (chapter / quiet / main), never repeating the previous shot, and writes it as `bg` + `bgFile` into `src/shots.ts`; the engine draws `bgFile` directly. `"bgRotate": false` (or no library) keeps the rule above. See `background-library.md`.
+- Backdrop: each theme ships three locked 2560×1440 backgrounds, `main` / `chapter` / `quiet`, all with a calm central ~70% safe area and decoration only at edges and corners. The engine picks one per shot (`bgVariantFor` in `index.tsx`): first shot of a chapter → `chapter`; `zones ≥ 4` → `quiet`; otherwise `main`; a shot-table `bg` field overrides the rule. Adjacent shots on different variants cross-fade over the 10-frame handoff. There is no full-frame translucent wash behind shots (removed: it ghosted the corner characters). The three rasters are now the `legacy` entries of a per-skin background library (`manifests/backgrounds.json`, 8 more per craft skin, 5 more for flat / cel); when the project has the library, `resolve-shots` assigns every shot one library background by role (chapter / quiet / main), never repeating the previous shot, and writes it as `bg` + `bgFile` into `src/shots.ts`; the engine draws `bgFile` directly. `"bgRotate": false` (or no library) keeps the rule above. See `background-library.md`.
 - Header plate: a theme whose top-right corner carries high-contrast decoration supplies `headerPlate` (cel: a comic caption box); flat leaves it unset.
 
 ## Palette source: Radix Colors (vendored)
@@ -70,6 +70,6 @@ The engine (`src/index.tsx`) reads `THEME` from `src/theme/active.ts` and perfor
 
 1. Implement the `Theme` interface from `theme/types.ts` in a new `theme/<id>.tsx`; optional locked decorative components go in `THEME.extras`.
 2. Supply three 2560×1440 background rasters (`public/bg/bg-<id>-main.jpg`, `-chapter.jpg`, `-quiet.jpg`) with a calm central ~70%, register each in `manifests/visual-assets.json` (sha256, prompt summary, rights), map them in the theme's `backgrounds` table, and declare the union of their `backgroundDecorZones` in 1920×1080 design coordinates.
-3. 让新 id 能被选中：`theme/active.ts` 改成 import 新主题，并把它加进 `scripts/notebook-video.mjs` 的 `new-project --style=` 取值（3.2.0 的取值是 flat / cel）。
+3. 让新 id 能被选中：`theme/active.ts` 改成 import 新主题，并把它加进 `scripts/notebook-video.mjs` 的 `new-project --style=` 取值（原有取值是 flat / cel）。
 4. Write `references/theme-<id>.md` as a contract (locked tokens, extras usage, rejection flags).
 5. Render stills of a chapter shot, a diagram shot and a dense shot (e.g. frames 150 / 780 / 400), and register the contract in validate-skill before merging.

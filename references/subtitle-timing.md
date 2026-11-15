@@ -112,7 +112,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-semantic-breaks manifests
 
 Reject word-stream mismatch, non-semantic segmentation, a break that is not a BudouX phrase boundary or a clause break, a cue starting with a closing mark, an ASCII model/product token split, a protected phrase crossing a cue boundary, overflow, horizontal jitter, two-line text, trailing visual punctuation, dark subtitle side marks or a changed contour.
 
-The word-cut rule is the one that catches what the phrase list misses, so read the validator's last line: it ends with `phrase rule: enforced (BudouX from …)` when the rule ran. On the delivery path (the CLI) that line is mandatory — the CLI passes `--require-budoux`, and since 3.9.0 the model itself ships with the skill, so an unresolvable BudouX means the bundle was deleted. The `SKIPPED — BudouX not found` tail only remains reachable via a deliberate `--no-budoux` or a direct script invocation where `assets/vendor/` is missing; there, only the mechanical checks and the phrase list were applied.
+The word-cut rule is the one that catches what the phrase list misses, so read the validator's last line: it ends with `phrase rule: enforced (BudouX from …)` when the rule ran. On the delivery path (the CLI) that line is mandatory — the CLI passes `--require-budoux`, and the model itself ships with the skill, so an unresolvable BudouX means the bundle was deleted. The `SKIPPED — BudouX not found` tail only remains reachable via a deliberate `--no-budoux` or a direct script invocation where `assets/vendor/` is missing; there, only the mechanical checks and the phrase list were applied.
 
 ## Line length: at most 16 characters
 

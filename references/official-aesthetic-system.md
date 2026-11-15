@@ -1,7 +1,7 @@
 # Official aesthetic system
 
-This document defines the aesthetic layer preserved by `notebook-video-3.2.0-flat-cel` (see `locked-style-contract.json`).
-This package contains one official aesthetic track, one canonical project template (`assets/lecture-template`) and two locked skins: `flat` (default) and `cel`. The 3.1.x warm-ivory paper look and its `--classic` example project were removed in 3.2.0.
+This document defines the aesthetic layer preserved by the flat / cel track (see `locked-style-contract.json`).
+This package contains one official aesthetic track, one canonical project template (`assets/lecture-template`) and two locked skins: `flat` (default) and `cel`. The old warm-ivory paper look and its `--classic` example project were removed in 3.2.0.
 
 ## Locked production grammar
 
@@ -69,7 +69,7 @@ For future aesthetic changes, work in a disposable project copy, render the comp
 Keep these official elements locked until the user approves a future rendered replacement:
 
 - React + TypeScript + Remotion rendering core;
-- locked premium motion contracts shipped in the template: `JumpInText` per-glyph 3D flip titles, `ShimmerText` sweep on CTA strings, multi-keyframe figure roll-ins, per-word subtitle reveal, and the v2.9 shot layer (see [shot-language.md](shot-language.md));
+- locked premium motion contracts shipped in the template: `JumpInText` per-glyph 3D flip titles, `ShimmerText` sweep on CTA strings, multi-keyframe figure roll-ins, per-word subtitle reveal, and the shot layer (see [shot-language.md](shot-language.md));
 - fixed native 30fps motion, rendered and delivered on the single locked canvas: 2560×1440 (16:9);
 - no duplicate-frame upconversion; use 60fps only when motion is authored natively at 60fps;
 - mount only the active scene, with at most two scenes during a short handoff;

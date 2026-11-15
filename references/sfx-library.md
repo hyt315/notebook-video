@@ -6,7 +6,7 @@ generate, download or tune sounds. Files live in `assets/lecture-template/public
 
 ## Events
 
-Nine events plus an optional bed (3.8.0 slimmed 16 → 9; see `src/sfx.ts` for why each cut one went).
+Nine events plus an optional bed (slimmed from 16; see `src/sfx.ts` for why each cut one went).
 
 The cut seven, and why they were not worth keeping:
 
@@ -46,7 +46,7 @@ Priority when two cues fall within 6 frames: chapter > success > stamp > error >
 
 `resolve-shots.py` validates the field and passes it into `src/shots.ts`; the engine reads it in `planSfx`.
 
-## Medium mapping (3.8.0)
+## Medium mapping
 
 Only the hand-made media (`journal` / `papercut` / `archive`) remap **automatic** punctuation sounds:
 
@@ -76,7 +76,7 @@ Rendered in code with **earshot** 0.2.0 (`earshot forge` recipes; https://github
 recorded samples — and quality-checked with `earshot rank` / `earshot match` (CLAP). License: CC0-1.0.
 Users never install earshot. To rebuild: `python scripts/dev/build-sfx-library.py` (needs torch CPU + earshot).
 
-## Rebuilt highlight (3.8.0)
+## Rebuilt highlight
 
 `highlight` was the weakest sound still in use: `notify #14` with an 1800 Hz high-pass and a 190 ms cut, earshot
 CLAP match z 2.04 ("weak"). It is also the single most repeated cue in a sparse film (last beat of every
@@ -113,7 +113,7 @@ files are kept byte-for-byte).
 - `validate-audio-levels.py` 每次出片打印一行「压人声 N 个（事件名）」：显式音效时刻正好落在某句旁白 `[start_ms, speech_end_ms]` 内的条数。自动音效（换章 `chapter`、翻页 `page`）落在换镜帧上、旁白还没开口，实测不产生重叠；会压到说话的只有作者在 story.json 里写的 `sfx`。**只报告不拦截**——少量压人是正常的动作拟音（图表生长、元素落位），全片都压才是问题。
 - 维护者：`python scripts/dev/audit-sfx.py [--legacy]` 打分（时序 40 + 电平 30 + 音色 30），`python scripts/dev/tune-sfx.py` 修剪 + 写回 manifest（需 numpy / soundfile / pyloudnorm；普通用户不用跑）。`validate-audio-levels.py` 核对 `SFX_GAIN` / `SFX_OFFSET_MS` 与 manifest 一致。
 
-## 离线质检（维护者可选，3.8.0）
+## 离线质检（维护者可选）
 
 earshot 的定位是**维护者离线质检**，不是运行时依赖——上传包只带成品音频、配方与许可；
 普通用户渲染一支视频不得被要求下载 1.1GB 模型或装 PyTorch。
