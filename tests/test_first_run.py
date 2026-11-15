@@ -82,6 +82,13 @@ class FontDownloadFailureTest(unittest.TestCase):
         self.assertEqual(now, self.baseline, "字体清单和开跑前不一致 —— 有用例搬走没搬回")
 
 
+def _fonts_ready() -> bool:
+    return all((FONTS / n).is_file() for n in ("LXGWWenKaiLite-Regular.ttf", "LXGWWenKaiLite-Medium.ttf"))
+
+
+@unittest.skipUnless(_fonts_ready() or os.environ.get("NV_ONLINE") == "1",
+                     "new-project 首跑要下载 LXGW 字体（约 28 MB）：单测默认离线，设 NV_ONLINE=1 才联网跑；"
+                     "或先 `node scripts/notebook-video.mjs fonts` 备好字体")
 class NewProjectFirstRunTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
