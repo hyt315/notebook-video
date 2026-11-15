@@ -8,3 +8,14 @@
 *.webp binary
 *.mp4 binary
 *.zip binary
+
+# 不进发布包（git archive / package-skill.py 都按这份清单剔除）：开发期工具、测试、CI、维护文档与历史归档
+/scripts/dev export-ignore
+/tests export-ignore
+/.github export-ignore
+/docs export-ignore
+/MAINTAINING.md export-ignore
+/CODE_OF_CONDUCT.md export-ignore
+/CONTRIBUTORS.md export-ignore
+/SUPPORT.md export-ignore
+/.editorconfig export-ignore

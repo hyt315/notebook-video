@@ -32,6 +32,8 @@ REQUIRED = ROOT_FILES + ("scripts/notebook-video.mjs", "assets/lecture-template/
 SKIP_DIRS = {".git", ".github", ".pytest_cache", "__pycache__", "node_modules", "renders", "dist", "build", ".bundle", ".remotion"}
 SKIP_SUFFIXES = {".pyc", ".pyo", ".log", ".tmp", ".mp4", ".mov", ".webm", ".zip"}
 SKIP_NAMES = {".DS_Store", "Thumbs.db"}
+# 开发期目录：维护工具与历史归档，只在仓库里用，不进上传包（与 .gitattributes 的 export-ignore 一致）。
+DEV_PREFIXES = ("scripts/dev/", "docs/")
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
 
@@ -43,6 +45,8 @@ def excluded(path: Path, include_fonts: bool) -> bool:
     r = rel(path)
     parts = PurePosixPath(r).parts
     if any(part in SKIP_DIRS for part in parts):
+        return True
+    if r.startswith(DEV_PREFIXES):
         return True
     if path.name in SKIP_NAMES or path.suffix.lower() in SKIP_SUFFIXES:
         return True
