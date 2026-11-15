@@ -227,13 +227,8 @@ scripts/coords-lint.py              覆盖层坐标越界体检
 scripts/package-project.py         交付源码打包（排除 node_modules / renders / 密钥）
 scripts/selftest.py                 端到端回归自测
 scripts/negative-gate-check.py     负向抽查：给六道构建期门禁喂"该拦的夹具"，验证它们真的会拦
-scripts/check-deps.sh | .cmd        环境依赖体检
-scripts/prepare-browser.sh | .cmd   Remotion 无头浏览器准备
-scripts/new-project.sh | .cmd       建工程
-scripts/sync-project-assets.sh | .cmd   同步 audio/ 与 manifests/ 进 public/ 与 src/
-scripts/render-remotion.sh | .cmd   Remotion 渲染
-scripts/validate-video.sh | .cmd    成片验收（编码 / 时长 / 响度 / 黑帧）
-scripts/package-project.sh | .cmd   打包
+scripts/notebook-video.mjs | .cmd   统一入口：check-deps / prepare-browser / new-project / sync / render / validate-video / package …
+scripts/make-video.mjs | .cmd       一条命令出片（compose → 门禁 → 静帧 / 渲染）
 ```
 
 ## Regression self-test

@@ -510,10 +510,8 @@ def main() -> None:
     required_cross_platform = (
         SKILL / 'scripts' / 'notebook-video.mjs',
         SKILL / 'scripts' / 'notebook-video.cmd',
-        SKILL / 'scripts' / 'new-project.sh',
-        SKILL / 'scripts' / 'new-project.cmd',
-        SKILL / 'scripts' / 'prepare-browser.sh',
-        SKILL / 'scripts' / 'prepare-browser.cmd',
+        SKILL / 'scripts' / 'make-video.mjs',
+        SKILL / 'scripts' / 'make-video.cmd',
         SKILL / 'scripts' / 'package-project.py',
         SKILL / 'DEPENDENCIES.md',
         SKILL / 'references' / 'cross-platform-compatibility.md',

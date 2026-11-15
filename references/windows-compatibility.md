@@ -32,7 +32,7 @@ Windows also includes a Command Prompt wrapper that does not require changing Po
 "<SKILL_DIR>\scripts\notebook-video.cmd" --help
 ```
 
-The individual Windows wrappers `check-deps.cmd`, `new-project.cmd`, `sync-project-assets.cmd`, `render-remotion.cmd`, `validate-video.cmd` and `package-project.cmd` are convenience aliases for the same Node implementation.
+Every subcommand (`check-deps`, `new-project`, `sync`, `render`, `validate-video`, `package`, `prepare-media`, …) goes through this one wrapper, e.g. `"<SKILL_DIR>\scripts\notebook-video.cmd" new-project .\my-video`. The only other wrapper is `make-video.cmd`.
 
 ## Required applications
 
@@ -123,7 +123,7 @@ cd "<PROJECT_DIRECTORY>"
 node node_modules/@remotion/cli/remotion-cli.js render src/index.tsx NotebookVideoFilm renders/out.mp4 --browser-executable="%LOCALAPPDATA%\remotion-browser\chrome-headless-shell\win64\chrome-headless-shell.exe"
 ```
 
-`scripts/notebook-video.mjs` already does exactly this (it also falls back to that cached browser automatically on Windows when `REMOTION_BROWSER_EXECUTABLE` is unset), so prefer `node "<SKILL_DIR>/scripts/notebook-video.mjs" render ...` or the `render-remotion.cmd` wrapper. Never rewrite the documented workflow as `npx remotion ...`.
+`scripts/notebook-video.mjs` already does exactly this (it also falls back to that cached browser automatically on Windows when `REMOTION_BROWSER_EXECUTABLE` is unset), so prefer `node "<SKILL_DIR>/scripts/notebook-video.mjs" render ...` or `notebook-video.cmd render ...`. Never rewrite the documented workflow as `npx remotion ...`.
 
 ### Command is not recognized
 

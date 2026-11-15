@@ -27,7 +27,7 @@ python "<SKILL_DIR>/scripts/prepare-media.py" ./my-video --add ./demo.mov --id c
 python "<SKILL_DIR>/scripts/validate-media.py" ./my-video                                                  # make-video 也会自动跑
 ```
 
-Windows：`scripts\prepare-media.cmd` 同参数。素材进 `public/media/`，登记在 `manifests/media.json`（同步一份到 `src/media.json`）。
+Windows：`scripts\notebook-video.cmd prepare-media` 同参数。素材进 `public/media/`，登记在 `manifests/media.json`（同步一份到 `src/media.json`）。
 
 `manifests/media.json` 每条：`{id, file, kind: image|video|gif, source: user|web, url, license, credit, trimStartSec, trimEndSec, focusRegions: [{id, x, y, w, h}], muted}`。
 区域坐标是 **0–1 的相对值**（相对原图宽高）。`muted` 缺省 true；写 `false` 才保留原声（门禁会提示）。动图会被转成 MP4（`kind` 变 `video`，帧驱动播放）。

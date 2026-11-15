@@ -131,7 +131,7 @@ node scripts/make-video.mjs ./my-video --render ./my-video/final.mp4     # full 
 On **Windows** (cmd / PowerShell) use the same `node` commands, or:
 
 ```bat
-scripts\new-project.cmd .\my-video --style=flat
+scripts\notebook-video.cmd new-project .\my-video --style=flat
 scripts\make-video.cmd .\my-video --stills
 scripts\make-video.cmd .\my-video --render .\my-video\final.mp4
 ```

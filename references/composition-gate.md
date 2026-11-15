@@ -193,7 +193,7 @@ python scripts/validate-shot-motion.py PROJECT_DIR
 | `CaptionFitGate` | **渲染期**（浏览器内） | 字幕超宽（按当前画幅与主题真实字重/字距测量） |
 | `validate-caption-sync.py` / `validate-semantic-breaks.py` | 构建期 | 字幕与 TTS 词边界一致、保护短语不被切开 |
 | `validate-presentation.py` | 构建期 | **呈现效果**：beat↔cue 时间接近、字幕阅读预算（Netflix 中文规范）、字号地板 13px 与正文色对比度（WCAG 4.5:1）。现有门禁都没问过「讲与画对不对得上、读不读得过来」——见 [presentation-gate.md](presentation-gate.md) |
-| `validate-video.sh` | 交付前 | 时长、音视频编码、**色彩契约**（四项元数据，见 §6.1）、响度、黑帧 |
+| `notebook-video validate-video` | 交付前 | 时长、音视频编码、**色彩契约**（四项元数据，见 §6.1）、响度、黑帧 |
 
 **分工原则**：能用算术在构建期证明的，不要留到渲染期；只有需要真实字体/布局测量的，
 才放在浏览器内。

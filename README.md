@@ -129,7 +129,7 @@ node scripts/make-video.mjs ./my-video --render ./my-video/final.mp4     # 满�
 **Windows**（cmd / PowerShell）用同一条 `node` 命令，或者：
 
 ```bat
-scripts\new-project.cmd .\my-video --style=flat
+scripts\notebook-video.cmd new-project .\my-video --style=flat
 scripts\make-video.cmd .\my-video --stills
 scripts\make-video.cmd .\my-video --render .\my-video\final.mp4
 ```
