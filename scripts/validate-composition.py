@@ -5,7 +5,7 @@
 没有它，v2.8 的强制条款再多也会像今天一样全部空转——规范强制使用活性组件、
 实现引用数为 0，9 个校验脚本没有一条能发现。
 
-检查项（判据与档位见 references/composition-gate.md）：
+检查项（判据与档位见 references/checks.md#composition-gate）：
 
   P0-1  骨架重复度        相邻场景不得同骨架；全片 ≥3 种；未知骨架名 → fail
   P0-2  活性组件覆盖率     每个讲解场景 ≥1 个活性组件；**且每个名字必须能在场景文件里找到**
@@ -56,7 +56,7 @@ CRAFT_ZONE_RANGE = (1, 5)
 MAX_EXPLANATION_FALSE = 1     # 一部片最多 1 镜可以不走"讲解场景"的活性要求（章节卡）
 MAX_SHOT_FRAMES = 300         # 单镜上限 10s
 MIN_LENGTH_RATIO = 2.0        # 最长/最短 倍数下限（测出来是节拍器）
-MIN_LENGTH_CV = 0.35          # 3.3.0 镜长变异系数（标准差/平均）下限：低于它 = 节拍器（references/camera-language.md §5）
+MIN_LENGTH_CV = 0.35          # 3.3.0 镜长变异系数（标准差/平均）下限：低于它 = 节拍器（references/camera.md#camera-language §5）
 LONG_HOLD_FRAMES = 360        # 3.3.0 单个构图 > 12 s 必须镜内换焦点（cinema.focus）或接插入镜
 MAX_BAND_SHARE = 0.8          # 同一时长档最多占 80%
 MAX_BEAT_GAP = 120            # 文档的慢章节上限（3–4s）；超过它才算越界
@@ -499,7 +499,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
         dur = int(s.get("duration") or 0)
         focus = [f for f in ((s.get("cinema") or {}).get("focus") or []) if not f.get("settle")]
         if dur > LONG_HOLD_FRAMES and not focus and not s.get("insert"):
-            p1.append({"id": s.get("id", "?"), "issue": "单镜 %.1fs 一个构图到底：> 12s 要在镜内换焦点（cinema.focus）或接插入镜（references/camera-language.md §5）" % (dur / 30)})
+            p1.append({"id": s.get("id", "?"), "issue": "单镜 %.1fs 一个构图到底：> 12s 要在镜内换焦点（cinema.focus）或接插入镜（references/camera.md#camera-language §5）" % (dur / 30)})
 
     # ---- P1-8 骨架指纹重复 ----
     fp: dict[tuple, list[str]] = {}
@@ -521,7 +521,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
         cv = (sum((d - mean) ** 2 for d in durs) / len(durs)) ** 0.5 / max(mean, 1)
         # 比较与显示用同一精度：0.349 显示成 0.35，却报「0.35 < 0.35」，读者无法理解（实测 P1 里出现过）。
         if round(cv, 2) < round(MIN_LENGTH_CV, 2):
-            p1.append({"id": "-", "issue": f"镜长变异系数 {cv:.2f} < {MIN_LENGTH_CV:.2f}（平均 {mean / 30:.1f}s）：镜长太整齐，读起来是节拍器；长短镜交替（references/camera-language.md §5）"})
+            p1.append({"id": "-", "issue": f"镜长变异系数 {cv:.2f} < {MIN_LENGTH_CV:.2f}（平均 {mean / 30:.1f}s）：镜长太整齐，读起来是节拍器；长短镜交替（references/camera.md#camera-language §5）"})
         share = {}
         for d in durs:
             for a, b, name in BANDS:
@@ -591,7 +591,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     n_used = len(used)
     need = 10 if len(shots) >= 16 else (7 if len(shots) >= 8 else 5)
     if n_used < need:
-        p1.append({"id": "-", "issue": f"可选组件只用了 {n_used} 件（{sorted(used)}），{len(shots)} 镜建议 ≥{need} 件；修辞动作 → 组件 见 media-routing.md"})
+        p1.append({"id": "-", "issue": f"可选组件只用了 {n_used} 件（{sorted(used)}），{len(shots)} 镜建议 ≥{need} 件；修辞动作 → 组件 见 references/media.md#media-routing"})
     for name, ids in used.items():
         share = len(ids) / max(1, len(shots))
         if share > 0.35:

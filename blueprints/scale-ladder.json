@@ -4,7 +4,7 @@
   "family": "scale-ladder",
   "$about": "尺度阶梯（3.3.0）：一个数字逐级放大或缩小，每一级配一个观众摸得到的参照物，最后落回观众手里。像《十的力量》（Powers of Ten）那样的公开结构，只借结构。",
   "fits": "大到 / 小到难以想象的数字：十二亿间小屋子、一光年、细胞里的分子数",
-  "$howto": "手写组件路线的分镜蓝图（不走 compose-story）。先按 references/director-method.md 写 manifests/treatment.json，candidates 里写 family；再照每拍的 $components 写 scenes.tsx。秒数按 60–90 秒片子给出，括号里是占片长的比例，按台词伸缩。字幕每行 ≤14 字。 每一级的参照物必须换（指甲 → 手掌 → 房间 → 城市），而不是同一个数字越写越大；数字只做最后的题注。",
+  "$howto": "手写组件路线的分镜蓝图（不走 compose-story）。先按 references/director.md#director-method 写 manifests/treatment.json，candidates 里写 family；再照每拍的 $components 写 scenes.tsx。秒数按 60–90 秒片子给出，括号里是占片长的比例，按台词伸缩。字幕每行 ≤14 字。 每一级的参照物必须换（指甲 → 手掌 → 房间 → 城市），而不是同一个数字越写越大；数字只做最后的题注。",
   "theme": "<<journal | papercut | archive>>",
   "beats": [
     {
@@ -96,8 +96,8 @@
   "$rules": [
     "每一级只换一个变量（尺度），参照物与画法保持同一媒介",
     "数字要可核对：facts 写清计算过程或原始出处",
-    "开场照 references/narrative-hook.md 的冷开合约（第 0 帧有主体、首条字幕 ≤ 1 s、第一句不用“X 这个词 / 你知道吗”），validate-opening 会查",
-    "镜头动机、景别阶梯、镜长见 references/camera-language.md；招牌镜头真推 ≥ 12%",
+    "开场照 references/director.md#narrative-hook 的冷开合约（第 0 帧有主体、首条字幕 ≤ 1 s、第一句不用“X 这个词 / 你知道吗”），validate-opening 会查",
+    "镜头动机、景别阶梯、镜长见 references/camera.md#camera-language；招牌镜头真推 ≥ 12%",
     "相邻两镜换骨架；每个构图 ≤ 12 s（更长就镜内换焦点）；镜长长短错开",
     "每个选题先 commons-search；真素材进 ArchivePhoto / PinnedPhoto / LoupeMedia，署名自动上屏",
     "避免：暗底发光线、粒子、金色/冰蓝科技风、电子 BGM、名词→定义→升华"

@@ -3,7 +3,7 @@
 
 用法：python scripts/validate-treatment.py PROJECT [--json]
 
-规则见 references/director-method.md 末表。要点：
+规则见 references/director.md#director-method 末表。要点：
   · 手作皮肤（journal / papercut / archive）：缺 treatment.json 或必填没填 = P0（阻断）；
   · flat / cel：同样的问题只记 P1（向后兼容：老工程没有这一层）；
   · 风格 / 节奏类建议（转向你的时间点、运镜种类、评审分数）永远是 P1；
@@ -21,9 +21,9 @@ from pathlib import Path
 
 CRAFT = {"journal", "papercut", "archive"}
 SKINS = CRAFT | {"flat", "cel"}
-# 3.3.0：叙事结构族（候选结构至少 2 族，见 references/director-method.md 第 5 步、blueprints/*.json 的 family）
+# 3.3.0：叙事结构族（候选结构至少 2 族，见 references/director.md#director-method 第 5 步、blueprints/*.json 的 family）
 FAMILIES = ("medium-metaphor", "kishotenketsu", "mystery", "scale-ladder", "experiment", "one-take-journey", "myth-flip", "lecture-arc")
-# 3.3.0：treatment 的景别 / 运镜要在镜头表里兑现（references/camera-language.md §2）
+# 3.3.0：treatment 的景别 / 运镜要在镜头表里兑现（references/camera.md#camera-language §2）
 MOVES = ("establish", "push-in", "pull-back", "pan-follow", "reveal", "micro-orbit", "still")
 SIGNATURE_PUSH_MIN = 0.12   # 招牌镜头至少真推 12%（缩放变化，或 cinema.focus 的 zoom）
 SIGNATURE_SHIFT_MIN = 120.0 # 或者屏幕位移 ≥120px（横移 / 拉远）：招牌镜的另一个合法做法
@@ -149,7 +149,7 @@ def check_camera(t: dict, resolved: list[dict]) -> tuple[list[str], list[str]]:
 def check_sound(t: dict) -> list[str]:
     snd = t.get("sound")
     if not isinstance(snd, dict) or placeholder(snd):
-        return ["treatment.sound 没写完：原生动作前静多久、全片最重要的一声、配乐用不用（为什么）、每种媒介配什么拟音（references/director-method.md 第 8 步）"]
+        return ["treatment.sound 没写完：原生动作前静多久、全片最重要的一声、配乐用不用（为什么）、每种媒介配什么拟音（references/director.md#director-method 第 8 步）"]
     out = []
     sil = snd.get("silence_before_native_move_sec")
     if not isinstance(sil, (int, float)) or sil < 0.5:
@@ -170,7 +170,7 @@ def check(proj: Path) -> tuple[list[str], list[str], str]:
     soft: list[str] = []   # 永远 P1
     tf = proj / "manifests" / "treatment.json"
     if not tf.is_file():
-        hard.append("没有 manifests/treatment.json —— 复制 manifests/treatment.example.json 填好（references/director-method.md）")
+        hard.append("没有 manifests/treatment.json —— 复制 manifests/treatment.example.json 填好（references/director.md#director-method）")
         return hard, soft, skin
     try:
         t = json.loads(tf.read_text(encoding="utf-8"))

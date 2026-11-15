@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the 3.3.0 camera / shot-length rules (references/camera-language.md §5).
+"""Tests for the 3.3.0 camera / shot-length rules (references/camera.md#camera-language §5).
 
 validate-composition: shot-length coefficient of variation >= 0.35; a single composition > 12 s needs an in-shot
 focus (cinema.focus) or an insert shot. resolve-shots passes the optional `insert` marker through.
@@ -67,7 +67,7 @@ class InsertMarker(unittest.TestCase):
     def test_resolve_shots_passes_insert_through(self):
         src = (ROOT / "scripts" / "resolve-shots.py").read_text(encoding="utf-8")
         self.assertIn('rec["insert"] = {"of": ins["of"].strip()}', src)
-        doc = (ROOT / "references" / "camera-language.md").read_text(encoding="utf-8")
+        doc = (ROOT / "references" / "camera.md").read_text(encoding="utf-8")
         for needle in ("12%", "变异系数", "插入镜", "视线连续"):
             self.assertIn(needle, doc)
 

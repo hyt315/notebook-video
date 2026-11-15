@@ -194,7 +194,7 @@ if ((await py('resolve-shots.py', [project])).code) die('resolve-shots 失败');
   }
 }
 
-// 4b. 3.3.0 评审拦截：手作皮肤要出成片，先得有一轮独立评审（director-method.md 第 4 步），或显式 --skip-review。
+// 4b. 3.3.0 评审拦截：手作皮肤要出成片，先得有一轮独立评审（references/director.md#director-method 第 4 步），或显式 --skip-review。
 //     只拦 --render（静帧 / 联系表就是给评审看的，不拦）；flat / cel 不拦，CI / selftest 不走 --render。
 const activeSkin = (() => {
   try { return fs.readFileSync(path.join(project, 'src', 'theme', 'active.ts'), 'utf8').match(/from\s+'\.\/(\w+)'/)?.[1] ?? style; } catch { return style; }
@@ -209,12 +209,12 @@ if (renderOut && ['journal', 'papercut', 'archive'].includes(activeSkin) && !fla
       `✗ 停在渲染前：${activeSkin} 是手作皮肤，manifests/treatment.json 的 review.rounds 还是空的。`,
       '',
       '  为什么停：手作片的问题（构图、调度、隐喻和媒介是否一致）只有独立的眼睛才看得出，',
-      '  渲染一次很贵，先评审再出片（references/director-method.md 第 4 步）。',
+      '  渲染一次很贵，先评审再出片（references/director.md#director-method 第 4 步）。',
       '',
       '  怎么评审：',
       '    1. node scripts/make-video.mjs <工程> --stills       → renders/stills-*.jpg 联系表',
       '    2. 开一个全新的会话 / 子代理，只给它：联系表 + storyboard.md（resolve-shots 自动生成）+ manifests/treatment.json，',
-      '       按 references/quality-checklist.md 与 director-method.md 的评审项打分、分 P0 / P1 / P2 列问题；',
+      '       按 references/checks.md#quality-checklist 与 references/director.md#director-method 的评审项打分、分 P0 / P1 / P2 列问题；',
       '    3. 修掉 P0 / P1，把这一轮写进 treatment.json 的 review.rounds（时间、评审者、问题、处理）。',
       '',
       '  确实要跳过（草稿 / 自测）：加 --skip-review。',
@@ -323,7 +323,7 @@ const fxNote = () => {
     const fx = JSON.parse(fs.readFileSync(path.join(project, 'renders', '.fx-probe.json'), 'utf8'));
     if (!fx.used) return [];
     return fx.on ? [`- 翻页：GPU 卷页已开启（${fx.browser}；探针 ${fx.probeMs ?? '?'} ms）`]
-      : [`- **P1 卷页降级**：${fx.reason}。本片的翻页已改用纯 CSS 的折痕版（pageflip）——**仍然是翻页**，只是没有纸的卷曲和纸背透光；要开：装完整版 Chromium（\`npx playwright install chromium\`，国内加 \`PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright\`），再跑 \`node scripts/notebook-video.mjs fx-probe <工程> --force\`（见 references/fx-effects.md）`];
+      : [`- **P1 卷页降级**：${fx.reason}。本片的翻页已改用纯 CSS 的折痕版（pageflip）——**仍然是翻页**，只是没有纸的卷曲和纸背透光；要开：装完整版 Chromium（\`npx playwright install chromium\`，国内加 \`PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright\`），再跑 \`node scripts/notebook-video.mjs fx-probe <工程> --force\`（见 references/camera.md#fx-effects）`];
   } catch { return []; }
 };
 const writeReport = (frames, sheets, extra = '') => {

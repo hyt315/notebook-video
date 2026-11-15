@@ -4,7 +4,7 @@
   "family": "mystery",
   "$about": "悬案式（3.3.0）：先给怪现象 / 结果 → 三条线索逐条摆上桌 → 排除一个“看起来很像”的错误嫌疑 → 揭晓。像侦探故事的公开结构，只借结构。",
   "fits": "“为什么…”类问题：现象人人见过，原因反直觉（咖啡渍为什么一圈深边、天为什么是蓝的）",
-  "$howto": "手写组件路线的分镜蓝图（不走 compose-story）。先按 references/director-method.md 写 manifests/treatment.json，candidates 里写 family；再照每拍的 $components 写 scenes.tsx。秒数按 60–90 秒片子给出，括号里是占片长的比例，按台词伸缩。字幕每行 ≤14 字。 线索要可视化成桌面上的物件（照片、样本、笔记），每条线索一镜；揭晓时让线索自己连起来。",
+  "$howto": "手写组件路线的分镜蓝图（不走 compose-story）。先按 references/director.md#director-method 写 manifests/treatment.json，candidates 里写 family；再照每拍的 $components 写 scenes.tsx。秒数按 60–90 秒片子给出，括号里是占片长的比例，按台词伸缩。字幕每行 ≤14 字。 线索要可视化成桌面上的物件（照片、样本、笔记），每条线索一镜；揭晓时让线索自己连起来。",
   "theme": "<<journal | papercut | archive>>",
   "beats": [
     {
@@ -97,8 +97,8 @@
   "$rules": [
     "线索必须都是已核事实（facts 带 url + 引文）；不能为了悬念编线索",
     "揭晓要在片长 80% 之前，留出回扣的时间",
-    "开场照 references/narrative-hook.md 的冷开合约（第 0 帧有主体、首条字幕 ≤ 1 s、第一句不用“X 这个词 / 你知道吗”），validate-opening 会查",
-    "镜头动机、景别阶梯、镜长见 references/camera-language.md；招牌镜头真推 ≥ 12%",
+    "开场照 references/director.md#narrative-hook 的冷开合约（第 0 帧有主体、首条字幕 ≤ 1 s、第一句不用“X 这个词 / 你知道吗”），validate-opening 会查",
+    "镜头动机、景别阶梯、镜长见 references/camera.md#camera-language；招牌镜头真推 ≥ 12%",
     "相邻两镜换骨架；每个构图 ≤ 12 s（更长就镜内换焦点）；镜长长短错开",
     "每个选题先 commons-search；真素材进 ArchivePhoto / PinnedPhoto / LoupeMedia，署名自动上屏",
     "避免：暗底发光线、粒子、金色/冰蓝科技风、电子 BGM、名词→定义→升华"

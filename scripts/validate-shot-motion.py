@@ -43,7 +43,7 @@ INTENT_MAX_ZOOM = {
 TEXT_ZOOM_MAX = 1.35
 GRAPHIC_ZOOM_MAX = 1.60
 ROT_MAX = 6.0  # micro-orbit 的 rotY 上限（度）
-CAM_DUR = (30, 45)  # 单次运镜时长（帧），references/shot-language.md
+CAM_DUR = (30, 45)  # 单次运镜时长（帧），references/camera.md#shot-language
 # 每章运镜配额要有时长比例感：短视频章节只有 7 秒时强求 3 次是无意义的。
 # 规则：章节 ≥20 秒 → ≥3 次；否则 ≥1 次。另有全片配额 ceil(秒/12)，下限 4。
 CHAPTER_MIN_MOVES_LONG = 3

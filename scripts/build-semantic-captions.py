@@ -8,7 +8,7 @@ wrapping `很多人以为 push 就是把文件传到服务器。` at 17 characte
 and no gate could see it, because Chinese TTS reports one word per character, so every
 character position looked like a legal word boundary.
 
-Break rule (`references/subtitle-timing.md`):
+Break rule (`references/audio-captions.md#subtitle-timing`):
   legal   = BudouX phrase boundaries + positions right after clause punctuation
   illegal = inside a word, inside an ASCII/digit token, before a closing mark,
             after an opening bracket, or inside a protected phrase

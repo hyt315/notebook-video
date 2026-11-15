@@ -6,8 +6,8 @@
 
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
-[![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel%20%7C%20journal%20%7C%20papercut%20%7C%20archive-ff7a59)](references/theme-system.md)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/technique.md#cross-platform-compatibility)
+[![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel%20%7C%20journal%20%7C%20papercut%20%7C%20archive-ff7a59)](references/themes/system.md)
 [![Validate](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml/badge.svg)](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
 
@@ -24,7 +24,7 @@ ask for "a short explainer on hash tables", and the agent uses the blueprints, t
 multi-minute Chinese teaching video with **React + TypeScript + [Remotion](https://www.remotion.dev/)**. You get the MP4 and the
 full, editable source project.
 
-- **Draft-paper narration**: no pen on screen — things appear only when the voice-over reaches them and grow in progressively: text unfolds left to right, a sketch is traced part by part, annotations are drawn as they are spoken; at most two things grow at once (rules in references/reveal-rules.md).
+- **Draft-paper narration**: no pen on screen — things appear only when the voice-over reaches them and grow in progressively: text unfolds left to right, a sketch is traced part by part, annotations are drawn as they are spoken; at most two things grow at once (rules in references/draftpaper.md#reveal-rules).
 - **A notebook page carries the shot, not slides**: every shot is either a **page** (a real archival plate or specimen photo, a magnifier over it, handwriting and a red seal) or a **component** doing the explaining (consoles, code diffs, checklists, stat rows, bars, verdict strips…). **Line drawings are optional**: they only ever draw a specimen, because a clip-art sketch that fails to explain a concept reads worse than no drawing — so they live inside the page as a figure (`content.figure`, ≤19 % of the drawing width) instead of leading the shot.
 - **The camera follows the narration**: an engine-level virtual camera pushes in by default, moves to the component the narration names (a sketch shot only does a 1.00→1.03 slow push-in, never a crop), and cuts with whip pans or zoom-throughs; push-ins keep margins so the drawing is never cropped.
 - **Reproducible by weaker models**: seven fusion recipes decide where the sketch sits and how big the cards are — the author only fills content. Ten teaching blueprints (five component routes + five hand-made structure families) name the skeleton and components for every shot, plus golden examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
@@ -35,7 +35,7 @@ full, editable source project.
   xuan paper, window-flower papercut, a 1630 map, film strips, screentone, mesh gradients…), rotated by shot role with no two
   adjacent shots alike; every file records its source and licence (Paper Shaders rendered offline once, public-domain / CC0
   Commons textures, fixed-seed drawings) and a gate checks light ground and subtitle contrast.
-  See [references/background-library.md](references/background-library.md).
+  See [references/media.md#background-library](references/media.md#background-library).
 
 - **Decide what the idea is made of first**: a director layer (metaphor first → the medium is the metaphor → one
   native move at the turn → three candidate structures; `treatment.json` is gated), three light hand-made skins (`journal`
@@ -136,8 +136,8 @@ All blueprints follow the same teaching arc: **hook → one key term → break i
 
 Two routes:
 
-- **Hand-written component scenes (recommended for delivery)**: `shots.json` + `scenes.tsx` in the project directory, adapted from the template's 8-shot example film. Manual: [references/handwritten-scenes.md](references/handwritten-scenes.md).
-- **story.json draft (quick first cut)**: `node scripts/make-video.mjs examples/concept-hash-table.story.json ./draft --stills`; `compose-story.py` lays out, times and frames the shots. See [references/auto-engine.md](references/auto-engine.md).
+- **Hand-written component scenes (recommended for delivery)**: `shots.json` + `scenes.tsx` in the project directory, adapted from the template's 8-shot example film. Manual: [references/scenes.md#handwritten-scenes](references/scenes.md#handwritten-scenes).
+- **story.json draft (quick first cut)**: `node scripts/make-video.mjs examples/concept-hash-table.story.json ./draft --stills`; `compose-story.py` lays out, times and frames the shots. See [references/technique.md#auto-engine](references/technique.md#auto-engine).
 
 ## Real media
 
@@ -155,7 +155,7 @@ python scripts/prepare-media.py ./my-video --add pr.png --id pr-page --region di
 - Source priority: the user's own files > your own captures of official pages > CC0 / CC-BY / Pexels / Unsplash. Web media must carry `url` / `license` / `credit`; the credit badge is drawn automatically. Without a compatible licence, redraw it with components.
 - `validate-media` blocks missing files, upscaling beyond 1.5× (blurry), wrong codec / frame rate, missing licence or credit, and references to undefined regions.
 
-Details: [references/real-media.md](references/real-media.md).
+Details: [references/media.md#real-media](references/media.md#real-media).
 
 ### Search Wikimedia Commons / Openverse first
 
@@ -167,7 +167,7 @@ python scripts/commons-search.py credits ./my-video   # → CREDITS.md
 
 No API key, standard library only; public domain / CC0 / CC BY are accepted (CC BY-SA is excluded by default because share-alike
 would reach the whole film), and `ArchivePhoto` / `PinnedPhoto` / `LoupeMedia` always draw the credit.
-Details: [references/commons-media.md](references/commons-media.md).
+Details: [references/media.md#commons-media](references/media.md#commons-media).
 
 ## Themes
 
@@ -180,10 +180,10 @@ Details: [references/commons-media.md](references/commons-media.md).
 | `archive` | Archive light table: real archival objects on a cool backlit surface, one signal colour, a loupe | `--style=archive` |
 
 Craft skins use 96 px@1440 Noto Serif SC Bold subtitles (downloaded on demand, sha256-checked) with no UI pill, and require a director
-treatment `manifests/treatment.json` ([references/director-method.md](references/director-method.md)); components in
-[references/craft-kit.md](references/craft-kit.md), style recipes in [references/style-recipes.md](references/style-recipes.md).
+treatment `manifests/treatment.json` ([references/director.md#director-method](references/director.md#director-method)); components in
+[references/components.md#craft-kit](references/components.md#craft-kit), style recipes in [references/director.md#style-recipes](references/director.md#style-recipes).
 
-Each theme ships three locked backgrounds (main / chapter / quiet) with a calm central ~70 % safe area; the engine picks one per shot. Text uses dedicated `*Ink` colours so contrast always passes. Specs: [references/theme-system.md](references/theme-system.md), [theme-flat.md](references/theme-flat.md), [theme-cel.md](references/theme-cel.md), [theme-journal.md](references/theme-journal.md), [theme-papercut.md](references/theme-papercut.md), [theme-archive.md](references/theme-archive.md).
+Each theme ships three locked backgrounds (main / chapter / quiet) with a calm central ~70 % safe area; the engine picks one per shot. Text uses dedicated `*Ink` colours so contrast always passes. Specs: [references/themes/system.md](references/themes/system.md), [references/themes/flat.md](references/themes/flat.md), [references/themes/cel.md](references/themes/cel.md), [references/themes/journal.md](references/themes/journal.md), [references/themes/papercut.md](references/themes/papercut.md), [references/themes/archive.md](references/themes/archive.md).
 
 ## Gates at a glance
 
@@ -194,7 +194,7 @@ Each theme ships three locked backgrounds (main / chapter / quiet) with a calm c
 | Final film | `validate-video`, `validate-motion-gaps` | Wrong size / codec / colour tags, frames frozen too long |
 | Skill self-checks | `validate-skill-consistency`, `selftest`, `negative-gate-check`, `dev/check-examples`, `dev/check-test-collection`, `dev/purity-smoke` | Docs naming components that do not exist, broken links; every gate must block a deliberately broken input; positive examples must pass and negatives must be blocked; a test file collects nothing; continuous and single-frame renders differ |
 
-Details: [references/composition-gate.md](references/composition-gate.md), [references/presentation-gate.md](references/presentation-gate.md), [references/quality-checklist.md](references/quality-checklist.md).
+Details: [references/checks.md#composition-gate](references/checks.md#composition-gate), [references/checks.md#presentation-gate](references/checks.md#presentation-gate), [references/checks.md#quality-checklist](references/checks.md#quality-checklist).
 
 ## Project structure
 

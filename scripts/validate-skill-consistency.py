@@ -88,7 +88,7 @@ DOC_IDENT_WHITELIST = {
     'Chloe', 'Dean', 'Mia', 'Milo', 'TransitionSeries',      # 供应商音色名 / Remotion API
     'FiZoomOut', 'LuZoomOut',                                 # react-icons 的两个字形名（政策里做字节级对照）
     'DeepSeek', 'Opus',                                       # 模型名
-    'NOTICE', 'UNLICENSED', 'Vulkan', 'VK_ICD_FILENAMES',      # 仓库文件名 / npm 许可字段 / Chromium feature / Vulkan loader 环境变量（3.3.0 fx-effects.md）
+    'NOTICE', 'UNLICENSED', 'Vulkan', 'VK_ICD_FILENAMES',      # 仓库文件名 / npm 许可字段 / Chromium feature / Vulkan loader 环境变量（3.3.0 references/camera.md#fx-effects）
     # —— 以下名字在文档里**只允许以"已删除/历史对照"的身份出现**（写它们的用途是告诉读者"别再用"）——
     'BackgroundMute', 'CameraRig', 'SceneContribute', 'SceneShip', 'SceneSkills',
     'Film4x3', 'Film3x4',                                        # 3.2.0 删除的 4:3 / 3:4 Composition
@@ -130,7 +130,7 @@ def doc_defined_names() -> set[str]:
                     if m2:
                         names.add(m2.group(1))
             # Remotion 合成 id（`<Composition id="NotebookVideoCraftSheet" …/>`）也是文档会引用的真名字：
-            # 3.3.0 的 craft-kit.md 写了 `NotebookVideoCraftSheet`，旧版只认 TS 声明，于是报"文档编出来的名字"。
+            # 3.3.0 的 references/components.md#craft-kit 写了 `NotebookVideoCraftSheet`，旧版只认 TS 声明，于是报"文档编出来的名字"。
             names |= set(re.findall(r'<Composition\s+id="([A-Za-z_$][\w$]*)"', t))
             for m in re.finditer(r'export\s*\{([^}]*)\}', t):
                 for part in m.group(1).split(','):
@@ -158,7 +158,7 @@ def check_doc_identifiers() -> list[str]:
     defined = doc_defined_names()
     problems: list[str] = []
     docs = [SKILL / 'SKILL.md', SKILL / 'README.md', SKILL / 'README.en.md']
-    docs += [p for p in (SKILL / 'references').glob('*.md')]
+    docs += [p for p in (SKILL / 'references').rglob('*.md')]
     docs += [p for p in (SKILL / 'agents').glob('*.yaml')]
     for doc in docs:
         if not doc.is_file() or doc.name in DOC_IDENT_SKIP_FILES:
@@ -490,9 +490,8 @@ def main() -> None:
         SKILL / 'scripts' / 'make-video.cmd',
         SKILL / 'scripts' / 'package-project.py',
         SKILL / 'DEPENDENCIES.md',
-        SKILL / 'references' / 'cross-platform-compatibility.md',
-        SKILL / 'references' / 'windows-compatibility.md',
-        SKILL / 'references' / 'visual-director.md',
+        SKILL / 'references' / 'technique.md',
+        SKILL / 'references' / 'director.md',
         SKILL / 'scripts' / 'validate-visual-plan.py',
     )
     for required in required_cross_platform:
@@ -506,8 +505,8 @@ def main() -> None:
                        'craft-common.tsx', 'journal.tsx', 'papercut.tsx', 'archive.tsx'):
         if not (theme_dir / theme_file).is_file():
             problems.append(f"missing theme pack file: assets/lecture-template/src/theme/{theme_file}")
-    for theme_doc in ('theme-system.md', 'theme-cel.md', 'theme-flat.md',
-                      'theme-journal.md', 'theme-papercut.md', 'theme-archive.md'):
+    for theme_doc in ('themes/system.md', 'themes/cel.md', 'themes/flat.md',
+                      'themes/journal.md', 'themes/papercut.md', 'themes/archive.md'):
         if not (SKILL / 'references' / theme_doc).is_file():
             problems.append(f"missing theme contract doc: references/{theme_doc}")
     if theme_dir.is_dir():
@@ -570,7 +569,7 @@ def main() -> None:
         if any(name.startswith(('renders/', 'node_modules/')) for name in names):
             problems.append('packager included renders or node_modules')
 
-    active_docs = [SKILL / 'SKILL.md', SKILL / 'references' / 'subtitle-timing.md', SKILL / 'references' / 'remotion-architecture.md', SKILL / 'references' / 'official-skills-exemplar.md', SKILL / 'references' / 'narrative-hook.md', SKILL / 'references' / 'visual-director.md']
+    active_docs = [SKILL / 'SKILL.md', SKILL / 'references' / 'audio-captions.md', SKILL / 'references' / 'director.md']
     for doc in active_docs:
         text = doc.read_text(encoding='utf-8')
         for obsolete_command in ('python3 scripts/', 'bash "$SKILL_DIR/scripts/', 'scripts/new-project.sh`'):

@@ -58,8 +58,8 @@ class CraftBlueprints(unittest.TestCase):
     def test_rules_link_opening_and_camera_docs(self):
         for name, bp in CRAFT.items():
             rules = " ".join(bp["$rules"])
-            self.assertIn("narrative-hook.md", rules, name)
-            self.assertIn("camera-language.md", rules, name)
+            self.assertIn("references/director.md#narrative-hook", rules, name)
+            self.assertIn("references/camera.md#camera-language", rules, name)
 
 
 if __name__ == "__main__":

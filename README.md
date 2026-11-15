@@ -6,8 +6,8 @@
 
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
-[![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel%20%7C%20journal%20%7C%20papercut%20%7C%20archive-ff7a59)](references/theme-system.md)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/technique.md#cross-platform-compatibility)
+[![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel%20%7C%20journal%20%7C%20papercut%20%7C%20archive-ff7a59)](references/themes/system.md)
 [![Validate](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml/badge.svg)](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
 
@@ -23,7 +23,7 @@
 你说「做一支讲哈希表的科普视频」，它就按这里的蓝图、模板和门禁，用 **React + TypeScript + [Remotion](https://www.remotion.dev/)**
 做出一支 30 秒到数分钟的中文讲课视频，并交付 MP4 和整套可改的源码工程。
 
-- **草稿纸讲解**：画面上没有笔，讲到哪，长到哪——每样东西在旁白讲到它时才出现，文字左→右展开，线稿按部位描出，圈注随讲随画；同一时刻最多 2 样在长（规则见 references/reveal-rules.md）。
+- **草稿纸讲解**：画面上没有笔，讲到哪，长到哪——每样东西在旁白讲到它时才出现，文字左→右展开，线稿按部位描出，圈注随讲随画；同一时刻最多 2 样在长（规则见 references/draftpaper.md#reveal-rules）。
 - **手账页承载，不是幻灯片**：镜头只有两种——**手账页**（贴一张真实档案图版 / 藏品照片，配放大镜、手写标注和朱印）
   和**组件**（控制台、代码差异、清单、数字行、柱条、结论条……）。**线稿是可选项**，只用来画「标本示意图」：
   一条讲不清概念的剪贴画，比不画更糟——所以它退回页内小图（`content.figure`，画宽 ≤19%），不再当镜头主角。
@@ -36,7 +36,7 @@
 
 - **背景库**：每个手作皮肤再加 8 张、flat / cel 各加 5 张亮底背景（横线本、宣纸、窗花、古地图、胶片、网点、mesh 渐变……），
   不写就按镜头角色自动轮换、相邻两镜不重复；每张都登记了来源与许可（Paper Shaders 离线预渲、Commons 公有领域 / CC0 纹理、确定性程序生成），
-  门禁核对亮底与字幕区对比度。见 [references/background-library.md](references/background-library.md)。
+  门禁核对亮底与字幕区对比度。见 [references/media.md#background-library](references/media.md#background-library)。
 
 - **先想"用什么东西演"**：导演层（隐喻先行 → 媒介即隐喻 → 顿悟点的原生动作 → 三候选结构，`treatment.json` 有门禁）；
   三套亮底手作皮肤（`journal` 手账水彩 / `papercut` 红色剪纸 / `archive` 档案灯台）和 craft 材质组件（压感墨线、"写出来"的中文、水彩晕染、剪纸、放大镜）；
@@ -134,8 +134,8 @@ scripts\make-video.cmd .\my-video --render .\my-video\final.mp4
 
 两条路线：
 
-- **手写组件场景（推荐，正式出片）**：工程目录里的 `shots.json` + `scenes.tsx`，照模板自带的 8 镜示例片改。手册：[references/handwritten-scenes.md](references/handwritten-scenes.md)。
-- **story.json 草稿（快速起稿）**：`node scripts/make-video.mjs examples/concept-hash-table.story.json ./draft --stills`，由 `compose-story.py` 自动排版、定时、算镜头。说明：[references/auto-engine.md](references/auto-engine.md)。
+- **手写组件场景（推荐，正式出片）**：工程目录里的 `shots.json` + `scenes.tsx`，照模板自带的 8 镜示例片改。手册：[references/scenes.md#handwritten-scenes](references/scenes.md#handwritten-scenes)。
+- **story.json 草稿（快速起稿）**：`node scripts/make-video.mjs examples/concept-hash-table.story.json ./draft --stills`，由 `compose-story.py` 自动排版、定时、算镜头。说明：[references/technique.md#auto-engine](references/technique.md#auto-engine)。
 
 ## 真实素材
 
@@ -153,7 +153,7 @@ python scripts/prepare-media.py ./my-video --add pr.png --id pr-page --region di
 - 来源优先级：用户文件 > 自己截的官方页面 > CC0 / CC-BY / Pexels / Unsplash；网络素材必须写 `url` / `license` / `credit`，署名徽章自动上屏。没有兼容许可就用组件重画。
 - `validate-media` 会拦：文件缺失、放大超过 1.5 倍（会糊）、编码 / 帧率不对、许可或署名缺失、引用了不存在的区域。
 
-详见 [references/real-media.md](references/real-media.md)。
+详见 [references/media.md#real-media](references/media.md#real-media)。
 
 ### 先搜 Wikimedia Commons / Openverse
 
@@ -164,7 +164,7 @@ python scripts/commons-search.py credits ./my-video   # → CREDITS.md
 ```
 
 免 key、只用标准库；只收公有领域 / CC0 / CC BY（CC BY-SA 默认排除——"相同方式共享"会波及整条片子），署名由 `ArchivePhoto` / `PinnedPhoto` / `LoupeMedia` 强制上屏。
-详见 [references/commons-media.md](references/commons-media.md)。
+详见 [references/media.md#commons-media](references/media.md#commons-media)。
 
 ## 主题
 
@@ -177,9 +177,9 @@ python scripts/commons-search.py credits ./my-video   # → CREDITS.md
 | `archive` | 档案灯台：冷白背光台面上的真实档案物件，一个信号色，放大镜 | `--style=archive` |
 
 手作皮肤的字幕是 96 px@1440 的 Noto Serif SC Bold（按需下载、校验 sha256），没有 UI 胶囊；它们要求先写导演层 `manifests/treatment.json`
-（[references/director-method.md](references/director-method.md)），组件见 [references/craft-kit.md](references/craft-kit.md)，风格配方见 [references/style-recipes.md](references/style-recipes.md)。
+（[references/director.md#director-method](references/director.md#director-method)），组件见 [references/components.md#craft-kit](references/components.md#craft-kit)，风格配方见 [references/director.md#style-recipes](references/director.md#style-recipes)。
 
-每套皮肤有 8–11 张亮底背景，按 `bgMode` 轮换：`film` 全片一张 / `chapter` 每章一张（手作皮肤默认）/ `shot` 每镜一张（flat、cel 默认），中央约 70% 是内容安全区。清单与许可见 [references/background-library.md](references/background-library.md)。文字色有专门的 `*Ink` 安全色，保证对比度。规格：[references/theme-system.md](references/theme-system.md)、[theme-flat.md](references/theme-flat.md)、[theme-cel.md](references/theme-cel.md)、[theme-journal.md](references/theme-journal.md)、[theme-papercut.md](references/theme-papercut.md)、[theme-archive.md](references/theme-archive.md)。
+每套皮肤有 8–11 张亮底背景，按 `bgMode` 轮换：`film` 全片一张 / `chapter` 每章一张（手作皮肤默认）/ `shot` 每镜一张（flat、cel 默认），中央约 70% 是内容安全区。清单与许可见 [references/media.md#background-library](references/media.md#background-library)。文字色有专门的 `*Ink` 安全色，保证对比度。规格：[references/themes/system.md](references/themes/system.md)、[references/themes/flat.md](references/themes/flat.md)、[references/themes/cel.md](references/themes/cel.md)、[references/themes/journal.md](references/themes/journal.md)、[references/themes/papercut.md](references/themes/papercut.md)、[references/themes/archive.md](references/themes/archive.md)。
 
 ## 门禁一览
 
@@ -190,7 +190,7 @@ python scripts/commons-search.py credits ./my-video   # → CREDITS.md
 | 成片 | `validate-video`、`validate-motion-gaps` | 尺寸 / 编码 / 色彩标记不对、画面静止过久 |
 | 技能自检 | `validate-skill-consistency`、`selftest`、`negative-gate-check`、`dev/check-examples`、`dev/check-test-collection`、`dev/purity-smoke` | 文档写了不存在的组件、断链；每道门禁喂坏输入必须拦住；正例过门禁、负例被拦；测试文件没被收集；连续渲与单帧渲画面不同 |
 
-细节：[references/composition-gate.md](references/composition-gate.md)、[references/presentation-gate.md](references/presentation-gate.md)、[references/quality-checklist.md](references/quality-checklist.md)。
+细节：[references/checks.md#composition-gate](references/checks.md#composition-gate)、[references/checks.md#presentation-gate](references/checks.md#presentation-gate)、[references/checks.md#quality-checklist](references/checks.md#quality-checklist)。
 
 ## 项目结构
 

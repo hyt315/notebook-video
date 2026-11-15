@@ -24,7 +24,7 @@ import linework_index  # noqa: E402  （必须在 sys.path 之后导入）
 from story_time import frame  # noqa: E402
 
 
-# ---------- 3.5.1 出现排程（references/reveal-rules.md 规则 ③）----------
+# ---------- 3.5.1 出现排程（references/draftpaper.md#reveal-rules 规则 ③）----------
 REVEAL_GAP = 12          # 同一镜里相邻两次「开始出现」至少隔 12 帧
 REVEAL_CONC = 2          # 同一时刻最多 2 个东西在长
 SKETCH_ENTER_SCHED = 45  # 线稿描出时长按上限 45 帧排（sketch.tsx 实际 clamp(12×部位数, 24, 45)）

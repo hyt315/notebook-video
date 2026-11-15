@@ -4,7 +4,7 @@
 1. 试听条：把 audio/seg*.wav 每段取前 3 秒拼成 audition.mp3（约30秒），
    成片前先听 30 秒，读错在源头改 narration.txt，不返工。
 2. 多音字扫描：内置高危表扫 narration.txt，命中报行号 + 替换建议。
-   （TTS 没有拼音通道，错读只能在源头改写，见技能 tts-audio.md）
+   （TTS 没有拼音通道，错读只能在源头改写，见技能 references/audio-captions.md#tts-audio）
 
 用法：python scripts/audition.py PROJECT_DIR
 产物：PROJECT_DIR/audio/audition.mp3

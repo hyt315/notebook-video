@@ -1,8 +1,8 @@
 # 皮肤契约：journal · 博物学家手账
 
 状态：LOCKED。实现在 `assets/lecture-template/src/theme/journal.tsx`。`new-project ./dir --style=journal` 选它（会按需下载 Noto Serif SC Bold，OFL-1.1，sha256 锁定）。
-手作皮肤**必须**先写导演层 `manifests/treatment.json`（[director-method.md](director-method.md)），`validate-treatment.py` 把缺项记 P0。
-配方（八个轴）见 [style-recipes.md](style-recipes.md)。
+手作皮肤**必须**先写导演层 `manifests/treatment.json`（[../director.md#director-method](../director.md#director-method)），`validate-treatment.py` 把缺项记 P0。
+配方（八个轴）见 [../director.md#style-recipes](../director.md#style-recipes)。
 
 ## 媒介
 一页暖白棉纸笔记本。东西是被**画上去、贴上去、写上去**的：水彩淡彩、钢笔批注、胶带贴住的照片和裁下的纸片。
@@ -17,8 +17,8 @@
 - 章节标识（`Chrome`）：左上角钢笔小字 "No.01 — 章名" + 一条手划线；**没有**右上技术页眉、没有吉祥物。
 - 调色（`Grade`）：轻微暖色 + 暗角。
 - 背景：`bg-journal-{main,chapter,quiet}.jpg`（2560×1440，`scripts/dev/make-craft-textures.py` 确定性生成，sha256 登记）；chapter 变体左下 / 右上各一团水彩晕。
-- 背景库：再加 8 张——`journal/ruled` 横线本、`grid` 方格本、`dots` 点阵本、`kraft` 牛皮纸本、`watercolor` 水彩纸、`sticky` 便签墙、`oldpage` 旧书页、`graph` 坐标纸；手作皮肤默认 `bgMode: "chapter"`：只在章节首镜换纸、章内沿用（装饰重的 `busy` 背景只给章节卡 / 安静镜）；想全片一张纸写 `"bgMode": "film"`，想改回逐镜轮换写 `"bgMode": "shot"`，见 [background-library.md](background-library.md)。
-- 转场缺省：`pageturn`（真翻页：上一页卷起来翻走，见 [fx-effects.md](fx-effects.md)）；机器画不了 WebGPU 时自动退回 `slide`（沿同一页横移）。章节首镜 `drop`（新的一页盖上来）。
+- 背景库：再加 8 张——`journal/ruled` 横线本、`grid` 方格本、`dots` 点阵本、`kraft` 牛皮纸本、`watercolor` 水彩纸、`sticky` 便签墙、`oldpage` 旧书页、`graph` 坐标纸；手作皮肤默认 `bgMode: "chapter"`：只在章节首镜换纸、章内沿用（装饰重的 `busy` 背景只给章节卡 / 安静镜）；想全片一张纸写 `"bgMode": "film"`，想改回逐镜轮换写 `"bgMode": "shot"`，见 [../media.md#background-library](../media.md#background-library)。
+- 转场缺省：`pageturn`（真翻页：上一页卷起来翻走，见 [../camera.md#fx-effects](../camera.md#fx-effects)）；机器画不了 WebGPU 时自动退回 `slide`（沿同一页横移）。章节首镜 `drop`（新的一页盖上来）。
 
 ## 原生动作（顿悟点用）
 1. **晕染即揭示**：`WashBlob` 在结构上晕开，水干后边缘自己变深——"本来就在那里，只是你没看出来"。

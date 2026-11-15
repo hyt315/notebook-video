@@ -4,7 +4,7 @@
 用法：
     python scripts/validate-opening.py PROJECT [--video MP4] [--json]
 
-依据：references/narrative-hook.md 的冷开合约（先给结果 / 最怪的画面，再给背景）与 pacing-rhythm.md 的开场节奏；
+依据：references/director.md#narrative-hook 的冷开合约（先给结果 / 最怪的画面，再给背景）与 references/director.md#pacing-rhythm 的开场节奏；
 YouTube 把"30 秒后还剩多少观众"单列为 Intro 指标，并建议把精彩内容提前（https://support.google.com/youtube/answer/9314415）。
 
 静态检查（读 manifests/shots.resolved.json + manifests/caption-cues.json）：
@@ -102,7 +102,7 @@ def static_checks(shots: list[dict], cues: list[dict], title: str) -> list[str]:
         text = str(cues[0].get("text") or "").strip()
         for pat, label in BANNED_OPENERS:
             if re.search(pat, text, re.I):
-                out.append(f"O5 第一句「{text}」是{label}开场：直接给结果或最怪的那个事实（narrative-hook.md 的冷开合约）")
+                out.append(f"O5 第一句「{text}」是{label}开场：直接给结果或最怪的那个事实（references/director.md#narrative-hook 的冷开合约）")
                 break
     return out
 

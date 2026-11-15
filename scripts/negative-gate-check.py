@@ -32,7 +32,7 @@ from gatelib import (  # noqa: E402  公共壳：临时工程 / 跑脚本 / 断�
 #   · 删掉 `if (blocked) throw e;` → 报"硬拦"却照样出图 rc=0（本仓库踩过两次的坑）；
 #   · 删掉 `[data-design-root]` 折算 → 口径从设计坐标退回输出像素，换 --scale 就失真。
 # 所以这三条各自一条夹具：原样必须过，删掉任一条必须被抓住。
-# （真渲染的负向/正向夹具在演示工程之外：见 references/composition-gate.md §5.2 的七条 composition。）
+# （真渲染的负向/正向夹具在演示工程之外：见 references/checks.md#composition-gate §5.2 的七条 composition。）
 # ════════════════════════════════════════════════════════════════════════════
 CANVAS_BOUNDS_NEEDLES = (
     # (检查项, 子串, 说人话)
@@ -623,7 +623,7 @@ cleanup(td)
 #
 # 渲染期门禁没法在这个脚本里真渲一帧（那要浏览器 + 30 秒/帧），但**最容易在重构里被削掉的几层**
 # 是纯静态可查的：挂载、档位（片子 warn / 接触表 block）、硬拦纪律、判据的收窄。
-# 真渲染的正/负向夹具与实测数字在 references/composition-gate.md §5.2。
+# 真渲染的正/负向夹具与实测数字在 references/checks.md#composition-gate §5.2。
 # ════════════════════════════════════════════════════════════════════════════
 CBW = [PY, os.path.join(SKILL, 'scripts/negative-gate-check.py'), '--canvas-bounds-wiring']
 
@@ -689,7 +689,7 @@ cleanup(td)
 # ════════════════════════════════════════════════════════════════════════════
 # AC/AD/AE · 讲法字段 G-14②：同一 `move` **不得连续 ≥3 镜**
 #
-# 为什么补这一组：这条规则在 `references/narrative-moves.md` 写了**两处**（§2 动作表的开头、§4 门禁表），
+# 为什么补这一组：这条规则在 `references/director.md#narrative-moves` 写了**两处**（§2 动作表的开头、§4 门禁表），
 # 可它此前**从没被任何门禁读过** —— `validate-presentation.py` 的 G-14 只查了"move 是不是 10 个名字
 # 之一"，于是写 3 镜连续 `引入` 的 shots.json 照旧 PASS。**判据加了而夹具没加 = 那道门仍然只是名义存在**，
 # 所以判据与夹具同版落地：
@@ -742,7 +742,7 @@ cleanup(td)
 # ════════════════════════════════════════════════════════════════════════════
 # AF–AK · 讲法字段 G-15：`evidence` 必须**作为 JSX 用法**出现在场景源码里（v2 简版口径）
 #
-# 为什么补这一组：`references/narrative-moves.md` §2/§4 与 `presentation-gate.md` 把 `evidence`
+# 为什么补这一组：`references/director.md#narrative-moves` §2/§4 与 `references/checks.md#presentation-gate` 把 `evidence`
 # 的判法写成 **P0**，而 `validate-presentation.py` 此前读它的唯一一处是 `if not ev:`（只查字段非空）：
 # 名字写成**不存在的**、或指向一个**不动的**东西，门禁一声不响。
 # 「文档里有、代码里没有」是本仓库最危险的一类缺陷（CardFitGate / OverlapGate / bottomFill 都是这样废掉的）。
@@ -763,7 +763,7 @@ cleanup(td)
 #           已经实测到了（帧经 `ctx` 这类不透明参数传进组件的写法会被判成静态，动作表推荐的 `PhaseRail`
 #           恰是这种写法，判成 P0 就等于"照文档写、门禁拦你"）。
 #   AL = 切不出"本镜"时降级并自报 —— 已经没有"本镜"这一层，无级可降。
-# 两条都写进了 `references/narrative-moves.md` §2 与 `presentation-gate.md` §G-15 的"现在不做"。
+# 两条都写进了 `references/director.md#narrative-moves` §2 与 `references/checks.md#presentation-gate` §G-15 的"现在不做"。
 # ════════════════════════════════════════════════════════════════════════════
 
 

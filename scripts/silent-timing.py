@@ -9,7 +9,7 @@
                                     [--start-ms 300] [--comma-ms 150] [--stop-ms 300] [--line-gap-ms 450] [--para-gap-ms 900]
 
   LINES_TXT  一行一句（就是 manifests/semantic-caption-lines.txt）；空行 = 段落停顿（多停 --para-gap-ms）。
-  OUT_JSON   词边界列表 [{part, start, end}]，与 TTS 适配器契约相同（references/tts-audio.md），
+  OUT_JSON   词边界列表 [{part, start, end}]，与 TTS 适配器契约相同（references/audio-captions.md#tts-audio），
              之后照常跑 build-semantic-captions.py 绑定成 caption-cues.json。
   --cps      读速（加权字/秒：汉字计 1，ASCII 字母 / 数字计 0.5，与 validate-presentation 同口径）。
              缺省：--project 是手作皮肤（journal / papercut / archive）→ 6.5；否则 4.5（组件路线的既有速度）。

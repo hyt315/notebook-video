@@ -12,7 +12,7 @@
 
 **它不下判断。** 阈值只在 `validate-composition.py` / `validate-caption-sync.py` / `validate-audio-levels.py`
 里存在一处，这里不复制第二份——否则同一个数会在两处漂移（这个坑项目里已经踩过：
-`cinema-camera.md` 正文和门禁表就曾对不上）。所以本脚本只输出数字与 Δ，判据请跑门禁。
+`references/camera.md#cinema-camera` 正文和门禁表就曾对不上）。所以本脚本只输出数字与 Δ，判据请跑门禁。
 
 只读 `manifests/` 与 `renders/` 里已有的文件，不渲染、不改工程。
 """
@@ -97,7 +97,7 @@ def measure(project: Path) -> dict:
         if s.get("cinema") or s.get("cameraIntent"):
             cam_shots += 1
         max_zoom = max(max_zoom, peak)
-        # 1.35 = TEXT_ZOOM_MAX（references/shot-language.md §相机上限）；只在这里统计，不当判据。
+        # 1.35 = TEXT_ZOOM_MAX（references/camera.md#shot-language §相机上限）；只在这里统计，不当判据。
         if peak > 1.35 and "text" in [str(x) for x in (s.get("media") or [])]:
             over_text_cap += 1
 

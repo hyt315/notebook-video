@@ -7,7 +7,7 @@ description: Turn a topic into a Chinese 16:9 teaching video with React, TypeScr
 
 **第一原则 · 草稿纸讲解**：画面像一张边讲边写的草稿纸。画面上**没有笔**；每样东西都在旁白讲到它时才出现，一点点长出来，不整块弹出，同一时刻不冒出一堆。下面的「手账页 / 组件 / 直书页」管的是**画什么**，草稿纸讲解管的是**什么时候、怎么出现**；两者冲突时，按草稿纸讲解。
 
-**出现规则**（auto 路线由引擎自动做到；手写场景路线照着写。全文见 [references/reveal-rules.md](references/reveal-rules.md)；版式、配色与组件搭配见 [references/draftpaper-design.md](references/draftpaper-design.md)）：
+**出现规则**（auto 路线由引擎自动做到；手写场景路线照着写。全文见 [references/draftpaper.md#reveal-rules](references/draftpaper.md#reveal-rules)；版式、配色与组件搭配见 [references/draftpaper.md#draftpaper-design](references/draftpaper.md#draftpaper-design)）：
 1. **跟着旁白**：一样东西在讲到它的那句话开始时才开始出现，不提前。
 2. **长出来**：文字和卡片左→右展开，用时 = 字数 × 4 帧（最少 12、最多 45 帧）；线稿按部位依次描出，整幅 24–45 帧；圈注 14 帧，下划线和箭头 12 帧，手写小字 24 帧。手账页上的真图版、照片、截图可以整件「贴上」，但也要等讲到它的那句。
 3. **不扎堆**：同一镜里，相邻两样东西开始出现至少隔 12 帧（0.4 秒）；同一时刻最多 2 样在长。
@@ -31,14 +31,14 @@ description: Turn a topic into a Chinese 16:9 teaching video with React, TypeScr
   模式是**门禁契约**，不是风格开关：声明 `component` 却整片是手账页，会被点名「别声明一套做另一套」。
 - 主题里的那个东西全片**至少出现一次**（手账页图版说明 / 墨图标签 / 标本速写 / `see` → 全组件片还认组件镜的 `title`），否则判 **P0**。
 - 手账页的容器是**纸**，不是卡片：不要给它套圆角框，也不要把图版做成"浏览器截图卡片"。
-- 手账页写法见 [references/journal-page.md](references/journal-page.md)；参考片 [examples/cell-notebook](examples/cell-notebook/README.md) **仅文档**（导演层 + 分镜 + 旁白，不含 story.json 与素材，不能直接跑）；能直接跑的手账页配方是 [examples/recipes/cork-page.story.json](examples/recipes/cork-page.story.json)（4 镜，自带导演层，素材按提示用 commons-search 取一次）；组件配方见 [references/recipes.md](references/recipes.md)。
+- 手账页写法见 [references/components.md#journal-page](references/components.md#journal-page)；参考片 [examples/cell-notebook](examples/cell-notebook/README.md) **仅文档**（导演层 + 分镜 + 旁白，不含 story.json 与素材，不能直接跑）；能直接跑的手账页配方是 [examples/recipes/cork-page.story.json](examples/recipes/cork-page.story.json)（4 镜，自带导演层，素材按提示用 commons-search 取一次）；组件配方见 [references/scenes.md#recipes](references/scenes.md#recipes)。
 
 **线稿是可选件，只做标本速写**（一件东西 + 尺寸线 + 手写名）。不要用简笔线稿去「解释」概念——
-实测那种画面像剪贴画，比不画更差。`validate-fusion` 对「文字 + 简笔线稿」超过 20% 判 P1。线稿写法见 [references/linework.md](references/linework.md)。
+实测那种画面像剪贴画，比不画更差。`validate-fusion` 对「文字 + 简笔线稿」超过 20% 判 P1。线稿写法见 [references/components.md#linework](references/components.md#linework)。
 
 组件是信息的主体，但**不是唯一的载体**：有真东西可看时用 `page`（手账页），只有一组关系要讲时用 `type`（直书页：靠字号、行距、对齐做层级，一个框都不出）。
-直书页是「省掉框」，不是「省掉内容」——每行 ≤10 字、≤5 行，全片 ≤40%；超了就成一本排版册。写法见 [references/journal-page.md](references/journal-page.md)。
-另外，每片留 2–3 个**锤子帧**（整章最该被记住的一句，满屏单独出现 1.5–2.5 秒），规则见 [references/pacing-rhythm.md](references/pacing-rhythm.md)。
+直书页是「省掉框」，不是「省掉内容」——每行 ≤10 字、≤5 行，全片 ≤40%；超了就成一本排版册。写法见 [references/components.md#journal-page](references/components.md#journal-page)。
+另外，每片留 2–3 个**锤子帧**（整章最该被记住的一句，满屏单独出现 1.5–2.5 秒），规则见 [references/director.md#pacing-rhythm](references/director.md#pacing-rhythm)。
 锤子帧怎么做：组件路线用 `StampBanner`（或 `Callout` 放大到 displayL）独占一镜；手作路线用 `HandLettering` 手写满屏一句，或 `Seal` 印章大字——都放在媒介里，不是白底大字。
 只有 16:9；五个皮肤：`flat`（默认）、`cel`，以及手作皮肤 `journal`（手账水彩）/ `papercut`（红色剪纸）/ `archive`（档案灯台）。
 TTS 是正式步骤：`notebook-video tts <工程>`（默认 edge-tts；也可 `--engine=file` 用你自己的录音），字幕与镜头按**词级时间**对齐；没有真实旁白时 `--render` 会停在渲染前（静音占位只给 `--stills` / `preview`）。默认无 BGM，音效稀疏。
@@ -53,19 +53,19 @@ TTS 是正式步骤：`notebook-video tts <工程>`（默认 edge-tts；也可 `
 
 **不论哪条路线，每个选题都先搜一次 Commons / Openverse**（真东西几乎总能让片子更好）：
 `python scripts/commons-search.py search "<英文关键词>" --project ./my-video`，能用的 `add` 进来，交付前 `credits` 生成 `CREDITS.md`。
-许可只收公有领域 / CC0 / CC BY，署名自动上屏。见 [references/commons-media.md](references/commons-media.md)。
+许可只收公有领域 / CC0 / CC BY，署名自动上屏。见 [references/media.md#commons-media](references/media.md#commons-media)。
 
 ## 第 0 步 · 导演层（手作路线必做）
 
-照 [references/director-method.md](references/director-method.md) 写 `manifests/treatment.json`（模板 `manifests/treatment.example.json`）：
+照 [references/director.md#director-method](references/director.md#director-method) 写 `manifests/treatment.json`（模板 `manifests/treatment.example.json`）：
 一个生活问题 → 只属于这个题的隐喻 → 媒介（皮肤）为什么是它 → 顿悟点的**原生动作** → 三个候选结构选一个 → 对标学 / 不学 → 镜头表每镜写理由。
 蓝图用 `blueprints/medium-metaphor.json`。`validate-treatment.py` 在手作皮肤下把缺项记 P0（`make-video` 自动跑）。
-媒介的八个轴与"不是什么"见 [references/style-recipes.md](references/style-recipes.md)；组件见 [references/craft-kit.md](references/craft-kit.md)
+媒介的八个轴与"不是什么"见 [references/director.md#style-recipes](references/director.md#style-recipes)；组件见 [references/components.md#craft-kit](references/components.md#craft-kit)
 （`InkPath` / `HandNote` / `HandLettering` / `WashBlob` / `CutPaper` / `Loupe` / `PinnedPhoto` / `ArchivePhoto` …）。
-开场钩子、节奏、运镜分别见 [references/narrative-hook.md](references/narrative-hook.md)、[references/pacing-rhythm.md](references/pacing-rhythm.md)、[references/camera-language.md](references/camera-language.md)。
-**手作路线只必读 4 份**：[director-method.md](references/director-method.md)、[craft-kit.md](references/craft-kit.md)、[camera-language.md](references/camera-language.md)、`references/theme-<皮肤>.md`；其余按需查（`lecture-composition.md` 等仅限组件路线）。
+开场钩子、节奏、运镜分别见 [references/director.md#narrative-hook](references/director.md#narrative-hook)、[references/director.md#pacing-rhythm](references/director.md#pacing-rhythm)、[references/camera.md#camera-language](references/camera.md#camera-language)。
+**手作路线只必读 4 份**：[references/director.md#director-method](references/director.md#director-method)、[references/components.md#craft-kit](references/components.md#craft-kit)、[references/camera.md#camera-language](references/camera.md#camera-language)、`references/theme-<皮肤>.md`；其余按需查（`references/scenes.md#lecture-composition` 等仅限组件路线）。
 
-**auto 路线（story.json）必读 2 份**：[auto-engine.md](references/auto-engine.md)、[reveal-rules.md](references/reveal-rules.md)；用到配方 / 线稿时再读 [recipes.md](references/recipes.md)、[linework.md](references/linework.md)。
+**auto 路线（story.json）必读 2 份**：[references/technique.md#auto-engine](references/technique.md#auto-engine)、[references/draftpaper.md#reveal-rules](references/draftpaper.md#reveal-rules)；用到配方 / 线稿时再读 [references/scenes.md#recipes](references/scenes.md#recipes)、[references/components.md#linework](references/components.md#linework)。
 先做 3 张风格帧（`--stills`），像了再做全片；**整片渲染前**由新会话只看联系表 + 自动生成的 `storyboard.md` + `treatment.json` 做七项独立评审，写进 `review.rounds`（手作皮肤没评审时 `make-video --render` 会停下，草稿用 `--skip-review` 显式跳过）。
 
 ## 第 1 步 · 选一个蓝图
@@ -84,7 +84,7 @@ TTS 是正式步骤：`notebook-video tts <工程>`（默认 edge-tts；也可 `
 | 能用一次对照实验说清的因果（变一个量，看结果） | `blueprints/experiment.json` | 手作 |
 
 组件路线的蓝图每一镜都写了 `$components`：该用的**骨架**（Stage / Split / Zoom / Corridor）和**组件**。照它选，别自己发明版式。
-手作路线的蓝图写的是结构和节拍；三个候选结构至少来自 2 个结构族（见 [references/director-method.md](references/director-method.md) 第 5 步）。
+手作路线的蓝图写的是结构和节拍；三个候选结构至少来自 2 个结构族（见 [references/director.md#director-method](references/director.md#director-method) 第 5 步）。
 
 ## 第 2 步 · 建工程，照抄示例片的结构
 
@@ -105,7 +105,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 
 渲染器先画一张探针验收 WebGPU 卷页；通过就换完整版 Chromium 只渲转场那 22 帧，再按帧号拼回快速渲染的整片
 （`transition-plan.mjs` 的 `curlWindows` 定窗口 + `fx-browser.mjs` 的 `spliceArgs` 拼回）。缺完整版 Chromium 时探针失败，全片照常出，
-翻页自动降级成折痕版并在报告里记 P1（[references/fx-effects.md](references/fx-effects.md)）。
+翻页自动降级成折痕版并在报告里记 P1（[references/camera.md#fx-effects](references/camera.md#fx-effects)）。
 装浏览器：`npx playwright install chromium`（国内加 `PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright`）。
 
 工程里已有一部完整的示例片（8 镜）。**照着改，不要从零写**：
@@ -120,15 +120,15 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 > **版式种类 / 介质种类 / 转场种类 / 镜长分布 / 最大推近**这几行有没有真的不同；全都一样就说明你只是在换文案。
 > 这是测量不是打分——"像不像"没有客观界线，但两列摆在一起你自己看得出来。
 
-组件怎么选：[references/media-routing.md](references/media-routing.md)（修辞动作 → 组件表）、[references/fxkit.md](references/fxkit.md)。
-完整作者手册（骨架、镜头语言、门禁细节）：[references/handwritten-scenes.md](references/handwritten-scenes.md)。
+组件怎么选：[references/media.md#media-routing](references/media.md#media-routing)（修辞动作 → 组件表）、[references/components.md#fxkit](references/components.md#fxkit)。
+完整作者手册（骨架、镜头语言、门禁细节）：[references/scenes.md#handwritten-scenes](references/scenes.md#handwritten-scenes)。
 
 ## 第 3 步 · 写台词与镜头表
 
 - 一镜 1–3 句，一句一个意思；字幕超 16 字由 `build-semantic-captions.py` 在合法断点自动拆（不拆词、英文、数字）。
 - 要观众「看那里」时，在镜头表写 `cinema.focus`（推近到那个组件的矩形）；不写也有缺省缓推。
 - 相邻两镜换骨架；一镜一个概念；关键数字用 `KineticNumber` 数过去。
-- 背景：手作皮肤默认 `bgMode: "chapter"`（每章一张纸、章内沿用），flat / cel 默认 `"shot"`（逐镜轮换）；全片一张纸写 `"bgMode": "film"`，完全不轮换写 `"bgRotate": false`。不写就自动选——每个皮肤有 8–11 张风格各异的亮底背景（手账：横线本 / 方格 / 点阵 / 牛皮纸 / 水彩纸 / 便签墙 / 旧书页 / 坐标纸；剪纸：红纸衬边 / 宣纸 / 窗花 / 祥云 / 挂笺 / 洒金…；档案：档案袋 / 旧报纸 / 古地图 / 卡片目录 / 胶片 / 展柜布面…），逐镜模式按镜头角色挑、相邻两镜不重复，装饰重的（`busy`）不进常规镜。某一镜要特定的纸，就写 `"bg": "oldpage"`；清单与许可见 [references/background-library.md](references/background-library.md)。
+- 背景：手作皮肤默认 `bgMode: "chapter"`（每章一张纸、章内沿用），flat / cel 默认 `"shot"`（逐镜轮换）；全片一张纸写 `"bgMode": "film"`，完全不轮换写 `"bgRotate": false`。不写就自动选——每个皮肤有 8–11 张风格各异的亮底背景（手账：横线本 / 方格 / 点阵 / 牛皮纸 / 水彩纸 / 便签墙 / 旧书页 / 坐标纸；剪纸：红纸衬边 / 宣纸 / 窗花 / 祥云 / 挂笺 / 洒金…；档案：档案袋 / 旧报纸 / 古地图 / 卡片目录 / 胶片 / 展柜布面…），逐镜模式按镜头角色挑、相邻两镜不重复，装饰重的（`busy`）不进常规镜。某一镜要特定的纸，就写 `"bg": "oldpage"`；清单与许可见 [references/media.md#background-library](references/media.md#background-library)。
 - 帧参数名：`fxkit` 组件传 `frame={f}`，其余模块传 `f={f}`（传错不报错只会错位，`validate-frame-props.py` 会抓）。
 
 ## 第 4 步 · 一条命令
@@ -175,11 +175,11 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 `--from=<跨镜边界前一秒> --seconds=1.2 --fx=on`（作者开发机实测 61 秒出片，慢机器上会长数倍）。
 跨镜边界在 `manifests/shots.resolved.json` 的 `from` 里，除以帧率就是秒。带翻页时不给全片耗时推算，
 因为只有转场帧走 WebGPU，线性外推会得假数字。）
-想量「是不是边讲边长」：`python scripts/measure-reveal.py <工程> renders/preview-*.mp4`（只报告，不拦；读法见 references/reveal-rules.md）。
+想量「是不是边讲边长」：`python scripts/measure-reveal.py <工程> renders/preview-*.mp4`（只报告，不拦；读法见 references/draftpaper.md#reveal-rules）。
 预览结束会打一行 `FillGate coverage`：每镜 `cells`（48 格占用）/ `blank`（全空的列）/ `largest`（最大单体占画面）/ `widest`（最大横向跨度），
 `largest<0.06` 判「主体过小」，但有两条豁免：`widest≥0.45`（面积小但横跨够的条状主体——标尺、格带、时间轴）
 和 `blank=0` 且 `cells≥24`（照片+引线+网格这类多个中等元素拼成一个主体，没有单个"大件"）。
-`blank≥3/8` 判「横向空洞」。被判空时**不要放大卡片凑面积**，按 [references/composition-gate.md](references/composition-gate.md) 的写法改：空洞处补一层属于主体的东西。**不要为了让开头满而把东西提前摆上**——FillGate 量的是每镜最完整的那一帧，开头空着是草稿纸的正常状态。
+`blank≥3/8` 判「横向空洞」。被判空时**不要放大卡片凑面积**，按 [references/checks.md#composition-gate](references/checks.md#composition-gate) 的写法改：空洞处补一层属于主体的东西。**不要为了让开头满而把东西提前摆上**——FillGate 量的是每镜最完整的那一帧，开头空着是草稿纸的正常状态。
 
 **片子比 30 秒长时，别看开头就下结论。** `preview --seconds=30` 只覆盖前六镜，cell 的 S7/S8 就是这么漏的
 （补跑 `--from=32` 才发现 S7 右下角空 30%）。全片一次量完用 `sweep`——每镜截一张落定态、拼成一张体检表，八镜约 60 秒：
@@ -212,7 +212,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" sweep ./my-video --json   # 给脚
 `python scripts/prepare-media.py ./my-video --add pr.png --id pr-page --region diff 0.01 0.31 0.69 0.17`，然后在场景里
 `<MediaFrame f={f} id="pr-page" x={200} y={200} w={1060} h={662} focus="diff" focusAt={b[1]} />`。
 来源优先级：用户文件 > 自己截的官方页面 > CC0 / CC-BY / Pexels / Unsplash（写清 url / license / credit，署名自动上屏）。
-**没有兼容许可就用组件重画。** 细节与门禁：[references/real-media.md](references/real-media.md)。
+**没有兼容许可就用组件重画。** 细节与门禁：[references/media.md#real-media](references/media.md#real-media)。
 
 ## 引擎替你保证的
 
@@ -238,11 +238,11 @@ AI 生成的图（`content.ink` / `content.figure` 的 label）是**说明性文
 
 赶时间时可以先用 `node scripts/make-video.mjs my-story.json ./draft --stills` 从蓝图直接出片（`compose-story.py` 自动排版、关键词同步、字幕定时）。
 它用这几种版式：**`page`**（手账页，`content.page` = `plate` / `loupe`）、`define` / `number` / `bars` / `compare` / `code` / `flow` / `list` / `quiz` / `custom` / `media`；`statement` 只渲染成一张卡片，不是缺省版式。
-要用配方和线稿就走这条路线；要逐镜手调版面，再改写成第 2–3 步的手写场景。细节见 [references/auto-engine.md](references/auto-engine.md)；示例 `examples/*.story.json`。
+要用配方和线稿就走这条路线；要逐镜手调版面，再改写成第 2–3 步的手写场景。细节见 [references/technique.md#auto-engine](references/technique.md#auto-engine)；示例 `examples/*.story.json`。
 
 ## 文档
 
-全部 51 篇正文的索引按「你接下来要做什么」分组，见 [references/INDEX.md](references/INDEX.md)（索引本身不计入 51）。
+全部 51 篇正文的索引按「你接下来要做什么」分组，见 [SKILL.md](SKILL.md)（索引本身不计入 51）。
 作者通常只读 4 篇（见上文「手作路线只必读 4 份」），其余按需查。
 
 - 自检：`node "<SKILL_DIR>/scripts/notebook-video.mjs" validate-skill`、`python scripts/selftest.py`、`python scripts/negative-gate-check.py`

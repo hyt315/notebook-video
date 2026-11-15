@@ -4,7 +4,7 @@
   "family": "medium-metaphor",
   "fits": "一个东西的“本义 / 来历 / 为什么叫这个名字”，观众有一个真实的错误直觉可以推翻",
   "$about": "媒介即隐喻（3.3.0）：用一种物质把一件事演出来——冷开（最怪的画面 / 数字）→ 反差 → 错误直觉被演出 → 原生动作推翻 → 数得出来的证据 → 转向你 → 首尾呼应。配手作皮肤（journal / papercut / archive）与 src/craft/ 组件。",
-  "$howto": "这是手写组件路线的分镜蓝图，不走 compose-story。先按 references/director-method.md 写 manifests/treatment.json（隐喻 / 媒介 / 原生动作 / 三候选），再照下面每拍的 $components 写 scenes.tsx。把 <<…>> 换成内容；秒数是 70–90 秒片子的建议位置，按台词长度伸缩。字幕每行 ≤14 字（硬上限 16），约 1/3 时长无字幕。",
+  "$howto": "这是手写组件路线的分镜蓝图，不走 compose-story。先按 references/director.md#director-method 写 manifests/treatment.json（隐喻 / 媒介 / 原生动作 / 三候选），再照下面每拍的 $components 写 scenes.tsx。把 <<…>> 换成内容；秒数是 70–90 秒片子的建议位置，按台词长度伸缩。字幕每行 ≤14 字（硬上限 16），约 1/3 时长无字幕。",
   "theme": "<<journal | papercut | archive>>",
   "beats": [
     {
@@ -59,7 +59,7 @@
   "$rules": [
     "相邻两镜换骨架；每个构图 ≤ 12–15 s；全片 ≥ 4 种运镜 + 一个招牌镜头",
     "转场在媒介里：分镜表 transition 写 auto（皮肤缺省：journal / archive 真翻页 pageturn、papercut 揭纸 peel，画不了 WebGPU 时退回 slide / drop），或显式 slide / drop",
-    "开场照 references/narrative-hook.md 的冷开合约；节奏照 references/pacing-rhythm.md；镜头动机与景别见 references/camera-language.md",
+    "开场照 references/director.md#narrative-hook 的冷开合约；节奏照 references/director.md#pacing-rhythm；镜头动机与景别见 references/camera.md#camera-language",
     "画内必读标签 ≥ 48 设计 px（CRAFT_TYPE.label），每帧 ≤ 3 个",
     "每个选题先 commons-search；真素材进 ArchivePhoto / PinnedPhoto / LoupeMedia，署名自动上屏",
     "避免：暗底发光线、粒子、金色/冰蓝科技风、电子 BGM、名词→定义→升华"

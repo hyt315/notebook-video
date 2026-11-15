@@ -2,7 +2,7 @@
 
 这里放的东西有一个共同点：**技能自己要用，但不能靠 `npm install` 拿到**。
 （其余第三方库都由 `assets/lecture-template/package.json` 声明、装进工程的 `node_modules`，
-本仓库不分发，见 `NOTICE` 与 `references/dependency-policy.md`。）
+本仓库不分发，见 `NOTICE` 与 `references/technique.md#dependency-policy`。）
 
 ---
 

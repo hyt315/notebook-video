@@ -2,7 +2,7 @@
 """Tests for the 3.3.0 real page-turn transitions (pageturn / peel via @remotion/effects pageTurn, WebGPU).
 
 Offline: no browser is started. The browser probe itself is exercised end-to-end by
-`node scripts/notebook-video.mjs fx-probe PROJECT --force` (see references/fx-effects.md).
+`node scripts/notebook-video.mjs fx-probe PROJECT --force` (see references/camera.md#fx-effects).
 """
 from __future__ import annotations
 

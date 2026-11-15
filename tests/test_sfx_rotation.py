@@ -147,7 +147,7 @@ class ListenSegmentsTest(unittest.TestCase):
 
 class ContractTest(unittest.TestCase):
     def test_document_states_the_protocol(self):
-        doc = (ROOT / "references" / "sfx-library.md").read_text(encoding="utf-8")
+        doc = (ROOT / "references" / "audio-captions.md").read_text(encoding="utf-8")
         self.assertIn("三段盲听", doc)
         self.assertIn("5 ms RMS", doc)
         self.assertIn("音色轮换", doc)

@@ -421,8 +421,8 @@ const newProject = async (args) => {
   }
   fs.mkdirSync(path.join(target, 'renders'), {recursive: true});
   console.log(`Created official lecture-template Remotion notebook project (pure code-drawn SVG default): ${target}`);
-  console.log(`Theme locked to "${style}". Style contract: references/theme-${style}.md.`);
-  console.log('Multi-zone lecture composition rules: references/lecture-composition.md. Image generation stays an optional add-on offered separately.');
+  console.log(`Theme locked to "${style}". Style contract: references/themes/${style}.md.`);
+  console.log('Multi-zone lecture composition rules: references/scenes.md#lecture-composition. Image generation stays an optional add-on offered separately.');
   console.log('Preserve the engine, background, subtitle, chrome, asset gate, audio tree and frame conventions. Replace topic content, visual plan, registered imagery and semantic scene objects.');
   console.log('Narration audio is intentionally not bundled. Generate or supply licensed audio, then run sync before rendering.');
   // 3.3.0：手作皮肤的导演层是必填项，直接说清下一步，别让新用户在门禁前面猜。
@@ -491,7 +491,7 @@ const suggestedConcurrency = () => Math.max(2, Math.min(6, Math.floor(os.availab
 const REMOTION_ENTRY_POINT = 'src/index.tsx';
 
 // Color metadata contract for the delivery file (also applied by the template's
-// package.json scripts and documented in references/windows-compatibility.md):
+// package.json scripts and documented in references/technique.md#windows-compatibility):
 //   H.264 + yuv420p + bt709 + limited (tv) range, the de-facto standard for SDR
 //   web video. Remotion's own default is `--color-space=default`, which emits NO
 //   color flags at all: the encoder then tagged frames yuvj420p (full range) while
@@ -513,7 +513,7 @@ const REMOTION_COLOR_ARGS = ['--color-space=bt709'];
 // yuv420p / tv / bt709 / bt709 / bt709. FFmpeg builds since 3.4 ship this filter.
 const H264_COLOR_TAG_FILTER = 'h264_metadata=colour_primaries=1:transfer_characteristics=1:matrix_coefficients=1:video_full_range_flag=0';
 
-// 交付文件的**色彩契约**（四项元数据必须就是这个组合，见 references/composition-gate.md §6）。
+// 交付文件的**色彩契约**（四项元数据必须就是这个组合，见 references/checks.md#composition-gate §6）。
 // 前面两道（`--color-space=bt709` + `h264_metadata` 回写）只是**生产者**；
 // 这里是**交付前的断言**——只有把契约写死在门禁里，"谁把参数删了"才会被立刻发现：
 //   · 删掉 `--color-space=bt709` → 流回到 yuvj420p / pc / bt470bg，transfer 与 primaries 变 unknown；
@@ -613,7 +613,7 @@ const assessCoverage = (coverage) => {
     const cols = Number(c.cols);
     const largest = Number(c.largest);
     const widest = Number(c.widest);
-    // 两条豁免（阈值来自 3.8.0 实测，理由见 fill-gate.tsx 与 composition-gate.md）：
+    // 两条豁免（阈值来自 3.8.0 实测，理由见 fill-gate.tsx 与 references/checks.md#composition-gate）：
     //   条状主体（标尺 / 格带 / 时间轴）：面积天然小，但跨度够 45% 画宽，不算空。
     //   组合装置（照片 + 引线 + 网格）：没有空白列、48 格里至少 24 格有内容。
     //   largest 是按**单个 DOM 元素**量的，多个中等元素拼成的主体天生只有 3%。
@@ -1506,7 +1506,7 @@ const pythonCommandMap = new Map([
   // v3.0.2 补登记：这两道也是构建期必跑门禁，之前只能直接 `python scripts/…` 调用，CLI 里点不到。
   ['validate-frame-props', ['validate-frame-props.py']],
   ['validate-audio-levels', ['validate-audio-levels.py']],
-  // v3.1 新增：呈现效果门禁（T1 纯算术：时间接近 / 字幕阅读预算 / 可读性底线），见 references/presentation-gate.md
+  // v3.1 新增：呈现效果门禁（T1 纯算术：时间接近 / 字幕阅读预算 / 可读性底线），见 references/checks.md#presentation-gate
   ['validate-presentation', ['validate-presentation.py']],
   // 3.3.0：导演层门禁、真实素材检索（Commons / Openverse）、渲染后 OCR 可读性抽查
   ['validate-treatment', ['validate-treatment.py']],
@@ -1525,7 +1525,7 @@ const pythonCommandMap = new Map([
 ]);
 
 // 交付路径收口：CLI 的 `validate-semantic-breaks` 是渲染后质检链（SKILL.md
-// "Validation after rendering"、references/subtitle-timing.md）的固定入口。底层短语规则
+// "Validation after rendering"、references/audio-captions.md#subtitle-timing）的固定入口。底层短语规则
 // 找不到 BudouX 时原本只是 SKIPPED + rc=0，只有 `--require-budoux` 才硬失败 —— 而交付链上
 // 没有任何调用方带这个开关，这正是本门禁要消灭的"跳过即静默放行"降级路径。现在由 CLI 收口：
 //   · 从 CAPTION_CUES_JSON 所在目录逐级向上探测 node_modules/budoux/module/index.js
@@ -1598,7 +1598,7 @@ const addSilentAudioTrack = async (target) => {
 // 两张中段图，`tile=6x6` 正好 36 格 = 18 页。（实测教训：`-ss 0.2 + fps=2` 的落点会偏 ——
 // seek 与 fps 取整叠加后实际抽到第 12/27 帧，第 ⑪ 页的转场中态又被错过；select 无此问题。）
 // 旧版 `fps=1` 只抽**页首帧**，转场这类"动作在页中段"的件（第 ⑪ 页 SceneTransitions）在抽图上根本看不见。
-// 作用：让执行 AI 看见库组件形态，而不是读文字描述（references/media-routing.md §6）。
+// 作用：让执行 AI 看见库组件形态，而不是读文字描述（references/media.md#media-routing §6）。
 //
 // ⚠️ 这个 mp4 是**交付物**（组件接触表成片），
 // 所以它走的是交付规格，不是调试规格：2560×1440（`SHOWCASE_DELIVERY_SCALE`）+ 静音 AAC 音轨 +
@@ -1629,7 +1629,7 @@ const showcase = async (args) => {
     const browser = browserExecutableOrFail();
     if (browser) nodeArgs.push(`--browser-executable=${browser}`);
     await run(process.execPath, nodeArgs, {cwd: project});
-    console.log(`Craft sheet written: ${out} — 读它判断当前皮肤下的手作组件（references/craft-kit.md）。`);
+    console.log(`Craft sheet written: ${out} — 读它判断当前皮肤下的手作组件（references/components.md#craft-kit）。`);
     return;
   }
 
@@ -1651,7 +1651,7 @@ const showcase = async (args) => {
   }
   await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', mp4, '-vf', "select='eq(mod(n,30),6)+eq(mod(n,30),21)',scale=640:-1,tile=6x6", '-frames:v', '1', '-q:v', '3', jpg]);
   console.log(`Showcase contact sheet written: ${jpg}`);
-  console.log('读它按样子挑组件；见 references/media-routing.md §6。');
+  console.log('读它按样子挑组件；见 references/media.md#media-routing §6。');
 };
 
 /** treatment.json 里的招牌镜（"S4" / "招牌镜头 S4：…"）。没有就返回 null，由调用方决定退路。 */

@@ -17,7 +17,7 @@
        上界与下界缺一不可——第一版只有③，`{cue:0, offset:200}`（讲完 6.7s 才出现）照样 PASS。
     ⚠️ 8 帧这条容差是**承重墙**：模板最紧的合法拍就是 `offset = 该句帧数`（"句末那拍"是设计约定），
        把容差整个吃掉。所以另外报一条 P1（`BEAT_TIGHT_FRAMES=4`）：距上界 ≤4 帧就预警。
-       实测口径见 references/presentation-gate.md §G-1；**每次换配音 / 重算 cue 都要重跑本门禁**。
+       实测口径见 references/checks.md#presentation-gate §G-1；**每次换配音 / 重算 cue 都要重跑本门禁**。
     ④ 每条 cue 在本镜内至少有一个 beat；确实不需要的必须在 shots.json 里显式声明
        `silentCues: [cueIndex, ...]`（显式声明才放行——这就是"要求写出结论"的做法）
     ⚠️ 与调研报告原文的差异（报告写的是 `|beat − cueStart| ≤ 6`）：**照抄会给正确的数据报错**。
@@ -515,13 +515,13 @@ def check_small_screen(project: Path) -> tuple[list, list]:
 
 # ------------------------------------------------- G-14/G-15/G-16 讲法字段完整性
 # 编号说明（2026-09-21 修撞号）：这一组原来标成 "G-6"，而 **G-6 是调研报告里"对比层结构闭合"**
-# 的编号（见 references/presentation-gate.md 的"还没做的"）。本组的编号以
-# references/narrative-moves.md §4 为准：G-14 `move` 闭合 / G-15 `evidence` 被当成 JSX 用 /
+# 的编号（见 references/checks.md#presentation-gate 的"还没做的"）。本组的编号以
+# references/director.md#narrative-moves §4 为准：G-14 `move` 闭合 / G-15 `evidence` 被当成 JSX 用 /
 # G-16 误解与留白（G-17 known→new 闭合尚未实现）。
 # ⚠️ G-15 的档次在 2026-09-22 从"真的会动（本镜 + 帧驱动链）"退回"名字被当成 JSX 用"：
-#    口径、代价与"不做哪半边"逐条写在下面 check_evidence 那一节，也写回了 narrative-moves.md §2。
+#    口径、代价与"不做哪半边"逐条写在下面 check_evidence 那一节，也写回了 references/director.md#narrative-moves §2。
 #
-# 为什么加这一条（2026-09-21）：`narrative-moves.md` 把 move / evidence / hold /
+# 为什么加这一条（2026-09-21）：`references/director.md#narrative-moves` 把 move / evidence / hold /
 # misconception 四个槽位写成**必填**，但**十道门禁没有一道读过它们**，而且：
 #   · `resolve-shots.py` 在把 shots.json 解析成 shots.resolved.json 时**把这四个字段整组丢掉**
 #     （那份解析结果里只有 skeleton/live/keys/beats… 没有 move/evidence/hold/misconception）
@@ -529,7 +529,7 @@ def check_small_screen(project: Path) -> tuple[list, list]:
 #   · 实测：把 S19 的 move 删掉，改前全部门禁照旧 PASS。
 # 这一条读**作者手写的 shots.json**（字段的唯一定源），并把 resolve 的透传一并修好（同一轮）。
 MOVES = {"引入", "定位", "推进", "传递", "对比", "拆分/合并", "累积", "收束", "反证", "回看"}
-HOLD_MIN = 40        # 留白预算下限：narrative-moves.md 里**标定**出来的线（不是拍的）
+HOLD_MIN = 40        # 留白预算下限：references/director.md#narrative-moves 里**标定**出来的线（不是拍的）
 MOVE_MIN_KINDS = 5   # 全片至少用到几种叙事动作（10 种里挑）：只写 1–2 种等于没有编排
 MOVE_RUN_LIMIT = 3   # G-14②：同一 move **连续 ≥3 镜**即违规（文档原文"不得连续 ≥3 镜"，含 3）
 
@@ -567,15 +567,15 @@ def check_narrative(project: Path) -> tuple[list, list]:
             p0.append({"id": sid, "issue": "标了 noMisconception 却没写 why（为什么不设误解）"})
 
     # ---- G-14② 同一 move 不得连续 ≥3 镜（2026-09-22 补：这条规则写了两处、**从来没有门禁**）----
-    # 文档原文（narrative-moves.md §2）：「闭合 10 个，**同一个 `move` 不得连续 ≥3 镜**」，§4 把
+    # 文档原文（references/director.md#narrative-moves §2）：「闭合 10 个，**同一个 `move` 不得连续 ≥3 镜**」，§4 把
     # 它列进 G-14 —— 但本脚本此前只查了"每镜的 move 是不是 10 个名字之一"，**没有任何连续镜检查**。
     # 也就是说这条规则从落地起就没被执行过：写 3 镜连续 `引入` 的片子照旧 PASS。
     #
     # 级别 = P0，依据是这条规则的出处（`呈现效果调研.md` §5.7）：「同一种 `move` 不得连续 ≥3 镜
     # **（与骨架重复检查同级）**」—— 而相邻同骨架在 `validate-composition.py` 是 **P0（P0-1）**；
-    # narrative-moves.md §2 用的也是"**不得**"（禁令），不是"建议"。
+    # references/director.md#narrative-moves §2 用的也是"**不得**"（禁令），不是"建议"。
     # ⚠️ §4 那一行的级别格原先写的是 "P0 / P1"，读起来像"连续这半条算 P1"——两种读法都说得通，
-    #    这里按出处取 P0，并**把口径写回文档**（narrative-moves.md §2/§4 已改成显式 P0），不再靠猜。
+    #    这里按出处取 P0，并**把口径写回文档**（references/director.md#narrative-moves §2/§4 已改成显式 P0），不再靠猜。
     #
     # 口径：按 shots.json 的镜序逐镜比较（= 成片顺序：resolve-shots 要求 from 连续，两者必然一致），
     #      同一 move 的**极大连续段** ≥3 镜即报一条，报出**哪几镜、连续了几个、什么 move**。
@@ -614,7 +614,7 @@ def check_narrative(project: Path) -> tuple[list, list]:
 
 # ------------------------------------------------- G-15 `evidence` 是不是真用在源码里（v2 简版）
 #
-# ⚠️ 这条判据此前**名存实亡**：文档（`narrative-moves.md` §2 / `presentation-gate.md` §G-15）把它写成
+# ⚠️ 这条判据此前**名存实亡**：文档（`references/director.md#narrative-moves` §2 / `references/checks.md#presentation-gate` §G-15）把它写成
 # 必填且"静态元素不算证据"，而本脚本读 `evidence` 的唯一一处是 `if not ev:`（**只查字段非空**）——
 # 名字写成源码里根本不存在的，门禁一声不响（负向夹具 AF 钉的就是这个）。
 #
@@ -632,7 +632,7 @@ def check_narrative(project: Path) -> tuple[list, list]:
 #     （让"没报"与"没跑"可区分，与其它门禁的覆盖率日志同一用意）。
 #   · 名字后面必须紧跟空白 / `/` / `>`（`(?![A-Za-z0-9_$])`），免得 `Widget2` 被 `Widget` 蒙混过去。
 #
-# **不做**的（口径已同步写回 `narrative-moves.md` §2 与 `presentation-gate.md` §G-15，别高估它）：
+# **不做**的（口径已同步写回 `references/director.md#narrative-moves` §2 与 `references/checks.md#presentation-gate` §G-15，别高估它）：
 #   · 不做**本镜作用域**：名字只要在该工程的场景源码里被 JSX 用到就算过 ——
 #     **一个名字在本镜没用到、但在别的镜用了，会漏**。这正是"降复杂度"买来的代价，
 #     负向夹具 AG 把这个口径**钉住**（它现在必须 rc=0，谁哪天加回本镜作用域，这条夹具会先失败）。
@@ -692,7 +692,7 @@ def check_evidence(project: Path) -> tuple[list, list]:
             f"evidence=«{ev}» 在场景源码（{where}）里**找不到这个用法**：名字要么写错了、"
             f"要么从来没被当成 JSX 用渲染出来（只写在注释 / 字符串 / import 行里都不算「用到」）。"
             f"G-15 要求 `evidence` 指向真的会变的那件东西，指向一个不存在的用法 = 这条声明无法被验证"
-            f"（判据与**已知边界**见 narrative-moves.md §2）")})
+            f"（判据与**已知边界**见 references/director.md#narrative-moves §2）")})
     return p0, p1
 
 

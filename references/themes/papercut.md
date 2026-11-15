@@ -1,7 +1,7 @@
 # 皮肤契约：papercut · 红色窗花剪纸
 
 状态：LOCKED。实现在 `assets/lecture-template/src/theme/papercut.tsx`。`new-project ./dir --style=papercut`。
-手作皮肤**必须**先写导演层 `manifests/treatment.json`（[director-method.md](director-method.md)）。配方见 [style-recipes.md](style-recipes.md)。
+手作皮肤**必须**先写导演层 `manifests/treatment.json`（[../director.md#director-method](../director.md#director-method)）。配方见 [../director.md#style-recipes](../director.md#style-recipes)。
 
 ## 媒介
 一切都是剪刀剪出来、平铺在米色宣纸上的纸片；细节只来自"剪掉了什么"——**洞就是线**。正面光，纸有厚度。
@@ -15,8 +15,8 @@
 - 字幕：一条深红横批（`#8f1216`，两端燕尾，像贴上去的对联条），米色字 72 设计 px（= 96 px@1440）Noto Serif SC Bold，≥7:1。
 - 章节标识：左上一枚红色方印（序号）+ 宋体章名；无技术页眉。
 - 背景：`bg-papercut-{main,chapter,quiet}.jpg`；chapter 变体上沿一条红色锯齿条（装饰区 y<72）。
-- 背景库：再加 8 张——`papercut/hongzhi` 红纸衬边、`xuan` 宣纸、`kraft` 牛皮纸·红绳、`origami` 折纸纹、`lattice` 窗花角、`sajin` 洒金笺、`cloud` 祥云、`menjian` 挂笺；手作皮肤默认 `bgMode: "chapter"`：只在章节首镜换纸、章内沿用（装饰重的 `busy` 背景只给章节卡 / 安静镜）；想全片一张纸写 `"bgMode": "film"`，想改回逐镜轮换写 `"bgMode": "shot"`，见 [background-library.md](background-library.md)。
-- 转场缺省：`peel`（从右下角把上一张剪纸揭起来，见 [fx-effects.md](fx-effects.md)）；画不了 WebGPU 时自动退回 `drop`（新纸盖上来）。运动用 `CutPaper` 的 12 fps 跳帧（剪纸动画手感），落定不弹。
+- 背景库：再加 8 张——`papercut/hongzhi` 红纸衬边、`xuan` 宣纸、`kraft` 牛皮纸·红绳、`origami` 折纸纹、`lattice` 窗花角、`sajin` 洒金笺、`cloud` 祥云、`menjian` 挂笺；手作皮肤默认 `bgMode: "chapter"`：只在章节首镜换纸、章内沿用（装饰重的 `busy` 背景只给章节卡 / 安静镜）；想全片一张纸写 `"bgMode": "film"`，想改回逐镜轮换写 `"bgMode": "shot"`，见 [../media.md#background-library](../media.md#background-library)。
+- 转场缺省：`peel`（从右下角把上一张剪纸揭起来，见 [../camera.md#fx-effects](../camera.md#fx-effects)）；画不了 WebGPU 时自动退回 `drop`（新纸盖上来）。运动用 `CutPaper` 的 12 fps 跳帧（剪纸动画手感），落定不弹。
 
 ## 原生动作
 1. **对折一刀展开**：一条路径镜像成两份 / 四份，同时出现——复制、对称。

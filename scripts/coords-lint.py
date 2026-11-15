@@ -5,7 +5,7 @@ ASTRA 教训：StampSeal 的 x/y 写成了场景坐标，实际相对卡片，�
 渲染零报错。Remotion 静态扫不到运行时坐标系，本脚本做诚实的事：
 列出所有覆盖层组件 (StampSeal/Burst/Callout/ChipContract/Funnel/ChatThread) 的数字 x/y，超过整画布
 (1920x1080 / 1080x1440) 直接报错；x>1000 或 y>700 的打 WARN，提醒人工
-确认是场景坐标还是卡片相对坐标（见 references/fxkit.md 坐标铁律）。
+确认是场景坐标还是卡片相对坐标（见 references/components.md#fxkit 坐标铁律）。
 
 用法：python scripts/coords-lint.py PROJECT_DIR [--strict]
 --strict 下 WARN 也算失败（发版前用）。

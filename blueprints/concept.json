@@ -1,7 +1,7 @@
 {
  "$blueprint": "concept",
  "$about": "概念讲解：一个词 / 一个原理讲明白",
- "$howto": "只改 <<…>> 里的内容（改完不许留下任何 <<）。不想要的镜可以删；想多讲一点可以复制一镜。版式名见 SKILL.md 的版式表。 ｜ 推荐把每镜写成 3.2.0 手写组件场景——每镜的 $components 给出骨架和该用的 3.2.0 组件（见 references/handwritten-scenes.md）；直接跑 compose-story 只是快速草稿。",
+ "$howto": "只改 <<…>> 里的内容（改完不许留下任何 <<）。不想要的镜可以删；想多讲一点可以复制一镜。版式名见 SKILL.md 的版式表。 ｜ 推荐把每镜写成 3.2.0 手写组件场景——每镜的 $components 给出骨架和该用的 3.2.0 组件（见 references/scenes.md#handwritten-scenes）；直接跑 compose-story 只是快速草稿。",
  "title": "<<片名>>",
  "theme": "flat",
  "kicker": "<<4–8 字栏目名>>",

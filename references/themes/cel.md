@@ -10,7 +10,7 @@ Bold comic / shonen-manga energy: off-white comic paper with halftone dots, near
 
 All hex values are vendored from Radix Colors v3 (MIT); the theme file names the scale and step next to each token.
 
-- Canvas: 16:9 only (2560×1440 delivery, 1920×1080 design space; see canvas-modes.md).
+- Canvas: 16:9 only (2560×1440 delivery, 1920×1080 design space; see ../scenes.md#canvas-modes).
 - Surfaces: `paper` `#ffffff` (panels), `paperWarm` `#fdfdf9` (yellow 1), `paperBase` `#fefce9` (yellow 2, comic paper).
 - Ink: `ink` `#111111` (gray-dark 1) for outlines and body text, `muted` `#63635e` (sand 11).
 - Accents (fill → text-safe `*Ink`; every Ink is ≥ 4.6:1 on all three surfaces):
@@ -25,7 +25,7 @@ All hex values are vendored from Radix Colors v3 (MIT); the theme file names the
 
   Yellow is a fill (bursts, highlight blocks, the subtitle's offset shadow); put `ink` text on it, never white.
 - Panel skin: `3px` solid ink border, `8px` radius, hard offset ink shadow `4px 4px 0` growing to `8px 8px 0` with lift, never blurred. Every panel carries a deterministic micro-tilt of ±0.7° max hashed from its position; scene transforms compose on top of it.
-- Background library : five more light backgrounds — `cel/halftone`, `speedlines`, `panels`, `screentone`, `sunburst` — rotate by shot role with no two adjacent shots alike; see [background-library.md](background-library.md). The three below stay as the `legacy` entries.
+- Background library : five more light backgrounds — `cel/halftone`, `speedlines`, `panels`, `screentone`, `sunburst` — rotate by shot role with no two adjacent shots alike; see [../media.md#background-library](../media.md#background-library). The three below stay as the `legacy` entries.
 - Backgrounds (LOCKED rasters, 2560×1440, `public/bg/`, registered with sha256 in `manifests/visual-assets.json`):
   - `bg-cel-main.jpg`: black halftone fan + yellow ink-outlined starburst bottom-left, speed lines top-right, red halftone + blue star bottom-right, blue halftone wedge top-left.
   - `bg-cel-chapter.jpg`: short speed-line ticks along the left and right edges, yellow starburst top-right, red halftone top-left, red star bottom-left, blue halftone bottom-right.
@@ -62,4 +62,4 @@ All hex values are vendored from Radix Colors v3 (MIT); the theme file names the
 The union over the three variants (1920×1080 design space), declared in `cel.tsx`:
 `(0,760,300,320)` bottom-left, `(1580,700,340,380)` bottom-right, `(1540,0,380,340)` top-right, `(0,0,240,230)` top-left, `(0,290,110,440)` left edge, `(1810,330,110,420)` right edge.
 
-**Content that overlaps a decoration zone must sit on a `CoverPanel`** (`tone="paper"`). Keep the plate's `z` above the background and below the content. See [media-routing.md](media-routing.md) §4.
+**Content that overlaps a decoration zone must sit on a `CoverPanel`** (`tone="paper"`). Keep the plate's `z` above the background and below the content. See [../media.md#media-routing](../media.md#media-routing) §4.

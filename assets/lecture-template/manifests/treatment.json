@@ -1,5 +1,5 @@
 {
-  "$about": "模板示例片的导演层（references/director-method.md）。这份是**示例片自己**的 treatment，新工程可以直接改；手作皮肤（journal / papercut / archive）必填，validate-treatment.py 会检查。",
+  "$about": "模板示例片的导演层（references/director.md#director-method）。这份是**示例片自己**的 treatment，新工程可以直接改；手作皮肤（journal / papercut / archive）必填，validate-treatment.py 会检查。",
   "topic": "GitHub 新手三部曲：从写代码到参与开源",
   "question": "你写的代码，还躺在硬盘里吗？",
   "metaphor": {
