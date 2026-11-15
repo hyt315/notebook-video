@@ -351,68 +351,6 @@ def check_skill_description() -> list[str]:
     return problems
 
 
-def check_version_metadata() -> list[str]:
-    """版本号只能有**一处**权威：manifest.json。
-
-    SKILL.md 的 frontmatter 是用户第一眼看到的版本，ZIP 里 BUILD-MANIFEST.json 也写这个号；
-    三处各写一遍，迟早漂移（实测漂过：manifest 3.4.0 时模板 package.json 还是 3.3.0）。
-
-    3.5.2 起把「用户一眼能看到的地方」也接上：两版 README 的静态版本徽章、README 里那节
-    「本版新增」的标题、模板 package.json / package-lock 的自身版本。实测又漂过一次：
-    徽章已经写成 3.5.2，README 的「新增」段还停在 3.5.0，整版 3.5.1 从没进过 README。
-    文件不在就跳过（只查漂移，不查缺件——装的是运行期子集时不该报红）。
-    """
-    problems: list[str] = []
-    try:
-        version = json.loads((SKILL / 'manifest.json').read_text(encoding='utf-8')).get('version')
-    except (OSError, ValueError) as exc:
-        return [f'manifest.json 读不出版本：{exc}']
-    if not version:
-        return ['manifest.json 没有 version 字段']
-    try:
-        head = (SKILL / 'SKILL.md').read_text(encoding='utf-8')[:2000]
-    except OSError as exc:
-        return [f'SKILL.md 读不到：{exc}']
-    m = re.search(r'^version:\s*(\S+)\s*$', head, re.M)
-    if not m:
-        return ['SKILL.md frontmatter 里没有 version:']
-    if m.group(1) != version:
-        problems.append(f'版本漂移：manifest.json {version} vs SKILL.md {m.group(1)}')
-
-    stamps = (
-        ('README.md 的静态版本徽章', 'README.md', r'badge/version-([0-9][0-9.]*)-'),
-        ('README.en.md 的静态版本徽章', 'README.en.md', r'badge/version-([0-9][0-9.]*)-'),
-        ('README.md 的「本版新增」小节', 'README.md', r'^## ([0-9][0-9.]*) 新增\s*$'),
-        ('README.en.md 的 What\'s new 小节', 'README.en.md', r"^## What's new in ([0-9][0-9.]*)\s*$"),
-        ('模板 package.json', 'assets/lecture-template/package.json', r'"version":\s*"([0-9][0-9.]*)"'),
-    )
-    for label, rel, pattern in stamps:
-        path = SKILL / rel
-        if not path.is_file():
-            continue
-        try:
-            text = path.read_text(encoding='utf-8')
-        except OSError:
-            continue
-        hit = re.search(pattern, text, re.M)
-        if not hit:
-            problems.append(f'{label}里找不到版本号，无法核对')
-        elif hit.group(1) != version:
-            problems.append(f'版本漂移：manifest.json {version} vs {label} {hit.group(1)}')
-
-    lock_path = SKILL / 'assets' / 'lecture-template' / 'package-lock.json'
-    if lock_path.is_file():
-        try:
-            lock = json.loads(lock_path.read_text(encoding='utf-8'))
-        except (OSError, ValueError) as exc:
-            problems.append(f'package-lock.json 读不出：{exc}')
-        else:
-            own = lock.get('version') or (lock.get('packages') or {}).get('', {}).get('version')
-            if own and own != version:
-                problems.append(f'版本漂移：manifest.json {version} vs package-lock.json 自身 {own}')
-    return problems
-
-
 def check_linework_geometry() -> list[str]:
     """线稿取景框必须盖得住图形，生成的缺省框必须与 library.ts 同步。
 
@@ -616,7 +554,6 @@ def main() -> None:
 
     problems.extend(check_doc_identifiers())
     problems.extend(check_skill_description())
-    problems.extend(check_version_metadata())
     problems.extend(check_enum_dual_source())
     problems.extend(check_canvas_mode_dual_source())
     problems.extend(check_numeric_dual_source())

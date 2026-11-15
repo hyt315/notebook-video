@@ -4,7 +4,6 @@
 
 **Turn one idea into a 16:9 Chinese teaching video: a notebook page carries the real thing, components do the explaining, line drawings are optional — with an engine-level virtual camera that follows the narration, one command to render, and objective gates that fix what they can.**
 
-[![Version](https://img.shields.io/badge/version-3.5.4-1f6feb)](CHANGELOG.md)
 [![Release](https://img.shields.io/github/v/release/hyt315/notebook-video?sort=semver)](https://github.com/hyt315/notebook-video/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/cross-platform-compatibility.md)
@@ -65,28 +64,9 @@ One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×108
 | **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤4.5 chars/s reading speed, frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
 | **Deterministic** | Every animation is a pure function of the frame (no `Math.random`, CSS animation or timers); no image-generation model, no online API required |
 
-## What's new in 3.5.4
+## Recent changes
 
-> A stop-the-bleeding release: **no gate verdict or visual style changes** — the tests, examples and docs now tell the truth.
-
-- **Full renders no longer drop a shot.** Panel cards wrote an invalid opacity after their entrance, so a render from frame 0 could lose a whole shot of cards (stills looked fine). Fixed, with a continuous-vs-still pixel check (`scripts/dev/frame-purity.mjs`, CI purity-smoke). Also: text reveals no longer cut a character in half, and the film layer waits for the theme fonts.
-- **Every bundled example passes its own gates.** Seven of the 14 story examples (all hand-made-skin ones) used to fail the hard gates. Positive examples are fixed (hand-made ones ship their own `<name>.treatment.json`); the deliberate negative moves to `examples/negative/` with its expected verdict; CI now requires every positive example to pass and every negative to be blocked.
-- **Cold open for hand-made skins.** In the auto route the first line of a hand-made skin now starts at 150 ms, so the opening gate O1 no longer fails by construction; flat / cel timing is unchanged.
-- **Missing media gets a command, not a React error.** When a story references unregistered media, `make-video` prints the `commons-search` command to run.
-- **Dead tests revived.** Two test files that were never collected now really run, and CI checks every test file runs at least one test.
-- **SKILL.md description under 1024 characters**, with the frontmatter fixed to be valid YAML (the plain scalar contained ": "), plus a length gate.
-- **Small fixes.** Contact-sheet ffmpeg duplicate-name error, uuid@9 deprecation and two moderate npm audit findings, the "GOLDEN EXAMPLE" stamp in example headers, a stale CI comment and process files in the repo root.
-
-## What's new in 3.5.3
-
-> A small quality-focused release: **no gate verdict, render output or existing capability changes** — only restoring a missing check and making advisories that were already produced visible.
-
-- **The phrase rule can no longer "pass" without running.** The delivery path in `make-video` now passes `--require-budoux`; a missing BudouX model used to be reported as SKIPPED with exit code 0. A compact model ships with the package, so a healthy install is unaffected.
-- **Advisories are no longer dropped.** Validators print P1 lines in three formats and the collector only recognised one, so most hints scrolled past in the terminal instead of landing in `renders/report.md`. One project went from 20 to 30 advisories, with zero summary lines misread as hints.
-- **Eight numeric dual-source pairs.** The 16-character limit, reading speed and the reveal-duration constants (12 / 45 / 4 / 24 / 1.5) live in both Python and TypeScript; changing only one side now fails CI by name.
-- **Documentation cleanup.** Broken pointers, a dead line number, the true-peak target and the skin count are corrected; README badges, blueprint count and test count are aligned.
-
-3.5.2 moved "grow as it is spoken" from "start frames line up" to "it really finishes, in the right order" (reveal scheduling, the auto engine growing code lines / bars / numbers, removing pre-filled scaffolding, and the new design spec). See [CHANGELOG.md](CHANGELOG.md) for every release.
+Per-release changes: [CHANGELOG.md](CHANGELOG.md).
 
 ## Quick start
 
@@ -177,7 +157,7 @@ python scripts/prepare-media.py ./my-video --add pr.png --id pr-page --region di
 
 Details: [references/real-media.md](references/real-media.md).
 
-### Search Wikimedia Commons / Openverse first (3.3.0)
+### Search Wikimedia Commons / Openverse first
 
 ```bash
 python scripts/commons-search.py search "Hooke Micrographia cork" --project ./my-video
@@ -234,7 +214,7 @@ notebook-video/
 ├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; .cmd / .sh wrappers
 │   └── dev/                     # Maintainer tools (SFX library build and tuning)
 ├── references/                  # Author manuals and specs (camera, layouts, themes, linework, recipes, SFX, captions, gates, cross-platform)
-├── tests/                       # 592 offline unit tests (a few skip when an optional dependency is missing) (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
+├── tests/                       # offline unit tests (a few skip when an optional dependency is missing or NV_ONLINE=1 is unset) (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
 ```
 
@@ -242,7 +222,7 @@ notebook-video/
 
 - **Is there built-in voice-over?** There is a TTS command, not a voice model. `notebook-video tts <project>` uses edge-tts by default (needs network), or `--engine=file` for your own recording; either way captions and shots align to word-level time. Without real narration `--render` stops instead of shipping a silent film.
 - **Does it use an image-generation model?** No, and image generation is not a default route. Scenes are drawn by components; use screenshots / recordings when a real interface matters.
-- **Portrait or 4:3?** No. Since 3.2.0 the only canvas is 16:9; the 3.1.x 4:3 / 3:4 canvases, the `paper` / `sticker` skins and the `--classic` example project are gone, and older projects are not supported.
+- **Portrait or 4:3?** No. The only canvas is 16:9; the earlier 4:3 / 3:4 canvases, the `paper` / `sticker` skins and the `--classic` example project are gone, and older projects are not supported.
 - **My topic needs a one-off diagram.** Copy `src/custom/RequestLane.tsx`, write your component and register it in `src/custom/index.ts`.
 - **Does the story.json draft look as good as hand-written scenes?** Close, but not identical: draft layouts are drawn by `auto.tsx`. Use hand-written component scenes for delivery.
 - **Is rendering slow?** Check with `--stills` first (key frames only). Full renders default to 1920×1080 delivery.
