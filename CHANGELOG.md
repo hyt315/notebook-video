@@ -6,6 +6,22 @@ Format follows Keep a Changelog: one section per release, one line per change. T
 更早的完整记录（1.0.0 – 3.5.4，中英双写的长条目）已归档到仓库内的 `docs/history/CHANGELOG-legacy.md`（只在仓库里，不进发布包）。
 The full earlier history (1.0.0 – 3.5.4) is archived in the repository at `docs/history/CHANGELOG-legacy.md` (repository only, not shipped).
 
+## [Unreleased]
+
+### Changed
+- 审美判据只点名不阻断：骨架 / 布局 / 意图 / 介质多样性、运镜配额、声明运镜却不动、G-14/G-15/G-16 纸面字段、treatment 纸面字段降为 P1；出界、枚举闭合、beats 越界、占位与自相矛盾仍是 P0。 / Aesthetic checks (diversity, camera quotas, paper fields) are now P1 warnings; technical errors stay P0.
+- 锤子镜（`recipe=hammer`、StampBanner / HandLettering / Seal）静止上限放宽到 3.0 s，其余仍 2.5 s。 / Hammer shots may hold still up to 3.0 s.
+- 真卷页改用 `@remotion/effects` 官方 pageTurn（WebGL2），探针不过退回 CSS 翻页；删掉自写的 fx 管线。 / Page curl uses the official `@remotion/effects` pageTurn.
+- 字体下载合成一张表（LXGW / Noto Serif / Clash）；排版字宽优先读 metrics 缓存。 / Table-driven font downloads; layout reads the metrics cache first.
+- `locked-style-contract.json` 只留描述字段，数值以 `src/contract.json` 为准。 / Numeric values now live only in `src/contract.json`.
+- references 去掉版本注记与经过叙述，重复段改为链接（判据与等级不变）；更正 auto 转场说明为一律翻页。 / References trimmed; auto transitions documented as page turns.
+
+### Removed
+- 零引用的 Dimension / MagnifyInset / MediaAudio；WhipBlur、SlotGuard 改为引擎内部件。 / Removed unused Dimension, MagnifyInset, MediaAudio.
+
+### Tests
+- 回归快照覆盖 make-video 构建期 11 道门禁，逐条记录等级；新增件名一致性、motion-gaps、treatment 纸面字段用例；负向抽查新增 `must_quiet`。 / Regression snapshot covers 11 build-time gates with per-rule levels; new name-consistency and gate tests.
+
 ## [3.6.0] - 2026-11-16
 
 ### Changed
