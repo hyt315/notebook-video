@@ -400,7 +400,7 @@ and [camera.md#shot-language](camera.md#shot-language).
 
 ### Reference files（按需加载参考 · 读取时机如下）
 
-Read only what the current production needs. **写任何场景之前，先读前五份**；其余按下面标注的时机读，不要一次全读。
+Read only what the current production needs：按下面每条标注的时机读，不要一次全读。「先读」几份只在写手写场景（逃生舱）时需要；走主路线（story.json + 蓝图）不用读。
 
 **读取时机说明**：每条开头的加粗词就是读取时机 —— 「先读」= 动手前读；「必读」= 这一步不做完不许往下走；
 「照抄」= 直接复用其代码形状；「逐条对照」= 完成后一条条核对；「何时读」= 满足该条件时才读；「仅当」= 只有该前提成立才读。

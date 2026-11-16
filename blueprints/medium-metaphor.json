@@ -3,7 +3,7 @@
   "$route": "handwritten-craft",
   "family": "medium-metaphor",
   "fits": "一个东西的“本义 / 来历 / 为什么叫这个名字”，观众有一个真实的错误直觉可以推翻",
-  "$about": "媒介即隐喻（3.3.0）：用一种物质把一件事演出来——冷开（最怪的画面 / 数字）→ 反差 → 错误直觉被演出 → 原生动作推翻 → 数得出来的证据 → 转向你 → 首尾呼应。配手作皮肤（journal / papercut / archive）与 src/craft/ 组件。",
+  "$about": "媒介即隐喻：用一种物质把一件事演出来——冷开（最怪的画面 / 数字）→ 反差 → 错误直觉被演出 → 原生动作推翻 → 数得出来的证据 → 转向你 → 首尾呼应。配手作皮肤（journal / papercut / archive）与 src/craft/ 组件。",
   "$howto": "这是手写组件路线的分镜蓝图，不走 compose-story。先按 references/director.md#director-method 写 manifests/treatment.json（隐喻 / 媒介 / 原生动作 / 三候选），再照下面每拍的 $components 写 scenes.tsx。把 <<…>> 换成内容；秒数是 70–90 秒片子的建议位置，按台词长度伸缩。字幕每行 ≤14 字（硬上限 16），约 1/3 时长无字幕。",
   "theme": "<<journal | papercut | archive>>",
   "beats": [

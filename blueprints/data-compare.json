@@ -1,7 +1,7 @@
 {
  "$blueprint": "data-compare",
  "$about": "数据对比：两组 / 多组数字说明一个结论",
- "$howto": "只改 <<…>> 里的内容（改完不许留下任何 <<）。不想要的镜可以删；想多讲一点可以复制一镜。版式名见 SKILL.md 的版式表。 ｜ 推荐把每镜写成 3.2.0 手写组件场景——每镜的 $components 给出骨架和该用的 3.2.0 组件（见 references/scenes.md#handwritten-scenes）；直接跑 compose-story 只是快速草稿。",
+ "$howto": "只改 <<…>> 里的内容（改完不许留下任何 <<）。不想要的镜可以删；想多讲一点可以复制一镜。layout 只能用 compose-story 认得的 13 个：statement / define / number / bars / compare / code / flow / list / quiz / custom / media / page / type，content 字段照本蓝图或其他蓝图里同 layout 的镜抄。直接跑 make-video 就是主路线；每镜的 $components 是改写成手写场景（逃生舱，见 references/scenes.md#handwritten-scenes）时该用的骨架与组件。",
  "title": "<<片名>>",
  "theme": "flat",
  "kicker": "<<4–8 字栏目名>>",

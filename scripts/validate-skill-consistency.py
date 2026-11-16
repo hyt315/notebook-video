@@ -306,6 +306,8 @@ def check_process_words() -> list[str]:
     # CI 与仓库模板（.github/）的注释同样只写「现在为什么这样」，不写版本史。
     docs += sorted(p for p in (SKILL / '.github').rglob('*')
                    if p.is_file() and p.suffix.lower() in ('.yml', '.yaml', '.md'))
+    # 蓝图是模型照抄的模板，同样只写现在怎么做。
+    docs += sorted((SKILL / 'blueprints').glob('*.json'))
     for doc in docs:
         if not doc.is_file():
             continue
