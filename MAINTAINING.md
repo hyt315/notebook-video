@@ -225,5 +225,8 @@
 - **改文档时每条规则都要有落位**：删、并、挪之前对照上面的表，写清新位置。
 - **发布包**：`python scripts/package-skill.py`（或 `git archive`，按 `.gitattributes` 的 export-ignore 剔除开发期文件）。`scripts/dev/`、`tests/`、`docs/`、本文件不进包。
 - **测试默认离线**：`python3 -m unittest discover -s tests -p 'test_*.py'`；设 `NV_ONLINE=1` 才跑要下载字体的首跑用例。
+- **一条命令跑全部检查**：`python3 scripts/dev/test-all.py`（单测 → 用例收集 → selftest → 负向抽查 → validate-skill → 链接 → `reuse lint`（装了才跑）→ tsc + test_frame_types（设了 `NV_E2E_NODE_MODULES` 才跑，在模板副本里软链依赖，不往模板里放 `node_modules`））。`--list` 看步骤名，可以只跑其中几步。单测步骤不把 `NV_E2E_NODE_MODULES` 传下去（它会打开渲染型 e2e），要渲染型 e2e 加 `--e2e`。
+- **回归集**：`tests/test_regress.py` 把 `examples/**/*.story.json`（现 16 份）逐份 compose → resolve → shot-motion / presentation 门禁，产物 sha256 与门禁 P0/P1 条数钉在 `tests/fixtures/regress.json`。有意改了排版 / 字幕 / 相机 / 判据时 `NV_REGRESS_UPDATE=1 python3 -m unittest tests/test_regress.py` 重写，并在提交说明里写清哪些 story 变了。
+- **组件使用率**：`python3 scripts/dev/component-usage.py`（`--unused` 只列蓝图 / 示例 / 模板场景里零引用的件，`--json` 给数据）。按「零引用即待删」纪律核对时用它，不要凭印象。组件清单从代码 export 读，`docs` 栏为 0 表示 references/ 里没写这件。
 - **跨语言常量只写一次**：FPS、字幕单行上限、读速、行高地板、标签字号地板、卷页帧数、舞台中心、相机缩放上限与运镜时长、文字展开时长参数都在 `assets/lecture-template/src/contract.json`。TS 用 `import CONTRACT from './contract.json'`，Python 用 `from contract import C`（`scripts/contract.py`），`scripts/transition-plan.mjs` 用 `fs` 读。新增一个两边都要用的数，加进这份 JSON，不要在两边各写一遍再加正则核对。语义不同但数值相同的（如字幕逐字计的 16 和 G-2 加权字计的 16）只共用数值，计法函数各自保留。
 - **素材许可两处登记**：`REUSE.toml`（+ `LICENSES/`，开发期 `reuse lint`，不进包）记每个文件的版权与许可；运行期仍读 `manifests/backgrounds.json`、`public/sfx/sfx-manifest.json`、`public/craft/craft-manifest.json`。加或换素材时两边一起改，`tests/test_reuse.py` 核对两边一致、且 `public/` 与 `assets/fonts/` 下每个二进制素材都有显式登记。本机检查：`pip install reuse==6.3.0`（GPL-3.0，装在仓库外的虚拟环境）后 `reuse lint`。
