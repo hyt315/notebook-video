@@ -49,7 +49,7 @@ import {MascotGate} from './mascot-gate';
 import {GlyphSnap} from './glyph-snap';
 import {planSfx, bedDuckAt, SFX_BED, BED_GAIN} from './sfx';
 import {MUSIC_ON} from './audio-config';
-import {CINEMA, cinemaCamAt, cinemaMask, cinemaTransform, parallaxTransform, resolveTransition, transitionFrames, transitionStyle, WhipBlur, whipOffset} from './cinema';
+import {CINEMA, cinemaCamAt, cinemaMask, cinemaTransform, parallaxTransform, resolveTransition, transitionFrames, transitionStyle, whipOffset} from './cinema';
 import {FxProbe, PageCurl, curlShadow, isCurl} from './fx';
 import {PageFold} from './transitions/pagefold';
 import {SHOTS, SHOT_IDS, SHOT_TOTAL, SFX_DENSITY} from './shots';
@@ -73,6 +73,17 @@ import * as FILM from './film';
 import {captionGap} from './caption-gap';
 // 3.8.0：章节卡标题的自适应字号改用它（同一能力的唯一实现，别再在调用处估算）。
 import {fitChineseTextOnNLines} from './components/fittext';
+
+/** 方向模糊滤镜（SVG feGaussianBlur，只在 X 方向）。id 唯一，按帧给 stdDeviation。
+ *  svg-id: singleton —— 进 / 出各一枚、固定在合成层，不随镜头重复（见下方 url(#nv-whip-*)）。 */
+const WhipBlur: React.FC<{id: string; amount: number}> = ({id, amount}) => (
+  <svg width={0} height={0} style={{position: 'absolute'}} aria-hidden>
+    <filter id={id} x="-20%" y="-5%" width="140%" height="110%" colorInterpolationFilters="sRGB">
+      <feGaussianBlur stdDeviation={`${Math.max(0, amount).toFixed(2)} 0`} />
+    </filter>
+  </svg>
+);
+
 const CHAPTER_STARTS=CHAPTER_SHOTS.map((id)=>SHOTS[id].from);
 
 const clamp={extrapolateLeft:'clamp' as const,extrapolateRight:'clamp' as const};

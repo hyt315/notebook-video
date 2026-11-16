@@ -84,7 +84,7 @@ export const useStageMachine = (phases: Phase[], f: number): StageCtx => {
 // 出声必须发生在出图路径上。（测量排在 rAF 里，所以同样持一个 delayRender，
 // 不然又会变成「装了但没量过」。）
 // ---------------------------------------------------------------------------
-export const SlotGuard: React.FC<{f: number; mainW: number; mainH: number; tag: string}> = ({f, mainW, mainH, tag}) => {
+const SlotGuard: React.FC<{f: number; mainW: number; mainH: number; tag: string}> = ({f, mainW, mainH, tag}) => {
   const ref = useRef<HTMLDivElement>(null);
   const slotW = mainW;
   const slotH = mainH;

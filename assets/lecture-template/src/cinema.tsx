@@ -313,15 +313,6 @@ export const transitionStyle = (kind: TransitionKind, p: number, role: 'in' | 'o
   return {transform: `translateX(${-dir * 900 * (1 - e)}px)`, opacity: Math.min(1, 0.15 + e * 1.4), blur: 60 * (1 - e) * blurBell + 18 * (1 - e)};
 };
 
-/** 方向模糊滤镜（SVG feGaussianBlur，只在 X 方向）。id 唯一，按帧给 stdDeviation。
- *  svg-id: singleton —— 进 / 出各一枚、固定在合成层，不随镜头重复（见 index.tsx 的 url(#nv-whip-*)）。 */
-export const WhipBlur: React.FC<{id: string; amount: number}> = ({id, amount}) => (
-  <svg width={0} height={0} style={{position: 'absolute'}} aria-hidden>
-    <filter id={id} x="-20%" y="-5%" width="140%" height="110%" colorInterpolationFilters="sRGB">
-      <feGaussianBlur stdDeviation={`${Math.max(0, amount).toFixed(2)} 0`} />
-    </filter>
-  </svg>
-);
 
 /** 一个转场里摄影机的「甩」位移（给背景视差用）。 */
 export const whipOffset = (kind: TransitionKind | null, p: number) => {
