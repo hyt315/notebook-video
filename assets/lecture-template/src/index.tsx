@@ -87,7 +87,9 @@ const pop=(f:number,start:number,stiffness=132)=>spring({frame:f-start,fps:BASE_
 // ⚠️ 先等一帧并强制一次样式计算再 load：FontFaces 的 <style> 刚插入时 @font-face 还没注册进
 // document.fonts，此刻 load() 匹配不到任何字体、立即 resolve（实测：各 face 仍是 unloaded）。
 // 3.5.3 之所以没事，是画面层同一次提交就挂上了、排版用到这些字体才触发加载；FontGate 不先挂画面层，必须自己触发。
-const loadThemeFonts=()=>new Promise<void>((r)=>requestAnimationFrame(()=>r())).then(()=>{void document.body.offsetHeight;}).then(()=>Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash'),document.fonts.load('700 40px Clash'),document.fonts.load('500 40px Space'),document.fonts.load('400 40px Caveat'),...(THEME.craft?.fonts??[]).map(fd=>document.fonts.load(fd)),document.fonts.ready]));
+const loadThemeFonts=()=>new Promise<void>((r)=>requestAnimationFrame(()=>r())).then(()=>{void document.body.offsetHeight;}).then(()=>Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash').catch(()=>[]),document.fonts.load('700 40px Clash').catch(()=>[]),document.fonts.load('500 40px Space'),document.fonts.load('400 40px Caveat'),...(THEME.craft?.fonts??[]).map(fd=>document.fonts.load(fd)),document.fonts.ready]));
+// 3.6.0：Clash Display 不入库（ITF FFL 禁止经仓库再分发），按需从 Fontshare 下载到工程 public/fonts/；离线没下到时
+// 这两条 load 会因 404 拒绝，catch 掉后 CSS 栈 'Clash,Space,Kai' 自然落到 Space Grotesk（P1 提示由 CLI 打出）。
 // 3.5.4 FontGate：字体就绪之前**不挂载画面层**。
 // 为什么：章节卡标题（fitChineseTextOnNLines）等组件在 render 里同步量字宽，而量字宽的两层缓存
 // （fittext.tsx 的 widthCache、@remotion/layout-utils 的 wordCache）会把**字体就绪前**的回退字体宽度
@@ -291,7 +293,7 @@ const Chrome=()=>{
   if(THEME.Chrome){const ThemeChrome=THEME.Chrome;return <ThemeChrome stage={stage} title={String(titles[stage]??'')} kicker={COPY.chromeKicker} header={COPY.header} headerSub={COPY.headerSub} local={local}/>;}
   return <>
     <Paper lift={0.3} style={{left:92,top:74,width:392,height:90,zIndex:150,display:'flex',alignItems:'center',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${.96+.04*p})`,overflow:'hidden',padding:0}}>
-      <div style={{width:72,height:'100%',background:`linear-gradient(135deg,${C.orange},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash',fontWeight:600,fontSize:31,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
+      <div style={{width:72,height:'100%',background:`linear-gradient(135deg,${C.orange},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash,Space,Kai',fontWeight:600,fontSize:31,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
       <div style={{padding:'8px 16px',flex:1,minWidth:0}}>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           <PillTag text={COPY.chromeKicker} color={C.blue} bg={C.blueLight} fontSize={TYPE.microS}/>

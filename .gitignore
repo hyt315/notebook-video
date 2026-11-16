@@ -35,3 +35,6 @@ assets/lecture-template/public/LXGWWenKaiLite-*.ttf
 # Noto Serif SC (OFL) is downloaded on demand (fonts --serif / new-project --style=journal|papercut|archive)
 assets/fonts/*.otf
 assets/lecture-template/public/NotoSerifSC-*.otf
+# Clash Display (ITF Free Font License forbids redistribution via repositories) is downloaded on demand
+assets/fonts/*.woff2
+assets/lecture-template/public/fonts/ClashDisplay-*.woff2

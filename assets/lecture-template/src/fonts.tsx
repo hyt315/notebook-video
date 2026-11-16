@@ -14,6 +14,8 @@ import {staticFile} from 'remotion';
 // 3.3.0：NotoSerifSC = Noto Serif SC Bold（OFL-1.1，notofonts/noto-cjk Serif2.003，按需下载，不入库）。
 // 只有手作皮肤（journal / papercut / archive）用它，皮肤在 THEME.craft.fonts 里声明，AssetGate 校验；
 // flat / cel 工程里这个 @font-face 指向的文件不存在也没关系（浏览器只在用到时才下载字体）。
+// 3.6.0：Clash Display（ITF Free Font License，禁止经仓库再分发）不随仓库发，CLI 首次用到时从 Fontshare
+// 按 sha256 锁定下载到工程 public/fonts/；离线缺文件时调用处的 'Clash,Space,Kai' 栈回落到 Space Grotesk。
 // ============================================================================
 
 /** 中日韩统一表意文字 + 扩展 A + 兼容表意 + CJK 标点 + 全角形式 + 假名 + 注音 + 中文常用符号。 */

@@ -306,15 +306,61 @@ const ensureFonts = async () => {
     if (fs.existsSync(file) && hashFile(file) === sha) continue;
     const url = `${base}/${name}`;
     console.log(`Downloading font ${name} (LXGW WenKai Lite ${FONT_RELEASE}, OFL-1.1) from ${url}`);
-    let res;
-    try { res = await fetch(url, {redirect: 'follow'}); } catch (error) { res = null; }
-    if (!res || !res.ok) fail(`Font download failed: ${url}\nDownload ${name} (${FONT_RELEASE}) manually from https://github.com/lxgw/LxgwWenKai-Lite/releases and put it in ${fontDir}, or set NOTEBOOK_VIDEO_FONT_BASE_URL to a mirror.`);
-    const tmp = `${file}.part`;
-    fs.writeFileSync(tmp, Buffer.from(await res.arrayBuffer()));
-    if (hashFile(tmp) !== sha) { fs.rmSync(tmp, {force: true}); fail(`Font checksum mismatch for ${name}; expected ${FONT_RELEASE} sha256 ${sha}.`); }
-    fs.renameSync(tmp, file);
+    const err = await downloadPinned(url, file, sha);
+    if (err === 'fetch') fail(`Font download failed: ${url}\nDownload ${name} (${FONT_RELEASE}) manually from https://github.com/lxgw/LxgwWenKai-Lite/releases and put it in ${fontDir}, or set NOTEBOOK_VIDEO_FONT_BASE_URL to a mirror.`);
+    if (err === 'sha') fail(`Font checksum mismatch for ${name}; expected ${FONT_RELEASE} sha256 ${sha}.`);
   }
   return fontDir;
+};
+
+// 按 URL 下载一个字体文件，sha256 不符就丢弃。返回 null = 成功，'fetch' = 下载失败，'sha' = 校验失败。
+// LXGW 与 Clash Display 共用这一条下载路径。
+const downloadPinned = async (url, file, sha) => {
+  let res;
+  try { res = await fetch(url, {redirect: 'follow'}); } catch (error) { res = null; }
+  if (!res || !res.ok) return 'fetch';
+  const tmp = `${file}.part`;
+  fs.writeFileSync(tmp, Buffer.from(await res.arrayBuffer()));
+  if (hashFile(tmp) !== sha) { fs.rmSync(tmp, {force: true}); return 'sha'; }
+  fs.renameSync(tmp, file);
+  return null;
+};
+
+// 3.6.0：Clash Display（Indian Type Foundry，ITF Free Font License v2.0）不入库 —— 许可 §02 禁止经
+// 代码仓库再分发字体文件（https://www.fontshare.com/licenses/itf-ffl）。与 LXGW 一样首次用到时下载：
+// 从 Fontshare CDN 按 sha256 锁定拉到 assets/fonts/ 缓存，再拷进工程 public/fonts/。
+// 镜像：NOTEBOOK_VIDEO_CLASH_BASE_URL 指向放着同名三个 .woff2 的目录。
+// 离线拿不到时**不报错**：只打 P1 提示，标题/数字走调用处的 'Clash,Space,Kai' 栈回落到 Space Grotesk。
+const CLASH_CDN = 'https://cdn.fontshare.com/wf';
+const CLASH_FILES = {
+  'ClashDisplay-Medium.woff2': ['2GQIT54GKQY3JRFTSHS4ARTRNRQISSAA/3CIP5EBHRRHE5FVQU3VFROPUERNDSTDF/JTSL5QESUXATU47LCPUNHZQBDDIWDOSW.woff2', '6de911fc824613ef7325c617b359262bedba2dd6499e7e93794fc9414ca24960'],
+  'ClashDisplay-Semibold.woff2': ['FPDAZ2S6SW4QMSRIIKNNGTPM6VIXYMKO/5HNPQ453FRLIQWV2FNOBUU3FKTDZQVSG/Z3MGHFHX6DCTLQ55LJYRJ5MDCZPMFZU6.woff2', 'e748ea11c49f39ae2375dce4fbda8dc971c5ca8b64ac8a838b5daba96f61a10a'],
+  'ClashDisplay-Bold.woff2': ['BFBSY7LX5W2U2EROCLVVTQP4VS7S4PC3/IIUX4FGTMD2LK2VWD3RVTAS4SSMUN7B5/53RZKGODFYDW3QHTIL7IPOWTBCSUEZK7.woff2', '532795f825c5a28b807c0323e27939c638e6289d5870c05b962b6c0916407476'],
+};
+const ensureClash = async () => {
+  const fontDir = path.join(SKILL_DIR, 'assets', 'fonts');
+  fs.mkdirSync(fontDir, {recursive: true});
+  const mirror = (process.env.NOTEBOOK_VIDEO_CLASH_BASE_URL || '').replace(/\/+$/, '');
+  const missing = [];
+  for (const [name, [cdnPath, sha]] of Object.entries(CLASH_FILES)) {
+    const file = path.join(fontDir, name);
+    if (fs.existsSync(file) && hashFile(file) === sha) continue;
+    const url = mirror ? `${mirror}/${name}` : `${CLASH_CDN}/${cdnPath}`;
+    console.log(`Downloading font ${name} (Clash Display, ITF Free Font License, via Fontshare) from ${url}`);
+    if (await downloadPinned(url, file, sha)) missing.push(name);
+  }
+  if (missing.length) console.log(`P1 Clash Display 未能下载（${missing.join(', ')}）：标题与数字将回落到 Space Grotesk。联网后重跑 node scripts/notebook-video.mjs fonts，或从 https://www.fontshare.com/fonts/clash-display 下载后放进 ${fontDir}（也可设 NOTEBOOK_VIDEO_CLASH_BASE_URL 指向镜像）。`);
+  return fontDir;
+};
+const ensureProjectClash = async (project) => {
+  const dest = path.join(project, 'public', 'fonts');
+  const missing = Object.keys(CLASH_FILES).filter((n) => !fs.existsSync(path.join(dest, n)));
+  if (!missing.length) return;
+  const dir = await ensureClash();
+  fs.mkdirSync(dest, {recursive: true});
+  const copied = missing.filter((n) => fs.existsSync(path.join(dir, n)));
+  for (const n of copied) fs.copyFileSync(path.join(dir, n), path.join(dest, n));
+  if (copied.length) console.log(`已补拉丁标题字体到工程 public/fonts/：${copied.join(', ')}（Clash Display · ITF Free Font License）`);
 };
 
 // 渲染前把中文字体补进工程。字体不入库（OFL 的 12 MB 二进制不该进 git），只在
@@ -329,6 +375,7 @@ const ensureProjectFonts = async (project) => {
     for (const n of missing) fs.copyFileSync(path.join(dir, n), path.join(project, 'public', n));
     console.log(`已补中文字体到工程 public/：${missing.join(', ')}（LXGW WenKai Lite · OFL-1.1）`);
   }
+  await ensureProjectClash(project);
   // 3.9.0：手作皮肤（journal / papercut / archive）的标题走 NotoSerifSC。缺了它不是"回退到别的衬线"，
   // 是 Chrome 在第 0 帧抛 `NetworkError: A network error occurred`（cancelRender）——
   // 报错里一个字都不提字体。所以和 LXGW 一样在渲染前补齐，缺网络时把下载失败的原因原样带出来。
@@ -419,6 +466,7 @@ const newProject = async (args) => {
     fs.copyFileSync(path.join(serifDir, SERIF_FILE), path.join(publicDir, SERIF_FILE));
     fs.copyFileSync(path.join(serifDir, 'LICENSE-OFL-1.1-NotoSerifSC.txt'), path.join(publicDir, 'LICENSE-OFL-1.1-NotoSerifSC.txt'));
   }
+  await ensureProjectClash(target);
   fs.mkdirSync(path.join(target, 'renders'), {recursive: true});
   console.log(`Created official lecture-template Remotion notebook project (pure code-drawn SVG default): ${target}`);
   console.log(`Theme locked to "${style}". Style contract: references/themes/${style}.md.`);
@@ -1745,7 +1793,7 @@ const deliver = async (args) => {
 // ----------------------------------------------------------------------
 // CLI：参数解析与命令分发
 // ----------------------------------------------------------------------
-const usage = () => {  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  fonts [--serif]   (download the pinned LXGW WenKai Lite fonts once — plus Noto Serif SC with --serif; new-project does this automatically)\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel|journal|papercut|archive]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]
+const usage = () => {  console.log(`Notebook Video cross-platform CLI\n\nCommands:\n  check-deps\n  fonts [--serif]   (download the pinned LXGW WenKai Lite + Clash Display fonts once — plus Noto Serif SC with --serif; new-project does this automatically)\n  validate-skill\n  new-project PROJECT_DIRECTORY [--style=flat|cel|journal|papercut|archive]\n  build-semantic-captions WORD_TIMING_JSON SEMANTIC_LINES OUTPUT_JSON [options]\n  match-timing PROJECT_DIRECTORY [--lock]\n  sync PROJECT_DIRECTORY\n  prepare-browser PROJECT_DIRECTORY\n  render-range PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]
   preview PROJECT_DIRECTORY [--seconds=30] [--from=SEC] [--shot=ID] [--scale=0.5] [--fx=on] [--reduced-motion]   (3.8.0: 30 s low-res check before the full render; GPU 卷页默认关，折痕翻页一直在；--reduced-motion 降动态预览)\n  sweep PROJECT_DIRECTORY [--scale=0.5] [--cols=4] [--plan] [--json]   (3.9.0: 每镜末段扫一遍，全片都量到——preview 只看开头，尾巴容易漏)\n  review-frames PROJECT_DIRECTORY OUTPUT_MP4 START_FRAME END_FRAME [COMPOSITION_ID]\n  render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID]\n  validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]\n  validate-caption-sync WORD_TIMING_JSON CAPTION_CUES_JSON\n  validate-semantic-breaks CAPTION_CUES_JSON PROTECTED_PHRASES_TXT [--budoux-dir DIR|--no-budoux]\n  (delivery default: the CLI auto-detects the project node_modules/budoux and always adds --require-budoux; a missing BudouX fails instead of silently skipping — pass --no-budoux to skip the phrase rule on purpose)\n  validate-visual-plan PROJECT_DIRECTORY
 validate-glyphs PROJECT_DIRECTORY   (3.5.0: every on-screen font stack must carry a CJK face before the generic family)\nvalidate-elem-kinds PROJECT_DIRECTORY   (3.6.2: every element kind compose-story emits needs a case in auto.tsx ElemView)\nresolve-shots PROJECT_DIRECTORY [--check]\nvalidate-shot-motion PROJECT_DIRECTORY\nvalidate-composition PROJECT_DIRECTORY [--strict]\nvalidate-audio-levels PROJECT_DIRECTORY\nvalidate-treatment PROJECT_DIRECTORY   (3.3.0 director layer: manifests/treatment.json)\nvalidate-opening PROJECT_DIRECTORY [--video MP4]   (3.3.0 first three seconds: cold open, first caption, beats, pixels)\nsilent-timing LINES_TXT OUT_JSON [--cps N] [--project DIR]   (3.3.0 caption timing without TTS; hand-made skins default 6.5 chars/s)\nvalidate-backgrounds PROJECT_DIRECTORY [--shots] [--recompute]   (3.3.0 background library: manifests/backgrounds.json)
 validate-facts PROJECT_DIRECTORY [--review]   (P2-22 内容事实质量：只保证标注合法，不保证事实正确；--review 出人工审读清单)\nvalidate-media PROJECT_DIRECTORY\nprepare-media PROJECT_DIRECTORY [--add FILE --id ID …]\ncommons search \"QUERY\" [--type image|video|audio] [--source commons|openverse] [--audio-category music|sound_effect] [--project DIR] | commons add PROJECT \"File:…\" --id ID | commons credits PROJECT\nvalidate-ocr PROJECT_DIRECTORY --video MP4 | --stills DIR   (optional: needs pip rapidocr onnxruntime)\nshowcase PROJECT_DIRECTORY [OUTPUT] [--sheet|--craft] [--frame=N] [--scale=S]   (组件样张：默认出库的 mp4+接触表，--sheet 只要接触表，--craft 出手作笔刷样张)
@@ -1857,7 +1905,7 @@ const main = async () => {
   switch (command) {
     case 'check-deps': return checkDeps();
     case 'capabilities': return capabilities();
-    case 'fonts': return ensureFonts().then(async (d) => { if (args.includes('--serif')) await ensureSerif(); console.log(`Fonts ready: ${d}`); });
+    case 'fonts': return ensureFonts().then(async (d) => { await ensureClash(); if (args.includes('--serif')) await ensureSerif(); console.log(`Fonts ready: ${d}`); });
     case 'new-project': return newProject(args);
     case 'sync': return syncProjectAssets(args);
     case 'prepare-browser': return prepareBrowser(args);

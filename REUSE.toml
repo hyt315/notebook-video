@@ -85,13 +85,6 @@ precedence = "override"
 SPDX-FileCopyrightText = "2020 The Space Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk)"
 SPDX-License-Identifier = "OFL-1.1"
 
-# Clash Display：Fontshare「Closed Source」字体，ITF Free Font License（字体 name 表许可 URL = fontshare.com/terms），不是 OFL
-[[annotations]]
-path = "assets/lecture-template/public/fonts/ClashDisplay-*.woff2"
-precedence = "override"
-SPDX-FileCopyrightText = "2021 Indian Type Foundry"
-SPDX-License-Identifier = "LicenseRef-ITF-FFL"
-
 # 字体许可原文本身
 [[annotations]]
 path = "assets/fonts/LICENSE-OFL-1.1-*.txt"

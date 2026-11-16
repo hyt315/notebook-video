@@ -94,8 +94,12 @@ class NewProjectFirstRunTest(unittest.TestCase):
     def setUpClass(cls):
         cls._td = tempfile.TemporaryDirectory()
         cls.proj = Path(cls._td.name) / "proj"
+        env = os.environ.copy()
+        if os.environ.get("NV_ONLINE") != "1":
+            # 单测默认离线：Clash Display（按需从 Fontshare 下载）指向一定连不上的镜像，走 P1 回落路径
+            env["NOTEBOOK_VIDEO_CLASH_BASE_URL"] = "http://127.0.0.1:9/nope"
         r = subprocess.run(["node", str(CLI), "new-project", str(cls.proj)],
-                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", env=env)
         cls.rc, cls.out = r.returncode, (r.stdout or "") + (r.stderr or "")
 
     @classmethod

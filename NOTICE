@@ -32,6 +32,10 @@ and bundles the following third-party materials:
    - Noto Serif SC Bold (Noto Serif CJK, release Serif2.003) — SIL Open Font License 1.1, Copyright 2017 Adobe
      (https://github.com/notofonts/noto-cjk). Downloaded on demand by `notebook-video.mjs fonts --serif` / `new-project --style=journal|papercut|archive`
      and verified by sha256; the font is not committed. Licence text: `assets/fonts/LICENSE-OFL-1.1-NotoSerifSC.txt`.
+   - Clash Display (Medium/Semibold/Bold) — Indian Type Foundry, ITF Free Font License v2.0 (https://www.fontshare.com/licenses/itf-ffl),
+     distributed by Fontshare. Section 02 forbids redistributing the font files through repositories, so they are **not** in this
+     repository or any package: `notebook-video.mjs fonts` / `new-project` / render commands download them from the Fontshare CDN
+     (sha256-pinned) into the user's project; offline, titles fall back to Space Grotesk.
    - Craft foley `public/sfx/lib/{page,place,snip,stamp,rustle,latch}.ogg` — trimmed, loudness-normalised edits of
      Kenney "RPG Audio" (https://kenney.nl/assets/rpg-audio), CC0 1.0. Credit is not required; given anyway.
    - Craft-skin backgrounds (`public/bg/bg-{journal,papercut,archive}-*.jpg`) and paper tiles (`public/craft/*.png`) are

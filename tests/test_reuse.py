@@ -93,9 +93,11 @@ class ReuseMatchesRegistries(unittest.TestCase):
         missing = [f for f in files if self.resolve(f, explicit_only=True) is None]
         self.assertEqual(missing, [], "新素材要在 REUSE.toml 里写来源与许可")
 
-    def test_clash_display_is_not_ofl(self):
-        for w in ("Bold", "Medium", "Semibold"):
-            self.assertEqual(self.resolve(f"{TPL}public/fonts/ClashDisplay-{w}.woff2")[0], "LicenseRef-ITF-FFL")
+    def test_clash_display_not_in_repo(self):
+        # ITF Free Font License §02 禁止经代码仓库再分发字体文件：Clash Display 只按需从 Fontshare 下载
+        r = subprocess.run(["git", "ls-files", "*ClashDisplay*"], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(r.stdout.strip(), "")
+        self.assertFalse(any("ClashDisplay" in str(a) for a in self.ann))
 
     def test_license_texts_match_usage(self):
         used = {lic for _, _, lic, _ in self.ann}

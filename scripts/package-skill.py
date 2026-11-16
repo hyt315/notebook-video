@@ -50,6 +50,9 @@ def excluded(path: Path, include_fonts: bool) -> bool:
         return True
     if path.name in SKIP_NAMES or path.suffix.lower() in SKIP_SUFFIXES:
         return True
+    # Clash Display（ITF Free Font License §02 禁止经仓库/包再分发）：开发机上按需下载的副本永不打包，--include-fonts 也不带。
+    if path.name.startswith("ClashDisplay-"):
+        return True
     # 字体是命令按需下载的运行缓存，不是源码；离线包可显式带上。
     if not include_fonts and r.startswith("assets/fonts/") and path.suffix.lower() in {".ttf", ".otf"}:
         return True

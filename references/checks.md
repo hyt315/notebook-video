@@ -165,7 +165,7 @@ Keep these locked until the user approves a future rendered replacement. For any
 - the active skin's three locked background rasters (`main` / `chapter` / `quiet`, `flat` default or `cel`), chosen per shot by the backdrop rule;
 - stable top-left chapter card and top-right technical header, both **outside** the shot camera;
 - bottom-pinned pure caption text with per-word reveal and soft text shadow; no decorative bar, dark border, side marks, locator or ring;
-- LXGW WenKai Lite as the unified CJK typeface plus Clash Display / Space Grotesk Latin accents, with WenKai registered as the CJK fallback face of every Latin display family (`src/fonts.tsx`) so no text ever falls back to a system font;
+- LXGW WenKai Lite as the unified CJK typeface plus Clash Display (downloaded on demand from Fontshare; offline falls back to Space Grotesk) / Space Grotesk Latin accents, with WenKai registered as the CJK fallback face of every Latin display family (`src/fonts.tsx`) so no text ever falls back to a system font;
 - TTS word timing converted once to integer absolute frames;
 - independent semantic parts with explicit z-order, entry and complete exit;
 - a spatial density budget: one hero action per zone, no temporary stack in the center;
