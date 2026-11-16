@@ -16,10 +16,13 @@ The full earlier history (1.0.0 – 3.5.4) is archived in the repository at `doc
 - `locked-style-contract.json` 只留描述字段，数值以 `src/contract.json` 为准。 / Numeric values now live only in `src/contract.json`.
 - references 去掉版本注记与经过叙述，重复段改为链接（判据与等级不变）；更正 auto 转场说明为一律翻页。 / References trimmed; auto transitions documented as page turns.
 
+- 五道浏览器门禁共用 `layout-probe.tsx` 的测量骨架；九个 P0/P1 型门禁的收尾统一到 `gate_report.finish()`，输出与退出码不变。 / Browser gates share one probe skeleton; validators share one finish routine.
+
 ### Removed
 - 零引用的 Dimension / MagnifyInset / MediaAudio；WhipBlur、SlotGuard 改为引擎内部件。 / Removed unused Dimension, MagnifyInset, MediaAudio.
 
 ### Tests
+- selftest 去掉与负向抽查、单测重复的项，语法与密钥检查移入单测；测试临时目录用完即删；负向抽查常见夹具收成 `shot_case`。 / Deduplicated selftest; temp dirs cleaned on exit.
 - 回归快照覆盖 make-video 构建期 11 道门禁，逐条记录等级；新增件名一致性、motion-gaps、treatment 纸面字段用例；负向抽查新增 `must_quiet`。 / Regression snapshot covers 11 build-time gates with per-rule levels; new name-consistency and gate tests.
 
 ## [3.6.0] - 2026-11-16
