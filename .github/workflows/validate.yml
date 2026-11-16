@@ -39,9 +39,7 @@ jobs:
           node scripts/notebook-video.mjs validate-visual-plan assets/lecture-template
           python3 scripts/selftest.py
       - name: Run the build-time gates on the default template
-        # ⚠️ 复核发现：CI 之前**一条构建期门禁都不跑**（只有 validate-skill / visual-plan
-        # 与 selftest），于是「负向抽查」长期只是本地仪式。
-        # 这里把模板上要跑的构建期命令全挂上（以 `run:` 为准）：构图 / 镜头运动 / 呈现效果 /
+        # 模板上要跑的构建期命令全挂在这里（以 `run:` 为准）：构图 / 镜头运动 / 呈现效果 /
         # 音效电平 / 背景库 / 字幕同步 / 语义断句。帧参数名没有单独门禁：组件的帧参数是必填类型，
         # 由下面的 Type-check 步骤拦。
         run: |
@@ -49,17 +47,16 @@ jobs:
           node scripts/notebook-video.mjs validate-shot-motion assets/lecture-template
           node scripts/notebook-video.mjs validate-presentation assets/lecture-template
           node scripts/notebook-video.mjs validate-audio-levels assets/lecture-template
-          # 3.4.0 背景库：每张图有来源与许可、sha256 对、亮底、字幕区对比度；分镜轮换无相邻重复
+          # 背景库：每张图有来源与许可、sha256 对、亮底、字幕区对比度；分镜轮换无相邻重复
           node scripts/notebook-video.mjs validate-backgrounds assets/lecture-template --min-per-skin journal=8,papercut=8,archive=8,flat=4,cel=4
           node scripts/notebook-video.mjs validate-backgrounds assets/lecture-template --shots
           node scripts/notebook-video.mjs validate-caption-sync assets/lecture-template/audio/narration.mp3.json assets/lecture-template/manifests/caption-cues.json
-          # 3.5.4 更正：BudouX 已随包放在 assets/vendor，脚本找得到它，所以这一步在 `npm ci` 之前
-          # **就已经强制执行**短语规则（日志里是 "phrase rule: enforced (BudouX from …/assets/vendor)"），
-          # 不是旧注释说的"跳过并告警"。下面「Re-run the phrase rule」一步再用模板 node_modules 里的 BudouX
-          # 带 --require-budoux 跑一遍，验的是 npm 装出来的那份也能用。
+          # BudouX 随包放在 assets/vendor，所以这一步在 `npm ci` 之前就强制执行短语规则
+          # （日志 "phrase rule: enforced (BudouX from …/assets/vendor)"）。下面「Re-run the phrase rule」
+          # 再用模板 node_modules 里的 BudouX 带 --require-budoux 跑一遍，验 npm 装出来的那份也能用。
           python3 scripts/validate-semantic-breaks.py assets/lecture-template/manifests/caption-cues.json assets/lecture-template/manifests/protected-caption-phrases.txt
       - name: Unit tests (Commons pipeline, director gate, OCR check, background library, page-turn fx)
-        # 3.3.0：离线单元测试（标准库 unittest，夹具在 tests/fixtures/，不访问网络）。
+        # 离线单元测试（标准库 unittest，夹具在 tests/fixtures/，不访问网络）。
         # test_ocr.py 的端到端用例需要 RapidOCR，CI 没装就自动 skip；纯函数部分照常跑。
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - name: REUSE lint (licence of every file; dev-only)
@@ -69,40 +66,34 @@ jobs:
           python3 -m pip install --quiet reuse==6.3.0
           reuse lint
       - name: Every test file really runs (no 0-test files)
-        # 3.5.4：test_craft_paper.py / test_skill.py 曾在 discover 下收集到 0 条、CI 照样绿。
         # 逐文件数 unittest 用例，任何文件 0 条或导入失败即失败。
         run: python3 scripts/dev/check-test-collection.py
       - name: Run the negative fixtures (every gate must really block)
-        # 「名存实亡的门禁是最危险的缺陷」——这一条保障每道门禁都有"喂坏输入必须拦住"的实证。
-        # 脚本自己找模板（`SKILL/assets/lecture-template`），不吃参数——别再传一个没用的路径进来。
+        # 每道门禁都要有「喂坏输入必须拦住」的实证。脚本自己找模板（`SKILL/assets/lecture-template`），不吃参数。
         run: python3 scripts/negative-gate-check.py
       - name: Upload package is reproducible and whitelisted
-        # P2-27：两次构建必须字节一致（否则发布记录里的 SHA 只是偶然值）；白名单外的东西
+        # 两次构建必须字节一致（否则发布记录里的 SHA 只是偶然值）；白名单外的东西
         # （tests / .git / node_modules / 缓存）不能混进去；排版链路的模块一个都不能少。
         run: python3 scripts/dev/package-repro-check.py
       - name: Render lock is exclusive across processes
-        # P2-27：同工程并发渲染必须被拦。单元测试只覆盖「同进程两次取锁」，
-        # 而真正的风险是两个终端同时跑 render 争用同一个 raw 文件。这里起两个真实 OS 进程，
+        # 同工程并发渲染必须被拦。单元测试只覆盖「同进程两次取锁」，这里起两个真实 OS 进程，
         # 验三件事：第二个必须失败、失败时能报出持锁 pid、holder 退出后不留残锁。
         run: node scripts/dev/render-lock-smoke.mjs
       - name: Security and licence audit
-        # P2-31：四类能在发布前用机器判的问题——依赖许可有没有记录、字体是否随附 OFL、
+        # 四类能在发布前用机器判的问题——依赖许可有没有记录、字体是否随附 OFL、
         # 有没有敏感文件进库、源码里有没有硬编码凭据。
         run: |
           python3 scripts/dev/security-audit.py
           python3 scripts/dev/gen-dependency-licences.py --check
       - name: Check overlay coordinates (out-of-canvas fails; "frame or card?" is warn-only)
-        # ⚠️ 名字必须与命令一致（复核抓到上一版写着 strict mode 却没传 --strict）。
-        # 现状：`OFF-CANVAS` 本身 rc=1；而 `VERIFY-FRAME` 类 WARN 在标准模板上还剩 1 条
-        # （showcase 的 ChatThread y=10 顶栏 N 格）——它**是待人工确认的真问题**，
-        # 不是可以顺手消掉的噪声，所以这一步刻意不加 --strict（要加就得先处置那条 WARN）。
+        # `OFF-CANVAS` 本身 rc=1；`VERIFY-FRAME` 类 WARN 在标准模板上还剩 1 条
+        # （showcase 的 ChatThread y=10 顶栏 N 格），待人工确认，所以这一步不加 --strict。
         run: python3 scripts/coords-lint.py assets/lecture-template
       - name: Audit locked dependencies
         working-directory: assets/lecture-template
         run: npm audit --package-lock-only --ignore-scripts --audit-level=high
       - name: Type-check the default template
-        # ⚠️ 两步都必要，别合并：模板此前**能打包但没有类型检查**，于是"幽灵引用"能一直长着不被发现
-        # （实测抓到过 `fitsWithin` 从未 import、`SlotGuard` 从未定义、SHAPES 传了库不认的参数）。
+        # 类型检查拦「幽灵引用」（未 import 的名字、未定义的组件、库不认的参数）。
         # ⚠️ 这一步**必须排在「Validate skill and template」之后**：那一步断言仓库树里没有
         # node_modules / .cache / renders（防生成目录泄漏进源码），而 typecheck 需要先装依赖。
         # 本地等价命令：cd assets/lecture-template && npm ci && npm run typecheck
@@ -111,7 +102,6 @@ jobs:
           npm ci --prefer-offline --no-audit --no-fund
           npm run typecheck
       - name: Every positive example passes the gates
-        # 3.5.4：随包 story 示例曾有一半过不了自己的硬门禁，CI 从没跑过它们。
         # examples/**/*.story.json（negative/ 除外）逐个新建工程 → compose → 全部构建期门禁 → tsc；
         # examples/negative/ 里登记的负例反向检查：必须被拦，且命中登记的判据。node_modules 软链模板的。
         run: python3 scripts/dev/check-examples.py -j 2
@@ -119,7 +109,7 @@ jobs:
         # ⚠️ 必须排在这里：`--budoux-dir` 指向模板的 `node_modules`，要等上面的 `npm ci`；
         # 而 `npm ci` 又必须排在「Validate skill and template」之后 —— 那一步断言仓库树没有 node_modules。
         # （更早那一步用的是 assets/vendor 里随包的 BudouX，同样是强制执行；这里验 npm 装出来的那份。）
-        # ⚠️ 这里**必须带 `--require-budoux`**（2026-09-22 加）：不带开关时"找不到 BudouX"只是
+        # ⚠️ 这里**必须带 `--require-budoux`**：不带开关时"找不到 BudouX"只是
         # SKIPPED + rc=0 —— 看起来通过、其实那条短语规则根本没跑。交付路径上一律要它把跳过变成失败，
         # 这样"没跑"就不可能冒充"检查过了"。（本地跑夹具目录时不要带这个开关。）
         run: |
@@ -137,8 +127,8 @@ jobs:
         # 「传错名 / 漏传 frame 必须 tsc 报错」。只跑这一个文件：NV_E2E_NODE_MODULES 会打开 test_sweep_e2e 的渲染用例。
         run: NV_E2E_NODE_MODULES="$GITHUB_WORKSPACE/assets/lecture-template/node_modules" python3 -m unittest tests.test_frame_types -v
       - name: Rendering is a pure function of the frame (continuous vs single-frame)
-        # 3.5.4 P0 的回归锁：3.5.3 从 f0 连续渲时 S5 整镜消失、单帧 still 却正常（panel 把 opacity:NaN
-        # 写进 inline style，浏览器保留上一帧的旧值）。这里用 concept-hash-table 现搭工程，在带卡片的
+        # 渲染必须是帧号的纯函数（例如 inline style 写进 NaN 时浏览器会保留上一帧的旧值，
+        # 连续渲与单帧渲结果不同）。这里用 concept-hash-table 现搭工程，在带卡片的
         # 镜头交接处取 2 个短窗口（交接前 12 帧 → 后 44 帧，0.2x），连续渲与单帧渲逐像素比。约 2–3 分钟。
         run: node scripts/dev/purity-smoke.mjs --windows=2 --scale=0.2
       - name: Smoke-test project creation
@@ -164,8 +154,7 @@ jobs:
           awk 'NR==1{print}' "$RUNNER_TEMP/notebook-video-smoke-cel/src/theme/active.ts" | grep -q "import"
 
   windows-quick:
-    # T-P2-01：Windows 上跑 R0 的子集（不跑渲染）。
-    # 本机实测一直只在 Windows 上做过，CI 补上这条让那份结论可复现。
+    # Windows 上跑 R0 的子集（不跑渲染）。
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8

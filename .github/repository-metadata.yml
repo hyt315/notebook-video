@@ -23,6 +23,3 @@ ruleset:
   require-status-check: validate
   block-force-push: true
   block-deletion: true
-release:
-  tag: v3.2.0
-  title: Notebook Video v3.2.0

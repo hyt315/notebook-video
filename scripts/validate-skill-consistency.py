@@ -302,11 +302,14 @@ def process_word_hits(text: str) -> list[str]:
 def check_process_words() -> list[str]:
     problems = []
     docs = [SKILL / 'SKILL.md'] + sorted((SKILL / 'references').rglob('*.md'))
+    # CI 与仓库模板（.github/）的注释同样只写「现在为什么这样」，不写版本史。
+    docs += sorted(p for p in (SKILL / '.github').rglob('*')
+                   if p.is_file() and p.suffix.lower() in ('.yml', '.yaml', '.md'))
     for doc in docs:
         if not doc.is_file():
             continue
         for hit in process_word_hits(doc.read_text(encoding='utf-8', errors='ignore')):
-            problems.append(f'process wording in agent doc {doc.relative_to(SKILL)}:{hit}'
+            problems.append(f'process wording in {doc.relative_to(SKILL)}:{hit}'
                             '（版本史 / 事故复述写进 CHANGELOG.md 或 MAINTAINING.md）')
     return problems
 
