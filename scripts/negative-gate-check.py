@@ -8,6 +8,7 @@
                          （例如注释/字符串里的反例不许被当成违规报出来）
   · `must_warn:<子串>`   rc == 0 **且**含该子串——P1 级判据"放行但要点名"的夹具
   · `must_pass`          rc == 0（阴性对照：合法输入必须全过）
+  · `must_quiet:<子串>`  不看 rc，输出**不含**该子串——P1 判据「不许误报」的那一侧
 
 为什么子串断言是必须的：只看 rc 会把"因为别的原因失败"记成通过（第一版 P 用例就是这样假通过的）。
 
@@ -500,7 +501,7 @@ def mksrc(replace_scene=None):
     return td, rc0, out0
 
 
-# ── X · 讲法字段必填（G-14/G-15/G-16）：删掉一镜的 move → validate-presentation 必须拦 ──
+# ── X · 讲法字段（G-14）：删掉一镜的 move → validate-presentation 必须点名（P1，不拦）──
 # 为什么值得单独一条：这四个字段**曾经在 resolve 那一步被整组丢掉**，
 # 于是"规范要求必填"下游根本看不见（实测删掉 move，全部门禁照旧 PASS）。
 def mut_move(d):
@@ -509,7 +510,7 @@ def mut_move(d):
 td, rc0, out0 = mkproj(mut_move)
 case('X 讲法字段 · 缺 move（G-14）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:缺 move', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_warn:缺 move', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
@@ -655,7 +656,7 @@ def mut_move_run(d, first, count):
 td, rc0, out0 = mkproj(lambda d: mut_move_run(d, 0, 3))
 case('AC 讲法字段 · 同一 move 连续 3 镜（G-14②）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:同一 move 连续 3 镜', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_warn:同一 move 连续 3 镜', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 
@@ -668,7 +669,7 @@ cleanup(td)
 
 
 def mut_move_run_gap(d):
-    """S1/S2/S4 都是 `引入`，S3 删掉 move：不许报"连续 3 镜"（缺 move 已经报了 P0）。"""
+    """S1/S2/S4 都是 `引入`，S3 删掉 move：不许报"连续 3 镜"（缺 move 已经另报）。"""
     mut_move_run(d, 0, 2)
     d['shots'][3]['move'] = d['shots'][0]['move']
     d['shots'][2].pop('move', None)
@@ -678,8 +679,8 @@ def mut_move_run_gap(d):
 td, rc0, out0 = mkproj(mut_move_run_gap)
 case('AE 讲法字段 · 缺 move 打断连续计数（不许拼出假的连续）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:缺 move', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-    ('must_absent:同一 move 连续', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_warn:缺 move', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
+    ('must_quiet:同一 move 连续', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
 ])
 cleanup(td)
 

@@ -392,6 +392,8 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 
 #### G-14/G-15/G-16 讲法字段（P0/P1）——判据见 `director.md#narrative-moves` §4
 
+**等级**：拦的只有会让声明失真的几条——`move` 不在闭集、缺 `evidence`、`misconception` 与 `noMisconception` 同时写、G-15 `evidence` 不是场景里的 JSX 用法（P0）；缺 `move` / `hold` / 误解二选一、`hold` 低于标定线、同一 `move` 连续 ≥3 镜只点名（P1）。auto 路线这些字段由 compose 写好。
+
 `shots.json` 里 `move` / `evidence` / `hold` / `misconception(+noMisconception+why)` 是否写全、`move` 是否在 10 个名字的闭集里、`hold` 是否 ≥ 标定线、误解二选一是否成立。判据与标定在 [director.md#narrative-moves](director.md#narrative-moves) §2–§4。
 
 **G-15 `evidence` 的口径**：只查名字是否**作为 JSX 用法**（`<名字 …>` / `<名字/>`）出现在**场景源码**里（扫前 `noncode()` 抹掉注释与字符串；只在注释 / import / 字符串里出现报 P0）。**不做**（代价写明）：
@@ -421,11 +423,11 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 | K | cue1 写成 36 加权字 / 0.9s | P0 G-2 阅读速度 |
 | L | 场景文件 `fontSize: 9` | P0 G-3 地板 |
 | M | 主题 `ink` 改成近乎白色 | P0 正文色对比 |
-| X | 删掉 S3 的 `move` | P0 缺 move（G-14） |
+| X | 删掉 S3 的 `move` | rc=0 + P1 缺 move（G-14） |
 | Y | `flat` 的 `blueInk` 改成 `#eeeeee` | P0 文字安全色 |
-| AC | S1–S3 的 `move` 都写 `引入` | P0 同一 move 连续 3 镜（G-14②：极大连续段 ≥3 即违规，最多连续 2 镜） |
+| AC | S1–S3 的 `move` 都写 `引入` | rc=0 + P1 同一 move 连续 3 镜（G-14②：极大连续段 ≥3 即点名，最多连续 2 镜） |
 | AD（对照） | 同样只改 2 镜 | rc=0 |
-| AE | S1/S2 与 S4 都是 `引入`、S3 的 `move` 删掉 | P0 缺 move，且**不报**"连续"（缺 move 打断计数） |
+| AE | S1/S2 与 S4 都是 `引入`、S3 的 `move` 删掉 | P1 缺 move，且**不报**"连续"（缺 move 打断计数） |
 | E（对照） | 原样分镜 | 通过 |
 | AF | S1 `evidence` 改成源码里不存在的名字 | P0（且不走"静态"那一侧） |
 | AG | S1 `evidence` 改成只在 S4 出现的 `StaggerList` | **rc=0**：钉住"不做本镜作用域"这条已知漏检；谁加回本镜作用域，它先失败 |

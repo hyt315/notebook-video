@@ -549,7 +549,7 @@ def check_narrative(project: Path) -> tuple[list, list]:
         ev = str(s.get("evidence") or "").strip()
         hold = s.get("hold")
         if not mv:
-            p0.append({"id": sid, "issue": "缺 move（叙事动作）：讲法规范要求每镜声明它在这一章里干哪件事"})
+            p1.append({"id": sid, "issue": "缺 move（叙事动作）：讲法规范要求每镜声明它在这一章里干哪件事"})
         elif mv not in MOVES:
             p0.append({"id": sid, "issue": f"move=«{mv}» 不在叙事动作表里（只能是 {'/'.join(sorted(MOVES))}）"})
         else:
@@ -557,33 +557,28 @@ def check_narrative(project: Path) -> tuple[list, list]:
         if not ev:
             p0.append({"id": sid, "issue": "缺 evidence（该镜内真的会变的那件组件）：没有它就没法验证「讲到哪亮到哪」"})
         if hold is None:
-            p0.append({"id": sid, "issue": "缺 hold（留白预算，单位帧）"})
+            p1.append({"id": sid, "issue": "缺 hold（留白预算，单位帧）"})
         elif not isinstance(hold, int) or hold < HOLD_MIN:
-            p0.append({"id": sid, "issue": f"hold={hold!r} 低于标定线 {HOLD_MIN} 帧"})
+            p1.append({"id": sid, "issue": f"hold={hold!r} 低于标定线 {HOLD_MIN} 帧"})
         mis = str(s.get("misconception") or "").strip()
         nomis = bool(s.get("noMisconception"))
         why = str(s.get("why") or "").strip()
         if mis and nomis:
             p0.append({"id": sid, "issue": "同时写了 misconception 与 noMisconception：只能二选一"})
         elif not mis and not nomis:
-            p0.append({"id": sid, "issue": "必须二选一：misconception（本镜要拆掉的误解）或 noMisconception(+why)"})
+            p1.append({"id": sid, "issue": "必须二选一：misconception（本镜要拆掉的误解）或 noMisconception(+why)"})
         elif nomis and not why:
-            p0.append({"id": sid, "issue": "标了 noMisconception 却没写 why（为什么不设误解）"})
+            p1.append({"id": sid, "issue": "标了 noMisconception 却没写 why（为什么不设误解）"})
 
-    # ---- G-14② 同一 move 不得连续 ≥3 镜（2026-09-22 补：这条规则写了两处、**从来没有门禁**）----
-    # 文档原文（references/director.md#narrative-moves §2）：「闭合 10 个，**同一个 `move` 不得连续 ≥3 镜**」，§4 把
-    # 它列进 G-14 —— 但本脚本此前只查了"每镜的 move 是不是 10 个名字之一"，**没有任何连续镜检查**。
-    # 也就是说这条规则从落地起就没被执行过：写 3 镜连续 `引入` 的片子照旧 PASS。
-    #
-    # 级别 = P0，依据是这条规则的出处（`呈现效果调研.md` §5.7）：「同一种 `move` 不得连续 ≥3 镜
-    # **（与骨架重复检查同级）**」—— 而相邻同骨架在 `validate-composition.py` 是 **P0（P0-1）**；
-    # references/director.md#narrative-moves §2 用的也是"**不得**"（禁令），不是"建议"。
-    # ⚠️ §4 那一行的级别格原先写的是 "P0 / P1"，读起来像"连续这半条算 P1"——两种读法都说得通，
-    #    这里按出处取 P0，并**把口径写回文档**（references/director.md#narrative-moves §2/§4 已改成显式 P0），不再靠猜。
+    # ---- G-14② 同一 move 连续 ≥3 镜（P1）----
+    # 等级：G-14/G-16 的「纸面字段」（缺 move / hold / 误解二选一、同 move 连续）只提示不拦——
+    # 它们约束的是写法而不是画面，auto 路线由 compose 写常量、永远满足；手写路线漏写不会让成片出错。
+    # 仍是 P0 的：move 不在闭集（拼错）、缺 evidence、misconception 与 noMisconception 同时写（自相矛盾）、
+    # G-15 evidence 没有作为 JSX 用在场景里（声明的东西画面上没有）。
     #
     # 口径：按 shots.json 的镜序逐镜比较（= 成片顺序：resolve-shots 要求 from 连续，两者必然一致），
     #      同一 move 的**极大连续段** ≥3 镜即报一条，报出**哪几镜、连续了几个、什么 move**。
-    #      缺 move / 不在闭集的镜**打断计数**：它自己已经另报 P0，既不在这里重复刷屏，
+    #      缺 move / 不在闭集的镜**打断计数**：它自己已经另报，既不在这里重复刷屏，
     #      也不许把它两侧的段接成一条假的"连续"——第一版写成 `continue`（跳过但不打断），
     #      于是 `引入,引入,缺move,引入` 被报成"S1→S2→S4 连续 3 镜"，那是一句用户照着改不了的假话
     #      （负向夹具 AE 抓到的）。
@@ -606,7 +601,7 @@ def check_narrative(project: Path) -> tuple[list, list]:
         runs.append((run_move, run_ids))
     for mv, ids in runs:
         if len(ids) >= MOVE_RUN_LIMIT:
-            p0.append({"id": f"{ids[0]}–{ids[-1]}", "issue": (
+            p1.append({"id": f"{ids[0]}–{ids[-1]}", "issue": (
                 f"同一 move 连续 {len(ids)} 镜：{'→'.join(ids)} 都是 «{mv}»（上限 {MOVE_RUN_LIMIT - 1} 镜，"
                 f"判据 = 文档的「同一个 move 不得连续 ≥{MOVE_RUN_LIMIT} 镜」）：连续同动作会让观众觉得"
                 f"这几镜在干同一件事，请换一个叙事动作或把其中两镜合并")})
