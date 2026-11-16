@@ -87,12 +87,12 @@ GitHub CLI 2.90+ 也可以：`gh skill install hyt315/notebook-video notebook-vi
 
 ### 2. 准备环境
 
-- **Node.js 18+**、**Python 3**、**ffmpeg / ffprobe**（抽帧、转码、响度）
+- **Node.js 20+**、**Python 3**、**ffmpeg / ffprobe**（抽帧、转码、响度）
 - 第一次用前体检并准备渲染用的 Chromium：
 
 ```bash
 node scripts/notebook-video.mjs check-deps
-node scripts/notebook-video.mjs fonts   # 首次自动下载 LXGW 文楷 Lite（约 28 MB，固定版本 + sha256 校验；new-project 也会自动调用）
+node scripts/notebook-video.mjs fonts   # 首次自动下载 LXGW 文楷 Lite（约 28 MB）与 Clash Display（Fontshare，许可不允许随仓库分发），固定版本 + sha256 校验；new-project 也会自动调用；离线时 Clash 回落 Space Grotesk 并给 P1 提示
 ```
 
 ### 3. 出片
@@ -190,6 +190,8 @@ python scripts/commons-search.py credits ./my-video   # → CREDITS.md
 | 成片 | `validate-video`、`validate-motion-gaps` | 尺寸 / 编码 / 色彩标记不对、画面静止过久 |
 | 技能自检 | `validate-skill-consistency`、`selftest`、`negative-gate-check`、`dev/check-examples`、`dev/check-test-collection`、`dev/purity-smoke` | 文档写了不存在的组件、断链；每道门禁喂坏输入必须拦住；正例过门禁、负例被拦；测试文件没被收集；连续渲与单帧渲画面不同 |
 
+门禁结果统一写进 `renders/gates.json`：P0 拦片，P1 进报告「建议（不拦）」。帧参数是必填类型，由 `tsc` 检查（取代原 `validate-frame-props`）；跨语言常量只在模板 `src/contract.json` 一处。
+
 细节：[references/checks.md#composition-gate](references/checks.md#composition-gate)、[references/checks.md#presentation-gate](references/checks.md#presentation-gate)、[references/checks.md#quality-checklist](references/checks.md#quality-checklist)。
 
 ## 项目结构
@@ -206,18 +208,18 @@ notebook-video/
 │   │   ├── manifests/           # shots.json、字幕、素材清单
 │   │   ├── public/              # 字体、背景、音效库 sfx/、真实素材 media/
 │   │   └── scripts/             # 可选 TTS 适配、变速后处理
-│   └── fonts/                   # LXGW 文楷 Lite（OFL-1.1，不入库，首次使用时自动下载）
-├── scripts/                     # make-video、notebook-video CLI、compose / resolve、各门禁、自检；.cmd / .sh 包装
-│   └── dev/                     # 维护者工具（音效库构建与调校）
+│   └── fonts/                   # LXGW 文楷 Lite（OFL-1.1）与 Clash Display（ITF FFL）的下载缓存，不入库，首次使用时自动下载
+├── scripts/                     # make-video、notebook-video CLI、compose / resolve、各门禁、自检；Windows 入口只有 notebook-video.cmd / make-video.cmd
+│   └── dev/                     # 维护者工具（一条命令全检 test-all.py、音效库与背景库构建；不进发布包）
 ├── references/                  # 作者手册与规格（镜头、版式、主题、线稿、配方、音效、字幕、门禁、跨平台）
 ├── tests/                       # 离线单元测试（少数在缺可选依赖或未设 NV_ONLINE=1 时跳过）（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 融合配方 / TTS / 静音 / 门禁 / 评审 …）
-└── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
+└── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · REUSE.toml（逐文件许可）· LICENSE
 ```
 
 ## 常见问题与限制
 
-- **自带配音吗？** 带一条 TTS 命令，不带声音模型。`notebook-video tts <工程>` 默认走 edge-tts（需联网），也可以 `--engine=file` 直接给录音；两种情况都按词级时间对齐字幕与镜头。没有真实旁白时 `--render` 会停下，不静音出片。
-- **要用生图模型吗？** 不用，也不支持把生图作为默认路线。画面由组件绘制，需要真实界面时用截图 / 录屏。
+- **自带配音吗？** 带一条 TTS 命令，不带声音模型。`notebook-video tts <工程>` 默认走 edge-tts（需联网），也可以 `--engine=file` 直接给录音；两种情况都按词级时间对齐字幕与镜头（录音对齐可选装 `faster-whisper`，没装就按字数均分）。没有真实旁白时 `--render` 会停下，不静音出片。
+- **要用生图模型吗？** 不用，技能不调用生图模型。画面由组件绘制；图来自用户、Wikimedia Commons / Openverse 或其他授权来源，需要真实界面时用截图 / 录屏。
 - **能做竖屏或 4:3 吗？** 不能，只有 16:9；早期的 4:3 / 3:4 画布、`paper` / `sticker` 皮肤与 `--classic` 示例工程已删除，旧工程不再支持。
 - **题目需要一张专属的图怎么办？** 照 `src/custom/RequestLane.tsx` 写一个组件，在 `src/custom/index.ts` 注册即可。
 - **story.json 和手写场景一样好看吗？** 接近但不等同：story.json 的版式由 `auto.tsx` 绘制。默认走 story.json + 蓝图；要逐镜手调版面时再改写成手写组件场景。
@@ -234,23 +236,21 @@ python scripts/package-skill.py                # 生成 dist/notebook-video-skil
 python scripts/package-skill.py --include-fonts --output dist/notebook-video-offline.zip
 ```
 
-默认包只含入口、运行脚本、模板、蓝图、示例与参考资料；不含 `.git`、测试、缓存、渲染产物、发行历史和按需下载的大字体。需要完全离线运行时再使用 `--include-fonts`。
+默认包只含入口、运行脚本、模板、蓝图、示例与参考资料；不含 `.git`、测试、缓存、渲染产物、发行历史和按需下载的大字体。需要完全离线运行时再使用 `--include-fonts`（Clash Display 的许可不允许再分发，任何包都不带它）。
 
 ## 参与贡献
 
 欢迎 Issue 与 Pull Request，流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。提交前请跑：
 
 ```bash
-python scripts/validate-skill-consistency.py
-python scripts/selftest.py
-python scripts/negative-gate-check.py
+python3 scripts/dev/test-all.py   # 一条命令：单测 + selftest + 负向抽查 + validate-skill + 链接 + reuse lint（没装就跳过）
 ```
 
 版本记录见 [CHANGELOG.md](CHANGELOG.md)，安全问题见 [SECURITY.md](SECURITY.md)。
 
 ## 开源协议
 
-[Apache License 2.0](LICENSE)。所用字体（LXGW 文楷 Lite，OFL-1.1，从官方 Release 自动下载；可用 `NOTEBOOK_VIDEO_FONT_BASE_URL` 指定镜像，或手动放进 `assets/fonts/`）、音效（CC0）与第三方依赖的授权与归属见 [NOTICE](NOTICE) 与 [DEPENDENCIES.md](DEPENDENCIES.md)。
+[Apache License 2.0](LICENSE)。所用字体（LXGW 文楷 Lite，OFL-1.1，从官方 Release 自动下载，可用 `NOTEBOOK_VIDEO_FONT_BASE_URL` 指定镜像，或手动放进 `assets/fonts/`；Clash Display，ITF Free Font License，从 Fontshare 自动下载，镜像用 `NOTEBOOK_VIDEO_CLASH_BASE_URL`）、音效（CC0）与第三方依赖的授权与归属见 [NOTICE](NOTICE) 与 [DEPENDENCIES.md](DEPENDENCIES.md)。
 
 > **关于 Remotion 的许可**：本仓库的 Apache-2.0 只覆盖本仓库的代码。渲染引擎 [Remotion](https://www.remotion.dev/license) 是 **source-available（源码可见）而非开源**许可：
 > 个人、非营利组织与 **不超过 3 名员工**的营利公司可免费使用（含商用）；**4 人及以上的营利公司需购买 Remotion 公司许可**。

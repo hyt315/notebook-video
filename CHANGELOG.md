@@ -6,16 +6,30 @@ Format follows Keep a Changelog: one section per release, one line per change. T
 更早的完整记录（1.0.0 – 3.5.4，中英双写的长条目）已归档到仓库内的 `docs/history/CHANGELOG-legacy.md`（只在仓库里，不进发布包）。
 The full earlier history (1.0.0 – 3.5.4) is archived in the repository at `docs/history/CHANGELOG-legacy.md` (repository only, not shipped).
 
-## [Unreleased]
+## [3.6.0] - 2026-11-16
 
 ### Changed
 - 发布包不再带 `scripts/dev/` 与 `docs/`；`.gitattributes` 用 export-ignore 标出开发期文件。 / The package no longer ships `scripts/dev/` or `docs/`.
 - 删掉 15 个只做转发的 `.sh/.cmd`，命令统一走 `notebook-video <子命令>`，Windows 只留 `notebook-video.cmd`、`make-video.cmd`。 / Removed 15 forwarding wrappers; use `notebook-video <subcommand>`.
 - 单元测试默认离线：需要下载字体的首跑用例只在已有字体或 `NV_ONLINE=1` 时运行。 / Unit tests run offline by default (`NV_ONLINE=1` enables the font-download cases).
-- CHANGELOG 改为每条一行，旧档归档。 / One-line changelog; old history archived.
+- CHANGELOG 改为每条一行，旧档归档；版本号只留在 `manifest.json`。 / One-line changelog, old history archived; version lives in `manifest.json` only.
+- SKILL.md 改为路由式入口，references 51 篇合并为 9 篇 + `themes/` 6 篇；`validate-skill` 守护过程词与内部版本号。 / Router-style SKILL.md; references merged into 9 + 6 files; process-word guard.
+- 形式性 P0 降为 P1（treatment 候选数、未搜 Commons、开场写法、手作皮肤缺评审），客观项仍拦片。 / Formal P0s downgraded to P1; objective checks still block.
+- 跨语言常量收进模板 `src/contract.json`，TS 与 Python 同读一份。 / Shared constants in `src/contract.json`.
+- 帧参数改为必填类型、由 `tsc` 检查，删除 `validate-frame-props.py`。 / Frame props are required types checked by `tsc`; `validate-frame-props.py` removed.
+- 字幕只留 `manifests/caption-cues.json` 一份。 / One caption source of truth.
+- `--engine=file` 可选 `faster-whisper` 词级对齐自己的录音，没装按字数均分。 / Optional faster-whisper alignment for your own recording.
+- 门禁统一结果写 `renders/gates.json`，删除 `p1-hints.mjs`。 / Unified gate results in `renders/gates.json`; `p1-hints.mjs` removed.
+- 逐文件许可登记 `REUSE.toml` + `LICENSES/`，CI 跑 `reuse lint`。 / Per-file licensing via REUSE.
+- 一条命令跑完开发期检查：`python3 scripts/dev/test-all.py`；回归集 16 份；组件使用率报告。 / One-command checks, 16-story regression set.
+- Clash Display 不再入库（ITF Free Font License §02 禁止经仓库再分发），首次用到时从 Fontshare 按 sha256 下载；离线回落 Space Grotesk 并给 P1 提示。 / Clash Display is downloaded on demand from Fontshare; offline falls back to Space Grotesk.
+- 技能不调用生图模型：图来自用户、Commons / Openverse 或其他授权来源。 / The skill never calls image models.
 
 ### Fixed
 - 在仓库根跑渲染命令时下载到 `.remotion/` 的浏览器被当成生成目录（gitignore、自检、打包都排除）。 / `.remotion/` browser downloads are treated as generated files.
+- `text_metrics.py` 丢掉 gid ≥ numberOfHMetrics 的字形宽度，按 OpenType 规范修正（与 fontTools 对照一致）。 / Fixed advance widths for high glyph ids.
+- compose-story 保护短语去重随 `PYTHONHASHSEED` 变序。 / Deterministic protected-phrase order.
+- `visual-assets.json` 手作皮肤背景 `source_type` 改为 `code-generated`，与 `backgrounds.json` / NOTICE 一致；DEPENDENCIES 的字体与插图说法与实际一致。 / Registry fixes for craft backgrounds and DEPENDENCIES.
 
 ## [3.5.4] - 2026-11-11
 - 止血版本：不改门禁判据与视觉风格，修掉整片渲染丢镜、逐字展开切半字、字体未就绪就量字三处画面问题，随包示例全部过得了自己的门禁。 / Stop-the-bleeding release: three render fixes, all bundled examples pass their own gates.

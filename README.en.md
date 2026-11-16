@@ -89,12 +89,12 @@ With GitHub CLI 2.90+: `gh skill install hyt315/notebook-video notebook-video --
 
 ### 2. Prepare the environment
 
-- **Node.js 18+**, **Python 3**, **ffmpeg / ffprobe** (frame extraction, transcoding, loudness)
+- **Node.js 20+**, **Python 3**, **ffmpeg / ffprobe** (frame extraction, transcoding, loudness)
 - Before the first render, check dependencies and prepare the rendering Chromium:
 
 ```bash
 node scripts/notebook-video.mjs check-deps
-node scripts/notebook-video.mjs fonts   # first run downloads LXGW WenKai Lite (~28 MB, pinned version + sha256; new-project calls this automatically)
+node scripts/notebook-video.mjs fonts   # first run downloads LXGW WenKai Lite (~28 MB) and Clash Display (Fontshare; its licence forbids shipping it in the repo), pinned + sha256; new-project calls this automatically; offline, Clash falls back to Space Grotesk with a P1 note
 ```
 
 ### 3. Make a video
@@ -194,6 +194,8 @@ Each theme ships three locked backgrounds (main / chapter / quiet) with a calm c
 | Final film | `validate-video`, `validate-motion-gaps` | Wrong size / codec / colour tags, frames frozen too long |
 | Skill self-checks | `validate-skill-consistency`, `selftest`, `negative-gate-check`, `dev/check-examples`, `dev/check-test-collection`, `dev/purity-smoke` | Docs naming components that do not exist, broken links; every gate must block a deliberately broken input; positive examples must pass and negatives must be blocked; a test file collects nothing; continuous and single-frame renders differ |
 
+Gate results are written to `renders/gates.json`: P0 blocks the film, P1 goes to the report as advice. Frame props are required types checked by `tsc` (replacing the old `validate-frame-props`); cross-language constants live in the template's `src/contract.json` only.
+
 Details: [references/checks.md#composition-gate](references/checks.md#composition-gate), [references/checks.md#presentation-gate](references/checks.md#presentation-gate), [references/checks.md#quality-checklist](references/checks.md#quality-checklist).
 
 ## Project structure
@@ -210,18 +212,18 @@ notebook-video/
 │   │   ├── manifests/           # shots.json, captions, media manifests
 │   │   ├── public/              # Fonts, backgrounds, SFX library sfx/, real media media/
 │   │   └── scripts/             # Optional TTS adapter, speed post-processing
-│   └── fonts/                   # LXGW WenKai Lite (OFL-1.1, not committed; downloaded on first use)
-├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; .cmd / .sh wrappers
-│   └── dev/                     # Maintainer tools (SFX library build and tuning)
+│   └── fonts/                   # Download cache for LXGW WenKai Lite (OFL-1.1) and Clash Display (ITF FFL); not committed, fetched on first use
+├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; Windows entry points notebook-video.cmd / make-video.cmd only
+│   └── dev/                     # Maintainer tools (one-command test-all.py, SFX and background library builds; not packaged)
 ├── references/                  # Author manuals and specs (camera, layouts, themes, linework, recipes, SFX, captions, gates, cross-platform)
 ├── tests/                       # offline unit tests (a few skip when an optional dependency is missing or NV_ONLINE=1 is unset) (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
-└── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · LICENSE
+└── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · REUSE.toml (per-file licences) · LICENSE
 ```
 
 ## FAQ and limitations
 
-- **Is there built-in voice-over?** There is a TTS command, not a voice model. `notebook-video tts <project>` uses edge-tts by default (needs network), or `--engine=file` for your own recording; either way captions and shots align to word-level time. Without real narration `--render` stops instead of shipping a silent film.
-- **Does it use an image-generation model?** No, and image generation is not a default route. Scenes are drawn by components; use screenshots / recordings when a real interface matters.
+- **Is there built-in voice-over?** There is a TTS command, not a voice model. `notebook-video tts <project>` uses edge-tts by default (needs network), or `--engine=file` for your own recording; either way captions and shots align to word-level time (recording alignment uses the optional `faster-whisper`; without it timings are spread by character count). Without real narration `--render` stops instead of shipping a silent film.
+- **Does it use an image-generation model?** No, the skill never calls image models. Scenes are drawn by components; images come from the user, Wikimedia Commons / Openverse or other licensed sources, and screenshots / recordings cover real interfaces.
 - **Portrait or 4:3?** No. The only canvas is 16:9; the earlier 4:3 / 3:4 canvases, the `paper` / `sticker` skins and the `--classic` example project are gone, and older projects are not supported.
 - **My topic needs a one-off diagram.** Copy `src/custom/RequestLane.tsx`, write your component and register it in `src/custom/index.ts`.
 - **Does story.json look as good as hand-written scenes?** Close, but not identical: its layouts are drawn by `auto.tsx`. Start with story.json + a blueprint; switch to hand-written component scenes when you need shot-by-shot layout control.
@@ -238,23 +240,21 @@ python scripts/package-skill.py                # write dist/notebook-video-skill
 python scripts/package-skill.py --include-fonts --output dist/notebook-video-offline.zip
 ```
 
-The default package holds the entry point, runtime scripts, template, blueprints, examples and reference material; it leaves out `.git`, tests, caches, rendered output, release history and the large on-demand fonts. Use `--include-fonts` only when you need a fully offline run.
+The default package holds the entry point, runtime scripts, template, blueprints, examples and reference material; it leaves out `.git`, tests, caches, rendered output, release history and the large on-demand fonts. Use `--include-fonts` only when you need a fully offline run (Clash Display's licence forbids redistribution, so no package ever includes it).
 
 ## Contributing
 
 Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). Before submitting, run:
 
 ```bash
-python scripts/validate-skill-consistency.py
-python scripts/selftest.py
-python scripts/negative-gate-check.py
+python3 scripts/dev/test-all.py   # one command: unit tests + selftest + negative checks + validate-skill + links + reuse lint (skipped if not installed)
 ```
 
 History: [CHANGELOG.md](CHANGELOG.md). Security reports: [SECURITY.md](SECURITY.md).
 
 ## Licence
 
-[Apache License 2.0](LICENSE). Licences and attribution for the font (LXGW WenKai Lite, OFL-1.1, downloaded from the official release; set `NOTEBOOK_VIDEO_FONT_BASE_URL` for a mirror or drop the files into `assets/fonts/`), the sound effects (CC0) and third-party dependencies are in [NOTICE](NOTICE) and [DEPENDENCIES.md](DEPENDENCIES.md).
+[Apache License 2.0](LICENSE). Licences and attribution for the fonts (LXGW WenKai Lite, OFL-1.1, downloaded from the official release — set `NOTEBOOK_VIDEO_FONT_BASE_URL` for a mirror or drop the files into `assets/fonts/`; Clash Display, ITF Free Font License, downloaded from Fontshare — mirror via `NOTEBOOK_VIDEO_CLASH_BASE_URL`), the sound effects (CC0) and third-party dependencies are in [NOTICE](NOTICE) and [DEPENDENCIES.md](DEPENDENCIES.md).
 
 > **About Remotion's licence**: Apache-2.0 covers this repository's code only. The rendering engine [Remotion](https://www.remotion.dev/license) is
 > **source-available, not open source**: individuals, non-profits and for-profit companies with **up to 3 employees** use it for free (including
