@@ -226,3 +226,4 @@
 - **发布包**：`python scripts/package-skill.py`（或 `git archive`，按 `.gitattributes` 的 export-ignore 剔除开发期文件）。`scripts/dev/`、`tests/`、`docs/`、本文件不进包。
 - **测试默认离线**：`python3 -m unittest discover -s tests -p 'test_*.py'`；设 `NV_ONLINE=1` 才跑要下载字体的首跑用例。
 - **跨语言常量只写一次**：FPS、字幕单行上限、读速、行高地板、标签字号地板、卷页帧数、舞台中心、相机缩放上限与运镜时长、文字展开时长参数都在 `assets/lecture-template/src/contract.json`。TS 用 `import CONTRACT from './contract.json'`，Python 用 `from contract import C`（`scripts/contract.py`），`scripts/transition-plan.mjs` 用 `fs` 读。新增一个两边都要用的数，加进这份 JSON，不要在两边各写一遍再加正则核对。语义不同但数值相同的（如字幕逐字计的 16 和 G-2 加权字计的 16）只共用数值，计法函数各自保留。
+- **素材许可两处登记**：`REUSE.toml`（+ `LICENSES/`，开发期 `reuse lint`，不进包）记每个文件的版权与许可；运行期仍读 `manifests/backgrounds.json`、`public/sfx/sfx-manifest.json`、`public/craft/craft-manifest.json`。加或换素材时两边一起改，`tests/test_reuse.py` 核对两边一致、且 `public/` 与 `assets/fonts/` 下每个二进制素材都有显式登记。本机检查：`pip install reuse==6.3.0`（GPL-3.0，装在仓库外的虚拟环境）后 `reuse lint`。

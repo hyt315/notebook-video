@@ -62,6 +62,12 @@ jobs:
         # 3.3.0：离线单元测试（标准库 unittest，夹具在 tests/fixtures/，不访问网络）。
         # test_ocr.py 的端到端用例需要 RapidOCR，CI 没装就自动 skip；纯函数部分照常跑。
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: REUSE lint (licence of every file; dev-only)
+        # REUSE.toml + LICENSES/ 登记每个文件的版权与许可；tests/test_reuse.py 核对它与运行期素材登记一致。
+        # reuse 工具是 GPL-3.0，只在这里临时安装来做检查，不随技能分发、技能运行不需要它。
+        run: |
+          python3 -m pip install --quiet reuse==6.3.0
+          reuse lint
       - name: Every test file really runs (no 0-test files)
         # 3.5.4：test_craft_paper.py / test_skill.py 曾在 discover 下收集到 0 条、CI 照样绿。
         # 逐文件数 unittest 用例，任何文件 0 条或导入失败即失败。

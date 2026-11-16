@@ -1,0 +1,107 @@
+# 素材与代码的版权 / 许可登记（REUSE 规范 3.x，https://reuse.software/spec-3.3/）。
+# 只在开发期用：`reuse lint`（工具 GPL-3.0，CI 里临时安装，不随技能分发）；本文件和 LICENSES/ 不进发布包。
+# 运行期仍读各自的登记（背景库 manifests/backgrounds.json、音效 public/sfx/sfx-manifest.json、
+# 主题背景 manifests/visual-assets.json、纸纹 public/craft/craft-manifest.json）；
+# tests/test_reuse.py 逐条核对本文件与这些登记的许可一致。改了素材，两边一起改。
+version = 1
+SPDX-PackageName = "notebook-video"
+SPDX-PackageDownloadLocation = "NOASSERTION"
+
+# 默认：本仓库自己写的代码、文档、蓝图、示例与夹具
+[[annotations]]
+path = "**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Notebook Video contributors"
+SPDX-License-Identifier = "Apache-2.0"
+
+# ---- 背景 ----
+# 主题背景 bg-*.jpg：flat / cel 为本项目生成图再脚本合成，手作三皮肤为代码生成（manifests/visual-assets.json）
+[[annotations]]
+path = "assets/lecture-template/public/bg/bg-*.jpg"
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Notebook Video contributors"
+SPDX-License-Identifier = "Apache-2.0"
+
+# 背景库 lib/*.webp：除下面 4 张外均为代码生成（make-bg-library.py / Paper Shaders 预渲染）
+[[annotations]]
+path = "assets/lecture-template/public/bg/lib/*.webp"
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Notebook Video contributors"
+SPDX-License-Identifier = "Apache-2.0"
+
+# Wikimedia Commons「Kraft tileable 1024x1024.png」by Coyau，作者释出公有领域
+[[annotations]]
+path = ["assets/lecture-template/public/bg/lib/journal-kraft.webp", "assets/lecture-template/public/bg/lib/papercut-kraft.webp", "assets/lecture-template/public/bg/lib/archive-envelope.webp"]
+precedence = "override"
+SPDX-FileCopyrightText = "NONE (public domain; source: Coyau, https://commons.wikimedia.org/wiki/File:Kraft_tileable_1024x1024.png)"
+SPDX-License-Identifier = "LicenseRef-PublicDomain"
+
+# Map of Holland, Anonymous, 3rd state by Frederick de Wit (1630)，PD-old，扫描 Leen Helmink
+[[annotations]]
+path = "assets/lecture-template/public/bg/lib/archive-map.webp"
+precedence = "override"
+SPDX-FileCopyrightText = "NONE (public domain, PD-old; source: https://commons.wikimedia.org/wiki/File:Helmink_Antique_map_of_Holland_by_Anonymous_3rd_state_by_Frederick_de_Wit_1630.jpg)"
+SPDX-License-Identifier = "LicenseRef-PublicDomain"
+
+# Hessian 380 by Rico Cilliers and colormass (Poly Haven)，CC0
+[[annotations]]
+path = "assets/lecture-template/public/bg/lib/archive-linen.webp"
+precedence = "override"
+SPDX-FileCopyrightText = "Rico Cilliers, colormass (Poly Haven)"
+SPDX-License-Identifier = "CC0-1.0"
+
+# 纸纹 tile：make-craft-textures.py 固定种子生成
+[[annotations]]
+path = "assets/lecture-template/public/craft/fibre-tile.png"
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Notebook Video contributors"
+SPDX-License-Identifier = "Apache-2.0"
+
+# ---- 音效 ----
+# 代码合成（earshot forge / build-sfx-library.py），作者以 CC0 释出
+[[annotations]]
+path = ["assets/lecture-template/public/sfx/lib/bed.ogg", "assets/lecture-template/public/sfx/lib/chapter.ogg", "assets/lecture-template/public/sfx/lib/chart.ogg", "assets/lecture-template/public/sfx/lib/error.ogg", "assets/lecture-template/public/sfx/lib/highlight.ogg", "assets/lecture-template/public/sfx/lib/pop.ogg", "assets/lecture-template/public/sfx/lib/success.ogg"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Notebook Video contributors"
+SPDX-License-Identifier = "CC0-1.0"
+
+# Kenney「RPG Audio」剪辑与其微变体，CC0
+[[annotations]]
+path = ["assets/lecture-template/public/sfx/lib/page.ogg", "assets/lecture-template/public/sfx/lib/page-b.ogg", "assets/lecture-template/public/sfx/lib/page-c.ogg", "assets/lecture-template/public/sfx/lib/place.ogg", "assets/lecture-template/public/sfx/lib/stamp.ogg"]
+precedence = "override"
+SPDX-FileCopyrightText = "Kenney Vleugels (https://kenney.nl/assets/rpg-audio)"
+SPDX-License-Identifier = "CC0-1.0"
+
+# ---- 字体（版权行取自字体文件 name 表 0 号记录）----
+[[annotations]]
+path = "assets/lecture-template/public/fonts/Caveat-Latin.woff2"
+precedence = "override"
+SPDX-FileCopyrightText = "2014 The Caveat Project Authors (https://github.com/googlefonts/caveat)"
+SPDX-License-Identifier = "OFL-1.1"
+
+[[annotations]]
+path = "assets/lecture-template/public/fonts/SpaceGrotesk-Latin.woff2"
+precedence = "override"
+SPDX-FileCopyrightText = "2020 The Space Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk)"
+SPDX-License-Identifier = "OFL-1.1"
+
+# Clash Display：Fontshare「Closed Source」字体，ITF Free Font License（字体 name 表许可 URL = fontshare.com/terms），不是 OFL
+[[annotations]]
+path = "assets/lecture-template/public/fonts/ClashDisplay-*.woff2"
+precedence = "override"
+SPDX-FileCopyrightText = "2021 Indian Type Foundry"
+SPDX-License-Identifier = "LicenseRef-ITF-FFL"
+
+# 字体许可原文本身
+[[annotations]]
+path = "assets/fonts/LICENSE-OFL-1.1-*.txt"
+precedence = "override"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "OFL-1.1"
+
+# ---- 随包第三方代码：BudouX 切片（index.js 是本项目自写的入口，走默认）----
+[[annotations]]
+path = ["assets/vendor/budoux/module/parser.js", "assets/vendor/budoux/module/data/models/zh-hans.js", "assets/vendor/budoux/module/package.json"]
+precedence = "override"
+SPDX-FileCopyrightText = "2021 Google LLC"
+SPDX-License-Identifier = "Apache-2.0"

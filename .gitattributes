@@ -20,3 +20,5 @@
 /SUPPORT.md export-ignore
 /.editorconfig export-ignore
 /变更说明.md export-ignore
+/REUSE.toml export-ignore
+/LICENSES export-ignore

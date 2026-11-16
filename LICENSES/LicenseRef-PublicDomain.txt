@@ -1,0 +1,5 @@
+Public domain.
+
+The files annotated with this identifier in REUSE.toml are in the public domain
+(released by their author, or out of copyright). The source page of each file is
+given in its REUSE.toml annotation and in assets/lecture-template/manifests/backgrounds.json.
