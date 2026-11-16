@@ -22,9 +22,6 @@ const C = THEME.palette;
 // `Paper` / `clamp` / `easeOutSoft` 三个局部 helper 本文件从未用上（tsc TS6133）；
 // easeOutSoft 是 clamp 与 Easing 的唯一使用者，三个一起删，连带去掉 Easing 的 import。
 const BASE_FPS = 30;
-// 与 index.tsx 的 q() 同义：工程里 MOTION_FPS == BASE_FPS == 30，步长为 1，量化即恒等。
-// （方向说明：是 index 的量化在 step=1 时退化为恒等，并非本模块另起一套。）
-const q = (f: number) => f;
 const smoothStep = (v: number) => { const t = Math.max(0, Math.min(1, v)); return t * t * (3 - 2 * t); };
 // 与 index.tsx 的三档**逐参数一致**：v3.0.1 迁移时这两个值被写成 20/190 与 12/170，
 // 与工程其它地方（fxkit.tsx / index.tsx）不一致，会让搬到本模块的组件动感偏移。
@@ -49,7 +46,7 @@ const popS = (f: number, start: number, preset: keyof typeof SPRINGS = 'soft') =
  *   · `stepped(f, 15)` —— 组件拿的是**镜内局部帧**（`<Scene f={f-s.from}/>`）时用这个，
  *     与 `enterAt(f, …)` / `popS(f, …)` 同一口径；这是场景里的常规写法。
  *   · `useSteppedFrame(15)` —— 组件不接帧参数、只能读**全局帧**时用（chrome / 接触表）。
- *     场景里误用它 = 又一次"局部帧 vs 全局帧"事故（见 `validate-frame-props.py` 钉的那一类）。
+ *     场景里误用它 = 又一次"局部帧 vs 全局帧"事故（帧参数必填后由 tsc 拦的那一类）。
  */
 export const stepped = (f: number, stepFps = 15) => Math.floor((f * stepFps) / BASE_FPS) * BASE_FPS / stepFps;
 export const useSteppedFrame = (stepFps = 15) => stepped(useCurrentFrame(), stepFps);
@@ -62,9 +59,9 @@ export const JumpInText:React.FC<{
   stagger?:number;
   letterSpacing?:number;
   style?:React.CSSProperties;
-  frame?:number;
+  frame:number;
 }>=({items,fontSize,fontWeight=700,start,stagger=1.2,letterSpacing=0,style,frame})=>{
-  const f=frame??q(useCurrentFrame());
+  const f=frame;
   let seq=0;
   // data-gate-allow 的理由（2026-09-21 —— OverlapGate 修好之后**第一次整片渲染就撞上**）：
   // 本件的动效是**逐字弹性波浪**：每个字独立 translate + rotateX(40°→0)，transformOrigin 在字脚
@@ -91,8 +88,8 @@ export const JumpInText:React.FC<{
     }))}
   </div>;
 };
-export const Checklist:React.FC<{items:string[];start:number;frame?:number;stagger?:number;colors?:string[];done?:number;rowH?:number;fontSize?:number;style?:React.CSSProperties}>=({items,start,frame,stagger=20,colors,done=-1,rowH=48,fontSize=TYPE.titleXS,style})=>{
-  const f=frame??q(useCurrentFrame());
+export const Checklist:React.FC<{items:string[];start:number;frame:number;stagger?:number;colors?:string[];done?:number;rowH?:number;fontSize?:number;style?:React.CSSProperties}>=({items,start,frame,stagger=20,colors,done=-1,rowH=48,fontSize=TYPE.titleXS,style})=>{
+  const f=frame;
   const defaults=[C.orange,C.blue,C.green,C.gold,C.red,C.navy];
   return <div style={{display:'flex',flexDirection:'column',...style}}>
     {items.map((s,i)=>{const p=popS(f,start+i*stagger,'soft');const checked=done>=0?i<done:false;
@@ -102,8 +99,8 @@ export const Checklist:React.FC<{items:string[];start:number;frame?:number;stagg
       </div>;})}
   </div>;
 };
-export const Callout:React.FC<{x:number;y:number;w:number;h:number;text:string;textDy?:number;textDx?:number;color?:string;rotate?:number;start:number;frame?:number;fontSize?:number;style?:React.CSSProperties}>=({x,y,w,h,text,textDy=-46,textDx=0,color=C.orange,rotate=-2,start,frame,fontSize=22,style})=>{
-  const f=frame??q(useCurrentFrame());
+export const Callout:React.FC<{x:number;y:number;w:number;h:number;text:string;textDy?:number;textDx?:number;color?:string;rotate?:number;start:number;frame:number;fontSize?:number;style?:React.CSSProperties}>=({x,y,w,h,text,textDy=-46,textDx=0,color=C.orange,rotate=-2,start,frame,fontSize=22,style})=>{
+  const f=frame;
   const p=popS(f,start,'bouncy');
   // 画圈的两道椭圆是 `fill="none"` 的 SVG，不是实心层——OverlapGate 的 looksSolid 本来就不会把它判成遮挡物，
   // 所以这里**不加** data-gate-allow：标注文字是"另一条信息"，必须继续参与重叠判定（白名单只留给"同位置换信息"和镜头交接）。

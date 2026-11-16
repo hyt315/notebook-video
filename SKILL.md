@@ -61,7 +61,7 @@ description: Turn a topic into a Chinese 16:9 teaching video with React, TypeScr
 | 单位、几何、算法、纯结构 | `freeform` | `journal` | 同上 |
 
 **主路线**：`story.json` + 蓝图（`blueprints/*.json`，每镜写了该用的骨架与组件，照抄，别自己发明版式）→ `make-video`。
-**逃生舱**（要逐镜手调版面、或强模型想拉高上限）：工程里的 `manifests/shots.json` + `src/scenes.tsx`，题目需要专属图时照抄 `src/custom/RequestLane.tsx` 写组件并在 `src/custom/index.ts` 注册。写法见 [scenes.md](references/scenes.md#handwritten-scenes)；纪律：动画只用帧号驱动，文字 ≥32px，文字色用 `C.ink` / `C.muted` / `C.*Ink`；`fxkit` 组件传 `frame={f}`，其余模块传 `f={f}`（传错不报错只会错位）。
+**逃生舱**（要逐镜手调版面、或强模型想拉高上限）：工程里的 `manifests/shots.json` + `src/scenes.tsx`，题目需要专属图时照抄 `src/custom/RequestLane.tsx` 写组件并在 `src/custom/index.ts` 注册。写法见 [scenes.md](references/scenes.md#handwritten-scenes)；纪律：动画只用帧号驱动，文字 ≥32px，文字色用 `C.ink` / `C.muted` / `C.*Ink`；`fxkit` 组件传 `frame={f}`，其余模块传 `f={f}`（帧参数必填，传错或漏传 tsc 报错）。
 
 **手作路线先写导演层**：照 [director.md](references/director.md#director-method) 写 `manifests/treatment.json`（模板 `treatment.example.json`）——生活问题 → 只属于这个题的隐喻 → 皮肤为什么是它 → 顿悟点的原生动作 → 三个候选结构（至少 2 个结构族）选一个 → 对标学 / 不学 → 每镜写理由。
 

@@ -308,7 +308,7 @@ const Chrome=()=>{
             fontFamily: 'Kai', fontWeight: 700, maxFontSize: TYPE.titleS, minFontSize: 19,
           });
           const fitSize = Math.max(19, Math.min(TYPE.titleS, Math.floor(measured)));
-          return <JumpInText key={stage} items={[{text:title}]} fontSize={fitSize}
+          return <JumpInText key={stage} frame={f} items={[{text:title}]} fontSize={fitSize}
             start={CHAPTER_STARTS[stage]+8} stagger={1.1}
             style={{marginTop:3,justifyContent:'flex-start',flexWrap:'nowrap',whiteSpace:'nowrap',overflow:'hidden',maxWidth:availW}}/>;
         })()}

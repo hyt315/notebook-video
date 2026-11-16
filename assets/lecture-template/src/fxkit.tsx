@@ -1,5 +1,5 @@
 import React from 'react';
-import {Easing, interpolate, spring, useCurrentFrame} from 'remotion';
+import {Easing, interpolate, spring} from 'remotion';
 import {diffLines} from 'diff';
 import {THEME} from './theme/active';
 
@@ -38,7 +38,6 @@ const easeOutSoft = (f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b
 // （toolkit.tsx 里还有一份同名私有副本，是那两个模块为免循环依赖刻意各自持有的，不走这里。）
 export const SPRINGS = {snappy:{damping:16,stiffness:200,mass:.8},soft:{damping:17,stiffness:132,mass:.86},bouncy:{damping:11,stiffness:160,mass:.9}} as const;
 export const popS = (f:number,start:number,preset:keyof typeof SPRINGS='soft')=>spring({frame:f-start,fps:BASE_FPS,config:SPRINGS[preset]});
-const useF = (frame?:number)=>frame??useCurrentFrame();
 /** 单向脉冲 0-1-0：一次性强调（砸中/刷新），不是永久呼吸。 */
 const pulse=(f:number,at:number,dur=14)=>Math.sin(Math.PI*Math.max(0,Math.min(1,(f-at)/dur)));
 /** 出场曲线：比入场快而急（motion-design 六律之二）。 */
@@ -63,12 +62,12 @@ const exitStyle = (f:number,exitStart:number|undefined):React.CSSProperties=>{
 // ---- 1. FitCard：防出格卡片。h 必须经 fitH() 算出后传入，超高内容直接断言 zichtbaar ----
 export const FitCard:React.FC<{
   x:number;y:number;w:number;h:number;pad?:number;borderColor?:string;lift?:number;z?:number;
-  frame?:number;start?:number;exitStart?:number;children?:React.ReactNode;style?:React.CSSProperties;
+  frame:number;start?:number;exitStart?:number;children?:React.ReactNode;style?:React.CSSProperties;
   // `lift` 是入参但**从未用过**（tsc TS6133）：本件的阴影是硬偏移 `3px 3px 0 C.ink`
   // （贴纸风），不是 paperShadow(lift) 那种柔影，所以 lift 无从生效。
   // 类型里保留（调用方还在传），实现里不再声明，免得留一个看起来能调的假旋钮。
 }> = ({x,y,w,h,pad=24,borderColor=C.line,z=70,frame,start=0,exitStart,children,style})=>{
-  const f = useF(frame);
+  const f = frame;
   const p = popS(f,start,'soft');
   const opP = easeOutSoft(f,start,start+16);
   return <div style={{position:'absolute',left:x,top:y,width:w,height:h,zIndex:z,background:C.paper||'#ffffff',border:`2.5px solid ${borderColor}`,borderRadius:10,boxShadow:`3px 3px 0 ${C.ink}`,padding:pad,overflow:'hidden',opacity:opP,transform:`translateY(${26*(1-p)}px)`,...exitStyle(f,exitStart),...style}}>{children}</div>;
@@ -107,10 +106,10 @@ export const getStreamingSlice = (
 // ---- 2. Typewriter：打字机。cps=字符/帧，标点分级停顿，多行排版与块光标呼吸闪烁 ----
 export const Typewriter:React.FC<{
   text:string;fontSize?:number;color?:string;fontFamily?:string;fontWeight?:number|string;
-  start?:number;cps?:number;frame?:number;cursor?:boolean;cursorSticky?:boolean;
+  start?:number;cps?:number;frame:number;cursor?:boolean;cursorSticky?:boolean;
   multiline?:boolean;style?:React.CSSProperties;
 }> = ({text,fontSize=30,color=C.ink,fontFamily='Kai',fontWeight=700,start=0,cps=0.45,frame,cursor=true,cursorSticky=false,multiline=false,style})=>{
-  const f = useF(frame);
+  const f = frame;
   const {isDone, currentText} = getStreamingSlice(text, f, start, cps);
   // 光标：16 帧周期（约 0.53s，接近真实终端）+ 连续值软阶梯。9 帧方波在 30fps 下读作频闪。
   const blinkPhase = 0.5+0.5*Math.cos((f/16)*Math.PI*2);
@@ -122,9 +121,9 @@ export const Typewriter:React.FC<{
 };
 
 export const StampSeal:React.FC<{
-  text:string;color?:string;size?:number;x?:number;y?:number;start?:number;frame?:number;
+  text:string;color?:string;size?:number;x?:number;y?:number;start?:number;frame:number;
 }> = ({text,color=C.red,size=110,x=0,y=0,start=0,frame})=>{
-  const f = useF(frame);
+  const f = frame;
   if(f<start) return null;
   const p = easeOutSoft(f,start,start+9);
   // 第二半：9 帧压到 1 之后再来一次 1 -> 1.06 -> 1 的回弹，外加一圈冲击波。
@@ -143,9 +142,9 @@ export const StampSeal:React.FC<{
 // ---- 5. Funnel：尝试漏斗。N 次尝试 → 宽进窄出 → 命中。widths 为归一化比例 ----
 export const Funnel:React.FC<{
   x:number;y:number;w:number;rows:{label:string;sub:string;count:string;color:string;ratio:number}[];
-  start?:number;stagger?:number;frame?:number;exitStart?:number;
+  start?:number;stagger?:number;frame:number;exitStart?:number;
 }> = ({x,y,w,rows,start=0,stagger=14,frame,exitStart})=>{
-  const f = useF(frame);
+  const f = frame;
   return <div style={{position:'absolute',left:x,top:y,width:w,...exitStyle(f,exitStart)}}>
     {rows.map((r,i)=>{
       const s = start+i*stagger, p = popS(f,s,'soft');
@@ -172,9 +171,9 @@ export const Funnel:React.FC<{
 
 // ---- 6. ChatThread：对话气泡。typing 三点 12 帧 → 气泡 pop，左右交替 ----
 export const ChatThread:React.FC<{
-  x:number;y:number;w:number;msgs:{side:'l'|'r';text:string;at:number}[];frame?:number;exitStart?:number;
+  x:number;y:number;w:number;msgs:{side:'l'|'r';text:string;at:number}[];frame:number;exitStart?:number;
 }> = ({x,y,w,msgs,frame,exitStart})=>{
-  const f = useF(frame);
+  const f = frame;
   let dy = 0;
   return <div style={{position:'absolute',left:x,top:y,width:w,...exitStyle(f,exitStart)}}>
     {msgs.map((m,i)=>{
@@ -194,9 +193,9 @@ export const ChatThread:React.FC<{
 };
 
 export const ProgressRing:React.FC<{
-  size?:number;pct:number;label?:string;color?:string;start?:number;duration?:number;frame?:number;
+  size?:number;pct:number;label?:string;color?:string;start?:number;duration?:number;frame:number;
 }> = ({size=96,pct,label,color=C.green,start=0,duration=36,frame})=>{
-  const f = useF(frame);
+  const f = frame;
   // 弧与数字用**不同时钟**（30 / 约 24 帧，数字晚 2 帧起步）：同一条曲线会让"数字就是那条弧"，
   // 错开后读作"表盘在走、读数是跟读数"。默认总时长 30 帧（约 Magic UI 的 1s 节拍）。
   const dur = duration===36?30:duration;
@@ -222,9 +221,9 @@ export const ProgressRing:React.FC<{
 };
 
 export const StaggerList:React.FC<{
-  x:number;y:number;w:number;items:{icon?:string;text:string;sub?:string;color:string}[];start?:number;stagger?:number;frame?:number;exitStart?:number;
+  x:number;y:number;w:number;items:{icon?:string;text:string;sub?:string;color:string}[];start?:number;stagger?:number;frame:number;exitStart?:number;
 }> = ({x,y,w,items,start=0,stagger=12,frame,exitStart})=>{
-  const f = useF(frame);
+  const f = frame;
   return <div style={{position:'absolute',left:x,top:y,width:w,...exitStyle(f,exitStart)}}>
     {items.map((it,i)=>{
       const s = start+i*stagger, p = popS(f,s,'soft'), opP = easeOutSoft(f,s,s+14);
@@ -271,11 +270,11 @@ export const DiffView:React.FC<{
   before?:string;after?:string;
   /** before/after 模式下第一行入场帧与逐行间隔 */
   startAt?:number;step?:number;
-  frame?:number;exitStart?:number;
+  frame:number;exitStart?:number;
   /** 代码字号（设计像素）。缺省 15 适合接触表小格；**成片里的差异镜头请给 26–34**，让补丁大而清晰。 */
   fontSize?:number;
 }> = ({x,y,w,title='patch.diff',lines,before,after,startAt=0,step=14,frame,exitStart,fontSize=15})=>{
-  const f = useF(frame);
+  const f = frame;
   const rows = React.useMemo(
     ()=> lines ?? (before!==undefined && after!==undefined ? diffToLines(before, after, startAt, step) : []),
     [lines, before, after, startAt, step]);
@@ -302,9 +301,9 @@ export const DiffView:React.FC<{
 };
 
 export const SkeletonCard:React.FC<{
-  x:number;y:number;w:number;h:number;rows?:number;start?:number;revealAt?:number;frame?:number;children?:React.ReactNode;
+  x:number;y:number;w:number;h:number;rows?:number;start?:number;revealAt?:number;frame:number;children?:React.ReactNode;
 }> = ({x,y,w,h,rows=3,start=0,revealAt=60,frame,children})=>{
-  const f = useF(frame);
+  const f = frame;
   const shown = f>=revealAt, p = shown?popS(f,revealAt,'soft'):0;
   // 等待中的骨架：呼吸幅度 ±5%、周期约 60 帧。原来的 0.55±0.25 读作「闪灯」而不是「在等」。
   const pulse = 0.9+0.05*Math.sin(f*0.048);

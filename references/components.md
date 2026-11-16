@@ -24,14 +24,10 @@ import {FitCard, Typewriter, StampSeal, Funnel, ChatThread, ProgressRing, Stagge
 
 > **⚠️ 帧参数名（必读）**：fxkit 的帧参数叫 **`frame`**，而模块
 > （`shotkit` / `stagekit` / `media` / `skeletons` / `insert`）的帧参数叫 **`f`**。
-> 给 fxkit 组件传 `f={f}` 会被**静默忽略**，组件回落到 `useCurrentFrame()`（全局帧），
-> 于是动画整体错位，甚至抛 `Frame NaN`。**fxkit 传 `frame={f}`，新模块传 `f={f}`。**
+> 帧参数是**必填**的：传错名字（给 fxkit 传 `f={f}`）或漏传，`tsc` 直接报错
+> （`Property 'frame' is missing`），make-video 的 TypeScript 检查一步就停。**fxkit 传 `frame={f}`，新模块传 `f={f}`。**
 >
 > 另外每个组件的 `frame` 语义是**本镜本地帧**（0 起），不是全局帧；在 `ShotCamera` 内组合时必须传本地帧。
->
-> **这条以前只是文档，现在有门禁**：`python scripts/validate-frame-props.py PROJECT_DIR` 逐个标签核对
-> 参数名，写错即 P0。实测两支自带样板片各有 5–6 处违反，印章 / Funnel / 打字机的进场动画因此长期失效
-> （组件回落到全局帧后，`start={局部节拍}` 早已过去，元素直接以完成态出现）。**改完场景文件先跑它。**
 
 **参数名对照（写场景时照这张表，别凭记忆）**
 

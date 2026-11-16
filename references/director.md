@@ -229,7 +229,7 @@ python scripts/commons-search.py search "<关键词>" --source openverse --proje
 >
 > **怎么判的**：扫之前先用 `noncode()` 把注释与字符串抹成空格（所以"只在注释里写过这个名字"会被报出来），
 > 再用 `<名字` + 一个非标识符字符 去匹配。场景源码 = `src/**` 里名字带 `scene` 的 `.tsx`
-> （与 `validate-frame-props.py` 的 SCENE_HINT 同一口径）；一个都没有就退到任一 `.tsx`；
+> ；一个都没有就退到任一 `.tsx`；
 > 连 `.tsx` 都没有则报一条 P1 说明**这条判据没生效**（让"没报"与"没跑"可区分）。
 >
 > **不做的（代价写在明处，别高估它）**：

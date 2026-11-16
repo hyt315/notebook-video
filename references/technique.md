@@ -88,8 +88,8 @@ auto 路线（story.json → compose）的引擎行为、运行环境、Windows 
 
 ### 门禁分工
 
-make-video 的硬门禁：`validate-shot-motion`、`validate-presentation`、`validate-frame-props`、`validate-audio-levels`、
-`validate-caption-sync`、`validate-semantic-breaks`，渲染期 `CaptionFitGate` / `CardFitGate` / `OverlapGate` / `ClippingGate`，
+make-video 的硬门禁：`validate-shot-motion`、`validate-presentation`、`validate-audio-levels`、
+`validate-caption-sync`、`validate-semantic-breaks`、`tsc --noEmit`（帧参数名与漏传），渲染期 `CaptionFitGate` / `CardFitGate` / `OverlapGate` / `ClippingGate`，
 成片 `validate-motion-gaps`。`validate-composition`（骨架 / 组件多样性）是为手写场景设计的结构门禁，auto 片只作参考输出。
 
 <a id="environment-matrix"></a>
@@ -741,7 +741,7 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 4. **接线别漏**：新件要挂在设计根 / 片子上才算生效（`data-design-root`、门禁的 `mode="warn" / "block"` 两档、`CardFitGate`
    的 `data-fit-skip`……）。**把组件文件拷过去 ≠ 生效**：实测长片的
    `index.tsx` 里 `CanvasBoundsGate` 是 0 处挂载 —— 门禁文件搬过去了也没在跑。
-5. **同步后跑门禁（都在工程目录里跑）**：`python scripts/validate-frame-props.py <工程>`（帧参数名，`f={f}` vs `frame={f}`）、
+5. **同步后跑门禁（都在工程目录里跑）**：`npx tsc --noEmit`（帧参数名，`f={f}` vs `frame={f}`，以及漏传）、
    `validate-composition.py <工程>`（`live` 名字必须真的出现在场景源码里、结构/时长）、`validate-presentation.py`、
    `validate-layering.py`、`validate-motion-gaps.py`；渲染期那五道 Gate 会在 still / render 时自己报。
    技能侧再跑 `scripts/negative-gate-check.py` 与 `validate-skill-consistency.py`。
@@ -1021,7 +1021,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 - 要观众「看那里」时，在镜头表写 `cinema.focus`（推近到那个组件的矩形）；不写也有缺省缓推。
 - 相邻两镜换骨架；一镜一个概念；关键数字用 `KineticNumber` 数过去。
 - 背景：手作皮肤默认 `bgMode: "chapter"`（每章一张纸、章内沿用），flat / cel 默认 `"shot"`（逐镜轮换）；全片一张纸写 `"bgMode": "film"`，完全不轮换写 `"bgRotate": false`。不写就自动选——每个皮肤有 8–11 张风格各异的亮底背景（手账：横线本 / 方格 / 点阵 / 牛皮纸 / 水彩纸 / 便签墙 / 旧书页 / 坐标纸；剪纸：红纸衬边 / 宣纸 / 窗花 / 祥云 / 挂笺 / 洒金…；档案：档案袋 / 旧报纸 / 古地图 / 卡片目录 / 胶片 / 展柜布面…），逐镜模式按镜头角色挑、相邻两镜不重复，装饰重的（`busy`）不进常规镜。某一镜要特定的纸，就写 `"bg": "oldpage"`；清单与许可见 [references/media.md#background-library](media.md#background-library)。
-- 帧参数名：`fxkit` 组件传 `frame={f}`，其余模块传 `f={f}`（传错不报错只会错位，`validate-frame-props.py` 会抓）。
+- 帧参数名：`fxkit` 组件传 `frame={f}`，其余模块传 `f={f}`（帧参数是必填类型，传错或漏传 `tsc` 报错）。
 
 ### 第 4 步 · 一条命令
 

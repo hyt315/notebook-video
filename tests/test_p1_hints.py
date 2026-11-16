@@ -40,7 +40,7 @@ class CollectP1(unittest.TestCase):
             ["validate-presentation：好几件事挤在一拍上"])
 
     def test_plain_line_is_not_truncated(self):
-        # backgrounds / audio-levels / fusion / frame-props：无冒号，中文开头
+        # backgrounds / audio-levels / fusion：无冒号，中文开头
         self.assertEqual(
             collect("  P1 分镜相邻两镜同一张背景（--shots）\n", "validate-backgrounds.py"),
             ["validate-backgrounds：分镜相邻两镜同一张背景（--shots）"])

@@ -770,7 +770,7 @@ export const HighlightCode: React.FC<{
 // 此前只能手写 HTML 硬排（上下标都难对齐），这个件把它变成一行。
 // ---------------------------------------------------------------------------
 export const MathBlock: React.FC<{
-  f?: number;
+  f: number;
   tex: string;
   startAt?: number;
   /** display 模式居中独占一行；inline 模式跟着文字走 */
@@ -778,7 +778,7 @@ export const MathBlock: React.FC<{
   fontSize?: number;
   tone?: string;
   align?: 'left' | 'center';
-}> = ({f = 0, tex, startAt = 0, display = true, fontSize = 40, tone, align = 'center'}) => {
+}> = ({f, tex, startAt = 0, display = true, fontSize = 40, tone, align = 'center'}) => {
   const html = katex.renderToString(tex, {throwOnError: false, displayMode: display});
   const p = f ? prog(f, startAt, 24) : 1;
   return (

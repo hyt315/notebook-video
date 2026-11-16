@@ -239,7 +239,6 @@ if (!flag('no-gates')) {
     ['validate-elem-kinds.py', [project], true],
     // 3.5.0 画面三层：主题物必须出现、配比不能回到「全是组件」（P0 只有主题物一条）
     ['validate-fusion.py', [project], true],
-    ['validate-frame-props.py', [project], true],
     ['validate-audio-levels.py', [project], true],
     ['validate-media.py', [project], true],
     // 3.3.0 导演层：手作皮肤缺 treatment.json / 没搜过 Commons 即停；flat / cel 只提示

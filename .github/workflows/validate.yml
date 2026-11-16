@@ -41,12 +41,10 @@ jobs:
       - name: Run the build-time gates on the default template
         # ⚠️ 复核发现：CI 之前**一条构建期门禁都不跑**（只有 validate-skill / visual-plan
         # 与 selftest），于是「负向抽查」长期只是本地仪式。
-        # 这里把模板上要跑的 **7 条**构建期命令全挂上：呈现效果 / 帧参数名 / 构图 / 镜头运动 /
-        # 音效电平 / 字幕同步 / 语义断句。
-        # ⚠️ 别按「构建期 6 道」去删一条 —— 那个 6 是 `SKILL.md`「The gates」表的**分类口径**
-        # （表里那 6 道不含字幕同步与语义断句这两条文本链检查）；本步骤实际挂的是 7 条，以 `run:` 为准。
+        # 这里把模板上要跑的构建期命令全挂上（以 `run:` 为准）：构图 / 镜头运动 / 呈现效果 /
+        # 音效电平 / 背景库 / 字幕同步 / 语义断句。帧参数名没有单独门禁：组件的帧参数是必填类型，
+        # 由下面的 Type-check 步骤拦。
         run: |
-          node scripts/notebook-video.mjs validate-frame-props assets/lecture-template
           node scripts/notebook-video.mjs validate-composition assets/lecture-template
           node scripts/notebook-video.mjs validate-shot-motion assets/lecture-template
           node scripts/notebook-video.mjs validate-presentation assets/lecture-template

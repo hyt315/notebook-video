@@ -165,29 +165,8 @@ case('G 冻结的假运镜', [
 ])
 cleanup(td)
 
-# ── H：帧参数写错（fxkit 组件传 f={f}）→ validate-frame-props 必须拦（v2.11 新增）──
-td, rc0, out0 = mkproj()
-# 必须把**整棵 src** 拷进去：只拷 fxkit.tsx 时门禁只解析到 11 个组件，
-# 会先撞"引擎源码没读到"的防呆分支（rc=2）—— 复核实测这条 case 一直是这样**假通过**的，
-# 它声称测的"帧参数写错"根本没走到。拷全之后才会走真正的判据。
-for base, _dirs, files in os.walk(os.path.join(TPL, 'src')):
-    for name in files:
-        if not name.endswith(('.tsx', '.ts')):
-            continue
-        src_path = os.path.join(base, name)
-        rel = os.path.relpath(src_path, os.path.join(TPL, 'src'))
-        dst = os.path.join(td, 'src', rel)
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
-        shutil.copy(src_path, dst)
-io.open(os.path.join(td, 'src/scenes.tsx'), 'w', encoding='utf-8', newline='').write(
-    "import {Typewriter} from './fxkit';" + NL
-    + "export const S=({f}:{f:number}) => <Typewriter f={f} text='x'/>;" + NL)
-case('H 帧参数写错（fxkit 传 f）', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:只认 frame', 'validate-frame-props', run([PY, os.path.join(SKILL, 'scripts/validate-frame-props.py'), td])),
-])
-cleanup(td)
-
+# （原 H / N / O 帧参数名用例已删：组件的帧参数现为必填类型，传错名或漏传由 make-video 的 tsc 拦；
+#   负向用例在 tests/test_frame_types.py。）
 # ── I · 呈现效果门禁 G-1：beat 提前剧透（offset 远早于它那句）→ validate-presentation 必须拦 ──
 # 这里刻意让 resolve-shots 仍然通过（它只算帧号，不管"讲与画对不对得上"），
 # 证明新门禁不是"看着 resolve-shots 过了就放行"。
@@ -279,41 +258,6 @@ io.open(os.path.join(td, 'src/theme/flat.tsx'), 'w', encoding='utf-8', newline='
 case('M 呈现效果 · 正文色几乎等于底色', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
     ('must_block:正文色', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-])
-cleanup(td)
-
-# ── N · 帧参数名门禁必须覆盖 **src/components/ 那一层**（v3.1.1 的 27 件）──
-# 旧版 `collect_components` 只 os.listdir(src) 一层、且名单里有 4 个不存在的文件名，
-# 于是给 `Chart` 写成 `frame={f}` 完全不会被抓（静默回落到全局帧）。
-# 夹具刻意把组件放在 **src/components/** 里使用，只有"递归扫描"才能判出来。
-def mk_fixture_scene(td_, attr):
-    io.open(os.path.join(td_, 'src/scenes-p.tsx'), 'w', encoding='utf-8', newline='').write(
-        "import {Chart} from './components/chart';" + NL
-        + "export const S=({f}:{f:number}) => <Chart " + attr + " width={400} height={300} startAt={0} data={[]} />;" + NL)
-
-td, rc0, out0 = mkproj()
-os.makedirs(os.path.join(td, 'src/components'), exist_ok=True)
-# 整层拷进去：只拷一个文件会让门禁的"引擎源码没读到"防呆（<20 个组件）先触发，
-# 那样测到的是防呆、不是本夹具要测的"递归覆盖 components/ 层"。
-for f in os.listdir(os.path.join(TPL, 'src/components')):
-    shutil.copy(os.path.join(TPL, 'src/components', f), os.path.join(td, 'src/components', f))
-mk_fixture_scene(td, 'frame={f}')     # 错：Chart 只认 f
-case('N 帧参数名 · components 层写成 frame={f}', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:只认 f', 'validate-frame-props', run([PY, os.path.join(SKILL, 'scripts/validate-frame-props.py'), td])),
-])
-cleanup(td)
-
-# ── O · 同一夹具写对（f={f}）→ 必须放行（证明 N 不是"见到就拦"）──
-td, rc0, out0 = mkproj()
-os.makedirs(os.path.join(td, 'src/components'), exist_ok=True)
-# 整层拷进去：只拷一个文件会让门禁的"引擎源码没读到"防呆（<20 个组件）先触发，
-# 那样测到的是防呆、不是本夹具要测的"递归覆盖 components/ 层"。
-for f in os.listdir(os.path.join(TPL, 'src/components')):
-    shutil.copy(os.path.join(TPL, 'src/components', f), os.path.join(td, 'src/components', f))
-mk_fixture_scene(td, 'f={f}')          # 对
-case('O 帧参数名 · 同一夹具写对（阴性对照）', [
-    ('must_pass', 'validate-frame-props', run([PY, os.path.join(SKILL, 'scripts/validate-frame-props.py'), td])),
 ])
 cleanup(td)
 

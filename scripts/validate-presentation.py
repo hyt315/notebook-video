@@ -630,7 +630,7 @@ def check_narrative(project: Path) -> tuple[list, list]:
 #     （真实工程 overview-film 的 S2 就是这么烂掉的：`MetricGrid` 被换成手绘行 + `Chart`，
 #      只在注释里留了一句"这里本来用 MetricGrid"；"文件里搜得到名字"那种判法会**假通过**）。
 #     同理，import 行与字符串里的代码样例也都不算 —— 只有 JSX 用法算。
-#   · 场景源码 = `src/**` 里名字带 `scene` 的 .tsx（与 validate-frame-props.py 的 SCENE_HINT 同一口径）；
+#   · 场景源码 = `src/**` 里名字带 `scene` 的 .tsx；
 #     一个都没有时退到 `src/**/*.tsx`；连 .tsx 都没有就报一条 P1 说明**这条判据没生效**
 #     （让"没报"与"没跑"可区分，与其它门禁的覆盖率日志同一用意）。
 #   · 名字后面必须紧跟空白 / `/` / `>`（`(?![A-Za-z0-9_$])`），免得 `Widget2` 被 `Widget` 蒙混过去。
@@ -659,7 +659,7 @@ def _evidence_used(code: str, name: str) -> bool:
 
 
 def _scene_files(project: Path) -> list[Path]:
-    """名字里带 `scene` 的 .tsx（与 validate-frame-props.py 的 SCENE_HINT 同一口径）。"""
+    """名字里带 `scene` 的 .tsx。"""
     src = project / "src"
     if not src.is_dir():
         return []

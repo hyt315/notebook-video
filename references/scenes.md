@@ -334,7 +334,7 @@ mainH = h − pad×2 − headH − stampH − (stamp ? 14 : 0) − (header ? 14 
 
 | # | 症状 | 真因 | 修法 |
 |---|---|---|---|
-| 1 | 动画整体错位、`Frame NaN` | 给 **fxkit** 组件传了 `f`（它的参数叫 `frame`），`f` 被静默忽略 → 回落到全局帧 | fxkit 传 `frame={f}`；其它模块传 `f={f}`；跑 `validate-frame-props.py` |
+| 1 | `tsc` 报 `Property 'frame' is missing` / `Property 'f' does not exist` | 给 **fxkit** 组件传了 `f`（它的参数叫 `frame`），或反过来 | fxkit 传 `frame={f}`；其它模块传 `f={f}`；帧参数是必填类型，tsc 会报错 |
 | 2 | 镜头一动，边缘内容被裁掉 | 平移会整层移动内容，`s=1.0` 时必然露边 | 平移量须由缩放覆盖：`maxPanX=960(1−1/s)`；`pan-follow` 自带 `from≥1.06` |
 | 3 | 一屏字叠成一团 | 文档流标题 + 绝对定位组件都从容器原点起 | 给组件显式 `y`，或把标题绝对定位 |
 | 4 | 整镜内容发灰/半透明 | 底托用了**正 z-index**，压住所有 `z-index:auto` 的场景元素 | 底托 `z={-1}` |
@@ -441,7 +441,7 @@ Read only what the current production needs. **写任何场景之前，先读前
 > 8. 声明了运镜就**必须真的动**：`max(s) − min(s) ≥ 0.02` 或 `|Δx| + |Δy| ≥ 20`（把 `still` 改名成 `push-in` 不算运镜）。
 > 9. 元素出现帧绑到"讲到它的那一句"（`SHOTS.Sx.beats`），**禁止镜头开头一次铺完**。
 > 10. 出现统一用模板的 `enterAt()`（左→右展开 22 帧，不淡入、不上浮）。同一句里的多个元素，相邻两个开始出现**至少隔 12 帧**，同一时刻最多 2 个在长；见 [draftpaper.md#reveal-rules](draftpaper.md#reveal-rules)。
-> 11. 帧参数名：`fxkit` 全部传 `frame={f}`；`media / kit / stagekit / skeletons / insert / shotkit` 传 `f={f}`。**传错不报错，只会整体错位**——这是最常见的错误（`validate-frame-props.py` 会抓）。
+> 11. 帧参数名：`fxkit` 全部传 `frame={f}`；`media / kit / stagekit / skeletons / insert / shotkit` 传 `f={f}`。帧参数是必填类型，传错名或漏传时 `tsc` 报错（make-video 的 TypeScript 检查会停）。
 > 12. 卡片高度必须用 `fitH()` 算，禁止手写"看着差不多"的固定高度（渲染期 `CardFitGate` 会拦下真裁切）。
 > 13. 给槽内组件传宽度前先算 `mainW = w − pad×2 − railW − 18`。
 > 14. 绝对定位构件的 `x/y` 相对**最近的定位祖先**，与文档流标题共用容器原点会精确重叠；**flex 子项若只含绝对定位子元素，必须显式给宽高**，否则宽度塌成 0、多张卡会叠在同一点。
@@ -527,7 +527,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" review-frames ./notebook-video-pro
 | `validate-composition.py` | build | adjacent scenes sharing a skeleton, <3 skeletons, no live component in an explanation scene, **a `live` name that does not exist in the scene file**, <3 media, **unknown transition/entry/media names**, zones out of 3–5 (1–5 for the journal / papercut / archive skins), lower quarter not filled, **`explanation:false` used to bypass density**, hero size, shot-length spread, repeated骨架 fingerprints, beat gaps (aggregated with frame ranges), **a beat index past the end (`b[k]` / `SHOTS.Sx.beats[k]` — both spellings; the value is `undefined`, so it either throws per frame or the element never appears)** | yes (P0) |
 | `validate-audio-levels.py` | build | **a sound-effect asset peaking below −12 dBFS** — it gets attenuated again at mix time and ends up inaudible | yes (P0) |
 | `validate-presentation.py` | build | **讲与画对不对得上、读不读得过来**：beat 必须落在它声明的那句/那一镜内且不提前剧透、每条 cue 至少有一拍；字幕 ≤9 加权字/秒、单行 ≤16、≤2 行；字号绝不低于 13px、正文色对比度 ≥4.5:1（WCAG 2.2 SC 1.4.3）。详见 [references/checks.md#presentation-gate](checks.md#presentation-gate) | yes (P0) |
-| `validate-frame-props.py` | build | **`f={f}` passed to an fxkit component (or `frame={f}` to the other modules)** — silently falls back to the global frame and kills the entrance animation | yes (P0) |
+| `tsc --noEmit` | build | **`f={f}` passed to an fxkit component (or `frame={f}` to the other modules), or the frame prop left out** — the frame prop is a required type, so this is a compile error | yes |
 | `CaptionFitGate` | render | caption wider than the safe width, measured with the **current canvas and skin's real weight/spacing** | yes |
 | `CardFitGate` | render | content taller/wider than its card (`scrollHeight > clientHeight`, 6px tolerance; clips only), waits for fonts, logs coverage every 5s | yes |
 | `OverlapGate` | render (15-frame grid **+ every shot boundary, beat and camera keyframe**) | text-vs-text overlap and paint-order occlusion using real glyph rects; gradient backgrounds count as opaque; header layer (z=140) included | `mode="block"` in the bundled films |
@@ -584,7 +584,6 @@ scripts/notebook-video.mjs          跨平台统一启动器（new-project / res
 scripts/resolve-shots.py            分镜表 → 帧号与相机关键帧（唯一定源）
 scripts/validate-shot-motion.py     构建期：镜头出界证明 + 运镜配额
 scripts/validate-composition.py     构建期：骨架 / 活性组件 / 介质 / 密度 / 枚举闭合 / live 可解析 / 主角尺寸 / 镜长分布
-scripts/validate-frame-props.py     构建期：fxkit 传 frame、其他模块传 f —— 写错即 P0（会静默回落到全局帧）
 scripts/validate-audio-levels.py    构建期：音效素材峰值 < -12 dBFS 即 P0；预制音效库 hash/响度/峰值/事件映射/增益一致性（references/audio-captions.md#sfx-library）
 scripts/validate-presentation.py    构建期：呈现效果（beat↔cue 对齐 / 字幕阅读预算 / 字号与对比度）——现有门禁都没问过的那一层
 scripts/validate-caption-sync.py    字幕与 TTS 词边界一致
