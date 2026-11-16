@@ -2,6 +2,7 @@
 """3.3.0: storyboard.md is generated from the real shot table (shots.resolved.json) by resolve-shots."""
 from __future__ import annotations
 
+import atexit
 import json
 import re
 import shutil
@@ -18,6 +19,7 @@ RS = ROOT / "scripts" / "resolve-shots.py"
 
 def project(storyboard: str | None = None, treatment: dict | None = None) -> Path:
     d = Path(tempfile.mkdtemp(prefix="nv-sb-"))
+    atexit.register(shutil.rmtree, d, True)  # 进程结束时清掉临时目录
     (d / "manifests").mkdir()
     (d / "src").mkdir()
     for f in ("caption-cues.json", "shots.json"):

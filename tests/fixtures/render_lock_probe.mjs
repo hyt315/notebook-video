@@ -8,6 +8,7 @@ import {acquireRenderLock, canResume, inputFingerprint, lockPathFor, manifestPat
         readManifest, writeManifest} from '../../scripts/render-lock.mjs';
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nv-lock-probe-'));
+process.on('exit', () => fs.rmSync(tmp, {recursive: true, force: true}));
 const project = path.join(tmp, 'proj');
 fs.mkdirSync(path.join(project, 'src'), {recursive: true});
 fs.mkdirSync(path.join(project, 'manifests'), {recursive: true});

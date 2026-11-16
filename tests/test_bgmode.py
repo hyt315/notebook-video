@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import atexit
 import json
 import shutil
 import subprocess
@@ -33,6 +34,7 @@ CHAPTERS = ["A", "A", "B", "B", "B", "C"]
 
 def project(theme: str, library: bool = True, mutate=None) -> Path:
     d = Path(tempfile.mkdtemp(prefix="nv-bgmode-"))
+    atexit.register(shutil.rmtree, d, True)  # 进程结束时清掉临时目录
     (d / "manifests").mkdir()
     (d / "src").mkdir()
     shutil.copy(TPL / "manifests" / "caption-cues.json", d / "manifests" / "caption-cues.json")
@@ -98,6 +100,7 @@ class BgModeTest(unittest.TestCase):
         if old_src.returncode != 0:
             self.skipTest("3.3.0 commit not in this clone")
         tmp = Path(tempfile.mkdtemp(prefix="nv-rs360-")) / "rs360.py"
+        atexit.register(shutil.rmtree, tmp.parent, True)  # 进程结束时清掉临时目录
         tmp.write_text(old_src.stdout, encoding="utf-8")
         old = load("rs360", tmp)
         # 3.3.0：sfxDensity 是**刻意的**行为变更（shots.ts 多一行导出、resolved 多一个键），

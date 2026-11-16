@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import atexit
+import shutil
 import json
 import sys
 import tempfile
@@ -31,6 +33,7 @@ def story_table() -> dict:
 def make_project(story: dict | None = None, muted: str = "#8a8a8a") -> Path:
     """临时工程：src/story.ts（结构化 role/size）+ 一套 muted 对比度可控的主题。"""
     td = tempfile.mkdtemp(prefix="nv-small-screen-")
+    atexit.register(shutil.rmtree, td, True)  # 进程结束时清掉临时目录
     proj = Path(td)
     (proj / "src" / "theme").mkdir(parents=True)
     (proj / "manifests").mkdir()
@@ -140,6 +143,7 @@ class SmallScreenContrastTest(unittest.TestCase):
     def test_no_story_file_skips_silently(self):
         """没 compose 产物时静默跳过（与 check_readability 同口径），不冒充通过。"""
         proj = Path(tempfile.mkdtemp(prefix="nv-ss-empty-"))
+        atexit.register(shutil.rmtree, proj, True)  # 进程结束时清掉临时目录
         (proj / "manifests").mkdir()
         (proj / "src").mkdir()
         p0, p1 = VP.check_small_screen(proj)

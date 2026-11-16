@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import atexit
 import json
 import re
 import shutil
@@ -20,6 +21,7 @@ spec.loader.exec_module(vo)
 
 def project(skin: str, shots: list[dict], cues: list[dict], title: str = "细胞为什么叫细胞") -> Path:
     d = Path(tempfile.mkdtemp(prefix="nv-open-"))
+    atexit.register(shutil.rmtree, d, True)  # 进程结束时清掉临时目录
     (d / "src" / "theme").mkdir(parents=True)
     (d / "manifests").mkdir()
     (d / "src" / "theme" / "active.ts").write_text(f"import {{THEME}} from './{skin}';\nexport {{THEME}};\n", encoding="utf-8")
@@ -82,6 +84,7 @@ class StaticOpening(unittest.TestCase):
 class PixelOpening(unittest.TestCase):
     def video(self, src: str) -> Path:
         out = Path(tempfile.mkdtemp(prefix="nv-open-v-")) / "v.mp4"
+        atexit.register(shutil.rmtree, out.parent, True)  # 进程结束时清掉临时目录
         subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", src, "-t", "4", "-pix_fmt", "yuv420p", str(out)], check=True)
         return out
 

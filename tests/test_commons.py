@@ -7,6 +7,8 @@ so these tests never touch the network.
 from __future__ import annotations
 
 import importlib.util
+import atexit
+import shutil
 import json
 import re
 import sys
@@ -35,6 +37,7 @@ class OfflineSearchTest(unittest.TestCase):
     def setUp(self):
         import tempfile
         self.tmp = Path(tempfile.mkdtemp(prefix="nv-commons-off-"))
+        atexit.register(shutil.rmtree, self.tmp, True)  # 进程结束时清掉临时目录
         (self.tmp / "manifests").mkdir()
 
     def test_network_failure_is_logged(self):

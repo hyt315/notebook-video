@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import atexit
 import json
 import shutil
 import sys
@@ -31,6 +32,7 @@ HAVE_PIL = all(importlib.util.find_spec(m) is not None for m in ("numpy", "PIL")
 
 def project(theme: str = "journal", library: bool = True, mutate=None) -> Path:
     d = Path(tempfile.mkdtemp(prefix="nv-bgt-"))
+    atexit.register(shutil.rmtree, d, True)  # 进程结束时清掉临时目录
     (d / "manifests").mkdir()
     (d / "src").mkdir()
     shutil.copy(TPL / "manifests" / "caption-cues.json", d / "manifests" / "caption-cues.json")

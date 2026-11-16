@@ -248,6 +248,7 @@ if (!flag('no-gates')) {
   // 这里只读这一种格式：P1 进报告「建议（不拦）」，全部记录进 renders/gates.json。终端文字只给人看。
   const records = [];
   const jsonl = path.join(os.tmpdir(), `nv-gates-${process.pid}.jsonl`);
+  process.on('exit', () => fs.rmSync(jsonl, {force: true}));  // 任何退出路径都不留下它
   for (const [g, argv, hard] of gates) {
     fs.rmSync(jsonl, {force: true});
     const r = await py(g, argv, {capture: true, env: {NV_GATE_JSON: jsonl}});

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import importlib.util
+import atexit
+import shutil
 import json
 import subprocess
 import sys
@@ -26,6 +28,7 @@ class SilentTiming(unittest.TestCase):
 
     def test_default_depends_on_skin(self):
         d = Path(tempfile.mkdtemp())
+        atexit.register(shutil.rmtree, d, True)  # 进程结束时清掉临时目录
         (d / "src" / "theme").mkdir(parents=True)
         (d / "src" / "theme" / "active.ts").write_text("import {THEME} from './journal';\nexport {THEME};\n", encoding="utf-8")
         lines = d / "l.txt"
@@ -62,6 +65,7 @@ class SilentTiming(unittest.TestCase):
 class CueDuration(unittest.TestCase):
     def run_sync(self, starts: list[int]) -> subprocess.CompletedProcess:
         d = Path(tempfile.mkdtemp())
+        atexit.register(shutil.rmtree, d, True)  # 进程结束时清掉临时目录
         words, cues = [], []
         for i, s0 in enumerate(starts):
             w = {"part": f"字{i}", "start": s0, "end": s0 + 300}

@@ -814,6 +814,12 @@ const runRemotionFiltered = (nodeArgs, cwd, {quiet = false, measure = true, pers
 const buildPropsArg = (extra = {}) => {
   const file = path.join(os.tmpdir(), `nv-props-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.json`);
   fs.writeFileSync(file, JSON.stringify(extra));
+  // 进程退出时删掉，不在系统临时目录里越积越多（函数自包含：测试会单独取出它来跑）
+  if (!globalThis.__nvPropsFiles) {
+    globalThis.__nvPropsFiles = new Set();
+    process.on('exit', () => { for (const f of globalThis.__nvPropsFiles) fs.rmSync(f, {force: true}); });
+  }
+  globalThis.__nvPropsFiles.add(file);
   return `--props=${file}`;
 };
 

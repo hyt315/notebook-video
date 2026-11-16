@@ -10,6 +10,7 @@ CI 在 npm ci 之后单独跑本测试；本地可用 NOTEBOOK_VIDEO_NODE_MODULE
 """
 from __future__ import annotations
 
+import atexit
 import json
 import os
 import re
@@ -64,6 +65,7 @@ class PlanSfxBehaviorTest(unittest.TestCase):
         if not cls.node or not cls.esbuild:
             raise unittest.SkipTest("node/esbuild unavailable (run after npm ci, or set NOTEBOOK_VIDEO_NODE_MODULES)")
         cls.tmp = Path(tempfile.mkdtemp(prefix="nv-medium-sfx-"))
+        atexit.register(shutil.rmtree, cls.tmp, True)  # 进程结束时清掉临时目录
         entry = cls.tmp / "entry.ts"
         entry.write_text(
             "import {planSfx} from " + json.dumps(SFX.as_posix()) + ";\n"

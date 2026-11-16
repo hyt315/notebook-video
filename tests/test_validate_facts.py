@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import atexit
+import shutil
 import json
 import subprocess
 import sys
@@ -13,6 +15,7 @@ SCRIPT = ROOT / "scripts" / "validate-facts.py"
 
 def run(story: dict, *extra: str) -> tuple[int, str]:
     td = tempfile.mkdtemp(prefix="nv-facts-")
+    atexit.register(shutil.rmtree, td, True)  # 进程结束时清掉临时目录
     (Path(td) / "story.json").write_text(json.dumps(story, ensure_ascii=False), encoding="utf-8")
     r = subprocess.run([sys.executable, str(SCRIPT), td, *extra],
                        capture_output=True, text=True, encoding="utf-8", cwd=ROOT)

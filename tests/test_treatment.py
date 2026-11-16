@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import atexit
 import json
 import shutil
 import sys
@@ -35,6 +36,7 @@ GOOD = {
 
 def project(skin: str, treatment: dict | None, searched: bool = True, media_ids=("cork",)) -> Path:
     d = Path(tempfile.mkdtemp(prefix="nv-treat-"))
+    atexit.register(shutil.rmtree, d, True)  # 进程结束时清掉临时目录
     (d / "src" / "theme").mkdir(parents=True)
     (d / "manifests").mkdir()
     (d / "src" / "theme" / "active.ts").write_text(f"import {{THEME}} from './{skin}';\nexport {{THEME}};\n", encoding="utf-8")

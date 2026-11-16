@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import atexit
 import json
 import shutil
 import subprocess
@@ -52,6 +53,7 @@ class ZoneRange(unittest.TestCase):
 
     def test_cli_reads_skin_from_active_theme(self):
         d = Path(tempfile.mkdtemp(prefix="nv-vc-"))
+        atexit.register(shutil.rmtree, d, True)  # 进程结束时清掉临时目录
         try:
             (d / "manifests").mkdir()
             (d / "src" / "theme").mkdir(parents=True)

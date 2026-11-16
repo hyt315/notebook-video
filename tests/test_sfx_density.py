@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import importlib.util
+import atexit
 import json
 import re
 import shutil
@@ -35,6 +36,7 @@ rs = load("rs_sfxdensity", ROOT / "scripts" / "resolve-shots.py")
 
 def project(mutate=None) -> Path:
     d = Path(tempfile.mkdtemp(prefix="nv-sfxdensity-"))
+    atexit.register(shutil.rmtree, d, True)  # 进程结束时清掉临时目录
     (d / "manifests").mkdir()
     (d / "src").mkdir()
     shutil.copy(TPL / "manifests" / "caption-cues.json", d / "manifests" / "caption-cues.json")
