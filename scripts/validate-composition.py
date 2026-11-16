@@ -41,7 +41,7 @@ from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON �
 # 实测把 media 写成 ["FAKE_MEDIUM_A",...]、live 写成 ["NO_SUCH_COMPONENT"] 也能 P0=0 通过）
 SKELETONS = {"Stage", "Corridor", "Split", "Zoom"}
 INTENTS = {"establish", "push-in", "pull-back", "pan-follow", "reveal", "micro-orbit", "still"}
-TRANSITIONS = {"auto", "cut", "handoff", "reveal", "whip", "whip-left", "whip-right", "zoom", "fade", "hard", "slide", "drop", "pageturn", "peel"}   # 引擎级转场（src/cinema.tsx）回归；auto = 章节首镜 zoom、其余 whip
+TRANSITIONS = {"auto", "cut", "handoff", "reveal", "whip", "whip-left", "whip-right", "zoom", "fade", "hard", "slide", "drop", "pageturn", "peel"}   # 引擎级转场（src/cinema.tsx resolveTransition）；auto = 皮肤的翻页（pageturn / peel，无 GPU 退 pageflip）
 ENTRIES = {"rise", "slide", "fade", "zoom", "build"}  # 3.5.1：build = 边讲边长（草稿纸），不是整镜入场
 MEDIA_KINDS = {"chart", "console", "code", "graphic", "text", "metric"}
 

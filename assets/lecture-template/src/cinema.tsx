@@ -19,8 +19,8 @@ import {FX_FALLBACK, transitionFramesOf, type TransitionKind as MetaTransitionKi
 //              拍结束后拉回；区域可写矩形，也可写 region 简写（left/right/top/bottom/center…）；
 //   3. pan     宽画布横摇：`cinema.pan.worldW` > 1920 时，场景按更宽的世界排版，摄影机横摇扫过；
 //   4. 转场     whip（甩镜：方向模糊 + 位移）/ zoom（推穿：放大淡出 + 新镜从远处推来）/ fade / hard；
-//              缺省 auto：章节首镜 zoom，其余 whip，左右交替；
-//              3.3.0 pageturn / peel：真卷页（src/fx.tsx，WebGL2），渲染器探针不通过时自动退回 slide / drop；
+//              缺省 auto：一律翻页（皮肤 craft.transition：pageturn / peel，src/fx.tsx，WebGL2），
+//              渲染器探针不通过时退回 pageflip（纯 CSS）；whip / zoom / slide / drop 要显式写；
 //   5. 视差     Backdrop 按 0.3 的系数跟随摄影机（背景比内容动得少 → 纵深）。
 //
 // 纪律：全部是**帧的纯函数**（interpolate / spring / Easing），无随机、无状态、无实时动画库；

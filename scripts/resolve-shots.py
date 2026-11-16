@@ -565,7 +565,7 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
             "anchor": s.get("anchor"),
             "hero": s.get("hero"),
             "cover": s.get("cover"),
-            # 缺省 auto（章节首镜 zoom 推穿、其余 whip 甩镜）；cut/reveal 是旧写法，引擎按 auto 处理，hard = 真硬切
+            # 缺省 auto（皮肤的翻页，见 cinema.tsx resolveTransition）；cut/reveal 是旧写法，引擎按 auto 处理，hard = 真硬切
             "transition": s.get("transition", "auto"),
             # v3.0.1：由分镜表推导，场景层不再手写这个布尔（消除"表说 cut、代码写 reveal"的不一致）
             "reveal": s.get("transition", "auto") == "reveal",

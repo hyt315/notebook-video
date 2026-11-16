@@ -65,8 +65,8 @@ export const RevealMask: React.FC<{f: number; at: number; dur?: number; dir?: 'l
  * 两处一致性由 `scripts/validate-skill-consistency.py` 交叉校验，漂移会被门禁拦下。
  */
 export const TRANSITIONS = ['auto', 'cut', 'handoff', 'reveal', 'whip', 'whip-left', 'whip-right', 'zoom', 'fade', 'hard', 'slide', 'drop', 'pageturn', 'peel'] as const;
-// 转场由引擎实现（src/cinema.tsx 的 resolveTransition / transitionStyle）：auto（缺省）= 章节首镜 zoom 推穿、
-// 其余 whip 甩镜左右交替；cut / handoff / reveal 是旧写法，引擎按 auto 处理（reveal 另由 RevealMask 做镜内揭示）；
+// 转场由引擎实现（src/cinema.tsx 的 resolveTransition / transitionStyle）：auto（缺省）= 皮肤的翻页
+// （pageturn / peel，无 GPU 退 pageflip）；cut / handoff / reveal 是旧写法，引擎按 auto 处理（reveal 另由 RevealMask 做镜内揭示）；
 // fade = 交叉淡化；hard = 真硬切；slide / drop = 手作皮肤的纸面横移 / 新纸落下；
 // pageturn / peel（3.3.0）= 真卷页 / 揭纸（src/fx.tsx，WebGL2；渲染器探针不通过时自动退回 slide / drop）。
 export type TransitionKind = (typeof TRANSITIONS)[number];
