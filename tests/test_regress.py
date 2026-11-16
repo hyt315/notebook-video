@@ -1,7 +1,8 @@
 """回归集：examples/ 下全部 story（≥10 份）走 compose → resolve → 两道构建期门禁，产物逐字节钉住。
 
 不渲染。每份 story 在模板副本里跑 compose-story.py 与 resolve-shots.py，记下产物的 sha256，
-再跑 validate-shot-motion / validate-presentation（统一结果 NV_GATE_JSON）记下 P0/P1 条数。
+再跑 make-video 构建期链上不依赖配音的每道门禁（统一结果 NV_GATE_JSON），记下 P0/P1 条数，
+以及每条判据的「等级|id」清单——判据降级（P0→P1）或增删在快照里一眼可见，总数不变也看得出。
 与 tests/fixtures/regress.json 比对：
 
 - 只改结构、行为不变 → 必须原样通过；
@@ -13,10 +14,12 @@
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 import unittest
 from pathlib import Path
 
@@ -26,7 +29,18 @@ FIXTURE = Path(__file__).resolve().parent / "fixtures" / "regress.json"
 ARTIFACTS = ("narration.txt", "src/shots.ts", "src/story.ts", "src/film.ts", "src/scenes.tsx",
              "manifests/shots.json", "manifests/shots.resolved.json", "manifests/caption-cues.json",
              "manifests/protected-caption-phrases.txt")
-GATES = ("validate-shot-motion.py", "validate-presentation.py")
+GATES = ("validate-shot-motion.py", "validate-presentation.py", "validate-glyphs.py", "validate-elem-kinds.py",
+         "validate-fusion.py", "validate-audio-levels.py", "validate-media.py", "validate-treatment.py",
+         "validate-opening.py", "validate-backgrounds.py", "validate-composition.py")
+GENERIC_ID = re.compile(r"^(validate-[a-z-]+-P[01]-\d+|-?|src|manifests|public)$")
+
+
+def rule_key(r: dict) -> str:
+    """一条记录的判据标识：自带编号就用编号，否则用消息开头（数字抹成 #），与本次的条序无关。"""
+    rid = r.get("id") or ""
+    if GENERIC_ID.match(rid):
+        rid = re.sub(r"\d+(\.\d+)?", "#", (r.get("message") or "").lstrip("-· "))[:14]
+    return f"{r['level']}|{rid}"
 
 
 def stories():
@@ -52,6 +66,7 @@ def run_one(story: Path, td: str) -> dict:
                        env={**env, "NV_GATE_JSON": str(jl)}, timeout=110)
         recs = [json.loads(x) for x in jl.read_text(encoding="utf-8").splitlines()] if jl.exists() else []
         out[g] = {lv: sum(1 for r in recs if r["level"] == lv) for lv in ("P0", "P1")}
+        out[g]["rules"] = sorted(rule_key(r) for r in recs)
     return out
 
 
@@ -61,8 +76,10 @@ class RegressSet(unittest.TestCase):
         self.assertGreaterEqual(len(items), 10, "回归集至少 10 份 story")
         got = {}
         with tempfile.TemporaryDirectory(prefix="nv-regress-") as td:
-            for s in items:
-                got[s.relative_to(ROOT).as_posix()] = run_one(s, td)
+            # 每份 story 各用一个模板副本、互不相干：并行跑，单测总时长不随门禁数翻倍
+            with ThreadPoolExecutor(max_workers=min(8, os.cpu_count() or 2)) as pool:
+                for s, r in zip(items, pool.map(lambda s: run_one(s, td), items)):
+                    got[s.relative_to(ROOT).as_posix()] = r
         if os.environ.get("NV_REGRESS_UPDATE") == "1":
             FIXTURE.write_text(json.dumps(got, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
             self.skipTest(f"已重写 {FIXTURE.name}（{len(got)} 份）")
