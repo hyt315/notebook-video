@@ -589,7 +589,7 @@ camera move that never moves, frame-prop typos, mistimed or out-of-range beats, 
 floor, low-contrast text, stale imports and doc names, a weakened canvas-bounds gate, `evidence` and narrative-`move`
 fixtures, layering and visual-plan violations, inaudible or corrupt audio, the removed example project put back,
 a stale resolved timeline, camera defaults, a BudouX-less delivery, canvas-mode drift) plus negative controls, and
-asserts each gate blocks, warns or passes as expected — 65 fixtures / 112 assertions (the script prints its own tally).
+asserts each gate blocks, warns or passes as expected (the script prints its own tally).
 Rules these fixtures pin: a failed measurement must hard-fail the gate, not pass; a width is never borrowed from
 another composition; guards must never be plain `assert`s (they must survive `python -O`); shared numbers (FPS,
 caption cap, reading speed, stage, zoom caps, grow timing) live once in `assets/lecture-template/src/contract.json`,
