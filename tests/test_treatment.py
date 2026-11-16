@@ -125,6 +125,16 @@ class TreatmentGate(unittest.TestCase):
         ex = json.loads((ROOT / "assets" / "lecture-template" / "manifests" / "treatment.example.json").read_text(encoding="utf-8"))
         self.assertEqual(self.run_gate(project("journal", ex)), 1)
 
+    def test_used_commons_title_points_to_media_id(self):
+        d = project("journal", {**GOOD, "commons": {"queries": ["Hooke cork"], "used": ["File:Cork.jpg"]}})
+        (d / "manifests" / "media.json").write_text(json.dumps(
+            {"items": [{"id": "cork", "commons": {"title": "File:Cork.jpg"}}]}), encoding="utf-8")
+        try:
+            hard, _, _ = vt.check(d)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+        self.assertTrue(any("填素材 id：cork" in h for h in hard), hard)
+
 
 def with_shots(d: Path, shots: list[dict]) -> Path:
     (d / "manifests" / "shots.resolved.json").write_text(json.dumps({"duration": 2100, "shots": shots}), encoding="utf-8")

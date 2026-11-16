@@ -264,9 +264,21 @@ def check(proj: Path) -> tuple[list[str], list[str], str]:
             ids = {e.get("id") for e in json.loads(media.read_text(encoding="utf-8")).get("items", [])}
         except ValueError:
             pass
+    titles: dict[str, str] = {}
+    if media.is_file():
+        try:
+            for e in json.loads(media.read_text(encoding="utf-8")).get("items", []):
+                ttl = (e.get("commons") or {}).get("title")
+                if ttl and e.get("id"):
+                    titles[ttl] = e["id"]
+        except ValueError:
+            pass
     for u in get(t, "commons.used") or []:
         if not placeholder(u) and u not in ids:
-            hard.append(f"commons.used 里的 {u} 不在 manifests/media.json —— 先 commons-search.py add")
+            if u in titles:
+                hard.append(f"commons.used 写的是 Commons 标题 {u} —— 这里填素材 id：{titles[u]}")
+            else:
+                hard.append(f"commons.used 里的 {u} 不在 manifests/media.json —— 先 commons-search.py add")
     # 软建议
     if soft_family:
         soft.append(soft_family)
