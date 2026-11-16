@@ -31,11 +31,8 @@
 
 ### 1. 要解决的问题
 
-早期版本的四个场景**结构同构**：`SceneContribute` / `SceneShip` / `SceneSkills` 三处近乎逐行相同
-（`Paper` + 涂鸦字 + 标题 + 编号列表 + 底部贴标），另有一整套 `*P` 竖屏复制品共 8 份（竖屏画布已删除）。
-**换内容不换结构 = 四个 PPT 页。** 这不是 AI 偷懒，是模板只给了这一种结构。
-
-解法不是加 157 张镜头卡（维护债 >> 收益），而是**四种构图本来就不同的骨架**。
+场景**结构同构**（`Paper` + 标题 + 编号列表 + 底部贴标，逐镜只换字）= 一串 PPT 页；根因是模板只给了一种结构。
+解法不是堆镜头卡（维护债 >> 收益），而是**四种构图本来就不同的骨架**。
 
 ### 2. 四种骨架
 
@@ -62,10 +59,8 @@
 3. **能装东西**：`header` / `main` / `rail` / `stamp` 四个命名槽。
 4. **把 main 槽填满**：`main` 槽拿走的是 `h − pad×2 − header − stamp` 之后的**全部剩余高度**，
    所以槽里的内容要自己撑满它——外层给 `height:'100%'`，内部再按 `mainH` 分栏或按拍数分块，
-   **不要只放一行标题**。实测过一镜：`StageFrame` 给足了 428px 的槽（画布 1080 的 39.6%），
-   调用方只在槽里放了一行字（47px），占用 11%，整块读成「一张空纸 + 一行标题」——
-   槽是给够的，占不占得住由**槽里的内容**决定。目标 ≥60%，`SlotGuard` 会在出图路径上
-   把占用率打进日志（<35% 出声），拿这个数字自查，别目测。
+   **不要只放一行标题**（槽给足了、内容只有一行，读成「一张空纸 + 一行标题」）。占用目标 ≥60%，
+   `SlotGuard` 在出图路径上把占用率打进日志（<35% 出声），拿这个数字自查，别目测。
 
 ```tsx
 const phases = [
@@ -91,7 +86,7 @@ const phases = [
 
 **`PhaseRail` 要把状态机显式画出来**——观众能看见主体在推进，这是"主线演化"和"卡片轮播"在观感上的分水岭。
 
-**"附着信息"用贴标做**（Attach 已删除，改用 `PillTag` / `StampBanner` / `Callout`）：原本要新开一张说明卡的，改成挂在主体附近的贴标。
+**"附着信息"用贴标做**（`PillTag` / `StampBanner` / `Callout`）：原本要新开一张说明卡的，改成挂在主体附近的贴标。
 只有"主体装不下的、且与主体无物理关系的信息"才允许独立成卡。
 
 ### 3.5 时序铁律：讲到哪，出现到哪
@@ -152,7 +147,7 @@ items.map((x, i) => <项 style={enterAt(f, at(2) + i * 12)} />)  // 同句内相
 | `camera` / `anchor` | 镜头配方与必须可见矩形 | `validate-shot-motion` |
 | `chapter` | 章节归属（运镜配额按章统计） | `validate-shot-motion` |
 | `zones` | 功能分区数（3–5） | `validate-composition` |
-| `bottomFill` | 下 1/4 密度的**声明位**：`validate-composition` 只查这个字段**在不在**（缺字段=配置错误）；**"到底填满了没有"由渲染期 `FillGate` 实测**（量信息元素的最低边 vs y=876，量的是画面而不是声明）。⚠️ 2026-09-21 降级：这个字段的值由生成分镜表的脚本自己写死 `true`，所以"值 == true"这条判据结构上不可能失败（成片实测 17/21 镜下 1/4 是空的，它一次都没响） | `FillGate`（渲染期） |
+| `bottomFill` | 下 1/4 密度的**声明位**：`validate-composition` 只查这个字段**在不在**（缺字段=配置错误）；**"到底填满了没有"由渲染期 `FillGate` 实测**（信息元素最低边 vs y=876）；为什么不按值判见 [checks.md#composition-gate](checks.md#composition-gate) 的 P0-4 降级说明 | `FillGate`（渲染期） |
 | `contentBand` / `cover` | 内容带与背景装饰区的关系 | `validate-shot-motion` |
 | `transition` / `entry` | 转场与入场方式（多样性） | `validate-composition` |
 | `beats` | 状态变化帧（节奏判据） | `validate-composition` |
@@ -166,23 +161,20 @@ python scripts/resolve-shots.py PROJECT_DIR
 ```
 
 **边界规则**：`from` = 本镜首句 cue 的起始帧；`to` = **下一镜首句的起始帧**（末镜 = 末句结束 + `tail`）。
-由构造保证连续。
-
-**好处**：改一句台词 → 改 `narration.txt` 与语义字幕行 → 重跑 `resolve-shots`，
-所有帧号（含音效钉帧）自动跟着走。**不再手改几十处 `ease(l,95,130)`。**
+由构造保证连续。改一句台词 → 改 `narration.txt` 与语义字幕行 → 重跑 `resolve-shots`，所有帧号（含音效钉帧）自动跟着走，不手改帧号。
 
 ### 4.5 版式 `layout`
 
 骨架管「机制怎么演」，版式管「这一页长什么样」。分镜表每镜可写 `layout`（自由命名，如 `hero-number`、`chart-number`、
 `code-full`、`diff-split`、`rail`、`ring-tree`、`chart-metric`、`hero-verdict`）。相邻两镜都写了且相同 → `validate-composition.py` P0。
-建议每镜都写：它逼你在写分镜时就想清楚「这一镜和上一镜看起来哪里不一样」。镜头怎么动见 [camera.md#cinema-camera](camera.md#cinema-camera)。
+建议每镜都写，逼自己想清楚这一镜和上一镜哪里不一样。镜头怎么动见 [camera.md#cinema-camera](camera.md#cinema-camera)。
 
 ### 5. 添加新骨架的门槛
 
 新骨架必须：
 
 1. 构图与现有四种**明显不同**（同构图不算新骨架）；
-2. 在 `skeletons.tsx` 的 `SKELETONS` 里注册，并同步 `validate-composition.py` 的 `SKELETONS`（漂移现由 `validate-skill-consistency.py` 对这两处 `SKELETONS` 的交叉校验兜底，忘同步会在一致性门禁里红，不再只靠自觉）；
+2. 在 `skeletons.tsx` 的 `SKELETONS` 里注册，并同步 `validate-composition.py` 的 `SKELETONS`（`validate-skill-consistency.py` 交叉校验两处，忘同步会红）；
 3. 有「何时用 / 何时不用」的判据，写进本文件的表格；
 4. 在 `NotebookVideoShowcase` 的接触表里出现（让后续 AI 看得见）。
 
@@ -192,11 +184,8 @@ python scripts/resolve-shots.py PROJECT_DIR
 
 ## 场景编写说明书（照着抄，不要重新发明）
 
-> 这份文档是给**执行 AI** 的：本技能的用法是「强 AI 做出一版最好的成片 → 把它的结构与代码沉淀成模板
-> → 后续用任何（包括较弱的）AI 照着模板模仿，收敛到 95% 的水平」。
-> 所以**模板里的代码形状就是标准答案**；你的任务是**照抄结构、替换内容**，不是自由发挥。
->
-> 看不懂就想一句话：**结构别动，只换内容。** 需要换结构时，先读
+> 给**执行 AI**：模板是最好成片的结构沉淀，后续任何（含较弱的）AI 照抄才能收敛到同一水平，
+> 所以**模板里的代码形状就是标准答案**——**结构别动，只换内容**，不自由发挥。需要换结构时，先读
 > [scenes.md#scene-skeletons](scenes.md#scene-skeletons) 与 [checks.md#composition-gate](checks.md#composition-gate)。
 
 ---
@@ -206,7 +195,7 @@ python scripts/resolve-shots.py PROJECT_DIR
 - [0. 六步流程（顺序不要跳）](#0-六步流程顺序不要跳)
 - [1. 分镜表长什么样](#1-分镜表长什么样可直接改造)
 - [2. 场景代码的标准形状](#2-场景代码的标准形状照抄)
-- [3. 反复踩的十个坑](#3-反复踩的十个坑每个都是真金白银换的)
+- [3. 十二个坑](#3-十二个坑)
 - [4. 渲染前自检](#4-渲染前自检逐条打勾)
 - [5. 想做得更好时的顺序](#5-想做得更好时的顺序)
 
@@ -250,7 +239,7 @@ python scripts/resolve-shots.py PROJECT_DIR
 }
 ```
 
-- `cues: [起, 止]` 是**闭区间**；`from` = 首句起始帧，`to` = 下一镜首句起始帧（末镜 = 末句结束 + `tail`）。
+- `cues: [起, 止]` 是**闭区间**；`from/to` 的边界规则见 [§4](#4-分镜表唯一真源)。
 - **禁止**在分镜表里手写帧号。**禁止**手改 `src/shots.ts`（它带 AUTO-GENERATED 头）。
 - `beats` 覆盖每一句的起始帧即可；若某段超过 110 帧没有变化，解析器会提醒你补拍。
 
@@ -313,12 +302,9 @@ mainW = w − pad×2 − (rail ? railW + 18 : 0)
 mainH = h − pad×2 − headH − stampH − (stamp ? 14 : 0) − (header ? 14 : 0)
 ```
 
-`StageFrame` 会把这两个值算好，并用 `SlotGuard` 在**出图路径**上实测 main 槽的**占用率**（槽里有内容的
-最内层元素的高度并集 ÷ 槽高），占用 <35% 会在控制台打警告并连槽的 `mainW×mainH` 一起报出来。
-所以两件事都要做：① 给 `ConsoleWindow` / `SkeletonCard` / `MetricGrid` 传 `w` 之前，**先算 `mainW`**，
-不要凭感觉写整数；② 槽里的内容要**撑满 `mainH`**（外层 `height:'100%'`，内部再按 `mainH` 分栏/分拍），
-不要只放一行字——实测过一镜：槽给足 428px（画布 1080 的 39.6%），内容只有一行 47px，占用 11%。
-判据与做法见 [scenes.md#scene-skeletons](scenes.md#scene-skeletons) §3 第 4 条。
+`StageFrame` 算好这两个值，`SlotGuard` 在**出图路径**上实测 main 槽**占用率**（槽内有内容的最内层元素高度并集 ÷ 槽高），
+<35% 在控制台警告并报出 `mainW×mainH`。两件事都要做：① 给 `ConsoleWindow` / `SkeletonCard` / `MetricGrid` 传 `w` 前**先算 `mainW`**，
+不凭感觉写整数；② 内容**撑满 `mainH`**，不要只放一行字——见 [§3 第 4 条](#3-stage-的写法活体主体)。
 
 #### 三个必须遵守的写法
 
@@ -330,7 +316,7 @@ mainH = h − pad×2 − headH − stampH − (stamp ? 14 : 0) − (header ? 14 
 
 ---
 
-### 3. 反复踩的十个坑（每个都是真金白银换的）
+### 3. 十二个坑
 
 | # | 症状 | 真因 | 修法 |
 |---|---|---|---|
@@ -339,12 +325,12 @@ mainH = h − pad×2 − headH − stampH − (stamp ? 14 : 0) − (header ? 14 
 | 3 | 一屏字叠成一团 | 文档流标题 + 绝对定位组件都从容器原点起 | 给组件显式 `y`，或把标题绝对定位 |
 | 4 | 整镜内容发灰/半透明 | 底托用了**正 z-index**，压住所有 `z-index:auto` 的场景元素 | 底托 `z={-1}` |
 | 5 | 画面下沿一条硬缝 | 底托是硬边矩形 | 径向羽化 + 去掉描边环 |
-| 6 | 字幕被裁切却没人报错 | `CaptionFitGate` 曾硬编码 16:9 的字号/安全宽 | 已修：按当前画布与主题实测（**修好后会更严格，会拦下以前静默放行的字幕**） |
+| 6 | 字幕被裁切 | 字幕超出安全宽 | `CaptionFitGate` 按当前画布与主题的真实字号/安全宽实测并拦下；照报错改字幕 |
 | 7 | **给槽内组件传的宽度超过了槽的可用宽**，不透明组件压住右侧轨道文字 | 没算 `mainW = w − pad×2 − railW − 18`，凭感觉写 `w=1060` 而实际只有 1035 | 先算 `mainW/mainH` 再传宽度；`StageFrame` 内建 `SlotGuard` 会在控制台警告超宽（见 §2 下方） |
 | 8 | 两个不同信息互相压字（门禁报 `OverlapGate`） | 真的重叠 | 按 §4 自检逐条修；**只有**"同一信息在同位置替换"和"镜头交接"才允许用 `data-gate-allow` 白名单 |
-| 9 | **多张卡片精确叠在同一点**，文字互相穿刺（实测：S12 四张事实卡全叠在一起） | flex 子项**只含绝对定位子元素**时没有在流内容，宽度塌成 0 → 四张 248px 宽的卡被 `gap:20` 排到 x=0/20/40/60 | 给这类 wrapper **显式 `width` + `height`**，或不要包一层、直接把宽高给卡片本身；`OverlapGate` 会报这种重叠 |
-| 10 | 卡片最后一行被裁掉一截 | `FitCard` 的高度是手写的，比内容矮（实测矮 25px），叠加 `overflow:hidden` 后文字被切 | 高度用 `fitH(rows, padTop, padBottom)` 算；渲染期 `CardFitGate` 用 `scrollHeight > clientHeight` 拦真裁切（容差 6px，吸收行盒取整） |
-| 11 | **场景标题/顶层卡片与左上角章节卡撞车**（实测：多镜标题在 y=120 发生遮挡） | 全局 `Chrome` 章节卡占用 `x: 92..484, y: 74..164`；独立元素写在 `top: 100~140` 发生物理重叠 | 场景标题放入 `StageFrame` 内由槽统一管理，或独立元素保持 `y >= 170`；`coords-lint.py` 会对 `y < 170` 报警 |
+| 9 | **多张卡片精确叠在同一点**，文字互相穿刺 | flex 子项**只含绝对定位子元素**时没有在流内容，宽度塌成 0 → 四张 248px 宽的卡被 `gap:20` 排到 x=0/20/40/60 | 给这类 wrapper **显式 `width` + `height`**，或不要包一层、直接把宽高给卡片本身；`OverlapGate` 会报这种重叠 |
+| 10 | 卡片最后一行被裁掉一截 | `FitCard` 的高度是手写的，比内容矮，叠加 `overflow:hidden` 后文字被切 | 高度用 `fitH(rows, padTop, padBottom)` 算；渲染期 `CardFitGate` 用 `scrollHeight > clientHeight` 拦真裁切（容差 6px，吸收行盒取整） |
+| 11 | **场景标题/顶层卡片与左上角章节卡撞车** | 全局 `Chrome` 章节卡占用 `x: 92..484, y: 74..164`；独立元素写在 `top: 100~140` 发生物理重叠 | 场景标题放入 `StageFrame` 内由槽统一管理，或独立元素保持 `y >= 170`；`coords-lint.py` 会对 `y < 170` 报警 |
 | 12 | **卡片/文字满屏瞬间全出，退化成 PPT** | 场景内多个子项、对比条或对话的 `start` 全部写死为 `0` 或同一帧 | **台词节拍阶梯涌现（铁律）**：必须强绑定 `beats`（`start={at(i)}`），随旁白语流逐项点亮与打字吐字 |
 
 ---
@@ -384,13 +370,9 @@ system, not a visual prompt: Remotion is the only renderer, the **composition an
 in code, and every animation is a pure function of the frame number. The established style must be
 reproducible by any AI in any environment — no image-generation model required.
 
-**What "no model dependency" means — and what it does not mean.** The line above bans **paid generative
-models** (image/video generation APIs) from the default route: they cost money per call and return a
-different picture every time, so the style cannot be reproduced. It does **not** ban open-source
-libraries. Free, lock-file-pinned React packages are expected to be reused directly rather than
-re-implemented — see [technique.md#dependency-policy](technique.md#dependency-policy). Hand-writing every UI
-element from scratch is not a goal; it is the slowest way to a worse result. `assets/lecture-template`
-ships a wrapped component layer under `src/components/` — reach for it before writing new SVG.
+**"No model dependency" bans paid generative models** (pay per call, a different picture every time), **not
+open-source libraries**: reuse free, lock-file-pinned React packages and the wrapped layer in `src/components/`
+before writing new SVG — see [technique.md#dependency-policy](technique.md#dependency-policy).
 
 **The film must not look like a slide deck.** That is enforced structurally and by gates, not by taste:
 four different scene skeletons with no adjacent repeats, at least three visual media per film, at least
@@ -465,21 +447,16 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./notebook-video-proje
 node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser ./notebook-video-project
 ```
 
-- `assets/lecture-template` is the only project template (the old `--classic` warm-ivory example is gone;
-  the flag now fails with a pointer to `--style`).
+- `assets/lecture-template` is the only project template (`--classic` fails with a pointer to `--style`).
 - Five skins, chosen once at kickoff: `flat` (default) and `cel` are the component themes;
   `journal` / `papercut` / `archive` are the hand-made skins driven by the director layer.
   Themes swap palette, card skin, background decoration and subtitle chrome only — every
   coordinate, type scale, motion contract and gate is shared.
-- **Text-safety colours (`*Ink`).** Every accent ships as a pair: the original (`blue`, `orange`,
-  `green`, `gold`, `red`) and a WCAG-derived ink variant (`blueInk`, `orangeInk`, …) for the same hue.
-  Fills and strokes keep the original; **text (`color:`) always uses the ink variant** — the original
-  reads 2–3:1 on the card surface, well under the 4.5:1 that body text needs. `validate-presentation.py` enforces
-  both halves (inks must pass, and any palette key used as `color:` is measured), and `headerAccent` /
-  `headerSub` count as text positions too. Details: [references/themes/system.md](themes/system.md).
+- **Text-safety colours (`*Ink`).** Fills and strokes keep the original accent; **text (`color:`) always uses
+  the `*Ink` variant** (the original reads 2–3:1, under the 4.5:1 body text needs). Rule and gate:
+  [references/themes/system.md](themes/system.md)「文字安全色」.
 - One locked canvas at native 30 fps: 2560×1440 (16:9), authored in the 1920×1080 design space.
-  4:3 / 3:4 canvases and the `paper` / `sticker` skins were removed; projects made with
-  them are not supported.
+  4:3 / 3:4 canvases and the `paper` / `sticker` skins are not supported.
 - Create the project in an empty directory so stale files from an earlier run cannot survive.
 
 ### Production workflow
@@ -531,9 +508,9 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" review-frames ./notebook-video-pro
 | `CaptionFitGate` | render | caption wider than the safe width, measured with the **current canvas and skin's real weight/spacing** | yes |
 | `CardFitGate` | render | content taller/wider than its card (`scrollHeight > clientHeight`, 6px tolerance; clips only), waits for fonts, logs coverage every 5s | yes |
 | `OverlapGate` | render (15-frame grid **+ every shot boundary, beat and camera keyframe**) | text-vs-text overlap and paint-order occlusion using real glyph rects; gradient backgrounds count as opaque; header layer (z=140) included | `mode="block"` in the bundled films |
-| `ClippingGate` | render (same sampling as `OverlapGate`) | **图形被裁**：SVG/图形元素的真实 rect 越出最近的"会裁切"祖先（HTML 的 `overflow≠visible` 祖先，或所属 `<svg>` 视口；显式 `overflow:visible` 的 svg 按计算样式判、不算越界）——`CardFitGate` 只管 div/span 里的文字、`OverlapGate` 只管文字互相压，两者都看不见"缺了半边的球"（实测 S19 走廊圆心算在 x=0，左半边被 svg 视口裁掉，零报错） | `mode="block"` in the bundled films |
-| `CanvasBoundsGate` | render (every frame) | **含文字的叶元素**（HTML 叶 + SVG `text`/`tspan`）的**墨迹矩形**（`Range` 取字）越出 composition 视口：≥6px 出声、落定态（有效不透明度 ≥0.98）≥20px 硬拦。v2 只判这一半——**图形 / 版面件那半边与 `ClippingGate` 会在同一批元素上重复报，已砍**；砍掉的复杂度（设计坐标回折、`z≥140` 排除、按帧抽样）与代价写在件头注释里。**这是此前四道渲染期门禁都不管的一类**：`ClippingGate` 只认 SVG 图元、`CardFitGate` 只管卡片内溢出、`OverlapGate` 管互相压、`FillGate` 管铺到多低，构建期 `coords-lint.py` 又把 `Corridor`/`ZoomStage`/`StageFrame` 这类布局件排除在外 —— 接触表第 ⑥ 页「按 Flash 结算」被画布右缘裁成「按 Flash 结」就是这么漏过去的。判据见 [references/checks.md#composition-gate](checks.md#composition-gate) §5.2 | `mode="warn"` in the bundled film / `mode="block"` on the contact sheet (deliberately different gears; reasons in `index.tsx` and the gate's header) |
-| `FillGate` | render (same sampling) | **下 1/4 实测密度**：信息元素（有文字/有边框/有描边）rect 并集的最低边 vs y=876（±24 容差），z≥140 的子树跳过。这是 P0-4 的**真实判据**——构建期只查 `bottomFill` 字段在不在（那个字段是生成器自己写死的 `true`，值判据结构上不可能失败） | warn（观感线；"画错了"那三类才硬拦） |
+| `ClippingGate` | render (same sampling as `OverlapGate`) | **图形被裁**：SVG/图形元素的真实 rect 越出最近的"会裁切"祖先（HTML 的 `overflow≠visible` 祖先，或所属 `<svg>` 视口；显式 `overflow:visible` 的 svg 按计算样式判、不算越界）——`CardFitGate` / `OverlapGate` 只看文字，看不见"缺了半边的图形" | `mode="block"` in the bundled films |
+| `CanvasBoundsGate` | render (every frame) | **含文字的叶元素**（HTML 叶 + SVG `text`/`tspan`）的**墨迹矩形**（`Range` 取字）越出 composition 视口：≥6px 出声、落定态（有效不透明度 ≥0.98）≥20px 硬拦；不判图形 / 版面件（归 `ClippingGate`，避免同一元素重复报）。补的是其它渲染期门禁与 `coords-lint.py`（排除布局件）都不管的「文字被画布边缘裁掉」。判据见 [references/checks.md#composition-gate](checks.md#composition-gate) §5.2 | `mode="warn"` in the bundled film / `mode="block"` on the contact sheet (deliberately different gears; reasons in `index.tsx` and the gate's header) |
+| `FillGate` | render (same sampling) | **下 1/4 实测密度**：信息元素（有文字/有边框/有描边）rect 并集的最低边 vs y=876（±24 容差），z≥140 的子树跳过。这是 P0-4 的**真实判据**（构建期只查 `bottomFill` 字段在不在） | warn（观感线；"画错了"那三类才硬拦） |
 | `SlotGuard` | render (output path, inside `StageFrame`) | **fill of the main slot**: union height of the innermost content elements ÷ slot height; speaks up below 35% and prints the slot's `mainW×mainH` — catches "slot was big enough, content left it empty" (measured: a 428px slot used 11%) | warn |
 | `validate-motion-gaps.py` | **post-render (T3, needs the MP4)** | **画面真的没动**：ffmpeg `freezedetect` 逐帧比对，连续"几乎完全相同"超过阈值（默认按镜长比例）即 P0。⚠️ 必须先裁掉字幕带，否则逐字上屏的字幕会把每一段静止都遮掉 | yes (P0) |
 
@@ -563,19 +540,12 @@ stacking, unregistered rasters, or generated text baked into imagery.
 
 ### Execution discipline and safety (Zero-Mutation 原则)
 
-执行纪律与安全约束（Zero-Mutation 原则）：脚本检测与视觉审查恪守纯只读排查原则，绝不擅自变动系统配置；对于完整渲染（render）或引擎级重构等治理对策，须用户明确授权后方可执行。
+脚本检测与视觉审查只读排查，绝不擅自变动系统配置；完整渲染（render）或引擎级重构须用户明确授权后方可执行。
 
-**依赖分两种，纪律完全不同（这是本技能最容易被读错的一条）：**
+**依赖分两种（最容易读错的一条）**：模板**已内置**的（`assets/lecture-template/package.json` 已声明）随 `npm install` 装好，**无需授权，直接 `import`**；清单之外的**新**依赖需用户明确授权后才能加进模板。
+内置清单与边界见 [technique.md#dependency-policy](technique.md#dependency-policy)：**禁的是"按次付费、结果不可复现"的生成式模型，不是开源库。**
 
-| 情况 | 纪律 |
-|---|---|
-| 模板**已内置**的依赖（`assets/lecture-template/package.json` 已声明的） | **随 `npm install` 一次装好，无需任何额外授权，直接 `import` 使用。** 含 Shiki（代码高亮）、lucide-react + simple-icons（图标）、jsdiff（补丁）、flubber（形状变形）、@visx/axis·grid·shape（图表轴与形状）、d3-scale/d3-shape，以及五个 `@remotion/*` 官方扩展（transitions / paths / shapes / layout-utils / noise） |
-| 清单之外的**新**依赖 | 需用户明确授权后才能加进模板 |
-
-判断边界见 [technique.md#dependency-policy](technique.md#dependency-policy)：**禁的是"按次付费、结果不可复现"的生成式模型，不是开源库。**
-
-`scripts/*.py` 严格基于 Python 3.10+ **标准库**实现，**零第三方依赖**（standard library only, zero third-party
-dependencies）——这条限定**只针对 `scripts/` 下的 Python 脚本**，不是对整个技能的约束。不要在本技能里写入实验性改动，直到用户看过渲染成片并明确批准。
+`scripts/*.py` 只用 Python 3.10+ **标准库**、**零第三方依赖**——这条**只针对 `scripts/` 下的 Python 脚本**，不是对整个技能的约束。不要在本技能里写入实验性改动，直到用户看过渲染成片并明确批准。
 
 ### Scripts 清单（`.sh` / `.cmd` 都是同一套 Node 实现的平台包装器，行为完全一致）
 
@@ -612,30 +582,17 @@ python "<SKILL_DIR>/scripts/selftest.py"
 Good fixtures must pass and each broken fixture (protected phrase split across cues, mismatched caption
 sync, non-video input) must be rejected by the matching gate.
 
-For the build-time gates, run the negative spot-check — it feeds its fixture family to the gates (a shot table whose anchor leaves the frame, a pan beyond the zoom budget, adjacent scenes sharing a
-skeleton, a shot with no live component, a timeline gap, a faked `live`/media name, a camera move that never
-moves, a frame-prop typo in the fxkit layer and in the components layer, a beat that spoils its line, a beat
-pointing at another shot's cue, a beat landing too late for its line, a beat legal but flush against that
-tolerance, a caption read too fast, a font below the floor, body text the same colour as the paper, a text
-colour that misses 4.5:1, a beat index past the end in all three spellings, imports of names that no longer
-exist, a doc naming a component that does not exist, a canvas-bounds gate whose wiring was cut, whose gears
-were "unified" or whose judgement was widened back, four `evidence` fixtures — one naming a widget that is not
-in the scene source at all, one naming a widget only another shot uses (a **known miss**: it must pass), one
-that only appears in a comment, and the untouched template with scene sources — and three narrative-`move`
-run fixtures), the layering contract violated both ways, a visual plan with an invalid mode or an
-uncovered frame gap — plus one whose film composition declares no numeric width inline (the check must
-refuse to borrow a width from another composition rather than silently pass), an inaudible sfx mix and a corrupt audio file (a failed measurement must hard-fail
-the gate, not pass), a skill copy with the removed example project put back, a scene source whose shot functions
-cannot be found — paired with one pinning that the bare `FC<` spelling of every shot function must pass —
-a stale resolved timeline, a match-timing mismatch fed under `python -O` (guards must never be plain
-`assert`s), and the
-canvas-mode dual-source cross-check where `canvas.ts` drifts away from the validator that pairs with it
-(other shared numbers — FPS, caption cap, reading speed, stage, zoom caps, grow timing — live once in
-`assets/lecture-template/src/contract.json`, read by both TS and Python, so they cannot drift), three camera-default fixtures (omitted `rotY` and
-omitted `to` must resolve to the documented values, while an explicit `from == to` zero-move must still be
-blocked), and a BudouX-less delivery) plus negative controls, and
-asserts each gate blocks, warns or passes as expected — 65 fixtures / 112 assertions (run the script — it
-prints its own tally), and every blocking fixture pins the expected message substring, so "failed for some
+For the build-time gates, run the negative spot-check: it feeds each gate fixtures it must catch (anchor out of
+frame, pan over budget, adjacent same skeleton, no live component, timeline gap, faked `live`/media names, a
+camera move that never moves, frame-prop typos, mistimed or out-of-range beats, too-fast captions, fonts below the
+floor, low-contrast text, stale imports and doc names, a weakened canvas-bounds gate, `evidence` and narrative-`move`
+fixtures, layering and visual-plan violations, inaudible or corrupt audio, the removed example project put back,
+a stale resolved timeline, camera defaults, a BudouX-less delivery, canvas-mode drift) plus negative controls, and
+asserts each gate blocks, warns or passes as expected — 65 fixtures / 112 assertions (the script prints its own tally).
+Rules these fixtures pin: a failed measurement must hard-fail the gate, not pass; a width is never borrowed from
+another composition; guards must never be plain `assert`s (they must survive `python -O`); shared numbers (FPS,
+caption cap, reading speed, stage, zoom caps, grow timing) live once in `assets/lecture-template/src/contract.json`,
+read by both TS and Python; and every blocking fixture pins the expected message substring, so "failed for some
 other reason" cannot pass as a blocked fixture.
 **A gate that exists in name only is the most dangerous defect.**
 
@@ -649,9 +606,7 @@ python "<SKILL_DIR>/scripts/negative-gate-check.py"
 
 ### Decompose by motion ownership
 
-If two visible things enter, move, rotate, hide, light or exit at different frames, model them as separate React components or SVG groups.
-
-Good parts include character body/arms, folder back/front, each card, each wire, buttons, status lights and badges. A flattened finished scene cut into rectangles is not independent modeling.
+If two visible things enter, move, rotate, hide, light or exit at different frames, model them as separate React components or SVG groups (body/arms, folder back/front, each card, wire, button, status light, badge). A flattened scene cut into rectangles is not independent modeling.
 
 ### Manifest fields
 
@@ -717,70 +672,48 @@ Register each used raster in `manifests/visual-assets.json`. Treat the bitmap, e
 
 ### Skeletons, media and camera
 
-The six rules below describe the visual language. Three further layers decide **how a scene is framed
-and what medium it uses**, and they are enforced by machine gates:
+Besides the six rules, three gated layers decide framing and medium (checked by `validate-composition.py` /
+`validate-shot-motion.py`; read [checks.md#composition-gate](checks.md#composition-gate) before rendering):
 
-1. **Skeletons** — pick one of `Stage` (one subject evolving through 3–6 states), `Corridor` (a
-   persistent object travelling a shared track), `Split` (two columns compared) or `Zoom`
-   (whole → focus → annotate → back). Adjacent scenes must not share a skeleton and the film must use
-   at least three. See [scenes.md#scene-skeletons](scenes.md#scene-skeletons).
-2. **Media** — every scene must answer "what medium does this passage use" before "which card".
-   At least three distinct media per film, and at least one live component per explanation scene.
-   Pure card-and-bullets scenes are rejected. See [media.md#media-routing](media.md#media-routing).
+1. **Skeletons** — `Stage` / `Corridor` / `Split` / `Zoom`; no adjacent repeat, ≥3 per film. See [scenes.md#scene-skeletons](scenes.md#scene-skeletons).
+2. **Media** — answer "what medium" before "which card": ≥3 media per film, ≥1 live component per explanation
+   scene; pure card-and-bullets scenes are rejected. See [media.md#media-routing](media.md#media-routing).
 3. **Camera** — one intent per shot plus a provably-visible `anchor`, ≥3 moves per chapter. See
    [camera.md#shot-language](camera.md#shot-language).
 
-All three are checked by `scripts/validate-composition.py` and `scripts/validate-shot-motion.py`;
-read [checks.md#composition-gate](checks.md#composition-gate) before rendering.
-
-This is the default visual route for every notebook video. It is pure
-code-drawn SVG plus rich synchronized text, so it works in every
-environment and never depends on an image-generation model. Follow the
-steps mechanically; the template already contains a working example of
-every pattern named here.
-
-The skill does not call image models. When a concrete hero scene needs a
-real image, take it from the user, Wikimedia Commons / Openverse or another
-licensed source and follow `director.md#visual-director` for that subset of
-scenes; otherwise produce everything below with SVG only.
+This is the default visual route: pure code-drawn SVG plus synchronized text, no image model. Follow the steps
+mechanically; the template has a working example of every pattern. When a concrete hero scene needs a real image,
+take it from the user, Wikimedia Commons / Openverse or another licensed source and follow
+`director.md#visual-director` for those scenes only.
 
 ### The six rules
 
 #### 1. Pure code-drawn graphics
 
-Every visual object — mascot, diagram, machine, chart, arrow — is SVG
-written by hand inside the Remotion component tree. No bitmap is required.
-Benefits you must exploit: strokes can grow (`strokeDasharray` +
-`strokeDashoffset`), parts can move independently, and colors always match
-the locked palette. Copy `LineIcon`, `ShapeDraw`, `PathDraw`-style
-components from the template instead of inventing new drawing styles.
+Every visual object (mascot, diagram, machine, chart, arrow) is SVG in the Remotion tree; no bitmap is required.
+Exploit it: strokes grow (`strokeDasharray` + `strokeDashoffset`), parts move independently, colors match the
+locked palette. Copy `LineIcon`, `ShapeDraw`, `PathDraw`-style components instead of inventing new drawing styles.
 
 #### 2. Multi-zone layout
 
-A scene is not one hero object. Split the 1920×1080 design canvas into
-3–5 functional zones, for example:
+A scene is not one hero object. Split the 1920×1080 design canvas into 3–5 functional zones, for example:
 
 - left: explanation panel (`Paper` with a WenKai title + body copy);
 - right or center: the graphic demonstration area;
 - bottom or side: a progressive checklist or comparison cards;
 - floating: small annotation tags that appear on cue.
 
-Keep the locked density budget: **each zone runs one main action at a
-time**, unrelated cards stay ≥70px apart, and only one temporary transfer
-object crosses the central corridor at once. Multi-zone means parallel
-zones, never parallel actions inside one zone.
+Locked density budget: **each zone runs one main action at a time**, unrelated cards stay ≥70px apart, and only
+one temporary transfer object crosses the central corridor at once — parallel zones, never parallel actions in one zone.
 
 #### 3. Text and graphics are co-stars
 
-Text is not a caption garnish. Pair every graphic demonstration with
-readable text that carries the same knowledge: checklists that tick item
-by item, good/bad comparison cards, warning strips, step tags. The
-viewer should be able to learn from the text alone or the animation alone.
+Pair every graphic demonstration with readable text carrying the same knowledge (ticking checklists, good/bad
+cards, warning strips, step tags); the viewer should learn from the text alone or the animation alone.
 
 #### 4. Frame-accurate speech sync
 
-Every appearance frame comes from the caption cue table, never from
-guessing. Mechanical procedure:
+Every appearance frame comes from the caption cue table, never from guessing:
 
 1. Run the TTS adapter, then `build-semantic-captions`, producing
    `manifests/caption-cues.json`.
@@ -790,85 +723,57 @@ guessing. Mechanical procedure:
    python -c "import json; d=json.load(open('manifests/caption-cues.json',encoding='utf-8'))['cues']; [print(i+1, round(c['start_ms']*30/1000), round(c['speech_end_ms']*30/1000), c['text'][:16]) for i,c in enumerate(d)]"
    ```
 
-3. Scene boundary = start frame of the first cue of each narration
-   paragraph (the chapter-segmented adapter also writes
-   `manifests/chapters.json` with exact chapter frames).
-4. Element appearance frame = start frame of the line that speaks about it,
-   minus the scene start frame (scenes use local frames `l`).
-5. A checklist item lights up on the cue that says it; a lamp turns red on
-   the cue that says "red"; a version digit brightens on the cue that names
-   it. Speak it, then show it — never earlier than the previous cue.
+3. Scene boundary = start frame of the first cue of each narration paragraph (the chapter-segmented adapter
+   also writes `manifests/chapters.json` with exact chapter frames).
+4. Element appearance frame = start frame of the line that speaks about it, minus the scene start frame
+   (scenes use local frames `l`).
+5. A checklist item lights up on the cue that says it (a lamp turns red on "red"). Speak it, then show it —
+   never earlier than the previous cue.
 
 #### 5. Demonstrative animation
 
-Animations must carry knowledge, not just decorate entries:
-
-- a persistent task card travels a shared track and changes state at each
-  station (process explanations);
-- a card is copied/flies from one owner to another (fork, transfer, push);
-- one line inside a log panel highlights (locating an error);
-- gauges fill, digits light up positionally, growth chains light level by
-  level (states and quantities).
-
-Entries/exits still use the restrained `pop`/`ease` helpers; the knowledge
-payload lives in what the object does between them.
+Animations must carry knowledge, not just decorate entries: a task card travels a shared track and changes state
+at each station (process); a card flies from one owner to another (fork, transfer, push); one log line highlights
+(locating an error); gauges fill, digits light positionally, growth chains light level by level (quantities).
+Entries/exits stay restrained; the knowledge lives in what the object does between them.
 
 #### 6. Series component reuse
 
-One channel, one visual IP. Reuse the same mascot, paper cards, badges and
-list patterns across every episode of a series, and cross-reference
-episodes in the closing scene. New graphics become reusable components
-written next to the existing ones, in the same stroke and palette style.
+One channel, one visual IP: reuse the same mascot, paper cards, badges and list patterns across a series and
+cross-reference episodes in the closing scene. New graphics become reusable components next to the existing ones,
+in the same stroke and palette style.
 
 ### Working the template
 
-`new-project` copies `assets/lecture-template`, a fully validated
-900-frame film that demonstrates every rule. The source file is layered:
+`new-project` copies `assets/lecture-template`, a fully validated 900-frame film that demonstrates every rule. The source is layered:
 
-- **LOCKED layer** — aesthetic core, subtitle, background, chrome, gates:
-  never edit.
-- **Component library** — `Paper`, `LineIcon`, `CheckBadge`,
-  rails, gauges: reuse directly, extend by imitation.
-- **Content layer** — `COPY`, scene boundaries, `Scene*` components,
-  `Sound` frame lists: rewrite this layer for a new topic.
+- **LOCKED layer** — aesthetic core, subtitle, background, chrome, gates: never edit.
+- **Component library** — `Paper`, `LineIcon`, `CheckBadge`, rails, gauges: reuse directly, extend by imitation.
+- **Content layer** — `COPY`, scene boundaries, `Scene*` components, `Sound` frame lists: rewrite for a new topic.
 
-To change duration, follow the duration-extension invariant in
-`technique.md#remotion-architecture` and update
+To change duration, follow the duration-extension invariant in `technique.md#remotion-architecture` and update
 `DURATION`, the scene guards and `manifests/asset-manifest.json` together.
 
 ### Self-check before rendering
 
 Answer every question with yes; fix the scene otherwise.
 
-1. Does every scene have at least three populated zones (except a
-   deliberate title/CTA scene)?
-2. Can every animation start frame be traced to a specific cue line?
-3. Is the bitmap count zero on this route (`visual-assets.json` assets
-   empty), unless the user explicitly accepted the image add-on?
-4. Does each zone run only one main action at a time, with ≥70px
-   separation between unrelated cards?
-5. Does at least one animation per explanatory scene demonstrate the
-   mechanism (transfer, highlight, fill, state change) rather than only
-   entering?
-6. Do checklists tick exactly when their line is spoken?
-7. Did the standard QA battery pass (`validate-visual-plan`,
-   `validate-layering`, `validate-caption-sync`,
-   `validate-semantic-breaks`, `validate-video`)?
-8. Is all reading text pure ink (`C.ink`)? The muted tone is reserved
-   for decorative kickers and struck-through contrast words; body copy
-   in muted gray fails on phone screens.
-9. Do content cards extend down to about 40px above the subtitle strip
-   (bottom edge near y=876 in the 1080 design space)? A film whose
-   lower quarter stays empty wastes exactly the area phones show
-   largest.
-10. Does every SVG element keep at least 24px clearance from its
-    neighbors, with no text label sitting on top of a graphic?
+1. Every scene has ≥3 populated zones (except a deliberate title/CTA scene)?
+2. Every animation start frame traces to a specific cue line?
+3. Bitmap count is zero on this route (`visual-assets.json` assets empty), unless the user explicitly accepted the image add-on?
+4. Each zone runs one main action at a time, ≥70px between unrelated cards?
+5. ≥1 animation per explanatory scene demonstrates the mechanism (transfer, highlight, fill, state change), not just an entry?
+6. Checklists tick exactly when their line is spoken?
+7. Standard QA battery passed (`validate-visual-plan`, `validate-layering`, `validate-caption-sync`, `validate-semantic-breaks`, `validate-video`)?
+8. All reading text is pure ink (`C.ink`)? Muted is only for decorative kickers and struck-through contrast words; muted body copy fails on phones.
+9. Content cards reach about 40px above the subtitle strip (bottom edge near y=876 in the 1080 design space)? An empty lower quarter wastes the area phones show largest.
+10. Every SVG element keeps ≥24px clearance from its neighbors, with no text label on top of a graphic?
 
 <a id="canvas-modes"></a>
 
 ## Canvas: 16:9 only
 
-本技能只有**一种**交付画布：16:9。4:3 与 3:4 竖屏（以及 `Film4x3` / `Film3x4`、对应背景图与门禁分支）已全部删除，不再支持。
+本技能只有**一种**交付画布：16:9。不支持 4:3 与 3:4（`Film4x3` / `Film3x4` 及其背景、门禁分支均不存在）。
 
 ### Spec
 
@@ -884,13 +789,13 @@ Answer every question with yes; fix the scene otherwise.
 | Usable content width | ~1700 |
 | Column layout | two columns |
 
-These are contract values. They live in `assets/lecture-template/src/theme/canvas.ts` (`MODES['16:9']`) and in `scripts/validate-visual-plan.py` (`CANVAS_MODES[2560]`); `validate-skill-consistency.py` cross-checks the two. Each skin's `SubtitleChrome` has its own render-time `bottom` (`cel` 44 / `flat` 40); the classic example project hard-codes `bottom:18`.
+These are contract values. They live in `assets/lecture-template/src/theme/canvas.ts` (`MODES['16:9']`) and in `scripts/validate-visual-plan.py` (`CANVAS_MODES[2560]`); `validate-skill-consistency.py` cross-checks the two. Each skin's `SubtitleChrome` has its own render-time `bottom` (`cel` 44 / `flat` 40).
 
 `validate-visual-plan` rejects any `NotebookVideoFilm` Composition width other than 2560, and `validate-video` accepts only 2560×1440 containers.
 
 ### Mobile readability type floor
 
-Small text is the main reason films look blurry on phones. Titles and the subtitle are already large enough; the floor below raises only the small tiers:
+Small text is the main reason films look blurry on phones; the floor raises only the small tiers:
 
 ```text
 bodyL:26  bodyM:24  bodyS:23
@@ -902,15 +807,15 @@ Never author content text below 16px design size; if a note only fits below that
 
 ### Full-canvas vertical budget
 
-Content must use the full height between the chapter chrome and the subtitle strip: card tops start near y=190 and card bottoms reach about y=876 (40px of breathing room above the strip). An empty lower quarter is a layout defect, not negative space. Bottom-anchored conclusion strips inside each card are the standard way to consume that height.
+Use the full height between chapter chrome and subtitle strip: card tops near y=190, bottoms about y=876 (40px above the strip). An empty lower quarter is a layout defect, not negative space; bottom-anchored conclusion strips inside cards are the standard way to fill it.
 
 <a id="recipes"></a>
 
 ## 七个线稿配方（`recipe`）· 降级为可选
 
-> **先读这段再往下看。** 主线是 [components.md#journal-page](components.md#journal-page)：
-> **手账页承载（真图版 / 放大镜）+ 组件讲概念**。下面这七个配方把简笔线稿当解释图，
-> 实测在讲解视频里像剪贴画，**比不画更差**（`validate-fusion` 对这类镜头 >20% 报 P1）。
+> **先读这段。** 主线是 [components.md#journal-page](components.md#journal-page)：
+> **手账页承载（真图版 / 放大镜）+ 组件讲概念**。下面七个配方把简笔线稿当解释图，在讲解视频里像剪贴画，
+> **比不画更差**（`validate-fusion` 对这类镜头 >20% 报 P1）。
 >
 > 什么时候还能用：**标本速写**——一件具体的东西（软木塞、电池、火箭、芯片）+ 手写名 + 尺寸线，
 > 观众需要先认出「这是哪个东西」。抽象概念（流程、对比、数量关系）一律用组件，不要画。
@@ -1002,9 +907,7 @@ Content must use the full height between the chapter chrome and the subtitle str
 
 ## Official exemplar
 
-The binding exemplar is the lecture template itself: an 8-shot, 1150-frame Remotion film configured at native 2560×1440 and 30fps (design space 1920×1080), skinned by one of two locked themes, `flat` (default) and `cel`. It demonstrates the four scene skeletons, five camera intents and the full gate stack on one topic (an open-source onboarding explainer).
-
-The old `--classic` warm-ivory example project (`example-project`, the old visual-director exemplar) was removed. Its paper look is gone; nothing in the skill copies or validates it any more.
+The binding exemplar is the lecture template itself: an 8-shot, 1150-frame Remotion film configured at native 2560×1440 and 30fps (design space 1920×1080), skinned by one of two locked themes, `flat` (default) and `cel`. It demonstrates the four scene skeletons, five camera intents and the full gate stack on one topic (an open-source onboarding explainer). The removed `example-project` (`--classic`) is not a reference.
 
 ### Required starting point
 
