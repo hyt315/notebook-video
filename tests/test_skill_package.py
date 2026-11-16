@@ -26,22 +26,13 @@ class SkillPackageTest(unittest.TestCase):
             self.assertFalse(r.endswith((".pyc", ".mp4", ".zip")), r)
 
     def test_downloaded_fonts_are_opt_in(self):
-        # 字体按需下载、不入库：树上没有字体时放一个临时占位（gitignore 范围内），测完删掉，
-        # 这样本用例不依赖别的用例先联网下载过字体。
+        # 只判路径，不往共享的 assets/fonts/ 里写占位文件：结果不取决于这台机器下没下过字体。
         fonts = ROOT / "assets" / "fonts"
-        dummy = None
-        if not any(fonts.glob("*.ttf")) and not any(fonts.glob("*.otf")):
-            dummy = fonts / "zz-test-placeholder.ttf"
-            dummy.write_bytes(b"\0")
-        try:
-            default = {PKG.rel(p) for p in PKG.collect_files()}
-            offline = {PKG.rel(p) for p in PKG.collect_files(include_fonts=True)}
-        finally:
-            if dummy is not None:
-                dummy.unlink(missing_ok=True)
-        self.assertFalse(any(r.startswith("assets/fonts/") and r.endswith((".ttf", ".otf")) for r in default))
-        self.assertTrue(any(r.startswith("assets/fonts/") and r.endswith((".ttf", ".otf")) for r in offline))
-        self.assertIn("assets/fonts/LICENSE-OFL-1.1-LXGW.txt", default)
+        for name in ("LXGWWenKaiLite-Regular.ttf", "NotoSerifSC-Bold.otf"):
+            self.assertTrue(PKG.excluded(fonts / name, include_fonts=False), name)
+            self.assertFalse(PKG.excluded(fonts / name, include_fonts=True), name)
+        self.assertTrue(PKG.excluded(fonts / "ClashDisplay-Bold.woff2", include_fonts=True))
+        self.assertIn("assets/fonts/LICENSE-OFL-1.1-LXGW.txt", {PKG.rel(p) for p in PKG.collect_files()})
 
     def test_skill_links_are_inside_package(self):
         self.assertEqual(PKG.validate_skill_links(PKG.collect_files()), [])

@@ -224,9 +224,15 @@ class CacheAndFallbackTest(unittest.TestCase):
         for role, name in (("kai", "LXGWWenKaiLite-Regular.ttf"), ("serif", "NotoSerifSC-Bold.otf")):
             if not (ROOT / "assets" / "fonts" / name).exists():
                 self.skipTest(f"缺 {name}（按需下载）：解析器路径无从验证")
-            m = tm.get(role)
+            m = tm.parse_font(ROOT / "assets" / "fonts" / name)
             self.assertFalse(m.fallback, role)
             self.assertGreater(len(m.advances), 1000, role)
+
+    def test_layout_does_not_depend_on_downloaded_fonts(self):
+        """缓存在时排版只读缓存：下没下过字体，同一份 story 排出同一个 story.ts。"""
+        if not tm.CACHE_PATH.is_file():
+            self.skipTest("没有 metrics.json")
+        self.assertTrue(tm.get("kai").source.startswith("cache:"), tm.get("kai").source)
 
 
 class FontToolsParityTest(unittest.TestCase):

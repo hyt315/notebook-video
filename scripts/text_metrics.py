@@ -244,10 +244,11 @@ def _load_all() -> None:
                 int(spec.get("unitsPerEm", 1000)), adv,
                 cjk_default=float(spec.get("cjkDefault", CJK_IDEO_DEFAULT)),
                 source=f"cache:{spec.get('source', role)}")
-    # 2) 磁盘字体覆盖缓存（字体在就用真字体，缓存只当离线兜底）
+    # 2) 缓存里没有的角色才读磁盘字体。缓存优先：排版结果不能取决于这台机器有没有下过字体
+    #    （下过 LXGW 的机器和没下过的机器，同一份 story 会排出不同的 story.ts）。
     for role, name in FONT_FILES.items():
         path = FONT_DIR / name
-        if path.is_file():
+        if role not in _METRICS and path.is_file():
             try:
                 _METRICS[role] = parse_font(path)
             except Exception as e:  # 解析失败不挡排版，退估算
