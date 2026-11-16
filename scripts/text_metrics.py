@@ -180,9 +180,11 @@ def parse_font(path: Path | str) -> FontMetrics:
         advances_by_gid.append(aw)
     cmap = _parse_cmap(data, tables["cmap"][0])
     advances: dict[int, float] = {}
+    # gid ≥ numberOfHMetrics 的字形没有自己的前进宽度，按规范沿用最后一条（等宽尾段）；
+    # 以前直接跳过，LXGW 的 U+1D5B/U+1DBB 因此退成 0.56 估算（与 fontTools 对照查出，scripts/dev/compare-text-metrics.py）
+    last = advances_by_gid[-1] if advances_by_gid else 0
     for cp, gid in cmap.items():
-        if gid < len(advances_by_gid):
-            advances[cp] = advances_by_gid[gid] / units_per_em
+        advances[cp] = (advances_by_gid[gid] if gid < len(advances_by_gid) else last) / units_per_em
     # CJK 表意的默认宽度：取「汉字区里最常见的前进宽度」
     cjk_widths = [advances[cp] for cp in range(0x4E00, 0x4E00 + 2048) if cp in advances]
     cjk_default = max(set(cjk_widths), key=cjk_widths.count) if cjk_widths else CJK_IDEO_DEFAULT

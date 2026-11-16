@@ -229,5 +229,27 @@ class CacheAndFallbackTest(unittest.TestCase):
             self.assertGreater(len(m.advances), 1000, role)
 
 
+class FontToolsParityTest(unittest.TestCase):
+    """自写 cmap/hmtx 解析与 fontTools（MIT，只在开发期当对照，不是技能依赖）逐码点一致。
+
+    对照脚本 scripts/dev/compare-text-metrics.py；`--layout` 还会比 examples/ 全部 story 的 compose 产物。
+    字体按需下载、fontTools 也不是必需，两样缺一就跳过。
+    """
+
+    def test_every_codepoint_matches_fonttools(self):
+        try:
+            import fontTools  # noqa: F401
+        except ModuleNotFoundError:
+            self.skipTest("没装 fontTools（开发期对照，可选）")
+        cmp = load("cmp_tm", "scripts/dev/compare-text-metrics.py")
+        names = [n for n in tm.FONT_FILES.values() if (ROOT / "assets" / "fonts" / n).exists()]
+        if not names:
+            self.skipTest("字体按需下载：先跑 node scripts/notebook-video.mjs fonts --serif")
+        for n in names:
+            old, new = tm.parse_font(ROOT / "assets" / "fonts" / n), cmp.ft_parse(ROOT / "assets" / "fonts" / n)
+            self.assertEqual(old.advances, new.advances, n)
+            self.assertEqual((old.units_per_em, old.cjk_default), (new.units_per_em, new.cjk_default), n)
+
+
 if __name__ == "__main__":
     unittest.main()

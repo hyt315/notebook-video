@@ -22,6 +22,7 @@ Notebook Video keeps source downloads small and reproducible by separating manif
 | Wikimedia Commons / Openverse media | No | `commons-search.py add` downloads into the user's project with licence + credit | Third-party works stay with their own licences; never committed to the skill |
 | faster-whisper (Python, MIT, optional) | No | Detected at run time by `scripts/tts.py --engine=file`; `pip install faster-whisper` enables word-level alignment of your own recording to `narration.txt` (model from `NV_WHISPER_MODEL`, default `small`, downloaded on first use; `NV_WHISPER=off` disables it). Missing → timings are spread evenly by character count, as before | Not redistributed; not needed by CI or tests (tests use a stub module) |
 | RapidOCR (optional) | No | `pip install rapidocr onnxruntime` enables `validate-ocr.py`; missing → the check is skipped with a hint | Apache-2.0; ~20 MB of models, not needed by CI |
+| fontTools (Python, MIT, dev-only) | No | Only `scripts/dev/compare-text-metrics.py` and one skippable test use it, as an oracle for `scripts/text_metrics.py` (stdlib cmap/hmtx parser): same advance for every code point of the three fonts, same `metrics.json`, same compose output for every `examples/` story | The skill keeps the stdlib parser so the zero-install path needs no pip install |
 | Procedural WAV effects | Yes | Copied with the template | Small deterministic runtime assets with a reuse notice |
 | Renders, caches and temporary files | No | Created locally and excluded from ZIP packages | Outputs are not source dependencies |
 
