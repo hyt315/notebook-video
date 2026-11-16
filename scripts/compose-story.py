@@ -72,6 +72,8 @@ FIRST_LEAD_MS = 700            # 片头（flat / cel）
 # 走 auto 路线都必挂 O1（随包手作示例全挂的根因之一）。手作皮肤把第一句提前到 150 ms（第 4.5 帧）。
 # flat / cel 不变（O1 对它们只是提示，且已交付片的时间轴不能动）。
 FIRST_LEAD_MS_HANDMADE = 150
+COLD_OPEN_SETTLE = 60          # 手作皮肤第一镜首个元素提前落定的帧数：≥ 任一元素的入场时长（O6 第 0 帧要有主体）
+IS_HANDMADE = False            # main() 按 src/theme/active.ts 填
 HANDMADE_SKINS = ("journal", "papercut", "archive")
 END_TAIL_F = 42                # 片尾
 # 字幕行宽 MAX_CHARS / 朗读速度 CPS / 标点停顿 / 术语语法 TERM_RE 的真源在 story_caption.py
@@ -860,6 +862,12 @@ def build(story, comp, p: Problems):
             rec["media_id"] = _c.get("media")
             rec["media_label"] = " ".join(str(x) for x in [
                 _c.get("catalogue") or "", _c.get("title") or "", _c.get("big") or "", _c.get("note") or ""]).strip()
+        # 冷开：片子第 0 帧就要有主体（validate-opening O6，手作皮肤 P0）。第一镜最先出现的那个元素
+        # 提前到镜头开始前就已落定（at 为负，组件按 at 插值、clamp 后第 0 帧即完整），其余元素照常按台词出现。
+        if k == 0 and IS_HANDMADE:
+            lead = min((e for e in els if e["kind"] not in ("arrow", "timer")), key=lambda e: e.get("at") or 0, default=None)
+            if lead is not None and (lead.get("at") or 0) >= 0:
+                lead["at"] = -COLD_OPEN_SETTLE
         out_shots.append(rec)
         story_ts[sid] = {"layout": sh["layout"], "variant": sh["variant"], "elements": els, "focus": focus_out, "tips": tips,
                          "lines": line_start, "lineEnds": line_end, "think": int(float(sh["content"].get("think", 3)) * FPS) if sh["layout"] == "quiz" else 0,
@@ -1007,12 +1015,13 @@ def main() -> int:
         _cap.set_cps(cps)
     setup_break_rule(Path(a.project))
     # treatment.signature_shot 决定哪一镜真推（3.6.2）；没有 treatment 就是 None，行为不变
-    global TREATMENT, TREATMENT_MOVES, FIRST_LEAD_MS
+    global TREATMENT, TREATMENT_MOVES, FIRST_LEAD_MS, IS_HANDMADE
     _act = Path(a.project) / "src" / "theme" / "active.ts"
     try:
         _m = re.search(r"from\s+'\./(\w+)'", _act.read_text(encoding="utf-8"))
         if _m and _m.group(1) in HANDMADE_SKINS:
             FIRST_LEAD_MS = FIRST_LEAD_MS_HANDMADE
+            IS_HANDMADE = True
     except OSError:
         pass
     tp = Path(a.project) / "manifests" / "treatment.json"
