@@ -14,7 +14,7 @@
 模板 `.ts/.tsx` 注释里的路径已在第 2 批改为新位置（`check-links.py` 一并检查）；`references/MOVED.md` 保留给外部旧链接换算。
 
 后续可做的压缩（第 2 批起，需逐条核对后再删）：`media.md` 里 media-routing 部分仍是原文全量（约 42 KB），组件索引与 `src/components` 重复，可改为由代码生成；
-`checks.md` 里 composition-gate / presentation-gate 的实现口径与事故记录可迁到本文件，只留「每类报错怎么修」。
+`checks.md` 里 composition-gate / presentation-gate 的实现口径与事故记录可迁到本文件，只留「每类报错怎么修」。（第 3 批已做，见「checks.md 压缩对照」。）
 
 ### 旧 references → 新位置（52 篇，含 INDEX）
 
@@ -214,6 +214,108 @@
 | — | 非规则内容：状态"生效"标注、"34 个库里 32 个引用数为 0""23 件从未出现…21 件已登记""排查了很久""38 秒处接缝""用户会明确感到…""旧版这一节写的是只记录未修"等实测故事与历史；"←此前没有/零覆盖"注 | **删**（历史叙述，按维护纪律写进 CHANGELOG / 本文件，不留在指令文档） |
 
 核对方式：压缩前全文存档在 git（`git show 758ed6f:references/media.md`）；`validate-skill`（文档里点名的组件必须在源码里存在）与 `check-links.py` 通过。
+
+---
+
+## checks.md 压缩对照（第 3 批）
+
+`references/checks.md` 由 69,427 字节压到约 44,100 字节（802 → 467 行）。做法同 media-routing：同一条规则只留一处，删历史叙述与修复经过；门禁的**实测记录与实现口径**迁到下面「门禁实测记录」，不删。四个外部锚点（`quality-checklist` / `official-aesthetic-system` / `composition-gate` / `presentation-gate`）与被代码注释引用的小节号（§5.2、§6、§6.1、§G-1、§G-15、「P0-4 降级说明」「还没做的」）保持不变。下表逐条列出压缩前的规则与它现在的位置。
+
+| # | 压缩前的规则（原小节） | 现在在哪 |
+|---|---|---|
+| 1 | Story 6 条：1.5s payoff / 8s open loop / 一景一意一动作 / 无旁白可懂 / 先 payoff 后背景 + 证据回扣 / 2–4s 状态变化 / 结尾 ≥1s（Story） | Story 3 条（同义条合并，「1.5s」与「先于背景」并为一条） |
+| 2 | Architecture 5 条（Remotion 主渲染、TTS 一次转整帧、同一 FPS、首帧前资源就绪、音效随可见动作声明） | Architecture 3 条（原句合并） |
+| 3 | 背景/章节/页眉/字幕与标准样例一致（Visuals） | Visuals 第 1 条 |
+| 4 | 每景一个 media kind；`image-text` 只在用户/Commons/授权图片时（Visuals） | Visuals 第 2 条（原样） |
+| 5 | 图片 6 条：有助理解才用原创/提供/授权图、图里不烘字、visual-assets.json 登记、识别-标注-关系-结论同步、只允许克制的裁切/推近、标注独立运动（Visuals） | Visuals「Images」一条（6 句全留；"Generated imagery/images" 改为 "Imagery/Images"，与第 1 批「技能不调用生图模型」一致） |
+| 6 | 物件 5 条：独立运动即独立组件、一个 home/destination 区、无关卡片间距 ≥70px 含阴影、中央走廊至多一个临时传送物、连续过程保留同一任务物、浮物在底座之上（Visuals） | Visuals「Objects」一条 |
+| 7 | 槽与离场 3 条：越过后才遮挡、插件完全没入前唇、临时件完全离场（Visuals） | Visuals「Slots and exits」一条 |
+| 8 | 阴影 2 条：只在纸抬起时变化、用锁定的 lift-linked 配方（Visuals） | Visuals「Shadows」一条 |
+| 9 | 官方引擎 4 条：锁定字号阶、不用系统字形/emoji、静态克制调色、普通编辑只在 COPY 等表面内（Visuals） | Visuals「In the official engine」一条（编辑面改为链到 #ordinary-editable-surface，那里是同一张清单） |
+| 10 | 数据虚线只在真实传送时按正确方向动；带字纸面四边留白（Visuals） | Visuals 同一条 |
+| 11 | 保留中文原文与真实品牌素材；无错字标签/假 logo/软化汉字（Visuals） | Visuals 同一条 |
+| 12 | 无讲解中大空白；无杂点碎屑蒸汽；无效果堆/迷你卡堆/半可见层；无全局缩放/抖动/噪点/色调分离/整屏翻页（Visuals 4 条） | Visuals 同一条 |
+| 13 | 运镜闭集 + anchor + validate-shot-motion P0=0 + 文字镜缩放 ≤1.35 + 章节运镜配额 + 全片 ≥3 种 intent（Visuals） | Visuals「Shot camera」（原样） |
+| 14 | 骨架 ≥3 种、相邻不同（Visuals） | Visuals「Scene skeletons」（原样） |
+| 15 | 介质 ≥3、讲解景至少一个活性组件、纯卡片堆拒绝（Visuals） | Visuals「Visual media」（原样） |
+| 16 | 每景 3–5 区、填满下 1/4（Visuals） | Visuals「Density」（原样） |
+| 17 | 背景装饰区内容放 CoverPanel、位图不动（Visuals） | Visuals「Background readability」（原样） |
+| 18 | OverlapGate 零警告、有意覆盖标 data-gate-allow、不许用白名单藏碰撞（Visuals） | Visuals「Runtime overlap gate」（原样） |
+| 19 | SlotGuard：槽高给满、目标 ≥60%、<35% 出声、宽度自己算（Visuals） | Visuals「Main-slot fill gate」（11% 实测并入括号） |
+| 20 | Motion：scaleX 不用 width、tabular-nums、多属性入场不同时钟（Visuals） | Visuals「Motion」（原样） |
+| 21 | Anti-PPT 活性组件清单；不要把不可达的名字写成硬要求（Visuals + 历史注） | Visuals「Anti-PPT」（规则留；六件已删组件的历史注删去，见末行） |
+| 22 | Subtitle 11 条（纯字幕、无边框/侧标/定位器、一行居中 44px、CaptionFitGate、半显不横移、尾标点剥除、semantic 分段、保护短语清单、不跨 cue、对齐 TTS 词流、领先 ≤80ms） | Subtitle 7 条（11 条全留，同类合并） |
+| 23 | Audio 6 条 | Audio 3 条（两两合并） |
+| 24 | File validation 10 条 + 「设计提案不更新技能，用户认可成片后才更新」 | File validation 5 条 + 原句 |
+| 25 | Deliverables 10 项 + 事实卡 + 「不要停在提示词/静帧/无声动画/未验证渲染」 | Deliverables（原样，标题去掉「原文迁自 SKILL.md」） |
+| 26 | 美学系统定义：flat/cel 两锁定皮肤、一个模板、3.2.0 删 classic（Official aesthetic system） | 节首一段 |
+| 27 | Locked production grammar 两段（含「必须仅靠原生 SVG 可构建」） | 原样 |
+| 28 | Locked aesthetic core 6 项 + 语义色只来自 C 等约束 | 原样 |
+| 29 | Ordinary editable surface 8 项 + 语义 ID 与显示文字分离 | 原样（第 6 项 "generated or supplied" → "supplied"，理由同 #5） |
+| 30 | Visual rules 14 条 | Visual rules 9 条（同主题合并；"generated bitmaps" → "bitmaps"） |
+| 31 | Future updates：一次性副本 → 整片渲染 → 用户认可 → 再覆盖模板 | Locked official elements 节首（与「用户看成片并认可前不写入技能」合在一处） |
+| 32 | Locked official elements 25 项 | 22 项（30fps / 画布 / 不重复帧 / 60fps 合为一项；两条字幕项合为一项；"optional generated imagery" → "optional imagery"） |
+| 33 | 构图门禁为什么要有：没有会拒绝 PPT 的门禁条款会退化；规则少而硬（§1） | §1（统计数字与历史删去） |
+| 34 | P0-1…P0-7 判据（§2） | §2 P0 表（原样；P0-4 的降级日期改为指向降级说明） |
+| 35 | P1-7…P1-10 判据（§2） | §2 P1 表（原样） |
+| 36 | 「十一项」数法 + 旧锚点说明（§2 引用块） | §2 首句（数法留，旧锚点故事删） |
+| 37 | P0-4 降级：声明只查存在、真实判据在 FillGate；「声明只能查写没写」（§2 引用块） | §2「P0-4 降级说明」 |
+| 38 | 横向空洞：四个数、只报不拦、合并落盘带 at（§2） | §2「横向空洞」列表 |
+| 39 | 横向口径表 4 行（最完整帧 / 条状豁免 / 组合豁免 / 阈值） | §2 口径表（原样，"为什么"列压短） |
+| 40 | 只有 render 与 sweep 落盘，窗口渲染只打印（§2 基线） | §2「横向空洞」列表 |
+| 41 | sweep 每镜量一遍、少一镜明写未量到（§2 堵上的坑） | §2「横向空洞」列表 |
+| 42 | 镜头开头空着正常、不要提前摆（§2 可复用写法） | §2 口径表后 |
+| 43 | 四个装置表 + 「拿掉这一层主体还完整吗」判据（§2） | §2 装置表（原样） |
+| 44 | 不该做 3 条（§2） | §2「不该做」一段 |
+| 45 | 怎么跑、退出码、NV_GATE_JSON、纯标准库只读（§3） | §3（原样） |
+| 46 | 失败修法表 7 行 + 不要把门禁改松（§4） | §4（原样） |
+| 47 | 修复顺序：先组件级再场景坐标 + 四类组件级根因与修法（§4.6） | §4 表后「修复顺序」（根因写成形态+修法，删"本版实测"数字） |
+| 48 | 门禁分工表 9 行 + 分工原则（§5） | §5（CardFitGate「抓到 4 处」与 OverlapGate「3 类」实测数删；CanvasBoundsGate 一格压短） |
+| 49 | CanvasBoundsGate 判据：文字叶墨迹、Range 并集、≥6 出声、落定态且 ≥20 硬拦（§5.2） | §5.2「判据」 |
+| 50 | 会裁切的祖先 / 铺满视口不算裁切（§5.2） | §5.2 列表 |
+| 51 | 输出像素口径、不做设计坐标回折（§5.2 + 砍掉表第 1 行） | §5.2 列表 |
+| 52 | 不判纯图形装饰块（已知空白）、不与 ClippingGate 重复报、SVG 文字两道各报是两件事（§5.2 砍掉表 + 重复报一段） | §5.2「不查」 |
+| 53 | 每帧量、整片耗时未实测（砍掉表第 4 行） | §5.2 列表 |
+| 54 | 相机不计入、会误报（§5.2） | §5.2 列表 |
+| 55 | 何时会响：block/warn 档、覆盖率日志、扫过 0 个当异常（§5.2） | §5.2「档位」 |
+| 56 | 怎么修 4 步（§5.2） | §5.2「怎么修」（例子保留口径，删事故叙述） |
+| 57 | Grid5：一页 5 件用自己的格子表（§5.2 真实命中） | §5.2 怎么修第 4 步 |
+| 58 | 负向夹具 AB0–AB4；渲染夹具建在交付工程外（§5.2） | §5.2「负向夹具」 |
+| 59 | 交付门槛 7 条（§6） | §6（原样，理由压短） |
+| 60 | 色彩契约：缺口、判据、只认一个组合的三条论证、只挂交付门（§6.1） | §6.1（原样压短） |
+| 61 | 14 道门禁数法 + 本道查什么 + 纯算术（呈现门禁节首） | 节首（"第 10 道"的历史删） |
+| 62 | 运行命令、退出码 | 原样 |
+| 63 | G-1 断言表 6 行 | 原样 |
+| 64 | G-1：上下界缺一不可、8 帧是承重墙、换配音必须重跑、修数据不调容差（引用块） | G-1 表后列表 |
+| 65 | G-1 与调研报告 6 帧形式的差异 + 文献依据 | G-1 表后列表末条 |
+| 66 | G-2 表 + 数据来源 | 原样 |
+| 67 | G-3 表 8 行 | 原样（MIN_LABEL_FONT 出处更正为 contract.json，data.tsx 导出） |
+| 68 | 强调色当文字色的 ①②③ 处置 | G-3「强调色当文字色时」 |
+| 69 | 对比度能力边界（硬编码 / 改名 / 渐变 / SVG fill 读不到；FocusGate 未做） | G-3「能力边界」 |
+| 70 | 扫描口径：只扫值位置、注释与字符串抹空格、两侧边界 | G-3「扫描口径」 |
+| 71 | 配对必须是声明的契约，五类（假阳性引用块） | G-3「配对是声明的契约」 |
+| 72 | G-14/15/16 字段与判据出处 | 原样 |
+| 73 | G-15 现口径（JSX 用法、noncode、P0）+ 不做三件与代价 + 宁可少报 | G-15 段 |
+| 74 | 编号规则：不叫 G-6，新门禁往后排 | 「编号」段 |
+| 75 | G-5 代理判据与差距 | 原样 |
+| 76 | 每条判据要有夹具 + 阴性对照；must_block 子串（二） | 二节首段 |
+| 77 | 夹具表 17 行（I…AK） | 二节表（"门禁实际报的"逐字输出改为"期望"摘要；逐字输出以 `negative-gate-check.py` 为准） |
+| 78 | X/Y 是新增判据的夹具、Y 兼自检；AC–AE 口径；AF–AK 语义；I 必须用 S1（四个引用块） | 并入表内对应行（AC 行写 G-14② 口径、AE 行写打断计数、AG 行写语义、I 行写为什么用 S1） |
+| 79 | 已知真实缺陷：白字在彩色填充上不足，留给用户（三） | 三（原样压短） |
+| 80 | 还没做的（四） | 四（加上 G-3 FocusGate 一行，原文在 G-3 引用块里） |
+| — | 非规则内容：「状态：生效」标注；34 库组件 32 个零引用、9 个脚本没一条能发现；「八项/十项」数错故事；六件已删组件历史注；FillGate 第一版取第一帧的错口径经过；cell 8 镜基线数字；preview 只覆盖前六镜的坑；CanvasBoundsGate 第 ⑥ / ③ 页事故、v1/v2 对照、文件行数、参考简版差异、v2 实测表、与 ClippingGate 实测对照；色彩契约正反实跑输出；G-1 第一版 PASS 漏洞与 demo 余量；对比度两版假阳性经过；G-15 旧 465 行实现与 overview-film S2；Ink 处置日期与 orangeDeep 4.19:1；夹具逐字输出 | 实测数据与实现口径迁到下面「门禁实测记录」；纯历史叙述**删**（按维护纪律不留在指令文档） |
+
+核对方式：压缩前全文在 git（`git show 65cd8ab:references/checks.md`）；`check-links.py`、`validate-skill`、`selftest` 通过。
+
+### 门禁实测记录（自 checks.md 迁出）
+
+- **横向空洞基线**（cell 全片 8 镜，修正口径后，`sweep` 量）：S1 28/1/0.16/0.44 · S2 23/1/0.26/0.43 · S3 19/1/0.08/0.32 · S4 32/0/0.29/0.82 · S5 27/0/0.03/0.84（条状豁免）· S6 28/0/0.14/0.36 · S7 24/0/0.02/0.37（组合豁免）· S8 28/0/0.15/0.43（cells/blank/largest/widest）。sweep 取「切点前最近的 15 倍数帧」，与整片渲染「整镜取最完整帧」差 2–3 格，判定不变。第一版取第一帧时六镜全判空洞（假阳性）。
+- **CanvasBoundsGate v2**（2026-09-22）：468 → 231 行。与仓库外参考简版的有意差异：参考版代码「任何 >6px 即硬拦」，本仓取「落定态且 ≥20」。v2 砍掉 v1 的设计坐标回折、图形/版面件分支、三条排除规则（z≥140 chrome、≥92% 底托、小取景框）、按帧抽样——两种口径在接触表上抓到同一批真缺陷。实测：接触表 6 页 rc=0 零报告（扫过 27/25/20/74 个文字叶）；第 ⑥ 页改回 `Corridor x={100} w={1720}` → rc=1 无图，两处 26px；第 ③ 页改回 `Grid4` → rc=1，27px；片子帧 300/900 warn 下零报告。与 `ClippingGate` 同挂：帧 150 只有 CanvasBoundsGate 报，帧 395 只有 ClippingGate 报（path 超出 svg 视口）。修 `Grid5` 后接触表 17 页只有第 ③ 页像素变化。
+- **色彩契约正反对照**：老片 `pc/bt470bg/unknown/unknown`（yuvj420p）→ rc=1；新渲片段（render-range 300–599，2560×1440）→ rc=0，`-17.1 LUFS, -3.8 dBTP`。
+- **G-1**：第一版只有③时 `{cue:0, offset:200}` 实测 PASS（③b 补它）；demo 上 S8/cue14 只剩 2 帧、S7/cue13 5 帧（修数据前）。
+- **G-3**：第一版 `white × paper` 全交叉 → 假 P0；第二版按 `background:` 推断又请回来——所以配对写死为五类。Ink 机制落地后 `flat: orangeDeep`（4.19:1）P1 消失。绕过实测：硬编码 `#dcdcdc` on `#faf7f2` = 1.28:1 rc=0。
+- **G-15**：旧实现 465 行（JSX 遍历 + 本镜切片 + 帧驱动白名单 + 降级），与现口径抓到同一批真缺陷；overview-film S2（`MetricGrid` 只在注释留名）现口径仍抓得住（夹具 AJ）。删掉的夹具 AH/AI（帧驱动 vs 静态）、AL（降级）。
+- **负向夹具 I**：第一版给 S2 的 cue4 加负 offset，该 cue 帧号等于镜起点，永远先撞①，测不到③。
 
 ---
 

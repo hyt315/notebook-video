@@ -32,7 +32,7 @@ from gatelib import (  # noqa: E402  公共壳：临时工程 / 跑脚本 / 断�
 #   · 删掉 `if (blocked) throw e;` → 报"硬拦"却照样出图 rc=0（本仓库踩过两次的坑）；
 #   · 删掉 `[data-design-root]` 折算 → 口径从设计坐标退回输出像素，换 --scale 就失真。
 # 所以这三条各自一条夹具：原样必须过，删掉任一条必须被抓住。
-# （真渲染的负向/正向夹具在演示工程之外：见 references/checks.md#composition-gate §5.2 的七条 composition。）
+# （真渲染的负向/正向夹具在演示工程之外：见 references/checks.md#composition-gate §5.2「负向夹具」；实测记录在 MAINTAINING.md。）
 # ════════════════════════════════════════════════════════════════════════════
 CANVAS_BOUNDS_NEEDLES = (
     # (检查项, 子串, 说人话)
