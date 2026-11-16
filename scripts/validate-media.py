@@ -30,7 +30,7 @@ UPSCALE_MAX = 1.5
 LICENSE_OK = re.compile(r"^(cc0|cc-by(-sa)?(-[0-9.]+)?|public[- ]domain|pd|pexels|unsplash|pixabay|mit|apache-2\.0|own|user|official-docs)$", re.I)
 EXT = {"image": {".png", ".jpg", ".jpeg", ".webp"}, "video": {".mp4"}, "gif": {".gif"}, "audio": {".wav"}}
 # 用到素材的组件（字面量 id / w / h 能被静态量出）：MediaFrame + 手作材质组件（src/craft/media.tsx）
-MEDIA_TAGS = ("MediaFrame", "ArchivePhoto", "PinnedPhoto", "LoupeMedia", "MediaAudio")
+MEDIA_TAGS = ("MediaFrame", "ArchivePhoto", "PinnedPhoto", "LoupeMedia")
 MEDIA_IMPL = {"media-frame.tsx", "media.tsx"}
 
 

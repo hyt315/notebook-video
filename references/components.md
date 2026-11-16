@@ -187,22 +187,17 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet
 | `InkCircle` | 手圈一个东西（1.12 圈，首尾交叠） | `cx cy rx ry p` |
 | `HandNote` | 钢笔批注：引线先长到目标，字再从左往右写出 | `f at x y text to?`；纸色光晕保证 ≥7:1 |
 | `HandLettering` | 一行中文（≤10 字）沿字形轮廓描墨、再填墨 | `f at text x y size perChar` |
-| `Dimension` | 尺寸线：主线 16 帧 → 两端刻度各 6 帧 → 标注。刻度方向按主线自动垂直，横竖斜都成立 | `f at from to tick=24 label labelAt` |
-| `MagnifyInset` | 局部放大：方框沿边描出 16 帧，描完再铺淡底；引线 22 帧长过去 + 标注；把主体里的**一个单元**拎到旁边 | `f at box={x,y,w,h} rotate radius lead label labelAt` |
 
 辅助：`prog(f, at, dur)`（帧 → 0..1，墨水缓动）、`samplePath(d, n)`、`easeInk`、`CRAFT_TYPE`（字号阶梯）。
 
-**这两个是「空场」的正解**：画面显得空时，先问「主体还缺哪一层属于它的东西」——
-有尺寸就标尺寸（`Dimension`），由很多小单元组成就拎一个出来放大（`MagnifyInset`）。
+**「空场」的正解**：画面显得空时，先问「主体还缺哪一层属于它的东西」——
+有尺寸就用 `InkPath` + `HandNote` 标尺寸，由很多小单元组成就用 `LoupeMedia` / `Loupe` 拎一个出来看近。
 不要放大卡片凑面积，也不要往空白处另起一句说明（判据见 composition-gate 的「横向空洞」一节）。
 
 ```tsx
 <InkPath d="M 300 700 C 600 640, 900 760, 1200 690" p={prog(f, b[1], 24)} size={9} seed="arrow" />
 <HandNote f={f} at={b[2]} x={1180} y={300} text="一间间小盒子" to={{x: 980, y: 520}} />
 <HandLettering f={f} at={10} text="细胞" x={760} y={380} size={CRAFT_TYPE.hero} />
-<Dimension f={f} at={b[0] + 6} from={[330, 200]} to={[330, 810]} label="2.54 cm" labelAt={[252, 140]} />
-<MagnifyInset f={f} at={b[0] + 18} box={{x: 1330, y: 700, w: 230, h: 180}} rotate={1.4}
-  lead="M 1630 700 C 1618 760, 1560 806, 1508 820" label="1 间" labelAt={[1344, 902]} />
 ```
 
 #### 纸与颜料（`paper.tsx`）
@@ -236,7 +231,6 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet
 | `ArchivePhoto` | 档案件：原比例（不裁不拉）、纸托边、编目签（编号 / 名称 / 署名）。图片区 ≥ 纸托卡片面积 70%（纸托边自动收窄）、编目签字号 ≤ 图高 12%，署名字号不缩；框太小、署名太长时签仍可能和图一样大——给它更大的 w×h。署名签不进字幕带：整件底边自动收在设计坐标 y = 874（字幕框顶 934 再让 60，招牌推镜后也不压字幕）以上，框伸进字幕带时图会相应缩小 |
 | `PinnedPhoto` | 贴进手账的照片：白边、胶带或图钉、微倾，下沿手写说明 + 署名 |
 | `LoupeMedia` | 放大镜压在素材上；`insideTreatment` 让镜片里换处理（如 `negative` → `none`）。手柄方向按署名框自动选，手柄永不压署名 |
-| `MediaAudio` | 真实声音（拟音 / 历史录音），按帧起播，支持 `trimStartSec` / `trimEndSec` |
 
 `treatment`：`none` / `sepia`（做旧，手账里的老照片）/ `duotone` / `negative` / `ink`（高反差黑白，像铜版画）。
 `validate-media` 认得这些组件名，按字面量 `w` / `h` 计算放大倍数（>1.5 倍会糊 → P0）。
@@ -482,7 +476,7 @@ node scripts/notebook-video.mjs showcase ./my-video mid.png --craft --frame=18  
 5. **印章**：`Seal`，2–3 字，朱砂，压在第一句末尾。
 6. **手写说明**：`HandNote`，一行 ≤16 字，写在第二句。
 
-可选：**放大镜**（`LoupeMedia`）、**引线**（`InkPath`，把说明指到图版上的某一点）、**尺寸线**（`Dimension`，标本用）。
+可选：**放大镜**（`LoupeMedia`）、**引线**（`InkPath`，把说明指到图版上的某一点）。
 
 ### 三种页型
 

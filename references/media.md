@@ -346,7 +346,6 @@ python scripts/commons-search.py search "rain" --type audio --source openverse -
 |---|---|
 | 历史图版、扫描件、手稿 | `ArchivePhoto`（纸托 + 编目签署名）；要"看近"用 `LoupeMedia` |
 | 现代照片、标本照 | `PinnedPhoto`（白边 + 胶带 + 手写说明 + 署名） |
-| 声音 | `MediaAudio`（按帧起播；拟音音量放在音效阶梯附近） |
 | 界面截图 / 录屏 | 仍用 `MediaFrame`（[media.md#real-media](media.md#real-media)） |
 
 署名规则：`source:"web"` 的素材**一定**在画面上显示署名；片尾 / 简介再放 `CREDITS.md` 全文。

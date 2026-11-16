@@ -429,7 +429,7 @@ Before the full render, check on the contact sheet or range renders:
 | 4 | **运动质感** | 东西怎么动：平滑缓动？12 fps 跳帧？墨水速度？纸的落定过冲？ | craft 组件的 `prog` / `stepped`、动作助手 |
 | 5 | **镜头语法** | 推、拉、横移、俯视台面、跟着笔尖走——各在什么情况下用 | 镜头表 `cinema`、treatment 的 `shots[].move` + 理由 |
 | 6 | **换场** | 在媒介内部换场：翻页、换一张纸、剪刀剪过、墨晕开、灯台换片 | `transition`（`slide` / `drop` / …），皮肤 `craft.transition` |
-| 7 | **声音** | 物质的声音：纸、笔、剪刀、印章、灯台开关；"安静 → 最重要的那一声" | `public/sfx/lib/`（Kenney CC0 拟音）、`MediaAudio` |
+| 7 | **声音** | 物质的声音：纸、笔、剪刀、印章、灯台开关；"安静 → 最重要的那一声" | `public/sfx/lib/`（Kenney CC0 拟音） |
 | 8 | **原生动作** | 只有这个材料做得出的 2–4 个动作，留给顿悟点 | craft 组件组合（[components.md#craft-kit](components.md#craft-kit)） |
 
 每个配方还要写两段：

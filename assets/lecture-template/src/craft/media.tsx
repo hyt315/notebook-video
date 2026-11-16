@@ -4,15 +4,13 @@
 //   ArchivePhoto  档案件：素材原样（真实比例、真实破损）躺在纸托 / 灯台上，下方编目签 = 署名
 //   PinnedPhoto   贴进手账的照片：白边、胶带或图钉、微倾，可选做旧（sepia）/ 双色调
 //   LoupeMedia    放大镜压在素材上：镜片里是原图放大（可切到 negative→positive 等「状态变化」）
-//   MediaAudio    Commons / Openverse 的真实声音（拟音 / 历史录音），按帧放
 //
 // 署名：source:"web" 的素材**一定**在画面上显示署名（编目签 / 照片下沿小字），组件没有关掉它的参数；
 //       validate-media 认得这些组件名，按字面量 w / h 量放大倍数（>1.5 倍会糊 → P0）。
 // 素材从 manifests/media.json 读（commons-search.py add / prepare-media.py 写）。
 // ============================================================================
 import React from 'react';
-import {Audio} from '@remotion/media';
-import {Img, Sequence, staticFile} from 'remotion';
+import {Img, staticFile} from 'remotion';
 import {THEME} from '../theme/active';
 import {MEDIA} from '../media-frame';
 import {TapeStrip} from '../theme/craft-common';
@@ -196,15 +194,5 @@ export const LoupeMedia: React.FC<Base & {look: {x: number; y: number}; lensAt: 
       </>} />;
   };
 
-/** 真实声音（kind:audio）。from = 起播帧；volume 线性（缺省 0.5，拟音放在音效阶梯附近）。 */
-export const MediaAudio: React.FC<{id: string; from: number; volume?: number; durationInFrames?: number}> = ({id, from, volume = 0.5, durationInFrames}) => {
-  const m = need(id);
-  if (m.kind !== 'audio') throw new Error(`MediaAudio: ${id} 不是声音素材`);
-  const start = Math.round(((m as any).trimStartSec ?? 0) * 30);
-  const end = (m as any).trimEndSec != null ? Math.round((m as any).trimEndSec * 30) : undefined;
-  return <Sequence from={from} durationInFrames={durationInFrames ?? (end != null ? end - start : undefined)} layout="none">
-    <Audio src={staticFile(`media/${m.file}`)} volume={volume} trimBefore={start} trimAfter={end} />
-  </Sequence>;
-};
 
 export {CRAFT_TYPE};
