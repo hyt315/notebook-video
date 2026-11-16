@@ -29,6 +29,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+
 CRAFT = {"journal", "papercut", "archive"}
 FPS = 30
 FIRST_EVENT_MAX_FRAMES = 6
@@ -189,6 +192,7 @@ def main(argv: list[str]) -> int:
     proj = Path(argv[0]).resolve()
     video = Path(argv[argv.index("--video") + 1]).resolve() if "--video" in argv else None
     r = check(proj, video)
+    emit("validate-opening", r["p0"], r["p1"], "manifests/shots.resolved.json")
     if "--json" in argv:
         print(json.dumps(r, ensure_ascii=False, indent=1))
     else:

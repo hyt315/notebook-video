@@ -23,6 +23,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+
 GENERIC = {"serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui", "ui-monospace", "emoji", "math"}
 # 这两个是随包字体（OFL-1.1），@font-face 在 fonts.tsx 里声明，字面覆盖 CJK。
 BASE_CJK = {"Kai", "NotoSerifSC"}
@@ -109,6 +112,7 @@ def main() -> int:
         print(f"没有这个工程目录：{project}", file=sys.stderr)
         return 2
     errors, checked, dynamic = scan(project)
+    emit("validate-glyphs", errors, [], "src")
     for e in errors:
         print(f"  ✗ P0 {e}")
     print(

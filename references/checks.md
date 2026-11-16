@@ -405,6 +405,7 @@ python scripts/validate-shot-motion.py PROJECT_DIR
 ```
 
 退出码：`0` 通过（可含 P1）/ `1` 存在 P0（或 `--strict` 下存在 P1）/ `2` 用法或文件错误。
+设了环境变量 `NV_GATE_JSON=<文件>` 时，每条 P0 / P1 另外追加一行统一格式的 JSON（见 `technique.md#auto-engine`「门禁分工」）；make-video 汇总成 `renders/gates.json`。
 两者都是**纯标准库、只读**，可直接放进 CI。
 
 ### 4. 失败时怎么办

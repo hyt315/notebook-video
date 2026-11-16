@@ -29,6 +29,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+
 SKINS = ("flat", "cel", "journal", "papercut", "archive")
 ROLES = ("main", "chapter", "quiet")
 # 皮肤墨色（= src/theme/<skin>.tsx 的 palette.ink；validate-skill-consistency 会核对两边一致）
@@ -218,6 +221,7 @@ def main() -> int:
             print(f"validate-backgrounds：没有背景库 {e}（3.3.0 之前的工程：按 main/chapter/quiet 三张图渲染，不受影响）")
             return 0
         label = "背景库"
+    emit("validate-backgrounds", p0, p1, "manifests/shots.resolved.json" if a.shots else "assets/backgrounds")
     for x in p0:
         print(f"  P0 {x}", file=sys.stderr)
     for x in p1:

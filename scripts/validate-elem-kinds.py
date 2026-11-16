@@ -27,6 +27,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+
 # 排版器里出现过的 kind 都是 `el("<元素id>", "<kind>", ...)` 的第二个参数。
 # 第一个参数可以是非 f-string 字面量（"text" / "verdict"）或 f-string（f"step{i+1}"）：
 # 两种都要认，否则 flow 的 node、list 的 item 会被当成"从没产出过"，判据等于没跑。
@@ -228,6 +231,7 @@ def main() -> int:
         print(f"不是目录：{project}", file=sys.stderr)
         return 2
     errors = check(project)
+    emit("validate-elem-kinds", errors, [], "src/auto.tsx")
     if errors:
         for e in errors:
             print(f"✗ {e}")

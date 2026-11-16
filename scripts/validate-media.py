@@ -23,6 +23,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+
 UPSCALE_MAX = 1.5
 LICENSE_OK = re.compile(r"^(cc0|cc-by(-sa)?(-[0-9.]+)?|public[- ]domain|pd|pexels|unsplash|pixabay|mit|apache-2\.0|own|user|official-docs)$", re.I)
 EXT = {"image": {".png", ".jpg", ".jpeg", ".webp"}, "video": {".mp4"}, "gif": {".gif"}, "audio": {".wav"}}
@@ -215,6 +218,7 @@ def main(argv: list[str]) -> int:
     for f in (proj / "src").rglob("*.tsx"):
         if f.name != "media-frame.tsx" and not (f.parent.name == "craft" and f.name in MEDIA_IMPL) and re.search(r"data-media-credit|hideCredit", f.read_text(encoding="utf-8", errors="ignore")):
             p0.append(f"{f.name}: 不许自己画 / 关掉署名徽章（MediaFrame 会自动显示）")
+    emit("validate-media", p0, p1, "manifests/media.json")
     print(f"validate-media · {len(items)} 条素材")
     for x in p0:
         print(f"  ✗ P0 {x}")

@@ -57,6 +57,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
 FPS = C["FPS"]
 BEAT_SPOILER_FRAMES = 12   # 3-③：不得早于所属 cue 超过 12 帧（0.4s）
@@ -735,6 +736,7 @@ def main() -> int:
     p0 += a
     p1 += b
 
+    emit("validate-presentation", p0, p1, "manifests/shots.resolved.json")
     if args.json:
         print(json.dumps({"p0": p0, "p1": p1}, ensure_ascii=False, indent=2))
     else:

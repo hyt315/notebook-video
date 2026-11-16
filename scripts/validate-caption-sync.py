@@ -5,8 +5,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import re
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
 
 def normalized(text: str) -> str:
@@ -74,6 +78,7 @@ def main() -> None:
 
     if [core(word) for word in flattened] != [core(word) for word in source]:
         failures.append("flattened cue words do not exactly match the complete TTS word stream")
+    emit("validate-caption-sync", failures, warnings, str(args.caption_cues_json))
     if failures:
         for failure in failures:
             print(f"SYNC ERROR: {failure}")

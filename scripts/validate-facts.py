@@ -38,6 +38,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+
 VALID_SOURCE_KINDS = ("fact", "analogy")
 VALID_CLAIM_KINDS = ("fact", "analogy")
 
@@ -160,6 +163,7 @@ def main(argv: list[str]) -> int:
 
     p0, p1 = check_facts(story)
     review = review_list(story)
+    emit("validate-facts", p0, p1, "story.json")
 
     if a.json:
         print(json.dumps({"p0": p0, "p1": p1, "review": review}, ensure_ascii=False, indent=2))

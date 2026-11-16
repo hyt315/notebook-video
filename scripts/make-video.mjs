@@ -15,12 +15,12 @@
 // ============================================================================
 import {spawn, spawnSync} from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
 import {writeSilentNarration} from './silent-audio.mjs';
 import {browserArgs} from './browser-exec.mjs';
-import {collectP1} from './p1-hints.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const IS_WIN = process.platform === 'win32';
@@ -43,7 +43,7 @@ const scale = flagVal('scale', '0.75');
 const renderOut = flag('render') ? path.resolve(flagVal('render', path.join(project, 'renders', 'final.mp4'))) : null;
 
 const run = (cmd, argv, opts = {}) => new Promise((resolve) => {
-  const child = spawn(cmd, argv, {cwd: opts.cwd, stdio: opts.capture ? ['ignore', 'pipe', 'pipe'] : 'inherit', windowsHide: true, shell: opts.shell ?? false});
+  const child = spawn(cmd, argv, {cwd: opts.cwd, env: opts.env, stdio: opts.capture ? ['ignore', 'pipe', 'pipe'] : 'inherit', windowsHide: true, shell: opts.shell ?? false});
   let out = '';
   if (opts.capture) { child.stdout.on('data', (d) => { out += d; }); child.stderr.on('data', (d) => { out += d; }); }
   child.on('close', (code) => resolve({code, out}));
@@ -59,7 +59,7 @@ const PY = findPython();
 // 输出被管道捕获时（make-video 就是这么调的）会抛 UnicodeEncodeError → 门禁假失败 → 出片被拦死。
 // 统一给子进程开 UTF-8 模式，比逐个脚本改 print 可靠。
 const PY_UTF8_ENV = {...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1'};
-const py = (script, argv, opts = {}) => run(PY.c, [...PY.pre, path.join(SCRIPT_DIR, script), ...argv], {...opts, env: PY_UTF8_ENV});
+const py = (script, argv, opts = {}) => run(PY.c, [...PY.pre, path.join(SCRIPT_DIR, script), ...argv], {...opts, env: {...PY_UTF8_ENV, ...(opts.env ?? {})}});
 const node = (argv, opts) => run(process.execPath, argv, opts);
 // 3.7.0：Windows 上 Remotion 不设 windowsHide，每帧收尾的 taskkill 都会闪一个 CMD 窗口
 // （--stills 逐帧模式下 = 每帧闪一次）。预加载 scripts/windows-hide-console.cjs 强制隐藏，
@@ -244,19 +244,36 @@ if (!flag('no-gates')) {
     // 手写场景的结构门禁（骨架 / 组件多样性）：auto 版式由引擎保证结构，这里只作参考
     ['validate-composition.py', [project], HAND],
   ];
+  // 每个门禁把 P0 / P1 逐条写成同一形状的 JSON 行（scripts/gate_report.py：gate/id/level/file/message/fix），
+  // 这里只读这一种格式：P1 进报告「建议（不拦）」，全部记录进 renders/gates.json。终端文字只给人看。
+  const records = [];
+  const jsonl = path.join(os.tmpdir(), `nv-gates-${process.pid}.jsonl`);
   for (const [g, argv, hard] of gates) {
-    const r = await py(g, argv, {capture: true});
+    fs.rmSync(jsonl, {force: true});
+    const r = await py(g, argv, {capture: true, env: {NV_GATE_JSON: jsonl}});
+    const name = g.replace(/\.py$/, '');
+    const recs = fs.existsSync(jsonl) ? fs.readFileSync(jsonl, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
+    // 门禁没写出任何 P0 却非零退出（缺文件、自身报错）：补一条 P0，免得报告里看不到它为什么停
+    if (r.code && !recs.some((x) => x.level === 'P0')) {
+      const last = r.out.split('\n').map((l) => l.trim()).filter(Boolean).slice(-1)[0] ?? `退出码 ${r.code}`;
+      recs.push({gate: name, id: `${name}-P0-1`, level: 'P0', file: '', message: last, fix: ''});
+    }
+    records.push(...recs.map((x) => ({...x, blocking: x.level === 'P0' && hard})));
     const verdict = (r.out.match(/结论[^\n]*/) ?? [r.code ? 'FAIL' : 'PASS'])[0];
     results.push({gate: g, code: r.code, hard, verdict});
     console.log(`  ${r.code ? (hard ? '✗' : '·') : '✓'} ${g.padEnd(30)} ${verdict}`);
-    // 把 P1 明细收进报告。手写场景工程不走 compose-story，`rep` 一直是初始值
-    // （fixes / hints 都是空数组），于是报告里「建议（不拦）」永远是 0 条 ——
-    // 而实测一场交付有 22 条 P1，它们只在终端滚过去了，写进文件的一条都没有。
-    // 3.5.2：收集逻辑挪到 p1-hints.mjs，认全三种明细行（原正则只认带编号 + 半角冒号的一种）。
-    const p1 = collectP1(r.out, g);
-    if (p1.length) rep.hints.push(...p1);
-    if (r.code && hard) { console.log(r.out.split('\n').filter((l) => /P0|✗|FAIL|Error|错误/.test(l)).slice(0, 12).join('\n')); die(`${g} 未通过`); }
+    const say = (x) => `${x.message}${x.fix ? ` —— ${x.fix}` : ''}`;
+    rep.hints.push(...recs.filter((x) => x.level === 'P1').map((x) => `${name}：${say(x)}`));
+    if (r.code && hard) {
+      fs.mkdirSync(path.join(project, 'renders'), {recursive: true});
+      fs.writeFileSync(path.join(project, 'renders', 'gates.json'), JSON.stringify(records, null, 1) + '\n');
+      console.log(recs.filter((x) => x.level === 'P0').slice(0, 12).map((x) => `  P0 ${x.id}: ${say(x)}`).join('\n'));
+      die(`${g} 未通过（全部记录：renders/gates.json）`);
+    }
   }
+  fs.rmSync(jsonl, {force: true});
+  fs.mkdirSync(path.join(project, 'renders'), {recursive: true});
+  fs.writeFileSync(path.join(project, 'renders', 'gates.json'), JSON.stringify(records, null, 1) + '\n');
 }
 
 // 6. tsc

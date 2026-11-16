@@ -37,6 +37,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+
 PEAK_FLOOR = -12.0          # 素材峰值下限（dBFS）
 QUIET_P0 = True             # 太轻记 P0（这是"静默失效"型缺陷）
 
@@ -353,6 +356,7 @@ def main() -> int:
         if refs and "vol:" not in src:
             p1.append("引用了音效但 index.tsx 里找不到任何 vol: 设定（音效可能被注释掉或整段删除）")
 
+    emit("validate-audio-levels", p0, p1, "public/sfx")
     if args.json:
         print(json.dumps({"p0": p0, "p1": p1, "checked": checked}, ensure_ascii=False, indent=2))
     else:

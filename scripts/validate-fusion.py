@@ -34,6 +34,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+
 PAGE_LAYOUTS = {"page"}
 COMPONENT_LAYOUTS = {"code", "flow", "list", "compare", "bars", "number", "media", "quiz", "custom"}
 # 直书页（type）：没有卡片，但它是**讲解**（把关系排成字），不是「字卡说不出东西」。
@@ -210,6 +213,7 @@ def main() -> int:
             p1.append(f"{sid}: see=「{see[:24]}」写成了文字描述；写「关掉声音观众看到什么」，"
                       f"例：『一页手账，右边是 1665 年原版铜版画，放大镜压在上面』。")
 
+    emit("validate-fusion", p0, p1, "manifests/shots.resolved.json")
     if a.json:
         print(json.dumps({"mode": mode, "p0": p0, "p1": p1, "notes": notes,
                           "shares": {"page": round(page_share, 3), "sketch": round(sketch_share, 3),

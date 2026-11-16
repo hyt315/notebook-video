@@ -19,6 +19,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+
 CRAFT = {"journal", "papercut", "archive"}
 SKINS = CRAFT | {"flat", "cel"}
 # 3.3.0：叙事结构族（候选结构至少 2 族，见 references/director.md#director-method 第 5 步、blueprints/*.json 的 family）
@@ -314,6 +317,7 @@ def main(argv: list[str]) -> int:
     craft = skin in CRAFT
     p0 = hard if craft else []
     p1 = ([] if craft else hard) + soft
+    emit("validate-treatment", p0, p1, "manifests/treatment.json")
     if "--json" in argv:
         print(json.dumps({"skin": skin, "p0": p0, "p1": p1}, ensure_ascii=False, indent=1))
     else:

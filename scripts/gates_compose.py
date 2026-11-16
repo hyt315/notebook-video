@@ -275,6 +275,22 @@ _rv1 = run(['node', MV, td, '--render', os.path.join(td, 'renders', 'x.mp4')])
 case('RV1 手作皮肤 · review.rounds 为空 · --render 不加 --skip-review → 只给 P1 提示，继续走到构建期门禁', [
     ('must_block:P1 journal 是手作皮肤', 'make-video --render（提示已打出）', _rv1),
     ('must_block:构建期门禁', 'make-video --render（没在评审处停下）', _rv1)])
+
+def _gates_json(td):
+    """门禁统一结果：make-video 停在门禁时 renders/gates.json 必须是同一形状的记录、且有一条拦片的 P0。"""
+    p = os.path.join(td, 'renders', 'gates.json')
+    try:
+        recs = json.loads(io.open(p, encoding='utf-8').read())
+    except (OSError, ValueError) as e:
+        return 1, f'renders/gates.json 读不到：{e}'
+    keys = {'gate', 'id', 'level', 'file', 'message', 'fix'}
+    bad = [r for r in recs if not keys <= set(r) or r['level'] not in ('P0', 'P1')]
+    stop = [r for r in recs if r['level'] == 'P0' and r.get('blocking')]
+    ok = recs and not bad and stop
+    return (0 if ok else 1), f"记录 {len(recs)} 条 · 形状不对 {len(bad)} · 拦片 P0 {len(stop)}（{stop[0]['gate'] if stop else '-'}）"
+
+case('GJ1 门禁统一结果 · make-video 停在门禁 → renders/gates.json 记录同一形状、含拦片的 P0', [
+    ('must_pass', 'renders/gates.json', _gates_json(td))])
 case('RV2 同一工程加 --skip-review → 不再出评审提示（继续走到构建期门禁）', [
     ('must_absent:review.rounds 还是空的', 'make-video --render --skip-review', run(['node', MV, td, '--render', os.path.join(td, 'renders', 'x.mp4'), '--skip-review'])),
     ('must_block:构建期门禁', '走到了门禁那一步', run(['node', MV, td, '--render', os.path.join(td, 'renders', 'x.mp4'), '--skip-review']))])

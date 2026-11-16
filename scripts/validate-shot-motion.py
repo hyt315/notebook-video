@@ -30,6 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
 STAGE_CX, STAGE_CY = float(C["STAGE"]["cx"]), float(C["STAGE"]["cy"])
 
@@ -324,6 +325,7 @@ def main() -> int:
         return 2
     shots, duration, theme = load_shots(project)
     p0, p1 = check(shots, duration, theme)
+    emit("validate-shot-motion", p0, p1, "manifests/shots.resolved.json")
     if args.json:
         print(json.dumps({"p0": p0, "p1": p1, "shots": len(shots), "duration": duration}, ensure_ascii=False, indent=2))
     else:

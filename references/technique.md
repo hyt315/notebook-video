@@ -92,6 +92,10 @@ make-video 的硬门禁：`validate-shot-motion`、`validate-presentation`、`va
 `validate-caption-sync`、`validate-semantic-breaks`、`tsc --noEmit`（帧参数名与漏传），渲染期 `CaptionFitGate` / `CardFitGate` / `OverlapGate` / `ClippingGate`，
 成片 `validate-motion-gaps`。`validate-composition`（骨架 / 组件多样性）是为手写场景设计的结构门禁，auto 片只作参考输出。
 
+门禁结果的统一格式：每条 P0 / P1 是一行同形状 JSON `{"gate","id","level","file","message","fix"}`（`scripts/gate_report.py`）。
+make-video 跑完门禁写 `renders/gates.json`（全部记录，`blocking: true` 的就是拦片的那条），P1 写进 `renders/report.md`「建议（不拦）」。
+**读结果只读 `renders/gates.json`**：先看 `level` 和 `blocking`，再按 `fix` 改；`file` 指出该改哪个文件。单跑某个门禁时设 `NV_GATE_JSON=<文件>` 也会得到同样的记录。
+
 <a id="environment-matrix"></a>
 
 ## 环境矩阵：这台机器能出什么片

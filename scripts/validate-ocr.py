@@ -36,6 +36,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
 FPS = C["FPS"]
 SIM_P0 = 0.60
@@ -315,11 +316,13 @@ def main(argv: list[str]) -> int:
     p0 = [r for r in rows if r["level"] == "P0"]
     p1 = [r for r in rows if r["level"] == "P1"]
     sims = [r["sim"] for r in rows]
+    as_item = lambda r: {"id": f"cue{r['cue'] + 1}", "issue": f"「{r['text']}」@{r.get('at', '-')} {r['issue']}"}  # noqa: E731
+    emit("validate-ocr", [as_item(r) for r in p0], [as_item(r) for r in p1], "manifests/caption-cues.json")
     print(f"validate-ocr · {len(rows)} 帧（{'成片' if opts['--video'] else '静帧'}，源高 {src_h}px）· 平均相似度 {sum(sims) / len(sims):.2f}")
     for r in rows:
         if r["level"] != "ok":
             mark = "✗" if r["level"] == "P0" else "·"
-            print(f"  {mark} {r['level']} cue{r['cue'] + 1}「{r['text']}」@{r['at']} — {r['issue']}；OCR「{r['got'][:40]}」")
+            print(f"  {mark} {r['level']} cue{r['cue'] + 1}「{r['text']}」@{r.get('at', '-')} — {r['issue']}；OCR「{r['got'][:40]}」")
     print(f"结论：P0={len(p0)} P1={len(p1)} → {'FAIL' if p0 else 'PASS'}")
     if opts["--json"]:
         Path(opts["--json"]).write_text(json.dumps({"rows": rows, "p0": len(p0), "p1": len(p1)}, ensure_ascii=False, indent=2), encoding="utf-8")

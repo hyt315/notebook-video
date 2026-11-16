@@ -90,6 +90,7 @@ Windows 用同一条 `node` 命令，或 `scripts\notebook-video.cmd` / `scripts
 ## 读输出
 
 - `✓ 自动修` = 引擎替你改了，不用管；`· 建议`（P1）自行判断，不拦；`✗`（P0）必须改，每条都写了怎么改。
+- 门禁的全部问题在 `renders/gates.json`，每条形状相同：`level`（P0/P1）、`blocking`（拦不拦）、`file`（改哪个文件）、`message`、`fix`（怎么改）。按 `fix` 改即可。
 - 同一个 ✗ 连续两轮没改过来，**停下**，把报错原文告诉用户。
 - 被判「空」时**不要放大卡片凑面积**，也不要为了开头满把东西提前摆上：在空洞处补一层属于主体的东西（[checks.md](references/checks.md#composition-gate)）。
 - **引擎不能保证的**：事实、数字、历史说法对不对。`validate-facts` 只查标注是否合法（缺标注只提示 P1，标注自相矛盾才拦 P0，不是无差别硬门禁）；出片前跑 `notebook-video validate-facts <工程> --review`，把清单里的数字、年份逐条人工审读。

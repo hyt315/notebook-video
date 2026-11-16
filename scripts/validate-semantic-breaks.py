@@ -29,6 +29,9 @@ import shutil
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+
 RULE_SOURCE = Path(__file__).resolve().parent / "build-semantic-captions.py"
 
 
@@ -157,6 +160,7 @@ def main() -> None:
             if crossed:
                 failures.append(f"protected phrase crosses a cue boundary: {phrase}")
 
+    emit("validate-semantic-breaks", failures, [], str(args.caption_cues_json))
     if failures:
         for failure in failures:
             print(f"SEMANTIC BREAK ERROR: {failure}")
