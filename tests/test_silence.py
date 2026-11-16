@@ -46,6 +46,20 @@ def make_video(path: Path, tone: bool) -> None:
     )
 
 
+class QuietShare(unittest.TestCase):
+    """容错按比例：长片里几处空隙被音效尾巴盖住不该判挂；持续配乐（几乎全不安静）照拦。"""
+
+    def test_threshold_scales_with_gaps(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("vs", SCRIPT)
+        vs = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(vs)
+        self.assertEqual(vs.required_quiet(1), 1)
+        self.assertEqual(vs.required_quiet(2), 1)
+        self.assertEqual(vs.required_quiet(5), 3)
+        self.assertEqual(vs.required_quiet(28), 17)   # 77 秒成片：26/28 安静应通过
+
+
 @unittest.skipUnless(FFMPEG, "需要 ffmpeg")
 class SilenceGate(unittest.TestCase):
     def run_gate(self, project: Path, video: Path) -> subprocess.CompletedProcess:

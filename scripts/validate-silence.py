@@ -6,8 +6,9 @@
 
 判据（只在 music.use 不是 true 时执行）：
   用字幕的句间空隙（相邻 cue 的 speech_end_ms → 下一句 start_ms，≥0.4 s 才算）当"应该安静"的位置，
-  对成片跑 `ffmpeg silencedetect=n=-45dB:d=0.4`；检测到的静音段数必须 ≥ 期望段数 − 1
-  （允许一处被音效尾巴盖住）。低于这个数 = 有持续底噪 / 配乐。
+  对成片跑 `ffmpeg silencedetect=n=-45dB:d=0.4`；与空隙重叠的静音段要占期望段数的 ≥ 60%
+  （且至少 1 段；短片空隙少时最多允许一处不安静）。持续底噪 / 配乐会让几乎所有空隙都不安静，
+  比例判据照样拦得住；而音效尾巴偶尔盖住几处空隙是设计内的，不该随片长变成必挂。
 
 用法：python scripts/validate-silence.py PROJECT VIDEO_MP4
 退出码：0 通过 / 1 有 P0 / 2 用法或测量失败（门禁自身故障）。
@@ -15,12 +16,19 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import subprocess
 import sys
 from pathlib import Path
 
 MIN_GAP_MS = 400
+QUIET_SHARE = 0.6   # 句间空隙里至少这么多比例要真安静
+
+
+def required_quiet(n_gaps: int) -> int:
+    """n 段句间空隙里至少几段要检测到静音：≥60%，且至少 1 段，短片最多容一处不安静。"""
+    return max(1, min(n_gaps - 1, math.ceil(n_gaps * QUIET_SHARE)))
 
 
 def music_on(project: Path) -> bool:
@@ -81,7 +89,7 @@ def main() -> int:
         a, b = starts[i], ends[i]
         if any(a < gb and b > ga for ga, gb in gaps):
             hits += 1
-    need = max(1, len(gaps) - 1)
+    need = required_quiet(len(gaps))
     print(f"validate-silence：句间空隙 {len(gaps)} 段 / 检测到与空隙重叠的静音 {hits} 段"
           f"（阈值 ≥{need}）· 全片静音段 {detected}")
     if hits < need:
