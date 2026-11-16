@@ -1,6 +1,6 @@
 # 检查：质量清单、美学系统、构图与呈现门禁
 
-交付前的质量清单与美学系统，以及构图门禁、呈现门禁每类报错的含义和修法。门禁的实现口径、实测记录与历次修正经过在维护者手册（不随包发布）。
+交付前的质量清单与美学系统，以及构图门禁、呈现门禁每类报错的含义和修法。
 
 本篇各节：
 
@@ -29,8 +29,8 @@
 
 - Background, chapter, header and subtitle match the canonical example.
 - Every scene declares one primary **media kind** (`chart` / `console` / `code` / `graphic` / `text` / `metric`) — 默认路线的路由维度。`image-text` 只在场景用用户提供 / Commons / 授权图片时才出现（见 director.md#visual-director；技能不调用生图模型）。
-- Images: concrete subjects use original, supplied or licensed imagery when seeing the subject materially improves comprehension. Imagery contains no baked labels, charts, logos or UI text; exact information remains in Remotion. Every raster is registered with source, prompt/description, crop policy and rights: skin backgrounds and user-supplied images in `visual-assets.json`, the background library in `backgrounds.json`. Image scenes synchronize recognition, callout, relation and conclusion instead of placing a static image beside unrelated copy. Images receive only restrained crop reveal or push-in motion; annotations move independently.
-- Objects: every independently moving object is an independent component with one home zone and one destination zone. Unrelated cards keep at least 70px separation, including airborne shadows. The central corridor contains at most one dominant temporary transfer object. A continuous process preserves one task object and changes its state at real stations. Floating objects stay above lower bases.
+- Images: use original, supplied or licensed imagery only when seeing a concrete subject materially improves comprehension; no baked labels, charts, logos or UI text (exact information stays in Remotion). Register every raster with source, prompt/description, crop policy and rights: skin backgrounds and user-supplied images in `visual-assets.json`, the background library in `backgrounds.json`. Image scenes synchronize recognition, callout, relation and conclusion (never a static image beside unrelated copy); images get only restrained crop reveal or push-in, annotations move independently.
+- Objects: every independently moving object is its own component with one home zone and one destination zone. Unrelated cards keep ≥70px separation, airborne shadows included. The central corridor holds at most one dominant temporary transfer object. A continuous process keeps one task object and changes its state at real stations. Floating objects stay above lower bases.
 - Slots and exits: slot occlusion begins only after a visible crossing; inserted modules finish fully behind the front lip with no residual fragment; temporary components exit completely (no half corner remains).
 - Shadows: dynamic shadow changes only when paper lifts; paper uses the engine's locked lift-linked contact/environment shadow recipe and no component invents a conflicting shadow.
 - In the official engine: display, title, body, label and micro copy use the locked type scale; no system glyphs or emoji as production icons (locked line-icon language); the whole-film grade is static and restrained (no animated grain or moving light texture); ordinary production edits stay inside the [ordinary editable surface](#ordinary-editable-surface).
@@ -42,8 +42,8 @@
 - Visual media: at least 3 distinct media across the film, and every explanation scene carries at least one live component that changes state with the narration. A pure card-and-bullets scene is rejected.
 - Density: every scene declares 3–5 functional zones and fills the lower quarter (bottom edge near y=876). An empty lower half is a PPT tell.
 - Background readability: content that overlaps a locked background decoration zone (`theme.backgroundDecorZones`) must sit on a `CoverPanel`; the background bitmap itself stays untouched.
-- Runtime overlap gate: after the first render, the console must show **no `OverlapGate` warnings** (text-vs-text overlap and paint-order occlusion, sampled every 15 frames). Intentional overlaps (shot handoff, header swap, metric value replacement) must be marked `data-gate-allow`; never use the allow-list to hide two different pieces of information colliding.
-- Main-slot fill gate (render path): **no `SlotGuard` warnings** — the main slot of `StageFrame` hands over the whole remaining height (`h − pad×2 − header − stamp`), so the content must fill it (target ≥60%; the guard reports the occupancy every rendered frame and speaks up below 35%; a one-line content in a full-height slot measured 11%). Width is still yours to budget: `mainW = w − pad×2 − railW − 18`.
+- Runtime overlap gate: after the first render, **no `OverlapGate` warnings** (text-vs-text overlap and paint-order occlusion, sampled every 15 frames). Intentional overlaps (shot handoff, header swap, metric value replacement) must be marked `data-gate-allow`; never use it to hide two different pieces of information colliding.
+- Main-slot fill gate (render path): **no `SlotGuard` warnings** — the main slot of `StageFrame` hands over the whole remaining height (`h − pad×2 − header − stamp`), so the content must fill it (target ≥60%; the guard reports occupancy every rendered frame and speaks up below 35%). Width is still yours to budget: `mainW = w − pad×2 − railW − 18`.
 - Motion: progress-like bars animate `scaleX` (never `width`); numeric readouts use `tabular-nums` with fixed fraction digits; every element's multi-property entrance uses different clocks (see draftpaper.md#motion-design).
 - Anti-PPT Functional Components: 技术概念（检索 / 记忆 / 上下文 / 契约 / 嵌入 / 安全）**不要**用一整排等大的要点卡去讲，要用**真的随旁白变化**的构件，从真实存在的里面挑：`ConsoleWindow` / `MetricGrid`（`media.tsx`）、`Funnel` / `ProgressRing` / `ChatThread`（`fxkit.tsx`）、`Chart` / `TreeView` / `NetworkGraph` / `ControlStack`（`src/components/`）。**不要把不可达（零 export、零 JSX 用法）的名字写成硬要求。**
 
@@ -52,7 +52,7 @@
 - Bottom-pinned pure caption text is present in every scene: one centered line, WenKai Lite 44px; no bar, torn contour, dark border, black side mark, inner line, orange locator or blue ring.
 - `CaptionFitGate` measures every fully revealed cue with the loaded WenKai font in the real render browser; every cue fits within the canvas safe width.
 - Partial reveal does not shift horizontally (hidden full-width placeholder).
-- Internal punctuation remains; trailing punctuation (`，。！？；、,.!?;:`) is strictly stripped and hidden visually via `cleanFull` and gated character length. Trailing punctuation mark on screen is an immediate rejection flag.
+- Internal punctuation remains; trailing punctuation (`，。！？；、,.!?;:`) is stripped and hidden via `cleanFull` and gated character length. A trailing punctuation mark on screen is an immediate rejection.
 - Caption segmentation is explicitly `semantic`, never `draft-character-count`.
 - Every model/product name, benchmark, number-plus-unit expression and fixed technical term is listed in the protected-phrase manifest; no protected phrase crosses a cue boundary; no ASCII identifier is split between cues.
 - Cue words flatten to the exact TTS word stream; caption timing leads measured speech by no more than about 80ms.
@@ -105,13 +105,13 @@ Do not stop at prompts, still images, a silent animation or an unvalidated rende
 
 ## Official aesthetic system
 
-The aesthetic layer preserved by the flat / cel track (see `locked-style-contract.json`): one official aesthetic track, one canonical project template (`assets/lecture-template`) and two locked skins, `flat` (default) and `cel`. (The old warm-ivory paper look and its `--classic` example were removed in 3.2.0.)
+The aesthetic layer preserved by the flat / cel track (see `locked-style-contract.json`): one official aesthetic track, one canonical project template (`assets/lecture-template`) and two locked skins, `flat` (default) and `cel`.
 
 ### Locked production grammar
 
-The system preserves the per-shot restricted camera, subtitle geometry, native 30fps card motion, declarative audio tree, asset gate and final draw order while allowing the scene grammar to follow meaning. Before storyboarding, select one primary **media kind** for each scene (`chart` / `console` / `code` / `graphic` / `text` / `metric` — 默认路线的路由维度，见 media.md#media-routing); `image-text` only applies when a scene uses a user-supplied / Commons / licensed image; read `director.md#visual-director`.
+The system preserves the per-shot restricted camera, subtitle geometry, native 30fps card motion, declarative audio tree, asset gate and final draw order while allowing the scene grammar to follow meaning. Before storyboarding, select one primary media kind per scene (closed set and `image-text` exception: see the checklist above, media.md#media-routing, `director.md#visual-director`).
 
-Real images are an optional input layer: the skill does not call image models, so images come from the user, Commons / Openverse or other licensed sources, used for concrete subjects where they improve comprehension. Keep exact text, arrows, diagrams and timing in Remotion. A project must remain buildable with native SVG alone.
+Real images are an optional input layer (user, Commons / Openverse or other licensed sources; the skill calls no image model). Keep exact text, arrows, diagrams and timing in Remotion. A project must remain buildable with native SVG alone.
 
 ### Locked aesthetic core
 
@@ -145,42 +145,25 @@ Stable semantic IDs must remain separate from display labels. Changing visible c
 
 - Preserve spacious composition and one hero action per zone; scene count follows the content.
 - Choose image-plus-text, pure text or pure graphic mode from meaning rather than repeating one scene family.
-- Treat bitmaps as animated assets, never as the finished scene; keep exact labels and diagrams outside the bitmap as live Remotion layers; record source, prompt summary, crop policy and rights for every raster asset.
-- Keep the bottom-pinned pure caption text at one centered line (no torn bar); use browser-native caption measurement after the exact font is loaded.
-- Use the official palette and type scale; do not invent per-scene styling.
-- Use lift-linked paper shadows only for moving paper; keep the grade static and restrained.
+- Treat bitmaps as animated assets, never as the finished scene (raster, caption and shadow rules: checklist above).
+- Use the official palette and type scale; do not invent per-scene styling. Keep the grade static and restrained.
 - Never lay a full-frame translucent wash over the background: the three backgrounds per theme keep their central ~70% calm on purpose, and a wash turns the corner characters into ghosts.
-- Icons: `LineIcon` (glyphs from `lucide-react`) is the primary icon language, not system glyphs or emoji. Topic-specific marks use `TopicIcon`: `simple-icons` for brands (single-colour paths, theme colour only) and `lucide-react` for line marks, with `strokeWidth` matched to `LineIcon`'s visual weight. See technique.md#dependency-policy §7.5.
+- Icons: `LineIcon` (`lucide-react` glyphs) is the primary icon language, never system glyphs or emoji. Topic-specific marks use `TopicIcon`: `simple-icons` for brands (single-colour paths, theme colour only), `lucide-react` for line marks, `strokeWidth` matched to `LineIcon`. See technique.md#dependency-policy §7.5.
 - Preserve the same persistent task-card, shared-track and physical-slot logic.
 
 ### Locked official elements
 
-Keep these locked until the user approves a future rendered replacement. For any aesthetic change: work in a disposable project copy, render the complete film, obtain user approval, and only then overwrite the template, the theme files and the contract. Do not write an experimental change into this skill until the user sees the rendered film and explicitly approves it.
+Keep these locked until the user approves a future rendered replacement. For any aesthetic change: work in a disposable project copy, render the complete film, obtain explicit user approval, and only then overwrite the template, the theme files and the contract.
 
-- React + TypeScript + Remotion rendering core;
-- locked premium motion contracts shipped in the template: `JumpInText` per-glyph 3D flip titles, `ShimmerText` sweep on CTA strings, multi-keyframe figure roll-ins, per-word subtitle reveal, and the shot layer (see [camera.md#shot-language](camera.md#shot-language));
-- fixed native 30fps motion on the single locked canvas 2560×1440 (16:9); no duplicate-frame upconversion; 60fps only when motion is authored natively at 60fps;
-- mount only the active scene, with at most two scenes during a short handoff;
-- animate moving objects with transforms instead of per-frame layout properties (**progress bars animate `scaleX`, never `width`**);
-- the active skin's three locked background rasters (`main` / `chapter` / `quiet`, `flat` default or `cel`), chosen per shot by the backdrop rule;
-- stable top-left chapter card and top-right technical header, both **outside** the shot camera;
-- bottom-pinned pure caption text with per-word reveal and soft text shadow; no decorative bar, dark border, side marks, locator or ring;
-- LXGW WenKai Lite as the unified CJK typeface plus Clash Display (downloaded on demand from Fontshare; offline falls back to Space Grotesk) / Space Grotesk Latin accents, with WenKai registered as the CJK fallback face of every Latin display family (`src/fonts.tsx`) so no text ever falls back to a system font;
-- TTS word timing converted once to integer absolute frames;
-- independent semantic parts with explicit z-order, entry and complete exit;
-- a spatial density budget: one hero action per zone, no temporary stack in the center;
-- a shot layer: one camera intent per shot from the closed set plus an `anchor` that `validate-shot-motion.py` must prove stays visible (restricted recipes, not free curves — and not frozen framing);
-- four scene skeletons (`Stage` / `Corridor` / `Split` / `Zoom`), **no two adjacent scenes sharing one**, at least three per film;
-- content→medium routing: at least three distinct visual media per film, at least one live state-changing component per explanation scene (**a pure card-and-bullets scene is a gate failure**);
-- a shot table that references narration cues instead of hard-coded frame numbers ([scenes.md#scene-skeletons](scenes.md#scene-skeletons));
-- background readability via `CoverPanel`: locked background bitmaps stay as they are; content overlapping a declared decoration zone sits on a feathered backing plate ([media.md#media-routing](media.md#media-routing));
-- shared-track continuity when one object changes state across several stations;
-- real slot geometry: insertable parts cross the slot, move behind the front lip and disappear fully;
-- declarative narration and action effects inside the Remotion component tree;
-- font/audio/image asset preload gate before the first frame;
-- a visual plan selecting pure text/graphic scenes by default, with image-plus-text only after the user accepts the add-on;
-- optional imagery as preloaded Remotion assets with prompt, crop and rights records;
-- H.264/AAC output, automated QA, contact sheets and editable source package.
+- Core: React + TypeScript + Remotion; fixed native 30fps on the single locked canvas 2560×1440 (16:9), no duplicate-frame upconversion, 60fps only when authored natively at 60fps; mount only the active scene (at most two during a short handoff); transforms, not per-frame layout properties (**progress bars animate `scaleX`, never `width`**).
+- Premium motion contracts shipped in the template: `JumpInText` per-glyph 3D flip titles, `ShimmerText` sweep on CTA strings, multi-keyframe figure roll-ins, per-word subtitle reveal, and the shot layer ([camera.md#shot-language](camera.md#shot-language)).
+- Frame furniture: the active skin's three locked background rasters (`main` / `chapter` / `quiet`, `flat` default or `cel`) chosen per shot by the backdrop rule; stable top-left chapter card and top-right technical header, both **outside** the shot camera; bottom-pinned pure caption text with per-word reveal and soft text shadow (no bar, dark border, side marks, locator or ring).
+- Type: LXGW WenKai Lite as the unified CJK face plus Clash Display (on demand from Fontshare; offline falls back to Space Grotesk) / Space Grotesk Latin accents, with WenKai registered as CJK fallback of every Latin display family (`src/fonts.tsx`) so no text falls back to a system font.
+- Timing and audio: TTS word timing converted once to integer absolute frames; declarative narration and action effects inside the Remotion component tree; font/audio/image preload gate before the first frame.
+- Objects: independent semantic parts with explicit z-order, entry and complete exit; spatial density budget (one hero action per zone, no temporary stack in the center); shared-track continuity across stations; real slot geometry (cross the slot, move behind the front lip, disappear fully).
+- Shots and scenes: a shot layer (closed intent set + proven-visible `anchor`; restricted recipes, not free curves, not frozen framing), four scene skeletons and content→medium routing, with the counts in the checklist above (**a pure card-and-bullets scene is a gate failure**); a shot table that references narration cues instead of hard-coded frame numbers ([scenes.md#scene-skeletons](scenes.md#scene-skeletons)); background readability via `CoverPanel` (feathered backing plate; bitmaps untouched — [media.md#media-routing](media.md#media-routing)).
+- Imagery: pure text/graphic scenes by default, image-plus-text only after the user accepts the add-on; optional imagery as preloaded Remotion assets with prompt, crop and rights records.
+- Output: H.264/AAC, automated QA, contact sheets and editable source package.
 
 <a id="composition-gate"></a>
 
@@ -190,7 +173,7 @@ Keep these locked until the user approves a future rendered replacement. For any
 
 ### 1. 为什么必须有这一层
 
-没有「会因为像 PPT 而拒绝渲染」的门禁，条款再多也会随时间退化。所以这里的规则**少而硬**：条款可以少，但写下的每一条都必须真的被检查。
+没有会拒绝 PPT 感的门禁，条款终会退化。所以规则**少而硬**：写下的每一条都必须真的被检查。
 
 ### 2. 十一项检查
 
@@ -217,19 +200,15 @@ P0 七项（P0-1…P0-7）+ P1 四项（P1-7…P1-10）。
 | **P1-9** | 状态变化间隔 | 任意 120 帧（4s）内至少一次画面变化；静止 >45 帧提示补呼吸 |
 | **P1-10** | 背景装饰可读性 | `contentBand` 与主题装饰区相交时须声明 `cover` |
 
-> **P0-4 降级说明**：「画面下半空洞」是 PPT 感的主要来源之一，所以底部填充是 P0。但 `bottomFill` 是生成分镜表的脚本自己写的常量，
-> 门禁查 `== true` 结构上不可能报错。所以声明位**只查字段在不在**；真实判据在**渲染期 `FillGate`**：
-> 量画面（信息元素的最低边 vs y=876），不是量声明。原则：**声明能查的只有「写没写」，「做没做到」必须实测。**
+> **P0-4 降级说明**：底部空洞是 PPT 感主因，所以是 P0；但 `bottomFill` 是脚本自己写的常量，查 `== true` 永远不报，故声明位**只查字段在不在**，真实判据在**渲染期 `FillGate`**（信息元素最低边 vs y=876）。原则：**声明能查的只有「写没写」，「做没做到」必须实测。**
 
 #### 横向空洞（实测，只报不拦）
 
-`FillGate` 除纵向外还量横向，**含手作皮肤**。拿同一批实测盒子落到 8×6 网格，每镜报四个数：
-`cells`（48 格占用）/ `blank`（整列没有任何元素的列数）/ `largest`（最大单体面积 ÷ 画面面积）/ `widest`（最大单体横向跨度 ÷ 画宽）。
+`FillGate` 也量横向，**含手作皮肤**：实测盒子落到 8×6 网格，每镜报 `cells`（48 格占用）/ `blank`（整列无元素的列数）/ `largest`（最大单体面积 ÷ 画面面积）/ `widest`（最大单体横向跨度 ÷ 画宽）。
 
-- **只报不拦**：它量的是版面审美，不是画错。
-- 落盘 `<工程>/renders/fill-coverage.json`，**合并**写入、每条带 `at`（量的时间）：只量一镜不会抹掉其它镜，看 `at` 分新旧。
-- **只有整片 `render` 和 `sweep` 落盘**；`preview` / `render-range` / `review-frames` 是窗口渲染，量到的是「窗口内最完整帧」，只打印不落盘。
-- `sweep` 每镜取一帧量一遍，少一镜会明写「未量到」。
+- **只报不拦**：量的是版面审美，不是画错。
+- 落盘 `<工程>/renders/fill-coverage.json`，**合并**写入、每条带 `at`（量的时间），只量一镜不抹其它镜。
+- **只有整片 `render` 和 `sweep` 落盘**（`sweep` 每镜量一帧，缺镜明写「未量到」）；`preview` / `render-range` / `review-frames` 是窗口渲染，只打印不落盘。
 
 | 项 | 规则 | 为什么 |
 |---|---|---|
@@ -238,9 +217,9 @@ P0 七项（P0-1…P0-7）+ P1 四项（P1-7…P1-10）。
 | 组合装置 | `blank = 0` **且** `cells ≥ 24/48` 时视为不空，不看面积 | 多个中等元素拼成一个主体时 `largest` 按单个元素量天生很小 |
 | 阈值 | `largest < 0.06`（且不属上面两种豁免）→ 主体过小；`blank ≥ 3/8` → 横向空洞 | 先量后定，取自实测基线 |
 
-**镜头开头空着是正常的**（量的是最完整那一帧）：不要为了开头好看把东西提前摆上，出现规则见 [draftpaper.md#reveal-rules](draftpaper.md#reveal-rules)。
+**镜头开头空着是正常的**：别为此提前摆东西，出现规则见 [draftpaper.md#reveal-rules](draftpaper.md#reveal-rules)。
 
-**空洞处补一层「属于主体」的东西**，不是补一句话。已验证的四个装置（例子在 `cell/src/scenes.tsx`）：
+**空洞处补一层「属于主体」的东西**，不是补一句话。四个装置（例子在 `cell/src/scenes.tsx`）：
 
 | 装置 | 什么时候用 | 例 |
 |---|---|---|
@@ -251,7 +230,7 @@ P0 七项（P0-1…P0-7）+ P1 四项（P1-7…P1-10）。
 
 判据：**把这一层拿掉，主体还是不是完整的？** 是 → 那层是装饰（删）；不是 → 它是内容。
 
-不该做：加「功能分区」凑覆盖率（逼作者往空白里塞清单）；放大卡片凑面积（`largest` 变大了，观众还是不知道看哪儿）；给空白处单独加一行字（把空场翻译成文字，没解决空）。
+不该做：加「功能分区」凑覆盖率；放大卡片凑面积（观众仍不知看哪）；给空白处单独加一行字（没解决空）。
 
 ### 3. 怎么跑
 
@@ -269,8 +248,7 @@ python scripts/validate-shot-motion.py PROJECT_DIR
 ```
 
 退出码：`0` 通过（可含 P1）/ `1` 存在 P0（或 `--strict` 下存在 P1）/ `2` 用法或文件错误。
-设了环境变量 `NV_GATE_JSON=<文件>` 时，每条 P0 / P1 另外追加一行统一格式的 JSON（见 `technique.md#auto-engine`「门禁分工」）；make-video 汇总成 `renders/gates.json`。
-两者都是**纯标准库、只读**，可直接放进 CI。
+设了 `NV_GATE_JSON=<文件>` 时每条 P0 / P1 另追加一行统一 JSON（见 `technique.md#auto-engine`「门禁分工」），make-video 汇总成 `renders/gates.json`。两者**纯标准库、只读**，可放进 CI。
 
 ### 4. 失败时怎么办
 
@@ -279,14 +257,14 @@ python scripts/validate-shot-motion.py PROJECT_DIR
 | P0-1 相邻同骨架 | 换骨架，**不是**改 `shots.json` 里的字符串。构图真的不同才算换。 |
 | P0-2 纯卡片堆 | 找出这一段"机制是什么"，换成能演示它的构件（见 `media.md#media-routing` §2）。 |
 | P0-3 运镜不足 | 给章节首镜加 `establish`，给聚焦处加 `push-in`；不要为了凑数加无意义甩镜。 |
-| P0-4 下 1/4 空洞 | 补一个真实信息元素（指标条 / 结论条 / 清单），**不是**放大现有卡片凑面积。判据在渲染期 `FillGate`：改完重渲那一镜的抽帧看 `[FillGate]` 出水，构建期只告诉你"字段写没写"。手作皮肤（journal / papercut / archive）不判纵向（大留白是设计）；flat / cel 的警告按镜头去重，渲染结束汇总成一行 `FillGate: N shots (S2,S5,…) bottom-quarter underfilled`。 |
+| P0-4 下 1/4 空洞 | 补一个真实信息元素（指标条 / 结论条 / 清单），**不是**放大现有卡片凑面积。改完重渲那一镜抽帧看 `[FillGate]` 输出。手作皮肤（journal / papercut / archive）不判纵向（大留白是设计）；flat / cel 的警告按镜头去重，结束汇总成 `FillGate: N shots (S2,S5,…) bottom-quarter underfilled`。 |
 | P0-5 介质单一 | 至少换一段内容用另一种介质（图表 / 控制台 / 大字 / 补丁）。 |
 | P0-6 出界 | 收窄运镜幅度或把 `anchor` 改成真正的解说对象外框；**不要**把 anchor 改小来绕过检查。 |
 | P1-9 长时间无变化 | 在最长间隔中点加一次状态变化（元素入场 / 数值变化 / 主体相位切换）。 |
 
 > **不要把门禁改松来通过。** 某条判据在真实题材上系统性误报，说明判据要改，但要经过「出片验证 + 用户确认」，不是当场调阈值。
 
-**修复顺序**：先修**组件级**（一次修好全部场景），再修**场景级坐标**。组件级根因的典型形态：缩放矩阵写错（`ZoomStage` 用三段式 `translate(框心) scale(k) translate(-焦点)`，并传 `contentW/contentH` 让缩放自动钳制）；相邻标签没有垂直预算（`Corridor` 状态标签放承载物**上方** 46px、站点标签下移 96px）；固定像素宽度撞上随 `railW` 变化的动态列宽；承载物盖住站点圆环与对勾（缩小承载物 / 把到站反馈画在环外侧）。
+**修复顺序**：先修**组件级**（一次修好全部场景），再修**场景级坐标**。组件级典型根因：缩放矩阵写错（`ZoomStage` 用三段式 `translate(框心) scale(k) translate(-焦点)`，并传 `contentW/contentH` 让缩放自动钳制）；相邻标签没有垂直预算（`Corridor` 状态标签放承载物**上方** 46px、站点标签下移 96px）；固定像素宽度撞上随 `railW` 变化的动态列宽；承载物盖住站点圆环与对勾（缩小承载物 / 把到站反馈画在环外侧）。
 
 ### 5. 与运行时门禁的分工
 
@@ -294,12 +272,12 @@ python scripts/validate-shot-motion.py PROJECT_DIR
 |---|---|---|
 | `validate-shot-motion.py` / `validate-composition.py` | **构建期**（不渲染） | 构图 / 骨架 / 介质 / 镜头配方与出界 |
 | `CardFitGate` | **渲染期**（浏览器内） | 文字溢出卡片 |
-| `SlotGuard` | **渲染期**（出图路径，`StageFrame` 内） | main 槽的**占用率**（槽内有内容的最内层元素并集高度 ÷ 槽高，<35% 出声）：槽给足了、内容没填满；槽宽仍按 `mainW = w − pad×2 − railW − 18` 自己先算 |
+| `SlotGuard` | **渲染期**（出图路径，`StageFrame` 内） | main 槽**占用率**（槽内最内层内容元素并集高度 ÷ 槽高，<35% 出声）；槽宽自己按 `mainW` 算（见清单） |
 | `OverlapGate` | **渲染期**（每 15 帧抽样） | **文字两两重叠 + 文字被遮挡**（有意覆盖用 `data-gate-allow` 白名单） |
-| `CanvasBoundsGate` | **渲染期**（每帧） | **含文字的叶元素**（HTML 叶 + SVG `text`/`tspan`）的墨迹越出视口（= composition 尺寸，输出像素口径）。补的是其它门禁都不管的一类：`ClippingGate` 只认 SVG 图元、`CardFitGate` 只管卡片内溢出、`OverlapGate` 管互相压、`FillGate` 管铺到多低、构建期 `coords-lint.py` 排除布局件。见 §5.2 |
+| `CanvasBoundsGate` | **渲染期**（每帧） | **含文字的叶元素**墨迹越出画布——其它门禁（`ClippingGate` / `CardFitGate` / `OverlapGate` / `FillGate` / `coords-lint.py`）都不管的一类。见 §5.2 |
 | `CaptionFitGate` | **渲染期** | 字幕超宽（按当前画幅与主题真实字重/字距测量） |
 | `validate-caption-sync.py` / `validate-semantic-breaks.py` | 构建期 | 字幕与 TTS 词边界一致、保护短语不被切开 |
-| `validate-presentation.py` | 构建期 | **呈现效果**：beat↔cue 时间接近、字幕阅读预算、字号地板与对比度——见 [checks.md#presentation-gate](checks.md#presentation-gate) |
+| `validate-presentation.py` | 构建期 | **呈现效果**：beat↔cue 时间接近、字幕阅读预算、字号地板与对比度——见 [下文](#presentation-gate) |
 | `notebook-video validate-video` | 交付前 | 时长、音视频编码、**色彩契约**（§6.1）、响度、黑帧 |
 
 **分工原则**：能用算术在构建期证明的，不要留到渲染期；只有需要真实字体/布局测量的，才放在浏览器内。
@@ -310,53 +288,51 @@ python scripts/validate-shot-motion.py PROJECT_DIR
 仍越出视口 ≥ **6 像素** → 出声；**落定态**（有效不透明度 ≥ 0.98）**且**越界 ≥ **20 像素** → 硬拦（`cancelRender`，rc≠0 且不产出任何图；与 `ClippingGate` 同口径）。
 
 - 「会裁切的祖先」= 取景框（`ZoomStage` 视口、接触表里 scale 过的格子），被它裁住的不算越界；铺满整个视口的祖先不算裁切。
-- 阈值单位是**输出像素**（2560×1440 上 20px ≈ 15 设计像素），不做设计坐标回折；换 `--scale` 时判据跟着输出走。
-- 入场途中元素在画布外飞是运动，只出声不拦。
-- **相机不计入**：被运镜放大推到画布外的文字**会**出声（误报面存在），这是片子挂 `warn` 的原因之一（§6）。
-- **不查**：一个字都没有的装饰块越出画布（`ClippingGate` 也不管，已知空白）；图形与版面件（与 `ClippingGate` 不重复报，同一处只报一次；SVG 文字既被 `<svg>` 视口裁又越出画布时两道各报一次，报的是两件事）。
-- 每帧都量；整片渲染的耗时影响未实测，片子渲染变慢时这里是第一嫌疑。
+- 阈值单位是**输出像素**（2560×1440 上 20px ≈ 15 设计像素），换 `--scale` 时判据跟着输出走。
+- 入场途中在画布外飞是运动，只出声不拦。
+- **相机不计入**：被运镜推出画布的文字**会**出声（误报面存在，片子挂 `warn` 的原因之一，§6）。
+- **不查**：无字装饰块越出画布（已知空白）；图形与版面件（归 `ClippingGate`，同一处只报一次；SVG 文字既被 `<svg>` 视口裁又越出画布时两道各报一次）。
+- 每帧都量；片子渲染变慢时这里是第一嫌疑。
 
-**档位**：`mode="block"`（接触表）落定态 ≥20px 硬拦；`mode="warn"`（片子）只出声。覆盖率日志每 150 帧一次
-`[CanvasBoundsGate] @帧 扫过 N 个文字叶，无越界`（探针开 `debug` 则每帧），让「没报」与「没跑」可区分——**扫过 0 个要当异常查**。
+**档位**：`mode="block"`（接触表）落定态 ≥20px 硬拦；`mode="warn"`（片子）只出声。覆盖率日志每 150 帧一次 `[CanvasBoundsGate] @帧 扫过 N 个文字叶，无越界`（`debug` 时每帧），区分「没报」与「没跑」——**扫过 0 个要当异常查**。
 
 **怎么修**（别调阈值）：
 
 1. 看日志里的文字与越界量（形如 `按 Flash 结算 越出右缘 26px`），直接定位组件。
-2. **容器给窄一点 / 内容收回来**：例如 `Corridor` 端点标签块是 `pts[i] ± 150`，`x/w` 给太满就伸出画布，改成两端对称留白（`x={130} w={1580}`，口径见 `skeletons.tsx` 注释）。
+2. **容器给窄 / 内容收回**：如 `Corridor` 端点标签块是 `pts[i] ± 150`，`x/w` 太满就伸出画布，改两端对称留白（`x={130} w={1580}`，见 `skeletons.tsx` 注释）。
 3. 内容确实要出画布（有意出血/取景）：在组件上标 `data-gate-allow="<理由>"`，**不要**把阈值调大。
-4. 接触表这类**目录 composition**：格子摆不下就换页或换格子表（一页 5 件用 `showcase.tsx` 的 `Grid5`，3 列 × 2 行），别让第 N 件落在画布外。
+4. 接触表这类**目录 composition**：摆不下就换页或换格子表（一页 5 件用 `showcase.tsx` 的 `Grid5`，3 列 × 2 行）。
 
-**负向夹具**：`scripts/negative-gate-check.py` 的 **AB0–AB4**（静态：接线、档位、硬拦纪律、判据收窄）。真渲染的夹具工程建在演示 / 交付工程**之外**（复用现成 `node_modules`，用完可删）；**别把渲染夹具塞进交付工程**。
+**负向夹具**：`scripts/negative-gate-check.py` 的 **AB0–AB4**（静态：接线、档位、硬拦纪律、判据收窄）。真渲染夹具建在演示 / 交付工程**之外**；**别把渲染夹具塞进交付工程**。
 
 ### 6. 交付门槛
 
 - `validate-composition.py` **P0 = 0**；`validate-shot-motion.py` **P0 = 0**；
 - P1 项逐条人工确认（每条都要有结论，不能"没看"）；
 - `CardFitGate` / `CaptionFitGate` 在整片渲染中没有触发 `cancelRender`；
-- **`CanvasBoundsGate` 在片子（`NotebookVideoFilm`）上是 `warn`**：渲染日志里有 `[CanvasBoundsGate]` 出水就逐条人工确认（文字可能被画布切掉的嫌疑，不是自动放行）。不在片子上硬拦：判据的实测来源是接触表，硬拦发生在交付渲染最后一刻，误报代价是整片不出。等它在片子上抓到第一处真缺陷再谈升回 block；这条口径由 **AB3** 夹具守着；
-- 接触表（`NotebookVideoShowcase`）的 `CanvasBoundsGate` 保持 **block**：件整件看不见 = 目录页缺件，属于画错了，不能退回 warn；
+- **`CanvasBoundsGate` 在片子（`NotebookVideoFilm`）上是 `warn`**：日志里有 `[CanvasBoundsGate]` 输出就逐条人工确认（不是自动放行）。不硬拦是因为判据实测自接触表，误报代价是整片不出；口径由 **AB3** 夹具守着；
+- 接触表（`NotebookVideoShowcase`）的 `CanvasBoundsGate` 保持 **block**：整件看不见 = 目录页缺件，属于画错，不能退回 warn；
 - **色彩契约**：`validate-video` 断言交付 mp4 的 `color_range / color_space / color_transfer / color_primaries` 精确等于 `tv / bt709 / bt709 / bt709`，任一项不符即 fail（打印实际值与修复提示），见 §6.1；
 - 某条判据被人工判定为误报，**记录在案并说明理由**，不要静默放宽。
 
 #### 6.1 色彩契约断言（`validate-video`）
 
-生产端有两道（`--color-space=bt709` + 渲染后 `h264_metadata` 回写 SPS VUI，见 `technique.md#windows-compatibility`）；这一条是交付端的那道：谁把参数删了，片子照样渲得出来，但四项元数据会退化成 `pc / bt470bg / unknown / unknown`，严格播放器按 BT.601 + 满幅解释，饱和色偏移。
+生产端两道（`--color-space=bt709` + 渲染后 `h264_metadata` 回写 SPS VUI，见 `technique.md#windows-compatibility`），这是交付端那道：参数被删时片子照样渲得出，但元数据退化成 `pc / bt470bg / unknown / unknown`，严格播放器按 BT.601 + 满幅解释，饱和色偏移。
 
-**判据**：四项精确等于 `tv / bt709 / bt709 / bt709`；缺字段一律按 `unknown` 报。**只认这一个组合**，不放宽成"看起来自洽"：
+**判据**：四项精确等于 `tv / bt709 / bt709 / bt709`；缺字段按 `unknown` 报。**只认这一个组合**，不放宽成"看起来自洽"：
 
-1. 交付都是 SDR 网络播放：`pc` 会被当有限幅解释而偏色，`bt470bg`（BT.601）与 `bt709` 矩阵不同同样偏色——放行等于把已修的缺陷放回来；
-2. 自洽推不出合格：`pc + bt709×3` 字段自洽，但渲染端已按 `range=limited` 转换过像素（`technique.md#windows-compatibility` 第 1 条），放行等于把"标错范围"当合格；
+1. SDR 网络播放下 `pc` 与 `bt470bg` 都会偏色；
+2. `pc + bt709×3` 字段自洽，但像素已按 `range=limited` 转换（`technique.md#windows-compatibility` 第 1 条），放行等于把"标错范围"当合格；
 3. 门禁职责是抓**漂移**，判据就该精确等于契约。
 
-**只挂交付门**：Remotion 自己 stitch 出来的 raw mp4（未经 `h264_metadata` 回写）本来就不满足，所以不去卡渲染路径。
+**只挂交付门**：Remotion 直出的 raw mp4（未经 `h264_metadata` 回写）本来就不满足，所以不卡渲染路径。
 
 <a id="presentation-gate"></a>
 
 ## 呈现效果门禁（`validate-presentation.py`）
 
 全技能现有 14 道门禁（构建期 6 + 渲染期 7 + 成片后验 1，表见 [scenes.md#handwritten-scenes](scenes.md#handwritten-scenes) 的 The gates），本道是构建期之一。
-其它门禁查「画面里**有没有** / **够不够多** / **会不会撞**」；这一道查 **观众此刻该看哪里、读不读得过来、讲的和画的对不对得上**。
-纯算术、不需要渲染、零新增数据模型。调研与依据见 `呈现效果调研.md`。
+其它门禁查「**有没有** / **够不够多** / **会不会撞**」；这一道查**观众此刻该看哪、读不读得过来、讲的和画的对不对得上**。纯算术、不渲染、零新增数据模型。依据见 `呈现效果调研.md`。
 
 ```bash
 python scripts/validate-presentation.py PROJECT_DIR [--json]
@@ -379,9 +355,9 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 | ③b-P1 | 贴边预警 | 距上界只剩 ≤4 帧（`BEAT_TIGHT_FRAMES`）→ P1。**合法但脆**：配音或 cue 表一变就先从这里挤成 P0 |
 | ④ | 每条 cue 至少有一拍 | 本镜 `cueFirst..cueLast` 全被 `beats` 覆盖；确实不需要的在 `shots.json` 里显式写 `silentCues: [i]`（**写出来才放行**） |
 
-- **下界与上界缺一不可**；**8 帧容差是承重墙不是安全边际**：模板最紧的合法拍就是 `offset = 该句帧数`（"这句讲完时那拍出现"是设计约定），余量恰好 8 帧。
-- **任何一次换配音 / 重算 cue 表，都必须重跑本门禁。** 修数据的方向永远是把拍挪回句内/句末，**不是把容差调大**。
-- 判据是「beat 落在它声明的那句/那一镜的范围内、且不提前也不拖后」，**不是**调研报告原文的 `|beat − cueStart| ≤ 6 帧`：`beats` 本来就允许句内偏移（`{cue:13, offset:100}` = 同一句的第二拍），照抄会给正确数据报 P0。依据：temporal contiguity（PMC12691884）+ 视听线索同步实验（JEP 2019, DOI 10.1037/edu0000285）。
+- **下界与上界缺一不可**；**8 帧容差是承重墙不是安全边际**：模板最紧的合法拍就是 `offset = 该句帧数`（设计约定），余量恰好 8 帧。
+- **任何一次换配音 / 重算 cue 表，都必须重跑本门禁。** 修法永远是把拍挪回句内/句末，**不是把容差调大**。
+- 判据**不是**调研报告原文的 `|beat − cueStart| ≤ 6 帧`：`beats` 允许句内偏移（`{cue:13, offset:100}` = 同句第二拍），照抄会给正确数据报 P0。依据：temporal contiguity（PMC12691884）+ 视听线索同步实验（JEP 2019, DOI 10.1037/edu0000285）。
 
 #### G-2 字幕阅读预算（P0）——Netflix 中文（简体）Timed Text Style Guide
 
@@ -406,35 +382,35 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 | 被 `color:` 用过的**任意其它调色板键** on 纸面 < 4.5:1 | P1（按主题聚合） | 用原色（或 `orangeDeep` 这类填充 token）当文字色。**修法是换成对应的 Ink 变体，不是调松门禁** |
 | 彩色填充上的白字 < 3.0 | P1（按主题聚合） | 见第三节 |
 
-**强调色当文字色时**：① 这个词位本来就该是文字 → 换成对应的 `*Ink`；② token 同时还要当填充（如 `orangeDeep` 是章节序号渐变的深色端）→ **原值留给填充，文字位改 `orangeInk`**；③ token 只当文字用（如 `headerAccent` / `headerSub`）→ 就地压到过线（同色相按 WCAG 反解）。
+**强调色当文字色时**：① 该词位本就是文字 → 换对应 `*Ink`；② token 还要当填充（如 `orangeDeep` 是章节序号渐变深色端）→ **原值留给填充，文字位改 `orangeInk`**；③ token 只当文字（如 `headerAccent` / `headerSub`）→ 就地压到过线（同色相按 WCAG 反解）。
 
-**配对是声明的契约**，只有五类：正文 `ink on 表面`、深底反白 `white on ink`、彩色反白 `white on <强调色>`、次要文字 `muted on 表面`、彩字 `<强调色> on 表面`。不能用静态交叉或 `background:` 推断去猜"谁压在谁上面"（会把 `white on paper` 这种永远不会出现的组合报成 P0）。
+**配对是声明的契约**，只有五类：正文 `ink on 表面`、深底反白 `white on ink`、彩色反白 `white on <强调色>`、次要文字 `muted on 表面`、彩字 `<强调色> on 表面`。不能用静态交叉或 `background:` 推断"谁压在谁上面"（会把永不出现的 `white on paper` 报成 P0）。
 
-**能力边界（别高估）**：只读 `theme/*.tsx` 里 `palette` 字面量、只认标准键名。拦得住"用标准键写错了色值"，拦不住"换个写法压低对比"：硬编码文字色（`style={{color:'#dcdcdc'}}`）完全不报；把正文色改名只报 P1；`linear-gradient()` / `conic-gradient()` 里的停靠色、SVG 的 `fill` / `stroke` 都读不到。量真实 DOM 的 computed color 属于渲染期 FocusGate（调研报告 §5.2，**未实现**）。
+**能力边界（别高估）**：只读 `theme/*.tsx` 的 `palette` 字面量、只认标准键名。拦得住"标准键写错色值"，拦不住"换写法压低对比"：硬编码文字色（`style={{color:'#dcdcdc'}}`）不报；正文色改名只报 P1；`linear-gradient()` / `conic-gradient()` 停靠色、SVG `fill` / `stroke` 读不到。真实 DOM computed color 属渲染期 FocusGate（调研报告 §5.2，**未实现**）。
 
-**扫描口径**：本门禁与 `import_integrity` 只扫"值位置"——扫描前把注释内部与字符串字面量内部抹成空格（长度与行号不变）。所以注释里的反例、模板字符串里的代码样例不算真代码；反过来，写在字符串里的可执行 import/字号（如从字符串生成场景源码）看不见，要靠人看（本技能不鼓励这种写法）。
+**扫描口径**：本门禁与 `import_integrity` 只扫"值位置"——先把注释与字符串字面量内部抹成空格（长度与行号不变）。注释里的反例、模板字符串里的样例不算真代码；反之写在字符串里的可执行 import/字号看不见，要靠人看（本技能不鼓励这种写法）。
 
 #### G-14/G-15/G-16 讲法字段（P0/P1）——判据见 `director.md#narrative-moves` §4
 
-`shots.json` 里 `move` / `evidence` / `hold` / `misconception(+noMisconception+why)` 是否写全、`move` 是否落在 10 个名字的闭集里、`hold` 是否 ≥ 标定线、误解二选一是否成立。判据、取值与标定在 [director.md#narrative-moves](director.md#narrative-moves) §2–§4，这里不重复。
+`shots.json` 里 `move` / `evidence` / `hold` / `misconception(+noMisconception+why)` 是否写全、`move` 是否在 10 个名字的闭集里、`hold` 是否 ≥ 标定线、误解二选一是否成立。判据与标定在 [director.md#narrative-moves](director.md#narrative-moves) §2–§4。
 
-**G-15 `evidence` 的口径**：只查一件事——名字必须**作为 JSX 用法**（`<名字 …>` / `<名字/>`）出现在该工程的**场景源码**里（扫前用 `noncode()` 抹掉注释与字符串，只在注释 / import / 字符串里出现的名字报 P0）。**不做**（写清代价）：
+**G-15 `evidence` 的口径**：只查名字是否**作为 JSX 用法**（`<名字 …>` / `<名字/>`）出现在**场景源码**里（扫前 `noncode()` 抹掉注释与字符串；只在注释 / import / 字符串里出现报 P0）。**不做**（代价写明）：
 
-- **不做本镜作用域**：名字在本镜没用到、但在别的镜用了，会漏（夹具 AG 钉着这个语义）。
-- **不做"是不是静态"**：指向一个本镜不动的静态卡片不会响（那一半只能做白名单，误报面实测存在：帧经 `ctx` 传进的 `PhaseRail` 会被判成静态）。
+- **不做本镜作用域**：本镜没用、别镜用了会漏（夹具 AG 钉着）。
+- **不做"是不是静态"**：指向本镜不动的静态卡片不会响（只能做白名单；实测误报：帧经 `ctx` 传进的 `PhaseRail` 会被判静态）。
 - **不做降级**：没有"本镜"这一层，无级可降。
 
 原则：**宁可少报，不要假报告。**
 
-**编号**：这一组不是 G-6。G-6 在调研报告里是"对比层结构闭合"（需要 `compare` 字段），未实现。本组用 `director.md#narrative-moves` §4 的编号：G-14 `move` 闭合 / G-15 `evidence` 真的会动 / G-16 误解与留白；G-17（`known → new` 闭合）未实现。**编号属于调研报告的清单，新门禁只能往后排。**
+**编号**：本组用 `director.md#narrative-moves` §4 的编号（G-14 `move` 闭合 / G-15 `evidence` 真的会动 / G-16 误解与留白；G-17 `known → new` 未实现），不是 G-6（调研报告的"对比层结构闭合"，未实现）。**编号属于调研报告的清单，新门禁只能往后排。**
 
 #### G-5 节拍拥挤（P1，代理指标）
 
-同一镜内 **≥3 个 beat 落在 12 帧窗口** → P1（好几件事挤在一拍上，观众分不清该看哪）。报告原文的 G-5 是每帧新开始的入场动画数直方图，需要元素级 `enters` 声明，现有数据里没有，这里只做代理形式。
+同一镜内 **≥3 个 beat 落在 12 帧窗口** → P1（观众分不清该看哪）。原文 G-5 需元素级 `enters` 声明，现无此数据，只做代理形式。
 
 ### 二、负向夹具（`scripts/negative-gate-check.py` 的 I–M · R · S · X · Y · AC–AE · AF–AK）
 
-**每条判据都要有「喂坏输入必须拦住」的夹具 + 阴性对照**（名存实亡的门禁是最危险的缺陷）；判据加了而夹具没加，这道门仍然只是名义存在。`must_block:<子串>` 断言保证"因别的原因失败"不算通过。
+**每条判据都要有「喂坏输入必须拦住」的夹具 + 阴性对照**（没有夹具的判据只是名义存在）。`must_block:<子串>` 断言保证"因别的原因失败"不算通过。
 
 | 夹具 | 喂了什么 | 期望 |
 |---|---|---|
@@ -458,10 +434,10 @@ node scripts/notebook-video.mjs validate-presentation PROJECT_DIR
 
 ### 三、已知的真实缺陷（P1 报出来、处置留给人）
 
-**彩色填充上的白字对比度不足**（flat / cel 上需逐色复测）：要么把填充色压深、要么给白字加描边，是纯审美取舍，**留给用户拍板**，不要替用户改主题配色。（强调色当文字色那一半已用 `*Ink` 文字安全色机制处理。）
+**彩色填充上的白字对比度不足**（flat / cel 需逐色复测）：压深填充或给白字描边是审美取舍，**留给用户拍板**，不要替用户改主题配色。（强调色当文字色已由 `*Ink` 机制处理。）
 
 ### 四、还没做的
 
-- G-4 屏上文字总量预算、G-6 对比层结构闭合（需要 `compare` 字段）、G-8 空间接近、G-13 信号-旁白对齐（需要序数词/实体名闭集）——都在调研报告的批次 B/C 里。
+- G-4 屏上文字总量预算、G-6 对比层结构闭合（需 `compare` 字段）、G-8 空间接近、G-13 信号-旁白对齐（需序数词/实体名闭集）——调研报告批次 B/C。
 - G-5 的原始形式（元素级 `enters` 直方图）需要新声明。
 - G-3 渲染期真实 DOM 对比度（FocusGate）。
