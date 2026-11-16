@@ -51,6 +51,26 @@ FPS = float(C["FPS"])
 # freezedetect 的噪声门限：-60dB 表示"两帧差异小于 -60dB 才算冻结"（很严，抓的是"几乎一模一样"）
 NOISE = "-60dB"
 MIN_SEG = 1.0  # 只统计 ≥1s 的段（低于 1s 的是正常呼吸/停顿）
+# 锤子帧（满屏一句话，SKILL.md 规定停 1.5–2.5 s）本来就该静止：落在锤子镜里的静止段
+# 放宽到 3.0 s（2.5 s + 前后半秒的入场收尾），超过仍是 P0。
+HAMMER_MAX_STATIC = 3.0
+HAMMER_LIVE = {"StampBanner", "HandLettering", "Seal"}
+
+
+def hammer_shots(project: Path, shots: list) -> set:
+    """锤子镜的 id：auto 路线看 manifests/fusion.json 的 recipe=hammer，手写路线看 live 里的锤子件。"""
+    ids = {s.get("id") for s in shots if HAMMER_LIVE & set(s.get("live") or [])}
+    fz = project / "manifests" / "fusion.json"
+    if fz.is_file():
+        per = (json.loads(fz.read_text(encoding="utf-8")).get("shots") or {})
+        ids |= {sid for sid, v in per.items() if isinstance(v, dict) and v.get("recipe") == "hammer"}
+    return ids
+
+
+def judge(rows: list, max_static: float, hammers: set) -> list:
+    """超限的静止段：一般镜 ≥ max_static，锤子镜 ≥ HAMMER_MAX_STATIC（取两者较大）。"""
+    lim = lambda r: max(max_static, HAMMER_MAX_STATIC) if r.get("shot") in hammers else max_static  # noqa: E731
+    return [r for r in rows if r["dur_s"] >= lim(r)]
 
 
 def run_freezedetect(video: Path, crop_h: float) -> list[tuple[float, float]]:
@@ -111,7 +131,8 @@ def main() -> int:
         )
     rows.sort(key=lambda r: -r["dur_s"])
 
-    bad = [r for r in rows if r["dur_s"] >= args.max_static]
+    hammers = hammer_shots(project, shots)
+    bad = judge(rows, args.max_static, hammers)
     total = sum(r["dur_s"] for r in rows)
 
     if args.json:
@@ -122,7 +143,7 @@ def main() -> int:
         if rows:
             print("  ---- 最长的 10 段 ----")
             for r in rows[:10]:
-                mark = "P0" if r["dur_s"] >= args.max_static else "  "
+                mark = "P0" if r in bad else ("锤" if r["shot"] in hammers and r["dur_s"] >= args.max_static else "  ")
                 loc = f"{r['shot']} 本地帧 {r['local_from']}" if r["local_from"] is not None else "?"
                 print(
                     f"  {mark} {r['start_s']:7.2f}s  {r['dur_s']:5.2f}s ({r['dur_frames']:>3} 帧)  {loc}"

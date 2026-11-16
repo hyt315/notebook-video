@@ -512,7 +512,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" review-frames ./notebook-video-pro
 | `CanvasBoundsGate` | render (every frame) | **含文字的叶元素**（HTML 叶 + SVG `text`/`tspan`）的**墨迹矩形**（`Range` 取字）越出 composition 视口：≥6px 出声、落定态（有效不透明度 ≥0.98）≥20px 硬拦；不判图形 / 版面件（归 `ClippingGate`，避免同一元素重复报）。补的是其它渲染期门禁与 `coords-lint.py`（排除布局件）都不管的「文字被画布边缘裁掉」。判据见 [references/checks.md#composition-gate](checks.md#composition-gate) §5.2 | `mode="warn"` in the bundled film / `mode="block"` on the contact sheet (deliberately different gears; reasons in `index.tsx` and the gate's header) |
 | `FillGate` | render (same sampling) | **下 1/4 实测密度**：信息元素（有文字/有边框/有描边）rect 并集的最低边 vs y=876（±24 容差），z≥140 的子树跳过。这是 P0-4 的**真实判据**（构建期只查 `bottomFill` 字段在不在） | warn（观感线；"画错了"那三类才硬拦） |
 | `SlotGuard` | render (output path, inside `StageFrame`) | **fill of the main slot**: union height of the innermost content elements ÷ slot height; speaks up below 35% and prints the slot's `mainW×mainH` — catches "slot was big enough, content left it empty" (measured: a 428px slot used 11%) | warn |
-| `validate-motion-gaps.py` | **post-render (T3, needs the MP4)** | **画面真的没动**：ffmpeg `freezedetect` 逐帧比对，连续"几乎完全相同"超过阈值（默认按镜长比例）即 P0。⚠️ 必须先裁掉字幕带，否则逐字上屏的字幕会把每一段静止都遮掉 | yes (P0) |
+| `validate-motion-gaps.py` | **post-render (T3, needs the MP4)** | **画面真的没动**：ffmpeg `freezedetect` 逐帧比对，连续"几乎完全相同" ≥ 2.5 s 即 P0（锤子镜放宽到 3.0 s：锤子帧本来就该停 1.5–2.5 s）。⚠️ 必须先裁掉字幕带，否则逐字上屏的字幕会把每一段静止都遮掉 | yes (P0) |
 
 Intentional overlaps (shot handoff, header swap, metric value replacement) must be declared with
 `data-gate-allow`; the allow-list may never hide two different pieces of information colliding.
