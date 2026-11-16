@@ -39,7 +39,8 @@ def rule_key(r: dict) -> str:
     """一条记录的判据标识：自带编号就用编号，否则用消息开头（数字抹成 #），与本次的条序无关。"""
     rid = r.get("id") or ""
     if GENERIC_ID.match(rid):
-        rid = re.sub(r"\d+(\.\d+)?", "#", (r.get("message") or "").lstrip("-· "))[:14]
+        msg = (r.get("message") or "").replace("\\", "/")  # Windows 路径分隔符归一，快照跨平台一致
+        rid = re.sub(r"\d+(\.\d+)?", "#", msg.lstrip("-· "))[:14]
     return f"{r['level']}|{rid}"
 
 
