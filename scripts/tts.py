@@ -285,9 +285,10 @@ def main() -> int:
             if r.returncode != 0:
                 return fail("✗ 字幕没能按新旁白重建：\n" + (r.stderr or r.stdout)[-800:]
                             + "\n  手动重跑：python scripts/build-semantic-captions.py audio/narration.mp3.json manifests/semantic-caption-lines.txt manifests/caption-cues.json")
-            (project / "src").mkdir(exist_ok=True)
-            shutil.copyfile(cues_out, project / "src" / "caption-cues.json")
-            print(f"tts：手写工程 → 已按词级时间重建字幕 {cues_out.relative_to(project)}（并同步到 src/）")
+            legacy = project / "src" / "caption-cues.json"  # 旧工程的 index.tsx 还 import 这份
+            if legacy.is_file():
+                shutil.copyfile(cues_out, legacy)
+            print(f"tts：手写工程 → 已按词级时间重建字幕 {cues_out.relative_to(project)}")
         else:
             print("tts：⚠ 没有 manifests/semantic-caption-lines.txt，字幕没有重建；validate-caption-sync 会失败", file=sys.stderr)
     marker = project / "audio" / ".silent-placeholder"

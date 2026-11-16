@@ -4,7 +4,6 @@ const path = require('node:path');
 const root = __dirname;
 const pairs = [
   ['audio/narration.mp3', 'public/narration.mp3'],
-  ['manifests/caption-cues.json', 'src/caption-cues.json'],
 ];
 for (const [from, to] of pairs) {
   const source = path.join(root, from);
@@ -18,7 +17,7 @@ for (const [from, to] of pairs) {
     throw new Error(`Render input sync failed: ${from} -> ${to}`);
   }
 }
-console.log('Synchronized canonical render inputs into public/ and src/.');
+console.log('Synchronized canonical render inputs into public/.');
 
 // 3.5.0 · 声音配置：默认无 BGM。只有 manifests/treatment.json 明确写 sound.music.use=true 才加载音乐床。
 // 生成 src/audio-config.ts 而不是让 TSX 去读 manifests：渲染包只认 src/ 下的静态 import。

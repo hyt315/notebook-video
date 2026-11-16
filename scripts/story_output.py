@@ -123,7 +123,9 @@ def write_project(story, comp, out_shots, story_ts, total, proj: Path, p=None):
             "break_rule": f"compose-story (silent, {_cap.CPS} chars/s, ≤{MAX_CHARS} chars per line)", "cues": cues}
     txt = json.dumps(cdoc, ensure_ascii=False, indent=1) + "\n"
     (proj / "manifests" / "caption-cues.json").write_text(txt, encoding="utf-8")
-    (proj / "src" / "caption-cues.json").write_text(txt, encoding="utf-8")
+    legacy = proj / "src" / "caption-cues.json"  # 旧工程的 index.tsx 还 import 这份；新工程只读 manifests/
+    if legacy.is_file():
+        legacy.write_text(txt, encoding="utf-8")
     # 有 TTS 的 meta 时，audio/narration.mp3.json 是**真实词级时间**，compose 不许覆盖它
     # （覆盖后字幕会退回"按 4.5 字/秒估算"，与音频脱同步，而且看不出来）。
     if not (proj / "audio" / "narration.meta.json").is_file():

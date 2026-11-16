@@ -774,7 +774,6 @@ Use the canonical tree copied by the cross-platform `scripts/notebook-video.mjs 
 ```text
 project/
 ├── src/index.tsx
-├── src/caption-cues.json
 ├── public/
 │   ├── fonts and licenses
 │   ├── narration.mp3

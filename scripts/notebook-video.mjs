@@ -436,11 +436,11 @@ const newProject = async (args) => {
 const syncProjectAssets = async ([projectArg], {quiet = false} = {}) => {
   if (!projectArg) fail('Usage: notebook-video sync PROJECT_DIRECTORY', 2);
   const project = resolvePath(projectArg);
-  const pairs = [
-    ['audio/narration.mp3', 'public/narration.mp3'],
-    ['manifests/caption-cues.json', 'src/caption-cues.json'],
-  ];
-  const required = [...pairs.map(([from]) => from), 'audio/narration.mp3.json'];
+  const pairs = [['audio/narration.mp3', 'public/narration.mp3']];
+  // 字幕只读 manifests/caption-cues.json（src/index.tsx 直接 import 它）。
+  // 旧工程的 index.tsx 还 import src/caption-cues.json：那份文件在时继续同步，免得渲染旧字幕。
+  if (fs.existsSync(path.join(project, 'src', 'caption-cues.json'))) pairs.push(['manifests/caption-cues.json', 'src/caption-cues.json']);
+  const required = [...pairs.map(([from]) => from), 'manifests/caption-cues.json', 'audio/narration.mp3.json'];
   for (const rel of required) {
     const source = path.join(project, ...rel.split('/'));
     if (!isNonEmptyFile(source)) fail(`Required render input is missing or empty: ${source}`);
@@ -452,7 +452,7 @@ const syncProjectAssets = async ([projectArg], {quiet = false} = {}) => {
     fs.copyFileSync(source, target);
     if (hashFile(source) !== hashFile(target)) fail(`Render input sync failed: ${from} -> ${to}`);
   }
-  if (!quiet) console.log('Synchronized canonical render inputs into public/ and src/.');
+  if (!quiet) console.log('Synchronized canonical render inputs into public/.');
 };
 
 const prepareBrowser = async ([projectArg]) => {

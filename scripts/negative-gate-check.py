@@ -1061,9 +1061,8 @@ cleanup(td)
 #   CC = match-timing：防护从 assert 换成 raise SystemExit 后，`python -O` 喂
 #        "lock 与 chapters 镜数不一致"的坏输入仍必须拦（needle = 新报错独有文案；
 #        旧版 -O 下 assert 被剥离，会带着错误数据往下跑到 FileNotFoundError 为止）。
-#   CD = validate-caption-sync：manifests/ 与 src/ 两份 caption-cues.json 都在且**不等** →
-#        必须报"dual-copy divergence"（防"校验一份、渲染另一份"）。
-#   CE = 两份等值 → 必须放行（CD 的阴性对照）。
+#   （原 CD 双份字幕不等用例已删：字幕只剩 manifests/ 一份，index.tsx 直接 import 它。）
+#   CE = validate-caption-sync：单份字幕、与配音时间一致 → 必须放行（阴性对照）。
 #   CF = validate-skill-consistency 新增的画布数值双真源交叉校验：把 canvas.ts 的
 #        designW 单独改掉 → 一致性检查必须红（needle = "canvas mode numeric drift"）。
 #        放行侧 = 本仓全量 `python scripts/validate-skill-consistency.py` rc=0（任务验证项）。
@@ -1103,32 +1102,18 @@ cleanup(td)
 CAPSYNC = os.path.join(SKILL, 'scripts/validate-caption-sync.py')
 
 
-def mkcues(diverge=False):
-    """最小"双份 cues"工程：manifests 与 src 各一份 caption-cues.json + 词级时间戳。
-    diverge=True 时只改 src 那份（真正被 index.tsx import 的那份），内容**不等**。"""
+def mkcues():
+    """最小字幕工程：只有 manifests/caption-cues.json（单份，index.tsx 直接 import 它）+ 词级时间戳。"""
     td_ = tempfile.mkdtemp(prefix='nv-cues-')
-    for sub in ('manifests', 'src', 'audio'):
+    for sub in ('manifests', 'audio'):
         os.makedirs(os.path.join(td_, sub), exist_ok=True)
     shutil.copy(os.path.join(TPL, 'manifests/caption-cues.json'), os.path.join(td_, 'manifests/caption-cues.json'))
-    shutil.copy(os.path.join(TPL, 'manifests/caption-cues.json'), os.path.join(td_, 'src/caption-cues.json'))
     shutil.copy(os.path.join(TPL, 'audio/narration.mp3.json'), os.path.join(td_, 'audio/narration.mp3.json'))
-    if diverge:
-        p = os.path.join(td_, 'src/caption-cues.json')
-        doc = json.loads(io.open(p, encoding='utf-8').read())
-        doc['cues'][0]['text'] = doc['cues'][0]['text'] + '（只改了渲染那份，校验那份不知道）'
-        io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(doc, ensure_ascii=False, indent=2))
     return td_
 
 
-td = mkcues(diverge=True)
-case('CD 字幕同步 · manifests 与 src 两份 caption-cues 不等（校验一份渲染另一份）', [
-    ('must_block:dual-copy divergence', 'validate-caption-sync',
-     run([PY, CAPSYNC, os.path.join(td, 'audio/narration.mp3.json'), os.path.join(td, 'manifests/caption-cues.json')])),
-])
-cleanup(td)
-
-td = mkcues(diverge=False)
-case('CE 字幕同步 · 两份等值（阴性对照，必须放行）', [
+td = mkcues()
+case('CE 字幕同步 · 单份字幕与配音时间一致（阴性对照，必须放行）', [
     ('must_pass', 'validate-caption-sync',
      run([PY, CAPSYNC, os.path.join(td, 'audio/narration.mp3.json'), os.path.join(td, 'manifests/caption-cues.json')])),
 ])

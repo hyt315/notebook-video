@@ -2,7 +2,6 @@
 """Audit skill files for obsolete renderer residue, stale render inputs, or contract mismatches."""
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 import subprocess
@@ -503,9 +502,6 @@ def main() -> None:
 
     lecture = SKILL / 'assets' / 'lecture-template'
     lecture_cues = lecture / 'manifests' / 'caption-cues.json'
-    lecture_src_cues = lecture / 'src' / 'caption-cues.json'
-    if hashlib.sha256(lecture_cues.read_bytes()).digest() != hashlib.sha256(lecture_src_cues.read_bytes()).digest():
-        raise SystemExit("lecture-template caption-cues mismatch between manifests/ and src/")
 
     subprocess.run([sys.executable, str(SKILL / 'scripts' / 'validate-layering.py'), str(lecture / 'manifests' / 'asset-manifest.json')], check=True)
     subprocess.run([sys.executable, str(SKILL / 'scripts' / 'validate-visual-plan.py'), str(lecture)], check=True)

@@ -1,7 +1,7 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {AbsoluteFill,Composition,Easing,Img,Sequence,cancelRender,continueRender,delayRender,interpolate,registerRoot,spring,staticFile,useCurrentFrame as useRawCurrentFrame} from 'remotion';
 import {Audio} from '@remotion/media';
-import cueData from './caption-cues.json';
+import cueData from '../manifests/caption-cues.json';  // 字幕只有这一份（manifests/），不再复制进 src/
 import CONTRACT from './contract.json';
 
 // ============================================================================

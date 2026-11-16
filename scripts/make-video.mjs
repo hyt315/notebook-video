@@ -335,7 +335,10 @@ const writeReport = (frames, sheets, extra = '') => {
 };
 
 // 同步渲染输入
-fs.copyFileSync(path.join(project, 'manifests', 'caption-cues.json'), path.join(project, 'src', 'caption-cues.json'));
+// 字幕只读 manifests/caption-cues.json（index.tsx 直接 import）；旧工程还留着 src/ 那份时继续同步它。
+if (fs.existsSync(path.join(project, 'src', 'caption-cues.json'))) {
+  fs.copyFileSync(path.join(project, 'manifests', 'caption-cues.json'), path.join(project, 'src', 'caption-cues.json'));
+}
 fs.copyFileSync(path.join(project, 'audio', 'narration.mp3'), path.join(project, 'public', 'narration.mp3'));
 
 if (flag('stills')) {

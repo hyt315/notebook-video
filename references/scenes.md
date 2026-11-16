@@ -628,7 +628,7 @@ refuse to borrow a width from another composition rather than silently pass), an
 the gate, not pass), a skill copy with the removed example project put back, a scene source whose shot functions
 cannot be found — paired with one pinning that the bare `FC<` spelling of every shot function must pass —
 a stale resolved timeline, a match-timing mismatch fed under `python -O` (guards must never be plain
-`assert`s), two caption-cues copies that disagree (validate one while rendering the other), and the
+`assert`s), and the
 canvas-mode dual-source cross-check where `canvas.ts` drifts away from the validator that pairs with it
 (other shared numbers — FPS, caption cap, reading speed, stage, zoom caps, grow timing — live once in
 `assets/lecture-template/src/contract.json`, read by both TS and Python, so they cannot drift), three camera-default fixtures (omitted `rotY` and

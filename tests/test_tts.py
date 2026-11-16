@@ -87,8 +87,20 @@ class HandwrittenCaptionRebuild(unittest.TestCase):
             self.assertIn("已按词级时间重建字幕", r.stdout)
             cues = project / "manifests" / "caption-cues.json"
             self.assertTrue(cues.is_file(), "没有产出 caption-cues.json")
-            self.assertEqual(cues.read_bytes(), (project / "src" / "caption-cues.json").read_bytes(),
-                             "src/ 里的字幕副本没同步")
+            self.assertFalse((project / "src" / "caption-cues.json").exists(),
+                             "字幕只留 manifests/ 一份，不该再往 src/ 复制")
+
+    def test_handwritten_legacy_src_copy_is_kept_in_sync(self):
+        """旧工程的 index.tsx 还 import src/caption-cues.json：那份在时要跟着重建。"""
+        with tempfile.TemporaryDirectory() as td:
+            project = self._project(td, fusion=False)
+            (project / "src").mkdir()
+            (project / "src" / "caption-cues.json").write_text("{}", encoding="utf-8")
+            r = subprocess.run([sys.executable, str(TTS), str(project), "--engine=file"],
+                               capture_output=True, text=True, timeout=120)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertEqual((project / "manifests" / "caption-cues.json").read_bytes(),
+                             (project / "src" / "caption-cues.json").read_bytes())
 
     def test_auto_project_is_left_alone(self):
         with tempfile.TemporaryDirectory() as td:
