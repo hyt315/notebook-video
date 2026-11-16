@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 ALLOWED_MODES = {"image-text", "pure-text", "pure-graphic"}
-ALLOWED_SOURCES = {"ai-generated", "user-supplied", "licensed-third-party"}
+ALLOWED_SOURCES = {"ai-generated", "user-supplied", "licensed-third-party", "code-generated"}
 
 # Locked parameter set for the only delivery canvas (16:9, 3.2.0+). Any other
 # Composition width is rejected.

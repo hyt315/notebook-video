@@ -535,7 +535,7 @@ Draw diagrams, arrows, exact labels and data with SVG/HTML inside Remotion. Imag
 Store each used raster in `public/illustrations/` and record it in `manifests/visual-assets.json` with:
 
 - stable ID and relative file path;
-- `source_type`: `ai-generated`, `user-supplied` or `licensed-third-party`;
+- `source_type`: `ai-generated`, `user-supplied`, `licensed-third-party` or `code-generated` (procedural, e.g. the craft-skin backgrounds — matches `backgrounds.json` `source.kind: procedural` and NOTICE);
 - provider or source URL when applicable;
 - prompt summary or original-asset description;
 - intended scene and crop policy;

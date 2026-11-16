@@ -29,7 +29,7 @@
 
 - Background, chapter, header and subtitle match the canonical example.
 - Every scene declares one primary **media kind** (`chart` / `console` / `code` / `graphic` / `text` / `metric`) — 默认路线的路由维度。`image-text` 只在场景用用户提供 / Commons / 授权图片时才出现（见 director.md#visual-director；技能不调用生图模型）。
-- Images: concrete subjects use original, supplied or licensed imagery when seeing the subject materially improves comprehension. Imagery contains no baked labels, charts, logos or UI text; exact information remains in Remotion. Every raster is registered in `visual-assets.json` with source, prompt/description, crop policy and rights. Image scenes synchronize recognition, callout, relation and conclusion instead of placing a static image beside unrelated copy. Images receive only restrained crop reveal or push-in motion; annotations move independently.
+- Images: concrete subjects use original, supplied or licensed imagery when seeing the subject materially improves comprehension. Imagery contains no baked labels, charts, logos or UI text; exact information remains in Remotion. Every raster is registered with source, prompt/description, crop policy and rights: skin backgrounds and user-supplied images in `visual-assets.json`, the background library in `backgrounds.json`. Image scenes synchronize recognition, callout, relation and conclusion instead of placing a static image beside unrelated copy. Images receive only restrained crop reveal or push-in motion; annotations move independently.
 - Objects: every independently moving object is an independent component with one home zone and one destination zone. Unrelated cards keep at least 70px separation, including airborne shadows. The central corridor contains at most one dominant temporary transfer object. A continuous process preserves one task object and changes its state at real stations. Floating objects stay above lower bases.
 - Slots and exits: slot occlusion begins only after a visible crossing; inserted modules finish fully behind the front lip with no residual fragment; temporary components exit completely (no half corner remains).
 - Shadows: dynamic shadow changes only when paper lifts; paper uses the engine's locked lift-linked contact/environment shadow recipe and no component invents a conflicting shadow.
@@ -135,7 +135,7 @@ Ordinary production models should primarily edit:
 3. semantic caption lines and protected phrases;
 4. scene timing constants when required by narration;
 5. the visual plan and `manifests/visual-assets.json`;
-6. supplied raster assets in `public/illustrations/`;
+6. supplied raster assets in `public/illustrations/` (created in the project when needed; the template ships none);
 7. topic-specific scene objects that preserve the same physical ownership and motion grammar;
 8. **the wrapped component layer in `src/components/`** — reach for a ready-made wrapped component, parameterised per scene, before hand-writing SVG. The dependency boundary and component rules live in [technique.md#dependency-policy](technique.md#dependency-policy); the template's `package.json` already declares those libraries, so no separate authorisation is needed to use them.
 
