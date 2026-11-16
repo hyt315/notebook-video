@@ -1,5 +1,6 @@
-import React, {useEffect} from 'react';
-import {cancelRender, continueRender, delayRender, useCurrentFrame} from 'remotion';
+import React from 'react';
+import {useCurrentFrame} from 'remotion';
+import {effectiveOpacity, useLayoutProbe} from './layout-probe';
 
 // ============================================================================
 // CanvasBoundsGate · 渲染期「画布越界」门禁（v2 · 简版，2026-09-22 换实现）
@@ -76,19 +77,6 @@ const TEXT_SEL = 'div,span,p,text,tspan';
 
 type Box = {left: number; top: number; right: number; bottom: number};
 
-/** 元素与其祖先的**有效**不透明度乘积（<0.02 一律当 0：还没出现 / 已经走了）。 */
-const effectiveOpacity = (el: Element) => {
-  let o = 1;
-  let n: Element | null = el;
-  while (n && n !== document.documentElement) {
-    const v = parseFloat(getComputedStyle(n as HTMLElement).opacity || '1');
-    if (!Number.isNaN(v)) o *= v;
-    if (o < 0.02) return 0;
-    n = n.parentElement;
-  }
-  return o;
-};
-
 /**
  * 元素的**墨迹矩形**：文字用 Range 取并集（真实字形），拿不到文本节点时退回 rect。
  * 块级容器整块宽不是字 —— 居中文字会被整块宽误判（`OverlapGate` 上踩过，这里同一处置）。
@@ -119,110 +107,68 @@ export const CanvasBoundsGate: React.FC<{
   debug?: boolean;
 }> = ({mode = 'warn', debug = false}) => {
   const raw = Math.round(useCurrentFrame());
-  useEffect(() => {
-    const handle = delayRender(`CanvasBoundsGate @${raw}`, {timeoutInMilliseconds: 60000});
-    let released = false;
-    let cancelled = false;
-    // 2026-09-21 实测过的坑（`ClippingGate` 与 `OverlapGate` 各踩过一次）：
-    // `cancelRender()` 的实现是 **`throw error`**，而判定整个包在 `try { … } catch (e) { warn }` 里；
-    // 抛出的异常一旦被自家 catch 吞掉、又走到 release()，handle 就归零 → `remotion_renderReady = true`
-    // → 渲染器判 "ready"（优先于 "cancelled"）→ **报了硬拦却照样出图 rc=0**。
-    // 处置：① 判定作出即置 `blocked`，此后 release() 一律空转（handle 永不释放）；
-    //       ② blocked 之后异常原样抛出，绝不再被自家 catch 吞掉。
-    let blocked = false;
-    const release = () => {
-      if (released || blocked) return;
-      released = true;
-      continueRender(handle);
-    };
-    const measure = () => {
-      if (cancelled) {
-        release();
-        return;
-      }
-      try {
-        const vw = window.innerWidth;   // Remotion 渲染时视口就是 composition 尺寸
-        const vh = window.innerHeight;
-        const issues: BoundsIssue[] = [];
-        let scanned = 0;
-        document.querySelectorAll<Element>(TEXT_SEL).forEach((el) => {
-          if (el.closest('[data-gate-skip]') || el.closest('[data-gate-allow]')) return;
-          // 引擎推近（data-cinema-focus）时画面是**有意**裁切的特写，版面是否越界在未推近的帧上量
-          if (el.closest('[data-cinema-focus]')) return;
-          if (!(el.textContent || '').trim()) return;    // 只看**含文字**的（装饰块/底托天然出局）
-          if (el.children.length) return;                // 只看**叶元素**（容器整块宽不是墨迹）
-          const cs = getComputedStyle(el as HTMLElement);
-          if (cs.visibility === 'hidden' || cs.display === 'none') return;
-          if (el.getClientRects().length === 0) return;  // 不参与布局（隐藏 / 未挂载）
-          const op = effectiveOpacity(el);
-          if (op < 0.05) return;                        // 还没出现 / 已经走了
-          let box = inkBoxOf(el);
-          if ((box.right - box.left) * (box.bottom - box.top) < 4) return; // 无实体的占位节点
-          // 扣掉**会裁切的祖先**：取景框（`ZoomStage` 视口、接触表里 scale 过的格子）是有意裁切，
-          // 被它裁住的部分不算越界。铺满整个视口的祖先不算裁切 —— 与它求交是恒等操作，
-          // 却会把"越出画布"这件事一起抹掉（v1 实渲栽在这一条）。
-          let n: Element | null = el.parentElement;
-          while (n && n !== document.body) {
-            const s = getComputedStyle(n as HTMLElement);
-            if (s.overflowX !== 'visible' || s.overflowY !== 'visible') {
-              const r = n.getBoundingClientRect();
-              if (r.width > 1 && r.height > 1 && !(r.left <= 0.5 && r.top <= 0.5 && r.right >= vw - 0.5 && r.bottom >= vh - 0.5)) {
-                box = {left: Math.max(box.left, r.left), top: Math.max(box.top, r.top), right: Math.min(box.right, r.right), bottom: Math.min(box.bottom, r.bottom)};
-              }
-            }
-            n = n.parentElement;
+  // 骨架（逐帧持柄、等字体就绪、硬拦时 handle 不释放且异常不被自家 catch 吞）在 layout-probe.tsx
+  useLayoutProbe({label: `CanvasBoundsGate @${raw}`, tag: '[CanvasBoundsGate]', timeoutInMilliseconds: 60000}, ({block}) => {
+    const vw = window.innerWidth;   // Remotion 渲染时视口就是 composition 尺寸
+    const vh = window.innerHeight;
+    const issues: BoundsIssue[] = [];
+    let scanned = 0;
+    document.querySelectorAll<Element>(TEXT_SEL).forEach((el) => {
+      if (el.closest('[data-gate-skip]') || el.closest('[data-gate-allow]')) return;
+      // 引擎推近（data-cinema-focus）时画面是**有意**裁切的特写，版面是否越界在未推近的帧上量
+      if (el.closest('[data-cinema-focus]')) return;
+      if (!(el.textContent || '').trim()) return;    // 只看**含文字**的（装饰块/底托天然出局）
+      if (el.children.length) return;                // 只看**叶元素**（容器整块宽不是墨迹）
+      const cs = getComputedStyle(el as HTMLElement);
+      if (cs.visibility === 'hidden' || cs.display === 'none') return;
+      if (el.getClientRects().length === 0) return;  // 不参与布局（隐藏 / 未挂载）
+      const op = effectiveOpacity(el);
+      if (op < 0.05) return;                        // 还没出现 / 已经走了
+      let box = inkBoxOf(el);
+      if ((box.right - box.left) * (box.bottom - box.top) < 4) return; // 无实体的占位节点
+      // 扣掉**会裁切的祖先**：取景框（`ZoomStage` 视口、接触表里 scale 过的格子）是有意裁切，
+      // 被它裁住的部分不算越界。铺满整个视口的祖先不算裁切 —— 与它求交是恒等操作，
+      // 却会把"越出画布"这件事一起抹掉（v1 实渲栽在这一条）。
+      let n: Element | null = el.parentElement;
+      while (n && n !== document.body) {
+        const s = getComputedStyle(n as HTMLElement);
+        if (s.overflowX !== 'visible' || s.overflowY !== 'visible') {
+          const r = n.getBoundingClientRect();
+          if (r.width > 1 && r.height > 1 && !(r.left <= 0.5 && r.top <= 0.5 && r.right >= vw - 0.5 && r.bottom >= vh - 0.5)) {
+            box = {left: Math.max(box.left, r.left), top: Math.max(box.top, r.top), right: Math.min(box.right, r.right), bottom: Math.min(box.bottom, r.bottom)};
           }
-          if (box.right - box.left <= 0.5 || box.bottom - box.top <= 0.5) return; // 全被裁 → 看不见
-          scanned++;
-          const over = Math.max(-box.left, box.right - vw, -box.top, box.bottom - vh);
-          if (over <= TOL) return;
-          const edge = -box.left === over ? '左缘' : box.right - vw === over ? '右缘' : -box.top === over ? '上缘' : '下缘';
-          issues.push({
-            kind: 'bounds',
-            frame: raw,
-            text: `${(el.textContent || '').trim().slice(0, 12)} 越出${edge} ${Math.round(over)}px`,
-            edge,
-            over: Math.round(over),
-            settled: op >= OPAQUE_FOR_SETTLED,
-          });
-        });
-
-        if (issues.length) {
-          const blocking = issues.filter((x) => x.settled && x.over >= BLOCK_PX);
-          const msg =
-            `[CanvasBoundsGate] @${raw} 共 ${issues.length} 处文字越出画布（落定态 ${blocking.length} 处）：` +
-            issues.slice(0, 5).map((x) => x.text).join(' | ');
-          if (typeof console !== 'undefined') console.warn(msg);
-          if (mode === 'block' && blocking.length) {
-            // 硬拦：blocked 置位后 handle 永不释放；cancelRender 抛出的异常由下面的 catch 原样放行
-            // （`if (blocked) throw e`）→ rc≠0 中止、不产出任何图。
-            blocked = true;
-            cancelRender(new Error(msg));
-            return;
-          }
-        } else if ((debug || raw % REPORT_EVERY === 0) && typeof console !== 'undefined') {
-          // 覆盖率：让「没报」与「没跑」可区分（旧门禁零输出两种含义混在一起）
-          console.warn(`[CanvasBoundsGate] @${raw} 扫过 ${scanned} 个文字叶，无越界`);
         }
-      } catch (e) {
-        if (blocked) throw e;
-        if (typeof console !== 'undefined') console.warn('[CanvasBoundsGate]', e);
+        n = n.parentElement;
       }
-      release();
-    };
-    const id = requestAnimationFrame(() => {
-      if (document.fonts && document.fonts.status !== 'loaded') {
-        // 等字体就绪再量（不能直接 return —— 另外两道门禁都因此每帧跳过，等于不存在）
-        document.fonts.ready.then(() => { if (!cancelled) measure(); }).catch(() => measure());
-        return;
-      }
-      measure();
+      if (box.right - box.left <= 0.5 || box.bottom - box.top <= 0.5) return; // 全被裁 → 看不见
+      scanned++;
+      const over = Math.max(-box.left, box.right - vw, -box.top, box.bottom - vh);
+      if (over <= TOL) return;
+      const edge = -box.left === over ? '左缘' : box.right - vw === over ? '右缘' : -box.top === over ? '上缘' : '下缘';
+      issues.push({
+        kind: 'bounds',
+        frame: raw,
+        text: `${(el.textContent || '').trim().slice(0, 12)} 越出${edge} ${Math.round(over)}px`,
+        edge,
+        over: Math.round(over),
+        settled: op >= OPAQUE_FOR_SETTLED,
+      });
     });
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(id);
-      release();
-    };
+
+    if (issues.length) {
+      const blocking = issues.filter((x) => x.settled && x.over >= BLOCK_PX);
+      const msg =
+        `[CanvasBoundsGate] @${raw} 共 ${issues.length} 处文字越出画布（落定态 ${blocking.length} 处）：` +
+        issues.slice(0, 5).map((x) => x.text).join(' | ');
+      if (typeof console !== 'undefined') console.warn(msg);
+      if (mode === 'block' && blocking.length) {
+        // 硬拦：handle 永不释放、异常不被吞（见 layout-probe.tsx）→ rc≠0 中止、不产出任何图。
+        block(msg);
+      }
+    } else if ((debug || raw % REPORT_EVERY === 0) && typeof console !== 'undefined') {
+      // 覆盖率：让「没报」与「没跑」可区分（旧门禁零输出两种含义混在一起）
+      console.warn(`[CanvasBoundsGate] @${raw} 扫过 ${scanned} 个文字叶，无越界`);
+    }
   }, [raw, mode, debug]);
 
   return null;

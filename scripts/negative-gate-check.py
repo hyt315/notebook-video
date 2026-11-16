@@ -35,7 +35,8 @@ from gatelib import (  # noqa: E402  公共壳：临时工程 / 跑脚本 / 断�
 # 所以这三条各自一条夹具：原样必须过，删掉任一条必须被抓住。
 # （真渲染的负向/正向夹具在演示工程之外：见 references/checks.md#composition-gate §5.2「负向夹具」；实测记录在 MAINTAINING.md。）
 # ════════════════════════════════════════════════════════════════════════════
-CANVAS_BOUNDS_NEEDLES = (
+# 测量骨架（逐帧持柄、等字体、硬拦纪律）在 layout-probe.tsx，五道浏览器门禁共用；判据留在门禁自己的文件里。
+PROBE_NEEDLES = (
     # (检查项, 子串, 说人话)
     ('硬拦纪律', 'let blocked = false;', '缺少 blocked 标志位：判定作出后 handle 还能被释放'),
     ('硬拦纪律', 'if (released || blocked) return;', '缺少"blocked 后 handle 不释放"的处置'),
@@ -44,6 +45,8 @@ CANVAS_BOUNDS_NEEDLES = (
     ('逐帧持柄', 'continueRender(', '缺 continueRender：handle 永远不释放，渲染卡死'),
     ('逐帧持柄', 'cancelRender(', '缺 cancelRender：硬拦根本无从谈起'),
     ('等字体', 'document.fonts.ready', '字体未就绪直接 return 会让每帧都跳过（另外两道门禁都踩过）'),
+)
+CANVAS_BOUNDS_NEEDLES = (
     # v2 判据的**收窄**就是这道门禁的全部价值所在（也是它不再与 ClippingGate 重复报的原因），
     # 所以这两条收窄各自一条夹具：削掉任一条，门禁就退回 v1 那个"什么都判"的宽口径。
     ('只看文字叶元素', 'if (el.children.length) return;', '丢掉了"只看叶元素"的收窄：容器的整块宽会被当成墨迹（居中文字误判）'),
@@ -64,9 +67,18 @@ def canvas_bounds_wiring(project_dir):
         return ['canvas-bounds-gate.tsx 不存在：渲染期画布越界门禁没有装']
     if not os.path.isfile(index):
         return ['src/index.tsx 不存在：无法确认门禁有没有被挂上']
+    probe = os.path.join(src, 'layout-probe.tsx')
+    if not os.path.isfile(probe):
+        return ['layout-probe.tsx 不存在：浏览器门禁的测量骨架没有装']
     g = io.open(gate, encoding='utf-8').read()
+    pr = io.open(probe, encoding='utf-8').read()
     t = io.open(index, encoding='utf-8').read()
     problems = []
+    if "from './layout-probe'" not in g or 'useLayoutProbe(' not in g:
+        problems.append('硬拦纪律：canvas-bounds-gate.tsx 没有走 layout-probe 的测量骨架（逐帧持柄 / 硬拦不被吞）')
+    for kind, needle, why in PROBE_NEEDLES:
+        if needle not in pr:
+            problems.append(f'{kind}：{why}（layout-probe.tsx 里找不到 `{needle}`）')
     for kind, needle, why in CANVAS_BOUNDS_NEEDLES:
         if needle not in g:
             problems.append(f'{kind}：{why}（找不到 `{needle}`）')
@@ -617,7 +629,7 @@ case('AB1 画布越界门禁 · 删掉片子里的挂载', [
 cleanup(td)
 
 # AB2 = 「异常不被自家 catch 吞」被删掉 —— 本仓库实测过两次的"报了硬拦却出图 rc=0"
-td, _rc, _out = mksrc_edits([('canvas-bounds-gate.tsx', 'if (blocked) throw e;', 'if (false) throw e;')])
+td, _rc, _out = mksrc_edits([('layout-probe.tsx', 'if (blocked) throw e;', 'if (false) throw e;')])
 case('AB2 画布越界门禁 · 删掉硬拦纪律（异常被自家 catch 吞）', [
     ('must_block:硬拦纪律', 'canvas-bounds-wiring', run(CBW + [td])),
 ])

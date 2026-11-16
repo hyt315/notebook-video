@@ -1,5 +1,6 @@
-import React, {useEffect, useMemo} from 'react';
-import {cancelRender, continueRender, delayRender, useCurrentFrame} from 'remotion';
+import React from 'react';
+import {useCurrentFrame} from 'remotion';
+import {useLayoutProbe, useSampledFrame} from './layout-probe';
 import {useCanvas} from './theme/canvas';
 import {THEME} from './theme/active';
 import {SHOTS} from './shots';
@@ -121,162 +122,103 @@ export const FillGate: React.FC<{
 }> = ({mode = 'warn', sampleEvery = SAMPLE_EVERY, watch, floorY = FLOOR_Y}) => {
   const raw = Math.round(useCurrentFrame());
   const {mode: canvasMode} = useCanvas();
-  const watchKey = (watch || []).join(',');
-  const hot = useMemo(() => {
-    const s = new Set<number>();
-    (watch || []).forEach((x) => {
-      for (let d = -EVENT_PAD; d <= EVENT_PAD; d++) s.add(Math.round(x) + d);
-    });
-    return s;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchKey]);
+  const {hot, should} = useSampledFrame(raw, sampleEvery, watch, EVENT_PAD);
   // 3.8.0：手作皮肤不再整条跳过。原来 `SKIN_SKIPPED` 把 journal/papercut/archive 全部短路，
   // 于是「主体缩在一角、四到七成空」这类横向空洞从来没有被量过（评审两轮都点了这条）。
   // 现在只跳过「下 1/4 必须填满」这条判据（手账的大留白确实不是空洞），覆盖率照量。
-  const should = raw % sampleEvery === 0 || hot.has(raw);
   const checkFloor = !SKIN_SKIPPED;
 
-  useEffect(() => {
-    if (!should) return;
-    const handle = delayRender(`FillGate @${raw}`);
-    let released = false;
-    let cancelled = false;
-    // 2026-09-21 实测修掉与 OverlapGate / ClippingGate 同源的「报而不拦」：
-    // `cancelRender()` 的实现是 **`throw error`**，若它被本函数自己的 catch 吞掉、
-    // 随后又 release()，handle 归零会让 `window.remotion_renderReady = true`；
-    // 而渲染器取状态时 "ready" 优先于 "cancelled"
-    // （@remotion/renderer/dist/seek-to-frame.js:46）→ 渲染照常成功。
-    // 处置：硬拦时置 `blocked`（此后 release() 空转、handle 永不释放），
-    // 且 blocked 之后异常原样抛出不吞。
-    let blocked = false;
-    const release = () => {
-      if (released || blocked) return;
-      released = true;
-      continueRender(handle);
-    };
-    const measure = () => {
-      if (cancelled) {
-        release();
-        return;
-      }
-      try {
-        // 设计坐标 → 输出坐标的比例：从设计根实测，不假设（Remotion 的 --scale 会改它）
-        const root = document.querySelector('[data-design-root]') as HTMLElement | null;
-        if (!root) {
-          release();
-          return;
-        }
-        const rr = root.getBoundingClientRect();
-        const k = rr.width / canvasMode.designW || 1;
-        let bottom = -Infinity;
-        let n = 0;
-        const boxes: Box[] = [];
-        document.querySelectorAll<HTMLElement>('div,span,p,svg,text,tspan,circle,ellipse,rect,path,line,polyline,polygon').forEach((el) => {
-          if (el.closest('[data-gate-skip]')) return;
-          if (el.closest('[data-gate-allow]')) return;
-          // 推近特写只免「下 1/4」判据；横向覆盖照量（裁到画布内），否则镜尾一推近整镜就零数据（sweep 0/8）。
-          const focused = !!el.closest('[data-cinema-focus]');
-          const b0 = infoBoxOf(el);
-          if (!b0) return;
-          const b = {left: Math.max(b0.left, rr.left), top: Math.max(b0.top, rr.top), right: Math.min(b0.right, rr.right), bottom: Math.min(b0.bottom, rr.bottom)};
-          if (b.right - b.left < 1 || b.bottom - b.top < 1) return;
-          n++;
-          boxes.push(b);
-          if (!focused && b.bottom > bottom) bottom = b.bottom;
-        });
-        if (!n) {
-          release();
-          return;
-        }
-        const designBottom = (bottom - rr.top) / k;
-
-        // 3.8.0 · 横向覆盖：把同一批实测盒子落到 8×6 网格上。
-        // 只出声、不判 —— 阈值要等这批数字量出来再定，避免又造一个"凭感觉"的门。
-        const dw = canvasMode.designW;
-        const dh = canvasMode.designH;
-        const cellW = dw / COVER_COLS;
-        const cellH = dh / COVER_ROWS;
-        const grid = new Uint8Array(COVER_COLS * COVER_ROWS);
-        let largest = 0;
-        let widest = 0;
-        for (const b of boxes) {
-          const l = (b.left - rr.left) / k;
-          const t = (b.top - rr.top) / k;
-          const r2 = (b.right - rr.left) / k;
-          const b2 = (b.bottom - rr.top) / k;
-          const area = Math.max(0, r2 - l) * Math.max(0, b2 - t);
-          if (area > largest) largest = area;
-          const span = Math.max(0, r2 - l) / dw;
-          if (span > widest) widest = span;
-          const c0 = Math.max(0, Math.min(COVER_COLS - 1, Math.floor(l / cellW)));
-          const c1 = Math.max(0, Math.min(COVER_COLS - 1, Math.ceil(r2 / cellW) - 1));
-          const r0 = Math.max(0, Math.min(COVER_ROWS - 1, Math.floor(t / cellH)));
-          const r1 = Math.max(0, Math.min(COVER_ROWS - 1, Math.ceil(b2 / cellH) - 1));
-          for (let cy = r0; cy <= r1; cy++) {
-            for (let cx = c0; cx <= c1; cx++) grid[cy * COVER_COLS + cx] = 1;
-          }
-        }
-        let cells = 0;
-        const colHit = new Uint8Array(COVER_COLS);
-        for (let cy = 0; cy < COVER_ROWS; cy++) {
-          for (let cx = 0; cx < COVER_COLS; cx++) {
-            if (grid[cy * COVER_COLS + cx]) { cells++; colHit[cx] = 1; }
-          }
-        }
-        let blankCols = 0;
-        for (let cx = 0; cx < COVER_COLS; cx++) if (!colHit[cx]) blankCols++;
-        const sidNow = shotAt(raw);
-        const prev = coverageSeen.get(sidNow);
-        const largestShare = largest / (dw * dh);
-        // 取"最完整的那一帧"：格子数更多，或格子数相同但主体更大。
-        if (!prev || cells > prev.cells || (cells === prev.cells && largestShare > prev.largest)) {
-          coverageSeen.set(sidNow, {cells, blank: blankCols, largest: largestShare, widest});
-          if (typeof console !== 'undefined') {
-            console.warn(
-              `[FillGate] coverage ${sidNow} cells=${cells}/${COVER_COLS * COVER_ROWS} ` +
-              `blank=${blankCols}/${COVER_COLS} largest=${largestShare.toFixed(2)} widest=${widest.toFixed(2)} n=${n}`
-            );
-          }
-        }
-
-        const pass = bottom === -Infinity || designBottom >= floorY - TOL;
-        if (checkFloor && !pass) {
-          const msg =
-            `[FillGate] @${raw} 内容底边只到 y=${Math.round(designBottom)}（设计坐标），` +
-            `P0-4 要求接近 y=${floorY}（下 1/4 不留空洞）；本帧计 ${n} 个信息元素。` +
-            `修法见 references/checks.md#composition-gate：补一个**真实信息元素**（指标条/结论条/清单），不是放大现有卡片凑面积。`;
-          const sid = shotAt(raw);
-          if (!warned.has(sid) && typeof console !== 'undefined') {
-            warned.add(sid);
-            console.warn(`[FillGate] underfilled ${sid} @${raw} y=${Math.round(designBottom)}`);
-          }
-          if (mode === 'block') {
-            // block 模式下才有拦的必要；blocked 置位后 handle 不再释放，
-            // cancelRender 抛出的异常由下面的 catch 原样放行 → 渲染 rc≠0 且不产出图。
-            blocked = true;
-            cancelRender(new Error(msg));
-            return;
-          }
-        }
-      } catch (e) {
-        if (blocked) throw e;
-        if (typeof console !== 'undefined') console.warn('[FillGate]', e);
-      }
-      release();
-    };
-    const id = requestAnimationFrame(() => {
-      if (document.fonts && document.fonts.status !== 'loaded') {
-        document.fonts.ready.then(() => { if (!cancelled) measure(); }).catch(() => measure());
-        return;
-      }
-      measure();
+  // 骨架（逐帧持柄、等字体就绪、硬拦时 handle 不释放且异常不被自家 catch 吞）在 layout-probe.tsx
+  useLayoutProbe({label: `FillGate @${raw}`, tag: '[FillGate]', active: should}, ({block}) => {
+    // 设计坐标 → 输出坐标的比例：从设计根实测，不假设（Remotion 的 --scale 会改它）
+    const root = document.querySelector('[data-design-root]') as HTMLElement | null;
+    if (!root) return;
+    const rr = root.getBoundingClientRect();
+    const k = rr.width / canvasMode.designW || 1;
+    let bottom = -Infinity;
+    let n = 0;
+    const boxes: Box[] = [];
+    document.querySelectorAll<HTMLElement>('div,span,p,svg,text,tspan,circle,ellipse,rect,path,line,polyline,polygon').forEach((el) => {
+      if (el.closest('[data-gate-skip]')) return;
+      if (el.closest('[data-gate-allow]')) return;
+      // 推近特写只免「下 1/4」判据；横向覆盖照量（裁到画布内），否则镜尾一推近整镜就零数据（sweep 0/8）。
+      const focused = !!el.closest('[data-cinema-focus]');
+      const b0 = infoBoxOf(el);
+      if (!b0) return;
+      const b = {left: Math.max(b0.left, rr.left), top: Math.max(b0.top, rr.top), right: Math.min(b0.right, rr.right), bottom: Math.min(b0.bottom, rr.bottom)};
+      if (b.right - b.left < 1 || b.bottom - b.top < 1) return;
+      n++;
+      boxes.push(b);
+      if (!focused && b.bottom > bottom) bottom = b.bottom;
     });
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(id);
-      release();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!n) return;
+    const designBottom = (bottom - rr.top) / k;
+
+    // 3.8.0 · 横向覆盖：把同一批实测盒子落到 8×6 网格上。
+    // 只出声、不判 —— 阈值要等这批数字量出来再定，避免又造一个"凭感觉"的门。
+    const dw = canvasMode.designW;
+    const dh = canvasMode.designH;
+    const cellW = dw / COVER_COLS;
+    const cellH = dh / COVER_ROWS;
+    const grid = new Uint8Array(COVER_COLS * COVER_ROWS);
+    let largest = 0;
+    let widest = 0;
+    for (const b of boxes) {
+      const l = (b.left - rr.left) / k;
+      const t = (b.top - rr.top) / k;
+      const r2 = (b.right - rr.left) / k;
+      const b2 = (b.bottom - rr.top) / k;
+      const area = Math.max(0, r2 - l) * Math.max(0, b2 - t);
+      if (area > largest) largest = area;
+      const span = Math.max(0, r2 - l) / dw;
+      if (span > widest) widest = span;
+      const c0 = Math.max(0, Math.min(COVER_COLS - 1, Math.floor(l / cellW)));
+      const c1 = Math.max(0, Math.min(COVER_COLS - 1, Math.ceil(r2 / cellW) - 1));
+      const r0 = Math.max(0, Math.min(COVER_ROWS - 1, Math.floor(t / cellH)));
+      const r1 = Math.max(0, Math.min(COVER_ROWS - 1, Math.ceil(b2 / cellH) - 1));
+      for (let cy = r0; cy <= r1; cy++) {
+        for (let cx = c0; cx <= c1; cx++) grid[cy * COVER_COLS + cx] = 1;
+      }
+    }
+    let cells = 0;
+    const colHit = new Uint8Array(COVER_COLS);
+    for (let cy = 0; cy < COVER_ROWS; cy++) {
+      for (let cx = 0; cx < COVER_COLS; cx++) {
+        if (grid[cy * COVER_COLS + cx]) { cells++; colHit[cx] = 1; }
+      }
+    }
+    let blankCols = 0;
+    for (let cx = 0; cx < COVER_COLS; cx++) if (!colHit[cx]) blankCols++;
+    const sidNow = shotAt(raw);
+    const prev = coverageSeen.get(sidNow);
+    const largestShare = largest / (dw * dh);
+    // 取"最完整的那一帧"：格子数更多，或格子数相同但主体更大。
+    if (!prev || cells > prev.cells || (cells === prev.cells && largestShare > prev.largest)) {
+      coverageSeen.set(sidNow, {cells, blank: blankCols, largest: largestShare, widest});
+      if (typeof console !== 'undefined') {
+        console.warn(
+          `[FillGate] coverage ${sidNow} cells=${cells}/${COVER_COLS * COVER_ROWS} ` +
+          `blank=${blankCols}/${COVER_COLS} largest=${largestShare.toFixed(2)} widest=${widest.toFixed(2)} n=${n}`
+        );
+      }
+    }
+
+    const pass = bottom === -Infinity || designBottom >= floorY - TOL;
+    if (checkFloor && !pass) {
+      const msg =
+        `[FillGate] @${raw} 内容底边只到 y=${Math.round(designBottom)}（设计坐标），` +
+        `P0-4 要求接近 y=${floorY}（下 1/4 不留空洞）；本帧计 ${n} 个信息元素。` +
+        `修法见 references/checks.md#composition-gate：补一个**真实信息元素**（指标条/结论条/清单），不是放大现有卡片凑面积。`;
+      const sid = shotAt(raw);
+      if (!warned.has(sid) && typeof console !== 'undefined') {
+        warned.add(sid);
+        console.warn(`[FillGate] underfilled ${sid} @${raw} y=${Math.round(designBottom)}`);
+      }
+      if (mode === 'block') {
+        // block 模式下才有拦的必要；handle 不再释放、异常不被吞（见 layout-probe.tsx）→ 渲染 rc≠0 且不产出图。
+        block(msg);
+      }
+    }
   }, [raw, should, mode, sampleEvery, hot, floorY, canvasMode.designW]);
 
   return null;

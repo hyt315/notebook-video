@@ -1,5 +1,6 @@
-import React, {useEffect} from 'react';
-import {continueRender, delayRender, useCurrentFrame} from 'remotion';
+import React from 'react';
+import {useCurrentFrame} from 'remotion';
+import {useLayoutProbe} from './layout-probe';
 import {THEME} from './theme/active';
 
 // ============================================================================
@@ -11,7 +12,7 @@ import {THEME} from './theme/active';
 // 判据：任一「卡片」（不透明底 + 实线边框，z<140，非 data-gate-allow）与
 // THEME.backgroundDecorZones 里**下方两角**的矩形相交超过 TOL 像素 → console.warn，
 // 提示两种修法：缩小/上移卡片（内容区底边 ≤ 860），或给该镜写 `bg: 'quiet'`
-// （quiet 变体的角色更低更小）。只在 watch 帧上量，useEffect + delayRender 兜住截帧。
+// （quiet 变体的角色更低更小）。只在 watch 帧上量，delayRender 兜住截帧（layout-probe.tsx）。
 // warn 而非 block：这是观感线，不该打断交付渲染。
 // ============================================================================
 
@@ -28,41 +29,32 @@ const solidCard = (el: HTMLElement) => {
 export const MascotGate: React.FC<{watch: number[]}> = ({watch}) => {
   const f = Math.round(useCurrentFrame());
   const zonesKey = JSON.stringify((THEME.backgroundDecorZones ?? []).filter((z) => z.y >= 700));
-  useEffect(() => {
-    const zones = JSON.parse(zonesKey) as {x: number; y: number; w: number; h: number}[];
-    if (!zones.length || !watch.includes(f)) return;
-    const handle = delayRender(`mascot-gate ${f}`, {timeoutInMilliseconds: 30000});
-    let done = false;
-    const finish = () => { if (!done) { done = true; continueRender(handle); } };
-    const id = requestAnimationFrame(() => {
-      try {
-        const root = document.querySelector('[data-design-root]') as HTMLElement | null;
-        if (!root) return;
-        const rr = root.getBoundingClientRect();
-        const k = rr.width / 1920;
-        const hits: string[] = [];
-        root.querySelectorAll<HTMLElement>('div').forEach((el) => {
-          if (el.closest('[data-gate-allow]') || el.closest('[data-cinema-focus]') || !solidCard(el)) return;
-          let a: HTMLElement | null = el;
-          while (a && a !== root) {
-            const z = parseInt(getComputedStyle(a).zIndex || '0', 10);
-            if (!Number.isNaN(z) && z >= SKIP_Z) return;
-            a = a.parentElement;
-          }
-          const r = el.getBoundingClientRect();
-          const b = {l: (r.left - rr.left) / k, t: (r.top - rr.top) / k, r: (r.right - rr.left) / k, btm: (r.bottom - rr.top) / k};
-          for (const z of zones) {
-            const ox = Math.min(b.r, z.x + z.w) - Math.max(b.l, z.x);
-            const oy = Math.min(b.btm, z.y + z.h) - Math.max(b.t, z.y);
-            if (ox > TOL && oy > TOL) hits.push(`card ${Math.round(b.l)},${Math.round(b.t)}–${Math.round(b.r)},${Math.round(b.btm)} overlaps corner decor ${z.x},${z.y} by ${Math.round(ox)}×${Math.round(oy)}px`);
-          }
-        });
-        if (hits.length) console.warn(`[MascotGate] frame ${f}: ${hits.slice(0, 3).join(' | ')} → raise/shrink the card (content bottom ≤ 860) or set bg:'quiet' on this shot`);
-      } finally {
-        finish();
+  const zones = JSON.parse(zonesKey) as {x: number; y: number; w: number; h: number}[];
+  // 骨架在 layout-probe.tsx；本门只在 watch 帧上量、只出声不拦，不等字体（量的是卡片盒子，不是字）
+  useLayoutProbe({label: `mascot-gate ${f}`, tag: '[MascotGate]', active: zones.length > 0 && watch.includes(f),
+    timeoutInMilliseconds: 30000, waitFonts: false}, () => {
+    const root = document.querySelector('[data-design-root]') as HTMLElement | null;
+    if (!root) return;
+    const rr = root.getBoundingClientRect();
+    const k = rr.width / 1920;
+    const hits: string[] = [];
+    root.querySelectorAll<HTMLElement>('div').forEach((el) => {
+      if (el.closest('[data-gate-allow]') || el.closest('[data-cinema-focus]') || !solidCard(el)) return;
+      let a: HTMLElement | null = el;
+      while (a && a !== root) {
+        const z = parseInt(getComputedStyle(a).zIndex || '0', 10);
+        if (!Number.isNaN(z) && z >= SKIP_Z) return;
+        a = a.parentElement;
+      }
+      const r = el.getBoundingClientRect();
+      const b = {l: (r.left - rr.left) / k, t: (r.top - rr.top) / k, r: (r.right - rr.left) / k, btm: (r.bottom - rr.top) / k};
+      for (const z of zones) {
+        const ox = Math.min(b.r, z.x + z.w) - Math.max(b.l, z.x);
+        const oy = Math.min(b.btm, z.y + z.h) - Math.max(b.t, z.y);
+        if (ox > TOL && oy > TOL) hits.push(`card ${Math.round(b.l)},${Math.round(b.t)}–${Math.round(b.r)},${Math.round(b.btm)} overlaps corner decor ${z.x},${z.y} by ${Math.round(ox)}×${Math.round(oy)}px`);
       }
     });
-    return () => { cancelAnimationFrame(id); finish(); };
+    if (hits.length) console.warn(`[MascotGate] frame ${f}: ${hits.slice(0, 3).join(' | ')} → raise/shrink the card (content bottom ≤ 860) or set bg:'quiet' on this shot`);
   }, [f, watch, zonesKey]);
   return null;
 };

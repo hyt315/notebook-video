@@ -1,5 +1,6 @@
-import React, {useEffect, useMemo} from 'react';
-import {cancelRender, continueRender, delayRender, useCurrentFrame} from 'remotion';
+import React from 'react';
+import {useCurrentFrame} from 'remotion';
+import {effectiveOpacity, useLayoutProbe, useSampledFrame} from './layout-probe';
 
 // ============================================================================
 // ClippingGate · 渲染期「图形被裁」门禁（v1）
@@ -69,19 +70,6 @@ const isSvg = (el: Element): el is SVGElement =>
 const isSvgRoot = (el: Element): el is SVGSVGElement =>
   typeof SVGSVGElement !== 'undefined' && el instanceof SVGSVGElement;
 
-/** 元素与其祖先的**有效**不透明度乘积（0 表示完全透明）。 */
-const effectiveOpacity = (el: Element) => {
-  let o = 1;
-  let n: Element | null = el;
-  while (n && n !== document.documentElement) {
-    const v = parseFloat(getComputedStyle(n as HTMLElement).opacity || '1');
-    if (!Number.isNaN(v)) o *= v;
-    if (o < 0.02) return 0;
-    n = n.parentElement;
-  }
-  return o;
-};
-
 /**
  * 最近的「会裁切」祖先盒子。
  * SVG 子元素：先看所属 `<svg>` —— 它默认裁切；显式 `overflow:visible` 的会跳过继续往上找。
@@ -117,126 +105,67 @@ export const ClippingGate: React.FC<{
   ignore?: string[];
 }> = ({mode = 'warn', sampleEvery = SAMPLE_EVERY, watch, ignore = []}) => {
   const raw = Math.round(useCurrentFrame());
-  const watchKey = (watch || []).join(',');
-  const hot = useMemo(() => {
-    const s = new Set<number>();
-    (watch || []).forEach((x) => {
-      for (let d = -EVENT_PAD; d <= EVENT_PAD; d++) s.add(Math.round(x) + d);
-    });
-    return s;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchKey]);
-  const should = raw % sampleEvery === 0 || hot.has(raw);
+  const {hot, should} = useSampledFrame(raw, sampleEvery, watch, EVENT_PAD);
   const ignoreKey = ignore.join('|');
 
-  useEffect(() => {
-    if (!should) return;
-    const handle = delayRender(`ClippingGate @${raw}`);
-    let released = false;
-    let cancelled = false;
-    // 2026-09-21 实测修掉**第二处静默失效**（第一处是缺 delayRender，见文件头）：
-    // `cancelRender()` 的实现是 **`throw error`**（remotion/dist/cjs/cancel-render.js），
-    // 而本门禁的判定整个包在 `try { … } catch (e) { console.warn(…) }` 里，于是：
-    //   cancelRender 抛 → 被自己的 catch 吞掉 → 走到函数末尾的 release() → continueRender
-    //   → `window.remotion_delayRenderHandles` 归零 → `window.remotion_renderReady = true`。
-    // 渲染器取状态时 **"ready" 排在 "cancelled" 前面**
-    // （@remotion/renderer/dist/seek-to-frame.js:46 是
-    //   `remotion_renderReady === true ? 'ready' : remotion_cancelledError !== undefined ? 'cancelled' : false`），
-    // 所以命中硬拦时渲染照样成功、PNG 照样写出来、退出码照样 0（独立核验的隔离实验
-    // FX-Probe-CancelTryCatchRelease 复现了这条链；FX-Probe-CancelRaf 则不触发）。
-    // 处置：① 判定一旦作出就置 `blocked`，此后 release() 一律空转 —— handle 永不释放；
-    //       ② blocked 之后异常原样抛出，绝不再被本函数的 catch 吞掉。
-    let blocked = false;
-    const release = () => {
-      if (released || blocked) return;
-      released = true;
-      continueRender(handle);
-    };
-    const measure = () => {
-      if (cancelled) {
-        release();
-        return;
-      }
-      try {
-        const issues: ClipIssue[] = [];
-        let checked = 0;
-        document.querySelectorAll<Element>(GRAPHIC_SEL).forEach((el) => {
-          if (el.closest('[data-gate-skip]')) return;
-          if (el.closest('[data-gate-allow]')) return;
-          if (el.closest('[data-cinema-focus]')) return; // 推近特写里被画框裁掉是镜头语言，不是版面裁切
-          const clip = clipBoxOf(el);
-          if (!clip) return; // 没有会裁切的祖先 → 不可能被裁
-          const r = el.getBoundingClientRect();
-          if (r.width * r.height < 4) return; // 无实体的占位节点
-          const op = effectiveOpacity(el);
-          if (op < 0.05) return; // 还没出现 / 已经走了
-          const over = Math.max(
-            clip.box.left - r.left,
-            r.right - clip.box.right,
-            clip.box.top - r.top,
-            r.bottom - clip.box.bottom
-          );
-          if (over <= TOL) return;
-          checked++;
-          const name =
-            el.tagName.toLowerCase() +
-            (isSvg(el) && el.getAttribute('class') ? `.${el.getAttribute('class')}` : '') +
-            (el.textContent && el.textContent.trim() ? `「${el.textContent.trim().slice(0, 10)}」` : '');
-          const who =
-            clip.who.tagName.toLowerCase() +
-            (clip.who.getAttribute('style')?.includes('overflow')
-              ? '[overflow]'
-              : '') +
-            (isSvgRoot(clip.who) ? '[svg 视口]' : '[overflow 祖先]');
-          if (ignoreKey && ignore.some((ig) => name.startsWith(ig))) return;
-          issues.push({
-            kind: 'clip',
-            frame: raw,
-            text: name,
-            other: who,
-            overflow: Math.round(over),
-            settled: op >= OPAQUE_FOR_SETTLED && effectiveOpacity(clip.who) >= OPAQUE_FOR_SETTLED,
-          });
-        });
-        if (issues.length) {
-          const head = issues
-            .slice(0, 5)
-            .map((x) => `${x.text} 超出 ${x.other} ${x.overflow}px`)
-            .join(' | ');
-          const blocking = issues.filter((x) => x.settled && x.overflow >= BLOCK_PX);
-          const msg = `[ClippingGate] @${raw} 共 ${issues.length} 处图形被裁（落定态 ${blocking.length} 处）：${head}`;
-          if (typeof console !== 'undefined') console.warn(msg);
-          if (mode === 'block' && blocking.length) {
-            // 硬拦：blocked 置位后 handle 不再释放；cancelRender 会抛，异常被下面的 catch
-            // 原样放行（`if (blocked) throw e`），渲染以 rc≠0 中止、不产出任何图。
-            blocked = true;
-            cancelRender(new Error(msg));
-            return;
-          }
-        } else if (raw % REPORT_EVERY === 0 && typeof console !== 'undefined') {
-          console.warn(`[ClippingGate] @${raw} 图形要素扫过 ${document.querySelectorAll(GRAPHIC_SEL).length} 个，无被裁`);
-        }
-        void checked;
-      } catch (e) {
-        if (blocked) throw e;
-        if (typeof console !== 'undefined') console.warn('[ClippingGate]', e);
-      }
-      release();
-    };
-    const id = requestAnimationFrame(() => {
-      if (document.fonts && document.fonts.status !== 'loaded') {
-        // 等字体就绪再量（不能直接 return —— OverlapGate 曾因此在出片路径上每帧都跳过）
-        document.fonts.ready.then(() => { if (!cancelled) measure(); }).catch(() => measure());
-        return;
-      }
-      measure();
+  // 骨架（逐帧持柄、等字体就绪、硬拦时 handle 不释放且异常不被自家 catch 吞）在 layout-probe.tsx
+  useLayoutProbe({label: `ClippingGate @${raw}`, tag: '[ClippingGate]', active: should}, ({block}) => {
+    const issues: ClipIssue[] = [];
+    let checked = 0;
+    document.querySelectorAll<Element>(GRAPHIC_SEL).forEach((el) => {
+      if (el.closest('[data-gate-skip]')) return;
+      if (el.closest('[data-gate-allow]')) return;
+      if (el.closest('[data-cinema-focus]')) return; // 推近特写里被画框裁掉是镜头语言，不是版面裁切
+      const clip = clipBoxOf(el);
+      if (!clip) return; // 没有会裁切的祖先 → 不可能被裁
+      const r = el.getBoundingClientRect();
+      if (r.width * r.height < 4) return; // 无实体的占位节点
+      const op = effectiveOpacity(el);
+      if (op < 0.05) return; // 还没出现 / 已经走了
+      const over = Math.max(
+        clip.box.left - r.left,
+        r.right - clip.box.right,
+        clip.box.top - r.top,
+        r.bottom - clip.box.bottom
+      );
+      if (over <= TOL) return;
+      checked++;
+      const name =
+        el.tagName.toLowerCase() +
+        (isSvg(el) && el.getAttribute('class') ? `.${el.getAttribute('class')}` : '') +
+        (el.textContent && el.textContent.trim() ? `「${el.textContent.trim().slice(0, 10)}」` : '');
+      const who =
+        clip.who.tagName.toLowerCase() +
+        (clip.who.getAttribute('style')?.includes('overflow')
+          ? '[overflow]'
+          : '') +
+        (isSvgRoot(clip.who) ? '[svg 视口]' : '[overflow 祖先]');
+      if (ignoreKey && ignore.some((ig) => name.startsWith(ig))) return;
+      issues.push({
+        kind: 'clip',
+        frame: raw,
+        text: name,
+        other: who,
+        overflow: Math.round(over),
+        settled: op >= OPAQUE_FOR_SETTLED && effectiveOpacity(clip.who) >= OPAQUE_FOR_SETTLED,
+      });
     });
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(id);
-      release();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (issues.length) {
+      const head = issues
+        .slice(0, 5)
+        .map((x) => `${x.text} 超出 ${x.other} ${x.overflow}px`)
+        .join(' | ');
+      const blocking = issues.filter((x) => x.settled && x.overflow >= BLOCK_PX);
+      const msg = `[ClippingGate] @${raw} 共 ${issues.length} 处图形被裁（落定态 ${blocking.length} 处）：${head}`;
+      if (typeof console !== 'undefined') console.warn(msg);
+      if (mode === 'block' && blocking.length) {
+        // 硬拦：handle 不再释放、异常不被吞（见 layout-probe.tsx），渲染以 rc≠0 中止、不产出任何图。
+        block(msg);
+      }
+    } else if (raw % REPORT_EVERY === 0 && typeof console !== 'undefined') {
+      console.warn(`[ClippingGate] @${raw} 图形要素扫过 ${document.querySelectorAll(GRAPHIC_SEL).length} 个，无被裁`);
+    }
+    void checked;
   }, [raw, should, mode, ignoreKey, sampleEvery, hot]);
 
   return null;

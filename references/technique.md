@@ -579,7 +579,8 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 
 **共享面（要同步）**：`src/components/**`（含 `fittext.tsx`）、`src/fxkit.tsx` / `media.tsx` / `stagekit.tsx` /
 `skeletons.tsx` / `toolkit.tsx` / `kit.tsx` / `shotkit.tsx` / `insert.tsx`、**五道渲染期门禁所在的四个文件**
-（`clipping-gate.tsx` 里的 `ClippingGate` + `CardFitGate`、`fill-gate.tsx`、`overlap-gate.tsx`、`canvas-bounds-gate.tsx`）、
+（`clipping-gate.tsx` 里的 `ClippingGate` + `CardFitGate`、`fill-gate.tsx`、`overlap-gate.tsx`、`canvas-bounds-gate.tsx`）
+与它们共用的测量骨架 `layout-probe.tsx`、
 `src/theme/**`、`external-types.d.ts`（本地类型声明，缺它 `topojson-client` 编译不过）、以及 `package.json` 的依赖表。
 **工程私有（不要覆盖）**：`scenes.tsx`、`shots.ts`、`caption-cues.json`、`manifests/**`、`audio/**`、`public/**`、
 `storyboard.md` —— 这些是这一部片子自己的内容，模板里的是"另一个片子"。
@@ -589,7 +590,7 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 1. **先比版本串**：两边的 `src/components/index.ts` 的 `COMPONENTS_VERSION`（还有 `SHOWCASE_VERSION` /
    `SCENES_VERSION`）。不一样 = 有人改了模板没同步工程，先问清"这轮要同步什么"，别整目录乱拷。
 2. **列出真实差异**：`diff -rq assets/lecture-template/src <工程>/src`。**`Only in 模板`** 的共享面文件（例：
-   `canvas-bounds-gate.tsx`、`external-types.d.ts`）= 工程缺件，要新增；**`Only in 工程`** 的（例：`storyboard.md`）
+   `layout-probe.tsx`、`external-types.d.ts`）= 工程缺件，要新增；**`Only in 工程`** 的（例：`storyboard.md`）
    一律不动。
 3. **依赖要一起搬（最容易漏的一步）**：模板 `package.json` 里新增的包必须**同时**加进工程 `package.json`，
    并在工程里跑一次 `npm install`（或 `npm install --package-lock-only` 后用 `npm ci`）让 `package-lock.json` 一起更新。
