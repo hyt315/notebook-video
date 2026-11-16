@@ -28,13 +28,13 @@
 
 ### 1. 为什么要路由
 
-画面像 PPT，不是因为没用图片，而是**全片只有一种介质（卡片 + 文字）**；让片子不像 PPT 的是同一支片里出现不同的视觉介质。组件放在仓库里没人用，缺的是"什么内容该用哪个件"的决策入口——这一层就是那个入口。
+画面像 PPT，是因为**全片只有一种介质（卡片 + 文字）**；同一支片里出现不同的视觉介质才不像 PPT。本层是"什么内容该用哪个件"的决策入口。
 
 ### 2. 路由表
 
 - **每行一个首选**，其余写明"何时才用"。
 - **加组件 = 换掉一件**；总数上限见 [technique.md#dependency-policy](technique.md#dependency-policy) §8。
-- 本表只管"这段内容配哪个件"；每件的用途、边界、接触表页、使用记录与实现注意只看 [§5.1](#51-组件权威索引53-件--选型只查这一处)。
+- 本表只管"这段内容配哪个件"；每件的用途、边界与实现注意只看 [§5.1](#51-组件权威索引53-件--选型只查这一处)。
 
 | 内容类型 | 首选 → 条件分支（模块） |
 |---|---|
@@ -61,7 +61,7 @@
 | 收尾引导 | **`QrCode`**（components） |
 | 收束 / 漏斗 | `Funnel` / `ProgressRing`（fxkit） |
 | 场景衔接 | **`SceneTransitions`**（components，20 种官方转场，不必手写）；手写 3 式：`shotkit` + `insert` |
-| 快速运镜 / 冲刺 | 不提供运动模糊件（`@remotion/motion-blur` 已删；"速度峰值"不在七种合法运镜意图里）。用**帧内位移 + 速度线**表达，不要手绘模糊 |
+| 快速运镜 / 冲刺 | 不提供运动模糊件（"速度峰值"不在七种合法运镜意图里）。用**帧内位移 + 速度线**表达，不要手绘模糊 |
 | 让画面"活一点" | **`NoiseJitter`**（components） |
 | 文字排版 / 卡片文字被裁 | **`FitTextBox` / `fitChineseTextOnNLines`**（components/fittext）；图元标签（treemap 格 / 气泡 / 扇区）用 **`fitNodeLabel`**：宽、高**都要**过，反推字号低于 13px（`MIN_LABEL_FONT`）就**不画字**、改进图例 |
 | 逐条揭示 | **`ClipReveal`**（components）；镜头级揭示是 `RevealMask`（insert） |
@@ -146,7 +146,7 @@
 | `src/skeletons.tsx` | `Corridor` `SplitStage` `ZoomStage` | `f` |
 | `src/insert.tsx` | `RevealMask` `useHandoff` `TRANSITIONS` | `f` |
 | `src/shotkit.tsx` | `ShotCamera` `CoverPanel` `safeCheck` | `f` |
-| `src/index.tsx` | 引擎层，**对场景不导出任何组件**：只有 16:9 一个 Composition `NotebookVideoFilm`（`Film4x3` / `Film3x4` 已删）；`Paper` / `Subtitle` / `Chrome` 是模块私有 `const`，场景 import 不到；曾在本文件内的 6 件零渲染"反 PPT 交互件"已删（见 [checks.md#quality-checklist](checks.md#quality-checklist)） | — |
+| `src/index.tsx` | 引擎层，**对场景不导出任何组件**：只有 16:9 一个 Composition `NotebookVideoFilm`；`Paper` / `Subtitle` / `Chrome` 是模块私有 `const`，场景 import 不到 | — |
 
 > **⚠️ 帧参数名**：`fxkit` 与 `toolkit` 传 `frame={f}`，其余传 `f={f}`。帧参数是必填类型，传错名或漏传 `tsc` 报错；写错会让动画时间轴整体错位。
 
@@ -154,87 +154,84 @@
 
 ### 5.1 组件权威索引（53 件 · 选型只查这一处）
 
-**全技能唯一一份组件清单。** [components.md#fxkit](components.md#fxkit) 只留 fxkit 参数与动效细节；`showcase.tsx` 只留接触表版面与 `SHOWCASE_VERSION`（给人读的串，不在画面上渲染）；源码注释只解释实现。件数、用途、何时用 / 别用、接触表页号、使用记录**以本表为准**；改组件先改这里，别处不另起清单。
+**全技能唯一一份组件清单。** [components.md#fxkit](components.md#fxkit) 只留 fxkit 参数与动效细节；`showcase.tsx` 只留接触表版面与 `SHOWCASE_VERSION`（给人读的串，不在画面上渲染）；源码注释只解释实现。件数、用途、何时用 / 别用**以本表为准**；改组件先改这里，别处不另起清单。
 
 **口径**：各模块对外 `export` 的 React 组件 = `src/components/` 27 件 + 其余 8 个模块 26 件（`kit` 3 / `fxkit` 9 / `media` 3 / `stagekit` 2 / `skeletons` 3 / `insert` 1 / `shotkit` 2 / `toolkit` 3）= **53**。不算件：渲染期门禁（`SlotGuard` 与四道 `*Gate`）、主题包件（`Paper` / `Background` / `Grade` / `SubtitleChrome`、cel 的 `Burst`）、大写常量与 type-only 导出。复核：对上述 9 个模块抽 `^export const X: React.FC` 去重计数，并与 `src/components/index.ts` 导出名单对齐，剔除 `SlotGuard` 与 Gate 后必须是 27 + 26；不是就说明有件加了没登记。
 
-- **接触表** = `showcase.tsx` 里真实渲染过的页号（多页全列；"未展示" = 接触表上看不见）。
-- **使用记录** = 参考片 `src/scenes.tsx`（`S1`–`S8`）或引擎 `index.tsx` 里真实出现的位置；"未使用" = 这些位置找不到，**不等于从没渲染过**（真实工程用到的写在格里）。
+| 组件 | 用途 | 何时用 | 何时别用 / 注意 |
+|---|---|---|---|
+| `Accordion`（components） | 手风琴，展开项随帧累积 | 并列要点逐项展开 / 收起，一屏放不下 | 只是逐行出现 → `StaggerList`；控件被改 → `ControlStack` |
+| `Tabs`（components） | 标签页，激活项由帧号决定 | 2–4 个对等方案切换，且切换本身是讲解内容 | "被改动"而非"切换" → `ControlStack` |
+| `ControlStack`（components） | 六种受控控件（开关 / 复选 / 单选 / 分段 / 滑块 / 进度，纯 div），`steps:[{at,value}]` 帧→状态，纯函数可复算 | 讲某个设置被改了：旁白说到哪、控件变到哪 | 一行一个控件，别把 6 种塞进一镜；控件不是主角时别用（抢戏） |
+| `OverlayFrame`（components） | 拟真弹层 dialog / menu / popover / tooltip（纯 div，Portal 指到画面根） | 讲"弹出来一个框" | 一次别冒三个；压在装饰区同样要坐 `CoverPanel` |
+| `NetworkGraph`（components） | d3-force 关系网（固定迭代 + 显式初值） | 谁连着谁：无层级、无方向 | 有层级用 `TreeView`；反过来别用树画网（凭空造出上下级） |
+| `HighlightCode`（components） | 语法高亮 + 行号 + 逐行聚焦，带窗口壳 | 页面形态的代码；"这是官方 / 真实代码" | 终端 → `ConsoleWindow`；逐字敲 → `Typewriter`；纯代码路线不做实拍框 |
+| `MathBlock`（components） | katex 公式块（静态、确定性） | 有公式 / 推导 | 无动画，别当装饰塞公式 |
+| `TopicIcon`（components） | 单个题材图标（simple-icons 品牌 + lucide-react 线条，笔画对齐 `LineIcon`） | 技术栈 / 品牌的单点 | 成排 → `IconWall`；与内容无关时别用 |
+| `IconWall`（components） | 图标墙（弹簧错峰入场） | 技术栈 / 依赖清单具象成一堵墙 | 图标不是内容时别用 |
+| `Chart`（components） | d3 算刻度与路径；`variant`：line（默认）/ area / stack / stackExpand（百分比堆叠）/ stream / radar / pie（扇区百分比 + 图例）；可喂 CSV（d3-dsv） | 数据 / 趋势 / 分布 / 多值对比；真实数据进图 | 一个百分比 → `ProgressRing`；前后两值 → `MetricGrid`；柱状用默认 line + `series` 驱动；未知 `variant` 直接抛错 |
+| `StatRow`（components） | 一行指标卡，数字随帧滚动（字符串值直显） | 报一个大数字；等权指标并排；对比两方不等权时 | 数值已在 `MetricGrid` 里滚动时别重复（接触表未展示） |
+| `KineticNumber`（cinema，引擎运动件，**不计入 53 件**） | 关键数字动态排版：计数 + 落定弹出 + 下划线扫入，字号 170–380 | 一镜的主角就是一个数（耗时、倍数、降幅），讲到它的那一拍 | 一镜并排 ≥3 个数（用 `StatRow` / `MetricGrid`）；全片超过 35% 的镜都用它（接触表未展示） |
+| `TreeView`（components） | 目录树 / 组织图 + treemap / pack / sunburst（d3-hierarchy，面积 = 数值） | 有层级；或占比 + 层级 | 无层级的网 → `NetworkGraph` |
+| `GeoView`（components） | 真陆地轮廓（d3-geo + world-atlas `land-110m`，55 KB 进 bundle），可叠经纬度标记点；`projection="flat"`（naturalEarth1）看全局，默认正交投影可 `spin` 自转 | 地理 / 全球视野；节点 / 站点分布 | **不含国界与地名**：要国界得换 `countries-110m.json` 并另立一件，别扩 `GeoView` 语义；同一组对比之外别混用两种投影 |
+| `SankeyChart`（components） | 流量图（d3-sankey） | 流量在环节之间怎么分流 | 逐级递减的漏斗 → `Funnel` |
+| `QrCode`（components） | 二维码（纯计算、不联网） | 收尾引导"扫码看仓库" | 中途别放（观众不会暂停扫码） |
+| `SketchFx`（components） | 手绘风图形（roughjs，seed 固定 → 每次同一笔迹）；`fillStyle` 6 种确定性值：hachure（手账风招牌）/ solid / zigzag / cross-hatch / dashed / zigzag-line | 手绘强调：圈画 / 下划线 / 方框 | 要精确几何 → `ShapeDraw`；`'dots'` 已移除（内部调 `Math.random()`，同帧两次不一致） |
+| `FocusFx`（components） | 一镜一次的注意力动作（dim / spot / loupe / marker） | 把注意力压到一块矩形区域 | 一镜一次；画面已有高亮或缩放时别叠 |
+| `GlowFrame`（components） | 流光边框（conic-gradient 绑帧号） | 强调一瞬（警告感） | 与 `ShimmerText` 二选一；要"真的变了状态"→ `ControlStack` |
+| `ShimmerText`（components） | 文字闪过一道光 | 只强调一句话；念口号 | 与 `GlowFrame` 二选一；讲解中段用显浮夸 |
+| `ClipReveal`（components） | 遮罩擦除（clip-path 按帧推进） | 逐条揭示（不只是淡入） | 镜头级交接 → `RevealMask` |
+| `NoiseJitter`（components） | 有机抖动（noise2D，同种子同结果） | 让静止物活一点（手绘 / 贴纸感） | 别给文字用（伤可读性） |
+| `VerdictBar`（components） | 全宽结论条（填满底部） | 收束场景且底部要填满 | 一镜一条；别与 `StampBanner` 同时砸（互压底线）（接触表未展示） |
+| `PathDraw`（components） | 描线生长 + 沿线运动的点 / 沿线转向的箭头（`showArrow`，`getTangentAtLength`，不用自己差分算切线） | 两者关系 / 因果；箭头沿路线跑；流程备选 | 路径短于 200px 时箭头盖住整条线；已有导轨 / 时间轴别叠；关系是网 → `NetworkGraph` |
+| `MorphShape`（components） | 形状连续变形（flubber；`engine="remotion"` 用 `interpolatePath`） | 同一个东西形态变了 | 没有变形语义别用 |
+| `ShapeDraw` / `SHAPES`（components） | 参数化几何（@remotion/shapes）：星 / 六边形 / 三角 / 圆 / 星芒 / callout 标注框 / arrow / heart / 椭圆 / 矩形 | 要标注框 / 箭头 / 星标，不想手写 path | 图标 → `TopicIcon`；形状要有语义，别撒装饰；份额别用它 |
+| `SceneTransitions`（components） | 官方 20 种转场全部登记，名 = 官方包名去连字符（= `PRESENTATIONS` 的键）。几何式 9：`fade` `slide` `wipe` `flip` `clockWipe` `iris` `bookFlip` `pushCut` `none`；着色器式 11：`blurSlide` `crossZoom` `crosswarp` `dissolve` `dreamyZoom` `filmBurn` `linearBlur` `ripple` `swap` `zoomBlur` `zoomInOut`（分组同 `pathfx.tsx`）。本机无头渲染全部可用；`@remotion/transitions` 无 `Math.random`，全部帧驱动 | 场景衔接要真的换场 | `flip` 在 50% 处正好侧对镜头（看着空属正常，看效果截 25% / 75%）；`none` 是硬切 |
+| `FitTextBox`（components） | 中文反推字号 + 断行（自带字体就绪门） | 固定宽 + 行数上限定字号（治卡片文字被裁） | 管卡片多高用 `FitCard` / `fitH()`（分工见 [components.md#fxkit](components.md#fxkit)） |
+| `PillTag`（kit） | 胶囊贴标 | 页眉 kicker、标签行 | 别当正文（接触表未展示） |
+| `LineIcon`（kit） | 26 字形线条图标（lucide-react） | 卡片小标题旁 | 大图 / 插图 → `TopicIcon`（接触表未展示） |
+| `CheckBadge`（kit） | 对勾圆徽章 | "已完成"状态 | 要盖章体量 → `StampSeal`（接触表未展示） |
+| `FitCard`（fxkit） | 防出格卡片（`h` 必须经 `fitH()` 算） | 任何文字卡片 | 禁止手写"看着差不多"的固定高度 |
+| `Typewriter`（fxkit） | 打字机（标点分级停顿、块光标） | 一个字一个字敲出来；正在写 | 改了什么 → `DiffView`；整段代码 → `HighlightCode` |
+| `StampSeal`（fxkit） | 印章砸下（2.6x→1 回弹，-8°） | 盖章定论 / 认证 | 字数 >4 溢出圆 |
+| `Funnel`（fxkit） | 尝试漏斗（宽进窄出 + 计数 + 滴落点） | 逐级递减 / 收束 | 只有一个百分比 → `ProgressRing` |
+| `ChatThread`（fxkit） | 对话气泡（typing 三点 → pop，左右交替） | 模拟 AI 对话 / Prompt 交互（多方案对比时备选 `Tabs`） | 2–3 条（1 问 + 1~2 答），否则溢出窗口高度 |
+| `ProgressRing`（fxkit） | 进度环（dashoffset + 中央标签） | **只有一个**百分比 | 多份额 → `Chart`；有前后值 → `MetricGrid` |
+| `DiffView`（fxkit） | 补丁 diff（红删绿加逐行滑入；`before`/`after` 由 jsdiff 算行） | 讲改了什么 | 无增无删时别用 |
+| `SkeletonCard`（fxkit） | 骨架 → 内容（等待 beats 先占位） | 已知要等（拉取 / 计算有过程） | 内容本该立刻出现时别用 |
+| `StaggerList`（fxkit） | 级联列表（逐行滑入 + 微旋转） | 只是逐行出现，防 bullets 堆砌 | 相邻开始至少 12 帧（`stagger` 取 12，见 [draftpaper.md#reveal-rules](draftpaper.md#reveal-rules)）；要完成态 → `Checklist` |
+| `ConsoleWindow`（media） | 控制台 / 终端窗口（整块界面） | 正在跑、命令行；终端形态 | 必须给 `h`，否则高度由内容撑；带行号高亮的代码 → `HighlightCode` |
+| `MetricGrid`（media） | 指标网格（before→after 替换，数字滚动） | 前后值成对 | 只有一个值 → `StatRow` |
+| `StampBanner`（media） | 结论吸底条（三段式落定 + 底色闪） | 砸一句结论、吸底；口号备选 | 一镜别砸两条（互压底线）（接触表未展示） |
+| `StageFrame`（stagekit） | 活体主体框（header / main / rail / stamp） | 一个主体持续演化（≥5 拍） | 只有 2–3 拍别用（状态机撑不起来），备选 `Corridor`（接触表未展示） |
+| `PhaseRail`（stagekit） | 状态进度轨（状态机显式画出来） | 让观众看见推进到第几步 | 静态内容别用 |
+| `Corridor`（skeletons） | 走廊 / 流程骨架（到站 + 停留 + 对勾描线，隐含顺序） | 演示一段流程；因果的备选 | 站点 <3 个改用 `StaggerList` |
+| `SplitStage`（skeletons） | 双栏对比（先暗输方，再亮赢方） | 两个对等对象对比 | 两方不是同一维度别用 |
+| `ZoomStage`（skeletons） | 整体→聚焦→标注→回整体（B 段插入） | 放大看局部（0.8–2s 取证）；圈住一处的备选 | 会缩放，静止元素别用 |
+| `RevealMask`（insert） | 镜头级遮罩揭示（ltr / rtl / ttb） | 镜头进场要"揭开" | 逐条揭示 → `ClipReveal`（接触表未展示） |
+| `ShotCamera`（shotkit） | 受限相机外壳（只做 transform / opacity） | 每一镜都要 | 页眉 / 章节卡 / 字幕放在它**之外**（否则被运镜带动）（接触表未展示） |
+| `CoverPanel`（shotkit） | 局部底托 / 卡片底 | 内容压到背景装饰区时 | 规则见 §4.2：wash 负 z、羽化、不铺整幅（接触表未展示） |
+| `Callout`（toolkit） | 圈住一处 + 引线 + 手写标注 | 圈住 / 指出一处 | 画面已有高亮别叠（重复编码） |
+| `Checklist`（toolkit） | 带完成态的清单（`done` 后序号变对勾） | 列清单、要完成态 | 项 >6 溢出；只是逐行出现 → `StaggerList` |
+| `JumpInText`（toolkit） | 逐字跳入（字色激活） | 念一句口号（钩子与收尾） | 全片最多 1–2 处；讲解中段显浮夸 |
 
-| 组件 | 用途 | 何时用 | 何时别用 / 注意 | 接触表 | 使用记录 |
-|---|---|---|---|---|---|
-| `Accordion`（components） | 手风琴，展开项随帧累积 | 并列要点逐项展开 / 收起，一屏放不下 | 只是逐行出现 → `StaggerList`；控件被改 → `ControlStack` | ⑦⑨ | 未使用 |
-| `Tabs`（components） | 标签页，激活项由帧号决定 | 2–4 个对等方案切换，且切换本身是讲解内容 | "被改动"而非"切换" → `ControlStack` | ④⑨ | 未使用 |
-| `ControlStack`（components） | 六种受控控件（开关 / 复选 / 单选 / 分段 / 滑块 / 进度，纯 div），`steps:[{at,value}]` 帧→状态，纯函数可复算 | 讲某个设置被改了：旁白说到哪、控件变到哪 | 一行一个控件，别把 6 种塞进一镜；控件不是主角时别用（抢戏） | ⑫ | 未使用 |
-| `OverlayFrame`（components） | 拟真弹层 dialog / menu / popover / tooltip（纯 div，Portal 指到画面根） | 讲"弹出来一个框" | 一次别冒三个；压在装饰区同样要坐 `CoverPanel` | ⑰ | 未使用 |
-| `NetworkGraph`（components） | d3-force 关系网（固定迭代 + 显式初值） | 谁连着谁：无层级、无方向 | 有层级用 `TreeView`；反过来别用树画网（凭空造出上下级） | ⑯ | 未使用 |
-| `HighlightCode`（components） | 语法高亮 + 行号 + 逐行聚焦，带窗口壳 | 页面形态的代码；"这是官方 / 真实代码" | 终端 → `ConsoleWindow`；逐字敲 → `Typewriter`；纯代码路线不做实拍框 | ⑨ | 未使用 |
-| `MathBlock`（components） | katex 公式块（静态、确定性） | 有公式 / 推导 | 无动画，别当装饰塞公式 | ⑭ | 未使用 |
-| `TopicIcon`（components） | 单个题材图标（simple-icons 品牌 + lucide-react 线条，笔画对齐 `LineIcon`） | 技术栈 / 品牌的单点 | 成排 → `IconWall`；与内容无关时别用 | ⑫ | 未使用 |
-| `IconWall`（components） | 图标墙（弹簧错峰入场） | 技术栈 / 依赖清单具象成一堵墙 | 图标不是内容时别用 | ⑩ | 未使用 |
-| `Chart`（components） | d3 算刻度与路径；`variant`：line（默认）/ area / stack / stackExpand（百分比堆叠）/ stream / radar / pie（扇区百分比 + 图例）；可喂 CSV（d3-dsv） | 数据 / 趋势 / 分布 / 多值对比；真实数据进图 | 一个百分比 → `ProgressRing`；前后两值 → `MetricGrid`；柱状用默认 line + `series` 驱动；未知 `variant` 直接抛错 | ①⑨⑭⑮ | 未使用 |
-| `StatRow`（components） | 一行指标卡，数字随帧滚动（字符串值直显） | 报一个大数字；等权指标并排；对比两方不等权时 | 数值已在 `MetricGrid` 里滚动时别重复 | 未展示 | 参考片 S1 |
-| `KineticNumber`（cinema，引擎运动件，**不计入 53 件**） | 关键数字动态排版：计数 + 落定弹出 + 下划线扫入，字号 170–380 | 一镜的主角就是一个数（耗时、倍数、降幅），讲到它的那一拍 | 一镜并排 ≥3 个数（用 `StatRow` / `MetricGrid`）；全片超过 35% 的镜都用它 | 未展示 | 演示片 S1 / S4 / S7 / S8 |
-| `TreeView`（components） | 目录树 / 组织图 + treemap / pack / sunburst（d3-hierarchy，面积 = 数值） | 有层级；或占比 + 层级 | 无层级的网 → `NetworkGraph` | ⑬⑯ | 未使用 |
-| `GeoView`（components） | 真陆地轮廓（d3-geo + world-atlas `land-110m`，55 KB 进 bundle），可叠经纬度标记点；`projection="flat"`（naturalEarth1）看全局，默认正交投影可 `spin` 自转 | 地理 / 全球视野；节点 / 站点分布 | **不含国界与地名**：要国界得换 `countries-110m.json` 并另立一件，别扩 `GeoView` 语义；同一组对比之外别混用两种投影 | ⑬ | 未使用（⑬ 已渲真地图 + 4 个标记点） |
-| `SankeyChart`（components） | 流量图（d3-sankey） | 流量在环节之间怎么分流 | 逐级递减的漏斗 → `Funnel` | ⑬ | 未使用 |
-| `QrCode`（components） | 二维码（纯计算、不联网） | 收尾引导"扫码看仓库" | 中途别放（观众不会暂停扫码） | ⑬ | 未使用 |
-| `SketchFx`（components） | 手绘风图形（roughjs，seed 固定 → 每次同一笔迹）；`fillStyle` 6 种确定性值：hachure（手账风招牌）/ solid / zigzag / cross-hatch / dashed / zigzag-line | 手绘强调：圈画 / 下划线 / 方框 | 要精确几何 → `ShapeDraw`；`'dots'` 已移除（内部调 `Math.random()`，同帧两次不一致） | ⑭ | 未使用 |
-| `FocusFx`（components） | 一镜一次的注意力动作（dim / spot / loupe / marker） | 把注意力压到一块矩形区域 | 一镜一次；画面已有高亮或缩放时别叠 | ⑱（整页专属，四态按帧轮转） | 参考片没用；真实工程 `overview-film` S8 渲过 |
-| `GlowFrame`（components） | 流光边框（conic-gradient 绑帧号） | 强调一瞬（警告感） | 与 `ShimmerText` 二选一；要"真的变了状态"→ `ControlStack` | ⑧⑩ | 未使用 |
-| `ShimmerText`（components） | 文字闪过一道光 | 只强调一句话；念口号 | 与 `GlowFrame` 二选一；讲解中段用显浮夸 | ⑧ | 未使用 |
-| `ClipReveal`（components） | 遮罩擦除（clip-path 按帧推进） | 逐条揭示（不只是淡入） | 镜头级交接 → `RevealMask` | ⑫ | 未使用 |
-| `NoiseJitter`（components） | 有机抖动（noise2D，同种子同结果） | 让静止物活一点（手绘 / 贴纸感） | 别给文字用（伤可读性） | ⑫ | 未使用 |
-| `VerdictBar`（components） | 全宽结论条（填满底部） | 收束场景且底部要填满 | 一镜一条；别与 `StampBanner` 同时砸（互压底线） | 未展示 | 参考片 S8 |
-| `PathDraw`（components） | 描线生长 + 沿线运动的点 / 沿线转向的箭头（`showArrow`，`getTangentAtLength`，不用自己差分算切线） | 两者关系 / 因果；箭头沿路线跑；流程备选 | 路径短于 200px 时箭头盖住整条线；已有导轨 / 时间轴别叠；关系是网 → `NetworkGraph` | ⑪⑰ | 未使用 |
-| `MorphShape`（components） | 形状连续变形（flubber；`engine="remotion"` 用 `interpolatePath`） | 同一个东西形态变了 | 没有变形语义别用 | ⑪ | 未使用 |
-| `ShapeDraw` / `SHAPES`（components） | 参数化几何（@remotion/shapes）：星 / 六边形 / 三角 / 圆 / 星芒 / callout 标注框 / arrow / heart / 椭圆 / 矩形 | 要标注框 / 箭头 / 星标，不想手写 path | 图标 → `TopicIcon`；形状要有语义，别撒装饰；份额别用它 | ⑩⑰ | 未使用 |
-| `SceneTransitions`（components） | 官方 20 种转场全部登记，名 = 官方包名去连字符（= `PRESENTATIONS` 的键）。几何式 9：`fade` `slide` `wipe` `flip` `clockWipe` `iris` `bookFlip` `pushCut` `none`；着色器式 11：`blurSlide` `crossZoom` `crosswarp` `dissolve` `dreamyZoom` `filmBurn` `linearBlur` `ripple` `swap` `zoomBlur` `zoomInOut`（分组同 `pathfx.tsx`）。本机无头渲染全部可用；`@remotion/transitions` 无 `Math.random`，全部帧驱动 | 场景衔接要真的换场 | `flip` 在 50% 处正好侧对镜头（看着空属正常，看效果截 25% / 75%）；`none` 是硬切 | ⑪ | 未使用 |
-| `FitTextBox`（components） | 中文反推字号 + 断行（自带字体就绪门） | 固定宽 + 行数上限定字号（治卡片文字被裁） | 管卡片多高用 `FitCard` / `fitH()`（分工见 [components.md#fxkit](components.md#fxkit)） | ③⑩⑭ | 未使用 |
-| `PillTag`（kit） | 胶囊贴标 | 页眉 kicker、标签行 | 别当正文 | 未展示 | 参考片 S1 S3 + 引擎页眉 |
-| `LineIcon`（kit） | 26 字形线条图标（lucide-react） | 卡片小标题旁 | 大图 / 插图 → `TopicIcon` | 未展示 | 参考片 S3 S7（`CardHead`） |
-| `CheckBadge`（kit） | 对勾圆徽章 | "已完成"状态 | 要盖章体量 → `StampSeal` | 未展示 | 参考片 S4 S7 |
-| `FitCard`（fxkit） | 防出格卡片（`h` 必须经 `fitH()` 算） | 任何文字卡片 | 禁止手写"看着差不多"的固定高度 | ③ | 参考片 S3 S4 |
-| `Typewriter`（fxkit） | 打字机（标点分级停顿、块光标） | 一个字一个字敲出来；正在写 | 改了什么 → `DiffView`；整段代码 → `HighlightCode` | ② | 参考片 S3 |
-| `StampSeal`（fxkit） | 印章砸下（2.6x→1 回弹，-8°） | 盖章定论 / 认证 | 字数 >4 溢出圆 | ③ | 参考片 S2 S6 |
-| `Funnel`（fxkit） | 尝试漏斗（宽进窄出 + 计数 + 滴落点） | 逐级递减 / 收束 | 只有一个百分比 → `ProgressRing` | ③ | 参考片 S5 |
-| `ChatThread`（fxkit） | 对话气泡（typing 三点 → pop，左右交替） | 模拟 AI 对话 / Prompt 交互（多方案对比时备选 `Tabs`） | 2–3 条（1 问 + 1~2 答），否则溢出窗口高度 | ④ | 参考片 S7 |
-| `ProgressRing`（fxkit） | 进度环（dashoffset + 中央标签） | **只有一个**百分比 | 多份额 → `Chart`；有前后值 → `MetricGrid` | ① | 参考片 S5 |
-| `DiffView`（fxkit） | 补丁 diff（红删绿加逐行滑入；`before`/`after` 由 jsdiff 算行） | 讲改了什么 | 无增无删时别用 | ② | 参考片 S3 |
-| `SkeletonCard`（fxkit） | 骨架 → 内容（等待 beats 先占位） | 已知要等（拉取 / 计算有过程） | 内容本该立刻出现时别用 | ③ | 参考片 S7 |
-| `StaggerList`（fxkit） | 级联列表（逐行滑入 + 微旋转） | 只是逐行出现，防 bullets 堆砌 | 相邻开始至少 12 帧（`stagger` 取 12，见 [draftpaper.md#reveal-rules](draftpaper.md#reveal-rules)）；要完成态 → `Checklist` | ① | 参考片 S4 |
-| `ConsoleWindow`（media） | 控制台 / 终端窗口（整块界面） | 正在跑、命令行；终端形态 | 必须给 `h`，否则高度由内容撑；带行号高亮的代码 → `HighlightCode` | ② | 参考片 S1 |
-| `MetricGrid`（media） | 指标网格（before→after 替换，数字滚动） | 前后值成对 | 只有一个值 → `StatRow` | ② | 参考片 S8 |
-| `StampBanner`（media） | 结论吸底条（三段式落定 + 底色闪） | 砸一句结论、吸底；口号备选 | 一镜别砸两条（互压底线） | 未展示 | 参考片 S1 S5 S8 |
-| `StageFrame`（stagekit） | 活体主体框（header / main / rail / stamp） | 一个主体持续演化（≥5 拍） | 只有 2–3 拍别用（状态机撑不起来），备选 `Corridor` | 未展示 | 参考片 S1 S5 S8 |
-| `PhaseRail`（stagekit） | 状态进度轨（状态机显式画出来） | 让观众看见推进到第几步 | 静态内容别用 | ④ | 参考片 S1 S5 |
-| `Corridor`（skeletons） | 走廊 / 流程骨架（到站 + 停留 + 对勾描线，隐含顺序） | 演示一段流程；因果的备选 | 站点 <3 个改用 `StaggerList` | ⑥ | 参考片 S2 S6 |
-| `SplitStage`（skeletons） | 双栏对比（先暗输方，再亮赢方） | 两个对等对象对比 | 两方不是同一维度别用 | ⑥ | 参考片 S4 |
-| `ZoomStage`（skeletons） | 整体→聚焦→标注→回整体（B 段插入） | 放大看局部（0.8–2s 取证）；圈住一处的备选 | 会缩放，静止元素别用 | ⑥ | 参考片 S3 S7 |
-| `RevealMask`（insert） | 镜头级遮罩揭示（ltr / rtl / ttb） | 镜头进场要"揭开" | 逐条揭示 → `ClipReveal` | 未展示 | 参考片 `Shot` 外壳（只有 S3 / S7 传了 `reveal`） |
-| `ShotCamera`（shotkit） | 受限相机外壳（只做 transform / opacity） | 每一镜都要 | 页眉 / 章节卡 / 字幕放在它**之外**（否则被运镜带动） | 未展示 | 参考片 8 镜 |
-| `CoverPanel`（shotkit） | 局部底托 / 卡片底 | 内容压到背景装饰区时 | 规则见 §4.2：wash 负 z、羽化、不铺整幅 | 未展示 | 参考片 8 镜 |
-| `Callout`（toolkit） | 圈住一处 + 引线 + 手写标注 | 圈住 / 指出一处 | 画面已有高亮别叠（重复编码） | ⑦ | 参考片 S1 |
-| `Checklist`（toolkit） | 带完成态的清单（`done` 后序号变对勾） | 列清单、要完成态 | 项 >6 溢出；只是逐行出现 → `StaggerList` | ⑦ | 参考片 S3 |
-| `JumpInText`（toolkit） | 逐字跳入（字色激活） | 念一句口号（钩子与收尾） | 全片最多 1–2 处；讲解中段显浮夸 | ⑧ | 引擎章节条（`index.tsx`） |
+**缺口（处置见 [technique.md#dependency-policy](technique.md#dependency-policy) §8）**
 
-**两处缺口（如实标出；处置见 [technique.md#dependency-policy](technique.md#dependency-policy) §8）**
-
-- **未上接触表 10 件**：旧模块 8 件（`PillTag` `LineIcon` `CheckBadge` `StampBanner` `StageFrame` `RevealMask` `ShotCamera` `CoverPanel`）**不该进**（原子 / 引擎外壳 / 参考片里天天出现，格子留给没画面的件）；封装层 2 件 `StatRow` `VerdictBar` **该进而没进**（已在参考片 S1 / S8 出现）。
-- `FocusFx` 覆盖层挂 `SCENE_ANCHOR`（`position: fixed` + 场景坐标 + zIndex 160），塞进 900×470 的格子会被舞台 transform 变成包含块、把"压暗整页"演残，所以它占第 ⑱ 整页，每 8 帧轮转一态。接触表 JPG 只抽到 **dim / loupe 两态**，spot / marker 以 showcase 成片 mp4 为准，别拿 JPG 当"四态都见过"。
-- 已删：PieDraw（被 `Chart variant="pie"` 与 `ProgressRing` 夹住，自身无标签无数值）、CameraMotionBlur / Trail（零渲染，按"零引用"判据删）；第 ⑪ 页空出的格换成 pathfx 组合用法（标注框 + 引线）。
-- **未使用 25 件**（口径 = 参考片 `scenes.tsx` + 引擎 `index.tsx`）全部在新封装层，且**全部在接触表上看得见**；旧模块 26 件全部在参考片里用过。`FocusFx` 有真实工程渲染记录（`overview-film` 的 `src/scenes.tsx` L8 import、L274 `<FocusFx f={f} mode="dim" …/>`，`shots.ts` S8 `live` / `evidence` 点名）。这是新旧并存的过渡态，不算缺陷：新件替旧件要动参考片 `scenes.tsx`，单独一轮做。
+- **未上接触表 10 件**（表中标「接触表未展示」；`KineticNumber` 不计）：旧模块 8 件（`PillTag` `LineIcon` `CheckBadge` `StampBanner` `StageFrame` `RevealMask` `ShotCamera` `CoverPanel`）**不该进**（原子 / 引擎外壳 / 参考片常用，格子留给没画面的件）；封装层 `StatRow` `VerdictBar` **该进而没进**。
+- `FocusFx` 覆盖层挂 `SCENE_ANCHOR`（`position: fixed` + 场景坐标 + zIndex 160），塞进 900×470 的格子会被舞台 transform 变成包含块、把"压暗整页"演残，所以独占第 ⑱ 页，每 8 帧轮转一态。接触表 JPG 只抽到 **dim / loupe 两态**，spot / marker 以 showcase 成片 mp4 为准。
+- 已删 PieDraw（被 `Chart variant="pie"` 与 `ProgressRing` 夹住）与零渲染的 CameraMotionBlur / Trail，别加回。
+- 新封装层多数件尚未进参考片 `scenes.tsx`；这是过渡态，不算缺陷（新件替旧件单独一轮做）。
 
 ### 6. 接触表
 
-件数与页号只查 [§5.1](#51-组件权威索引53-件--选型只查这一处)；本节只讲机制。**为什么要它**：读 props 很难想象构件长什么样，让执行 AI **看图选型**比读文字准——这是"能力存在但不可达"的解法。
+件数只查 [§5.1](#51-组件权威索引53-件--选型只查这一处)；本节只讲机制。**为什么要它**：读 props 很难想象构件长什么样，**看图选型**比读文字准。
 
 `src/showcase.tsx` 注册 `NotebookVideoShowcase`：**18 页 × 1 秒**，1920×1080 原生，渲染：
 
-- 旧层 **18 件**（按 `showcase.tsx` 里真实出现的 JSX 标签数：`fxkit` 9 + `media` 2 + `stagekit` 1（`PhaseRail`）+ `skeletons` 3 + `toolkit` 3）。别与"旧模块对外 export 26 件"混用：差的 8 件是接触表没逐件渲染的；`SHOWCASE_VERSION` 与本节都按"实际渲染"口径。
+- 旧层 **18 件**（按真实渲染的 JSX 标签数：`fxkit` 9 + `media` 2 + `stagekit` 1（`PhaseRail`）+ `skeletons` 3 + `toolkit` 3）；与"旧模块 export 26 件"差的 8 件没逐件渲染，`SHOWCASE_VERSION` 同按"实际渲染"口径。
 - 第 ⑤ 页 6 种运镜意图；第 ⑥ 页四种骨架（`StageFrame` 只在标题点名、未渲染）。
 - 新封装层第 ⑨–⑱ 页共 25 件（⑨–⑰ 24 件 + ⑱ `FocusFx` 整页）+ 新能力 3 页（图表变体 / 层级与关系 / 弹层与形状）。
-- 没覆盖的 10 件见 §5.1「两处缺口」。
+- 没覆盖的 10 件见 §5.1「缺口」。
 
 ```text
 node scripts/notebook-video.mjs showcase PROJECT_DIR          # 接触表 mp4（交付规格：2560×1440 / 静音 AAC / 色彩四项回写）
@@ -251,14 +248,14 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet   # 只要 jpg（se
 - [ ] 全片 ≥3 种介质，且每个讲解场景 ≥1 个活性组件；
 - [ ] 每段内容都问过"该用什么**介质**"，而不是"用哪张卡片"；
 - [ ] 压到背景装饰区的内容都坐在 `CoverPanel` 上；
-- [ ] 用到的构件都能在 §5.1 指到；新构件同时登记进索引（引擎外壳 / 原子件不需要进接触表，见 §5.1「两处缺口」）；
+- [ ] 用到的构件都能在 §5.1 指到；新构件同时登记进索引（引擎外壳 / 原子件不需要进接触表，见 §5.1「缺口」）；
 - [ ] wash 底板的 z 没设到内容之上。
 
 ---
 
 ### 修辞动作 → 组件
 
-§2 路由的是**内容类型**；这张路由**你此刻要做的修辞动作**。写场景前先查一遍：**`live` 里写的每个名字，都应能在这张表（或 [components.md#fxkit](components.md#fxkit) 的组件表）里指到。** 首选与备选的"何时别用"都在 §5.1 该件那一行。
+§2 路由**内容类型**；这张路由**此刻要做的修辞动作**。**`live` 里写的每个名字，都应能在这张表（或 [components.md#fxkit](components.md#fxkit) 的组件表）里指到。** "何时别用"见 §5.1 该件那一行。
 
 | 修辞动作 | 首选 | 备选（何时才用） |
 |---|---|---|
@@ -289,8 +286,8 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet   # 只要 jpg（se
 ## 真实素材：先搜 Wikimedia Commons / Openverse
 
 > 工具：`scripts/commons-search.py`（只用 Python 标准库；下载后的入库 / 转码复用 `prepare-media.py`）。
-> 原则：**每个选题先搜一次**。1665 年的铜版画、第一张 X 光片、真实的显微照片、一段历史录音——真东西几乎总能让片子更好。
-> 能找到就用；找不到也没关系，写清搜了什么（搜索记录会落进 `manifests/commons-log.json`，导演层门禁看它）。
+> 原则：**每个选题先搜一次**（历史图版、真实显微照片、历史录音——真东西几乎总能让片子更好）。
+> 能找到就用；找不到也行，搜索记录会落进 `manifests/commons-log.json`，导演层门禁看它。
 
 ### 两个源
 
@@ -299,7 +296,7 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet   # 只要 jpg（se
 | [Wikimedia Commons](https://commons.wikimedia.org/) | 1 亿多个文件：图片、视频、声音；每个文件都有结构化许可元数据（`extmetadata`） | MediaWiki Action API `https://commons.wikimedia.org/w/api.php`，免 key | 首选：覆盖最大、元数据最规整、大量公有领域历史图版 |
 | [Openverse](https://openverse.org/)（MIT，WordPress 基金会维护） | 聚合 Flickr、博物馆图片与 Freesound、Jamendo 等声音 | `https://api.openverse.org/v1/`，免 key | 补声音（Commons 的声音搜索大半是读音录音）与博物馆图；请求时只要 `cc0,pdm,by` |
 
-没有引入 pywikibot（重、要配账号）或 mwclient（第三方依赖，违背"scripts 只用标准库"）：直接 HTTP 的薄客户端足够。
+不引入 pywikibot / mwclient（scripts 只用标准库），直接 HTTP 薄客户端。
 
 ### 三条命令
 
@@ -317,17 +314,13 @@ python scripts/commons-search.py add ./my-video "openverse:audio:<id>" --id scra
 python scripts/commons-search.py credits ./my-video     # → CREDITS.md
 ```
 
-**按声音分类筛**：`--audio-category music|sound_effect`，只配 `--source openverse --type audio`，对应 Openverse API 的
-`category` 查询参数（官方文档：<https://api.openverse.org/v1/#tag/audio/operation/audio_search>，可选值 `audiobook` / `music` /
-`news` / `podcast` / `pronunciation` / `sound_effect`，这里只开放配乐 `music` 和音效 `sound_effect` 两类）。
-它和 Commons 的 `--category`（Commons 分类）是两回事，不能混用；许可门禁不变（请求仍只要 `cc0,pdm,by`，结果再过一遍白名单）。
+**按声音分类筛**：`--audio-category music|sound_effect`，只配 `--source openverse --type audio`，对应 Openverse API 的 `category` 参数（<https://api.openverse.org/v1/#tag/audio/operation/audio_search>；官方还有 `audiobook` / `news` / `podcast` / `pronunciation`，这里只开放 `music` 与 `sound_effect`）。它和 Commons 的 `--category`（Commons 分类）是两回事，不能混用；许可门禁不变（请求仍只要 `cc0,pdm,by`，结果再过一遍白名单）。
 
 ```text
 python scripts/commons-search.py search "rain" --type audio --source openverse --audio-category sound_effect
 ```
 
-> 2026-10-29 实测：Openverse 线上 API 带 `category` 时对 "rain" 返回 0 条（sound_effect）、对 "piano" 返回 HTTP 500（music），
-> 不带 `category` 正常返回。参数名与取值以官方文档为准；线上筛选恢复前，可以先不加分类搜，再按标题挑。
+> 线上 API 带 `category` 曾返回 0 条或 HTTP 500（不带则正常）；遇到时先不加分类搜，再按标题挑。
 
 搜索结果每条给出：标题、尺寸、许可（已归一）、作者、页面链接；不合格的许可直接不列。
 
@@ -365,8 +358,7 @@ python scripts/commons-search.py search "rain" --type audio --source openverse -
 
 ## 真实素材（截图 / 录屏 / 动图）
 
-把用户给的或合法找来的截图、短录屏放进片子里，和组件场景混排（例如 Git 协作课里放一张真实的 PR 页面截图）。
-外观沿用默认组件风格的卡片语言：`MediaFrame` = 主题卡片（`THEME.Paper`）+ 可选外壳（browser 地址栏 / window 三圆点 / device 手机边框）+ 署名徽章。
+把用户给的或合法找来的截图、短录屏放进片子，和组件场景混排。外观沿用卡片语言：`MediaFrame` = 主题卡片（`THEME.Paper`）+ 可选外壳（browser 地址栏 / window 三圆点 / device 手机边框）+ 署名徽章。
 
 ### 什么时候用真实素材，什么时候用组件画
 
@@ -434,10 +426,6 @@ P1：`muted: false`；登记了没用到；2K 交付时放大超过 1.5 倍。
 - 镜头表 `cinema.focus` 推近画面别处时，旁边的 MediaFrame 卡片可能被推出画面一半——给那条 focus 写 `keep: {x,y,w,h}`（卡片的矩形），引擎会降低推近倍数把两者都装下。
 - `w` / `h` 请写数字或同文件 `const`（`w={W}`、`w={W * 0.6}` 都能量）；写成布局对象字段时 validate-media 量不出放大倍数，只按占满画布估并给 P1 提醒。
 
-### Highlight & push-in notes
-
-Region highlights are drawn in viewport space (4 px orange stroke, white inner ring, lift shadow, 0.16 veil outside); boxes < 90 % visible after a region zoom are hidden. When a shot-level `cinema.focus` pushes in elsewhere, add `keep: {x,y,w,h}` for the MediaFrame card. Write `w`/`h` as numbers or same-file consts so validate-media can measure upscaling.
-
 <a id="html-capture"></a>
 
 ## HTML and website capture
@@ -466,9 +454,7 @@ Never substitute real-time recording for the Remotion renderer merely because bo
 
 ## 背景库 · Background library
 
-> 每个皮肤原有 `main / chapter / quiet` 三张锁定背景；背景库再给每个手作皮肤（journal / papercut / archive）
-> 新增 8 张、flat / cel 各新增 5 张风格各异、符合皮肤媒介的背景，旧的三张原样保留并入库（标 legacy）。
-> Every craft skin gains 8 backgrounds and flat / cel gain 5 each; the three original rasters stay, marked legacy.
+> 每个皮肤原有 `main / chapter / quiet` 三张锁定背景（入库标 legacy）；背景库再给手作皮肤（journal / papercut / archive）各加 8 张、flat / cel 各加 5 张。
 
 ### 1. 怎么用 / Usage
 
@@ -483,12 +469,11 @@ Never substitute real-time recording for the Remotion renderer merely because bo
 | `"shot"` | 逐镜轮换（下面的规则） | flat / cel |
 
 - `chapter` / `film` 模式下那张纸要撑满章内的常规镜头，所以只从 `roles` 含 `main`、且没有标 `busy` 的背景里挑。
-- **改回逐镜轮换：** 顶层写 `"bgMode": "shot"`。**完全不轮换：** `"bgRotate": false`（优先级高于 `bgMode`）。
+- **完全不轮换：** `"bgRotate": false`（优先级高于 `bgMode`）。
 - 显式写了 `bg` 的镜头永远用它自己的，只影响那一镜，章内其他镜头照样沿用章节纸。
-- `validate-backgrounds --shots` 只在 `bgMode=shot` 时把"相邻两镜同一张"记 P1；`chapter` / `film` 模式同章同纸是设计如此，不报。
+- `chapter` / `film` 模式同章同纸是设计如此，门禁不报（相邻同纸 P1 只在 `bgMode=shot` 时报，见下文门禁表）。
 
-**装饰重的背景 `"busy": true`：** 便签墙、窗花、洒金笺、祥云、挂笺、红纸衬边、集中线、放射光在 `backgrounds.json` 里标了 `busy`。
-自动选择时它们**不会分给 `main` 角色**（也不会当章节纸），只给章节卡或安静镜；想用在某一镜就显式写 `bg`。
+**装饰重的背景 `"busy": true`**（便签墙、窗花、洒金笺、祥云、挂笺、红纸衬边、集中线、放射光）：自动选择时**不分给 `main` 角色**、不当章节纸，只给章节卡或安静镜；想用在某一镜就显式写 `bg`。
 
 #### 逐镜轮换（`bgMode: "shot"`）/ Per-shot rotation
 
@@ -513,16 +498,14 @@ Never substitute real-time recording for the Remotion renderer merely because bo
 
 写了不存在的名字或别的皮肤的背景，`resolve-shots` 直接报错并列出本皮肤可选的名字。
 
-**关掉轮换：** `manifests/shots.json` 顶层写 `"bgRotate": false`。没有 `manifests/backgrounds.json` 的旧工程
-本来就不轮换，`resolve-shots` 的输出逐字节不变。
+**关掉轮换：** `"bgRotate": false`（见上）。没有 `manifests/backgrounds.json` 的工程不轮换，`resolve-shots` 输出逐字节不变。
 
 **看一眼全部背景：** `python scripts/dev/bg-gallery.py out.jpg`（需要 numpy + pillow；每张图都按 96 px 交付字号压一行墨色字幕，不加衬底，即门禁量的最坏情况）。
 
 #### 引擎怎么画 / How the engine draws it
 
-`resolve-shots` 把选中的库 id 写进 `src/shots.ts` 的 `bg`，文件路径写进 `bgFile`；`src/index.tsx` 的 `Backdrop`
-有 `bgFile` 就直接铺这张 2560×1440 的图（`objectFit: cover`，底色 `palette.paperBase`），没有就按原有的 `main / chapter / quiet` 走 `THEME.Background`。
-相邻两镜背景不同时交叉淡化 10 帧，背景随摄影机视差移动。`Theme` 接口没有变。
+`resolve-shots` 把选中的库 id 写进 `src/shots.ts` 的 `bg`、路径写进 `bgFile`；`src/index.tsx` 的 `Backdrop` 有 `bgFile` 就铺这张 2560×1440 的图（`objectFit: cover`，底色 `palette.paperBase`），没有就按 `main / chapter / quiet` 走 `THEME.Background`。
+相邻两镜背景不同时交叉淡化 10 帧，背景随摄影机视差移动。
 
 ### 2. 门禁 / Gates
 
@@ -543,11 +526,11 @@ Never substitute real-time recording for the Remotion renderer merely because bo
 
 ### 3. 来源与做法 / Where they come from
 
-按用户「不造轮子」的原则，优先级：
+「不造轮子」，优先级：
 
 1. **Paper Shaders**（[paper-design/shaders](https://github.com/paper-design/shaders)，`@paper-design/shaders@0.0.82`，Apache-2.0）——纸纹（冷压水彩纸、长纤维宣纸、
-   帘纹纸、旧纸 foxing、揉皱折痕）、mesh 渐变、点阵、半调网点。它是 WebGL：因为逐帧 WebGL 在纯 CPU（SwiftShader）上太贵而暂缓。
-   做法是**离线预渲一次**：`scripts/dev/prerender-paper-shaders.py` 用无头 Chromium 把 `scripts/dev/paper-shaders.spec.json` 里每个着色器
+   帘纹纸、旧纸 foxing、揉皱折痕）、mesh 渐变、点阵、半调网点。它是 WebGL，逐帧在纯 CPU（SwiftShader）上太贵，所以
+   **离线预渲一次**：`scripts/dev/prerender-paper-shaders.py` 用无头 Chromium 把 `scripts/dev/paper-shaders.spec.json` 里每个着色器
    以静态参数（speed 0、固定 seed）渲成 2560×1440 PNG，再由生成器合成、压成 WebP 入库。**渲染期零 WebGL、零新 npm 依赖**。
 2. **Wikimedia Commons 的公有领域 / CC0 纹理**（用 `scripts/commons-search.py` 搜，CC0 / PD 优先）：牛皮纸（Coyau，PD）、
    粗麻布（Poly Haven「Hessian 380」，CC0）、1630 年荷兰古地图（PD）。生成器取图时重新核对 Commons 页面上的许可，变了就拒绝。
@@ -564,7 +547,7 @@ python scripts/dev/bg_metrics.py assets/lecture-template
 python scripts/validate-backgrounds.py assets/lecture-template --min-per-skin journal=8,papercut=8,archive=8,flat=4,cel=4
 ```
 
-同一输入两次构建逐字节相同（已验证）。体积：34 张库背景 WebP 共约 2.7 MB（有损 q82；两张大面积浅色渐变用 q95 保住抖动、防色带）。
+同一输入两次构建逐字节相同。体积：34 张库背景 WebP 共约 2.7 MB（有损 q82；两张大面积浅色渐变用 q95 保住抖动、防色带）。
 纸纹的 1 px 颗粒先轻微模糊再编码：H.264 交付时本来就会丢掉这个频段，留着只会让文件大三倍。
 
 **加自己的背景**：把 2560×1440 的图放进工程 `public/bg/lib/`，在工程的 `manifests/backgrounds.json` 里照现有条目加一条（`source` / `license` / `attribution`
@@ -572,66 +555,68 @@ python scripts/validate-backgrounds.py assets/lecture-template --min-per-skin jo
 
 ### 4. 清单与许可 / Inventory and licences
 
-Paper Shaders 与程序生成的图由本仓库生成，随仓库以 Apache-2.0 发布；Commons 来源的图保留原许可（PD / CC0），署名照样写上（好习惯，也便于核查）。
+Paper Shaders 与程序生成的图由本仓库生成，随仓库以 Apache-2.0 发布；Commons 来源的图保留原许可（PD / CC0），署名照写。
 完整字段（seed、着色器参数、合成步骤、sha256、对比度指标）见 `assets/lecture-template/manifests/backgrounds.json`。
+
+署名列简写：`ps-*` = Paper Shaders 着色器预设（@paper-design/shaders@0.0.82）；`seed N` = `scripts/dev/make-bg-library.py` 的种子；make-craft-textures = `scripts/dev/make-craft-textures.py`；Kraft tileable = [File:Kraft tileable 1024x1024.png](https://commons.wikimedia.org/wiki/File:Kraft_tileable_1024x1024.png) · Coyau (own work)。
 
 #### journal
 
 | id | 名称 | 角色 | 来源 | 许可 | 署名 / 出处 |
 |---|---|---|---|---|---|
-| `journal/ruled` | 横线本 | main / quiet | Paper Shaders 预渲 | Apache-2.0 | `ps-coldpress` · @paper-design/shaders@0.0.82 |
-| `journal/grid` | 方格本（线圈） | main / chapter | Paper Shaders 预渲 | Apache-2.0 | `ps-coldpress` · @paper-design/shaders@0.0.82 |
-| `journal/dots` | 点阵本 | main / quiet | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1103 |
-| `journal/kraft` | 牛皮纸本 | main / chapter | Wikimedia Commons | PD | [File:Kraft tileable 1024x1024.png](https://commons.wikimedia.org/wiki/File:Kraft_tileable_1024x1024.png) · Coyau (own work) |
-| `journal/watercolor` | 水彩纸 | chapter / main | Paper Shaders 预渲 | Apache-2.0 | `ps-coldpress` · @paper-design/shaders@0.0.82 |
-| `journal/sticky` | 便签墙 | chapter / main | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1106 |
-| `journal/oldpage` | 旧书页 | main / chapter | Paper Shaders 预渲 | Apache-2.0 | `ps-oldpage` · @paper-design/shaders@0.0.82 |
-| `journal/graph` | 坐标纸 | quiet / main | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1108 |
-| `journal/main` | 棉纸·常规 *(legacy)* | main | 程序生成 | Apache-2.0 | `scripts/dev/make-craft-textures.py` |
-| `journal/chapter` | 棉纸·章节 *(legacy)* | chapter | 程序生成 | Apache-2.0 | `scripts/dev/make-craft-textures.py` |
-| `journal/quiet` | 棉纸·安静 *(legacy)* | quiet | 程序生成 | Apache-2.0 | `scripts/dev/make-craft-textures.py` |
+| `journal/ruled` | 横线本 | main / quiet | Paper Shaders 预渲 | Apache-2.0 | `ps-coldpress` |
+| `journal/grid` | 方格本（线圈） | main / chapter | Paper Shaders 预渲 | Apache-2.0 | `ps-coldpress` |
+| `journal/dots` | 点阵本 | main / quiet | 程序生成 | Apache-2.0 | seed 1103 |
+| `journal/kraft` | 牛皮纸本 | main / chapter | Wikimedia Commons | PD | Kraft tileable |
+| `journal/watercolor` | 水彩纸 | chapter / main | Paper Shaders 预渲 | Apache-2.0 | `ps-coldpress` |
+| `journal/sticky` | 便签墙 | chapter / main | 程序生成 | Apache-2.0 | seed 1106 |
+| `journal/oldpage` | 旧书页 | main / chapter | Paper Shaders 预渲 | Apache-2.0 | `ps-oldpage` |
+| `journal/graph` | 坐标纸 | quiet / main | 程序生成 | Apache-2.0 | seed 1108 |
+| `journal/main` | 棉纸·常规 *(legacy)* | main | 程序生成 | Apache-2.0 | make-craft-textures |
+| `journal/chapter` | 棉纸·章节 *(legacy)* | chapter | 程序生成 | Apache-2.0 | make-craft-textures |
+| `journal/quiet` | 棉纸·安静 *(legacy)* | quiet | 程序生成 | Apache-2.0 | make-craft-textures |
 
 #### papercut
 
 | id | 名称 | 角色 | 来源 | 许可 | 署名 / 出处 |
 |---|---|---|---|---|---|
-| `papercut/hongzhi` | 红纸衬边 | chapter | Paper Shaders 预渲 | Apache-2.0 | `ps-xuan` · @paper-design/shaders@0.0.82 |
-| `papercut/xuan` | 宣纸 | main / quiet | Paper Shaders 预渲 | Apache-2.0 | `ps-xuan` · @paper-design/shaders@0.0.82 |
-| `papercut/kraft` | 牛皮纸·红绳 | main / chapter | Wikimedia Commons | PD | [File:Kraft tileable 1024x1024.png](https://commons.wikimedia.org/wiki/File:Kraft_tileable_1024x1024.png) · Coyau (own work) |
-| `papercut/origami` | 折纸纹 | main / quiet | Paper Shaders 预渲 | Apache-2.0 | `ps-origami` · @paper-design/shaders@0.0.82 |
-| `papercut/lattice` | 窗花角 | chapter / main | Paper Shaders 预渲 | Apache-2.0 | `ps-xuan` · @paper-design/shaders@0.0.82 |
-| `papercut/sajin` | 洒金笺 | main / chapter | Paper Shaders 预渲 | Apache-2.0 | `ps-xuan` · @paper-design/shaders@0.0.82 |
-| `papercut/cloud` | 祥云 | chapter / main | Paper Shaders 预渲 | Apache-2.0 | `ps-xuan` · @paper-design/shaders@0.0.82 |
-| `papercut/menjian` | 挂笺 | chapter | Paper Shaders 预渲 | Apache-2.0 | `ps-xuan` · @paper-design/shaders@0.0.82 |
-| `papercut/main` | 米纸·常规 *(legacy)* | main | 程序生成 | Apache-2.0 | `scripts/dev/make-craft-textures.py` |
-| `papercut/chapter` | 米纸·章节 *(legacy)* | chapter | 程序生成 | Apache-2.0 | `scripts/dev/make-craft-textures.py` |
-| `papercut/quiet` | 米纸·安静 *(legacy)* | quiet | 程序生成 | Apache-2.0 | `scripts/dev/make-craft-textures.py` |
+| `papercut/hongzhi` | 红纸衬边 | chapter | Paper Shaders 预渲 | Apache-2.0 | `ps-xuan` |
+| `papercut/xuan` | 宣纸 | main / quiet | Paper Shaders 预渲 | Apache-2.0 | `ps-xuan` |
+| `papercut/kraft` | 牛皮纸·红绳 | main / chapter | Wikimedia Commons | PD | Kraft tileable |
+| `papercut/origami` | 折纸纹 | main / quiet | Paper Shaders 预渲 | Apache-2.0 | `ps-origami` |
+| `papercut/lattice` | 窗花角 | chapter / main | Paper Shaders 预渲 | Apache-2.0 | `ps-xuan` |
+| `papercut/sajin` | 洒金笺 | main / chapter | Paper Shaders 预渲 | Apache-2.0 | `ps-xuan` |
+| `papercut/cloud` | 祥云 | chapter / main | Paper Shaders 预渲 | Apache-2.0 | `ps-xuan` |
+| `papercut/menjian` | 挂笺 | chapter | Paper Shaders 预渲 | Apache-2.0 | `ps-xuan` |
+| `papercut/main` | 米纸·常规 *(legacy)* | main | 程序生成 | Apache-2.0 | make-craft-textures |
+| `papercut/chapter` | 米纸·章节 *(legacy)* | chapter | 程序生成 | Apache-2.0 | make-craft-textures |
+| `papercut/quiet` | 米纸·安静 *(legacy)* | quiet | 程序生成 | Apache-2.0 | make-craft-textures |
 
 #### archive
 
 | id | 名称 | 角色 | 来源 | 许可 | 署名 / 出处 |
 |---|---|---|---|---|---|
-| `archive/envelope` | 档案袋 | chapter / main | Wikimedia Commons | PD | [File:Kraft tileable 1024x1024.png](https://commons.wikimedia.org/wiki/File:Kraft_tileable_1024x1024.png) · Coyau (own work) |
-| `archive/newsprint` | 旧报纸 | main | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1302 |
+| `archive/envelope` | 档案袋 | chapter / main | Wikimedia Commons | PD | Kraft tileable |
+| `archive/newsprint` | 旧报纸 | main | 程序生成 | Apache-2.0 | seed 1302 |
 | `archive/map` | 古地图 | chapter / main | Wikimedia Commons | PD | [File:Helmink Antique map of Holland by Anonymous 3rd state by Frederick de Wit 1630.jpg](https://commons.wikimedia.org/wiki/File:Helmink_Antique_map_of_Holland_by_Anonymous_3rd_state_by_Frederick_de_Wit_1630.jpg) · Anonymous, 3rd state by Frederick de Wit (1630); scan Leen Helmink |
-| `archive/catalog` | 卡片目录 | main / quiet | Paper Shaders 预渲 | Apache-2.0 | `ps-laid` · @paper-design/shaders@0.0.82 |
-| `archive/filmstrip` | 胶片灯箱 | main / chapter | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1305 |
+| `archive/catalog` | 卡片目录 | main / quiet | Paper Shaders 预渲 | Apache-2.0 | `ps-laid` |
+| `archive/filmstrip` | 胶片灯箱 | main / chapter | 程序生成 | Apache-2.0 | seed 1305 |
 | `archive/linen` | 展柜布面 | main / quiet | Wikimedia Commons | CC0-1.0 | [File:Hessian 380 diff 8k (Rico Cilliers and colormass via Poly Haven).jpg](https://commons.wikimedia.org/wiki/File:Hessian_380_diff_8k_(Rico_Cilliers_and_colormass_via_Poly_Haven).jpg) · Rico Cilliers (processing), colormass (photography) via Poly Haven |
-| `archive/ledger` | 登记簿 | quiet / main | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1307 |
-| `archive/vellum` | 描图纸 | quiet / main | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1308 |
-| `archive/main` | 灯箱·常规 *(legacy)* | main | 程序生成 | Apache-2.0 | `scripts/dev/make-craft-textures.py` |
-| `archive/chapter` | 灯箱·章节 *(legacy)* | chapter | 程序生成 | Apache-2.0 | `scripts/dev/make-craft-textures.py` |
-| `archive/quiet` | 灯箱·安静 *(legacy)* | quiet | 程序生成 | Apache-2.0 | `scripts/dev/make-craft-textures.py` |
+| `archive/ledger` | 登记簿 | quiet / main | 程序生成 | Apache-2.0 | seed 1307 |
+| `archive/vellum` | 描图纸 | quiet / main | 程序生成 | Apache-2.0 | seed 1308 |
+| `archive/main` | 灯箱·常规 *(legacy)* | main | 程序生成 | Apache-2.0 | make-craft-textures |
+| `archive/chapter` | 灯箱·章节 *(legacy)* | chapter | 程序生成 | Apache-2.0 | make-craft-textures |
+| `archive/quiet` | 灯箱·安静 *(legacy)* | quiet | 程序生成 | Apache-2.0 | make-craft-textures |
 
 #### flat
 
 | id | 名称 | 角色 | 来源 | 许可 | 署名 / 出处 |
 |---|---|---|---|---|---|
-| `flat/mesh-dawn` | 晨光渐变 | main / quiet | Paper Shaders 预渲 | Apache-2.0 | `ps-mesh-dawn` · @paper-design/shaders@0.0.82 |
-| `flat/mesh-mint` | 薄荷渐变 | main / quiet | Paper Shaders 预渲 | Apache-2.0 | `ps-mesh-mint` · @paper-design/shaders@0.0.82 |
-| `flat/dotgrid` | 点阵 | quiet / main | Paper Shaders 预渲 | Apache-2.0 | `ps-dotgrid` · @paper-design/shaders@0.0.82 |
-| `flat/sunrise` | 暖角渐变 | chapter / main | Paper Shaders 预渲 | Apache-2.0 | `ps-grain-sun` · @paper-design/shaders@0.0.82 |
-| `flat/shapes` | 几何角饰 | chapter / main | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1405 |
+| `flat/mesh-dawn` | 晨光渐变 | main / quiet | Paper Shaders 预渲 | Apache-2.0 | `ps-mesh-dawn` |
+| `flat/mesh-mint` | 薄荷渐变 | main / quiet | Paper Shaders 预渲 | Apache-2.0 | `ps-mesh-mint` |
+| `flat/dotgrid` | 点阵 | quiet / main | Paper Shaders 预渲 | Apache-2.0 | `ps-dotgrid` |
+| `flat/sunrise` | 暖角渐变 | chapter / main | Paper Shaders 预渲 | Apache-2.0 | `ps-grain-sun` |
+| `flat/shapes` | 几何角饰 | chapter / main | 程序生成 | Apache-2.0 | seed 1405 |
 | `flat/main` | 天空吉祥物·常规 *(legacy)* | main | AI 生成 | Apache-2.0 | 见 `manifests/visual-assets.json` |
 | `flat/chapter` | 天空吉祥物·章节 *(legacy)* | chapter | AI 生成 | Apache-2.0 | 见 `manifests/visual-assets.json` |
 | `flat/quiet` | 天空吉祥物·安静 *(legacy)* | quiet | AI 生成 | Apache-2.0 | 见 `manifests/visual-assets.json` |
@@ -640,11 +625,11 @@ Paper Shaders 与程序生成的图由本仓库生成，随仓库以 Apache-2.0 
 
 | id | 名称 | 角色 | 来源 | 许可 | 署名 / 出处 |
 |---|---|---|---|---|---|
-| `cel/halftone` | 网点角 | main / chapter | Paper Shaders 预渲 | Apache-2.0 | `ps-halftone-corners` · @paper-design/shaders@0.0.82 |
-| `cel/speedlines` | 集中线 | chapter | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1502 |
-| `cel/panels` | 分格边 | main / chapter | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1503 |
-| `cel/screentone` | 渐变网点 | main / quiet | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1504 |
-| `cel/sunburst` | 放射光 | chapter | 程序生成 | Apache-2.0 | `scripts/dev/make-bg-library.py` seed 1505 |
+| `cel/halftone` | 网点角 | main / chapter | Paper Shaders 预渲 | Apache-2.0 | `ps-halftone-corners` |
+| `cel/speedlines` | 集中线 | chapter | 程序生成 | Apache-2.0 | seed 1502 |
+| `cel/panels` | 分格边 | main / chapter | 程序生成 | Apache-2.0 | seed 1503 |
+| `cel/screentone` | 渐变网点 | main / quiet | 程序生成 | Apache-2.0 | seed 1504 |
+| `cel/sunburst` | 放射光 | chapter | 程序生成 | Apache-2.0 | seed 1505 |
 | `cel/main` | 漫画角饰·常规 *(legacy)* | main | AI 生成 | Apache-2.0 | 见 `manifests/visual-assets.json` |
 | `cel/chapter` | 漫画角饰·章节 *(legacy)* | chapter | AI 生成 | Apache-2.0 | 见 `manifests/visual-assets.json` |
 | `cel/quiet` | 漫画角饰·安静 *(legacy)* | quiet | AI 生成 | Apache-2.0 | 见 `manifests/visual-assets.json` |
@@ -668,22 +653,15 @@ Paper Shaders 与程序生成的图由本仓库生成，随仓库以 Apache-2.0 
 
 1. **版式**（最硬）：`page` = 手账页（要放真图版 + 大字 + 印章，必须中心干净、边角不抢）；
    `component` = 组件镜（卡片盖住中间，容得下中等纹理）；`chapter` = 纯字卡（可以最花）。
-   一镜如果是手账页，**就算它刚好开了一章**也按 page 挑纸——章节首镜不降级。
-   这条实测抓过一个真 bug：S1 是 page，却因为是章节首镜拿到了 `cel/speedlines`（全幅集中线），
-   真图版直接废掉。
+   一镜如果是手账页，**就算它刚好开了一章**也按 page 挑纸——章节首镜不降级（否则会拿到全幅集中线之类的章节纸，真图版直接废掉）。
 2. **题材**（可选）：`story.json` 顶层写 `"topic": "science"`，compose 写进 `shots.json`，
-   resolve 只在 `use.fits` 命中的纸里挑；命中为空则退回只按版式（不报错，但也不保证贴题）。
+   resolve 只在 `use.fits` 命中的纸里挑；命中为空则退回只按版式（不报错）。
    可用值：`science` / `craft` / `eastern` / `concept` / `story`。
-3. **角色 + 轮换**：`main` / `chapter` / `quiet`，同 `bgMode`（手作三族默认一章一张纸，
-   flat / cel 逐镜换）。永不与上一镜同一张。
+3. **角色 + 轮换**：同上文 `bgMode` 与逐镜轮换规则。
 
 #### 为什么不用「按背景自动调色」
 
-算过：卡片色 `#fbf6ea`（lum 0.96）对最暗的纸（`papercut/chapter` 0.66）明度比只有 **1.42**。
-而 49 张纸的 `zone_mean_lum` 全部落在 0.66–0.97，**没有一张暗到需要浅墨**。
-也就是说：卡片的可读性从来不是靠「换个更亮的色」解决的，靠的是**描边 + 阴影 + 纸条卡片**
-（`paperCard` 的 1px 墨边 + 三层阴影）。硬做「背景→调色」只会把已经成立的视觉弄花。
-真正的失配发生在**选错纸**，不在配色。
+卡片色 `#fbf6ea`（lum 0.96）对最暗的纸（`papercut/chapter` 0.66）明度比只有 **1.42**，而 49 张纸的 `zone_mean_lum` 全部落在 0.66–0.97，**没有一张暗到需要浅墨**。卡片可读性靠**描边 + 阴影 + 纸条卡片**（`paperCard` 的 1px 墨边 + 三层阴影），不靠换色；真正的失配在**选错纸**，不在配色。
 
 #### 换皮肤要三处一起改
 
@@ -692,6 +670,6 @@ python scripts/set-skin.py <工程> journal --rebuild
 ```
 
 皮肤有两个来源：`src/theme/active.ts`（渲染端 import 它）与 `manifests/shots.json` 的 `theme`
-（背景库按它挑图）。只改一处会渲出「A 皮肤的组件 + B 皮肤的纸」——**没有任何门禁看得见的坏组合**。
+（背景库按它挑图）。只改一处会渲出「A 皮肤的组件 + B 皮肤的纸」——**没有门禁看得见**。
 `set-skin.py` 一次写全三处（`active.ts` + `story.json` + `shots.json`），`--rebuild` 顺手重跑
-compose + resolve。resolve 现在一律以 `active.ts` 为准，不同步时只提示、不阻断。
+compose + resolve。resolve 以 `active.ts` 为准，不同步时只提示、不阻断。
