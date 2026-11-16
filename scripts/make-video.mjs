@@ -34,10 +34,22 @@ if (!positional[0]) {
 }
 // 两种入口。① 工程目录（推荐，手写组件场景路线：shots.json + scenes.tsx 里用默认组件）；
 //        ② STORY.json（auto 草稿路线：compose-story 自动排版）。两条路线共用 resolve → 门禁 → tsc → 静帧/渲染。
-const HAND = fs.existsSync(path.join(path.resolve(positional[0]), 'src', 'index.tsx'));
-const storyPath = HAND ? null : path.resolve(positional[0]);
+// 由 story.json 建出来的工程，compose 时记下 story 的位置（manifests/story-source.json）：
+// 之后只给工程目录（tts 之后 `make-video ./my-video --render`）也要重跑 compose，
+// 否则字幕和镜头停在静音占位的时序上，caption-sync 判「字幕与 TTS 词流不一致」。
+const SOURCE_FILE = (dir) => path.join(dir, 'manifests', 'story-source.json');
+const recordedStory = (dir) => {
+  try {
+    const p = JSON.parse(fs.readFileSync(SOURCE_FILE(dir), 'utf8')).story;
+    return p && fs.existsSync(p) ? p : null;
+  } catch { return null; }
+};
+const isProject = fs.existsSync(path.join(path.resolve(positional[0]), 'src', 'index.tsx'));
+const linkedStory = isProject ? recordedStory(path.resolve(positional[0])) : null;
+const HAND = isProject && !linkedStory;
+const storyPath = HAND ? null : (linkedStory ?? path.resolve(positional[0]));
 const story = HAND ? {title: path.basename(path.resolve(positional[0]))} : JSON.parse(fs.readFileSync(storyPath, 'utf8'));
-const project = HAND ? path.resolve(positional[0]) : path.resolve(positional[1] ?? storyPath.replace(/\.json$/i, '') + '-project');
+const project = isProject ? path.resolve(positional[0]) : path.resolve(positional[1] ?? storyPath.replace(/\.json$/i, '') + '-project');
 const style = flagVal('style', story.theme ?? 'flat');
 const scale = flagVal('scale', '0.75');
 const renderOut = flag('render') ? path.resolve(flagVal('render', path.join(project, 'renders', 'final.mp4'))) : null;
@@ -137,6 +149,8 @@ const reportJson = path.join(project, 'renders', 'compose-report.json');
 const comp = await py('compose-story.py', [storyPath, project, '--report', reportJson]);
 if (comp.code) die('compose-story 有修不了的问题（见上面的 ✗，每条都写了怎么改）');
 rep = JSON.parse(fs.readFileSync(reportJson, 'utf8'));
+fs.writeFileSync(SOURCE_FILE(project), JSON.stringify({story: storyPath}, null, 1) + '\n');
+if (linkedStory) step(`工程由 ${path.basename(storyPath)} 生成：已按它重跑 compose（字幕按最新旁白重排）`);
 
 // 2b. 3.5.4 素材前置检查：story 引用的 media id 必须已登记在 manifests/media.json。
 //     旧版缺素材时一路绿到渲染，才在 React 里抛「craft media: ……没有 id」——用户看到的是渲染栈。
