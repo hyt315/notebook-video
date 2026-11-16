@@ -957,7 +957,7 @@ TTS 是正式步骤：`notebook-video tts <工程>`（默认 edge-tts；也可 `
 **手作路线只必读 4 份**：[references/director.md#director-method](director.md#director-method)、[references/components.md#craft-kit](components.md#craft-kit)、[references/camera.md#camera-language](camera.md#camera-language)、`references/themes/<皮肤>.md`；其余按需查（`references/scenes.md#lecture-composition` 等仅限组件路线）。
 
 **auto 路线（story.json）必读 2 份**：[references/technique.md#auto-engine](technique.md#auto-engine)、[references/draftpaper.md#reveal-rules](draftpaper.md#reveal-rules)；用到配方 / 线稿时再读 [references/scenes.md#recipes](scenes.md#recipes)、[references/components.md#linework](components.md#linework)。
-先做 3 张风格帧（`--stills`），像了再做全片；**整片渲染前**由新会话只看联系表 + 自动生成的 `storyboard.md` + `treatment.json` 做七项独立评审，写进 `review.rounds`（手作皮肤没评审时 `make-video --render` 会停下，草稿用 `--skip-review` 显式跳过）。
+先做 3 张风格帧（`--stills`），像了再做全片；**整片渲染前**由新会话只看联系表 + 自动生成的 `storyboard.md` + `treatment.json` 做七项独立评审，写进 `review.rounds`（手作皮肤没评审时 `make-video --render` 给一条 P1 提示、照常渲染；`--skip-review` 关掉提示）。
 
 ### 第 1 步 · 选一个蓝图
 
@@ -1034,7 +1034,7 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 **旁白顺序（auto 路线）**：`compose-story` 先写出 `narration.txt` → 你跑 `notebook-video tts <工程>` 生成音频 → `make-video` 里第二次 compose 按词级时间重排字幕与镜头。
 **改了 story 必须重跑 compose 再 tts**：`story.json` 比 `narration.txt` 新时 tts 会直接停下，告诉你先跑 compose——
 否则它会读旧的旁白，**出半截音频而且不报错**。自己手写 narration（不跟 story 走）时加 `--allow-stale`。
-**先看 `--stills` 静帧，再渲整片**（整片渲染要先征得用户同意）。手作皮肤 `treatment.json` 的 `review.rounds` 为空时 `--render` 会停下（先做独立评审；草稿用 `--skip-review` 显式跳过）。`--render` 默认 1920×1080；响度目标 −16 LUFS（静音旁白片与真人声片相同）。
+**先看 `--stills` 静帧，再渲整片**（整片渲染要先征得用户同意）。手作皮肤 `treatment.json` 的 `review.rounds` 为空时 `--render` 给一条 P1 提示（建议先做独立评审；照常渲染，`--skip-review` 关掉提示）。`--render` 默认 1920×1080；响度目标 −16 LUFS（静音旁白片与真人声片相同）。
 
 **渲染中途失败别整片重渲**：`notebook-video render <工程> <输出> --resume`。raw 中间产物只在**成功交付后**才删除，
 所以渲染/响度/封装任一环节失败都能接着做；输入（场景、素材、音频、story）没变就跳过整片渲染，直接做响度与封装。

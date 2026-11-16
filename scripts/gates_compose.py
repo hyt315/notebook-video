@@ -255,7 +255,7 @@ case('SFX2 分镜 · 缺省 sfxDensity = sparse（值由 tests/test_sfx_density.
 cleanup(_td)
 
 
-# ---- 3.3.0 评审拦截：手作皮肤 review.rounds 为空时 make-video --render 必须停（不加 --skip-review） ----
+# ---- 评审提示（P1）：手作皮肤 review.rounds 为空时 make-video --render 只提示、不拦（--skip-review 关掉提示） ----
 def mk_review_proj(skin, rounds):
     td = tempfile.mkdtemp(prefix='nv-review-')
     os.makedirs(os.path.join(td, 'manifests'))
@@ -271,13 +271,15 @@ def mk_review_proj(skin, rounds):
 
 MV = os.path.join(SKILL, 'scripts/make-video.mjs')
 td = mk_review_proj('journal', [])
-case('RV1 手作皮肤 · review.rounds 为空 · --render 不加 --skip-review → 渲染前停下', [
-    ('must_block:review.rounds', 'make-video --render', run(['node', MV, td, '--render', os.path.join(td, 'renders', 'x.mp4')]))])
-case('RV2 同一工程加 --skip-review → 不再被评审拦（继续走到构建期门禁）', [
+_rv1 = run(['node', MV, td, '--render', os.path.join(td, 'renders', 'x.mp4')])
+case('RV1 手作皮肤 · review.rounds 为空 · --render 不加 --skip-review → 只给 P1 提示，继续走到构建期门禁', [
+    ('must_block:P1 journal 是手作皮肤', 'make-video --render（提示已打出）', _rv1),
+    ('must_block:构建期门禁', 'make-video --render（没在评审处停下）', _rv1)])
+case('RV2 同一工程加 --skip-review → 不再出评审提示（继续走到构建期门禁）', [
     ('must_absent:review.rounds 还是空的', 'make-video --render --skip-review', run(['node', MV, td, '--render', os.path.join(td, 'renders', 'x.mp4'), '--skip-review'])),
     ('must_block:构建期门禁', '走到了门禁那一步', run(['node', MV, td, '--render', os.path.join(td, 'renders', 'x.mp4'), '--skip-review']))])
 cleanup(td)
 td = mk_review_proj('flat', [])
-case('RV3 flat 皮肤 · review.rounds 为空 → 不拦（只拦手作皮肤）', [
+case('RV3 flat 皮肤 · review.rounds 为空 → 不提示（只对手作皮肤提示）', [
     ('must_absent:review.rounds 还是空的', 'make-video --render（flat）', run(['node', MV, td, '--render', os.path.join(td, 'renders', 'x.mp4')]))])
 cleanup(td)

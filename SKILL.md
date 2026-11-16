@@ -82,7 +82,7 @@ Windows 用同一条 `node` 命令，或 `scripts\notebook-video.cmd` / `scripts
 - **先看 `--stills`，再渲整片；整片渲染要先征得用户同意。** 看动起来对不对用 `notebook-video preview ./my-video --seconds=30`，全片体检用 `notebook-video sweep ./my-video`。
 - **改了 story 必须重跑 compose 再 tts**，否则 tts 读的是旧旁白，出半截音频而且不报错（自己手写 narration 时加 `--allow-stale`）。
 - 没有真实旁白时 `--render` 会停在渲染前（静音占位只给 `--stills` / `preview`）。默认无 BGM，音效稀疏。
-- 手作皮肤整片渲染前，由新会话只看联系表 + `storyboard.md` + `treatment.json` 做一轮独立评审，写进 `review.rounds`（没评审时 `--render` 会停下；草稿用 `--skip-review`）。
+- 手作皮肤整片渲染前，由新会话只看联系表 + `storyboard.md` + `treatment.json` 做一轮独立评审，写进 `review.rounds`（没评审时 `--render` 只给 P1 提示，照常渲染；`--skip-review` 关掉提示）。
 - 字幕每行 ≤16 字（超了自动在合法断点拆）。抄结构不抄片子：改完跑 `notebook-video eval-project "<SKILL_DIR>/assets/lecture-template" ./my-video` 看版式 / 介质 / 转场 / 镜长是否真的不同。
 - 渲染中途失败用 `notebook-video render <工程> <输出> --resume`，别整片重渲。交付会自动带 `renders/captions.srt` 与 `renders/poster.jpg`。
 - 预览、体检、FillGate 读数、封面、交付物的细节：[technique.md](references/technique.md#skill-workflow)。

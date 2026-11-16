@@ -135,8 +135,8 @@ python scripts/commons-search.py search "<关键词>" --source openverse --proje
    - `storyboard.md` 由 `resolve-shots` 从 `manifests/shots.resolved.json` **自动生成**：片名、总帧数、时长、皮肤，
      每镜一行写起止秒、景别、运镜、意图缩放 / 实际缩放、转场、背景、主要组件、字幕摘要。文件头有"自动生成"标记，手改会被覆盖；
      如果你手写过 storyboard.md（没有标记），不覆盖，生成的那份写到 `storyboard.generated.md`——评审用生成的那份。
-5. 一轮修改把所有问题改完，再渲整片。手作皮肤 `review.rounds` 为空时 `make-video --render` 会停下并说明原因；
-   草稿 / 自测确实要跳过，显式加 `--skip-review`。
+5. 一轮修改把所有问题改完，再渲整片。手作皮肤 `review.rounds` 为空时 `make-video --render` 会给一条 P1 提示（照常渲染，提示也写进报告）；
+   草稿 / 自测不想看到提示，加 `--skip-review`。
 
 ### treatment.json 字段一览
 见 `assets/lecture-template/manifests/treatment.example.json`（复制成 `treatment.json` 再填）。门禁规则：
