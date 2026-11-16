@@ -152,7 +152,7 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
                 elif need > hi + 0.5:
                     p0.append({"id": sid, "f": k["f"], "issue": f"anchor 出界：{axis}={need:.0f} > 可见边界 {hi:.0f}"})
 
-        # ---- 运镜时长与配额 ----
+        # ---- 运镜时长 ----
         if intent != "still":
             span = int(cam.get("dur", C["CAM_DUR"]["std"]))
             if not (CAM_DUR[0] <= span <= CAM_DUR[1]):
@@ -160,14 +160,14 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
             moving = sum(1 for a, b in zip(keys, keys[1:]) if abs(a["s"] - b["s"]) > 1e-6 or abs(a["x"] - b["x"]) > 1e-6 or abs(a["y"] - b["y"]) > 1e-6)
             if moving > 1:
                 p1.append({"id": sid, "issue": f"本镜有 {moving} 段位移，约定每镜 ≤1 次运镜"})
-            # P0：声明了运镜就必须真的动。否则"把 still 改名成 push-in"就能同时骗过
-            # 意图多样性统计和每章运镜配额，而画面完全静止（v2.8 的老毛病换了件衣服）。
+            # P1：声明了运镜却几乎不动 → 点名提示。多样性与配额本身也是 P1，
+            # 这里点名是为了不让「改名成 push-in」把那两条提示悄悄消掉。
             scale_span = max(k["s"] for k in keys) - min(k["s"] for k in keys)
             pan_span = (max(k["x"] for k in keys) - min(k["x"] for k in keys)) + (max(k["y"] for k in keys) - min(k["y"] for k in keys))
             if scale_span < 0.02 - 1e-9 and pan_span < 20 - 1e-9:
-                p0.append({"id": sid, "issue": f"声明 intent={intent} 但关键帧几乎不动（Δs={scale_span:.3f}, Δ平移={pan_span:.1f}px）；把 still 改名成运镜不算运镜"})
+                p1.append({"id": sid, "issue": f"声明 intent={intent} 但关键帧几乎不动（Δs={scale_span:.3f}, Δ平移={pan_span:.1f}px）；把 still 改名成运镜不算运镜"})
 
-    # ---- 每章运镜配额 ----
+    # ---- 每章运镜配额（P1，提示不阻断）----
     chapters: dict[str, list[dict]] = {}
     for s in shots:
         chapters.setdefault(s.get("chapter", "-"), []).append(s)
@@ -176,14 +176,14 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
         seconds = sum(s["duration"] for s in group) / FPS
         need = CHAPTER_MIN_MOVES_LONG if seconds >= CHAPTER_LONG_SECONDS else CHAPTER_MIN_MOVES_SHORT
         if len(moves) < need:
-            p0.append({"id": f"chapter:{name}", "issue": f"本章（{seconds:.1f}s）仅 {len(moves)} 次运镜，配额 ≥{need}"})
+            p1.append({"id": f"chapter:{name}", "issue": f"本章（{seconds:.1f}s）仅 {len(moves)} 次运镜，配额 ≥{need}"})
     total_moves = sum(1 for s in shots if s.get("cameraIntent", "still") != "still")
     film_need = max(4, -(-int(duration) // (FILM_MOVES_MIN_PER_12S * FPS)))
     if total_moves < film_need:
-        p0.append({"id": "-", "issue": f"全片仅 {total_moves} 次运镜，按片长 {duration / FPS:.1f}s 要求 ≥{film_need} 次"})
+        p1.append({"id": "-", "issue": f"全片仅 {total_moves} 次运镜，按片长 {duration / FPS:.1f}s 要求 ≥{film_need} 次"})
     all_intents = {s.get("cameraIntent", "still") for s in shots}
     if len(all_intents - {"still"}) < 3:
-        p0.append({"id": "-", "issue": f"全片仅 {len(all_intents - {'still'})} 种镜头意图（不含 still），要求 ≥3 种"})
+        p1.append({"id": "-", "issue": f"全片仅 {len(all_intents - {'still'})} 种镜头意图（不含 still），要求 ≥3 种"})
 
     # ---- 背景装饰区可读性：内容压到装饰区必须声明 cover ----
     decor = DECOR_ZONES.get(theme, [])

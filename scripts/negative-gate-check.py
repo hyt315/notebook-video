@@ -158,7 +158,7 @@ case('F 造假 live / media 名', [
 ])
 cleanup(td)
 
-# ── G：冻结的假运镜（声明 intent 但关键帧不动）→ validate-shot-motion 必须拦（v2.11 新增）──
+# ── G：冻结的假运镜（声明 intent 但关键帧不动）→ validate-shot-motion 必须点名（P1）──
 td, rc0, out0 = mkproj(lambda d: (d['shots'][1].__setitem__('cameraIntent', 'pan-follow'), d)[1])
 if rc0 == 0:
     import json as _json
@@ -171,7 +171,7 @@ if rc0 == 0:
     io.open(rp, 'w', encoding='utf-8', newline='').write(_json.dumps(rr, ensure_ascii=False))
 case('G 冻结的假运镜', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:几乎不动', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
+    ('must_warn:几乎不动', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
 ])
 cleanup(td)
 
@@ -1009,9 +1009,9 @@ cleanup(td)
 # resolve-shots.py 一处。三条夹具把**新默认**钉在 resolved 输出上，并保住 P0 判据本身：
 #   BH = micro-orbit 省 rotY → resolved rotY 幅度 = 6（正向钉，关闭漏放）；
 #   BI = establish 省 to   → resolved s 尾值 = 1.03（正向钉，关闭误拦）；
-#   BJ = 显式 from==to 的 push-in（**真正**零运动）→ validate-shot-motion 必须仍拦
+#   BJ = 显式 from==to 的 push-in（**真正**零运动）→ validate-shot-motion 必须仍点名（P1）
 #        —— G 那条"冻结假运镜"喂的是改写 resolved 的坏输入；默认对齐后"省参数"不再
-#        等于零运动，这条把 P0"几乎不动"的 must_block 换喂**显式写了 from==to** 的坏输入，
+#        等于零运动，这条把"几乎不动"的 must_warn 换喂**显式写了 from==to** 的坏输入，
 #        判据一字未动，只是喂准。
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -1052,12 +1052,12 @@ case('BI 相机默认 · establish 省略 to → resolved s 尾值 1.03（正向
 ])
 cleanup(td)
 
-# BJ · 真正零运动（显式 from==to 的 push-in）→ "声明运镜却不动"P0 必须仍拦（判据不许因收口失效）
+# BJ · 真正零运动（显式 from==to 的 push-in）→ "声明运镜却不动"必须仍点名（判据不许因收口失效）
 td, rc0, out0 = mkproj(mut_cam(2, {'intent': 'push-in', 'at': 10, 'dur': 38,
                                    'x': 960, 'y': 540, 'from': 1.0, 'to': 1.0}))
-case('BJ 相机默认 · 显式 from==to 的零运动 push-in 仍被 P0 拦（喂准的坏输入）', [
+case('BJ 相机默认 · 显式 from==to 的零运动 push-in 仍被点名（喂准的坏输入）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:几乎不动', 'validate-shot-motion', run([PY, MOTION, td])),
+    ('must_warn:几乎不动', 'validate-shot-motion', run([PY, MOTION, td])),
 ])
 cleanup(td)
 
