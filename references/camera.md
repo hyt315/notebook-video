@@ -13,7 +13,6 @@
 
 ## 镜头语言：受限配方 + 出界数学证明
 
-> 状态：**生效**。取代旧的 `Camera Micro-Framing Invariant`。
 > 落地件：`assets/lecture-template/src/shotkit.tsx`；门禁：`scripts/validate-shot-motion.py`。
 
 ### 目录
@@ -31,23 +30,9 @@
 
 ### 1. 为什么改
 
-> 本节数字均为 **早期版本的历史口径**（源码已复算核实），现行规则见下文。
+旧做法是包在所有场景外的**全片一条关键帧轨道**（`CameraRig`，已删），景别变化上限 1.8%、等同定焦，每个镜头没有自己的取景，观众感受就是"翻页"；而它也没保住稳定性——轨道上有关键帧让可见窗出画，且**没有任何校验器能抓到**。
 
-早期版本的铁律把虚拟相机锁在 `x ∈ [945, 975]`（±15px）、`y ∈ [538, 542]`、`s ∈ [1.00, 1.018]`。
-这三个界是 **16:9 的 1920×1080 设计空间**里的取值。
-景别变化上限 **1.8%**，等同定焦；而且 `CameraRig` 是**全片一条关键帧轨道**，包在所有场景外——
-所以**每个镜头不可能有自己的取景**。观众感受到的就是"翻页"。
-
-同时这条铁律并没有真的保住稳定性（口径澄清 + 真数，均按旧源码复算；
-`CAM_KEYS_P` 与 `CameraRig` 整条轨道已删除）：该轨道共 15 个关键帧，
-其中 10 个是 `s` 超过旧上限 1.018（最大 s=1.14）——这是拿 16:9 口径去量当年竖屏轨道的结论（竖屏画布已删除）；
-x 最偏到 410，但 x=410 在 1080 宽空间本身合法，与 945–975 并排属范畴错误。
-**真正危险的是"可见窗出画"口径：8 个关键帧**（f=248/328/390/613/669/840/950/1056），
-最大露出 383px（第 950 帧下缘）；逐帧扫描非零露底约 862–892 帧（随亚像素容差浮动）。
-根因不变：**没有任何校验器能抓到它**。
-
-结论（与历史方案一致）：**不能靠"放开限制"解决（自由曲线会立刻出界），
-只能把自由曲线换成"带内置不变量的受限配方"，并把"不出界"从"靠不动"换成"靠证明"。**
+结论：**不能靠"放开限制"解决（自由曲线会立刻出界），只能把自由曲线换成"带内置不变量的受限配方"，并把"不出界"从"靠不动"换成"靠证明"。**
 
 ### 2. 六个运镜意图 + `still`（合法取值 7 个）
 
@@ -68,13 +53,11 @@ x 最偏到 410，但 x=410 在 1080 宽空间本身合法，与 945–975 并�
 - 含文字的镜头 `s ≤ 1.35`（`TEXT_ZOOM_MAX`）；
 - 纯图形镜头 `s ≤ 1.60`（`GRAPHIC_ZOOM_MAX`）。
 
-超过 1.35 的文字会被光栅化后放大而发虚，所以"放大"这件事**优先用更大的字号做，
-而不是用相机推近做**——这也是 everything2explainer 「主角尺寸档」的道理。
+超过 1.35 的文字会被光栅化后放大而发虚，所以"放大"**优先用更大的字号做，而不是用相机推近做**。
 
 ### 2.5 平移安全预算：想平移多少，就先缩放到能覆盖它（**铁律**）
 
-相机平移会**整层移动内容**，所以在 `s = 1.00` 时任何平移都会把内容推出画面、露出边缘。
-实测：`pan-follow` 在 `s=1.0` 下把走廊左侧的站名裁掉了。
+相机平移会**整层移动内容**，所以在 `s = 1.00` 时任何平移都会把内容推出画面、露出边缘（例如裁掉走廊左侧的站名）。
 
 几何上，缩放为 `s` 时可见窗半宽 = `960/s`，只要窗口仍落在 1920×1080 舞台内就不会露边，因此：
 
@@ -132,11 +115,9 @@ top  = y - 540/s      bottom = y + 540/s
 | 缓冲口令 | 入场后先停 ≥10 帧再动，运镜期间不做 Glitch | 人工 |
 | **页眉 / 章节卡 / 字幕永不被运镜带动** | 它们在相机之外（屏幕空间） | 结构性保证 |
 
-> 页眉与字幕在 `ShotCamera` 之外渲染，所以**结构上不可能被带动**——这是早期版本`CameraRig`
-> 已经做对的一件事，继续保留。任何把 chrome 或字幕放进相机内的写法都是错的。
+> 页眉与字幕在 `ShotCamera` 之外渲染，所以**结构上不可能被带动**。任何把 chrome 或字幕放进相机内的写法都是错的。
 
-**配额来自实测教训**（参考项目 anything2explainer）：他们自己的参考片只有 2.2–2.5 次运镜/分钟、
-**零次推近**，根因是旧文档写了「静态镜头为主」。所以这里把配额写成**数字**，并让门禁检查。
+配额写成**数字**并由门禁检查：只写「静态镜头为主」这类原则，片子会落到每分钟两次多运镜、零次推近。
 
 ### 5. 怎么写
 
@@ -185,17 +166,16 @@ const bad = safeCheck(keys, {x: 320, y: 190, w: 1280, h: 640}, 1.35); // [] 表�
 ### 6. 向后兼容
 
 - 没有任何 `rotY` 关键帧时走**纯 `translate + scale`** 路径；当 `s = 1.0`、`x = 960`、`y = 540` 时
-  `transform` 退化为 `translate(0,0) scale(1)`，与早期版本的定焦渲染**逐像素一致**。
+  `transform` 退化为 `translate(0,0) scale(1)`，与定焦渲染**逐像素一致**。
 - 有 `rotY` 时走 3D 路径：外层 `perspective`，内层用 **CSS `zoom`** 而不是 `transform: scale`——
-  因为 Chromium 会先按布局宽度光栅化 3D 复合层再用 GPU 放大，文字会糊（这条来自 video-shotcraft
-  `PageCam.tsx` 的实现注释）。
+  因为 Chromium 会先按布局宽度光栅化 3D 复合层再用 GPU 放大，文字会糊。
 - `CameraRig` 与 `CAM_KEYS_L/CAM_KEYS_P` 已删除，不要再新增全片级相机轨道：
   **取景是镜头级的，不是全片级的。**
 
 ### 7. 自检
 
 - [ ] 每一镜都有 `anchor`，且 `validate-shot-motion.py` P0 = 0；
-- [ ] 每章 ≥3 次运镜（**章节 <20s 时 ≥1 次**，与 `validate-shot-motion.py` 的 `CHAPTER_LONG_SECONDS=20` 一致），全片 ≥3 种 intent；
+- [ ] 每章 ≥3 次运镜（**章节 <20s 时 ≥1 次**），全片 ≥3 种 intent；
 - [ ] 含文字的镜头 `s ≤ 1.35`；
 - [ ] 运镜期间解说对象始终完整可见（门禁已证明）；
 - [ ] chrome / 字幕放在 `ShotCamera` 之外；
@@ -208,9 +188,7 @@ const bad = safeCheck(keys, {x: 320, y: 190, w: 1280, h: 640}, 1.35); // [] 表�
 > 适用：每一条片子（手作路线必读）。配套：[camera.md#cinema-camera](camera.md#cinema-camera)（引擎能做什么、字段怎么写）、
 > [camera.md#shot-language](camera.md#shot-language)（7 个 intent 与出界证明）、[director.md#director-method](director.md#director-method) 第 7 步（treatment 里写景别和理由）。
 > 门禁：`validate-treatment.py` 对照 treatment 与镜头表（§2），`validate-composition.py` 查镜长（§5）。
->
-> 方法来源：纪录片 / 讲解片通行的景别阶梯与剪辑连续性（公开的电影语法常识）；镜头配方卡的写法参考 video-shotcraft（Apache-2.0，只借结构，
-> 不用它打包的音效）。本文是 notebook-video 自己的写法。
+> 镜头配方卡的结构参考 video-shotcraft（Apache-2.0，只借结构，不用它打包的音效）。
 
 ### 1. 先问"为什么动"——动机 → 运镜
 
@@ -285,8 +263,7 @@ const bad = safeCheck(keys, {x: 320, y: 190, w: 1280, h: 640}, 1.35); // [] 表�
 
 ### 1. 为什么要有这一层
 
-没有虚拟镜头时每一镜是「静止舞台 + 卡片依次出现」：即使 `ShotCamera` 推了 3%，观众感受仍是翻幻灯片。
-引擎给每一镜套一台虚拟摄影机，并且把「内容太小」「镜头不跟讲解」「换镜硬切」这三类 PPT 感的来源变成默认行为与门禁。
+没有它时每一镜是「静止舞台 + 卡片依次出现」，即使 `ShotCamera` 推了 3% 也像翻幻灯片。引擎给每一镜套一台虚拟摄影机，把「内容太小」「镜头不跟讲解」「换镜硬切」三类 PPT 感的来源变成默认行为与门禁。
 
 ### 2. 六个能力（全部是帧的纯函数）
 
@@ -296,7 +273,7 @@ const bad = safeCheck(keys, {x: 320, y: 190, w: 1280, h: 640}, 1.35); // [] 表�
 | **drift** 缓推 / 漂移 | `auto`（4.5%） | `cinema.drift: "auto" \| "none" \| 0–0.08` | 每镜一次慢推，镜与镜之间轮换：正推 → 右移推 → 拉 → 左移推（不会全片同一种推）。 |
 | **focus** 讲到哪推到哪 | 无 | `cinema.focus: [{beat \| cue \| at, region \| x,y,w,h, zoom?, hold?}]` | 第 N 拍开始，弹簧曲线（20 帧）推近该区域，停 `hold` 帧（缺省 60）后 24 帧缓拉回；相邻焦点首尾相接时直接从一个**横摇**到下一个。`region` 简写：`left/right/top/bottom/center/top-left/…`（按本镜 `contentBand` 切）。<br>**不切字**：`slide: false` 关掉横向滑回；`keep: {x,y,w,h} \| region` = 推近时也必须完整入画的矩形（例如推近右侧终端时左侧的大数字），引擎把推近倍数降到能装下「焦点 ∪ keep」（留 28 px 边距，不低于 1.1，装不下就忽略 keep）。`hero-number` 版式缺省 `keep` = anchor + 8% 字号的字形外溢余量；`keep: false` 关掉。镜头里有 MediaFrame 卡片又要推近别处时，给卡片写 `keep`，否则卡片会被推出画面一半。 |
 | **pan** 宽画布横摇 | 无 | `cinema.pan: {worldW: 2800, beat? \| at?, dur?, dir?: "ltr" \| "rtl"}` | 场景按更宽的世界排版，摄影机横摇扫过（时间线、长链路）。 |
-| **transition** 换镜 | `auto` | 镜级 `transition` | `auto` = 章节首镜 **zoom**（推穿：上一镜放大淡出、新镜从远处推来）、其余 **whip**（甩镜：水平方向模糊 + 位移，左右交替）；也可写 `whip / whip-left / whip-right / zoom / fade / hard`，手作皮肤另有 `slide / drop` 与真卷页 `pageturn / peel`（[camera.md#fx-effects](camera.md#fx-effects)；渲染器探针不通过时退回 `slide / drop`）。`cut / handoff / reveal` 是旧写法，引擎按 `auto` 处理。转场 14 帧（卷页 22 帧）。 |
+| **transition** 换镜 | `auto` | 镜级 `transition` | `auto` = 一律翻页：用皮肤的 `craft.transition`（papercut 是 `peel`，其余 `pageturn`），渲染器探针不通过时退回 `pageflip`（纯 CSS 折痕翻页），首镜无转场；显式可写 `whip / whip-left / whip-right / zoom / fade / hard / slide / drop / pageturn / peel`（[camera.md#fx-effects](camera.md#fx-effects)）。`cut / handoff / reveal` 是旧写法，引擎按 `auto` 处理。转场 14 帧（卷页 22 帧）。 |
 | **parallax** 视差 | 开 | — | 背景按 0.3 的系数跟随摄影机（背景动得比内容少 → 纵深），预放大 1.06 保证不露边；甩镜时背景一起甩。 |
 
 纪律：无随机、无状态、无实时动画库；同一帧渲两次结果相同。总缩放（场景 × 引擎）钳在 `TEXT_ZOOM_MAX = 1.35`，取景窗永远落在 1920×1080 舞台（或 pan 世界）之内。
@@ -346,8 +323,7 @@ const bad = safeCheck(keys, {x: 320, y: 190, w: 1280, h: 640}, 1.35); // [] 表�
 
 ## 真翻页 / 揭纸转场（`@remotion/effects`）
 
-> 手作皮肤的「翻到下一页」不再是镜头横移，而是一页纸真的卷起来翻走：卷曲、折痕高光、纸背透出上一页的墨迹。
-> The hand-made skins now turn a real page: the old page curls away with a shaded fold and its back showing through, instead of a camera pan.
+> 「翻到下一页」是一页纸真的卷起来翻走（卷曲、折痕高光、纸背透出上一页的墨迹），不是镜头横移。
 
 ### 1. 用法
 
@@ -356,7 +332,7 @@ const bad = safeCheck(keys, {x: 320, y: 190, w: 1280, h: 640}, 1.35); // [] 表�
 | `pageturn` | 近乎竖直的折线（-78°，下角领先），整页从右往左翻走 | **所有皮肤的缺省**（`auto`） | `pageflip`（纯 CSS 折痕翻页） |
 | `peel` | 对角折线（315°），从右下角往左上角揭起 | `papercut` 的 `auto` | `drop`（新纸落下） |
 
-- **翻页是缺省。** 分镜表写 `auto`（或不写、或整个 story 不写 `transition`）就是翻页——这是「笔记本影片」的基本语法，不该由每部片、每套皮肤重新决定。显式写 `"transition": "pageturn"` / `"peel"` 也可以（任何皮肤都行）。
+- **翻页是缺省。** 分镜表写 `auto`（或不写、或整个 story 不写 `transition`）就是翻页——「笔记本影片」的基本语法，不由每部片、每套皮肤重新决定。显式写 `"transition": "pageturn"` / `"peel"` 也可以（任何皮肤都行）。
 - 章节首镜也翻页：翻到新一章和翻到下一页是同一个动作，中途插一个 `zoom` / `drop` 会把观众从本子里拽出来。
 - 卷页时长 22 帧（`CURL_FRAMES`，0.73 s，手翻的速度）；`pageflip` 同为 22 帧；其余转场仍是 14 帧。
 - 卷走的是上一镜的**整页**：背景（按上一镜末帧的视差位置）+ 内容；新的一页在下面不动，背景不交叉淡化。页眉、章节卡、字幕在纸面之上，不跟着卷。
@@ -402,10 +378,10 @@ node scripts/notebook-video.mjs preview <工程> --from=3.4 --seconds=1.2 --scal
 
 `fractalNoise()`（WebGL2）可以做「纸纹的动态层」。实测：
 
-- Headless Shell + `--gl=swangle`（Remotion 4.0.539 实测）：2560×1440 全分辨率 ≈ 3.2 s/帧（30 帧 103 s）——整片叠一层要多 1.5 小时以上；
+- Headless Shell + `--gl=swangle`：2560×1440 全分辨率 ≈ 3.2 s/帧（30 帧 103 s）——整片叠一层要多 1.5 小时以上；
 - 观感：纸本身不会动，逐帧演化的云纹在亮底上像「沸腾的纸」，盖过了墨线和水彩的手作感。1/4 分辨率 + 每 5 帧跳一次（6 fps 手绘抖动）便宜很多，但仍需要 `--gl=swangle` 整片渲染。
 
-结论：现有的静态纤维纹理（`public/craft/fibre-tile.png`）+ 背景库里 Paper Shaders 离线预渲的纸纹，已经比动态噪声好且零运行时成本。`fractalNoise` 只作为**离线**生成静态纹理的候选（维护者工具里渲一次存成位图，与处理 Paper Shaders 的方式相同），不进渲染期。
+结论：静态纤维纹理（`public/craft/fibre-tile.png`）+ 背景库里离线预渲的 Paper Shaders 纸纹更好且零运行时成本。`fractalNoise` 只作**离线**生成静态纹理的候选（同 Paper Shaders 的处理），不进渲染期。
 
 ### 5. 许可
 
