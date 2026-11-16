@@ -677,6 +677,11 @@ def build(story, comp, p: Problems):
                     else:
                         p.hint(f"{sid}: treatment.signature_shot 点名了本镜，但本镜又推不进也横移不开——"
                                f"把招牌镜换成有并列元素或独占大主体的镜")
+                elif sh["layout"] == "page":
+                    # 手账 / 档案页的图版几乎占满整页高（比推近后的安全框还高），auto 路线推不进也扫不开。
+                    # 放大镜页本身就有「镜片放大」这个动作，只是它不是相机运镜，招牌镜门禁不认。
+                    p.hint(f"{sid}: treatment.signature_shot 点名了 page 版式——图版占满整页高，auto 路线的相机推不进去。"
+                           f"招牌镜改点一镜 flow / list / compare（自动横移扫镜）；要「放大镜压上真照片」当招牌，走手写场景（references/components.md 的 LoupeMedia）")
                 else:
                     p.hint(f"{sid}: treatment.signature_shot 点名了本镜，但本镜只有一个静的主体——"
                            f"换成有并列元素（flow / list / compare）或有独占大主体的镜")
