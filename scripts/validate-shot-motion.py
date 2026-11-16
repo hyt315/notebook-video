@@ -30,7 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
-from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+from gate_report import finish  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
 FPS = C["FPS"]
 STAGE_CX, STAGE_CY = float(C["STAGE"]["cx"]), float(C["STAGE"]["cy"])
@@ -326,17 +326,10 @@ def main() -> int:
         return 2
     shots, duration, theme = load_shots(project)
     p0, p1 = check(shots, duration, theme)
-    emit("validate-shot-motion", p0, p1, "manifests/shots.resolved.json")
-    if args.json:
-        print(json.dumps({"p0": p0, "p1": p1, "shots": len(shots), "duration": duration}, ensure_ascii=False, indent=2))
-    else:
-        print(f"validate-shot-motion · {len(shots)} 镜 / {duration} 帧 / theme={theme}")
-        for item in p0:
-            print(f"  P0 {item['id']} f={item.get('f', '-')}: {item['issue']}")
-        for item in p1:
-            print(f"  P1 {item['id']}: {item['issue']}")
-        print(f"结论：P0={len(p0)} P1={len(p1)} → {'PASS' if not p0 else 'FAIL'}")
-    return 1 if p0 else 0
+    return finish("validate-shot-motion", p0, p1, "manifests/shots.resolved.json",
+                  payload={"p0": p0, "p1": p1, "shots": len(shots), "duration": duration} if args.json else None,
+                  header=f"validate-shot-motion · {len(shots)} 镜 / {duration} 帧 / theme={theme}",
+                  item0=lambda x: f"{x['id']} f={x.get('f', '-')}: {x['issue']}")
 
 
 if __name__ == "__main__":

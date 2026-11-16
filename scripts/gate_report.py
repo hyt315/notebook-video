@@ -3,6 +3,7 @@
 每个 validate-*.py 照旧在终端打印给人看的明细和「结论：…」汇总；另外在打印之前调一次
 `emit(门禁名, p0, p1, file)`。设了环境变量 `NV_GATE_JSON=<文件路径>` 时，每条 P0 / P1
 追加一行 JSON 到那个文件（JSON Lines）；没设就什么也不写，终端输出不受影响。
+P0 / P1 型门禁直接用 `finish(...)`：emit、打印明细与结论、--json、退出码一次做完。
 
 一行的形状（所有门禁一样）：
     {"gate": "validate-presentation", "id": "S3", "level": "P1",

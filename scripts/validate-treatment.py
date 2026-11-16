@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+from gate_report import finish  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
 CRAFT = {"journal", "papercut", "archive"}
 SKINS = CRAFT | {"flat", "cel"}
@@ -321,17 +321,10 @@ def main(argv: list[str]) -> int:
     craft = skin in CRAFT
     p0 = hard if craft else []
     p1 = ([] if craft else hard) + soft
-    emit("validate-treatment", p0, p1, "manifests/treatment.json")
-    if "--json" in argv:
-        print(json.dumps({"skin": skin, "p0": p0, "p1": p1}, ensure_ascii=False, indent=1))
-    else:
-        print(f"validate-treatment · 皮肤 {skin}{'（手作皮肤：导演层必填）' if craft else '（导演层建议填）'}")
-        for x in p0:
-            print(f"  ✗ P0 {x}")
-        for x in p1:
-            print(f"  · P1 {x}")
-        print(f"结论：P0={len(p0)} P1={len(p1)} → {'FAIL' if p0 else 'PASS'}")
-    return 1 if p0 else 0
+    return finish("validate-treatment", p0, p1, "manifests/treatment.json",
+                  payload={"skin": skin, "p0": p0, "p1": p1} if "--json" in argv else None, indent=1,
+                  header=f"validate-treatment · 皮肤 {skin}{'（手作皮肤：导演层必填）' if craft else '（导演层建议填）'}",
+                  marks=("  ✗ P0 ", "  · P1 "))
 
 
 if __name__ == "__main__":

@@ -38,7 +38,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+from gate_report import finish  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
 PEAK_FLOOR = -12.0          # 素材峰值下限（dBFS）
 QUIET_P0 = True             # 太轻记 P0（这是"静默失效"型缺陷）
@@ -356,10 +356,7 @@ def main() -> int:
         if refs and "vol:" not in src:
             p1.append("引用了音效但 index.tsx 里找不到任何 vol: 设定（音效可能被注释掉或整段删除）")
 
-    emit("validate-audio-levels", p0, p1, "public/sfx")
-    if args.json:
-        print(json.dumps({"p0": p0, "p1": p1, "checked": checked}, ensure_ascii=False, indent=2))
-    else:
+    def summary():
         print(f"validate-audio-levels · 检查 {len(checked)} 个音效素材（峰值下限 {PEAK_FLOOR:.0f} dBFS）")
         for c in checked:
             extra = (f"  I {c['lufs_i']:>6.1f} LUFS" if c.get("lufs_i", -99) > -69 else "  I   n/a (<0.4 s, gated)") if "lufs_i" in c else ""
@@ -376,12 +373,8 @@ def main() -> int:
             names = "、".join(mix["voice_overlap_events"][:4])
             print(f"  压人声 {ov} 个{('（' + names + '）') if names else ''} —— 落在旁白说话区间里的显式音效")
         print(f"  配乐：{'开（treatment.sound.music.use=true）' if music_on else '关（默认无 BGM）'}")
-        for x in p0:
-            print(f"  P0 {x}")
-        for x in p1:
-            print(f"  P1 {x}")
-        print(f"结论：P0={len(p0)} P1={len(p1)} → {'PASS' if not p0 else 'FAIL'}")
-    return 1 if p0 else 0
+    return finish("validate-audio-levels", p0, p1, "public/sfx",
+                  payload={"p0": p0, "p1": p1, "checked": checked} if args.json else None, header=summary)
 
 
 if __name__ == "__main__":

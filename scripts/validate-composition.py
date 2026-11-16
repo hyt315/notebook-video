@@ -35,7 +35,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+from gate_report import finish  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
 # 闭合集合：写错名字必须被拦下（v2.11 前这些字段是自由字符串，
 # 实测把 media 写成 ["FAKE_MEDIUM_A",...]、live 写成 ["NO_SUCH_COMPONENT"] 也能 P0=0 通过）
@@ -638,25 +638,10 @@ def main() -> int:
     p0 += ii_p0
     if ii_note:
         notes.append(ii_note)
-    emit("validate-composition", p0, p1, "src/scenes.tsx")
-    if args.json:
-        print(json.dumps({"p0": p0, "p1": p1, "notes": notes, "shots": len(data.get("shots", []))}, ensure_ascii=False, indent=2))
-    else:
-        shots = data.get("shots", [])
-        print(f"validate-composition · {len(shots)} 镜")
-        for item in p0:
-            print(f"  P0 {item['id']}: {item['issue']}")
-        for item in p1:
-            print(f"  P1 {item['id']}: {item['issue']}")
-        for n in notes:
-            print(f"  ·· {n}")
-        verdict = "PASS" if not p0 and not (args.strict and p1) else "FAIL"
-        print(f"结论：P0={len(p0)} P1={len(p1)} → {verdict}")
-    if p0:
-        return 1
-    if args.strict and p1:
-        return 1
-    return 0
+    n_shots = len(data.get("shots", []))
+    return finish("validate-composition", p0, p1, "src/scenes.tsx",
+                  payload={"p0": p0, "p1": p1, "notes": notes, "shots": n_shots} if args.json else None,
+                  header=f"validate-composition · {n_shots} 镜", notes=notes, strict=args.strict)
 
 
 if __name__ == "__main__":

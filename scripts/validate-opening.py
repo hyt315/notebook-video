@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+from gate_report import finish  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
 CRAFT = {"journal", "papercut", "archive"}
 FPS = 30
@@ -192,17 +192,10 @@ def main(argv: list[str]) -> int:
     proj = Path(argv[0]).resolve()
     video = Path(argv[argv.index("--video") + 1]).resolve() if "--video" in argv else None
     r = check(proj, video)
-    emit("validate-opening", r["p0"], r["p1"], "manifests/shots.resolved.json")
-    if "--json" in argv:
-        print(json.dumps(r, ensure_ascii=False, indent=1))
-    else:
-        print(f"validate-opening · 皮肤 {r['skin']}{'（手作皮肤：像素实测不合格即停，写法规则只提示）' if r['skin'] in CRAFT else '（只提示）'} · 像素检查 {r['pixel']}")
-        for x in r["p0"]:
-            print(f"  ✗ P0 {x}")
-        for x in r["p1"]:
-            print(f"  · P1 {x}")
-        print(f"结论：P0={len(r['p0'])} P1={len(r['p1'])} → {'FAIL' if r['p0'] else 'PASS'}")
-    return 1 if r["p0"] else 0
+    return finish("validate-opening", r["p0"], r["p1"], "manifests/shots.resolved.json",
+                  payload=r if "--json" in argv else None, indent=1,
+                  header=f"validate-opening · 皮肤 {r['skin']}{'（手作皮肤：像素实测不合格即停，写法规则只提示）' if r['skin'] in CRAFT else '（只提示）'} · 像素检查 {r['pixel']}",
+                  marks=("  ✗ P0 ", "  · P1 "))
 
 
 if __name__ == "__main__":

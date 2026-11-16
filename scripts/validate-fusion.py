@@ -35,7 +35,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+from gate_report import finish  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
 PAGE_LAYOUTS = {"page"}
 COMPONENT_LAYOUTS = {"code", "flow", "list", "compare", "bars", "number", "media", "quiz", "custom"}
@@ -213,26 +213,16 @@ def main() -> int:
             p1.append(f"{sid}: see=「{see[:24]}」写成了文字描述；写「关掉声音观众看到什么」，"
                       f"例：『一页手账，右边是 1665 年原版铜版画，放大镜压在上面』。")
 
-    emit("validate-fusion", p0, p1, "manifests/shots.resolved.json")
-    if a.json:
-        print(json.dumps({"mode": mode, "p0": p0, "p1": p1, "notes": notes,
-                          "shares": {"page": round(page_share, 3), "sketch": round(sketch_share, 3),
-                                     "component": round(component_share, 3), "typeface": round(typeface_share, 3), "text": round(text_share, 3),
-                                     "annotated": round(annotated_share, 3),
-                                     "sketch_as_explainer": round(sketch_as_explainer, 3)}},
-                         ensure_ascii=False, indent=2))
-    else:
-        print(f"validate-fusion · 模式 {mode}（{rule['why']}）· 手账页 {page_share:.0%} · 组件 {component_share:.0%}（含直书 {typeface_share:.0%}）· 纯文字 {text_share:.0%}"
-              f" · 线稿 {sketch_share:.0%}（当解释图 {sketch_as_explainer:.0%}）· 讲解层 {annotated_share:.0%}"
-              f" · 锤子帧 {len(hammer)}")
-        for x in p0:
-            print(f"  P0 {x}")
-        for x in p1:
-            print(f"  P1 {x}")
-        for x in notes:
-            print(f"  ·· {x}")
-        print(f"结论：P0={len(p0)} P1={len(p1)} → {'PASS' if not p0 else 'FAIL'}")
-    return 1 if p0 else 0
+    payload = {"mode": mode, "p0": p0, "p1": p1, "notes": notes,
+               "shares": {"page": round(page_share, 3), "sketch": round(sketch_share, 3),
+                          "component": round(component_share, 3), "typeface": round(typeface_share, 3), "text": round(text_share, 3),
+                          "annotated": round(annotated_share, 3),
+                          "sketch_as_explainer": round(sketch_as_explainer, 3)}}
+    return finish("validate-fusion", p0, p1, "manifests/shots.resolved.json",
+                  payload=payload if a.json else None, notes=notes,
+                  header=f"validate-fusion · 模式 {mode}（{rule['why']}）· 手账页 {page_share:.0%} · 组件 {component_share:.0%}（含直书 {typeface_share:.0%}）· 纯文字 {text_share:.0%}"
+                         f" · 线稿 {sketch_share:.0%}（当解释图 {sketch_as_explainer:.0%}）· 讲解层 {annotated_share:.0%}"
+                         f" · 锤子帧 {len(hammer)}")
 
 
 if __name__ == "__main__":

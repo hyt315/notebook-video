@@ -39,7 +39,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+from gate_report import finish  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
 VALID_SOURCE_KINDS = ("fact", "analogy")
 VALID_CLAIM_KINDS = ("fact", "analogy")
@@ -163,26 +163,20 @@ def main(argv: list[str]) -> int:
 
     p0, p1 = check_facts(story)
     review = review_list(story)
-    emit("validate-facts", p0, p1, "story.json")
+    def show_review():
+        if not a.review:
+            return
+        print(f"\n人工审读清单（{len(review)} 条含数字/年份的未标注文本 —— 机器判不了对错，但它们被看见了）：")
+        for r in review:
+            print(f"  {r['shot']}.{r['field']}: {r['text'][:50]}  数字: {' / '.join(r['numbers'][:5])}")
+        if not review:
+            print("  （没有）")
 
-    if a.json:
-        print(json.dumps({"p0": p0, "p1": p1, "review": review}, ensure_ascii=False, indent=2))
-    else:
-        print("validate-facts · 内容事实质量的标注与审读（P2-22）")
-        print("  这条只保证标注合法，不保证事实正确 —— 事实对错要人工审读。")
-        for item in p0:
-            print(f"  P0 {item['id']}: {item['issue']}")
-        for item in p1:
-            print(f"  P1 {item['id']}: {item['issue']}")
-        if a.review:
-            print(f"\n人工审读清单（{len(review)} 条含数字/年份的未标注文本 —— 机器判不了对错，但它们被看见了）：")
-            for r in review:
-                print(f"  {r['shot']}.{r['field']}: {r['text'][:50]}  数字: {' / '.join(r['numbers'][:5])}")
-            if not review:
-                print("  （没有）")
-        print(f"结论：P0={len(p0)} P1={len(p1)} → {'PASS' if not p0 else 'FAIL'}"
-              f"（P1 不拦出片；P0 是标注自己说不通）")
-    return 1 if p0 else 0
+    return finish("validate-facts", p0, p1, "story.json",
+                  payload={"p0": p0, "p1": p1, "review": review} if a.json else None,
+                  header="validate-facts · 内容事实质量的标注与审读（P2-22）\n"
+                         "  这条只保证标注合法，不保证事实正确 —— 事实对错要人工审读。",
+                  extra=show_review, suffix="（P1 不拦出片；P0 是标注自己说不通）")
 
 
 if __name__ == "__main__":
