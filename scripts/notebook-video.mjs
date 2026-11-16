@@ -313,16 +313,25 @@ const ensureFonts = async () => {
   return fontDir;
 };
 
+// 多个进程同时下载同一个字体（如 check-examples -j 2）时，各写各的临时文件，谁先落盘都行。
+const partPath = (file) => `${file}.${process.pid}.${Date.now()}.part`;
+const commitPart = (tmp, file, sha) => {
+  try { fs.renameSync(tmp, file); } catch (error) {
+    fs.rmSync(tmp, {force: true});
+    if (!(fs.existsSync(file) && hashFile(file) === sha)) throw error;
+  }
+};
+
 // 按 URL 下载一个字体文件，sha256 不符就丢弃。返回 null = 成功，'fetch' = 下载失败，'sha' = 校验失败。
 // LXGW 与 Clash Display 共用这一条下载路径。
 const downloadPinned = async (url, file, sha) => {
   let res;
   try { res = await fetch(url, {redirect: 'follow'}); } catch (error) { res = null; }
   if (!res || !res.ok) return 'fetch';
-  const tmp = `${file}.part`;
+  const tmp = partPath(file);
   fs.writeFileSync(tmp, Buffer.from(await res.arrayBuffer()));
   if (hashFile(tmp) !== sha) { fs.rmSync(tmp, {force: true}); return 'sha'; }
-  fs.renameSync(tmp, file);
+  commitPart(tmp, file, sha);
   return null;
 };
 
@@ -402,10 +411,10 @@ const ensureSerif = async () => {
   let res;
   try { res = await fetch(url, {redirect: 'follow'}); } catch (error) { res = null; }
   if (!res || !res.ok) fail(`Font download failed: ${url}\nDownload ${SERIF_FILE} from https://github.com/notofonts/noto-cjk (tag ${SERIF_RELEASE}, Serif/SubsetOTF/SC/) and put it in ${fontDir}, or set NOTEBOOK_VIDEO_SERIF_URL to a mirror.`);
-  const tmp = `${file}.part`;
+  const tmp = partPath(file);
   fs.writeFileSync(tmp, Buffer.from(await res.arrayBuffer()));
   if (hashFile(tmp) !== SERIF_SHA) { fs.rmSync(tmp, {force: true}); fail(`Font checksum mismatch for ${SERIF_FILE}; expected ${SERIF_RELEASE} sha256 ${SERIF_SHA}.`); }
-  fs.renameSync(tmp, file);
+  commitPart(tmp, file, SERIF_SHA);
   return fontDir;
 };
 
