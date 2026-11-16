@@ -114,15 +114,24 @@ case('B 平移超预算（s=1.0 平移 ±220px → 自动抬缩放后超意图�
 ])
 cleanup(td)
 
-# ── C：相邻同骨架 + 抽掉活性组件 → validate-composition 必须拦 ──
-def mut_skel(d):
-    d['shots'][1]['skeleton'] = d['shots'][0]['skeleton']
+# ── C：抽掉活性组件 → validate-composition 必须拦；相邻同骨架是 P1，只点名 ──
+def mut_live(d):
     d['shots'][1]['live'] = []
     return d
-td, rc0, out0 = mkproj(mut_skel)
-case('C 相邻同骨架 + 无活性组件', [
+td, rc0, out0 = mkproj(mut_live)
+case('C 无活性组件', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:同骨架', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+    ('must_block:没有任何活性组件', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+])
+cleanup(td)
+
+def mut_skel(d):
+    d['shots'][1]['skeleton'] = d['shots'][0]['skeleton']
+    return d
+td, rc0, out0 = mkproj(mut_skel)
+case('C2 相邻同骨架（P1 点名）', [
+    ('must_pass', 'resolve-shots', (rc0, out0)),
+    ('must_warn:同骨架', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
 ])
 cleanup(td)
 
@@ -297,7 +306,7 @@ case('P 一致性 · 文档写了不存在的组件名', [
 ])
 cleanup(td_skill)
 
-# ── AL：3.2.0 相邻两镜同 layout → validate-composition 必须拦 ──
+# ── AL：相邻两镜同 layout → validate-composition 必须点名（P1）──
 def mut_layout(d):
     for k, sh in enumerate(d['shots']):
         sh['layout'] = 'grid' if k in (2, 3) else f'L{k}'
@@ -305,7 +314,7 @@ def mut_layout(d):
 td, rc0, out0 = mkproj(mut_layout)
 case('AL 相邻镜头同布局（layout）', [
     ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:同布局', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
+    ('must_warn:同布局', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
 ])
 cleanup(td)
 

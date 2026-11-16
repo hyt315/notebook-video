@@ -43,7 +43,7 @@
 | **Split** | 双栏对比：两侧各自入场，差异侧高亮 | 对比、优劣、before/after、取舍 | `skeletons.SplitStage` |
 | **Zoom** | 整体 → 聚焦 → 标注 → 回整体（**纯代码局部放大，不是图片**） | 证据、细节、界面、等式 | `skeletons.ZoomStage` |
 
-**硬约束（门禁 P0）**：
+**约束（门禁 P1，点名提示，成片前人工确认）**：
 
 - **相邻场景不得同骨架**；
 - **全片 ≥3 种骨架**。
@@ -339,7 +339,7 @@ mainH = h − pad×2 − headH − stampH − (stamp ? 14 : 0) − (header ? 14 
 
 - [ ] `resolve-shots.py` 通过（时间轴连续、覆盖 = duration）
 - [ ] `validate-shot-motion.py` **P0 = 0**（含每镜 anchor 出界证明、平移预算）
-- [ ] `validate-composition.py` **P0 = 0**（骨架相邻不同款、活性组件覆盖、介质 ≥3 种、下 1/4 填满）
+- [ ] `validate-composition.py` **P0 = 0**（活性组件覆盖、下 1/4 声明位、beats 下标），P1 的骨架 / 介质多样性已逐条看过
 - [ ] 一镜内**没有元素在它该出现的那句之前出现**
 - [ ] 章节卡 / 页眉 / 字幕都在 `ShotCamera` **之外**
 - [ ] 压到背景装饰区的内容坐在底托上；底托是负 z + 羽化

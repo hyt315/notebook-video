@@ -7,11 +7,11 @@
 
 检查项（判据与档位见 references/checks.md#composition-gate）：
 
-  P0-1  骨架重复度        相邻场景不得同骨架；全片 ≥3 种；未知骨架名 → fail
+  P1-1  骨架重复度        相邻场景同骨架 / 同布局、全片 <3 种 → 提示（未知骨架名仍 P0）
   P0-2  活性组件覆盖率     每个讲解场景 ≥1 个活性组件；**且每个名字必须能在场景文件里找到**
-  P0-3  镜头意图多样性     全片 ≥3 种 intent（不含 still）
+  P1-3  镜头意图多样性     全片 ≥3 种 intent（不含 still）
   P0-4  密度硬条款         3–5 个功能分区；下 1/4 填满（**不再被 explanation:false 绕过**）
-  P0-5  介质多样性         全片 ≥3 种不同视觉介质，且取值必须在闭合集合内
+  P1-5  介质多样性         全片 ≥3 种不同视觉介质（取值闭合仍由 P0-6 拦）
   P0-6  枚举闭合           转场 / 入场 / 介质 / 骨架 / 意图 全是闭合集合，写错名字即 fail
   P1-7  单镜过长           单镜 > 300 帧（10s）提示锯开（基准 4–6s、最长 ≤9s）
   P1-8  骨架指纹重复       同一 (骨架,意图,转场,入场) 组合每出现一次就提示
@@ -378,23 +378,23 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
             elif not nxt or (nxt.get("carrier") or "").strip() != carrier:
                 p0.append({"id": s.get("id", "?"), "issue": f"carrier=\"{carrier}\" 但下一镜没有声明同一个 carrier（交接对象跨镜不连续）"})
 
-    # ---- P0-1 骨架重复度 ----
+    # ---- P1-1 骨架重复度（审美判据，提示不阻断；未知骨架名仍 P0）----
     seq = [(s.get("id", "?"), s.get("skeleton", "?")) for s in shots]
     for (a_id, a), (b_id, b) in zip(seq, seq[1:]):
         if a == b:
-            p0.append({"id": b_id, "issue": f"与上一镜同骨架（{a}）；相邻场景必须不同骨架"})
+            p1.append({"id": b_id, "issue": f"与上一镜同骨架（{a}）；相邻场景应换骨架"})
     # 相邻镜头换不同布局（layout 是可选的版式名：hero-number / split / code-full / grid / rail…）。
-    # 同骨架已被上一条拦下；同骨架以外，两镜都声明了 layout 且相同 → 观众读作「同一页换了字」。
+    # 同骨架已在上一条提示；同骨架以外，两镜都声明了 layout 且相同 → 观众读作「同一页换了字」。
     lay = [(s.get("id", "?"), s.get("layout")) for s in shots]
     for (a_id, a), (b_id, b) in zip(lay, lay[1:]):
         if a and b and a == b:
-            p0.append({"id": b_id, "issue": f"与上一镜同布局（layout={a}）；相邻镜头必须换布局"})
+            p1.append({"id": b_id, "issue": f"与上一镜同布局（layout={a}）；相邻镜头应换布局"})
     kinds = {k for _, k in seq}
     unknown = kinds - SKELETONS
     if unknown:
         p0.append({"id": "-", "issue": f"未知骨架 {sorted(unknown)}；只能是 {sorted(SKELETONS)}"})
     if len(kinds & SKELETONS) < MIN_SKELETONS:
-        p0.append({"id": "-", "issue": f"全片仅 {len(kinds & SKELETONS)} 种骨架，要求 ≥{MIN_SKELETONS} 种"})
+        p1.append({"id": "-", "issue": f"全片仅 {len(kinds & SKELETONS)} 种骨架，要求 ≥{MIN_SKELETONS} 种"})
 
     # ---- P0-2 活性组件覆盖率（含"名字可解析"）+ P0-4 密度 ----
     # explanation:false 只能豁免"活性组件"这一条，且全片最多 1 镜；
@@ -477,18 +477,18 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
         if "bottomFill" not in s:
             p0.append({"id": sid, "issue": "缺 bottomFill 字段（下 1/4 密度的声明位；实测判据见渲染期 FillGate）"})
 
-    # ---- P0-3 镜头意图多样性 ----
+    # ---- P1-3 镜头意图多样性 ----
     intents = {s.get("cameraIntent", "still") for s in shots}
     if len(intents - {"still"}) < MIN_INTENTS:
-        p0.append({"id": "-", "issue": f"全片仅 {len(intents - {'still'})} 种镜头意图，要求 ≥{MIN_INTENTS} 种"})
+        p1.append({"id": "-", "issue": f"全片仅 {len(intents - {'still'})} 种镜头意图，要求 ≥{MIN_INTENTS} 种"})
 
-    # ---- P0-5 介质多样性 ----
+    # ---- P1-5 介质多样性 ----
     media: set[str] = set()
     for s in shots:
         for m in s.get("media") or []:
             media.add(m)
     if len(media) < MIN_MEDIA:
-        p0.append({"id": "-", "issue": f"全片仅 {len(media)} 种视觉介质 {sorted(media)}，要求 ≥{MIN_MEDIA} 种"})
+        p1.append({"id": "-", "issue": f"全片仅 {len(media)} 种视觉介质 {sorted(media)}，要求 ≥{MIN_MEDIA} 种"})
 
     # ---- P1 单镜过长（工艺项，不阻断；结构由作者决定）----
     for s in shots:
