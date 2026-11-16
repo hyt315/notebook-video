@@ -98,5 +98,34 @@ class EveryHumanLineHasARecord(unittest.TestCase):
         self.assertTrue(recs[0]["fix"].startswith("复制"))
 
 
+class FinishTest(unittest.TestCase):
+    """gate_report.finish：P0 / P1 型门禁共用的收尾（打印格式、退出码、--json、--strict）。"""
+
+    def finish(self, *a, **k):
+        import contextlib
+        import io
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import gate_report
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = gate_report.finish(*a, **k)
+        return rc, buf.getvalue()
+
+    def test_text_output_and_exit_codes(self):
+        rc, out = self.finish("g", [{"id": "S1", "issue": "坏"}], ["提示"], header="g · 头", notes=["注"])
+        self.assertEqual(rc, 1)
+        self.assertEqual(out, "g · 头\n  P0 S1: 坏\n  P1 提示\n  ·· 注\n结论：P0=1 P1=1 → FAIL\n")
+        rc, out = self.finish("g", [], ["x"], marks=("  ✗ P0 ", "  · P1 "), suffix="（尾）")
+        self.assertEqual((rc, out), (0, "  · P1 x\n结论：P0=0 P1=1 → PASS（尾）\n"))
+
+    def test_strict_and_json(self):
+        rc, out = self.finish("g", [], ["x"], strict=True)
+        self.assertEqual(rc, 1)
+        self.assertTrue(out.endswith("→ FAIL\n"))
+        rc, out = self.finish("g", [], ["x"], payload={"p1": ["x"]}, indent=1, strict=True)
+        self.assertEqual(rc, 1)
+        self.assertEqual(json.loads(out), {"p1": ["x"]})
+
+
 if __name__ == "__main__":
     unittest.main()

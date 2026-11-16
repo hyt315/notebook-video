@@ -47,3 +47,36 @@ def emit(gate: str, p0, p1, file: str = "") -> None:
         for level, items in (("P0", p0 or []), ("P1", p1 or [])):
             for n, item in enumerate(items, 1):
                 fh.write(json.dumps(record(gate, level, item, n, file), ensure_ascii=False) + "\n")
+
+
+def _item(x) -> str:
+    return f"{x['id']}: {x['issue']}" if isinstance(x, dict) else f"{x}"
+
+
+def finish(gate: str, p0, p1, file: str = "", *, payload=None, indent: int = 2, header=None,
+           marks=("  P0 ", "  P1 "), item0=_item, extra=None, notes=(), suffix: str = "",
+           strict: bool = False) -> int:
+    """P0 / P1 型门禁的收尾：emit → 打印（或 --json）→ 退出码。
+
+    payload 不是 None 时打印它的 JSON（`--json`）；否则打印 header（字符串，或自己打印的函数）、逐条 P0 / P1、extra()、
+    `  ·· 注记`，最后一行「结论：P0=… P1=… → PASS/FAIL」。strict 时 P1 也计入失败。
+    """
+    emit(gate, p0, p1, file)
+    fail = bool(p0) or (strict and bool(p1))
+    if payload is not None:
+        print(json.dumps(payload, ensure_ascii=False, indent=indent))
+        return 1 if fail else 0
+    if callable(header):
+        header()
+    elif header is not None:
+        print(header)
+    for x in p0:
+        print(f"{marks[0]}{item0(x)}")
+    for x in p1:
+        print(f"{marks[1]}{_item(x)}")
+    if extra:
+        extra()
+    for n in notes:
+        print(f"  ·· {n}")
+    print(f"结论：P0={len(p0)} P1={len(p1)} → {'FAIL' if fail else 'PASS'}{suffix}")
+    return 1 if fail else 0
