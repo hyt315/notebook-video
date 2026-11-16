@@ -7,7 +7,7 @@ import {SHOTS} from './shots';
 // ============================================================================
 // FillGate · 「下 1/4 有没有填满」的**实测**门（v1）
 //
-// 为什么要新写一个（2026-09-21）：这条判据（composition-gate.md 的 P0-4
+// 为什么要新写一个（2026-09-21）：这条判据（references/checks.md#composition-gate 的 P0-4
 // 「zones ∈[3,5]；bottomFill == true（底边接近 y=876，下 1/4 不留空洞）」）**本来就有门禁**，
 // 但它查的是清单里的一个布尔字段：
 //     `if s.get("bottomFill") is not True: → P0`
@@ -30,7 +30,7 @@ import {SHOTS} from './shots';
 //   （**不设 NODE_ENV 门**：渲染包是 production 模式，dev-only 的门在出片路径上永远看不到。）
 // ============================================================================
 
-/** 内容底线（设计坐标）：composition-gate.md P0-4 的同一个数，不新造魔数。 */
+/** 内容底线（设计坐标）：references/checks.md#composition-gate P0-4 的同一个数，不新造魔数。 */
 const FLOOR_Y = 876;
 /** 容差（设计像素）：卡片下沿与底线差几个像素不算空洞。 */
 const TOL = 24;
@@ -244,7 +244,7 @@ export const FillGate: React.FC<{
           const msg =
             `[FillGate] @${raw} 内容底边只到 y=${Math.round(designBottom)}（设计坐标），` +
             `P0-4 要求接近 y=${floorY}（下 1/4 不留空洞）；本帧计 ${n} 个信息元素。` +
-            `修法见 composition-gate.md：补一个**真实信息元素**（指标条/结论条/清单），不是放大现有卡片凑面积。`;
+            `修法见 references/checks.md#composition-gate：补一个**真实信息元素**（指标条/结论条/清单），不是放大现有卡片凑面积。`;
           const sid = shotAt(raw);
           if (!warned.has(sid) && typeof console !== 'undefined') {
             warned.add(sid);

@@ -18,7 +18,7 @@ import CONTRACT from './contract.json';
 //
 // 铁律（Shot Camera Invariant）：
 //   - 每镜 ≥1 次运镜、≤1 次；单次 30–45 帧 easeInOut；整片运镜配额见
-//     references/shot-language.md；
+//     references/camera.md#shot-language；
 //   - 含文字的镜头 zoom ≤ 1.35（纯图形镜头可到 1.60，硬上限 1.60）；
 //   - Chrome / 章节卡 / 字幕永远在相机之外（屏幕空间），不受任何运镜影响；
 //   - 无 3D 关键帧时走纯 translate+scale 路径，渲染结果与旧版逐像素一致。
@@ -69,7 +69,7 @@ const clampPan = (x: number, y: number, s: number) => {
 };
 const easeInOut = Easing.inOut(Easing.cubic);
 
-/** 运镜默认时长（帧）：shot-language.md 规定单次 30–45 帧。 */
+/** 运镜默认时长（帧）：references/camera.md#shot-language 规定单次 30–45 帧。 */
 export const CAM_DUR = CONTRACT.CAM_DUR;
 
 type IntentOpts = {

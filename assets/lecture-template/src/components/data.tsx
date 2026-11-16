@@ -23,7 +23,7 @@ import CONTRACT from '../contract.json';
 //   SankeyChart ← d3-sankey      流量图（转化、分流、去向）
 //   QrCode      ← qrcode         二维码（纯计算、不联网）
 //
-// 契约（dependency-policy.md §7）：颜色只读 THEME；动画是 f(帧号) 的纯函数；
+// 契约（references/technique.md#dependency-policy §7）：颜色只读 THEME；动画是 f(帧号) 的纯函数；
 // 四个库都是纯计算或纯字符串渲染，结果确定，可复现。
 //
 // ⚠️ 实测踩到的坑（treemap/pack/partition 三者共存时必读）：

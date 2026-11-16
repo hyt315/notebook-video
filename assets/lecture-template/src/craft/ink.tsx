@@ -208,7 +208,7 @@ export const MagnifyInset: React.FC<{
   label?: string; labelAt?: [number, number];
   seed?: string;
 }> = ({f, at, box, rotate = 0, radius = 8, lead, label, labelAt, seed = 'mag'}) => {
-  // 3.5.1 草稿纸：框沿边描出 16 帧，描完才铺淡底；不淡入（references/reveal-rules.md）
+  // 3.5.1 草稿纸：框沿边描出 16 帧，描完才铺淡底；不淡入（references/draftpaper.md#reveal-rules）
   if (f < at) return null;
   return <>
     <div style={{position: 'absolute', left: box.x, top: box.y, width: box.w, height: box.h,

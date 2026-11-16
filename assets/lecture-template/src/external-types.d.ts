@@ -4,7 +4,7 @@
 // 为什么手写而不是装 @types：
 //   · `world-atlas` 是纯数据包（只发 JSON，无 main / 无 types）；
 //     `topojson-client` 也没有自带 .d.ts。两者都是 ISC，登记在
-//     references/dependency-policy.md §4.2。
+//     references/technique.md#dependency-policy §4.2。
 //   · 本技能只放行了这两个包，**不再加 `@types/topojson-client`**——那是第三个包。
 //   · `GeoJSON.*` 命名空间来自 `@types/geojson`，它是已声明的 `@types/d3-geo` 的
 //     传递依赖（`{"@types/geojson":"*"}`），不额外装东西；d3-geo 自己的类型也是 import 它。

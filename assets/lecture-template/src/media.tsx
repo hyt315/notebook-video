@@ -5,7 +5,7 @@ import {THEME} from './theme/active';
 // ============================================================================
 // media · 视觉介质层 v2（内容 → 视觉形式 的落地件）
 //
-// 介质清单与对应组件（references/media-routing.md 有完整路由表）：
+// 介质清单与对应组件（references/media.md#media-routing 有完整路由表）：
 //   数据/对比   → fxkit: CompareBars / ProgressRing      本文件: MetricGrid
 //   软件/流程   → 本文件: ConsoleWindow
 //   技术代码    → fxkit: DiffView / Typewriter

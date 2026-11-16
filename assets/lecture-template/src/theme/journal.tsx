@@ -6,7 +6,7 @@ import {FibreOverlay, PaperSubtitle, TapeStrip, chromeIn, makeBackground, tiltOf
 // JOURNAL 主题（3.3.0，LOCKED）：博物学家手账 / 水彩笔记本。
 // 媒介：一页暖白棉纸；东西被「画上去、贴上去、写上去」——水彩淡彩、钢笔批注、胶带贴的照片。
 // 适合：观察、发现、实验记录、生物 / 自然 / 历史上的「有人第一次看见」。
-// 原生动作（见 references/theme-journal.md）：晕染即揭示、标本 + 批注、放大镜压在贴进来的真照片上、雾洗回白纸。
+// 原生动作（见 references/themes/journal.md）：晕染即揭示、标本 + 批注、放大镜压在贴进来的真照片上、雾洗回白纸。
 // 不是：矢量插画套水彩滤镜；不是暗底；没有 UI 胶囊。
 // 色值全部锁定；*Ink 在三种纸面上 ≥ 4.7:1（validate-presentation 门禁核对）。
 // ============================================================================

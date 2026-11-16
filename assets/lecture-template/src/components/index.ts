@@ -2,7 +2,7 @@
 // components/index.ts — 封装组件层（唯一入口）
 //
 // 场景只从这里 import；不要直接 import 原始库。理由见
-// references/dependency-policy.md §7：库是无样式的，直接引用会让每个场景
+// references/technique.md#dependency-policy §7：库是无样式的，直接引用会让每个场景
 // 写出不同的边框/圆角/阴影，违反「不得发明 per-scene 样式」。
 //
 //   import {Accordion, Tabs, Chart, ControlStack, GlowFrame} from './components';
@@ -11,9 +11,9 @@
 //   1. 颜色/边框/圆角/阴影只从 THEME 取
 //   2. 动画是 f(帧号) 的纯函数：禁 CSS transition / setTimeout / Math.random
 //   3. 文字容器高度用 fitH() 或 fitTextOnNLines() 算出，禁止手写
-//   4. 新组件必须登记进 references/media-routing.md 的两张路由表
+//   4. 新组件必须登记进 references/media.md#media-routing 的两张路由表
 //
-// 增长纪律（见 references/dependency-policy.md §8）：
+// 增长纪律（见 references/technique.md#dependency-policy §8）：
 //   · 加一件 = 换掉一件。新效果优先做成既有组件的**参数或变体**，不要为新效果新开组件。
 //   · 合规判据是**「零引用」而不是「总数」**——任何组件只要从未出现在任何画面里
 //     （参考片或接触表），就是待删除项。**不要对着一个数字做有损合并**：
@@ -21,7 +21,7 @@
 //     逐件点算的地板是 53 件（src/components/ 27 + 其余 8 个模块 26）。
 //     口径 = 各模块对外 export 的大写 React 组件（本层 27 = 本层实现 27，v3.1.1 起无库再导出；
 //     其余模块 26 = kit 3 / fxkit 9 / media 3 / stagekit 2 / skeletons 3 / insert 1 /
-//     shotkit 2 / toolkit 3；渲染期门禁件 SlotGuard 不算件，与 references/fxkit.md 同口径）。
+//     shotkit 2 / toolkit 3；渲染期门禁件 SlotGuard 不算件，与 references/components.md#fxkit 同口径）。
 //
 // 本版（3.2.0，Phase 3「能用成熟开源件就不手写」）变更（组件数不变，仍 27 件）：
 //   · `Accordion` / `Tabs` / `ControlStack` / `OverlayFrame` 去掉 Radix（12 个包），改纯 div，
@@ -65,7 +65,7 @@ export {Chart, StatRow, csvToChartData, csvToChartSeries, CHART_BOX} from './cha
 export type {ChartDatum, ChartSeries, ChartVariant} from './chart';
 
 // ---- 结构化数据 → 图形（d3-hierarchy / d3-geo / d3-sankey / qrcode）----
-// GeoView 的真地图数据来自 world-atlas（land-110m）+ topojson-client，见 dependency-policy.md §4.2
+// GeoView 的真地图数据来自 world-atlas（land-110m）+ topojson-client，见 references/technique.md#dependency-policy §4.2
 export {TreeView, GeoView, SankeyChart, QrCode, fitNodeLabel, fitOneLine, MIN_LABEL_FONT} from './data';
 export type {TreeNode, TreeVariant, SankeyNodeIn, SankeyLinkIn, GeoMarker, GeoProjection} from './data';
 

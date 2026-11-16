@@ -31,7 +31,7 @@ const BASE_FPS = 30;
 // 从头到尾没被调用过（tsc TS6133），已删；需要它们时从 index / 其它模块取。
 // ⚠️ 下面三个（easeOutSoft / SPRINGS / popS）是**本库自己在用的**，别跟着一起删。
 const easeOutSoft = (f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b],[from,to],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
-// SPRINGS + popS 导出（2026-09-21）：`references/motion-design.md` 的 Locked motion pack 明写
+// SPRINGS + popS 导出（2026-09-21）：`references/draftpaper.md#motion-design` 的 Locked motion pack 明写
 // "use `popS(f, start, preset)` with `SPRINGS` … Do not hand-tune new damping/stiffness values per scene"，
 // 而这两个名字此前**没有 export** —— 场景文件在物理上 import 不到，那条纪律等于只能靠自觉。
 // 导出之后它才可执行：场景直接取这一份，不许再手写 damping/stiffness。

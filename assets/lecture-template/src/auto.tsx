@@ -24,7 +24,7 @@ const G = CONTRACT.GROW;  // 展开时长参数，scripts/story_acts.py grow_dur
 // 本层只负责「画」，几何全部在 compose-story 里算好（门禁也在那里跑），所以弱模型写不坏版面。
 //
 // 克制原则：
-//   · 出现（3.5.1 草稿纸）：沿阅读方向左→右展开，线性；不淡入、不上浮、不回弹。见 references/reveal-rules.md
+//   · 出现（3.5.1 草稿纸）：沿阅读方向左→右展开，线性；不淡入、不上浮、不回弹。见 references/draftpaper.md#reveal-rules
 //   · 强调 = 底色带 + 左侧标记条 + 加粗（不只靠颜色，色弱观众也看得出）；同时只强调一个元素，其余略暗。
 //   · 文字色一律走主题的 *Ink 变体（WCAG AA ≥4.5:1），原色只做填充 / 描边。
 //   · 帧的纯函数：没有任何 useState / 随机 / 实时动画。
@@ -59,7 +59,7 @@ export const tone = (t?: string) => {
   }
 };
 
-/** 出现（3.5.1 草稿纸）：沿阅读方向左→右展开，线性，dur 帧；不淡入、不上浮、不缩放。见 references/reveal-rules.md
+/** 出现（3.5.1 草稿纸）：沿阅读方向左→右展开，线性，dur 帧；不淡入、不上浮、不缩放。见 references/draftpaper.md#reveal-rules
  *  reduced-motion（P2-21）：直接到位——元素仍按 `at` 出现（内容顺序不变），只是不动。 */
 export const enter = (f: number, at: number, _rise = 14, dur = 18): React.CSSProperties => {
   if (REDUCED_MOTION) return {opacity: f >= at ? 1 : 0};

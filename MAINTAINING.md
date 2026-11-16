@@ -11,7 +11,7 @@
 
 合并方式：每篇旧文档**整篇**搬进新文件的一节（节前 `<a id="旧文件名"></a>`，标题降一级），所以旧文档里的每条规则都原样在新位置；
 全仓库 `.md/.py/.mjs/.cjs/.json` 里指向旧文件的链接、路径、错误提示一律改成 `新文件#旧文件名`。
-例外：模板 `.ts/.tsx` 的注释（第 1 批不碰 .ts/.tsx），读者按 `references/MOVED.md` 换算；第 2 批改 .tsx 时顺手更新。
+模板 `.ts/.tsx` 注释里的路径已在第 2 批改为新位置（`check-links.py` 一并检查）；`references/MOVED.md` 保留给外部旧链接换算。
 
 后续可做的压缩（第 2 批起，需逐条核对后再删）：`media.md` 里 media-routing 部分仍是原文全量（约 42 KB），组件索引与 `src/components` 重复，可改为由代码生成；
 `checks.md` 里 composition-gate / presentation-gate 的实现口径与事故记录可迁到本文件，只留「每类报错怎么修」。

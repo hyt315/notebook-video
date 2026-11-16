@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """检查仓库内所有相对链接（含 #锚点）与 .py/.mjs/.cjs/.json/.md/.yaml 里出现的 references/ 路径是否可解析。
-用法：python3 scripts/dev/check-links.py .   退出码 = 问题数。.ts/.tsx 的注释单独列出（第 1 批不改 .ts/.tsx）。"""
+用法：python3 scripts/dev/check-links.py .   退出码 = 问题数。.ts/.tsx 注释里的路径同样检查并计入问题数（第 2 批已全部改为新位置）。"""
 import re, sys, os, unicodedata
 from pathlib import Path
 ROOT = Path(sys.argv[1]).resolve()
@@ -29,7 +29,7 @@ def get_anchors(p):
             b = slug(m.group(1)); n = seen.get(b, 0); seen[b] = n + 1
             s.add(b if n == 0 else f'{b}-{n}')
     anchors[p] = s; return s
-problems, tsx = [], []
+problems = []
 files = [p for p in ROOT.rglob('*') if p.is_file() and not (set(p.relative_to(ROOT).parts) & SKIP)]
 LINK = re.compile(r'\]\(([^)\s]+)\)')
 PATH = re.compile(r'(?<![\w/.-])((?:\.\./)*references/[\w./-]+?\.(?:md|json))(#[\w\-\u4e00-\u9fff%]+)?')
@@ -56,9 +56,6 @@ for p in files:
         if dest is None: bad = f'path {path}'
         elif a and dest.suffix == '.md' and a[1:] not in get_anchors(dest): bad = f'anchor {path}{a}'
         if bad:
-            (tsx if p.suffix in ('.ts', '.tsx') else problems).append(f'{rel}: {bad}')
+            problems.append(f'{rel}: {bad}')
 print('\n'.join(problems) or 'OK: no broken links / reference paths')
-if tsx:
-    print(f'\n[.ts/.tsx 注释里的旧路径：{len(tsx)} 处，第 1 批不改 .ts/.tsx，见 references/MOVED.md]')
-    print('\n'.join(tsx))
 sys.exit(len(problems))

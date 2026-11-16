@@ -38,7 +38,7 @@ import {cancelRender, continueRender, delayRender, useCurrentFrame} from 'remoti
 //   · 片子（`NotebookVideoFilm`）取 **warn**：这一版判据在**片子**上的价值尚未被证明
 //     （实测来源全是接触表），而它的硬拦发生在**交付渲染的最后一刻** —— 判据一旦误报，
 //     代价是"整片渲到最后一帧被打断、不出片"，远贵于漏报一处 20px 的裁切。
-//     出水照样在渲染日志里，交付前人工确认（口径见 references/composition-gate.md §5.2/§6）。
+//     出水照样在渲染日志里，交付前人工确认（口径见 references/checks.md#composition-gate §5.2/§6）。
 //
 // 与 `ClippingGate` 同一条纪律（这个仓库踩过的坑，一条都不重犯）：
 //   · 测量排在 rAF 里 → **必须逐帧持 delayRender**，否则截帧先于测量，门禁等于不存在；

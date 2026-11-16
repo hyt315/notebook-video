@@ -9,7 +9,7 @@ import {THEME} from './theme/active';
 // 换内容不换结构，读起来就是「四个 PPT 页」。本层提供一个「活体主体」：
 // 同一实例常驻不卸载，随旁白在 5–6 个 phase 之间演化状态。
 //
-// 三条硬标准（references/scene-skeletons.md）：
+// 三条硬标准（references/scenes.md#scene-skeletons）：
 //   1. 占主体：16:9 下 ≥1024×620 设计像素，或占画幅宽 ≥60%；
 //   2. 有状态机：≥5 拍，每拍 2–4 秒，全程同一实例；
 //   3. 能装东西：main / rail / stamp 三个命名槽。
@@ -73,7 +73,7 @@ export const useStageMachine = (phases: Phase[], f: number): StageCtx => {
 // 于是「引用了不存在的标识符」一路静默 —— 只要进一次 Studio / dev 就是 ReferenceError。
 // 实现逐字取自 overview-film 的 v5 版本（同仓库下游工程，已在成片里跑过）。
 //
-// 它守的是什么：scene-skeletons.md 那条**观感标准**「活体主体要占主体」——
+// 它守的是什么：references/scenes.md#scene-skeletons 那条**观感标准**「活体主体要占主体」——
 // 成片实测过一镜：StageFrame 给足了 428px 高的 main 槽（画布 1080 的 39.6%），
 // 调用方却只在槽里放了一行字（47px），占用 11%，整块读成「一张空纸 + 一行标题」。
 // 组件的槽是给够的，占不占得住由**槽里的内容**决定 —— 这条护栏就是把"没占住"变成出声的数字。
@@ -129,8 +129,8 @@ export const SlotGuard: React.FC<{f: number; mainW: number; mainH: number; tag: 
           console.warn(
             `[SlotGuard] @${Math.round(f)} StageFrame「${tag}」main 槽只用了 ${Math.round(cover * 100)}% 的高度` +
               `（${leaves} 个内容块 / 槽 ${Math.round(slotW)}×${Math.round(slotH)} 设计像素）。` +
-              `scene-skeletons.md 要求活体主体"占主体：≥1024×620 或占画幅宽 ≥60%"，` +
-              `槽里的内容要给 height:'100%' 并用状态机填满（见 scene-authoring.md §2）。`
+              `references/scenes.md#scene-skeletons 要求活体主体"占主体：≥1024×620 或占画幅宽 ≥60%"，` +
+              `槽里的内容要给 height:'100%' 并用状态机填满（见 references/scenes.md#scene-authoring §2）。`
           );
         } else if (typeof console !== 'undefined') {
           console.warn(`[SlotGuard] @${Math.round(f)} 「${tag}」main 槽占用 ${Math.round(cover * 100)}%（${leaves} 块）`);
@@ -182,7 +182,7 @@ export const StageFrame: React.FC<{
   const railPx = rail ? railW || Math.round(w * 0.26) : 0;
   const headH = header ? 56 : 0;
   const stampH = stamp ? 56 : 0;
-  // main 槽真正可用的宽/高——给槽内组件传宽度前必须先算这两个数（见 scene-authoring.md）。
+  // main 槽真正可用的宽/高——给槽内组件传宽度前必须先算这两个数（见 references/scenes.md#scene-authoring）。
   const mainW = w - pad * 2 - (rail ? railPx + 18 : 0);
   const mainH = h - pad * 2 - headH - stampH - (stamp ? 14 : 0) - (header ? 14 : 0);
   const Paper = THEME.Paper;

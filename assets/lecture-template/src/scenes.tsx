@@ -16,11 +16,11 @@ import {SHOTS} from './shots';
 // 官方模板场景层 · 「GitHub 开源三部曲 EP0」（8 镜 / 4 骨架 / 5 种镜头意图）
 //
 // 这一层是**标准答案**：结构照抄，内容替换。形状与判据见
-// references/scene-authoring.md、scene-skeletons.md、shot-language.md。
+// references/scenes.md#scene-authoring、references/scenes.md#scene-skeletons、references/camera.md#shot-language。
 //
 // 两条时序铁律：
 //   1. 元素出现帧绑定到"讲到它的那一句"（SHOTS.Sx.beats），禁止开头一次性铺完；
-//   2. 出现统一 enterAt()：左→右展开 22 帧，线性（3.5.1 草稿纸；见 references/reveal-rules.md）。
+//   2. 出现统一 enterAt()：左→右展开 22 帧，线性（3.5.1 草稿纸；见 references/draftpaper.md#reveal-rules）。
 //
 // 几何：内容留在 [80,1840] × [80,930]；带平移的镜头再内缩平移预算。
 // ============================================================================
@@ -31,7 +31,7 @@ const easeOut = (f: number, a: number, b: number, from = 0, to = 1) => interpola
 const easeIO = (f: number, a: number, b: number, from = 0, to = 1) => interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.inOut(Easing.cubic)});
 
 const IN = 22;
-/** 出现（3.5.1 草稿纸）：左→右展开 22 帧，线性；不淡入、不上浮、不缩放。所有元素统一用它。见 references/reveal-rules.md */
+/** 出现（3.5.1 草稿纸）：左→右展开 22 帧，线性；不淡入、不上浮、不缩放。所有元素统一用它。见 references/draftpaper.md#reveal-rules */
 const enterAt = (f: number, at: number): React.CSSProperties => {
   const p = interpolate(f, [at, at + IN], [0, 1], {...clamp, easing: Easing.linear});
   if (p <= 0) return {opacity: 0};

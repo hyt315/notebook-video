@@ -26,7 +26,7 @@ import {fitChineseTextOnNLines, fitsWithin} from './fittext';
 // ============================================================================
 // ui.tsx — 界面结构件（库提供结构，本层提供皮肤 + 帧驱动）
 //
-// 契约（见 references/dependency-policy.md §7）：
+// 契约（见 references/technique.md#dependency-policy §7）：
 //   1. 场景 import 本层，不直接 import 原始库
 //   2. 颜色/边框/圆角/阴影只从 THEME 取
 //   3. 动画一律 f(帧号) 的纯函数：禁 CSS transition / setTimeout / Math.random

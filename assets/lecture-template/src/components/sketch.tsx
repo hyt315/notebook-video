@@ -11,7 +11,7 @@ import {prog} from './ui';
 // roughjs 给线条加手抖与重复笔触，才是真的像手画。
 //
 // 确定性：roughjs 用种子化伪随机，**同一个 seed 永远画出同一笔迹**，
-// 不破坏"同一份代码渲出同一支片"（dependency-policy.md 判据第二条）。
+// 不破坏"同一份代码渲出同一支片"（references/technique.md#dependency-policy 判据第二条）。
 // ⚠️ 两处例外，都是实测抓到的（见下面 fillStyle 的注释）：
 //   ① `fillStyle:'dots'` 的填充器无条件调 `Math.random()` → **已从本组件移除**；
 //   ② `seed: 0` 是假值 → roughjs 的 LCG 退回 `Math.random()` → 所有填充失效。

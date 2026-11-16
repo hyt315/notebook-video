@@ -14,7 +14,7 @@ import {TYPE, LineIcon} from './kit';
 // 实现一致但各自持有——这是为避免循环依赖而做的重复，不是疏忽。
 // 注意：本项目的 MOTION_FPS == BASE_FPS == 30，所以 index.tsx 的 q() 实为恒等，这里同样不做量化。
 //
-// 怎么选：**先查 references/media-routing.md 的「修辞动作 → 组件」表**（含"何时别用"），
+// 怎么选：**先查 references/media.md#media-routing 的「修辞动作 → 组件」表**（含"何时别用"），
 // 再决定用哪一件。表里标了禁用的动作请照做。
 // ============================================================================
 
@@ -34,7 +34,7 @@ const popS = (f: number, start: number, preset: keyof typeof SPRINGS = 'soft') =
   spring({frame: f - start, fps: BASE_FPS, config: SPRINGS[preset]});
 
 /**
- * 停帧点缀（`references/motion-design.md` 的 Stop-motion accent，LOCKED motion pack 里的一条）：
+ * 停帧点缀（`references/draftpaper.md#motion-design` 的 Stop-motion accent，LOCKED motion pack 里的一条）：
  * "`useSteppedFrame(15)` quantizes a component to 15fps so each pose holds two output frames.
  *  Reserve it for occasional hand-made charm; never apply it to subtitles, transfers or the camera."
  *

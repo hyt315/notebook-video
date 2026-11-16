@@ -22,7 +22,7 @@ import CONTRACT from './contract.json';
 //   3. 场景边界 = 每章首条 cue 的起始帧；元素出现帧 = 对应台词的起始帧
 //      减去场景起始帧（场景内部用本地帧 l）。说到哪，亮到哪。
 //
-// 画面组织六规范见 references/lecture-composition.md。
+// 画面组织六规范见 references/scenes.md#lecture-composition。
 // ============================================================================
 
 // Keep authored scene time separate from delivery frames.
@@ -30,8 +30,8 @@ import {MODES, CanvasContext, useCanvas} from './theme/canvas';
 import {THEME} from './theme/active';
 import {JumpInText} from './toolkit';
 import {PillTag, TYPE} from './kit';
-// v2.10 视觉体系四层：镜头 / 骨架 / 介质 / 门禁。用法见 references/shot-language.md、
-// scene-skeletons.md、media-routing.md、composition-gate.md。
+// v2.10 视觉体系四层：镜头 / 骨架 / 介质 / 门禁。用法见 references/camera.md#shot-language、
+// references/scenes.md#scene-skeletons、references/media.md#media-routing、references/checks.md#composition-gate。
 // 四层组件按需 import —— tsconfig 开了 noUnusedLocals，导了不用会被 tsc 判错，
 // 所以这里只留本文件真用到的，其余列名备查：
 //   shotkit    CoverPanel / ShotCamera / camAt / shotCam / stillCam
@@ -470,7 +470,7 @@ const FilmLayout:React.FC<{hideCaptions?:boolean}>=({hideCaptions})=>{
             代价是「整片渲到最后一帧被打断、不出片」，比漏报一处 20px 的裁切贵得多。
             出水照样进渲染日志（每 150 帧还有一条覆盖率），交付前人工确认；
             等它在片子上抓到第一处真缺陷，再谈升回 block。
-            口径与实测见 references/composition-gate.md §5.2 / §6。 */}
+            口径与实测见 references/checks.md#composition-gate §5.2 / §6。 */}
         <CanvasBoundsGate mode="warn"/>
         {/* FillGate 默认 warn：P0-4 是"观感线"，为它打断整片渲染不划算；出水进日志、可复查 */}
         <FillGate mode="warn" watch={WATCH}/><MascotGate watch={WATCH}/><GlyphSnap/><Backdrop/>
@@ -503,11 +503,11 @@ const Film16x9=({hideCaptions}:{hideCaptions?:boolean}={})=> <FilmLayout hideCap
 //     无一处误报 —— 于是把 warn 收敛回 block。
 // 判据上的理由：越出画布 = 件**整件看不见**或被切掉一块，属于**画错了**，
 // 与「图形被裁」「文字互相压」同级，不是 FillGate 那种观感线；
-// 而接触表是「看见才会用」的唯一入口（references/media-routing.md §6），件看不见就该中断渲染，
+// 而接触表是「看见才会用」的唯一入口（references/media.md#media-routing §6），件看不见就该中断渲染，
 // 不能默默出一张缺件的目录页。
 // v2 简版换实现后的复验（2026-09-22）：原样 6 页（帧 35/65/95/155/275/395）rc=0 有图零报告；
 // 把 `showcase.tsx` 的两处历史缺陷各改回去一次，这条 block 档仍然**各自抓住**（26px×2 / 27px，rc=1 不出图）。
-// 口径与实测表见 references/composition-gate.md §5.2。
+// 口径与实测表见 references/checks.md#composition-gate §5.2。
 const ShowcaseComposition=()=> <>
   <FontFaces bg={C.paperBase}/>
   <Showcase/>
@@ -525,7 +525,7 @@ const CraftSheetComposition=()=> <>
 const FxProbeComposition=()=> <FxProbe/>;
 
 const Root=()=> <>
-  {/* 官方模板示例片（8 镜 / 4 骨架），按 1920×1080 设计空间编写，交付 2560×1440（见 references/canvas-modes.md）。 */}
+  {/* 官方模板示例片（8 镜 / 4 骨架），按 1920×1080 设计空间编写，交付 2560×1440（见 references/scenes.md#canvas-modes）。 */}
   <Composition id="NotebookVideoFilm" component={Film16x9} durationInFrames={DURATION} fps={FPS} width={2560} height={1440}/>
   {/* 组件接触表：18 页 × 1 秒（`SHOWCASE_PAGES`）；抽帧用 select 滤镜按帧号取每页第 6/21 帧两张中段图，
       6×6=36 格一张 JPG，供 AI 看图选型（时长 = SHOWCASE_PAGES*30，加页自动跟随） */}

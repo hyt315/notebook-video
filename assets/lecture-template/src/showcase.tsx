@@ -29,7 +29,7 @@ import {Accordion, Chart, ClipReveal, COMPONENTS_VERSION, ControlStack, FitTextB
 // 注：KenBurnsImg / EvidenceZoom 依赖位图素材，不进接触表（不给模板塞示例图片）。
 //
 // ⚠️ 本文件是接触表的**渲染实现**，不是组件清单：页标题里的名字也不构成一份"有哪些件"的清单。
-//    **件的权威索引只有一处** —— references/media-routing.md §5.1「组件权威索引」
+//    **件的权威索引只有一处** —— references/media.md#media-routing §5.1「组件权威索引」
 //    （53 件逐件：用途 / 何时用 / 何时别用 / 接触表页 / 真实使用记录；含 10 件未上接触表的原因）。
 //    要核对"某件有没有上接触表"看那张表，别从本文件反推。
 // ============================================================================
@@ -39,7 +39,7 @@ const F = 150; // 所有组件渲染在「已落定」帧，便于一眼看清�
 const PAGE = 30;
 
 // ⑬ 页 GeoView 用的经纬度标记（源站 / 边缘节点这类）：经纬度是**手填**的，
-// 本技能不做地理编码、也不含城市/国界数据（见 references/dependency-policy.md §4.2）。
+// 本技能不做地理编码、也不含城市/国界数据（见 references/technique.md#dependency-policy §4.2）。
 const GEO_MARKERS = [
   {lon: 116.4, lat: 39.9, label: '北京', tone: C.orange},
   {lon: 8.7, lat: 50.1, label: '法兰克福', tone: C.green},
@@ -803,7 +803,7 @@ export const Showcase: React.FC = () => {
 export const SHOWCASE_PAGES = 18;
 
 // 「件」的口径 = 逐个数过**本文件里真实出现过的旧模块 JSX 标签**：fxkit 9 + media 2 +
-// stagekit 1（PhaseRail）+ skeletons 3 + toolkit 3 = **18 件**（与 references/media-routing.md §6 同一口径）。
+// stagekit 1（PhaseRail）+ skeletons 3 + toolkit 3 = **18 件**（与 references/media.md#media-routing §6 同一口径）。
 // ⚠️ 别把旧模块**对外 export** 的 26 件（见 components/index.ts 的「53 件地板」注释）填到这里 ——
 // 那是"能 import 的件数"，不是"接触表渲染出来的件数"，两者差 8 件。
 // ⚠️ 这个串**不在任何画面上渲染**（本文件没有页脚，`Page` 只用 title / note；全仓库没有一处读它）
