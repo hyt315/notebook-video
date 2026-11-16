@@ -100,12 +100,9 @@ class PageTurnContract(unittest.TestCase):
         self.assertNotIn("whip-left", tail)
 
     def test_curl_frames_match_between_composition_and_renderer(self):
-        # P2-23：渲染侧的真源搬到 transitions/meta.ts（fx.tsx 只 re-export）；
-        # 3.9.0：构建期的真源在转场计划（scripts/transition-plan.mjs）。两边必须同值。
-        a = re.search(r"export const CURL_FRAMES\s*=\s*(\d+)",
-                      read("assets/lecture-template/src/transitions/meta.ts")).group(1)
-        b = re.search(r"export const CURL_FRAMES\s*=\s*(\d+)", read("scripts/transition-plan.mjs")).group(1)
-        self.assertEqual(a, b)
+        # 渲染侧（transitions/meta.ts）与构建期（scripts/transition-plan.mjs）都读 src/contract.json，没有第二份字面量。
+        self.assertIn("export const CURL_FRAMES = CONTRACT.CURL_FRAMES;", read("assets/lecture-template/src/transitions/meta.ts"))
+        self.assertIn("export const CURL_FRAMES = CONTRACT.CURL_FRAMES;", read("scripts/transition-plan.mjs"))
         # fx.tsx 必须 re-export（不能有第二份字面量）
         fx = read("assets/lecture-template/src/fx.tsx")
         self.assertIn("export {CURL_FRAMES", fx)

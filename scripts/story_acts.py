@@ -22,6 +22,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import linework_index  # noqa: E402  （必须在 sys.path 之后导入）
 from story_time import frame  # noqa: E402
+from contract import C  # noqa: E402
 
 
 # ---------- 3.5.1 出现排程（references/draftpaper.md#reveal-rules 规则 ③）----------
@@ -37,9 +38,10 @@ MIN_GROW = 12            # 3.5.2：赶时压缩展开时长的下限
 def grow_dur(e: dict) -> int:
     """文字 / 卡片沿阅读方向展开的帧数：clamp(字数 × 4, 12, 45)；没字的按宽度 /40。与 auto.tsx growDur 同一公式。"""
     n = len("".join(e.get("lines") or []) or str(e.get("text") or ""))
-    if e.get("kind") == "codeline":  # 3.5.2：代码行按 1.5 帧/字，12–24 帧（与 auto.tsx growDur 同式）
-        return max(12, min(24, round(n * 1.5) if n > 0 else 12))
-    return max(12, min(45, n * 4 if n > 0 else round(e["w"] / 40)))
+    g = C["GROW"]  # 与 auto.tsx growDur 读同一份 contract.json
+    if e.get("kind") == "codeline":  # 代码行按 1.5 帧/字，12–24 帧
+        return max(g["min"], min(g["codelineMax"], round(n * g["codelinePerChar"]) if n > 0 else g["min"]))
+    return max(g["min"], min(g["max"], n * g["perChar"] if n > 0 else round(e["w"] / 40)))
 
 
 def schedule_reveals(els: list, sk_out, ann_out: list, tips: list, shot_len: int | None = None) -> list:

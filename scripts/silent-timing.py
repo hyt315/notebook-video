@@ -26,9 +26,12 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
+
 CRAFT = {"journal", "papercut", "archive"}
 CPS_CRAFT = 6.5
-CPS_COMPONENT = 4.5
+CPS_COMPONENT = C["READ_CPS"]
 CPS_MAX = 9.0
 COMMA = set("，、；：,;:")
 STOP = set("。！？!?…")

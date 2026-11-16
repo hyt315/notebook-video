@@ -235,11 +235,10 @@ class SingleSourceTest(unittest.TestCase):
 
     def test_curl_frames_match_the_composition(self):
         # P2-23：渲染侧的真源在 transitions/meta.ts（fx.tsx 只 re-export，不再有第二份字面量）
-        a = re.search(r"export const CURL_FRAMES\s*=\s*(\d+)",
-                      (ROOT / "assets/lecture-template/src/transitions/meta.ts").read_text(encoding="utf-8")).group(1)
-        b = re.search(r"export const CURL_FRAMES\s*=\s*(\d+)",
-                      CLI.read_text(encoding="utf-8")).group(1)
-        self.assertEqual(a, b)
+        # 两侧都读 src/contract.json（不各写字面量）
+        meta = (ROOT / "assets/lecture-template/src/transitions/meta.ts").read_text(encoding="utf-8")
+        self.assertIn("export const CURL_FRAMES = CONTRACT.CURL_FRAMES;", meta)
+        self.assertIn("export const CURL_FRAMES = CONTRACT.CURL_FRAMES;", CLI.read_text(encoding="utf-8"))
         # fx.tsx 与 fx-browser.mjs 都只转出，不各存一份
         fx = (ROOT / "assets/lecture-template/src/fx.tsx").read_text(encoding="utf-8")
         self.assertNotIn("export const CURL_FRAMES = ", fx)

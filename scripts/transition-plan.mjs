@@ -17,8 +17,9 @@ import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
 
-/** 卷页转场时长（帧），与 src/fx.tsx 的 CURL_FRAMES 同值（tests/test_fx.py 交叉校验）。 */
-export const CURL_FRAMES = 22;
+/** 卷页转场时长（帧）：读模板 src/contract.json（与渲染端 transitions/meta.ts 同一份）。 */
+const CONTRACT = JSON.parse(fs.readFileSync(new URL('../assets/lecture-template/src/contract.json', import.meta.url), 'utf8'));
+export const CURL_FRAMES = CONTRACT.CURL_FRAMES;
 
 /** 引擎里「显式写死、且不需要 WebGPU」的转场（cinema.tsx 第一段直接 return 的那批）。 */
 const EXPLICIT_PLAIN = new Set(['hard', 'fade', 'zoom', 'whip-left', 'whip-right', 'slide', 'drop']);

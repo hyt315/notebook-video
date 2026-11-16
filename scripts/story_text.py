@@ -22,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import text_metrics as _tm  # noqa: E402  （必须在 sys.path 之后导入）
+from contract import C  # noqa: E402
 
 # 字号地板：低于它就是「手机上看不清」，不是审美选择（设计像素，1920 宽）。
 MIN_FONT = 32
@@ -32,8 +33,8 @@ TAIL_PUNCT_RE = re.compile(r"[，。！？；：、,.!?;:\s]+$")
 # 行高下限 = 渲染端 Lines 的 safeLh（assets/lecture-template/src/auto.tsx）。
 # 排版端若按更小的 lh 算框高，下一行会落进上一行的行盒 → OverlapGate 硬拦（define 压字那条）。
 # **唯一**行高真源；排版与渲染都对齐它，不再各自写 1.42。
-# validate-skill-consistency 的数值对直接锚这一行（锚点文件已改到本模块）。
-SAFE_LH = 1.42
+# 数值在 src/contract.json，TS 端 auto.tsx 读同一份。
+SAFE_LH = C["SAFE_LH"]
 
 
 def safe_lh(lh: float) -> float:

@@ -11,11 +11,17 @@
 """
 from __future__ import annotations
 
-FPS = 30
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
+
+FPS = C["FPS"]
 
 
 def frame(ms: float) -> int:
-    """毫秒 → 帧（四舍五入）。与模板 `FPS = 30` 同一个数（一致性检查另行钉死）。
+    """毫秒 → 帧（四舍五入）。FPS 来自 src/contract.json（与模板同一份）。
 
     运算顺序保持 `ms * FPS / 1000`（与旧版逐字一致）：换成 `ms / 1000 * FPS` 在
     .5 边界上可能因浮点舍入差 1 帧，而帧号会进 story.ts。

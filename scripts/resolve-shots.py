@@ -28,8 +28,11 @@ import re
 import sys
 from pathlib import Path
 
-FPS = 30
-STAGE_CX, STAGE_CY = 960.0, 540.0
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
+
+FPS = C["FPS"]
+STAGE_CX, STAGE_CY = float(C["STAGE"]["cx"]), float(C["STAGE"]["cy"])
 
 
 def ms_frame(ms: float) -> int:
@@ -58,7 +61,7 @@ def expand_cam(cam: dict, duration: int) -> list[dict]:
         return cam["keys"]
     intent = cam.get("intent", "still")
     at = int(cam.get("at", 0))
-    span = int(cam.get("dur", 38))
+    span = int(cam.get("dur", C["CAM_DUR"]["std"]))
     x = float(cam.get("x", STAGE_CX))
     y = float(cam.get("y", STAGE_CY))
     frm = float(cam.get("from", 1.0))
@@ -95,7 +98,7 @@ def expand_cam(cam: dict, duration: int) -> list[dict]:
 # anchor 放大后仍完整落在内容带内、TEXT_ZOOM_MAX（与场景 ShotCamera 相乘后）、FIT_MAX_S。
 FIT_MIN, FIT_TARGET, FIT_HI = 0.60, 0.72, 0.80
 FIT_MAX_S = 1.30
-TEXT_ZOOM_MAX = 1.35
+TEXT_ZOOM_MAX = C["TEXT_ZOOM_MAX"]
 
 
 def compute_fit(anchor: dict | None, band: dict, keys: list[dict], mode) -> dict:

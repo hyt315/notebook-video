@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import unittest
 from pathlib import Path
@@ -84,10 +85,10 @@ class FrameParityTest(unittest.TestCase):
 
     def test_curl_frames_cross_checked_with_transition_plan(self):
         """卷页帧数必须与转场计划同值——窗口按它算，渲染按它画。"""
-        a = re.search(r"export const CURL_FRAMES\s*=\s*(\d+)", read(META)).group(1)
-        b = re.search(r"export const CURL_FRAMES\s*=\s*(\d+)",
-                      read(ROOT / "scripts" / "transition-plan.mjs")).group(1)
-        self.assertEqual(a, b)
+        self.assertIn("export const CURL_FRAMES = CONTRACT.CURL_FRAMES;", read(META))
+        self.assertIn("export const CURL_FRAMES = CONTRACT.CURL_FRAMES;", read(ROOT / "scripts" / "transition-plan.mjs"))
+        contract = json.loads(read(ROOT / "assets" / "lecture-template" / "src" / "contract.json"))
+        self.assertEqual(contract["CURL_FRAMES"], 22)  # 历史值，改它会改所有卷页时长
 
     def test_fold_direction_single_source(self):
         """折线方向只有一个定义：CSS 折痕（pagefold）与 GPU 卷页（fx 的 curlParams）共用。"""

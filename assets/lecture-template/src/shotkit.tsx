@@ -1,6 +1,7 @@
 import React from 'react';
 import {Easing, interpolate} from 'remotion';
 import {THEME} from './theme/active';
+import CONTRACT from './contract.json';
 
 // ============================================================================
 // shotkit · 镜头层 v1（每个 shot 一段受限相机）
@@ -35,11 +36,11 @@ export type CamKey = {f: number; x: number; y: number; s: number; rotY?: number}
 export type Anchor = {x: number; y: number; w: number; h: number};
 
 /** 设计坐标系（与 index.tsx 的 1920×1080 舞台一致）。 */
-export const STAGE = {w: 1920, h: 1080, cx: 960, cy: 540} as const;
+export const STAGE = CONTRACT.STAGE;
 
 /** 相机缩放硬上限。含文字的镜头用 TEXT_ZOOM_MAX，纯图形镜头可到 GRAPHIC_ZOOM_MAX。 */
-export const TEXT_ZOOM_MAX = 1.35;
-export const GRAPHIC_ZOOM_MAX = 1.6;
+export const TEXT_ZOOM_MAX = CONTRACT.TEXT_ZOOM_MAX;
+export const GRAPHIC_ZOOM_MAX = CONTRACT.GRAPHIC_ZOOM_MAX;
 
 const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
 
@@ -69,7 +70,7 @@ const clampPan = (x: number, y: number, s: number) => {
 const easeInOut = Easing.inOut(Easing.cubic);
 
 /** 运镜默认时长（帧）：shot-language.md 规定单次 30–45 帧。 */
-export const CAM_DUR = {short: 30, std: 38, long: 45} as const;
+export const CAM_DUR = CONTRACT.CAM_DUR;
 
 type IntentOpts = {
   /** 整镜长度（帧） */

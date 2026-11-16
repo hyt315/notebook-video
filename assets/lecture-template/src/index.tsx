@@ -2,6 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {AbsoluteFill,Composition,Easing,Img,Sequence,cancelRender,continueRender,delayRender,interpolate,registerRoot,spring,staticFile,useCurrentFrame as useRawCurrentFrame} from 'remotion';
 import {Audio} from '@remotion/media';
 import cueData from './caption-cues.json';
+import CONTRACT from './contract.json';
 
 // ============================================================================
 // LECTURE TEMPLATE · 讲课式默认模板（纯代码 SVG，不依赖任何生图能力）
@@ -55,7 +56,7 @@ import {SHOTS, SHOT_IDS, SHOT_TOTAL, SFX_DENSITY} from './shots';
 import {SCENES} from './scenes';
 import {FontFaces} from './fonts';
 import type {BgVariant} from './theme/types';
-const BASE_FPS=30,FPS=30,MOTION_FPS=30,TIMELINE_SCALE=1,DURATION=SHOT_TOTAL,DESIGN_SCALE=4/3;
+const BASE_FPS=30,FPS=CONTRACT.FPS,MOTION_FPS=30,TIMELINE_SCALE=1,DURATION=SHOT_TOTAL,DESIGN_SCALE=4/3;
 const useCurrentFrame=()=>useRawCurrentFrame()*BASE_FPS/FPS/TIMELINE_SCALE;
 const deliveryFrame=(designFrame:number)=>Math.round(designFrame*FPS*TIMELINE_SCALE/BASE_FPS);
 
@@ -204,7 +205,7 @@ const CardFitGate=()=>{
 // 判定：> mode.safe 记 fail（真的会被裁切）；> mode.safe - subtitlePadX 只 warn（会顶到内边）。
 // 字幕每行 ≤ CAPTION_MAX_CHARS 字（去掉句末标点与空白后逐字计，ASCII 也按 1 字计）。
 // 与 build-semantic-captions.py --max-chars / validate-caption-sync.py --max-chars 同口径；超了直接拦。
-const CAPTION_MAX_CHARS=16;
+const CAPTION_MAX_CHARS=CONTRACT.CAPTION_MAX_CHARS;
 const captionChars=(t:string)=>[...String(t).replace(/[，。！？；：、,.!?;:\s]+$/g,'').replace(/\s+/g,'')].length;
 const CaptionFitGate=()=>{const {mode:baseMode}=useCanvas();const mode={...baseMode,subFont:AESTHETIC.subtitleSize??baseMode.subFont};const subFamily=AESTHETIC.subtitleFamily??'Kai';const safe=mode.safe,innerSafe=safe-(AESTHETIC.subtitlePadX??0),weight=AESTHETIC.subtitleWeight??400,ls=AESTHETIC.subtitleLetterSpacing??1.6;const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;let blocked=false;Promise.all([document.fonts.load(`${weight} ${mode.subFont}px ${subFamily}`),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){blocked=true;cancelRender(new Error('Subtitle measurement node is unavailable'));return}const longCues=captions.map((c:any,index:number)=>({index,n:captionChars(c.text),text:String(c.text)})).filter(x=>x.n>CAPTION_MAX_CHARS);if(longCues.length){blocked=true;cancelRender(new Error(`Subtitle too long (>${CAPTION_MAX_CHARS} chars per line): ${longCues.map(x=>`#${x.index+1} ${x.n}字 ${x.text}`).join(' | ')}`));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const widths=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''}));const overflow=widths.filter(row=>row.width>safe+.5);const tight=widths.filter(row=>row.width>innerSafe+.5&&row.width<=safe+.5);if(tight.length&&typeof console!=='undefined')console.warn(`[CaptionFitGate] ${tight.length} 条字幕超过内边距安全宽 ${innerSafe}px（未裁切但会顶到字幕框内边）：${tight.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px`).join(' | ')}`);if(overflow.length){blocked=true;cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px>${safe}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live&&!blocked){blocked=true;cancelRender(error)}});return()=>{live=false}},[handle,mode.subFont,subFamily,safe,innerSafe,weight,ls]);if(done)return null;return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:`${subFamily},Kai,sans-serif`,fontSize:mode.subFont,fontWeight:weight,whiteSpace:'nowrap',letterSpacing:ls}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</div>};
 

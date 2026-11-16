@@ -1,3 +1,4 @@
+import CONTRACT from '../contract.json';
 // ============================================================================
 // transitions/meta.ts · 转场元数据的唯一真源（P2-23 解耦）
 //
@@ -11,7 +12,7 @@
 // 现在：**新增一种转场 = 在 TRANSITION_META 里加一个条目 + 一个实现模块**。
 // 时长 / 方向 / 翻页 / 退回 / 拟音都从这张表读，不再各处抄。
 //
-// 与 scripts/transition-plan.mjs 的 CURL_FRAMES 同值（tests/test_fx.py 交叉校验）：
+// CURL_FRAMES 与 scripts/transition-plan.mjs 同读 src/contract.json：
 // 转场计划（构建期算窗口）与渲染器（画卷页）必须用同一个帧数，否则窗口盖不住整段卷页。
 // ============================================================================
 
@@ -30,8 +31,8 @@ export type CurlKind = 'pageturn' | 'peel';
  */
 export const PAGETURN_FOLD_DIRECTION = -78;
 
-/** 卷页转场时长（帧）：与 scripts/transition-plan.mjs 的 CURL_FRAMES 同值（测试交叉校验）。 */
-export const CURL_FRAMES = 22;
+/** 卷页转场时长（帧）：src/contract.json，scripts/transition-plan.mjs 读同一份。 */
+export const CURL_FRAMES = CONTRACT.CURL_FRAMES;
 
 /** 普通转场（whip / zoom / fade / slide / drop）的缺省时长（帧）。 */
 export const DEFAULT_TRANSITION_FRAMES = 14;

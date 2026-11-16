@@ -40,11 +40,14 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
+
 # 字幕带以下的部分不参与判定：默认裁到画面高度的 87%
 # （16:9 时设计坐标 y≈940/1080；字幕框在 y≈1010 起）
 DEFAULT_CROP_H = 0.87
 DEFAULT_MAX_STATIC = 2.5
-FPS = 30.0
+FPS = float(C["FPS"])
 # freezedetect 的噪声门限：-60dB 表示"两帧差异小于 -60dB 才算冻结"（很严，抓的是"几乎一模一样"）
 NOISE = "-60dB"
 MIN_SEG = 1.0  # 只统计 ≥1s 的段（低于 1s 的是正常呼吸/停顿）

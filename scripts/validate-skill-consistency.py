@@ -249,83 +249,6 @@ def check_canvas_mode_dual_source() -> list[str]:
     return problems
 
 
-# ---------------------------------------------------------------------------
-# 数值双真源配对交叉校验（并入既有双真源机制：check_enum_dual_source 比字符串
-# 集合、check_canvas_mode_dual_source 比画布数值对；这里收其余"TS 运行时 ⇄
-# python 判据"写了两遍的**同款语义**数值对）。原则：
-#   · 声明式配对表 [(名, 文件A, 正则A, 文件B, 正则B)]，逐对比 float 值；
-#   · 任一侧锚点解析不到 = problem（防"改写法就静默放行"）；
-#   · 宁缺毋滥：语义不同款（判据侧独立档位 / "默认值"vs"上限"这类）一律不收。
-# 不收清单见 v3.1.1 批6 报告：FONT_LABEL_MIN（16，门禁独有标注档）、
-# ROT_MAX（shotkit 侧 6 是 micro-orbit 默认角非上限）、INTENT_MAX_ZOOM（意图
-# 缩放预算 ⇄ shotkit 各 intent 默认目标值本就不同数）、validate-shot-motion
-# 内联 `/30` 秒换算（无命名锚点，FPS 判据已由三处命名常量对钉死）。
-# ---------------------------------------------------------------------------
-_TS_SHOTKIT = 'assets/lecture-template/src/shotkit.tsx'
-_TS_INDEX = 'assets/lecture-template/src/index.tsx'
-_TS_DATA = 'assets/lecture-template/src/components/data.tsx'
-_PY_MOTION = 'scripts/validate-shot-motion.py'
-_PY_RESOLVE = 'scripts/resolve-shots.py'
-_PY_PRESENT = 'scripts/validate-presentation.py'
-_PY_GAPS = 'scripts/validate-motion-gaps.py'
-_PY_STAGE = r'^STAGE_CX,\s*STAGE_CY\s*=\s*([\d.]+)'
-_PY_STAGE_CY = r'^STAGE_CX,\s*STAGE_CY\s*=\s*[\d.]+,\s*([\d.]+)'
-_TS_STAGE_CX = r'STAGE = \{[^}]*cx:\s*([\d.]+)'
-_TS_STAGE_CY = r'STAGE = \{[^}]*cy:\s*([\d.]+)'
-_NUM_DUAL_PAIRS = (
-    # 3.9.0 行高下限：排版端 SAFE_LH（story_text，P2-24 起从 compose-story 切出）⇄ 渲染端 Lines 的 safeLh（auto.tsx）。
-    # 两边必须同数：排版按更小的 lh 算框高 → 下一行压进上一行的行盒（OverlapGate 硬拦）。
-    ('SAFE_LH story_text vs auto.tsx safeLh', 'scripts/story_text.py', r'^SAFE_LH\s*=\s*([\d.]+)',
-     'assets/lecture-template/src/auto.tsx', r'safeLh\s*=\s*Math\.max\(lh,\s*([\d.]+)\)'),
-
-    # 3.3.0 卷页转场时长：合成（src/fx.tsx）⇄ 转场计划（scripts/transition-plan.mjs，3.9.0 起窗口由它算）。
-    # 窗口比转场短 → 拼接处露出退回的 pageflip。
-    # P2-23：渲染侧真源搬到 transitions/meta.ts（fx.tsx 只 re-export）
-    ('CURL_FRAMES meta.ts vs transition-plan.mjs', 'assets/lecture-template/src/transitions/meta.ts', r'export const CURL_FRAMES\s*=\s*(\d+)', 'scripts/transition-plan.mjs', r'^export const CURL_FRAMES\s*=\s*(\d+)'),
-    # 字号绝对地板：data.tsx「反推低于它就不画字」⇄ G-3 地板（判据侧注释自证口径 = MIN_LABEL_FONT）
-    ('MIN_LABEL_FONT vs FONT_FLOOR', _TS_DATA, r'export const MIN_LABEL_FONT\s*=\s*([\d.]+)', _PY_PRESENT, r'^FONT_FLOOR\s*=\s*([\d.]+)'),
-    # 舞台中心三写（shotkit ⇄ motion ⇄ resolve），两对比对
-    ('STAGE.cx vs motion STAGE_CX', _TS_SHOTKIT, _TS_STAGE_CX, _PY_MOTION, _PY_STAGE),
-    ('STAGE.cy vs motion STAGE_CY', _TS_SHOTKIT, _TS_STAGE_CY, _PY_MOTION, _PY_STAGE_CY),
-    ('STAGE.cx vs resolve STAGE_CX', _TS_SHOTKIT, _TS_STAGE_CX, _PY_RESOLVE, _PY_STAGE),
-    ('STAGE.cy vs resolve STAGE_CY', _TS_SHOTKIT, _TS_STAGE_CY, _PY_RESOLVE, _PY_STAGE_CY),
-    # 相机缩放上限
-    ('TEXT_ZOOM_MAX', _TS_SHOTKIT, r'export const TEXT_ZOOM_MAX\s*=\s*([\d.]+)', _PY_MOTION, r'^TEXT_ZOOM_MAX\s*=\s*([\d.]+)'),
-    ('GRAPHIC_ZOOM_MAX', _TS_SHOTKIT, r'export const GRAPHIC_ZOOM_MAX\s*=\s*([\d.]+)', _PY_MOTION, r'^GRAPHIC_ZOOM_MAX\s*=\s*([\d.]+)'),
-    # 运镜时长合法区间 (30,45) 与默认 38（std ⇄ 两侧 cam.get("dur", …) 回落值）
-    ('CAM_DUR.short vs CAM_DUR[0]', _TS_SHOTKIT, r'CAM_DUR = \{short:\s*([\d.]+)', _PY_MOTION, r'^CAM_DUR = \(([\d.]+),'),
-    ('CAM_DUR.long vs CAM_DUR[1]', _TS_SHOTKIT, r'CAM_DUR = \{[^}]*long:\s*([\d.]+)', _PY_MOTION, r'^CAM_DUR = \([\d.]+,\s*([\d.]+)\)'),
-    ('CAM_DUR.std vs resolve dur default', _TS_SHOTKIT, r'CAM_DUR = \{[^}]*std:\s*([\d.]+)', _PY_RESOLVE, r'cam\.get\("dur",\s*([\d.]+)\)'),
-    ('CAM_DUR.std vs motion dur default', _TS_SHOTKIT, r'CAM_DUR = \{[^}]*std:\s*([\d.]+)', _PY_MOTION, r'cam\.get\("dur",\s*([\d.]+)\)'),
-    # FPS：模板注册值 ⇄ 判据里真拿它做 ms→帧 换算的命名常量（motion/composition 的内联 30 不收，见上）
-    ('FPS vs resolve FPS', _TS_INDEX, r'(?<!\w)FPS\s*=\s*([\d.]+)', _PY_RESOLVE, r'^FPS\s*=\s*([\d.]+)'),
-    ('FPS vs presentation FPS', _TS_INDEX, r'(?<!\w)FPS\s*=\s*([\d.]+)', _PY_PRESENT, r'^FPS\s*=\s*([\d.]+)'),
-    ('FPS vs motion-gaps FPS', _TS_INDEX, r'(?<!\w)FPS\s*=\s*([\d.]+)', _PY_GAPS, r'^FPS\s*=\s*([\d.]+)'),
-
-    # 3.5.2：补上「同一份公式 / 同一个上限」在 Python 与 TS 各写一遍、却没人盯的四组。
-    # 只比数值，不改任何判据；有人只改一边（例如把代码行 1.5 帧/字改成 2）时 CI 会先报漂移。
-    # 语义差异要说明：MAX_CHARS / CAPTION_MAX_CHARS 逐字计，LINE_MAX 是加权字（ASCII 记 0.5），
-    # 三者只锁「16 这个上限」相同，不把它们合成一个函数。
-    ('MAX_CHARS vs LINE_MAX', 'scripts/story_caption.py', r'^MAX_CHARS\s*=\s*([\d.]+)',
-     _PY_PRESENT, r'^LINE_MAX\s*=\s*([\d.]+)'),
-    ('CAPTION_MAX_CHARS vs MAX_CHARS', _TS_INDEX, r'const CAPTION_MAX_CHARS\s*=\s*([\d.]+)',
-     'scripts/story_caption.py', r'^MAX_CHARS\s*=\s*([\d.]+)'),
-    ('CPS vs CPS_COMPONENT', 'scripts/story_caption.py', r'^CPS\s*=\s*([\d.]+)',
-     'scripts/silent-timing.py', r'^CPS_COMPONENT\s*=\s*([\d.]+)'),
-    # grow_dur (story_acts.py) ⇄ growDur (auto.tsx)：排程按它写 dur，渲染按它展开，差一倍就长不完。
-    ('growDur min', 'scripts/story_acts.py', r'return max\((\d+), min\(45, n \* 4',
-     'assets/lecture-template/src/auto.tsx', r'return Math\.max\((\d+), Math\.min\(45, n > 0 \? n \* 4'),
-    ('growDur max', 'scripts/story_acts.py', r'return max\(12, min\((\d+), n \* 4',
-     'assets/lecture-template/src/auto.tsx', r'return Math\.max\(12, Math\.min\((\d+), n > 0 \? n \* 4'),
-    ('growDur chars-per-frame', 'scripts/story_acts.py', r'n \* (\d+) if n > 0',
-     'assets/lecture-template/src/auto.tsx', r'n > 0 \? n \* (\d+) :'),
-    ('growDur codeline max', 'scripts/story_acts.py', r'return max\(12, min\((\d+), round\(n \* 1\.5\)',
-     'assets/lecture-template/src/auto.tsx', r'return Math\.max\(12, Math\.min\((\d+), n > 0 \? Math\.round\(n \* 1\.5\)'),
-    ('growDur codeline rate', 'scripts/story_acts.py', r'round\(n \* ([\d.]+)\)',
-     'assets/lecture-template/src/auto.tsx', r'Math\.round\(n \* ([\d.]+)\)'),
-)
-
-
 def check_skill_description() -> list[str]:
     """3.5.4：SKILL.md 的 description ≤ 1024 字符（Agent Skills 规范上限），且纯标量里不能有「: 」。
 
@@ -406,29 +329,6 @@ def check_linework_geometry() -> list[str]:
         problems.append(f'缺少 {crops.relative_to(SKILL)}（跑 python scripts/linework_index.py --write-crops）')
     elif crops.read_text(encoding='utf-8') != li.render_part_crops(li.part_crops()):
         problems.append('src/linework/crops.ts 与 library.ts 不同步（跑 python scripts/linework_index.py --write-crops）')
-    return problems
-
-
-def check_numeric_dual_source() -> list[str]:
-    problems: list[str] = []
-    texts: dict[str, str] = {}
-
-    def grab(rel: str, pat: str):
-        if rel not in texts:
-            try:
-                texts[rel] = (SKILL / rel).read_text(encoding='utf-8', errors='ignore')
-            except OSError:
-                texts[rel] = ''
-        m = re.search(pat, texts[rel], re.M)
-        return m.group(1) if m else None
-
-    for name, fa, pa, fb, pb in _NUM_DUAL_PAIRS:
-        va, vb = grab(fa, pa), grab(fb, pb)
-        if va is None or vb is None:
-            problems.append(f"numeric dual-source parse failed: {name} "
-                            f"(anchor missing in {fa if va is None else fb})")
-        elif float(va) != float(vb):
-            problems.append(f"numeric dual-source drift: {name} {va} ({fa}) vs {vb} ({fb})")
     return problems
 
 
@@ -594,7 +494,6 @@ def main() -> None:
     problems.extend(check_process_words())
     problems.extend(check_enum_dual_source())
     problems.extend(check_canvas_mode_dual_source())
-    problems.extend(check_numeric_dual_source())
     problems.extend(check_linework_geometry())
 
     if problems:

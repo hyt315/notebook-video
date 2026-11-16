@@ -12,6 +12,7 @@ import {THEME} from '../theme/active';
 import {TYPE} from '../kit';
 import {prog} from './ui';
 import {fitChineseTextOnNLines} from './fittext';
+import CONTRACT from '../contract.json';
 
 // ============================================================================
 // data.tsx — 结构化数据 → 图形（四个库都只做计算，画与皮肤由本层负责）
@@ -62,7 +63,7 @@ const sumOf = (n: TreeNode): number => (n.children && n.children.length ? n.chil
  * maxLines 默认 2：留 3 行时，一个竖长格子会被排成「一字一行」的竖排标签，
  * 读起来不像标签而像装饰条。
  */
-export const MIN_LABEL_FONT = 13;
+export const MIN_LABEL_FONT = CONTRACT.MIN_LABEL_FONT;
 
 export const fitNodeLabel = (text: string, boxW: number, boxH: number, maxFont = 34, maxLines = 2, fontFamily = 'Kai') => {
   const box = Math.max(24, boxW);

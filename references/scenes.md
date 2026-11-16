@@ -630,8 +630,9 @@ the gate, not pass), a skill copy with the removed example project put back, a s
 cannot be found — paired with one pinning that the bare `FC<` spelling of every shot function must pass —
 a stale resolved timeline, a match-timing mismatch fed under `python -O` (guards must never be plain
 `assert`s), two caption-cues copies that disagree (validate one while rendering the other), and the
-numeric dual-source cross-checks where a theme or component constant drifts away from the validator that
-pairs with it (canvas-mode numbers and the font floor), three camera-default fixtures (omitted `rotY` and
+canvas-mode dual-source cross-check where `canvas.ts` drifts away from the validator that pairs with it
+(other shared numbers — FPS, caption cap, reading speed, stage, zoom caps, grow timing — live once in
+`assets/lecture-template/src/contract.json`, read by both TS and Python, so they cannot drift), three camera-default fixtures (omitted `rotY` and
 omitted `to` must resolve to the documented values, while an explicit `from == to` zero-move must still be
 blocked), and a BudouX-less delivery) plus negative controls, and
 asserts each gate blocks, warns or passes as expected — 65 fixtures / 112 assertions (run the script — it

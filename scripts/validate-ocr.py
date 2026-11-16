@@ -34,7 +34,10 @@ import tempfile
 import unicodedata
 from pathlib import Path
 
-FPS = 30
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
+
+FPS = C["FPS"]
 SIM_P0 = 0.60
 SIM_P1 = 0.90
 SCORE_P1 = 0.85

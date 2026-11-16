@@ -1123,9 +1123,7 @@ cleanup(td)
 #   CF = validate-skill-consistency 新增的画布数值双真源交叉校验：把 canvas.ts 的
 #        designW 单独改掉 → 一致性检查必须红（needle = "canvas mode numeric drift"）。
 #        放行侧 = 本仓全量 `python scripts/validate-skill-consistency.py` rc=0（任务验证项）。
-#   CG = 批6 新增的数值双真源交叉校验（check_numeric_dual_source 配对表）：把 data.tsx 的
-#        MIN_LABEL_FONT 单独改掉（判据侧 FONT_FLOOR 不动）→ 一致性检查必须红
-#        （needle = "numeric dual-source drift"）。放行侧同 CF = 本仓 rc=0。
+#   （原 CG/CH 数值双源漂移用例已删：这些常量现在只在 src/contract.json 写一次，不存在两侧漂移。）
 # ════════════════════════════════════════════════════════════════════════════
 
 td = mkvisual(GOOD_SCENE, 120)
@@ -1201,38 +1199,6 @@ assert 'designW: 1900' in _ct, 'CF 夹具没改到 canvas.ts'
 io.open(ctp, 'w', encoding='utf-8', newline='').write(_ct)
 case('CF 一致性 · canvas.ts 的 designW 单独漂移（画布数值双真源交叉校验）', [
     ('must_block:canvas mode numeric drift', 'validate-skill-consistency',
-     run([PY, os.path.join(SKILL, 'scripts/validate-skill-consistency.py'), '--root', td_skill])),
-])
-cleanup(td_skill)
-
-# CG · 数值双真源配对表（批6）：整仓临时副本里只改 TS 侧一处数值（MIN_LABEL_FONT 13→12，
-# 判据侧 FONT_FLOOR 不动）→ 一致性检查必须红并点名这一对。锚点找不到直接 raise（不用
-# assert：-O 下 assert 被剥，"夹具没改到"会变成静默假通过 —— 正是 CC 钉过的教训）。
-td_skill = mk_skill_copy()
-dtp = os.path.join(td_skill, 'assets/lecture-template/src/components/data.tsx')
-_dt = io.open(dtp, encoding='utf-8').read()
-if 'export const MIN_LABEL_FONT = 13;' not in _dt:
-    raise SystemExit('CG 夹具锚点没找到：data.tsx 的 MIN_LABEL_FONT 写法变了（这本身就是该配而未配的双真源风险）')
-io.open(dtp, 'w', encoding='utf-8', newline='').write(
-    _dt.replace('export const MIN_LABEL_FONT = 13;', 'export const MIN_LABEL_FONT = 12;', 1))
-case('CG 一致性 · MIN_LABEL_FONT 单独漂移（数值双真源交叉校验）', [
-    ('must_block:numeric dual-source drift: MIN_LABEL_FONT vs FONT_FLOOR', 'validate-skill-consistency',
-     run([PY, os.path.join(SKILL, 'scripts/validate-skill-consistency.py'), '--root', td_skill])),
-])
-cleanup(td_skill)
-
-# CH · 3.5.2 补的 growDur 公式双源锁：整仓副本里只改 TS 侧代码行系数（1.5 → 2 帧/字），
-# Python 排程侧不动 → 一致性检查必须点名这一对漂移。排程按 1.5 写 dur、渲染按 2 展开，
-# 代码行会在镜尾前长不完，正是 3.5.2 修掉的那类错。
-td_skill = mk_skill_copy()
-atp = os.path.join(td_skill, 'assets/lecture-template/src/auto.tsx')
-_at = io.open(atp, encoding='utf-8').read()
-if 'Math.round(n * 1.5)' not in _at:
-    raise SystemExit('CH 夹具锚点没找到：auto.tsx 的 codeline 系数写法变了')
-io.open(atp, 'w', encoding='utf-8', newline='').write(
-    _at.replace('Math.round(n * 1.5)', 'Math.round(n * 2)', 1))
-case('CH 一致性 · growDur 代码行系数单独漂移（数值双真源交叉校验）', [
-    ('must_block:numeric dual-source drift: growDur codeline rate', 'validate-skill-consistency',
      run([PY, os.path.join(SKILL, 'scripts/validate-skill-consistency.py'), '--root', td_skill])),
 ])
 cleanup(td_skill)

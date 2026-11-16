@@ -13,6 +13,9 @@ import type {SketchSpec} from './linework/types';
 import {HandLettering, HandNote, InkCircle, InkPath, Underline} from './craft/ink';
 import {Seal} from './craft/paper';
 import {ArchivePhoto, LoupeMedia} from './craft/media';
+import CONTRACT from './contract.json';
+
+const G = CONTRACT.GROW;  // 展开时长参数，scripts/story_acts.py grow_dur 读同一份
 
 // ============================================================================
 // auto.tsx · 3.2.0 内容驱动的镜头渲染器（AutoShot）
@@ -71,8 +74,8 @@ export const enter = (f: number, at: number, _rise = 14, dur = 18): React.CSSPro
 /** 展开时长：clamp(字数 × 4, 12, 45) 帧；没字的按宽度 / 40。与 scripts/story_acts.py grow_dur() 同一公式。 */
 export const growDur = (e: {text?: string; lines?: string[]; w: number; kind?: string}) => {
   const n = ((e.lines ?? []).join('') || e.text || '').length;
-  if (e.kind === 'codeline') return Math.max(12, Math.min(24, n > 0 ? Math.round(n * 1.5) : 12));  // 3.5.2，与 story_acts.grow_dur 同式
-  return Math.max(12, Math.min(45, n > 0 ? n * 4 : Math.round(e.w / 40)));
+  if (e.kind === 'codeline') return Math.max(G.min, Math.min(G.codelineMax, n > 0 ? Math.round(n * G.codelinePerChar) : G.min));
+  return Math.max(G.min, Math.min(G.max, n > 0 ? n * G.perChar : Math.round(e.w / 40)));
 };
 
 /** 关键词强调权重（0..1）：说到这个词时 8 帧升起，until 后 12 帧落下。 */
@@ -94,10 +97,9 @@ const Lines: React.FC<{lines?: string[]; text: string; size: number; lh?: number
   // 实测（flow 节点，字号 46）：lh=1.25 压住 414px²；1.32 仍压 274px²（「1665/借来」）
   // 和 282px²（「今天/住户」，纯汉字——所以这不是「数字字形特殊」，是 46px 中文本身就需要更高行距）。
   // 1.42（= 65.3px）之后两行彻底分开。这里统一兜底，而不是在每个调用点记一个魔法数。
-  // 行高下限与排版端 SAFE_LH（scripts/compose-story.py）必须同数——
-  // validate-skill-consistency 的 'SAFE_LH compose vs auto.tsx safeLh' 钉死两边。
+  // 行高下限与排版端 SAFE_LH（scripts/story_text.py）同读 src/contract.json——
   // 排版按更小的 lh 算框高 → 下一行压进上一行的行盒（OverlapGate 硬拦）。
-  const safeLh = Math.max(lh, 1.42);
+  const safeLh = Math.max(lh, CONTRACT.SAFE_LH);
   return (
   <div style={{position: 'relative', fontSize: size, lineHeight: safeLh, color, fontWeight: weight, textAlign: (align as any) ?? 'left', whiteSpace: 'nowrap'}}>
     {(lines ?? [text]).map((l, i) => <div key={i}>{l}</div>)}
@@ -255,7 +257,7 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
     }
     case 'number':
       // 3.5.2：整串左→右展开、直接写终值（不弹簧放大、不滚动计数）
-      return <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, opacity: dim, ...enter(f, e.at, 0, Math.max(12, Math.min(45, `${e.prefix ?? ''}${e.value}${e.unit ?? ''}`.length * 4)))}}>
+      return <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, opacity: dim, ...enter(f, e.at, 0, Math.max(G.min, Math.min(G.max, `${e.prefix ?? ''}${e.value}${e.unit ?? ''}`.length * G.perChar)))}}>
         <KineticNumber f={f} at={e.at} from={e.from_ ?? 0} to={e.value} decimals={e.decimals} prefix={e.prefix} suffix={e.unit} size={e.size} color={tt.fill} ink={tt.ink} dur={30} draft />
       </div>;
     case 'bar': {

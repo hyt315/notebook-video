@@ -22,11 +22,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from story_text import PUNCT, line_len, units  # noqa: E402  （必须在 sys.path 之后导入）
+from contract import C  # noqa: E402
 
-CPS = 4.5                      # 中文朗读 / 阅读速度：4–5 字/秒，取 4.5
+CPS = C["READ_CPS"]           # 中文朗读 / 阅读速度：4–5 字/秒，取 4.5
 CHAR_MS = 1000 / CPS           # ≈ 222 ms
 COMMA_MS, STOP_MS = 150, 300   # 句中逗号 / 句末停顿
-MAX_CHARS = 16                 # 单行字幕上限（门禁与拆行共用这一份）
+MAX_CHARS = C["CAPTION_MAX_CHARS"]  # 单行字幕上限（门禁、拆行与 TS 端共用 contract.json）
 TERM_RE = re.compile(r"\{\{([^}|]+)(?:\|([^}]+))?\}\}")
 
 

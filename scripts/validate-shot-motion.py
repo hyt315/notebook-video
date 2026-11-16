@@ -28,7 +28,10 @@ import json
 import sys
 from pathlib import Path
 
-STAGE_CX, STAGE_CY = 960.0, 540.0
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
+
+STAGE_CX, STAGE_CY = float(C["STAGE"]["cx"]), float(C["STAGE"]["cy"])
 
 # 每个镜头意图的缩放预算（设计空间）。含文字的镜头上限更严，见 TEXT_ZOOM_MAX。
 INTENT_MAX_ZOOM = {
@@ -40,10 +43,10 @@ INTENT_MAX_ZOOM = {
     "micro-orbit": 1.10,
     "still": 1.00,
 }
-TEXT_ZOOM_MAX = 1.35
-GRAPHIC_ZOOM_MAX = 1.60
+TEXT_ZOOM_MAX = C["TEXT_ZOOM_MAX"]
+GRAPHIC_ZOOM_MAX = C["GRAPHIC_ZOOM_MAX"]
 ROT_MAX = 6.0  # micro-orbit 的 rotY 上限（度）
-CAM_DUR = (30, 45)  # 单次运镜时长（帧），references/camera.md#shot-language
+CAM_DUR = (C["CAM_DUR"]["short"], C["CAM_DUR"]["long"])  # 单次运镜时长（帧），references/camera.md#shot-language
 # 每章运镜配额要有时长比例感：短视频章节只有 7 秒时强求 3 次是无意义的。
 # 规则：章节 ≥20 秒 → ≥3 次；否则 ≥1 次。另有全片配额 ceil(秒/12)，下限 4。
 CHAPTER_MIN_MOVES_LONG = 3
@@ -149,7 +152,7 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
 
         # ---- 运镜时长与配额 ----
         if intent != "still":
-            span = int(cam.get("dur", 38))
+            span = int(cam.get("dur", C["CAM_DUR"]["std"]))
             if not (CAM_DUR[0] <= span <= CAM_DUR[1]):
                 p1.append({"id": sid, "issue": f"单次运镜 {span} 帧，建议 {CAM_DUR[0]}–{CAM_DUR[1]} 帧"})
             moving = sum(1 for a, b in zip(keys, keys[1:]) if abs(a["s"] - b["s"]) > 1e-6 or abs(a["x"] - b["x"]) > 1e-6 or abs(a["y"] - b["y"]) > 1e-6)

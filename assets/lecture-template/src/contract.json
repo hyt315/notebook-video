@@ -1,0 +1,14 @@
+{
+  "_about": "跨语言常量的唯一来源。TS 用 import C from './contract.json'；Python 用 scripts/contract.py 读同一份。改数值只改这里，两侧同时生效。",
+  "FPS": 30,
+  "CAPTION_MAX_CHARS": 16,
+  "READ_CPS": 4.5,
+  "SAFE_LH": 1.42,
+  "MIN_LABEL_FONT": 13,
+  "CURL_FRAMES": 22,
+  "STAGE": {"w": 1920, "h": 1080, "cx": 960, "cy": 540},
+  "TEXT_ZOOM_MAX": 1.35,
+  "GRAPHIC_ZOOM_MAX": 1.6,
+  "CAM_DUR": {"short": 30, "std": 38, "long": 45},
+  "GROW": {"min": 12, "max": 45, "perChar": 4, "codelineMax": 24, "codelinePerChar": 1.5}
+}

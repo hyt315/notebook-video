@@ -55,7 +55,10 @@ import re
 import sys
 from pathlib import Path
 
-FPS = 30
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
+
+FPS = C["FPS"]
 BEAT_SPOILER_FRAMES = 12   # 3-③：不得早于所属 cue 超过 12 帧（0.4s）
 BEAT_LATE_FRAMES = 8       # G-1③b：允许晚于该句结束的容差（帧）
 # G-1③b 贴边预警：这条容差是**承重墙**不是安全边际。实测（模板）最紧的合法拍
@@ -66,8 +69,8 @@ BEAT_TIGHT_FRAMES = 4      # G-1③b-P1：距上界只剩这么多帧 = 贴边
 BEAT_CLUSTER_FRAMES = 12   # G-5：聚簇窗口
 BEAT_CLUSTER_MAX = 3       # G-5：窗口内 ≥3 个 beat 才算拥挤
 CPS_MAX = 9.0              # G-2：Netflix 中文成人档
-LINE_MAX = 16              # G-2：单行加权字上限
-FONT_FLOOR = 13            # G-3：绝对地板（= components/data.tsx 的 MIN_LABEL_FONT）
+LINE_MAX = C["CAPTION_MAX_CHARS"]  # G-2：单行加权字上限（只共用这个数，计法仍是加权字）
+FONT_FLOOR = C["MIN_LABEL_FONT"]  # G-3：绝对地板（与 components/data.tsx 同读 contract.json）
 FONT_LABEL_MIN = 16        # G-3：标注档
 CONTRAST_TEXT = 4.5        # WCAG 2.2 SC 1.4.3 正文
 CONTRAST_LARGE = 3.0       # 大字号（≥24px 或 ≥18.5px 粗体）
