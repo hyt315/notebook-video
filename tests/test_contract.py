@@ -42,6 +42,9 @@ class ContractTest(unittest.TestCase):
             ("validate-shot-motion", "STAGE_CY", C["STAGE"]["cy"]),
             ("resolve-shots", "STAGE_CX", C["STAGE"]["cx"]),
             ("validate-shot-motion", "CAM_DUR", (C["CAM_DUR"]["short"], C["CAM_DUR"]["long"])),
+            ("validate-shot-motion", "FPS", C["FPS"]),
+            ("validate-shot-motion", "ROT_MAX", C["ORBIT_ROT"]),
+            ("resolve-shots", "DEFAULT_ROT_Y", {"micro-orbit": C["ORBIT_ROT"]}),
         ]
         for mod, attr, want in cases:
             with self.subTest(mod=mod, attr=attr):

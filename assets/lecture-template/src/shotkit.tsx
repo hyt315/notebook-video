@@ -129,7 +129,7 @@ export const shotCam = (intent: ShotIntent, o: IntentOpts): CamKey[] => {
     // 的 expand_cam）第 4 键**保留 rotY**（收尾停在摆到位的角度）。两侧行为不一致，
     // 改哪一侧属行为决策，等用户拍板——拍板前别"顺手对齐"任何一侧。
     case 'micro-orbit':
-      return [head, {f: at, x, y, s: o.from ?? 1, rotY: 0}, {f: at + dur, x, y, s: o.to ?? o.from ?? 1, rotY: o.rotY ?? 6}, {f: holdEnd, x, y, s: o.to ?? o.from ?? 1}];
+      return [head, {f: at, x, y, s: o.from ?? 1, rotY: 0}, {f: at + dur, x, y, s: o.to ?? o.from ?? 1, rotY: o.rotY ?? CONTRACT.ORBIT_ROT}, {f: holdEnd, x, y, s: o.to ?? o.from ?? 1}];
     default:
       return [head, tail];
   }

@@ -6,6 +6,7 @@
   "SAFE_LH": 1.42,
   "MIN_LABEL_FONT": 13,
   "CURL_FRAMES": 22,
+  "ORBIT_ROT": 6,
   "STAGE": {"w": 1920, "h": 1080, "cx": 960, "cy": 540},
   "TEXT_ZOOM_MAX": 1.35,
   "GRAPHIC_ZOOM_MAX": 1.6,

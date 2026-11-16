@@ -48,8 +48,8 @@ DEFAULT_TO = {"establish": 1.03, "push-in": 1.12, "reveal": 1.08, "pull-back": 1
 # pull-back 省略 from 时**只抬 k1**（f=at 那一帧，shotkit.tsx:119 的 `o.from ?? 1.12`：先推近再拉远），
 # head（f=0）仍是 `o.from ?? 1`（shotkit.tsx:108）—— head/k1 默认值不同是 TS 原样行为，照抄。
 DEFAULT_FROM_K1 = {"pull-back": 1.12}
-# micro-orbit 省略 rotY 时 TS 默认 6°（shotkit.tsx:128 的 `rotY: o.rotY ?? 6`）；其余 intent 不用 rotY。
-DEFAULT_ROT_Y = {"micro-orbit": 6.0}
+# micro-orbit 省略 rotY 时用 contract.json 的 ORBIT_ROT（shotkit.tsx 的 `rotY: o.rotY ?? CONTRACT.ORBIT_ROT`）；其余 intent 不用 rotY。
+DEFAULT_ROT_Y = {"micro-orbit": float(C["ORBIT_ROT"])}
 
 
 def expand_cam(cam: dict, duration: int) -> list[dict]:

@@ -32,6 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
 from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
+FPS = C["FPS"]
 STAGE_CX, STAGE_CY = float(C["STAGE"]["cx"]), float(C["STAGE"]["cy"])
 
 # 每个镜头意图的缩放预算（设计空间）。含文字的镜头上限更严，见 TEXT_ZOOM_MAX。
@@ -46,7 +47,7 @@ INTENT_MAX_ZOOM = {
 }
 TEXT_ZOOM_MAX = C["TEXT_ZOOM_MAX"]
 GRAPHIC_ZOOM_MAX = C["GRAPHIC_ZOOM_MAX"]
-ROT_MAX = 6.0  # micro-orbit 的 rotY 上限（度）
+ROT_MAX = float(C["ORBIT_ROT"])  # micro-orbit 的 rotY 上限（度）= shotkit 默认环绕角
 CAM_DUR = (C["CAM_DUR"]["short"], C["CAM_DUR"]["long"])  # 单次运镜时长（帧），references/camera.md#shot-language
 # 每章运镜配额要有时长比例感：短视频章节只有 7 秒时强求 3 次是无意义的。
 # 规则：章节 ≥20 秒 → ≥3 次；否则 ≥1 次。另有全片配额 ceil(秒/12)，下限 4。
@@ -172,14 +173,14 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
         chapters.setdefault(s.get("chapter", "-"), []).append(s)
     for name, group in chapters.items():
         moves = [s for s in group if s.get("cameraIntent", "still") != "still"]
-        seconds = sum(s["duration"] for s in group) / 30.0
+        seconds = sum(s["duration"] for s in group) / FPS
         need = CHAPTER_MIN_MOVES_LONG if seconds >= CHAPTER_LONG_SECONDS else CHAPTER_MIN_MOVES_SHORT
         if len(moves) < need:
             p0.append({"id": f"chapter:{name}", "issue": f"本章（{seconds:.1f}s）仅 {len(moves)} 次运镜，配额 ≥{need}"})
     total_moves = sum(1 for s in shots if s.get("cameraIntent", "still") != "still")
-    film_need = max(4, -(-int(duration) // (FILM_MOVES_MIN_PER_12S * 30)))
+    film_need = max(4, -(-int(duration) // (FILM_MOVES_MIN_PER_12S * FPS)))
     if total_moves < film_need:
-        p0.append({"id": "-", "issue": f"全片仅 {total_moves} 次运镜，按片长 {duration / 30:.1f}s 要求 ≥{film_need} 次"})
+        p0.append({"id": "-", "issue": f"全片仅 {total_moves} 次运镜，按片长 {duration / FPS:.1f}s 要求 ≥{film_need} 次"})
     all_intents = {s.get("cameraIntent", "still") for s in shots}
     if len(all_intents - {"still"}) < 3:
         p0.append({"id": "-", "issue": f"全片仅 {len(all_intents - {'still'})} 种镜头意图（不含 still），要求 ≥3 种"})
