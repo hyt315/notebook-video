@@ -378,7 +378,7 @@ node scripts/notebook-video.mjs showcase PROJECT_DIR --sheet   # 只要接触表
 | 列一份清单 | `Checklist`（带完成态，`toolkit.tsx`） | `StaggerList` | 项 >6 会溢出；`StaggerList` 的 `stagger` 取 12（相邻开始至少 12 帧） |
 | 演示一段流程 | `Corridor` | `PathDraw`（描线生长，`components/`） | 站点 <3 个时改用 `StaggerList` |
 | 一个主体持续演化 | `StageFrame`（≥5 拍） | `Corridor` | 只有 2–3 拍时别用（状态机撑不起来） |
-| 证明"这是官方/真实" | `HighlightCode` 的窗口壳（`components/`） | — | 纯代码路线不做实拍框；能用代码画清的别用实拍（实拍只能走可选生图附加路线） |
+| 证明"这是官方/真实" | `HighlightCode` 的窗口壳（`components/`） | — | 纯代码路线不做实拍框；能用代码画清的别用实拍（需要实拍时用用户提供 / Commons / 授权图片，技能不调用生图模型） |
 | 表现"正在跑/正在写" | `ConsoleWindow` / `HighlightCode` | `Typewriter` | `ConsoleWindow` 一定给 `h`，否则高度由内容撑 |
 | 模拟 AI 对话 / Prompt 交互 | `ChatThread`（`fxkit`） | `Tabs`（多方案对比时，`components/`） | 对话条数建议 2–3 条（1 问 + 1~2 答），避免溢出窗口高度 |
 | 页面形态 | `HighlightCode` 的窗口壳（`components/`） | `ConsoleWindow`（终端形态） | 终端内容用 `ConsoleWindow`；带行号/高亮的代码用 `HighlightCode` |

@@ -424,7 +424,7 @@ Read only what the current production needs. **写任何场景之前，先读前
 > **"一共有哪些件"只查一处：[media.md#media-routing §5.1 组件权威索引](media.md#51-组件权威索引53-件--选型只查这一处)**（53 件逐件：用途 / 何时用 / **何时别用** / 接触表第几页 / 真实使用记录）。
 > `components.md#fxkit` 与 `showcase.tsx` 各自只保留实现细节与接触表版面，**不再维护组件清单**——别从接触表反推"有哪些件"，那里有 10 件根本没上。
 **何时读**（排版前）：[references/scenes.md#canvas-modes](scenes.md#canvas-modes) — 唯一画布 16:9 的锁定参数、手机可读字号地板与纵向预算。
-**何时读**：仅当用户接受了可选的生图附加路线时，读 [references/director.md#visual-director](director.md#visual-director)。
+**何时读**（场景要用真实图片——用户提供 / Commons / 其他授权来源——时）：[references/director.md#visual-director](director.md#visual-director)。技能不调用生图模型。
 **何时读**（组装工程 / 抓 HTML / 跨平台排错时）：[references/scenes.md#official-skills-exemplar](scenes.md#official-skills-exemplar)、[references/media.md#html-capture](media.md#html-capture)、[references/technique.md#cross-platform-compatibility](technique.md#cross-platform-compatibility)、[references/technique.md#windows-compatibility](technique.md#windows-compatibility)。
 
 ### 开工前 20 行授权契约
@@ -739,14 +739,10 @@ environment and never depends on an image-generation model. Follow the
 steps mechanically; the template already contains a working example of
 every pattern named here.
 
-Image generation is an optional add-on, not part of this route. Before
-production, ask the user once whether they want generated support art for
-concrete hero scenes, and tell them plainly: the add-on's quality depends
-entirely on the image-generation model of the current tool, and Codex
-with its built-in image generation is the best-suited environment for it.
-Only if they accept, follow `director.md#visual-director` for
-that subset of scenes. When declined or unavailable, produce everything
-below with SVG only.
+The skill does not call image models. When a concrete hero scene needs a
+real image, take it from the user, Wikimedia Commons / Openverse or another
+licensed source and follow `director.md#visual-director` for that subset of
+scenes; otherwise produce everything below with SVG only.
 
 ### The six rules
 

@@ -456,7 +456,7 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 
 | 类别 | 例子 | 纪律 |
 |---|---|---|
-| ❌ **禁止**（默认路线） | 生图模型 API、生视频模型 API、任何按次计费的生成服务 | 默认路线**绝不用**。它们按调用付费，且同一提示词两次返回不同画面，风格锁不住。仅当用户**主动要求**时，才走 [director.md#visual-director](director.md#visual-director) 那条可选的生图附加路线 |
+| ❌ **禁止**（默认路线） | 生图模型 API、生视频模型 API、任何按次计费的生成服务 | 默认路线**绝不用**。它们按调用付费，且同一提示词两次返回不同画面，风格锁不住。技能不调用它们；需要真实图片时用用户提供 / Commons / 授权图片，见 [director.md#visual-director](director.md#visual-director) |
 | ✅ **允许，且鼓励** | 开源、免费、可被 lock 文件锁死版本的 React 库 | **直接 `import` 用，不需要额外授权、不需要"先证明现有件做不到"**。装已在模板 `package.json` 里，`npm install` 一次到位 |
 | ⚠️ **需授权** | 清单之外的新库 | 先问用户，同意后才加进模板 |
 

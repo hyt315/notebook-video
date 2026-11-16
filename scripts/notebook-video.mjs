@@ -422,7 +422,7 @@ const newProject = async (args) => {
   fs.mkdirSync(path.join(target, 'renders'), {recursive: true});
   console.log(`Created official lecture-template Remotion notebook project (pure code-drawn SVG default): ${target}`);
   console.log(`Theme locked to "${style}". Style contract: references/themes/${style}.md.`);
-  console.log('Multi-zone lecture composition rules: references/scenes.md#lecture-composition. Image generation stays an optional add-on offered separately.');
+  console.log('Multi-zone lecture composition rules: references/scenes.md#lecture-composition. The skill does not call image models; images come from the user, Commons / Openverse or other licensed sources.');
   console.log('Preserve the engine, background, subtitle, chrome, asset gate, audio tree and frame conventions. Replace topic content, visual plan, registered imagery and semantic scene objects.');
   console.log('Narration audio is intentionally not bundled. Generate or supply licensed audio, then run sync before rendering.');
   // 3.3.0：手作皮肤的导演层是必填项，直接说清下一步，别让新用户在门禁前面猜。

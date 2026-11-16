@@ -42,7 +42,7 @@
 ### Visuals
 
 - Background, chapter, header and subtitle match the canonical example.
-- Every scene declares one primary **media kind** (`chart` / `console` / `code` / `graphic` / `text` / `metric`) — 这是默认路线的路由维度。`image-text` 只在用户接受可选的生图附加路线时才出现（见 director.md#visual-director）。
+- Every scene declares one primary **media kind** (`chart` / `console` / `code` / `graphic` / `text` / `metric`) — 这是默认路线的路由维度。`image-text` 只在场景用用户提供 / Commons / 授权图片时才出现（见 director.md#visual-director；技能不调用生图模型）。
 - Concrete subjects use original, supplied or licensed imagery when seeing the subject materially improves comprehension.
 - Generated imagery contains no baked labels, charts, logos or UI text; exact information remains in Remotion.
 - Every raster is registered in `visual-assets.json` with source, prompt/description, crop policy and rights.
@@ -157,9 +157,9 @@ This package contains one official aesthetic track, one canonical project templa
 
 ### Locked production grammar
 
-The system preserves the per-shot restricted camera, subtitle geometry, native 30fps card motion, declarative audio tree, asset gate and final draw order while allowing the scene grammar to follow meaning. Before storyboarding, select one primary **media kind** for each scene (`chart` / `console` / `code` / `graphic` / `text` / `metric` — 默认路线的路由维度，见 media.md#media-routing); `image-text` only applies on the optional visual-director route. Read `director.md#visual-director`.
+The system preserves the per-shot restricted camera, subtitle geometry, native 30fps card motion, declarative audio tree, asset gate and final draw order while allowing the scene grammar to follow meaning. Before storyboarding, select one primary **media kind** for each scene (`chart` / `console` / `code` / `graphic` / `text` / `metric` — 默认路线的路由维度，见 media.md#media-routing); `image-text` only applies when a scene uses a user-supplied / Commons / licensed image; read `director.md#visual-director`.
 
-Generated imagery is an optional input layer. When an authorized image-generation tool is available, use it for concrete subjects and promotional hero shots where it improves comprehension. Keep exact text, arrows, diagrams and timing in Remotion. A project must remain buildable with user-supplied, licensed or native SVG assets when image generation is unavailable.
+Real images are an optional input layer: the skill does not call image models, so images come from the user, Commons / Openverse or other licensed sources, used for concrete subjects where they improve comprehension. Keep exact text, arrows, diagrams and timing in Remotion. A project must remain buildable with native SVG alone.
 
 ### Locked aesthetic core
 
