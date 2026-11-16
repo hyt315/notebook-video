@@ -35,7 +35,7 @@ LINK = re.compile(r'\]\(([^)\s]+)\)')
 PATH = re.compile(r'(?<![\w/.-])((?:\.\./)*references/[\w./-]+?\.(?:md|json))(#[\w\-\u4e00-\u9fff%]+)?')
 for p in files:
     rel = p.relative_to(ROOT).as_posix()
-    if p.suffix not in ('.md', '.py', '.mjs', '.cjs', '.json', '.yaml', '.yml', '.ts', '.tsx', '.txt'): continue
+    if p.suffix not in ('.md', '.py', '.mjs', '.cjs', '.json', '.yaml', '.yml', '.ts', '.tsx', '.txt') and p.name not in ('NOTICE', 'REUSE.toml'): continue
     t = p.read_text(encoding='utf-8', errors='ignore')
     if rel == 'CHANGELOG.md': continue
     if p.suffix == '.md':
