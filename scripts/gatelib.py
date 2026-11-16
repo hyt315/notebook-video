@@ -7,6 +7,7 @@
 两种断言口径别搞混：
   · `must_block` / `must_absent` 要求 **rc != 0**（门必须真的拦）
   · `must_pass` / `must_warn` 要求 **rc == 0**（阴性对照 / 只警告）
+  · `must_quiet:<子串>` 只要求输出**没有**该子串、不看 rc（钉 P1 判据「不许误报」的那一侧）
 只判 rc 会把"因为别的原因失败"记成通过——第一版 P 用例就是这么假通过的。
 """
 import io, json, os, re, shutil, subprocess, sys, tempfile
@@ -54,9 +55,9 @@ def case(name, steps):
         # 于是它因为"链接断了"而失败，根本没测到"文档写了不存在的组件名"）。
         # `must_absent:<子串>` = 必须失败**且**输出里**没有**该子串，用来钉"不许误报"的那一侧。
         kind_base, _sep, arg = kind.partition(':')
-        good = (rc == 0) if kind_base in ('must_pass', 'must_warn') else (rc != 0)
+        good = (rc == 0) if kind_base in ('must_pass', 'must_warn') else True if kind_base == 'must_quiet' else (rc != 0)
         if arg:
-            good = good and (arg not in out if kind_base == 'must_absent' else arg in out)
+            good = good and (arg not in out if kind_base in ('must_absent', 'must_quiet') else arg in out)
         ok = ok and good
         lines = [l.strip() for l in out.split('\n') if l.strip()][:2]
         detail.append(f"    {'PASS' if good else 'FAIL'}  [{kind}] {label}: rc={rc} · {' / '.join(lines)[:230]}")
