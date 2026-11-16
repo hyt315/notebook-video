@@ -288,30 +288,55 @@ const SKIN_WHY = {
 };// 手作皮肤的字幕与正文用 Noto Serif SC Bold（用户字幕规范：96 px@1440 衬线粗体），需要额外字体。
 const SERIF_THEMES = ['journal', 'papercut', 'archive'];
 
-// LXGW WenKai Lite (OFL-1.1) is not stored in the repo (~28 MB). It is downloaded once
-// from the official GitHub release, pinned by version and sha256, into assets/fonts/.
-// Mirror: set NOTEBOOK_VIDEO_FONT_BASE_URL to a folder URL holding the same two files,
-// or copy the two .ttf files into assets/fonts/ by hand.
-const FONT_RELEASE = 'v1.522';
-const FONT_FILES = {
-  'LXGWWenKaiLite-Regular.ttf': '140c99ba4e28e817cec49bf82a0c5fcdc4fe633fb9dfda16d0ee8d59a8545f15',
-  'LXGWWenKaiLite-Medium.ttf': '02eb0f8deed11b00481393f5720630ae1a44424f37f4157ea160a69a1c72a0b6',
+// 字体都不入库，首次用到时下载到 assets/fonts/，按版本与 sha256 锁定。三套字体走同一个表驱动的
+// ensureFontSet：表里写下载地址、镜像环境变量、缺失时怎么办。
+// - LXGW WenKai Lite（OFL-1.1，~28 MB）：正文与字幕，必需，下载失败直接报错。
+// - Noto Serif SC Bold（OFL-1.1，~12 MB）：手作皮肤的标题与字幕，用到时必需。
+// - Clash Display（Indian Type Foundry，ITF Free Font License v2.0）：拉丁标题与数字。许可 §02 禁止经
+//   代码仓库再分发（https://www.fontshare.com/licenses/itf-ffl），所以从 Fontshare CDN 拉。拿不到时
+//   不报错，只打 P1，标题 / 数字走调用处的 'Clash,Space,Kai' 栈回落到 Space Grotesk。
+// 镜像：`mirrorEnv` 指向放着同名文件的目录（serif 的环境变量指向文件本身）；也可以手动把文件放进 assets/fonts/。
+const LXGW_RELEASE = 'v1.522';
+const SERIF_RELEASE = 'Serif2.003';
+const SERIF_FILE = 'NotoSerifSC-Bold.otf';
+const FONT_SETS = {
+  lxgw: {
+    label: `LXGW WenKai Lite ${LXGW_RELEASE}, OFL-1.1`,
+    mirrorEnv: 'NOTEBOOK_VIDEO_FONT_BASE_URL',
+    url: (name) => `https://github.com/lxgw/LxgwWenKai-Lite/releases/download/${LXGW_RELEASE}/${name}`,
+    files: {
+      'LXGWWenKaiLite-Regular.ttf': '140c99ba4e28e817cec49bf82a0c5fcdc4fe633fb9dfda16d0ee8d59a8545f15',
+      'LXGWWenKaiLite-Medium.ttf': '02eb0f8deed11b00481393f5720630ae1a44424f37f4157ea160a69a1c72a0b6',
+    },
+    manual: (name, dir) => `Download ${name} (${LXGW_RELEASE}) manually from https://github.com/lxgw/LxgwWenKai-Lite/releases and put it in ${dir}, or set NOTEBOOK_VIDEO_FONT_BASE_URL to a mirror.`,
+  },
+  serif: {
+    label: `Noto Serif CJK ${SERIF_RELEASE}, OFL-1.1`,
+    mirrorEnv: 'NOTEBOOK_VIDEO_SERIF_URL',
+    mirrorIsFile: true,
+    url: (name) => `https://github.com/notofonts/noto-cjk/raw/${SERIF_RELEASE}/Serif/SubsetOTF/SC/${name}`,
+    files: {[SERIF_FILE]: '24693d48bdb9152f0a06b02af625638a1097abd6de4010ebba027f6e82710527'},
+    manual: (name, dir) => `Download ${name} from https://github.com/notofonts/noto-cjk (tag ${SERIF_RELEASE}, Serif/SubsetOTF/SC/) and put it in ${dir}, or set NOTEBOOK_VIDEO_SERIF_URL to a mirror.`,
+  },
+  clash: {
+    label: 'Clash Display, ITF Free Font License, via Fontshare',
+    mirrorEnv: 'NOTEBOOK_VIDEO_CLASH_BASE_URL',
+    optional: true,
+    url: (name) => `https://cdn.fontshare.com/wf/${CLASH_CDN_PATHS[name]}`,
+    files: {
+      'ClashDisplay-Medium.woff2': '6de911fc824613ef7325c617b359262bedba2dd6499e7e93794fc9414ca24960',
+      'ClashDisplay-Semibold.woff2': 'e748ea11c49f39ae2375dce4fbda8dc971c5ca8b64ac8a838b5daba96f61a10a',
+      'ClashDisplay-Bold.woff2': '532795f825c5a28b807c0323e27939c638e6289d5870c05b962b6c0916407476',
+    },
+    onMissing: (missing, dir) => console.log(`P1 Clash Display 未能下载（${missing.join(', ')}）：标题与数字将回落到 Space Grotesk。联网后重跑 node scripts/notebook-video.mjs fonts，或从 https://www.fontshare.com/fonts/clash-display 下载后放进 ${dir}（也可设 NOTEBOOK_VIDEO_CLASH_BASE_URL 指向镜像）。`),
+  },
 };
-const ensureFonts = async () => {
-  const fontDir = path.join(SKILL_DIR, 'assets', 'fonts');
-  fs.mkdirSync(fontDir, {recursive: true});
-  const base = (process.env.NOTEBOOK_VIDEO_FONT_BASE_URL || `https://github.com/lxgw/LxgwWenKai-Lite/releases/download/${FONT_RELEASE}`).replace(/\/+$/, '');
-  for (const [name, sha] of Object.entries(FONT_FILES)) {
-    const file = path.join(fontDir, name);
-    if (fs.existsSync(file) && hashFile(file) === sha) continue;
-    const url = `${base}/${name}`;
-    console.log(`Downloading font ${name} (LXGW WenKai Lite ${FONT_RELEASE}, OFL-1.1) from ${url}`);
-    const err = await downloadPinned(url, file, sha);
-    if (err === 'fetch') fail(`Font download failed: ${url}\nDownload ${name} (${FONT_RELEASE}) manually from https://github.com/lxgw/LxgwWenKai-Lite/releases and put it in ${fontDir}, or set NOTEBOOK_VIDEO_FONT_BASE_URL to a mirror.`);
-    if (err === 'sha') fail(`Font checksum mismatch for ${name}; expected ${FONT_RELEASE} sha256 ${sha}.`);
-  }
-  return fontDir;
+const CLASH_CDN_PATHS = {
+  'ClashDisplay-Medium.woff2': '2GQIT54GKQY3JRFTSHS4ARTRNRQISSAA/3CIP5EBHRRHE5FVQU3VFROPUERNDSTDF/JTSL5QESUXATU47LCPUNHZQBDDIWDOSW.woff2',
+  'ClashDisplay-Semibold.woff2': 'FPDAZ2S6SW4QMSRIIKNNGTPM6VIXYMKO/5HNPQ453FRLIQWV2FNOBUU3FKTDZQVSG/Z3MGHFHX6DCTLQ55LJYRJ5MDCZPMFZU6.woff2',
+  'ClashDisplay-Bold.woff2': 'BFBSY7LX5W2U2EROCLVVTQP4VS7S4PC3/IIUX4FGTMD2LK2VWD3RVTAS4SSMUN7B5/53RZKGODFYDW3QHTIL7IPOWTBCSUEZK7.woff2',
 };
+const FONT_DIR = path.join(SKILL_DIR, 'assets', 'fonts');
 
 // 多个进程同时下载同一个字体（如 check-examples -j 2）时，各写各的临时文件，谁先落盘都行。
 const partPath = (file) => `${file}.${process.pid}.${Date.now()}.part`;
@@ -323,7 +348,6 @@ const commitPart = (tmp, file, sha) => {
 };
 
 // 按 URL 下载一个字体文件，sha256 不符就丢弃。返回 null = 成功，'fetch' = 下载失败，'sha' = 校验失败。
-// LXGW 与 Clash Display 共用这一条下载路径。
 const downloadPinned = async (url, file, sha) => {
   let res;
   try { res = await fetch(url, {redirect: 'follow'}); } catch (error) { res = null; }
@@ -335,32 +359,30 @@ const downloadPinned = async (url, file, sha) => {
   return null;
 };
 
-// 3.6.0：Clash Display（Indian Type Foundry，ITF Free Font License v2.0）不入库 —— 许可 §02 禁止经
-// 代码仓库再分发字体文件（https://www.fontshare.com/licenses/itf-ffl）。与 LXGW 一样首次用到时下载：
-// 从 Fontshare CDN 按 sha256 锁定拉到 assets/fonts/ 缓存，再拷进工程 public/fonts/。
-// 镜像：NOTEBOOK_VIDEO_CLASH_BASE_URL 指向放着同名三个 .woff2 的目录。
-// 离线拿不到时**不报错**：只打 P1 提示，标题/数字走调用处的 'Clash,Space,Kai' 栈回落到 Space Grotesk。
-const CLASH_CDN = 'https://cdn.fontshare.com/wf';
-const CLASH_FILES = {
-  'ClashDisplay-Medium.woff2': ['2GQIT54GKQY3JRFTSHS4ARTRNRQISSAA/3CIP5EBHRRHE5FVQU3VFROPUERNDSTDF/JTSL5QESUXATU47LCPUNHZQBDDIWDOSW.woff2', '6de911fc824613ef7325c617b359262bedba2dd6499e7e93794fc9414ca24960'],
-  'ClashDisplay-Semibold.woff2': ['FPDAZ2S6SW4QMSRIIKNNGTPM6VIXYMKO/5HNPQ453FRLIQWV2FNOBUU3FKTDZQVSG/Z3MGHFHX6DCTLQ55LJYRJ5MDCZPMFZU6.woff2', 'e748ea11c49f39ae2375dce4fbda8dc971c5ca8b64ac8a838b5daba96f61a10a'],
-  'ClashDisplay-Bold.woff2': ['BFBSY7LX5W2U2EROCLVVTQP4VS7S4PC3/IIUX4FGTMD2LK2VWD3RVTAS4SSMUN7B5/53RZKGODFYDW3QHTIL7IPOWTBCSUEZK7.woff2', '532795f825c5a28b807c0323e27939c638e6289d5870c05b962b6c0916407476'],
-};
-const ensureClash = async () => {
-  const fontDir = path.join(SKILL_DIR, 'assets', 'fonts');
-  fs.mkdirSync(fontDir, {recursive: true});
-  const mirror = (process.env.NOTEBOOK_VIDEO_CLASH_BASE_URL || '').replace(/\/+$/, '');
+// 补齐一套字体，返回 assets/fonts/ 目录。必需的字体下载失败直接 fail；可选的（optional）只调 onMissing。
+const ensureFontSet = async (id) => {
+  const set = FONT_SETS[id];
+  fs.mkdirSync(FONT_DIR, {recursive: true});
+  const mirror = (process.env[set.mirrorEnv] || '').replace(/\/+$/, '');
   const missing = [];
-  for (const [name, [cdnPath, sha]] of Object.entries(CLASH_FILES)) {
-    const file = path.join(fontDir, name);
+  for (const [name, sha] of Object.entries(set.files)) {
+    const file = path.join(FONT_DIR, name);
     if (fs.existsSync(file) && hashFile(file) === sha) continue;
-    const url = mirror ? `${mirror}/${name}` : `${CLASH_CDN}/${cdnPath}`;
-    console.log(`Downloading font ${name} (Clash Display, ITF Free Font License, via Fontshare) from ${url}`);
-    if (await downloadPinned(url, file, sha)) missing.push(name);
+    const url = !mirror ? set.url(name) : set.mirrorIsFile ? mirror : `${mirror}/${name}`;
+    console.log(`Downloading font ${name} (${set.label}) from ${url}`);
+    const err = await downloadPinned(url, file, sha);
+    if (!err) continue;
+    if (set.optional) { missing.push(name); continue; }
+    if (err === 'fetch') fail(`Font download failed: ${url}\n${set.manual(name, FONT_DIR)}`);
+    fail(`Font checksum mismatch for ${name}; expected ${set.label} sha256 ${sha}.`);
   }
-  if (missing.length) console.log(`P1 Clash Display 未能下载（${missing.join(', ')}）：标题与数字将回落到 Space Grotesk。联网后重跑 node scripts/notebook-video.mjs fonts，或从 https://www.fontshare.com/fonts/clash-display 下载后放进 ${fontDir}（也可设 NOTEBOOK_VIDEO_CLASH_BASE_URL 指向镜像）。`);
-  return fontDir;
+  if (missing.length) set.onMissing(missing, FONT_DIR);
+  return FONT_DIR;
 };
+const ensureFonts = () => ensureFontSet('lxgw');
+const ensureSerif = () => ensureFontSet('serif');
+const ensureClash = () => ensureFontSet('clash');
+const CLASH_FILES = FONT_SETS.clash.files;
 const ensureProjectClash = async (project) => {
   const dest = path.join(project, 'public', 'fonts');
   const missing = Object.keys(CLASH_FILES).filter((n) => !fs.existsSync(path.join(dest, n)));
@@ -394,28 +416,6 @@ const ensureProjectFonts = async (project) => {
     fs.copyFileSync(path.join(dir, SERIF_FILE), path.join(project, 'public', SERIF_FILE));
     console.log(`已补标题字体到工程 public/：${SERIF_FILE}（Noto Serif SC · OFL-1.1）`);
   }
-};
-
-// Noto Serif SC Bold（OFL-1.1，~12 MB，SC 子集 OTF）同样按需下载、按版本与 sha256 锁定，不入库。
-// 镜像：NOTEBOOK_VIDEO_SERIF_URL 指向同一个文件。
-const SERIF_RELEASE = 'Serif2.003';
-const SERIF_FILE = 'NotoSerifSC-Bold.otf';
-const SERIF_SHA = '24693d48bdb9152f0a06b02af625638a1097abd6de4010ebba027f6e82710527';
-const ensureSerif = async () => {
-  const fontDir = path.join(SKILL_DIR, 'assets', 'fonts');
-  fs.mkdirSync(fontDir, {recursive: true});
-  const file = path.join(fontDir, SERIF_FILE);
-  if (fs.existsSync(file) && hashFile(file) === SERIF_SHA) return fontDir;
-  const url = process.env.NOTEBOOK_VIDEO_SERIF_URL || `https://github.com/notofonts/noto-cjk/raw/${SERIF_RELEASE}/Serif/SubsetOTF/SC/${SERIF_FILE}`;
-  console.log(`Downloading font ${SERIF_FILE} (Noto Serif CJK ${SERIF_RELEASE}, OFL-1.1) from ${url}`);
-  let res;
-  try { res = await fetch(url, {redirect: 'follow'}); } catch (error) { res = null; }
-  if (!res || !res.ok) fail(`Font download failed: ${url}\nDownload ${SERIF_FILE} from https://github.com/notofonts/noto-cjk (tag ${SERIF_RELEASE}, Serif/SubsetOTF/SC/) and put it in ${fontDir}, or set NOTEBOOK_VIDEO_SERIF_URL to a mirror.`);
-  const tmp = partPath(file);
-  fs.writeFileSync(tmp, Buffer.from(await res.arrayBuffer()));
-  if (hashFile(tmp) !== SERIF_SHA) { fs.rmSync(tmp, {force: true}); fail(`Font checksum mismatch for ${SERIF_FILE}; expected ${SERIF_RELEASE} sha256 ${SERIF_SHA}.`); }
-  commitPart(tmp, file, SERIF_SHA);
-  return fontDir;
 };
 
 

@@ -57,7 +57,8 @@ def reusable_file(path: Path) -> bool:
 # ---------------------------------------------------------------------------
 DOC_IDENT_SKIP_FILES = {"CHANGELOG.md", "CHANGELOG-legacy.md"}
 DOC_IDENT_WHITELIST = {
-    "NOTEBOOK_VIDEO_FONT_BASE_URL",  # env var read in scripts/notebook-video.mjs (ensureFonts)
+    # 字体镜像环境变量：scripts/notebook-video.mjs 的 FONT_SETS 按表读 process.env[mirrorEnv]
+    "NOTEBOOK_VIDEO_FONT_BASE_URL", "NOTEBOOK_VIDEO_SERIF_URL", "NOTEBOOK_VIDEO_CLASH_BASE_URL",
     # 平台 / 框架 API（Remotion、React、Web）
     'Composition', 'Sequence', 'Series', 'AbsoluteFill', 'Audio', 'Video', 'Img', 'Still', 'Player',
     'DelayRender', 'ContinueRender', 'CancelRender', 'Interpolate', 'Spring', 'Easing', 'Random',
