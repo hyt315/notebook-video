@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,8 @@ SCRIPTS = ROOT / "scripts"
 TTS = SCRIPTS / "tts.py"
 COMPOSE = SCRIPTS / "compose-story.py"
 FFMPEG = shutil.which("ffmpeg")
+# 这些用例测「按字数均分」那条路：本机就算装了 faster-whisper 也不让它下载模型、改变结果。
+NO_WHISPER = {**os.environ, "NV_WHISPER": "off"}
 
 sys.path.insert(0, str(SCRIPTS))
 import narration_contract as nc  # noqa: E402
@@ -84,7 +87,7 @@ class StaleGateTest(unittest.TestCase):
         return project
 
     def _run(self, project: Path, *flags: str) -> subprocess.CompletedProcess[str]:
-        return subprocess.run([sys.executable, str(TTS), str(project), "--engine=file", *flags],
+        return subprocess.run([sys.executable, str(TTS), str(project), "--engine=file", *flags], env=NO_WHISPER,
                               capture_output=True, text=True, encoding="utf-8",
                               errors="replace", timeout=180)
 

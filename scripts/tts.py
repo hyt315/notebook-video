@@ -13,8 +13,9 @@
 引擎：
   · edge  微软 Edge 在线语音（pip install edge-tts；需要联网）。词级时间来自 WordBoundary。
   · file  用户自备录音 / 别家 TTS：把音频放到 audio/narration.mp3，再跑本脚本。
-          没有词级对齐时按字数均分（estimated=true，标点也占时长）——字幕仍按这个估计时间排，
-          只能大致对上，正式交付请用 edge 引擎或自己对时间。
+          装了 faster-whisper（可选，pip install faster-whisper）时自动按台词做词级对齐
+          （engine=file+faster-whisper，estimated=false）；没装、设了 NV_WHISPER=off、或识别结果
+          与台词对不上时按字数均分（estimated=true，标点也占时长），字幕只能大致对上。
 
 失败一律 rc=3 并给出**两条可走的路**（装 edge-tts / 换 --engine=file），
 不许悄悄退回静音占位——那正是旧版"成片没人说话"的来源。
@@ -141,7 +142,83 @@ def audio_duration_ms(path: Path) -> int | None:
         return None
 
 
-def synth_file(project: Path, lines: list[str]) -> tuple[list[dict], str]:
+def even_split(chars: list[str], total_ms: int) -> list[dict]:
+    """没有对齐时的估计：留 200ms 尾部，其余按字数均分（标点也占时长）。"""
+    usable = max(1, total_ms - 200)
+    return [{"part": ch, "start": round(usable * i / len(chars)), "end": round(usable * (i + 1) / len(chars))}
+            for i, ch in enumerate(chars)]
+
+
+def whisper_words(audio: Path, prompt: str) -> list[tuple[str, int, int]] | None:
+    """可选：faster-whisper（MIT，pip install faster-whisper）识别出的词级时间，摊成逐字 (字, 起, 止) 毫秒。
+
+    没装、或设了 NV_WHISPER=off 时返回 None（调用方退回均分）。模型名取 NV_WHISPER_MODEL，默认 small；
+    第一次用会自动下载模型。
+    """
+    import os
+    if os.environ.get("NV_WHISPER", "").lower() in ("0", "off", "no", "false"):
+        return None
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError:
+        return None
+    model = WhisperModel(os.environ.get("NV_WHISPER_MODEL", "small"), device="auto", compute_type="int8")
+    segments, _info = model.transcribe(str(audio), language="zh", word_timestamps=True,
+                                       initial_prompt=prompt[:200], vad_filter=False)
+    out: list[tuple[str, int, int]] = []
+    for seg in segments:
+        for w in seg.words or []:
+            text = [c for c in str(w.word) if not c.isspace()]
+            a, b = round(float(w.start) * 1000), round(float(w.end) * 1000)
+            for i, ch in enumerate(text):  # 一个识别词里的字按字数均分它的时间
+                out.append((ch, a + (b - a) * i // len(text), a + (b - a) * (i + 1) // len(text)))
+    return out
+
+
+def align_to_script(chars: list[str], heard: list[tuple[str, int, int]], total_ms: int,
+                    min_ratio: float = 0.6) -> list[dict] | None:
+    """台词是已知的：用 difflib 把台词逐字对到识别结果上，对上的字取识别时间，
+    没对上的字（标点、识别错字）在前后两个已对上的字之间均分。
+    对上的「读出来的字」不到 min_ratio 时返回 None（录音和台词对不上，交给均分并提示）。"""
+    import difflib
+    spoken_idx = [i for i, c in enumerate(chars) if spoken(c)]
+    if not heard or not spoken_idx:
+        return None
+    a = "".join(chars[i] for i in spoken_idx)
+    b = "".join(h[0] for h in heard)
+    times: dict[int, tuple[int, int]] = {}
+    for blk in difflib.SequenceMatcher(None, a, b, autojunk=False).get_matching_blocks():
+        for k in range(blk.size):
+            _, s, e = heard[blk.b + k]
+            times[spoken_idx[blk.a + k]] = (s, e)
+    if len(times) < min_ratio * len(spoken_idx):
+        return None
+    words: list[dict] = []
+    i, prev_end = 0, 0
+    while i < len(chars):
+        if i in times:
+            s, e = times[i]
+            s = max(s, prev_end)
+            e = max(e, s)
+            words.append({"part": chars[i], "start": s, "end": e})
+            prev_end = e
+            i += 1
+            continue
+        j = i  # 一段没对上的字：[i, j)，夹在 prev_end 和下一个对上的字的起点之间
+        while j < len(chars) and j not in times:
+            j += 1
+        nxt = max(prev_end, times[j][0] if j < len(chars) else max(prev_end, total_ms - 200))
+        n = j - i
+        for k in range(n):
+            words.append({"part": chars[i + k], "start": prev_end + (nxt - prev_end) * k // n,
+                          "end": prev_end + (nxt - prev_end) * (k + 1) // n})
+        prev_end = nxt
+        i = j
+    return words
+
+
+def synth_file(project: Path, lines: list[str]) -> tuple[list[dict], str, bool]:
+    """自备音频。返回 (词级时间, 引擎名, 是否估计)。装了 faster-whisper 就按台词对齐，否则按字数均分。"""
     audio = project / "audio" / "narration.mp3"
     if not audio.is_file() or audio.stat().st_size == 0:
         raise RuntimeError(
@@ -156,14 +233,13 @@ def synth_file(project: Path, lines: list[str]) -> tuple[list[dict], str]:
     chars = [c for c in text if not c.isspace()]
     if not chars:
         raise RuntimeError("narration.txt 是空的：先写每行一句的旁白")
-    # 留 200ms 尾部，其余按字数均分
-    usable = max(1, total - 200)
-    words = []
-    for i, ch in enumerate(chars):
-        a = round(usable * i / len(chars))
-        b = round(usable * (i + 1) / len(chars))
-        words.append({"part": ch, "start": a, "end": b})
-    return words, "file"
+    heard = whisper_words(audio, text)
+    if heard is not None:
+        aligned = align_to_script(chars, heard, total)
+        if aligned is not None:
+            return aligned, "file+faster-whisper", False
+        print("⚠ faster-whisper 识别结果和 narration.txt 对不上（对上的字不到六成），退回按字数均分。", file=sys.stderr)
+    return even_split(chars, total), "file", True
 
 
 def main() -> int:
@@ -228,8 +304,7 @@ def main() -> int:
             words = merge_punctuation(words, source)
             estimated = False
         else:
-            words, engine = synth_file(project, lines)
-            estimated = True
+            words, engine, estimated = synth_file(project, lines)
     except RuntimeError as e:
         return fail(f"✗ TTS 没有完成：{e}")
     words_p = project / "audio" / "narration.mp3.json"

@@ -27,7 +27,7 @@ TTS（可插拔）、字幕断句与定时、语义音效库与闪避。
 
 ### Status
 
-The skill ships `scripts/tts.py`: `notebook-video tts <project>` uses **edge-tts** (detected at run time, not bundled; install with `pip install edge-tts`) or `--engine=file` for your own recording. edge-tts calls Microsoft's online speech service, so it needs network access and its output is subject to that service's terms — check them yourself before publishing commercially. `--engine=file` has no word timing: it spreads the audio evenly over the characters (punctuation included), so captions are only approximately aligned. Hand-written projects get their captions rebuilt automatically after `tts` . The provider-neutral contract below still applies if you use another provider.
+The skill ships `scripts/tts.py`: `notebook-video tts <project>` uses **edge-tts** (detected at run time, not bundled; install with `pip install edge-tts`) or `--engine=file` for your own recording. edge-tts calls Microsoft's online speech service, so it needs network access and its output is subject to that service's terms — check them yourself before publishing commercially. `--engine=file`: if the optional `faster-whisper` package is installed (`pip install faster-whisper`), the recording is transcribed with word timestamps and matched character by character against `narration.txt` (the script is known, so only the times are taken from recognition; unmatched characters are interpolated). Without it — or with `NV_WHISPER=off`, or when fewer than 60% of spoken characters match — the audio is spread evenly over the characters (punctuation included), so captions are only approximately aligned; `audio/narration.meta.json` then says `estimated: true`. Hand-written projects get their captions rebuilt automatically after `tts` . The provider-neutral contract below still applies if you use another provider.
 
 ### Provider-neutral TTS contract
 
@@ -95,7 +95,7 @@ Why not mtime: re-saving an old draft makes it *newer* than `narration.txt` and 
 - Writing narration by hand: pass `--allow-stale`; it prints a loud notice and records `allow_stale: true` in `narration.meta.json`.
 - Projects without a contract keep the old mtime check as a fallback and say so.
 - `narration.meta.json` records `text_sha256`, `timeline` (`measured` / `estimated`), voice, rate and any backup path, so the audio itself is traceable to a text version.
-- `--engine=file` only has **estimated** timings (evenly divided by character count). It refuses to overwrite an existing measured timeline unless you add `--force-estimate`, and any rewrite is backed up to `narration.mp3.json.bak-<timestamp>` and logged.
+- `--engine=file` without faster-whisper only has **estimated** timings (evenly divided by character count). It refuses to overwrite an existing measured timeline unless you add `--force-estimate`, and any rewrite is backed up to `narration.mp3.json.bak-<timestamp>` and logged.
 - When compose rewrites `narration.txt` while an older audio exists, it prints a hint: the subtitles follow the new text but the voice is still the previous take.
 
 ### Standard delivery pace

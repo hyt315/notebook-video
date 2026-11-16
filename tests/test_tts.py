@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -19,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 TTS = ROOT / "scripts" / "tts.py"
 COMPOSE = ROOT / "scripts" / "compose-story.py"
 FFMPEG = shutil.which("ffmpeg")
+# 这些用例测「按字数均分」那条路：本机就算装了 faster-whisper 也不让它下载模型、改变结果。
+NO_WHISPER = {**os.environ, "NV_WHISPER": "off"}
 
 
 def load_compose():
@@ -40,7 +43,7 @@ class TtsFileEngine(unittest.TestCase):
             subprocess.run([FFMPEG, "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi",
                             "-i", "anullsrc=r=48000:cl=mono", "-t", "3", "-q:a", "9",
                             str(project / "audio" / "narration.mp3")], check=True, timeout=60)
-            r = subprocess.run([sys.executable, str(TTS), str(project), "--engine=file"],
+            r = subprocess.run([sys.executable, str(TTS), str(project), "--engine=file"], env=NO_WHISPER,
                                capture_output=True, text=True, timeout=120)
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             words = json.loads((project / "audio" / "narration.mp3.json").read_text(encoding="utf-8"))
@@ -54,7 +57,7 @@ class TtsFileEngine(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             project = Path(td)
             (project / "narration.txt").write_text("一句话。\n", encoding="utf-8")
-            r = subprocess.run([sys.executable, str(TTS), str(project), "--engine=file"],
+            r = subprocess.run([sys.executable, str(TTS), str(project), "--engine=file"], env=NO_WHISPER,
                                capture_output=True, text=True, timeout=60)
             self.assertEqual(r.returncode, 3)
             self.assertIn("两条路", r.stderr)
@@ -81,7 +84,7 @@ class HandwrittenCaptionRebuild(unittest.TestCase):
     def test_handwritten_rebuilds_cues(self):
         with tempfile.TemporaryDirectory() as td:
             project = self._project(td, fusion=False)
-            r = subprocess.run([sys.executable, str(TTS), str(project), "--engine=file"],
+            r = subprocess.run([sys.executable, str(TTS), str(project), "--engine=file"], env=NO_WHISPER,
                                capture_output=True, text=True, timeout=120)
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             self.assertIn("已按词级时间重建字幕", r.stdout)
@@ -96,7 +99,7 @@ class HandwrittenCaptionRebuild(unittest.TestCase):
             project = self._project(td, fusion=False)
             (project / "src").mkdir()
             (project / "src" / "caption-cues.json").write_text("{}", encoding="utf-8")
-            r = subprocess.run([sys.executable, str(TTS), str(project), "--engine=file"],
+            r = subprocess.run([sys.executable, str(TTS), str(project), "--engine=file"], env=NO_WHISPER,
                                capture_output=True, text=True, timeout=120)
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             self.assertEqual((project / "manifests" / "caption-cues.json").read_bytes(),
@@ -105,7 +108,7 @@ class HandwrittenCaptionRebuild(unittest.TestCase):
     def test_auto_project_is_left_alone(self):
         with tempfile.TemporaryDirectory() as td:
             project = self._project(td, fusion=True)
-            r = subprocess.run([sys.executable, str(TTS), str(project), "--engine=file"],
+            r = subprocess.run([sys.executable, str(TTS), str(project), "--engine=file"], env=NO_WHISPER,
                                capture_output=True, text=True, timeout=120)
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             self.assertNotIn("重建字幕", r.stdout, "auto 工程由 compose 重排，不该在这里重建")
