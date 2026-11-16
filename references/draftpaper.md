@@ -12,7 +12,7 @@
 
 ## 出现规则（草稿纸讲解）
 
-**草稿纸讲解**：画面像一张边讲边写的草稿纸——讲到哪，长到哪。画面上没有笔，也不要求什么都画成线稿；组件、图片、文字照常用。这份规则只管**什么时候出现、怎么出现**。
+**草稿纸讲解**：画面像一张边讲边写的草稿纸——讲到哪，长到哪（没有笔，也不要求都画成线稿；组件、图片、文字照常用）。本节只管**什么时候出现、怎么出现**；更细的阈值见 [§1](#draftpaper-design)。
 
 **四条规则**
 
@@ -44,25 +44,23 @@
 
 **手写场景路线**：用 `enterAt(f, at(n))` 把每个元素绑到讲到它的那一句；同一句里多个元素写成 `at(n) + i * 12`；不要在开镜第 0 帧摆好东西。
 
-**怎么量**：`python scripts/measure-reveal.py <工程> [renders/preview-*.mp4]`。静态部分看 `same`（同帧开始，应为 1）、`gap`（相邻开始间隔，应 ≥12）、`conc`（同时在长，应 ≤2）、`pre`（开镜预铺，应 ≤1）；给了预览视频还会算**镜内生长比 G**（每镜最后一帧的内容里，有多少是开镜 0.8 秒后才长出来的）：每镜 ≥0.45、中位 ≥0.60 算合格，中位 ≥0.75 算好。只报告，不拦。
+**怎么量**：`python scripts/measure-reveal.py <工程> [renders/preview-*.mp4]`。静态看 `same`（同帧开始，应为 1）、`gap`（相邻开始间隔，应 ≥12）、`conc`（同时在长，应 ≤2）、`pre`（开镜预铺，应 ≤1）；给了预览视频还算**镜内生长比 G**（每镜最后一帧的内容里，开镜 0.8 秒后才长出来的占比）：每镜 ≥0.45、中位 ≥0.60 合格，中位 ≥0.75 算好。只报告，不拦。
 
-更完整的目标规则（全片一张纸、跟随生长的镜头、出现注册表门禁）另有专门规则，见 [components.md#journal-page](components.md#journal-page)。
-
-版式、配色与组件搭配见 [draftpaper.md#draftpaper-design](draftpaper.md#draftpaper-design)。
+全片一张纸、跟随生长的镜头、出现注册表门禁等目标规则见 [components.md#journal-page](components.md#journal-page)；版式、配色与组件搭配见 [draftpaper.md#draftpaper-design](draftpaper.md#draftpaper-design)。
 
 <a id="draftpaper-design"></a>
 
 ## 草稿纸讲解 · 设计规范
 
-「草稿纸」指的是**讲述方式和出现方式**：画面上没有笔，也不要求笔迹；组件、图片、文字照常用；所有东西讲到哪长到哪，和旁白同步，不整块弹出；版式和搭配要帮人理解，也要好看。时间单位为 30 fps 下的帧（f），空间为设计坐标 1920×1080 下的 px。
+「草稿纸」指**讲述与出现方式**（见 [reveal-rules](#reveal-rules)）；版式和搭配要帮人理解，也要好看。时间单位为 30 fps 下的帧（f），空间为设计坐标 1920×1080 下的 px。
 
 ### 1. 出现规则
 
 1. **绑词**【引擎保证】：每样东西从讲到它的那句话开始出现，不提前。文字、数字在所讲词头前 4 帧开始；引线在词头前 6 帧，标签在引线完成后接上；线稿最早在词头前 20 帧开始，60% 的笔画在该词结束前完成；结论印章、勾在最后一个音节处。
-2. **本句、本镜长完**【引擎保证】：每样东西在切镜前 4 帧长完；放不下时先把展开压到 12 帧，仍放不下就删元素或拆镜。说完一句之后才开始出现的东西，应当属于下一句。
-3. **长出来，不整块**【引擎保证】：文字、卡片、清单项、代码行左→右展开；线稿一个部位一个部位描出（外轮廓 → 内部 → 细节，底座最后）；方框、圆圈、下划线、箭头沿路径描出；字先描轮廓再填色。不用透明度、缩放、位移做出现。单个元素单帧进度增量 ≤0.35。只有证据类照片、截图可以「贴」（整件 10–14 帧落下），每镜 ≤1 次，面积 ≤画面 30%，也要等讲到它。
-4. **不扎堆**【引擎保证】：同一时刻最多 2 样东西在长；同一镜里相邻两样东西开始出现至少隔 12 帧（0.4 秒）；一组同类小东西（几根柱、几个格、几个点）算 1 样，组内错开 2–3 帧，整组 ≤45 帧。
-5. **不预铺**【引擎保证（auto）/ 作者遵守（手写）】：切进新镜时纸上只有已经讲过的东西；开镜 6 帧内最多 1 样东西开始出现；不先摆空框、灰色占位条、空心圈再往里填。
+2. **本句、本镜长完**【引擎保证】：切镜前 4 帧长完（压缩与拆镜同 [规则 1](#reveal-rules)）。说完一句之后才开始出现的东西，应当属于下一句。
+3. **长出来，不整块**【引擎保证】：展开 / 描出同 [规则 2](#reveal-rules)；线稿顺序外轮廓 → 内部 → 细节，底座最后；字先描轮廓再填色。不用透明度、缩放、位移做出现。单个元素单帧进度增量 ≤0.35。只有证据类照片、截图可以「贴」（整件 10–14 帧落下），每镜 ≤1 次，面积 ≤画面 30%，也要等讲到它。
+4. **不扎堆**【引擎保证】：同时 ≤2 样在长、相邻开始 ≥12 帧（同 [规则 3](#reveal-rules)）；一组同类小东西（几根柱、几个格、几个点）算 1 样，组内错开 2–3 帧，整组 ≤45 帧。
+5. **不预铺**【引擎保证（auto）/ 作者遵守（手写）】：同 [规则 4](#reveal-rules)（开镜 6 帧内最多 1 样开始）；不先摆空框、灰色占位条、空心圈再往里填。
 6. **标注在后**【引擎保证】：圈、下划线、箭头在它标的东西长完 2 帧后才开始；每句 ≤1 次强调，每镜 ≤3 次；多步组合按「荧光 → 圈 → 箭头 → 批注字」，相邻间隔 2–6 帧。
 7. **改错留痕**【作者遵守】：错值用灰色正常写出 → 「不对」词头后 1 帧划一道近水平删除线（7 帧，≤10°，覆盖 120% 字宽）→ 停 ≥6 帧 → 在旁边用强调色写对的值 → 回头圈。错值留在纸上，不擦、不淡出、不原地变形。
 8. **停顿与呼吸**【作者遵守】：句间 ≥9 帧不长新东西；一组意思结束 12–18 帧；关键结论后「想一想」24–36 帧、镜头不动；讲解中任意 36 帧内至少有一样东西在长（刻意呼吸 ≤60 帧、每镜 ≤1 次）；结尾停留 36–60 帧。
@@ -111,13 +109,13 @@
 
 ### 5. 怎么量
 
-`python scripts/measure-reveal.py <工程> [renders/preview-*.mp4]`：静态看 `same`（应为 1）、`gap`（应 ≥12）、`conc`（应 ≤2）、`pre`（应 ≤1）；给了预览还会算每镜生长比 G（≥0.45 合格、中位 ≥0.60，模板目标每镜 ≥0.60、中位 ≥0.80）。只报告，不拦。compose 的「才长完」「纸上 … 有 N 字」两类提示要清零。
+同 [reveal-rules](#reveal-rules) 的 `measure-reveal.py`（合格线相同）；模板目标更高：每镜 G ≥0.60、中位 ≥0.80。compose 的「才长完」「纸上 … 有 N 字」两类提示要清零。
 
 <a id="motion-design"></a>
 
 ## Motion design contract
 - **Anti-PPT 的构件从真实存在的里面挑**：`ConsoleWindow`（`media.tsx`）、`MetricGrid`（`media.tsx`）、`Funnel` / `ProgressRing` / `ChatThread`（`fxkit.tsx`）、`Chart` / `TreeView` / `NetworkGraph` / `ControlStack`（`src/components/`）。
-  > 历史注：本节曾列出 6 件专门为 Anti-PPT 设计的插图件（脑波仪 / 雷达声呐 / BM25 标尺 / 挂载坞 / 脱敏扫描 / 芯片契约）——它们定义在 `index.tsx` 内部、**零 export、且从未被任何一处 JSX 渲染过**，按本技能自己的「零引用」判据已删除。**不要再写它们。**
+  脑波仪 / 雷达声呐 / BM25 标尺 / 挂载坞 / 脱敏扫描 / 芯片契约这 6 件已删除（零引用），**不要再写它们。**
 
 ### Contents
 
@@ -137,13 +135,13 @@
 
 Deliver at native 30fps. Keep scene constants, physical poses, subtitle reveal and output in the same 30fps coordinate system. Do not duplicate frames into a 60fps container. For an intentional stop-motion accent, quantize only that component to 15fps so each pose holds for two output frames.
 
-The camera is **per shot**, not one film-wide track. Each shot declares one intent from a closed set and an `anchor` that must stay visible; the arithmetic proof lives in [camera.md#shot-language](camera.md#shot-language). Quotas: ≥3 camera moves per chapter, ≤1 per shot, 30–45 frames each, easeInOut, zoom ≤1.35 on shots carrying text, and the chrome card / header / subtitle sit **outside** the camera so they never move. Keep scale always >=1 so the canvas never shows outside the stage. Author `still` only deliberately — a film with no camera at all reads as page-turning.
+The camera is **per shot**, not one film-wide track — intents, `anchor`, quotas and zoom budgets in [Shot camera](#shot-camera-镜头受限配方与出界证明) below. Keep scale always >=1 so the canvas never shows outside the stage. Author `still` only deliberately — a film with no camera at all reads as page-turning.
 
 Keep stable layout coordinates fixed and animate movement with `translate3d`, rotate, scale and opacity. Mount only the active scene, plus the incoming scene during a short transition.
 
 ### Standard motions
 
-- Camera: one intent per shot (`establish` / `push-in` / `pull-back` / `pan-follow` / `reveal` / `micro-orbit`), parameters and zoom budgets per [camera.md#shot-language](camera.md#shot-language). The narrated `anchor` must stay fully inside the frame at every keyframe — proved by `scripts/validate-shot-motion.py`, not by keeping the camera still.
+- Camera: one intent per shot (see [Shot camera](#shot-camera-镜头受限配方与出界证明)); the `anchor` is kept in frame by proof (`scripts/validate-shot-motion.py`), not by keeping the camera still.
 - JumpInText title: per-glyph 3D flip-in (rotateX ~88deg from the baseline, 12px rise, spring over-bounce, ~1.6-frame stagger). Always for chapter and scene titles.
 - Figure roll-in: multi-keyframe rotation (150deg to 360deg with a mid-scale bulge) instead of a plain pop for emblem graphics.
 - Subtitle reveal: one word at a time, chars inside a word stagger by 0.9 frames, 6px fade-slide, 180ms lead over the word start; all trailing punctuation strictly eliminated; never a decorative bar.
@@ -159,9 +157,7 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 
 ### Motion polish: multi-clock motion
 
-**根因诊断**：模板里每个组件原本都是「一个元素的、一个属性、一条曲线、动完永久静止」。
-所有看起来丝滑的开源库都在动**同一元素的多个属性、用不同的时钟**，并且画面里永远有
-一个缓慢的背景运动。下面六条是把"丝滑"从形容词变成参数。
+"一个元素、一个属性、一条曲线、动完永久静止"读起来僵；丝滑的做法是**同一元素的多个属性用不同时钟**，并且画面里永远有一个缓慢的背景运动。六条参数：
 
 1. **多时钟**：同一元素的位移与透明度用不同时长（参考 number-flow：位移 900ms / 透明度 450ms，
    约 2:1）。本模板取：数值位移 27 帧 / 透明度 14 帧；卡片入场 透明度 16 帧 / 位移 20 帧。
@@ -178,26 +174,16 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 6. **过冲只给物体，不给数值**：印章/横幅可以 0.94→1.03→1 弹一下，百分比与环不能弹
    （会短暂显示错误的数）。环要"落定"就给容器 scale 一个 1→1.03→1。
 
-**Rule 5 · 环境运动（每镜一处，永不停止）**：所有元素都"动完即永久静止"时，画面读起来像被暂停。
-每镜保留**一处**缓慢的背景运动：幅度 ≤4%、周期 120–180 帧、`Easing.inOut(Easing.sin)`，
-**只放在背景/次级元素上**（本模板用 `shotkit.ambientBreath(f)` 施加在底托上），
-绝不放内容层——内容只在语义节点变化。这一条是"正面要求"，与下面"不要随机漂移"的禁令不冲突：
-禁令针对的是没有叙事理由的抖动，环境运动提供的是前景参照。
+**Rule 5 · 环境运动（每镜一处，永不停止）**：全部动完即静止时画面像被暂停。每镜保留**一处**缓慢背景运动：幅度 ≤4%、周期 120–180 帧（下限可放到 90）、`Easing.inOut(Easing.sin)`，
+**只放在背景/次级元素上**（模板用 `shotkit.ambientBreath(f)` 施加在底托上），绝不放内容层——内容只在语义节点变化；且**只在停驻时**呼吸，行驶/进行中不抖，"一直在微动"不算语义变化。
+它与"不要随机漂移"的禁令不冲突：禁令针对没有叙事理由的抖动，环境运动提供前景参照。
 
-配套的两条结构性要求：
-- **每镜保留一个全程缓慢的"环境运动"**（≤4% 幅度、周期 90–180 帧、`Easing.inOut(Easing.sin)`），
-  且**只在停驻时**呼吸——行驶/进行中不要抖动，"一直在微动"不算语义变化。
 - **状态机推进要有动作**：`PhaseRail` 的当前点脉冲 + 光晕、连接线按拍画出、完成态用
   **描线**而不是缩放入场（对勾是笔画，应当画出来）。
 
 ### Shot camera (镜头受限配方与出界证明)
 
-**取代旧的 Camera Micro-Framing Invariant。** 旧铁律把相机锁在 `x ∈ [945,975]`、`s ∈ [1.00,1.018]`
-（景别变化 1.8%，等同定焦），而且是**全片一条关键帧轨道**，所以每个镜头不可能有自己的取景；
-同时按旧源码复算，`CAM_KEYS_P`（轨道已删除）10 个关键帧 `s` 超旧上限 1.018（16:9 设计空间口径），
-真正可见窗出画的是 8 个关键帧、最大 383px，且无人发现。两个极端都来自同一件事：**没有校验**。
-
-现行规则：
+取景是镜头级的，且必须有校验——锁死的全片相机等同定焦，而不校验的相机会出画且无人发现。规则：
 
 1. **每个 shot 一个 intent**，取值仅限 `establish` / `push-in` / `pull-back` / `pan-follow` / `reveal` / `micro-orbit` / `still`；
    曲线形状由 intent 决定，调用方只填少量参数 —— 自由曲线一律不接受。
@@ -208,7 +194,7 @@ Keep stable layout coordinates fixed and animate movement with `translate3d`, ro
 4. **缩放预算**：含文字的镜头 `s ≤ 1.35`，纯图形镜头 `s ≤ 1.60`；
    需要"更大"时优先**把主角画大**，而不是把相机推近（推近会牺牲文字锐度）。
 5. **页眉 / 章节卡 / 字幕在相机之外**（屏幕空间），结构上不可能被运镜带动。
-7. **不要**重新引入全片级相机轨道。取景是镜头级的。
+6. **不要**重新引入全片级相机轨道。
 
 镜头部分的完整参数表与写法见 [camera.md#shot-language](camera.md#shot-language)（本文件只保留与动效相关的部分）。
 
@@ -220,7 +206,7 @@ Never stack plain text bullets inside generic rectangular boxes. Every explanati
 ### Locked motion pack
 
 - Spring presets: use `popS(f, start, preset)` with `SPRINGS` — `snappy` for small UI ticks and code lines, `soft` (identical to the legacy `pop`) for cards and lists, `bouncy` for callouts and celebratory beats. Do not hand-tune new damping/stiffness values per scene.
-- Scene transitions: the vocabulary is `cut | handoff | reveal`. `reveal` is implemented by `RevealMask` (`src/insert.tsx`) and is driven by the shot table's `transition` field — **never write the `reveal` prop by hand**, it is generated into `shots.ts` by `resolve-shots.py`. `handoff` requires a `carrier` shared with the next shot. `whip` / `paper-turn` were removed (zero uses in two shipped films, and a single-frame whip is unreadable at 30fps). **No scene overlap, ever**: the outgoing scene must reach opacity 0 before the incoming one starts.
+- Scene transitions: the vocabulary is `cut | handoff | reveal`. `reveal` is implemented by `RevealMask` (`src/insert.tsx`) and driven by the shot table's `transition` field — **never write the `reveal` prop by hand**, `resolve-shots.py` generates it into `shots.ts`. `handoff` requires a `carrier` shared with the next shot. No `whip` / `paper-turn` (a single-frame whip is unreadable at 30fps). **No scene overlap, ever**: the outgoing scene must reach opacity 0 before the incoming one starts.
 - Camera script: build keyframe tracks in the `camera` field of `manifests/shots.json` (expanded by `resolve-shots.py`) instead of raw keyframe tables; it guarantees first/last frame coverage. The same easing and exponential lag follow-focus apply.
 - Stop-motion accent: `useSteppedFrame(15)` quantizes a component to 15fps so each pose holds two output frames. Reserve it for occasional hand-made charm; never apply it to subtitles, transfers or the camera.
 - Component motion stays inside the locked library: `Checklist` rows slide in with staggered `soft` springs, `HighlightCode` lines enter with `snappy` springs, `PathDraw` animates its dash flow only during transfer.

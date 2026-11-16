@@ -17,27 +17,23 @@
 
 > 适用：每一条片子，尤其是手作皮肤（journal / papercut / archive）。产物：`manifests/treatment.json`，
 > 由 `scripts/validate-treatment.py` 检查（手作皮肤缺它或没填完 = P0；flat / cel 缺它 = P1 提醒）。
+> 思路来源：lemo-opuscar 的 DIRECTOR.md（MIT，© 2026 LemoLab，<https://github.com/lemomo-ai/lemo-opuscar>）；
+> 独立评审借鉴 motion-video-kit（MIT）的 "builder ≠ judge"。本文是自己的写法，不是译文。
 >
-> 方法来源：lemo-opuscar 的 DIRECTOR.md（MIT，© 2026 LemoLab，<https://github.com/lemomo-ai/lemo-opuscar>）的思路——
-> 先对标、媒介原生动作、三候选结构、风格帧先行、一轮修改——以及用户第三季十条片子的实战复盘；
-> 独立评审回路借鉴 motion-video-kit（MIT）的 "builder ≠ judge"。本文是 notebook-video 自己的写法，不是译文。
-
 > 配套：开场钩子 [director.md#narrative-hook](director.md#narrative-hook)、节奏 [director.md#pacing-rhythm](director.md#pacing-rhythm)、运镜 [camera.md#camera-language](camera.md#camera-language)。
 
 ### 为什么要这一层
 
-蓝图（concept / process / …）告诉你"讲什么顺序"，组件表告诉你"画什么卡片"。两者都不回答最要紧的问题：
-**这件事，用什么东西演出来，观众才会"啊——原来是这样"？**
-不回答它，片子就会落进同一个模板：名词 → 定义 → 拆开 → 升华，画面是卡片里放组件。
+蓝图管顺序，组件表管卡片，都不回答：**这件事用什么东西演出来，观众才会"啊——原来是这样"？**
+不回答它，片子就落进同一个模板：名词 → 定义 → 拆开 → 升华，画面是卡片里放组件。
 
 ### 七步（按顺序，每步写进 treatment.json）
 
 #### 1. 一个生活里的问题（`question`）
-第一秒就要能问出口的那句话，观众自己遇到过："咖啡渍为什么总是一圈深边？""'细胞'这个词，最早是什么意思？"
-不是"今天我们来了解 XX"。
+第一秒就能问出口、观众自己遇到过的那句话（"咖啡渍为什么总是一圈深边？"），不是"今天我们来了解 XX"。
 
 #### 2. 只属于这个题的隐喻（`metaphor`）
-找一个**换个题就不成立**的形象。检验：把题目换成邻近的另一个题，这个隐喻还能用吗？能用 = 太泛，重找。
+找一个**换个题就不成立**的形象。检验：换成邻近的题还能用 = 太泛，重找。
 - 好：二维码本来就是"黑白剪纸"——深色模块是纸，浅色模块是洞（纠错码）。
 - 差："知识的大门""信息的海洋"。
 
@@ -52,13 +48,11 @@
 更多媒介的"配方"（risograph、engraving、whiteboard、one-line…）见 [director.md#style-recipes](director.md#style-recipes)。
 
 #### 4. 一个原生动作（`native_move`）——放在顿悟点
-**只有这个媒介做得出**的那个动作，放在观众理解发生变化的那一秒：
-水彩在镜头前晕开干透、自己圈出深边；对折剪一刀，两份同时坏；放大镜压上去，镜片里的负片转正。
-写清：做什么、在第几秒、为什么换成别的媒介就做不出。没有原生动作的顿悟点，只能是"一个数字滚到位"。
+**只有这个媒介做得出**的那个动作，放在观众理解发生变化的那一秒（水彩晕开干透、自己圈出深边；对折剪一刀，两份同时坏；镜片里负片转正）。
+写清：做什么、在第几秒、为什么换成别的媒介做不出。没有原生动作的顿悟点，只能是"一个数字滚到位"。
 
 #### 5. 三个候选结构，选一个（`candidates` + `chosen` + `chosen_why`）
-每个两三行：形状（一次旅程 / 前后对比 / 倒计时 / 一个清单逐条翻转 / 错误猜想被推翻……）、开头画面、结尾。
-第一个想到的往往是这个媒介的陈词滥调；写满三个再选。
+每个两三行：形状（旅程 / 前后对比 / 倒计时 / 清单逐条翻转 / 错误猜想被推翻……）、开头画面、结尾。第一个想到的往往是陈词滥调；写满三个再选。
 
 **选结构族**：每个候选写 `family`，三个候选**至少来自 2 个族**（否则只是同一条曲线的三种写法，validate-treatment 记 P1）。
 族名与蓝图：
@@ -83,8 +77,7 @@
 ```
 
 #### 5b. 声音设计（`sound`）
-**默认无 BGM**：`music.use` 不写或写 `false` 时，成片里不会加载音乐床。要配乐才写 `true` 并给出理由。
-声音设计仍然必填（缺项 P1）：`treatment.json → sound` 每项的意思：
+**默认无 BGM**：`music.use` 不写或 `false` 时不加载音乐床；要配乐才写 `true` 并给出理由。声音设计仍必填（缺项 P1），`treatment.json → sound`：
 
 | 字段 | 意思 | 示例 |
 |---|---|---|
@@ -98,14 +91,12 @@
 响度目标 −16 LUFS（真峰值 ≤ −1.5 dBTP，与渲染端两遍响度规范化的 TP 值一致；全文目标见 [audio-captions.md#tts-audio](audio-captions.md#tts-audio)）。旁白由 `notebook-video tts` 生成；句间空隙必须是真安静。
 
 #### 6. 对标：学什么、不学什么（`benchmark`）
-挑一两部真实作品（纪录片、片头、绘本、展览），写"学：构图 / 节奏 / 镜头语法 / 配色逻辑"和"不学：角色、具体镜头、旋律、字体"。
-同时勾掉同质化清单（`avoid`）：暗底发光线、粒子、金色 / 冰蓝科技风、电子 BGM、名词→定义→升华模板。
+挑一两部真实作品（纪录片、片头、绘本、展览），写"学：构图 / 节奏 / 镜头语法 / 配色逻辑"和"不学：角色、具体镜头、旋律、字体"；勾掉同质化清单（`avoid`）：暗底发光线、粒子、金色 / 冰蓝科技风、电子 BGM、名词→定义→升华模板。
 
 #### 7. 镜头表要写"为什么"（`shots`、`signature_shot`）
 每镜：景别（全 / 中 / 近 / 特写 / 插入）、运镜（推 / 拉 / 横移 / 跟 / 静）、**理由**。全片 ≥4 种运镜，一个招牌镜头。
-**景别写了就要兑现**：`validate-treatment` 拿 treatment 的 `move` / `framing` 对照镜头表的 `cameraIntent` 和实际缩放；
-招牌镜头至少真推 12%（keys 缩放或 `cinema.focus` 的 zoom），否则手作皮肤 P0。动机、景别阶梯、视线连续、什么时候不动、镜长：
-见 [camera.md#camera-language](camera.md#camera-language)。
+**景别写了就要兑现**：`validate-treatment` 拿 `move` / `framing` 对照镜头表 `cameraIntent` 和实际缩放；招牌镜头至少真推 12%（keys 缩放或 `cinema.focus` 的 zoom），否则手作皮肤 P0。
+动机、景别阶梯、视线连续、何时不动、镜长见 [camera.md#camera-language](camera.md#camera-language)。
 转场在媒介内部完成（翻页、换一张纸、剪刀剪过、墨晕开），不用缺省的淡入淡出 / 甩镜。
 关键时刻主体 ≥1/3 画高；每个构图 ≤12–15 秒；关键揭示后留 2–3 秒呼吸。
 "节拍边界要有东西活下来"：上一拍的某个物件变成下一拍的起点，片子才连成一条线而不是幻灯片。
@@ -117,26 +108,23 @@ python scripts/commons-search.py search "<英文关键词>" --project ./my-video
 python scripts/commons-search.py search "<关键词>" --type audio --project ./my-video   # 真实的声音
 python scripts/commons-search.py search "<关键词>" --source openverse --project ./my-video
 ```
-真东西（1665 年的铜版画、第一张 X 光片、真实的显微照片、一段历史录音）几乎总能让片子更好。
-搜过就会记进 `manifests/commons-log.json`；门禁会提示（P1）手作皮肤至少搜过一次；断网不卡出片。找到能用的就 `add` 进来，放进
-`ArchivePhoto` / `PinnedPhoto` / `LoupeMedia`（见 [components.md#craft-kit](components.md#craft-kit)），署名自动上屏。没找到也没关系——写清搜了什么。
+真东西（1665 年的铜版画、第一张 X 光片、显微照片、历史录音）几乎总能让片子更好。搜过记进 `manifests/commons-log.json`；手作皮肤没搜过 → P1；断网不卡出片。
+能用的 `add` 进来，放进 `ArchivePhoto` / `PinnedPhoto` / `LoupeMedia`（[components.md#craft-kit](components.md#craft-kit)），署名自动上屏；没找到就写清搜了什么。
 
 ### 事实（`facts`）
 每个数字、日期、人名：打开原始出处，写 `url` + 原文引文 `quote`。区分实验条件（"在真空中"、"小鼠"）。
 
 ### 先做风格帧，再做全片
 1. 写完 treatment.json；
-2. 做 3 张风格帧（其中一张是招牌镜头 / 最难的那一镜）：`make-video --stills` 看图，不像就改媒介或改隐喻，不要硬上；
+2. 3 张风格帧（含招牌镜头 / 最难的一镜），`make-video --stills` 看图，不像就改媒介或隐喻，不硬上；
 3. 全片；`--stills` 联系表两遍；关键动作 0.2 秒连帧；
 4. **独立评审**（做的人不评自己）：开一个新会话 / 子 agent，**只给它三样东西**：`--stills` 联系表、工程根目录的
    `storyboard.md`、`manifests/treatment.json`，不给任何过程记录。按七项 1–10 打分：
    构图主体、调度节奏、隐喻与媒介一致、顿悟惊艳、字幕可读、手作质感与色彩纪律、叙事完整；问题分 P0 / P1 / P2 列出。
    <8 的改完再评，分数、问题与处理写进 `treatment.json → review.rounds`（时间、评审者、问题、处理）。
-   - `storyboard.md` 由 `resolve-shots` 从 `manifests/shots.resolved.json` **自动生成**：片名、总帧数、时长、皮肤，
-     每镜一行写起止秒、景别、运镜、意图缩放 / 实际缩放、转场、背景、主要组件、字幕摘要。文件头有"自动生成"标记，手改会被覆盖；
-     如果你手写过 storyboard.md（没有标记），不覆盖，生成的那份写到 `storyboard.generated.md`——评审用生成的那份。
-5. 一轮修改把所有问题改完，再渲整片。手作皮肤 `review.rounds` 为空时 `make-video --render` 会给一条 P1 提示（照常渲染，提示也写进报告）；
-   草稿 / 自测不想看到提示，加 `--skip-review`。
+   - `storyboard.md` 由 `resolve-shots` 从 `manifests/shots.resolved.json` **自动生成**（片名、总帧数、时长、皮肤；每镜起止秒、景别、运镜、意图 / 实际缩放、转场、背景、主要组件、字幕摘要）。
+     文件头有"自动生成"标记，手改会被覆盖；手写过的（无标记）不覆盖，生成到 `storyboard.generated.md`——评审用生成的那份。
+5. 一轮改完所有问题再渲整片。手作皮肤 `review.rounds` 为空时 `make-video --render` 给一条 P1 提示（照常渲染、写进报告）；草稿 / 自测加 `--skip-review`。
 
 ### treatment.json 字段一览
 见 `assets/lecture-template/manifests/treatment.example.json`（复制成 `treatment.json` 再填）。门禁规则：
@@ -161,14 +149,9 @@ python scripts/commons-search.py search "<关键词>" --source openverse --proje
 
 ## 讲法规范（叙事动作 · 误解优先 · 留白）——第三张表：**怎么讲**
 
-> 这份文档回答的问题不是"画得好不好"，而是**"讲得对不对"**。
-> 起因是一次实证：**同一份牛顿定律内容**，364 名大一物理生分两组——
-> "清楚流畅的讲解版" 26 题从 6.0 → **6.3（等于没学）**；"**先说出误解、再反驳**"的版本 6 → **11**。
-> 而且讲解版那组**自评"简单、清楚、易懂"，对自己的答案更有信心**（错得更理直气壮）。
-> 出处与完整拆解见 `讲解手法拆解.md`。
->
-> 我们此前的片子在结构上就是"**说明文（Exposition）**"：「想入场，其实只要三步。第一步…」——
-> 这正是上面那个"清楚了但没学"的版本。本规范落三条最小改动，专治它。
+> 本节管**"讲得对不对"**，不管"画得好不好"。依据是一次实证：同一份牛顿定律内容，364 名大一物理生分两组——
+> "清楚流畅的讲解版" 26 题从 6.0 → **6.3（等于没学）**，且自评"简单、清楚"、更有信心；"**先说出误解、再反驳**"版 6 → **11**。
+> 出处与拆解见 `讲解手法拆解.md`。纯"说明文"结构（「想入场，其实只要三步。第一步…」）就是那个"清楚了但没学"的版本。
 
 ### 1. 三条字段（写进 `manifests/shots.json` 的每镜）
 
@@ -178,7 +161,7 @@ python scripts/commons-search.py search "<关键词>" --source openverse --proje
 | `known` → `new` | 这镜**从什么已知**推到**什么新知**（相邻镜必须闭合：`known` 要能在前面某镜的 `new` 里找到，或属于常识锚点） | 各一句短语 | P0（闭合）/ P1（锚点存疑） |
 | `hold` | 留白预算：**这镜里至少有一段什么都不新增** | 帧数（见 §3 标定） | P0 |
 
-**`misconception` 必须可豁免，而且豁免要写理由。** 实验的另一半结论是：先立误解**对外行收益最大，对已经学得很好的观众零增益、还会让人觉得被冒犯**。所以规范要求的是"**要么立一个真误解，要么写清为什么这镜不需要**"，不是"每镜都要卖关子"。
+**`misconception` 必须可豁免，而且豁免要写理由**：先立误解对外行收益最大，对已学好的观众零增益、还显得冒犯。所以要求是"**要么立一个真误解，要么写清为什么这镜不需要**"，不是"每镜都卖关子"。
 
 ```jsonc
 // 正面：先立误解
@@ -206,53 +189,38 @@ python scripts/commons-search.py search "<关键词>" --source openverse --proje
 | 9 | **反证** | **先给错的（或旧值），再给对的，两者被区分** | `MetricGrid`/`SplitStage` |
 | 10 | 回看 | 把前面几件再摆一次（复用同一视觉件） | 复用既有骨架 |
 
-> **「不得连续 ≥3 镜」的判据口径（2026-09-22 写回；原文只有这一句，太容易读歪）**：
-> 按**成片镜序**（= `shots.json` 里的顺序；`resolve-shots` 要求 `from` 连续，两者必然一致）逐镜比较，
-> 同一 `move` 的**极大连续段 ≥3 镜即违规** —— 即同一动作**最多连续 2 镜**，第 3 镜就是错（不是"超过 3 镜"）。
-> 跨章节**不重置**（观众不认章节号，只认"刚才连着三镜在干同一件事"）；缺 `move` 或不在闭集里的镜
-> **打断计数**（它们自己另报 P0，不在这里重复刷屏），所以不会拼出跨越断点的假"连续"。
-> **级别是 P0**：这条规则的出处（`呈现效果调研.md` §5.7）写的是"同一种 `move` 不得连续 ≥3 镜
-> **（与骨架重复检查同级）**"，而"相邻同骨架"在 `validate-composition.py` 里就是 P0。
-> 实测：连续 3 镜 → `P0 S1–S3: 同一 move 连续 3 镜：S1→S2→S3 都是 «引入»（上限 2 镜…）`；连续 2 镜不报。
+> **「不得连续 ≥3 镜」的判据口径**：按**成片镜序**（= `shots.json` 顺序；`resolve-shots` 要求 `from` 连续，两者必然一致）逐镜比较，
+> 同一 `move` 的**极大连续段 ≥3 镜即违规**——同一动作**最多连续 2 镜**，第 3 镜就是错（不是"超过 3 镜"）。
+> 跨章节**不重置**（观众不认章节号）；缺 `move` 或不在闭集里的镜**打断计数**（它们另报 P0），不会拼出跨断点的假"连续"。
+> **级别是 P0**：出处 `呈现效果调研.md` §5.7 定为"与骨架重复检查同级"，而"相邻同骨架"在 `validate-composition.py` 里是 P0。
+> 报错样式：`P0 S1–S3: 同一 move 连续 3 镜：S1→S2→S3 都是 «引入»（上限 2 镜…）`；连续 2 镜不报。
 
 **`evidence` 必填**：指到一个**在该镜内真的会变**的元素。**静态元素不算证据。**
 
-> 上面这句是**作者侧的写作要求**；门禁只能验其中一半（验到哪一步见下），别把要求当成"门禁已经保证"。
-
-> **判法的最终口径（2026-09-22 二次简化后落地，与代码同版）**：
-> `validate-presentation.py` 现在只查**一件事** —— **名字有没有被当成 JSX 用法**（`<名字 …>` / `<名字/>`）
-> **出现在该工程的场景源码里**：
+> 这是**作者侧的写作要求**；门禁只验其中一半，别当成"门禁已经保证"。
+>
+> **门禁判法**：`validate-presentation.py` 只查**名字有没有作为 JSX 用法**（`<名字 …>` / `<名字/>`）**出现在该工程的场景源码里**：
 >
 > | 判据 | 检查 | 级别 |
 > |---|---|---|
 > | G-15 **用在源码里** | `evidence` 的名字作为 **JSX 用法**出现在场景源码里；**注释、字符串、import 行里都不算"用到"** | **P0** |
 >
-> **怎么判的**：扫之前先用 `noncode()` 把注释与字符串抹成空格（所以"只在注释里写过这个名字"会被报出来），
-> 再用 `<名字` + 一个非标识符字符 去匹配。场景源码 = `src/**` 里名字带 `scene` 的 `.tsx`
-> ；一个都没有就退到任一 `.tsx`；
-> 连 `.tsx` 都没有则报一条 P1 说明**这条判据没生效**（让"没报"与"没跑"可区分）。
+> 先用 `noncode()` 把注释与字符串抹成空格（"只在注释里写过"会被报出），再用 `<名字` + 一个非标识符字符匹配。
+> 场景源码 = `src/**` 里名字带 `scene` 的 `.tsx`；没有就退到任一 `.tsx`；连 `.tsx` 都没有则报一条 P1 说明**这条判据没生效**（让"没报"与"没跑"可区分）。
 >
-> **不做的（代价写在明处，别高估它）**：
-> · **不做本镜作用域**：名字只要在该工程的场景源码里被用到就算过 ——
->   **名字在本镜没用到、但在别的镜用了，会漏**。夹具 AG 现在就是这个语义（必须放行），用来把这条口径钉在明处：
->   谁哪天加回本镜作用域，它会先失败。
-> · **不做"是不是静态"**：不解析 JSX 结构、不看帧驱动量。所以**指向一个在本镜里从头到尾不动的静态卡片，
->   门禁不会响**（只要那个名字在别处被 JSX 用到过）。砍掉它的理由：那一半只能做**白名单**判定，
->   而它的误报面已经实测到了 —— 帧经 `ctx` 这类不透明参数传进组件的写法会被判成静态，
->   本表「推进」推荐的首选件 `PhaseRail` 恰好就是这种写法，判成 P0 等于"照本表写、门禁拦你"。
-> · **不做降级**：旧实现在"切不出本镜"时要降级并自报一条 P1 —— 现在没有"本镜"这一层，无级可降。
+> **不做的（别高估它）**：
+> · **不做本镜作用域**：名字在本镜没用到、但在别的镜用了，**会漏**。夹具 AG 钉住这个语义（必须放行）。
+> · **不做"是不是静态"**：指向本镜里从头到尾不动的静态卡片，**门禁不会响**。理由：这一半只能做白名单判定且误报——
+>   帧经 `ctx` 这类不透明参数传进组件的写法会被判成静态，本表「推进」首选件 `PhaseRail` 恰好如此，判 P0 等于"照本表写、门禁拦你"。
+> · **不做降级**：没有"本镜"这一层，无级可降。
 >
-> **为什么敢砍到这一步（实测，不是省事）**：旧实现是 465 行的实现（手写 JSX 遍历 + 本镜切片 + 帧驱动白名单
-> + 降级分支）。实测它在**接触表**上抓到的真缺陷与本版**是同一批**（第 ⑥ 页 `26px × 2`、第 ③ 页 `27px`），
-> 而那三层复杂度各自都带来了误报面或维护成本。取舍与本仓库其它判据一致：**宁可少报，也不要假报告**。
-> 实测（两个真实工程）：`assets/lecture-template` 8 镜全过；真实工程 `overview-film` 的 **S2 报 P0** ——
-> 它把 `MetricGrid` 换成了手绘行 + `Chart`，只在注释里留了一句"这里本来用 MetricGrid"。
-> 夹具：`scripts/negative-gate-check.py` 的 **AF / AG / AJ / AK**（AF 名字不存在、AJ 只在注释里 → 必须拦；
-> AK 原样模板必须全过；AG 是上面那条"别镜"口径的钉住夹具）。
+> 取舍与本仓库其它判据一致：**宁可少报，也不要假报告**（更复杂的旧判法在接触表上抓到的真缺陷与本版是同一批）。
+> 实例：`assets/lecture-template` 8 镜全过；`overview-film` 的 S2 把 `MetricGrid` 换成手绘行 + `Chart`、只在注释里留名 → P0。
+> 夹具：`scripts/negative-gate-check.py` 的 **AF / AG / AJ / AK**（AF 名字不存在、AJ 只在注释里 → 必须拦；AK 原样模板必须全过；AG 见上）。
 
 ### 3. 留白预算：先标定，再定阈值
 
-**标定方法**：拿现有成片（`demo-video`，8 镜 / 1453 帧）离线数"无新增窗"——即同一镜内相邻两个 beat 之间、以及镜首/镜尾到最近 beat 的帧数，取每镜最长的一段。
+**标定方法**：对成片 `demo-video`（8 镜 / 1453 帧）数每镜最长的"无新增窗"（镜内相邻 beat 之间、镜首/镜尾到最近 beat 的帧数）。
 
 | 镜 | 时长 | beat 数 | 相邻 beat 最小间隔 | **最长"无新增"窗** |
 |---|---|---|---|---|
@@ -266,10 +234,10 @@ python scripts/commons-search.py search "<关键词>" --source openverse --proje
 | S8 | 258 | 4 | **8** | 96 |
 
 **标定结论**：
-- 现有片子**每一镜都已经有 ≥72 帧（2.4 s）的无新增窗**——所以报告里"留白 ≥30 帧"那条**对现状等于没检查**（全都过）。**不能照抄这个数。**
-- 取 **`hold ≥ 40 帧（1.33 s）`** 作为 P0：比现状最小值 72 再留 32 帧余量，既不误伤现有片，又能拦住"每 20 帧蹦一个新元素"的过载镜。
-- 另加 **P1：相邻 beat < 20 帧**（现状有两处 9 / 8 帧）→ 提示"两件事挤在一拍"，**不阻断**（它是节奏问题，不是对错问题）。
-- ⚠️ 这两条都是**从我们自己片子的真实数据标定出来的**，不是拍脑袋；等新长片出来后要用新数据再标定一次。
+- 每镜都已有 ≥72 帧（2.4 s）无新增窗，所以"留白 ≥30 帧"**等于没检查**，不能照抄。
+- **`hold ≥ 40 帧（1.33 s）`** 为 P0：低于现状最小值 72 留 32 帧余量，不误伤现有片，又能拦住"每 20 帧蹦一个新元素"的过载镜。
+- **P1：相邻 beat < 20 帧**（现状有 9 / 8 帧两处）→ 提示"两件事挤在一拍"，**不阻断**（节奏问题，不是对错问题）。
+- ⚠️ 两条都来自真实数据标定；新长片出来后要用新数据再标定一次。
 
 ### 4. 落到门禁（`validate-presentation.py` 的 G-14/G-15/G-16）
 
@@ -280,16 +248,12 @@ python scripts/commons-search.py search "<关键词>" --source openverse --proje
 | G-16 误解与留白 | `misconception` 或 `noMisconception`+`why` 二选一；`hold` ≥ 标定值 | P0 |
 | G-17 `known → new` 闭合 | 相邻镜的 `known` 能在前面某镜的 `new` 里找到（或标为常识锚点） | P1 |
 
-**为什么这些能机械检查**：三个字段都是**声明**，而声明可以：
-① 检查枚举闭合；② 检查指向的元素真的在动；③ 检查阈值；④ 检查跨镜一致性。
-这与本技能既有的治理方式一致——**不靠自觉，靠"写出来 + 被检查"**。
+**为什么能机械检查**：这些字段都是**声明**，可以查枚举闭合、指向、阈值、跨镜一致性——**不靠自觉，靠"写出来 + 被检查"**。
 
 ### 5. 与既有文档的关系
 
-- **第二张表**（`media.md#media-routing` 的"修辞动作 → 组件"）：管**用哪件**。
-- **本表**：管**此刻在讲什么动作**、**观众带着什么误解**、**哪里留白**。
-- **`checks.md#presentation-gate`**：管"讲与画对不对得上、读不读得过来"（T1 纯算术）。
-- 三者的关系是：本表决定**这一镜要做什么事**，第二张表决定**用哪件做**，presentation gate 检查**做出来的东西跟旁白对不对得上**。
+本表决定**这一镜做什么事**（动作、误解、留白）；第二张表（`media.md#media-routing` 的"修辞动作 → 组件"）决定**用哪件做**；
+`checks.md#presentation-gate` 检查**讲与画对不对得上、读不读得过来**（T1 纯算术）。
 
 <a id="narrative-hook"></a>
 
@@ -306,7 +270,7 @@ The first ten seconds are a retention beat, not an introduction. Start from the 
 | 4–8s | Open loop | Promise the explanation without resolving it: name the mechanism, constraint or unanswered question that the main body will unpack. |
 | 8–12s | Pivot | Begin normal context and show the first evidence path. Do not repeat the opening claim verbatim. |
 
-The hook must be understandable with sound off: a viewer should see one large, specific claim and one visual consequence in the first four seconds. It may be a number, outcome, before/after contrast, unresolved constraint or rare capability. It must never exaggerate beyond the sourced material.
+The hook must work with sound off: one large, specific claim and one visual consequence in the first four seconds (a number, outcome, before/after contrast, unresolved constraint or rare capability), never exaggerated beyond the sources.
 
 ### Callback and payoff
 
@@ -316,26 +280,26 @@ For every cold open, put three entries in `storyboard.md`:
 2. `Deferred question`: the mechanism or tension intentionally held back.
 3. `Callback / payoff`: the later scene and narration line that answers it, normally before the final 25% of the video.
 
-The callback must add evidence or causality, not merely repeat the headline. Example: open on “十万卡已真机亮相”, defer “十万张卡为什么不是简单堆卡”, then answer through compute, fabric, storage and cooling in the body.
+The callback must add evidence or causality, not repeat the headline (open on “十万卡已真机亮相”, defer “十万张卡为什么不是简单堆卡”, answer through compute, fabric, storage and cooling).
 
 ### Writing rules
 
-- Lead with the consequence, not the event chronology. Rewrite “在某展会上，一台设备亮相” as the verified result that makes the event worth watching.
-- Use one sharp angle only: scale, reversal, constraint, trade-off or real-world consequence. Do not stack several claims in one opening sentence.
-- Avoid generic openings such as “你知道吗”“今天我们聊聊”“最近很火”“一台机器被围住了”, unless the following clause immediately gives the concrete payoff.
-- Do not place source lists, definitions, caveats, chapter explanation or a slow logo reveal before the payoff. Necessary qualifiers can follow in the pivot or callback.
-- Keep the open loop honest. If the video cannot answer the question with sourced evidence, do not open it.
+- Lead with the consequence, not the chronology (not “在某展会上，一台设备亮相”).
+- One sharp angle only (scale, reversal, constraint, trade-off or real-world consequence); never stack claims in the opening sentence.
+- No generic openings (“你知道吗”“今天我们聊聊”“最近很火”“一台机器被围住了”) unless the next clause gives the concrete payoff.
+- No source lists, definitions, caveats, chapter explanation or slow logo reveal before the payoff; qualifiers go in the pivot or callback.
+- Keep the open loop honest: if sourced evidence cannot answer it, do not open it.
 
 ### Visual rules
 
-- The opening visual should begin with a completed consequence, contrast or tension. Do not spend the first seconds assembling neutral decorative cards.
-- Use one oversized hero statement plus at most two supporting elements. Preserve the fixed camera, paper style, subtitle and chrome contract.
-- The normal chapter label may appear after the payoff is legible; it must not cover or delay the hero claim.
-- Make the callback visually related to the opener: reuse the hero object, number, rail, module or status state so the viewer recognizes the answer.
+- Begin with a completed consequence, contrast or tension, not neutral decorative cards being assembled.
+- One oversized hero statement plus at most two supporting elements; keep the fixed camera, paper style, subtitle and chrome contract.
+- The chapter label may appear only after the payoff is legible and must not cover or delay it.
+- The callback reuses the opener's hero object, number, rail, module or status state so the viewer recognizes the answer.
 
 ### Three proven first-sentence templates
 
-Write the first spoken sentence from one of these shapes, then verify it against the source material. Rule: put the core result or conflict in the first sentence. Reason: a viewer decides whether to stay before any context has been given, so context-first openings spend the only seconds that decide retention on material that has no pull yet.
+Write the first spoken sentence from one of these shapes, then verify it against the source. Rule: the core result or conflict goes in the first sentence. Reason: viewers decide whether to stay before any context is given, so context-first openings waste the only seconds that decide retention.
 
 1. **Result first** — state the verified outcome before any context: "一条命令，能让你写崩的代码一秒回到十分钟前。"
 2. **Curiosity gap** — name a mistake or blind spot most viewers do not know they have: "你花399买的课，GitHub上大概率有人免费开源了。"
@@ -345,10 +309,10 @@ Never open with audience labeling or roadmap sentences ("作为XX专业的学生
 
 ### First-three-seconds motion density
 
-Rule: the first three seconds carry several distinct visual changes. Reason: a single slow title pop reads as a still image, and a still image at second one looks like a loading screen. Requirements:
+Rule: the first three seconds carry several distinct visual changes. Reason: a single slow title pop reads as a still image, which at second one looks like a loading screen.
 
 - at least **three distinct visual actions** inside the first 90 native frames (hero statement lands, then two supporting elements enter or change state);
-- the hero statement is a full-screen hammer frame (displayL or larger) that lands within 45 frames, with one short accent sound at its landing frame — this is one of the film's 2–3 hammer-frame exceptions to SKILL.md's "no full-screen text pages" rule (see director.md#pacing-rhythm); component route: `StampBanner` / enlarged `Callout`; hand-made route: `HandLettering` or a `Seal` in the medium, never plain text on blank paper;
+- the hero statement is a full-screen hammer frame (displayL or larger) that lands within 45 frames, with one short accent sound at its landing frame — it counts as one of the film's 2–3 hammer frames; build it as described in director.md#pacing-rhythm;
 - the regular multi-zone layout and chapter chrome begin only after the hammer frame has been legible for at least 1 second.
 
 ### Opening review gate
@@ -365,11 +329,11 @@ Before full render, range-render 0–360 native frames and inspect at 0.5s, 2s, 
 
 ## Pacing and rhythm contract
 
-A film whose every chapter has the same structure, density and speed loses viewers after a minute even when each scene is individually good. This contract makes energy rise and fall on purpose. It complements `director.md#narrative-hook`: the hook wins the first ten seconds, pacing keeps the rest.
+A film whose chapters all share one structure, density and speed loses viewers after a minute even when each scene is good. This contract makes energy rise and fall on purpose; the hook (`director.md#narrative-hook`) wins the first ten seconds, pacing keeps the rest.
 
 ### Hammer frames
 
-Plan two or three hammer moments per film (roughly one per 60–90 seconds, never two in adjacent chapters). They are the **only** exception to SKILL.md's rule that regular shots never become full-screen text pages. A hammer moment is the single most quotable line of a chapter shown as a full-screen statement:
+Plan two or three hammer moments per film (roughly one per 60–90 seconds, never in adjacent chapters) — the **only** exception to SKILL.md's rule that regular shots never become full-screen text pages. A hammer moment is a chapter's single most quotable line as a full-screen statement:
 
 - one oversized sentence (displayL or larger) on an otherwise nearly empty paper, held 1.5–2.5 seconds;
 - all other zones exit completely before it enters; the multi-zone layout resumes after it;
@@ -383,11 +347,11 @@ Mark each hammer frame in `storyboard.md` with `Hammer:` plus its cue number so 
 
 Alternate chapter energy instead of keeping one speed:
 
-- **Slow chapters** (new concepts): fewer elements per beat, longer readable holds, state changes every 3–4 seconds.
-- **Fast chapters** (procedures, lists, montages): denser element entries, state changes every 1.5–2.5 seconds, clipped holds.
-- Never schedule two slow chapters back to back; separate them with a fast chapter or a hammer frame.
+- **Slow chapters** (new concepts): fewer elements per beat, longer holds, state changes every 3–4 seconds.
+- **Fast chapters** (procedures, lists, montages): denser entries, state changes every 1.5–2.5 seconds, clipped holds.
+- Never two slow chapters back to back; separate them with a fast chapter or a hammer frame.
 
-With a chapter-segmented TTS adapter, give each paragraph its own style instruction: calmer and slightly slower for slow chapters, brisker with more energy for fast chapters and the hook. Keep one voice; vary delivery, not identity.
+With a chapter-segmented TTS adapter, give each paragraph a style instruction (calmer, slightly slower for slow chapters; brisker for fast chapters and the hook). One voice; vary delivery, not identity.
 
 ### Chapter breathing
 
@@ -397,7 +361,7 @@ Between chapters insert a breath of 0.5–1 second: the outgoing scene completes
 
 The final chapter drops density on purpose: at most three elements (wrap-up line, mascot, closing card) so the film visibly lands instead of stopping mid-texture.
 
-For knowledge films the closing card is a save hook, not a follow plea: recommendation algorithms weight saves and shares above completion for this genre. Give viewers a concrete reason to save — "点个收藏，下次写崩了翻出来照着敲" names the exact future moment they will need the film — and pair it with a code-drawn star that draws its outline and fills on the spoken word. When the film belongs to a series, add a one-line next-episode teaser under the save card; keep platform references to the compliant "主页可以查看" wording with no account names or links.
+For knowledge films the closing card is a save hook, not a follow plea (algorithms weight saves and shares above completion for this genre): name the future moment they will need it ("点个收藏，下次写崩了翻出来照着敲") and pair it with a code-drawn star that draws its outline and fills on the spoken word. For a series, add a one-line next-episode teaser under the save card; platform references stay at the compliant "主页可以查看" wording, no account names or links.
 
 ### Review gate
 
@@ -412,12 +376,8 @@ Before the full render, check on the contact sheet or range renders:
 
 ## 风格配方：把一种"观感"拆成可执行的八个轴
 
-> 一个"风格"不是一张参考图，也不是一个滤镜。它是一组**互相约束的决定**：用什么材料、颜色怎么分工、字怎么上、
-> 东西怎么动、镜头怎么走、换场靠什么、听起来像什么，以及——最关键的——**这个材料会做、别的材料做不出的那个动作**。
-> 写清这八个轴，再写清"它不是什么"和"它的坑"，弱模型也能做出有物质感的片子。
->
-> 思路来源：lemo-opuscar（MIT，© 2026 LemoLab）每个 `styles/*/STYLE.md` 的章节拆法。本文是 notebook-video 自己的抽象，
-> 按本项目的皮肤 / 组件 / 门禁重写，不是译文；配方内容为原创描述。
+> "风格"不是参考图或滤镜，而是一组**互相约束的决定**——最关键的是**这个材料会做、别的材料做不出的那个动作**。
+> 写清八个轴，再写清"它不是什么"和"它的坑"。拆法参考 lemo-opuscar（MIT，© 2026 LemoLab）的 `styles/*/STYLE.md`；配方内容为原创，不是译文。
 
 ### 八个轴
 
@@ -496,7 +456,7 @@ Before the full render, check on the contact sheet or range renders:
 
 ## Visual director: image, text and graphic modes
 
-Use this reference before storyboarding scenes. The skill does not call an image-generation model: images come from the user, from Wikimedia Commons / Openverse ([media.md](media.md#commons-media)), or from other licensed sources.
+Read before storyboarding. The skill does not call an image-generation model: images come from the user, Wikimedia Commons / Openverse ([media.md](media.md#commons-media)) or other licensed sources.
 
 ### 1. Choose the visual mode from meaning
 
@@ -508,13 +468,11 @@ Assign exactly one primary mode to every scene before building it.
 | Contrast, slogan, misconception, keyword or emotional beat | `pure-text` | Scale, replacement, underline, staggered explanation and typographic rhythm |
 | Process, system, relationship, quantity or state transition | `pure-graphic` | SVG paths, nodes, tracks, cards and state changes |
 
-Use `image-text` when a concrete subject benefits from being seen and a real or licensed image exists. Use the other modes deliberately; do not force a bitmap into an abstract relationship.
+Do not force a bitmap into an abstract relationship.
 
 ### 2. Where images come from
 
-- Search Commons / Openverse first for every topic (`commons-search.py`), and prefer real material (engravings, photographs, recordings).
-- Use files the user supplies, or licensed third-party assets with a clear licence.
-- If no suitable image exists, keep the same storyboard and draw the layer with native SVG / Remotion components. Do not block the video.
+Commons / Openverse first (`commons-search.py`, see [素材](#director-method)), then user files or clearly licensed assets. If nothing fits, keep the storyboard and draw the layer with native SVG / Remotion components; do not block the video.
 
 ### 3. Prepare assets for animation
 
@@ -528,38 +486,27 @@ The raster is an input layer, never the finished video. Pick or crop it so that:
 6. it carries no baked captions, labels, charts, logos or UI text you need to change;
 7. the subtitle safe area is free of clutter.
 
-Draw diagrams, arrows, exact labels and data with SVG/HTML inside Remotion. Images provide atmosphere and concrete objects; Remotion provides exact information.
+Diagrams, arrows, exact labels and data are SVG/HTML in Remotion: images give atmosphere and objects, Remotion gives exact information.
 
 ### 4. Register provenance
 
-Store each used raster in `public/illustrations/` and record it in `manifests/visual-assets.json` with:
+Store each used raster in `public/illustrations/` and record it in `manifests/visual-assets.json` with: stable ID and relative path; `source_type` (`ai-generated`, `user-supplied`, `licensed-third-party` or `code-generated` — procedural, e.g. the craft-skin backgrounds, matching `backgrounds.json` `source.kind: procedural` and NOTICE); provider or source URL when applicable; prompt summary or original-asset description; intended scene and crop policy; rights note; `baked_text: false` when the image carries no text (legacy `ai-generated` backgrounds keep their existing records).
 
-- stable ID and relative file path;
-- `source_type`: `ai-generated`, `user-supplied`, `licensed-third-party` or `code-generated` (procedural, e.g. the craft-skin backgrounds — matches `backgrounds.json` `source.kind: procedural` and NOTICE);
-- provider or source URL when applicable;
-- prompt summary or original-asset description;
-- intended scene and crop policy;
-- rights note;
-- `baked_text: false` when the image carries no text (legacy `ai-generated` backgrounds keep their existing records).
-
-Do not keep unused images in the deliverable. Never commit an asset with uncertain redistribution rights.
+No unused images in the deliverable; never commit an asset with uncertain redistribution rights.
 
 ### 5. Animate image and information separately
 
-Treat the bitmap, each callout, each arrow and each explanation line as independent parts.
+Bitmap, each callout, arrow and explanation line are independent parts:
 
-- Give the image a restrained reveal, crop wipe or 2–5% push-in.
-- Add callouts only after the viewer can recognize the image.
-- Time each callout to the matching narration phrase.
-- Remove annotations before the image exits when the next scene changes subject.
-- Keep text as live Remotion typography; do not rely on text rendered inside the bitmap.
-- Prefer one image with two or three sequential annotations over several static image cards.
+- the image gets a restrained reveal, crop wipe or 2–5% push-in;
+- callouts come only after the image is recognizable, each timed to its narration phrase;
+- annotations leave before the image exits when the next scene changes subject;
+- text stays live Remotion typography, never text inside the bitmap;
+- prefer one image with two or three sequential annotations over several static image cards.
 
 ### 6. Enforce scene lifetime
 
-Use start-inclusive and end-exclusive scene windows. A scene owns all of its image, text, SVG and annotation layers. At the scene end, either unmount the whole group or drive every obsolete part to zero opacity or fully outside the canvas.
-
-Before the next scene enters, inspect these frames:
+Scene windows and layer ownership follow [technique.md](technique.md) (start-inclusive, end-exclusive; at scene end unmount the whole group or drive every obsolete part to zero opacity or fully outside the canvas). Before the next scene enters, inspect:
 
 1. last readable hold;
 2. middle of exit;
@@ -570,8 +517,8 @@ No outgoing label, hidden corner, arrow head, shadow or image crop may remain be
 
 ### 7. Review for video, not slides
 
-Reject the scene if the image is merely placed on a card while unrelated text appears beside it. The image and overlays must answer the same question in the same few seconds. A useful image scene normally follows this rhythm:
+Reject the scene if the image merely sits on a card beside unrelated text; image and overlays must answer the same question in the same few seconds. Typical rhythm:
 
 `recognize image → locate object → explain relation → land conclusion → clear scene`
 
-Across the whole film, vary the primary mode according to content so the result can include image-plus-text, pure text and pure graphic scenes without feeling like a moving slide deck.
+Across the film, vary the primary mode with the content so it never feels like a moving slide deck.
