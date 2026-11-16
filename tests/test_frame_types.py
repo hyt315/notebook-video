@@ -33,6 +33,7 @@ class FrameTypesTest(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="nv-frame-types-") as td:
             proj = Path(td)
             shutil.copytree(TPL / "src", proj / "src")
+            shutil.copytree(TPL / "manifests", proj / "manifests")  # index.tsx import ../manifests/caption-cues.json（#14）
             shutil.copy(TPL / "tsconfig.json", proj / "tsconfig.json")
             os.symlink(DEPS, proj / "node_modules", target_is_directory=True)
             (proj / "src" / "zz-frame-negative.tsx").write_text(BAD_SCENE, encoding="utf-8")
