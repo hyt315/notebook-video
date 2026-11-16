@@ -73,7 +73,7 @@
 | `references/official-skills-exemplar.md` | `references/scenes.md#official-skills-exemplar` | Official exemplar | 整篇原文搬入，标题降一级 |
 | `references/INDEX.md` | `SKILL.md` | 文档索引（并入 SKILL.md 的路由表） | 整篇原文搬入，标题降一级 |
 
-`references/locked-style-contract.json` 原样保留（validate-skill 读它；第 2 批没并入 `contract.json`，留到第 3 批）。
+`references/locked-style-contract.json` 只留描述性字段（调色、字体、章节卡、字幕区等，给手写场景查）；与 `src/contract.json` 重复的数值已删，数值只以 `contract.json` 为准。没有代码读它。
 `references/INDEX.md` 删除：分组路由并入 `SKILL.md` 的「去哪读」表，每篇的去向即上表。
 
 ### 原 SKILL.md 规则 → 新位置（第 1 批 #8）
