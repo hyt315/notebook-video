@@ -43,6 +43,15 @@ def mkproj(mutate=None):
     rc, out = run([PY, os.path.join(SKILL, 'scripts/resolve-shots.py'), td])
     return td, rc, out
 
+def shot_case(name, mutate, expect, gate):
+    """最常见的一类夹具：改一份 shots.json → resolve-shots 必须过 → 指定门禁按 expect 拦 / 提示 / 放行。"""
+    td, rc0, out0 = mkproj(mutate)
+    case(name, [
+        ('must_pass', 'resolve-shots', (rc0, out0)),
+        (expect, gate, run([PY, os.path.join(SKILL, f'scripts/{gate}.py'), td])),
+    ])
+    cleanup(td)
+
 def resolve(td):
     return run([PY, os.path.join(SKILL, 'scripts/resolve-shots.py'), td])
 

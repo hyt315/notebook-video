@@ -20,7 +20,7 @@
 import io, json, os, pathlib, re, shutil, subprocess, sys, tempfile  # 夹具仍直接用这些标准库
 
 from gatelib import (  # noqa: E402  公共壳：临时工程 / 跑脚本 / 断言 / 汇总
-    PY, SKILL, SRC, TPL, case, cleanup, mkproj, resolve, results, run, summary,
+    PY, SKILL, SRC, TPL, case, cleanup, mkproj, resolve, results, run, shot_case, summary,
 )
 
 
@@ -107,45 +107,29 @@ if len(sys.argv) >= 3 and sys.argv[1] == '--canvas-bounds-wiring':
     sys.exit(0 if not probs else 1)
 
 # ── A：anchor 出界 → validate-shot-motion 必须拦 ──
-td, rc0, out0 = mkproj(lambda d: (d['shots'][0].__setitem__('anchor', {'x': 1900, 'y': 1500, 'w': 1200, 'h': 600}), d)[1])
-case('A 镜头 anchor 出界', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:anchor 出界', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
-])
-cleanup(td)
+shot_case('A 镜头 anchor 出界', lambda d: (d['shots'][0].__setitem__('anchor', {'x': 1900, 'y': 1500, 'w': 1200, 'h': 600}), d)[1],
+          'must_block:anchor 出界', 'validate-shot-motion')
 
 # ── B：平移超出缩放预算（s=1.0 却平移 ±220px）→ validate-shot-motion 必须拦 ──
 def mut_pan(d):
     d['shots'][3]['camera'] = {'intent': 'pan-follow', 'at': 10, 'dur': 45, 'fromX': 700, 'fromY': 540,
                                'x': 1220, 'y': 540, 'from': 1.0, 'to': 1.0}
     return d
-td, rc0, out0 = mkproj(mut_pan)
-case('B 平移超预算（s=1.0 平移 ±220px → 自动抬缩放后超意图预算）', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:预算', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
-])
-cleanup(td)
+shot_case('B 平移超预算（s=1.0 平移 ±220px → 自动抬缩放后超意图预算）', mut_pan,
+          'must_block:预算', 'validate-shot-motion')
 
 # ── C：抽掉活性组件 → validate-composition 必须拦；相邻同骨架是 P1，只点名 ──
 def mut_live(d):
     d['shots'][1]['live'] = []
     return d
-td, rc0, out0 = mkproj(mut_live)
-case('C 无活性组件', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:没有任何活性组件', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
-])
-cleanup(td)
+shot_case('C 无活性组件', mut_live,
+          'must_block:没有任何活性组件', 'validate-composition')
 
 def mut_skel(d):
     d['shots'][1]['skeleton'] = d['shots'][0]['skeleton']
     return d
-td, rc0, out0 = mkproj(mut_skel)
-case('C2 相邻同骨架（P1 点名）', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_warn:同骨架', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
-])
-cleanup(td)
+shot_case('C2 相邻同骨架（P1 点名）', mut_skel,
+          'must_warn:同骨架', 'validate-composition')
 
 # ── D：时间轴断档（跳过两句话）→ resolve-shots 自身必须拦 ──
 td, rc0, out0 = mkproj(lambda d: (d['shots'][1].__setitem__('cues', [6, 6]), d)[1])
@@ -197,30 +181,18 @@ def mut_spoiler(d):
     # 任何负 offset 都会先撞判据①"落在镜外"，于是这条夹具**永远测不到③**（复核实测）。
     d['shots'][0]['beats'] = [{'cue': 0, 'offset': 0}, {'cue': 1, 'offset': -13}, {'cue': 2, 'offset': 0}, {'cue': 3, 'offset': 0}]
     return d
-td, rc0, out0 = mkproj(mut_spoiler)
-case('I 呈现效果 · beat 提前剧透 13 帧', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:早于该句', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-])
-cleanup(td)
+shot_case('I 呈现效果 · beat 提前剧透 13 帧', mut_spoiler,
+          'must_block:早于该句', 'validate-presentation')
 
 # ── J · 呈现效果门禁 G-1②：beat 声明了不属于本镜的 cue → 必须拦 ──
-td, rc0, out0 = mkproj(lambda d: (d['shots'][1].__setitem__('beats', [{'cue': 13, 'offset': 0}]), d)[1])
-case('J 呈现效果 · beat 引用了别的镜的 cue', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:超出本镜', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-])
-cleanup(td)
+shot_case('J 呈现效果 · beat 引用了别的镜的 cue', lambda d: (d['shots'][1].__setitem__('beats', [{'cue': 13, 'offset': 0}]), d)[1],
+          'must_block:超出本镜', 'validate-presentation')
 
 # ── S · 呈现效果门禁 G-1③b：beat **晚于**它那句讲完太久 → 必须拦（上界的方向）──
 # 复核抓到的口径漏洞：第一版只防"早"，`{cue:0, offset:200}`（台词讲完 6.7s 才出现）照样 PASS。
 # 这条夹具把 S1 的第一拍推到 offset=200（该句 31 帧、容差 8 帧 → 上界 39）。
-td, rc0, out0 = mkproj(lambda d: (d['shots'][0]['beats'].__setitem__(0, {'cue': 0, 'offset': 200}), d)[1])
-case('S 呈现效果 · beat 晚于该句结束 169 帧', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:晚于该句结束', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-])
-cleanup(td)
+shot_case('S 呈现效果 · beat 晚于该句结束 169 帧', lambda d: (d['shots'][0]['beats'].__setitem__(0, {'cue': 0, 'offset': 200}), d)[1],
+          'must_block:晚于该句结束', 'validate-presentation')
 
 # ── R · 呈现效果门禁 G-1③b-P1：合法但**贴边**的拍要被点名（rc 仍为 0，不许当成拦）──
 # 复核实测：模板最紧的合法拍余量恰好 8 帧（offset = 该句帧数 = "句末那拍"），容差是承重墙。
@@ -232,12 +204,8 @@ def mut_tight(d):
         if b['cue'] == 13 and b['offset'] == 100:
             b['offset'] = 112
     return d
-td, rc0, out0 = mkproj(mut_tight)
-case('R 呈现效果 · 距容差上界只剩 2 帧（贴边预警）', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_warn:贴边', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-])
-cleanup(td)
+shot_case('R 呈现效果 · 距容差上界只剩 2 帧（贴边预警）', mut_tight,
+          'must_warn:贴边', 'validate-presentation')
 
 # ── K · 呈现效果门禁 G-2：字幕阅读速度超预算（40 字塞进 1 秒）→ 必须拦 ──
 def mut_dense(td_):
@@ -323,12 +291,8 @@ def mut_layout(d):
     for k, sh in enumerate(d['shots']):
         sh['layout'] = 'grid' if k in (2, 3) else f'L{k}'
     return d
-td, rc0, out0 = mkproj(mut_layout)
-case('AL 相邻镜头同布局（layout）', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_warn:同布局', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
-])
-cleanup(td)
+shot_case('AL 相邻镜头同布局（layout）', mut_layout,
+          'must_warn:同布局', 'validate-composition')
 
 # ── AM：3.2.0 字幕一行超过 16 字 → validate-caption-sync 必须拦；拆开的原样必须过 ──
 def mk_long_caption():
@@ -356,12 +320,8 @@ def mut_tiny(d):
     d['shots'][0]['contentBand'] = {'x': 160, 'y': 130, 'w': 1600, 'h': 780}
     d['shots'][0]['cinema'] = {'fit': 'none'}
     return d
-td, rc0, out0 = mkproj(mut_tiny)
-case('AN 内容只占安全区 13%（关掉自动放大）', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:内容只占安全区', 'validate-shot-motion', run([PY, os.path.join(SKILL, 'scripts/validate-shot-motion.py'), td])),
-])
-cleanup(td)
+shot_case('AN 内容只占安全区 13%（关掉自动放大）', mut_tiny,
+          'must_block:内容只占安全区', 'validate-shot-motion')
 
 # ── E：阴性对照：原样分镜表三道门必须全过（证明门不是"见谁拦谁"） ──
 td, rc0, out0 = mkproj()
@@ -528,12 +488,8 @@ def mksrc(replace_scene=None):
 def mut_move(d):
     d['shots'][2].pop('move', None)
     return d
-td, rc0, out0 = mkproj(mut_move)
-case('X 讲法字段 · 缺 move（G-14）', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_warn:缺 move', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-])
-cleanup(td)
+shot_case('X 讲法字段 · 缺 move（G-14）', mut_move,
+          'must_warn:缺 move', 'validate-presentation')
 
 # ── Y · 文字安全色（*Ink）：把 blueInk 改成近乎白色 → validate-presentation 必须拦（P0）──
 # 这一条同时是"新增机制的自检"：五个 *Ink 是专门用来当文字色的，
@@ -674,19 +630,11 @@ def mut_move_run(d, first, count):
     return d
 
 
-td, rc0, out0 = mkproj(lambda d: mut_move_run(d, 0, 3))
-case('AC 讲法字段 · 同一 move 连续 3 镜（G-14②）', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_warn:同一 move 连续 3 镜', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-])
-cleanup(td)
+shot_case('AC 讲法字段 · 同一 move 连续 3 镜（G-14②）', lambda d: mut_move_run(d, 0, 3),
+          'must_warn:同一 move 连续 3 镜', 'validate-presentation')
 
-td, rc0, out0 = mkproj(lambda d: mut_move_run(d, 0, 2))
-case('AD 讲法字段 · 同一 move 连续 2 镜（阴性对照，必须放行）', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_pass', 'validate-presentation', run([PY, os.path.join(SKILL, 'scripts/validate-presentation.py'), td])),
-])
-cleanup(td)
+shot_case('AD 讲法字段 · 同一 move 连续 2 镜（阴性对照，必须放行）', lambda d: mut_move_run(d, 0, 2),
+          'must_pass', 'validate-presentation')
 
 
 def mut_move_run_gap(d):
@@ -1290,12 +1238,8 @@ def _mut_entry(d):
     for _sh in d['shots']:
         _sh['entry'] = 'pop'                      # 既不是 rise/slide/fade/zoom，也不是 build
     return d
-td, rc0, out0 = mkproj(_mut_entry)
-case('EN1 入场方式写 pop → validate-composition 判 P0 并列出合法值', [
-    ('must_pass', 'resolve-shots', (rc0, out0)),
-    ('must_block:未知入场方式', 'validate-composition', run([PY, os.path.join(SKILL, 'scripts/validate-composition.py'), td])),
-])
-cleanup(td)
+shot_case('EN1 入场方式写 pop → validate-composition 判 P0 并列出合法值', _mut_entry,
+          'must_block:未知入场方式', 'validate-composition')
 
 # (2) 12 镜工程手账页 0% 仍要判 P1——「镜头 ≤3 不判」只放过样例，不放过成片。
 _td = tempfile.mkdtemp(prefix='nv-mix-')
