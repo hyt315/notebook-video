@@ -21,7 +21,7 @@ export type TransitionKind =
   | 'zoom' | 'fade' | 'hard' | 'slide' | 'drop'
   | 'pageturn' | 'peel' | 'pageflip';
 
-/** 需要 WebGPU 的卷页种类（无 GPU 时按 fallback 退回）。 */
+/** 需要 WebGL2 的卷页种类（探针不通过时按 fallback 退回）。 */
 export type CurlKind = 'pageturn' | 'peel';
 
 /**
@@ -42,7 +42,7 @@ export type TransitionMeta = {
   frames: number;
   /** 是否翻页 —— 纸声跟着它走（不跟皮肤走）。新增翻页类型时这里要标 true。 */
   pageTurn: boolean;
-  /** 需要 WebGPU 的卷页种类（CurlKind：pageturn / peel）；缺省 = 不需要。 */
+  /** 需要 WebGL2 的卷页种类（CurlKind：pageturn / peel）；缺省 = 不需要。 */
   gpu?: CurlKind;
   /** 无 GPU 时退回的转场（仍是「翻过去一页」，不是横移）。 */
   fallback?: TransitionKind;
@@ -78,7 +78,7 @@ export const TRANSITION_META: Record<TransitionKind, TransitionMeta> = {
 export const isPageTurnKind = (k: string | null | undefined): boolean =>
   k === 'auto' || (k != null && TRANSITION_META[k as TransitionKind]?.pageTurn === true);
 
-/** 需要 WebGPU 的卷页种类判定（无 GPU 时走 fallback）。 */
+/** 需要 WebGL2 的卷页种类判定（探针不通过时走 fallback）。 */
 export const isCurl = (k: string | null | undefined): k is CurlKind => k === 'pageturn' || k === 'peel';
 
 /** 无 GPU 时的退回映射（仍是「翻过去一页」，不是横移）。 */

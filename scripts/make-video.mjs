@@ -320,13 +320,13 @@ const sheet = async (pngs, out) => {
     '-frames:v', '1', out]);
 };
 const cli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
-// 3.3.0 真卷页：render / fx-probe 把结论写在 renders/.fx-probe.json。本片用到 pageturn / peel 却没开成 → P1（片子照出，转场已退回 slide / drop）。
+// 真卷页：render / fx-probe 把结论写在 renders/.fx-probe.json。本片用到 pageturn / peel 却没开成 → P1（片子照出，转场已退回 pageflip / drop）。
 const fxNote = () => {
   try {
     const fx = JSON.parse(fs.readFileSync(path.join(project, 'renders', '.fx-probe.json'), 'utf8'));
     if (!fx.used) return [];
-    return fx.on ? [`- 翻页：GPU 卷页已开启（${fx.browser}；探针 ${fx.probeMs ?? '?'} ms）`]
-      : [`- **P1 卷页降级**：${fx.reason}。本片的翻页已改用纯 CSS 的折痕版（pageflip）——**仍然是翻页**，只是没有纸的卷曲和纸背透光；要开：装完整版 Chromium（\`npx playwright install chromium\`，国内加 \`PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright\`），再跑 \`node scripts/notebook-video.mjs fx-probe <工程> --force\`（见 references/camera.md#fx-effects）`];
+    return fx.on ? [`- 翻页：WebGL2 卷页已开启（探针 ${fx.probeMs ?? '?'} ms）`]
+      : [`- **P1 卷页降级**：${fx.reason}。本片的翻页已改用纯 CSS 的折痕版（pageflip）——**仍然是翻页**，只是没有纸的卷曲和纸背透光；修好浏览器后跑 \`node scripts/notebook-video.mjs fx-probe <工程> --force\` 重探（见 references/camera.md#fx-effects）`];
   } catch { return []; }
 };
 const writeReport = (frames, sheets, extra = '') => {
@@ -351,8 +351,7 @@ if (flag('stills')) {
   // Windows 上杀毒/索引器会短暂占用文件，rmSync 会抛 EBUSY/EPERM；maxRetries 是 Node 官方给的重试开关。
   fs.rmSync(bundle, {recursive: true, force: true, maxRetries: 5, retryDelay: 120});
   if ((await nodeRemotion([cli, 'bundle', 'src/index.tsx', '--out-dir', bundle], {cwd: project, capture: true})).code) die('remotion bundle 失败');
-  // 3.3.0：先探一次真卷页能力，结论进报告（P1）。静帧本身不走完整版 Chrome（每帧 ~3 s）：静帧取的是镜头开场 / 关键词 / 镜尾，
-  // 不落在镜头开头 22 帧的卷页窗口里（只有短于 66 帧的镜头例外，那张静帧里看到的是退回后的 slide / drop）。
+  // 先探一次真卷页能力，结论进报告（P1）。静帧取的是镜头开场 / 关键词 / 镜尾，不落在镜头开头 22 帧的卷页窗口里。
   const fxr = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'fx-probe', project], {capture: true});
   try { const fx = JSON.parse(fxr.out.slice(fxr.out.indexOf('{'))); if (fx.used) console.log(fx.on ? '  真卷页：探针通过（成片里开启）' : `  ⚠ P1 真卷页未开启：${fx.reason}`); } catch { /* 探针输出读不出：按未开启处理 */ }
   const frames = frameList();

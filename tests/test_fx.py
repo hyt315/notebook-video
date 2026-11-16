@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the 3.3.0 real page-turn transitions (pageturn / peel via @remotion/effects pageTurn, WebGPU).
+"""Tests for the real page-turn transitions (pageturn / peel via @remotion/effects pageTurn, WebGL2).
 
 Offline: no browser is started. The browser probe itself is exercised end-to-end by
 `node scripts/notebook-video.mjs fx-probe PROJECT --force` (see references/camera.md#fx-effects).
@@ -134,6 +134,8 @@ class PageTurnContract(unittest.TestCase):
         self.assertEqual(len(set(rem.values())), 1, rem)
         version = next(iter(rem.values()))
         self.assertRegex(version, r"^\d+\.\d+\.\d+$", "Remotion 全家必须 --save-exact 同版本")
+        # pageTurn 从 4.0.540 起走 WebGL2（缺省 Headless Shell 能画）；更早的版本只有 WebGPU 后端。
+        self.assertGreaterEqual(tuple(map(int, version.split("."))), (4, 0, 540))
         lock = json.loads((TPL / "package-lock.json").read_text(encoding="utf-8"))
         for name in rem:
             self.assertEqual(lock["packages"][f"node_modules/{name}"]["version"], version, name)

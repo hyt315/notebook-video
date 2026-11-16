@@ -330,7 +330,7 @@ const shotIndexAt=(f:number)=>{let idx=0;for(let i=0;i<SHOT_IDS.length;i++){ if(
 const camFor=(i:number,local:number)=>{const s:any=(SHOTS as any)[SHOT_IDS[i]];return cinemaCamAt(s.cinema,local,s.duration,i,s.keys);};
 const transFor=(i:number)=>{const s:any=(SHOTS as any)[SHOT_IDS[i]];return resolveTransition(s.transition,i,(CHAPTER_STARTS as readonly number[]).includes(s.from));};
 
-// 3.9.0 · 折痕翻页（没有 WebGPU 时的纯 CSS 版）已抽到 transitions/pagefold.tsx（P2-23 解耦）。
+// 3.9.0 · 折痕翻页（卷页探针不通过时的纯 CSS 版）已抽到 transitions/pagefold.tsx（P2-23 解耦）。
 // 折线几何（FOLD_K / FOLD_DEG / FOLD_SPAN）与 PageFold 组件都在那里；折线方向与 GPU 卷页
 // 共用 transitions/meta.ts 的 PAGETURN_FOLD_DIRECTION，预览（CSS）与成片（GPU）永远同向。
 
@@ -534,7 +534,7 @@ const Root=()=> <>
   <Composition id="NotebookVideoShowcase" component={ShowcaseComposition} durationInFrames={SHOWCASE_PAGES*30} fps={FPS} width={1920} height={1080}/>
   {/* craft 组件样张（`notebook-video.mjs craft-sheet`），设计坐标 1920×1080 */}
   <Composition id="NotebookVideoCraftSheet" component={CraftSheetComposition} durationInFrames={CRAFT_SHEET_FRAMES} fps={FPS} width={1920} height={1080}/>
-  {/* 真卷页能力探针（`notebook-video.mjs fx-probe`）：WebGPU + HTML-in-canvas 画得出来才给成片开 pageturn / peel */}
+  {/* 真卷页能力探针（`notebook-video.mjs fx-probe`）：WebGL2 + HTML-in-canvas 画得出来才给成片开 pageturn / peel */}
   <Composition id="NotebookVideoFxProbe" component={FxProbeComposition} durationInFrames={1} fps={FPS} width={320} height={180}/>
 </>;
 

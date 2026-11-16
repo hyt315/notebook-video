@@ -120,8 +120,8 @@ class PropsMergeTest(unittest.TestCase):
 
     def test_render_merges_fx_props_instead_of_overwriting(self):
         src = CLI.read_text(encoding="utf-8")
-        # 合并而不是 push 两个 --props：fx.args 的 props 被读出来 Object.assign 进 mergedProps
-        self.assertIn("Object.assign(mergedProps, JSON.parse(raw))", src)
+        # 合并而不是 push 两个 --props：nvFx 与 nvReducedMotion 写进同一个 mergedProps
+        self.assertIn("if (fx.on) mergedProps.nvFx = 'on';", src)
         self.assertIn("if (reducedMotion) mergedProps.nvReducedMotion = 'on';", src)
         # 只推一次 --props（buildPropsArg 的产物）
         self.assertEqual(src.count("nodeArgs.push(buildPropsArg(mergedProps))"), 1)

@@ -104,8 +104,8 @@ make-video 跑完门禁写 `renders/gates.json`（全部记录，`blocking: true
 
 | 判定 | 含义 | 用户会遇到的 |
 |---|---|---|
-| `full` 全能力 | 硬依赖齐、有带 WebGPU 的 Chromium、字体齐 | 卷页是真卷页；语义断句生效 |
-| `degraded` 折页降级 | 能出片，但没找到带 WebGPU 的 Chromium | `pageturn` / `peel` 退成 CSS 折痕翻页；片照出，只是没有纸背弧面 |
+| `full` 全能力 | 硬依赖齐、Remotion 浏览器已就位、字体齐 | 卷页是真卷页；语义断句生效 |
+| `degraded` 折页降级 | 能出片，但还没有 Remotion 浏览器（先 `prepare-browser`） | `pageturn` / `peel` 退成 CSS 折痕翻页；片照出，只是没有纸背弧面 |
 | `unsupported` 不支持 | 缺 ffmpeg / ffprobe / Python / npm，或 Node < 20 | 连合成都做不了。每条缺项都打印出补它的命令 |
 
 ### 怎么自检
@@ -549,7 +549,7 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 | `@remotion/shapes` | 参数化几何图形：圆 / 椭圆 / 矩形 / 三角 / 多边形 / 星 / Pie / 心形 / 箭头 / 对话气泡 / 星芒，`make*()` 直接给出 path 字符串 |
 | `@remotion/layout-utils` | `measureText`（实测文字宽高，**准确且严格线性**：已验证 46px 时 44 字 = 2024px）、`fillTextBox`。**治卡片裁切的正解**。⚠️ **不要用 `fitTextOnNLines` 处理中文**，见第 5.1 节 |
 | `@remotion/noise` | `noise2D/3D`：给同一 seed 得到同一结果，可做有机抖动、自然呼吸而不破坏可复现性 |
-| `@remotion/effects` | 画布特效（WebGL2 / WebGPU）。本模板只用 `pageTurn()` 做手作皮肤的真翻页 / 揭纸转场（`src/fx.tsx`）；它要 WebGPU，缺省 Headless Shell 画不了，所以由渲染器探针决定开不开，详见 [camera.md#fx-effects](camera.md#fx-effects)。`fractalNoise()` 评估过，不进渲染期（同文件 §4） |
+| `@remotion/effects` | 画布特效（WebGL2）。本模板只用 `pageTurn()` 做真翻页 / 揭纸转场（`src/fx.tsx`）；缺省 Headless Shell 就能画，没有 WebGL2 的浏览器会报错，所以由渲染器探针决定开不开，详见 [camera.md#fx-effects](camera.md#fx-effects)。`fractalNoise()` 评估过，不进渲染期（同文件 §4） |
 
 > 选型理由：这五个与渲染引擎同厂，**按帧驱动设计**，不存在"库自带时间动画"的冲突，是引入成本最低、
 > 风险最小的一类扩展。加依赖时优先考虑这一族。
@@ -990,7 +990,7 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 手作路线换成 `--style=journal`（或 `papercut` / `archive`），会按需下载 Noto Serif SC Bold（字幕字体，OFL）。
 
 **翻页是缺省，不是选项。** 任何皮肤、任何 story，只要不写 `transition`，镜间一律翻页：
-`pageturn`（纸被卷起来，WebGPU）→ 画不了就退到 `pageflip`（纯 CSS 的折痕翻页，无依赖），
+`pageturn`（纸被卷起来，WebGL2）→ 画不了就退到 `pageflip`（纯 CSS 的折痕翻页，无依赖），
 两者**同向**（近乎竖直的折线、下角领先，从右往左翻）。所以 story 里**不需要**写
 `"transition": "pageturn"`，写了反而会把自定义皮肤的选择固定死。
 `whip`（甩镜）/ `zoom` / `slide` / `drop` 仍可用，但都要显式写。
@@ -998,10 +998,8 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 **翻页一定有纸声**（`page` 拟音，转场第 3 帧命中）。它是动作音，不是标点：
 `sfxDensity: sparse` 只削标点，不削动作；换章那一镜 chapter 与 page 并存，不会互相吃掉。
 
-渲染器先画一张探针验收 WebGPU 卷页；通过就换完整版 Chromium 只渲转场那 22 帧，再按帧号拼回快速渲染的整片
-（`transition-plan.mjs` 的 `curlWindows` 定窗口 + `fx-browser.mjs` 的 `spliceArgs` 拼回）。缺完整版 Chromium 时探针失败，全片照常出，
+渲染器先画一张探针验收卷页；通过就整片一遍渲完（与其余帧同一浏览器、同样并发）。探针失败时全片照常出，
 翻页自动降级成折痕版并在报告里记 P1（[references/camera.md#fx-effects](camera.md#fx-effects)）。
-装浏览器：`npx playwright install chromium`（国内加 `PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright`）。
 
 工程里已有一部完整的示例片（8 镜）。**照着改，不要从零写**：
 
@@ -1064,12 +1062,9 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 **看动起来对不对，别直接渲整片**：`node "<SKILL_DIR>/scripts/notebook-video.mjs" preview ./my-video --seconds=30`
 （默认 0.5 倍分辨率；**翻页预览里就有**——不开 fx 时走纯 CSS 的折痕翻页，速度不受影响。
 30 秒窗口的耗时看机器：作者开发机约 40 秒，2 核 / 8 GB 的 Linux 实测约 5 分钟（含打包）；同时给接触片和响度读数。单镜验：`--shot=S6`。
-`--fx=on` 是把翻页升级成 GPU 卷页（纸真的弯起来、带纸背透光），它会切完整版 Chromium
-（预览 0.5x 下约 1.8 秒/帧，交付分辨率约 3 秒/帧），所以别拿它渲 30 秒窗口，
-**要看卷页就只截转场那 30 来帧**：
-`--from=<跨镜边界前一秒> --seconds=1.2 --fx=on`（作者开发机实测 61 秒出片，慢机器上会长数倍）。
-跨镜边界在 `manifests/shots.resolved.json` 的 `from` 里，除以帧率就是秒。带翻页时不给全片耗时推算，
-因为只有转场帧走 WebGPU，线性外推会得假数字。）
+`--fx=on` 把翻页升级成卷页（纸真的弯起来、带纸背透光），多一次探针、几乎不增加每帧耗时；
+只看一处卷页就截转场那 30 来帧：`--from=<跨镜边界前一秒> --seconds=1.2 --fx=on`。
+跨镜边界在 `manifests/shots.resolved.json` 的 `from` 里，除以帧率就是秒。）
 想量「是不是边讲边长」：`python scripts/measure-reveal.py <工程> renders/preview-*.mp4`（只报告，不拦；读法见 references/draftpaper.md#reveal-rules）。
 预览结束会打一行 `FillGate coverage`：每镜 `cells`（48 格占用）/ `blank`（全空的列）/ `largest`（最大单体占画面）/ `widest`（最大横向跨度），
 `largest<0.06` 判「主体过小」，但有两条豁免：`widest≥0.45`（面积小但横跨够的条状主体——标尺、格带、时间轴）

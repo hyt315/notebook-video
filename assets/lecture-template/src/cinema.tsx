@@ -20,7 +20,7 @@ import {FX_FALLBACK, transitionFramesOf, type TransitionKind as MetaTransitionKi
 //   3. pan     宽画布横摇：`cinema.pan.worldW` > 1920 时，场景按更宽的世界排版，摄影机横摇扫过；
 //   4. 转场     whip（甩镜：方向模糊 + 位移）/ zoom（推穿：放大淡出 + 新镜从远处推来）/ fade / hard；
 //              缺省 auto：章节首镜 zoom，其余 whip，左右交替；
-//              3.3.0 pageturn / peel：真卷页（src/fx.tsx，WebGPU），渲染器探针不通过时自动退回 slide / drop；
+//              3.3.0 pageturn / peel：真卷页（src/fx.tsx，WebGL2），渲染器探针不通过时自动退回 slide / drop；
 //   5. 视差     Backdrop 按 0.3 的系数跟随摄影机（背景比内容动得少 → 纵深）。
 //
 // 纪律：全部是**帧的纯函数**（interpolate / spring / Easing），无随机、无状态、无实时动画库；
@@ -250,7 +250,7 @@ export const resolveTransition = (declared: string | undefined, idx: number, _is
   const d = declared ?? 'auto';
   if (d === 'hard') return 'hard';
   if (d === 'fade' || d === 'zoom' || d === 'whip-left' || d === 'whip-right' || d === 'slide' || d === 'drop') return d;
-  // 3.3.0：真卷页。渲染器没开 fx（浏览器没有 WebGPU / HTML-in-canvas）→ 走 FX_FALLBACK，片子照样出。
+  // 3.3.0：真卷页。渲染器没开 fx（浏览器没有 WebGL2 / HTML-in-canvas）→ 走 FX_FALLBACK，片子照样出。
   // 3.7.0 起 pageturn 退回的不是 slide（那是「横移」），而是 pageflip（纯 CSS 折痕翻页）：
   // 卷页是「纸在弯」，折页是「纸沿一条折痕翻过去」——后者不要 GPU，而观众看到的是同一件事。
   if (d === 'pageturn') return fx ? d : FX_FALLBACK.pageturn;
@@ -287,7 +287,7 @@ export const transitionStyle = (kind: TransitionKind, p: number, role: 'in' | 'o
   const e = easeIO(Math.max(0, Math.min(1, p)));
   if (kind === 'hard') return role === 'out' ? {transform: 'none', opacity: 0, blur: 0} : {transform: 'none', opacity: 1, blur: 0};
   if (kind === 'fade') return role === 'out' ? {transform: 'none', opacity: 1 - e, blur: 0} : {transform: 'none', opacity: 1, blur: 0};
-  // pageturn / peel：两层都不动，卷页由 index.tsx 的 PageCurl（WebGPU）画在上一镜那一层上。
+  // pageturn / peel：两层都不动，卷页由 index.tsx 的 PageCurl（WebGL2）画在上一镜那一层上。
   if (kind === 'pageturn' || kind === 'peel') return {transform: 'none', opacity: 1, blur: 0};
   // pageflip：折痕斜着扫过整页，露出下面那一页。
   // **不要再退回 rotateY。** 绕竖直边缘转整页，两个方向都读不成翻页：

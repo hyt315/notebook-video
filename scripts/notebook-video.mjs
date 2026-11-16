@@ -6,10 +6,9 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
-import {FX_CONCURRENCY, FX_PROBE_TIMEOUT_MS, curlWindows, resolveFx, spliceArgs} from './fx-browser.mjs';
+import {FX_PROBE_TIMEOUT_MS, resolveFx} from './fx-browser.mjs';
 import {readShotPlan} from './transition-plan.mjs';
 import {acquireRenderLock, canResume, inputFingerprint, lockPathFor, manifestPathFor, projectKeyFor, readManifest, writeManifest} from './render-lock.mjs';
-import {FxStageError, FX_TMP_PREFIX, pruneFxTemp, runFxPipeline} from './fx-pipeline.mjs';
 import {appendRunLog, classifyExit, formatSummary, readRunLog, RUN_LOG_REL, summarize} from './render-log.mjs';
 import {writeSilentNarration} from './silent-audio.mjs';
 import {resolveBrowserExecutable} from './browser-exec.mjs';
@@ -83,8 +82,7 @@ const readShotTable = (project) => {
 };
 
 // options.timeoutMs：到点就 SIGKILL 并按失败返回（allowFailure 时 resolve，code=-1）。
-// 只给"可能永远不返回"的探针用——完整版 Chrome 在没有 GPU 的机器上会卡在 WebGPU 初始化，
-// 而这里没有超时的话 `render` 会一直停在「Rendering at concurrency N」后面，看起来像在渲染。
+// 只给"可能永远不返回"的探针用：浏览器起不来时，没有超时 `render` 会一直停在「Rendering at concurrency N」后面。
 const run = (command, args = [], options = {}) => new Promise((resolve, reject) => {
   const child = spawn(command, args, {
     cwd: options.cwd,
@@ -246,7 +244,7 @@ const capabilities = async () => {
     level,
     blockers: hard.map((k) => ({name: k, fix: advice[k]})),
     capabilities: Object.fromEntries(Object.entries(bins).map(([k, v]) => [k, v])),
-    pageTurn: browser ? {mode: 'gpu', browser} : {mode: 'fold', why: '没找到带 WebGPU 的 Chromium：pageturn/peel 退化成折痕翻页，片照出'},
+    pageTurn: browser ? {mode: 'gpu', browser} : {mode: 'fold', why: '没找到 Remotion 浏览器（先 prepare-browser）：pageturn/peel 退化成折痕翻页，片照出'},
     fonts: {lxgw: fontFiles.some((f) => /lxgw/i.test(f)), serif: hasSerif,
             note: hasSerif ? '' : '手作皮肤要跑 notebook-video fonts --serif（NotoSerifSC 约 12 MB）'},
     budoux: {available: budoux, note: budoux ? '' : '语义断句会跳过；交付路径（--require-budoux）会因此失败，先 prepare-browser'},
@@ -620,7 +618,7 @@ const applyColorTags = async (target) => {
   }
 };
 
-// 3.3.0：真卷页能力探针（scripts/fx-browser.mjs）。同一进程内只探一次；结论写 renders/.fx-probe.json 供 make-video 写报告。
+// 真卷页能力探针（scripts/fx-browser.mjs）。同一进程内只探一次；结论写 renders/.fx-probe.json 供 make-video 写报告。
 const fxCache = new Map();
 const fxFor = async (project, {force = false, quiet = false} = {}) => {
   if (!force && fxCache.has(project)) return fxCache.get(project);
@@ -629,16 +627,14 @@ const fxFor = async (project, {force = false, quiet = false} = {}) => {
   try { remotionVersion = JSON.parse(fs.readFileSync(path.join(project, 'node_modules', 'remotion', 'package.json'), 'utf8')).version; } catch { /* 未安装 */ }
   const runStill = async (args) => {
     if (!fs.existsSync(remotionCli)) return {code: 1, out: `Remotion CLI missing: ${remotionCli}`};
-    // 探针一定要有上限。没有完整版 Chromium 时 Remotion 会去下载 Chrome for Testing
-    //（`--chrome-mode=chrome-for-testing`），网络不通就永远不返回——`render` 于是卡在
-    // 「Rendering at concurrency N」后面 20 分钟毫无输出。探针失败是**正常结局**（退回 pageflip），
-    // 所以到点就杀，按失败处理。
-    const r = await run(process.execPath, [...hideConsoleArgs(), remotionCli, 'still', REMOTION_ENTRY_POINT, ...args],
+    // 探针用与成片相同的浏览器；有上限，到点就杀，按失败处理（退回 pageflip）。
+    const browser = browserExecutableOrFail();
+    const r = await run(process.execPath, [...hideConsoleArgs(), remotionCli, 'still', REMOTION_ENTRY_POINT, ...args, ...(browser ? [`--browser-executable=${browser}`] : [])],
       {cwd: project, capture: true, allowFailure: true, timeoutMs: FX_PROBE_TIMEOUT_MS});
     return {code: r.code, out: `${r.stdout}\n${r.stderr}`};
   };
   const fx = await resolveFx({project, remotionVersion, runStill, force});
-  if (!quiet && fx.used) console.log(fx.on ? `翻页：GPU 卷页已开启 · ${fx.browser}` : `翻页：折痕版（pageflip）· ${fx.reason}`);
+  if (!quiet && fx.used) console.log(fx.on ? '翻页：WebGL2 卷页已开启' : `翻页：折痕版（pageflip）· ${fx.reason}`);
   fxCache.set(project, fx);
   return fx;
 };
@@ -782,12 +778,11 @@ const runRemotionFiltered = (nodeArgs, cwd, {quiet = false, measure = true, pers
       EXIT_INFO.stalled = true;
       return reject(new Error(
       `渲染 ${stallMs < 60000 ? `${Math.round(stallMs / 1000)} 秒` : `${Math.round(stallMs / 60000)} 分钟`}没有任何输出，判定为卡住并中止（不是慢，是不动）。\n` +
-      `常见原因：浏览器没能起来（完整版 Chromium 缺失、WebGPU 初始化挂住、或触发自动下载而网络不可达）。\n` +
+      `常见原因：浏览器没能起来（触发自动下载而网络不可达，或 WebGL2 初始化挂住）。\n` +
       `下一步：\n` +
-      `  1) 关掉 GPU 卷页再试：notebook-video render ${cwd} <输出.mp4> --fx=off\n` +
+      `  1) 关掉卷页再试：notebook-video render ${cwd} <输出.mp4> --fx=off\n` +
       `  2) 探测卷页能力：notebook-video fx-probe ${cwd} --force\n` +
-      `  3) 装完整版 Chromium：npx playwright install chromium\n` +
-      `     （国内加 PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright）\n` +
+      `  3) 预先下好浏览器：notebook-video prepare-browser ${cwd}\n` +
       `  确实需要更长静默窗口时用 REMOTION_STALL_MS 放宽（当前 ${stallMs} ms）。`));
     }
     if (quiet && code !== 0 && tailLines.length) console.error(tailLines.join('\n'));
@@ -813,7 +808,7 @@ const runRemotionFiltered = (nodeArgs, cwd, {quiet = false, measure = true, pers
 // 3.9.0：浏览器路径解析抽出来给 render / still 共用。以前这段埋在 remotionRender 里，
 // `sweep` 要起 still 就得抄一遍——抄第二遍的时候一定会漏掉"缓存存在就别下载"这条。
 
-// 统一的 --props 组装：Remotion 的 --props 只接受一次，而 nvFx（fx.args 里）/ hideCaptions（poster）/
+// 统一的 --props 组装：Remotion 的 --props 只接受一次，而 nvFx / hideCaptions（poster）/
 // nvReducedMotion（--reduced-motion）各有来源，必须合并成一个对象再写临时文件传。
 // 不合并的话后写的会把先写的覆盖掉——nvFx 会悄悄关掉，卷页退回折痕版没人知道。
 const buildPropsArg = (extra = {}) => {
@@ -822,7 +817,8 @@ const buildPropsArg = (extra = {}) => {
   return `--props=${file}`;
 };
 
-const remotionRender = async ({project, composition, output, frames, concurrency, colorTagged = false, scale, fxMode = 'auto', crf = 16, muted = false, measure = true, persist = true, entry = REMOTION_ENTRY_POINT, reducedMotion = false}) => {  const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
+const remotionRender = async ({project, composition, output, frames, concurrency, colorTagged = false, scale, fxMode = 'auto', crf = 16, muted = false, measure = true, persist = true, reducedMotion = false}) => {
+  const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
   if (!fs.existsSync(remotionCli)) await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
   if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after npm ci: ${remotionCli}`);
   ensureParent(output);
@@ -832,40 +828,25 @@ const remotionRender = async ({project, composition, output, frames, concurrency
     if (!fs.existsSync(shim)) fail(`Optional network shim is missing: ${shim}`);
     nodeArgs.push('--require', shim);
   }
-  // 3.3.0 真卷页（pageturn / peel，WebGPU）：只有成片 composition、且本片用到卷页时才探测；
-  // 探针通过 → 换完整版 Chromium + 软件 GPU 参数并传 {nvFx:'on'}，并发压到 1（完整版 Chrome 多标签会花屏，见 fx-browser.mjs）；
-  // 不通过 → 照常渲染（合成里 pageturn 退回 pageflip 折痕翻页）。
-  // fxMode：auto = 探针说行就开；off = 不开（整片快速渲染那一遍）；on = 必须开（卷页片段那一遍，调用方已确认探针通过）。
+  // 真卷页（pageturn / peel，WebGL2）：只有成片 composition、且本片用到卷页时才探测；
+  // 探针通过 → 传 {nvFx:'on'}，浏览器与并发照旧；不通过 → 合成里 pageturn 退回 pageflip 折痕翻页。
+  // fxMode：auto = 探针说行就开；off = 不开。
   const fx = composition === 'NotebookVideoFilm' && fxMode !== 'off' ? await fxFor(project) : {on: false};
-  nodeArgs.push(remotionCli, 'render', entry, composition, output, '--codec=h264', `--crf=${crf}`, ...REMOTION_COLOR_ARGS, `--concurrency=${fx.on ? FX_CONCURRENCY : concurrency}`);
+  nodeArgs.push(remotionCli, 'render', REMOTION_ENTRY_POINT, composition, output, '--codec=h264', `--crf=${crf}`, ...REMOTION_COLOR_ARGS, `--concurrency=${concurrency}`);
   if (muted) nodeArgs.push('--muted');
   if (frames) nodeArgs.push(`--frames=${frames}`);
   // 缩放必须是**十进制字面量**：CLI 不接受分数字面量（`--scale=4/3` 会被判非法参数而拒绝渲染），
   // 所以这里传的是 1.3333333333333333（= 2560/1920，四舍五入回正好 2560×1440）。
   if (scale) nodeArgs.push(`--scale=${scale}`);
-  // fx.args 带着 --props=<file>（{nvFx:'on'}）；这里把 props 收出来统一合并，
-  // 其余参数（--gl / --chrome-mode / --browser-executable）照旧传。
   const mergedProps = {};
-  if (fx.on) {
-    for (const a of fx.args) {
-      if (a.startsWith('--props=')) {
-        const src = a.slice('--props='.length);
-        try {
-          const raw = fs.readFileSync(src, 'utf8');
-          Object.assign(mergedProps, JSON.parse(raw));
-        } catch { /* props 文件被清掉：按无 fx props 处理（会退回折痕版，但不炸） */ }
-      } else {
-        nodeArgs.push(a);
-      }
-    }
-  }
+  if (fx.on) mergedProps.nvFx = 'on';
   if (reducedMotion) mergedProps.nvReducedMotion = 'on';
   if (Object.keys(mergedProps).length) nodeArgs.push(buildPropsArg(mergedProps));
   // Browser resolution: explicit env wins, then the local Remotion cache that
   // `prepare-browser` already populated — never trigger a fresh 100MB+ shell
   // download when a cached copy exists on this machine.
   const browserExecutable = browserExecutableOrFail();
-  if (browserExecutable && !fx.on) nodeArgs.push(`--browser-executable=${browserExecutable}`);
+  if (browserExecutable) nodeArgs.push(`--browser-executable=${browserExecutable}`);
   // 返回 FillGate 的实测结果：`render` 不看，`sweep` 要拿它打全片表。
   // 之前这里丢掉了返回值，于是 sweep 只能再读一次终端输出——那就是第二个真源。
   const result = await runRemotionFiltered(nodeArgs, project, {measure, persist});
@@ -903,7 +884,7 @@ const printStageTimings = () => {
   if (!RUN) return;
   RUN.stages.total = Date.now() - RUN.startedAt;
   const fmt = (ms) => `${(ms / 1000).toFixed(1)}s`;
-  const order = ['prepare', 'fx-probe', 'fingerprint', 'fast', 'bundle', 'segments', 'splice', 'tag', 'render', 'loudprobe', 'finalize'];
+  const order = ['prepare', 'fx-probe', 'fingerprint', 'render', 'loudprobe', 'finalize'];
   const parts = order.filter((k) => RUN.stages[k] !== undefined).map((k) => `${k} ${fmt(RUN.stages[k])}`);
   console.log(`分阶段耗时：${parts.join(' · ')} · 合计 ${fmt(RUN.stages.total)}`);
   console.log(`（同一工程的历史记录：node scripts/notebook-video.mjs timings <工程>）`);
@@ -967,9 +948,7 @@ const render = async (args) => {
   // 于是 fx 判定、raw key、Remotion 合成名全错——`--fx=off` 当年的「卡死」有一部分就是这么来的。
   const positional = (args || []).filter((a) => !String(a).startsWith('--'));
   const [projectArg, outputArg, composition = 'NotebookVideoFilm'] = positional;
-  // --fx=off：跳过 WebGPU 卷页探测。**关掉的只是 GPU 卷页**，翻页本身不会消失——
-  // 没开 fx 时合成里走纯 CSS 的 pageflip（折痕翻页），速度不受影响。
-  // 探针现在有 150 秒上限（FX_PROBE_TIMEOUT_MS），不会再卡在「Rendering at concurrency N」后面。
+  // --fx=off：跳过卷页探测。关掉的只是 WebGL2 卷页，翻页本身不会消失——没开 fx 时走纯 CSS 的 pageflip（折痕翻页）。
   const [reducedMotion, cleanArgs] = takeReducedMotion(args || []);
   const fxOff = cleanArgs.includes('--fx=off');
   if (!projectArg || !outputArg) fail('Usage: notebook-video render PROJECT_DIRECTORY OUTPUT_MP4 [COMPOSITION_ID] [--fx=off] [--resume]', 2);
@@ -978,10 +957,7 @@ const render = async (args) => {
   // 先拿锁再碰工程：ensureProjectFonts / syncProjectAssets 都会写工程目录。
   const renderLock = takeRenderLock(project, output);
   RUN = {project, output, startedAt: Date.now(), stages: {}, stage: 'prepare',
-         fx: {on: false, windows: 0, bundleCount: 0}, resumed: false, composition};
-  // 上一次失败留下的现场：保留期内不删（要能复现），过期的清掉（连续失败不能塞满系统盘）。
-  const pruned = pruneFxTemp({log: (m) => console.log(m)});
-  if (pruned.kept.length) console.log(`保留 ${pruned.kept.length} 个未过期的卷页临时目录（上次失败的现场，24 小时后自动清）`);
+         fx: {on: false}, resumed: false, composition};
   await stage('prepare', async () => {
     await ensureProjectFonts(project);
     await syncProjectAssets([project]);
@@ -994,11 +970,7 @@ const render = async (args) => {
   // 交付路径：这是"真正出交付物"的渲染，色彩元数据必须打全（见 applyColorTags）。
   // NOTEBOOK_VIDEO_SCALE=0.75 → 1920×1080 交付（缺省 2560×1440）
   const scaleArg = process.env.NOTEBOOK_VIDEO_SCALE || undefined;
-  // 3.3.0 真卷页：完整版 Chrome + 软件 GPU 每帧约 3 s（实测 2 核 arm64、2560×1440，缺省 Headless Shell 约 0.25 s），
-  // 整片都用它会慢 10 倍以上。所以「快速整片 + 卷页片段 + 按帧号拼接」：
-  //   ① 整片照常用 Headless Shell 渲（卷页处是退回的 pageflip，马上被替换），近无损 crf 8；
-  //   ② 每个卷页窗口（22 帧）用完整版 Chrome 单独渲（crf 8、静音）；
-  //   ③ ffmpeg 按帧号 split/trim/concat 拼回，只在这一遍编码到交付质量（crf 16）。
+  // 真卷页（WebGL2）与其余帧同一个浏览器、同一遍渲完。
   const fx = composition === 'NotebookVideoFilm' && !fxOff ? await stage('fx-probe', () => fxFor(project)) : {on: false};
   const total = composition === 'NotebookVideoFilm' ? readFilmDuration(project) : null;
   // raw 的 key 必须包含所有会改变画面的渲染参数：工程、分辨率、合成、GPU 卷页还是 CSS 折页。
@@ -1006,8 +978,7 @@ const render = async (args) => {
   const rawKey = createHash('sha1').update(JSON.stringify([project, scaleArg ?? 'default', composition, fx.on ? 'gpu-curl' : 'css-fold'])).digest('hex').slice(0, 12);
   const raw = path.join(os.tmpdir(), `nv-remotion-raw-${rawKey}.mp4`);
   fs.mkdirSync(path.dirname(raw), {recursive: true});
-  const windows = fx.on ? curlWindows(project, total ?? Infinity) : [];
-  RUN.fx = {on: fx.on, windows: windows.length, bundleCount: 0, segments: []};
+  RUN.fx = {on: fx.on};
   RUN.frames = total;
   RUN.concurrency = concurrency;
   RUN.scale = scaleArg ?? 'default';
@@ -1028,46 +999,8 @@ const render = async (args) => {
   });
   if (resumeOk) {
     console.log(`续跑：复用 ${raw}（指纹 ${fingerprint} 一致，raw 完整），跳过整片渲染，直接做响度与封装。`);
-  } else if (windows.length) {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), FX_TMP_PREFIX));
-    const fastRaw = path.join(tmpDir, 'fast.mp4');
-    console.log(`真卷页：整片快速渲染 + ${windows.length} 个卷页片段（${windows.map(([a, b]) => `${a}-${b}`).join(', ')}）拼接`);
-    await stage('fast', () => remotionRender({project, composition, output: fastRaw, concurrency, scale: scaleArg, fxMode: 'off', crf: 8}));
-    // 每个 22 帧片段都从 src 重新 render，会把「打包整个工程」重复 N 次（实测每次约 20 秒，
-    // 比片段本身还贵）。同一批窗口的源码完全相同：只 bundle 一次，之后把产物目录当 render 入口。
-    // 浏览器仍每段重启（完整版 Chrome 多标签会花屏，不能靠加并发省这一笔）。
-    const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
-    const curlBundle = path.join(tmpDir, 'curl-bundle');
-    let piped;
-    try {
-      piped = await runFxPipeline({
-        windows, tmpDir, fastRaw, raw,
-        bundle: async () => {
-          const bundled = await run(process.execPath, [...hideConsoleArgs(), remotionCli, 'bundle', REMOTION_ENTRY_POINT, '--out-dir', curlBundle], {cwd: project, capture: true, allowFailure: true});
-          if (bundled.code !== 0) throw new Error(`${`${bundled.stdout}\n${bundled.stderr}`.trim().slice(-4000)}`);
-        },
-        renderSegment: (a, b, seg) => remotionRender({project, composition, output: seg, frames: `${a}-${b}`, concurrency: FX_CONCURRENCY, scale: scaleArg, fxMode: 'on', crf: 8, muted: true, entry: curlBundle}),
-        splice: (fast, segs, out) => run('ffmpeg', spliceArgs(fast, segs, windows, out)),
-        tag: applyColorTags,
-        log: (m) => console.log(`真卷页：${m}`),
-      });
-    } catch (e) {
-      if (e instanceof FxStageError) fail(e.toReport({tmpDir}));
-      throw e;
-    }
-    // 成功：runFxPipeline 已经删掉临时目录；各阶段毫秒数进运行日志
-    RUN.stages.bundle = piped.timings.bundleMs;
-    RUN.stages.splice = piped.timings.spliceMs;
-    RUN.stages.tag = piped.timings.tagMs;
-    RUN.stages.segments = piped.timings.segmentsMs.reduce((a, x) => a + x.ms, 0);
-    RUN.fx.bundleCount = piped.timings.bundleCount;
-    RUN.fx.segments = piped.timings.segmentsMs;
-    RUN.fx.tmpDir = tmpDir;
   } else {
-    // 走到这里说明 fx.on 却一个卷页窗口都没有（每镜都显式写了 whip / zoom 之类）。
-    // 那就没有任何一帧需要 WebGPU：必须显式 fxMode:'off'，否则 remotionRender 会按 fx.on
-    // 把整片换成完整版 Chrome + 并发 1，慢十倍而画面一模一样。
-    await stage('render', () => remotionRender({project, composition, output: raw, concurrency, colorTagged: true, scale: scaleArg, fxMode: 'off', reducedMotion}));
+    await stage('render', () => remotionRender({project, composition, output: raw, concurrency, colorTagged: true, scale: scaleArg, fxMode: fx.on ? 'auto' : 'off', reducedMotion}));
   }
   // raw 到这里才算完整。只有这个状态允许 --resume 复用（见 render-lock.mjs 的 canResume）。
   writeManifest(manifestPath, {state: 'raw-complete', rawBytes: fs.statSync(raw).size, rawCompletedAt: new Date().toISOString()});
@@ -1165,9 +1098,7 @@ const preview = async (argv) => {
   if (!Number.isFinite(end) || end <= start) fail(`渲染区间无效：${start}-${end}`, 2);
   const scale = Number(opt('scale', 0.5));
   if (!Number.isFinite(scale) || scale < 0.1 || scale > 1) fail(`--scale 必须在 0.1–1 之间，收到 ${opt('scale', 0.5)}`, 2);
-  // 预览默认关掉 **GPU 卷页**（要换完整版 Chromium + 并发 1，实测把 30 秒片段从 ~1 分钟拖到 8 分钟以上）。
-  // 但翻页本身预览里一直在：不开 fx 时走纯 CSS 的 pageflip（折痕翻页），速度不受影响。
-  // 要看「纸真的卷起来」那一种，才需要 --fx=on。
+  // 预览缺省关掉 WebGL2 卷页（省一次探针）；翻页本身仍在，走纯 CSS 的 pageflip。要看纸真的卷起来，加 --fx=on。
   const fxMode = opt('fx', 'off') === 'on' ? 'auto' : 'off';
   const label = shotId ? `shot-${shotId}` : `f${start}-${end}`;
   const output = path.join(project, 'renders', `preview-${label}.mp4`);
@@ -1208,14 +1139,7 @@ const preview = async (argv) => {
   console.log(loudness
     ? `Loudness: ${loudness.lufs} LUFS / true peak ${loudness.tp} dBTP（预览是原始渲染、未做交付规范化；交付按 −16 LUFS）`
     : 'Loudness: 未能读取（loudnorm 输出无法解析）');
-  // 全片推算只在它成立的时候给。开了真卷页时**不能线性外推**：WebGPU 只用于转场那几十帧，
-  // 其余帧走普通渲染，按"每帧 1.8 秒"乘全片会得到 40 分钟这种假数字（实测：
-  // `--from=3 --seconds=1 --fx=on` 53 秒，外推全片 2614 秒；而全片实际是 13 分钟）。
-  // 探针结论已缓存（fxFor），这里问一次不会重跑浏览器。
-  const fxOn = fxMode !== 'off' && (await fxFor(project, {quiet: true})).on;
-  if (totalFrames && fxOn) {
-    console.log(`Done in ${took.toFixed(0)}s — 开了真卷页，全片耗时无法从窗口线性推算（只有转场帧走 WebGPU）`);
-  } else if (totalFrames) {
+  if (totalFrames) {
     console.log(`Done in ${took.toFixed(0)}s — 按 ${scale}x 推算全片约 ${Math.round(took * totalFrames / Math.max(1, end - start))}s（交付分辨率另计）`);
   }
   // 3.9.0：预览只盖一段时，**当场说出后面还有几镜没看**。
@@ -1450,7 +1374,7 @@ const reviewFrames = async ([projectArg, outputArg, startArg, endArg, compositio
   // 调试产物（看画面对不对，不是拿去交付）：不回写色彩元数据。
   // 代价写在 applyColorTags 上方：这条片子的 ffprobe 会显示 color_transfer=unknown，
   // 要验色彩契约请验**交付文件**（validate-video 也只认交付文件）。
-  // 看画面 / 量密度不需要 GPU 卷页（折痕翻页照样在），别让它把整段换成完整版 Chrome。
+  // 看画面 / 量密度不需要卷页（折痕翻页照样在），省一次探针。
   await remotionRender({project, composition, output, frames: `${start}-${end}`, concurrency, measure: (end - start + 1) >= 60, persist: false, fxMode: 'off'});
   // 一次 bundle/一次浏览器：范围视频 + 自动接触片一步到位。
   // 多帧视觉检查用本命令替代逐帧 still，实测约省 3 倍时间（bundle 与浏览器开销只付一次）。
@@ -1809,7 +1733,7 @@ validate-facts PROJECT_DIRECTORY [--review]   (P2-22 内容事实质量：只保
 poster PROJECT_DIRECTORY [OUTPUT_JPG] [--frame=N|--shot=ID] [--scale=1]   (3.9.0: one cover still — a settled frame of the signature shot, captions suppressed)
 deliver PROJECT_DIRECTORY   (3.9.0: subtitles + cover for a finished project, re-runnable without re-rendering)
 export-srt CAPTION_CUES_JSON OUTPUT_SRT [--offset-ms N]   (3.9.0: delivery subtitles from the cues the film already uses)
-eval-project PROJECT_A [PROJECT_B] [--json]   (3.9.0: measure one film, or diff two versions — numbers only, no score)\nfx-probe PROJECT_DIRECTORY [--force]   (3.3.0: can this machine draw the WebGPU page turn? prints JSON; render runs it automatically)\n  timings PROJECT_DIRECTORY [--state=ok|failed|stalled|cancelled|all]   (3.8.0: 分阶段耗时中位数 / p95，来自 renders/render-log.jsonl)
+eval-project PROJECT_A [PROJECT_B] [--json]   (3.9.0: measure one film, or diff two versions — numbers only, no score)\nfx-probe PROJECT_DIRECTORY [--force]   (can this machine draw the WebGL2 page turn? prints JSON; render runs it automatically)\n  timings PROJECT_DIRECTORY [--state=ok|failed|stalled|cancelled|all]   (3.8.0: 分阶段耗时中位数 / p95，来自 renders/render-log.jsonl)
   clean PROJECT_DIRECTORY [--dry-run] [--yes] [--all]   (P2-32: 删 renders/ 里的可重建中间产物；默认只预演，--all 才删成片，render-log 永不删)
   package PROJECT_DIRECTORY OUTPUT_ZIP\n\nTTS is provider-neutral: supply audio/narration.mp3 and audio/narration.mp3.json using the documented adapter contract.\nGenerated or supplied raster assets are provider-neutral: register used files in manifests/visual-assets.json.\nThe same command works on macOS, Linux, Windows Command Prompt and PowerShell.`);
 };

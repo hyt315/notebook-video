@@ -4,14 +4,12 @@ import {CURL_FRAMES, FX_FALLBACK, PAGETURN_FOLD_DIRECTION, isCurl, type CurlKind
 import {pageTurn} from '@remotion/effects/page-turn';
 
 // ============================================================================
-// fx.tsx · 真翻页 / 揭纸转场（@remotion/effects 的 pageTurn，WebGPU）
+// fx.tsx · 真翻页 / 揭纸转场（@remotion/effects 的 pageTurn，WebGL2）
 //
-// 为什么单独一层：pageTurn 要 WebGPU + HTML-in-canvas。Remotion 缺省的 Chrome Headless Shell
-// 没有 WebGPU 适配器（实测 157.0.8080.0 / linux-arm64：`No WebGPU adapter available`），
-// 只有完整版 Chrome（Chrome for Testing ≥ 149，--headless=new）配上软件 Vulkan（SwiftShader）
-// 才画得出来。所以这层**默认关**：只有渲染器先用探针画过一张、核对过像素，才通过 inputProps
-// `{nvFx: 'on'}` 打开（scripts/notebook-video.mjs 的 resolveFx）。没打开时 pageturn / peel
-// 自动退回旧转场（FX_FALLBACK），绝不会因为浏览器不支持而整片渲染失败。
+// pageTurn 要 WebGL2 + HTML-in-canvas，Remotion 缺省的 Chrome Headless Shell 就能画（无显卡时走软件 ANGLE）。
+// 但没有 WebGL2 的浏览器会让 pageTurn 直接抛错，所以这层**默认关**：渲染器先用探针画过一张、核对过像素，
+// 才通过 inputProps `{nvFx: 'on'}` 打开（scripts/notebook-video.mjs 的 fxFor）。没打开时 pageturn / peel
+// 自动退回 CSS 转场（FX_FALLBACK），绝不会因为浏览器不支持而整片渲染失败。
 //
 // 纪律：几何参数全是帧的纯函数（interpolate + 固定缓动）；pageTurn 本身无随机 → 同一帧渲两次结果相同。
 // ============================================================================

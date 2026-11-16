@@ -21,7 +21,7 @@ import {fileURLToPath} from 'node:url';
 const CONTRACT = JSON.parse(fs.readFileSync(new URL('../assets/lecture-template/src/contract.json', import.meta.url), 'utf8'));
 export const CURL_FRAMES = CONTRACT.CURL_FRAMES;
 
-/** 引擎里「显式写死、且不需要 WebGPU」的转场（cinema.tsx 第一段直接 return 的那批）。 */
+/** 引擎里「显式写死、且不需要 WebGL2」的转场（cinema.tsx 第一段直接 return 的那批）。 */
 const EXPLICIT_PLAIN = new Set(['hard', 'fade', 'zoom', 'whip-left', 'whip-right', 'slide', 'drop']);
 
 /**
@@ -36,7 +36,7 @@ export const effectiveTransition = (declared, index, craftTransition = null) => 
   if (d === 'whip') return index % 2 ? 'whip-left' : 'whip-right'; // 引擎按镜号交替，不是随机
   if (craftTransition === 'pageturn' || craftTransition === 'peel') return craftTransition;
   if (craftTransition === 'slide' || craftTransition === 'drop') return craftTransition;
-  // 既没声明卷页、皮肤也没声明 → pageflip（纯 CSS 折痕翻页，不需要 WebGPU）。3.9.0 的缺省。
+  // 既没声明卷页、皮肤也没声明 → pageflip（纯 CSS 折痕翻页，不需要 WebGL2）。3.9.0 的缺省。
   // cut / reveal / handoff / 未知名在引擎里**没有**单独分支，同样落到这里——别为了"看起来更合理"给它们单开分支，
   // 那会让本函数与 resolveTransition 悄悄分叉，而症状只是某处翻页换了种翻法。
   return 'pageflip';
@@ -137,8 +137,7 @@ export const readShotPlan = (project) => {
 };
 
 /**
- * 逐镜的转场结论 + 卷页帧窗（未合并）。窗口**宁多勿少**：多拼一个窗口只是那 22 帧换完整版 Chrome 再渲一遍
- * （同一合成、同一帧 → 同样的画面）；少拼一个则那一处留着折痕版，观众看到的是另一种翻页。
+ * 逐镜的转场结论 + 卷页帧窗（未合并）。帧窗用于排查和单独预览卷页（render 整片一遍渲完，不需要它）。
  */
 export const curlPlan = (project, total = Infinity) => {
   const plan = readShotPlan(project);
@@ -162,7 +161,7 @@ export const curlPlan = (project, total = Infinity) => {
 /** 成片里可能出现卷页的帧窗 [[a, b], …]（含两端、已合并）。fx-browser 与 notebook-video 都调它。 */
 export const curlWindows = (project, total = Infinity) => curlPlan(project, total).windows;
 
-/** 本片是否用到卷页（决定要不要去找完整版 Chromium、要不要跑探针）。 */
+/** 本片是否用到卷页（决定要不要跑探针）。 */
 export const projectUsesCurl = (project) => curlPlan(project).boundaries.some((b) => b.curl);
 
 const warned = new Set();

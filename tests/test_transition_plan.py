@@ -154,7 +154,7 @@ class EffectiveTransitionTest(unittest.TestCase):
         self.assertEqual(self._kinds("auto", craft="peel"), ("peel", True))
         self.assertEqual(self._kinds("auto", craft="slide"), ("slide", False))
         self.assertEqual(self._kinds("auto", craft="drop"), ("drop", False))
-        # 皮肤没声明媒介转场 → pageflip（纯 CSS 折痕翻页，不需要 WebGPU）
+        # 皮肤没声明媒介转场 → pageflip（纯 CSS 折痕翻页，不需要 WebGL2）
         self.assertEqual(self._kinds("auto", craft=None), ("pageflip", False))
 
     def test_cut_reveal_handoff_are_not_their_own_kind(self):
