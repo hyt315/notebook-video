@@ -253,7 +253,8 @@ def compose(story: dict, p: Problems):
                     _pv = sk_.get("parts")
                     _cand += [str(sk_.get("label") or "")] + [str(v_) for v_ in (_pv.values() if isinstance(_pv, dict) else [])]
     auto_protect = [w_ for w_ in dict.fromkeys(_cand) if 2 <= len(w_) <= 8 and w_ in _said]
-    protected = sorted(set(list(glossary.keys()) + list(story.get("protect") or []) + auto_protect), key=len, reverse=True)
+    # dict.fromkeys 去重保序：set 的迭代顺序随 PYTHONHASHSEED 变，同长短语的先后（和产物）就不确定
+    protected = sorted(dict.fromkeys(list(glossary.keys()) + list(story.get("protect") or []) + auto_protect), key=len, reverse=True)
     if not protected:
         p.hint("字幕保护短语为空（validate-semantic-breaks 会因此拦下）：在 story.json 顶层写 \"protect\": [\"……\"]（字幕里不能被切开的词，至少 1 个，必须原样出现在台词里），或在台词里用 {{术语}} 标出")
     chapters = story.get("chapters") or []
