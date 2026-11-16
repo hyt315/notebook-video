@@ -150,6 +150,20 @@ class Retime(unittest.TestCase):
         self.assertFalse(cs.retime_to_tts(comp, [{"part": "别", "start": 0, "end": 10}], p))
         self.assertTrue(p.hints)
 
+    def test_late_mismatch_leaves_earlier_cues_untouched(self):
+        # 第 2 句对不上时，第 1 句不能已经换成 TTS 时间（半套时序会把镜头节拍推到镜外）
+        cs = load_compose()
+        words = [{"part": ch, "start": 1000 + i * 120, "end": 1100 + i * 120} for i, ch in enumerate("第一句。别的话。")]
+        comp = {"cues": [{"text": "第一句。", "words": [], "start_ms": 700, "speech_end_ms": 1100},
+                         {"text": "第二句。", "words": [], "start_ms": 1200, "speech_end_ms": 1600}],
+                "shots": [{"start_ms": 700, "line_cues": [[0]]}, {"start_ms": 1200, "line_cues": [[1]]}],
+                "total_ms": 2000}
+        p = cs.Problems()
+        self.assertFalse(cs.retime_to_tts(comp, words, p))
+        self.assertEqual(comp["cues"][0]["start_ms"], 700)
+        self.assertEqual(comp["cues"][0]["words"], [])
+        self.assertEqual(comp["shots"][0]["start_ms"], 700)
+
 
 if __name__ == "__main__":
     unittest.main()

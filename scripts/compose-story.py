@@ -934,6 +934,9 @@ def retime_to_tts(comp: dict, words: list[dict], p: "Problems") -> bool:
     idx = 0
     old_start: dict[int, int] = {}
     cues = comp["cues"]
+    # 先整片对一遍、全对上才改：边对边改的话，第 13 句对不上时前 12 句已经换成 TTS 时间，
+    # 后面仍是估算时间，镜头节拍就落到镜外（validate-presentation 报 beat 超出本镜）。
+    segs: dict[int, list] = {}
     for ci, cue in enumerate(cues):
         chars = [c for c in cue["text"] if not c.isspace()]
         if not chars:
@@ -945,12 +948,15 @@ def retime_to_tts(comp: dict, words: list[dict], p: "Problems") -> bool:
                 f"字幕/镜头沿用原有时序。修法：让 narration.txt 与字幕同文，或重跑 tts。"
             )
             return False
+        segs[ci] = seg
+        idx += len(chars)
+    for ci, seg in segs.items():
+        cue = cues[ci]
         old_start[ci] = int(cue["start_ms"])
         cue["words"] = [{"part": c, "start": st, "end": en} for c, st, en in seg]
         cue["start_ms"], cue["speech_end_ms"], cue["reveal_end_ms"] = seg[0][1], seg[-1][2], seg[-1][2]
         cue["start"], cue["speech_end"], cue["reveal_end"] = (
             round(cue["start_ms"] / 1000, 3), round(cue["speech_end_ms"] / 1000, 3), round(cue["reveal_end_ms"] / 1000, 3))
-        idx += len(chars)
     # 镜头起点跟着它第一句字幕走（保持"台词前多久起镜"的相对关系）
     prev = 0
     for sh in comp["shots"]:
