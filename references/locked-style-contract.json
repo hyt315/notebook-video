@@ -3,16 +3,12 @@
   "status": "official-current",
   "canonical_entry": "assets/lecture-template/src/index.tsx",
   "canonical_composition": "NotebookVideoFilm",
+  "constants": "设计画布 1920×1080（STAGE）、帧率（FPS）、运镜时长（CAM_DUR）、缩放上限（TEXT_ZOOM_MAX / GRAPHIC_ZOOM_MAX）只写在 assets/lecture-template/src/contract.json，本文件不再重复",
   "canvas": {
     "width": 2560,
     "height": 1440,
-    "design_width": 1920,
-    "design_height": 1080,
     "design_scale": 1.3333333333,
-    "delivery_fps": 30,
-    "design_timeline_fps": 30,
-    "physical_motion_fps": 30,
-    "frame_quantizer": "designStep = designTimelineFps / physicalMotionFps; Math.floor(designFrame / designStep) * designStep",
+    "frame_quantizer": "designStep = FPS / physicalMotionFps; Math.floor(designFrame / designStep) * designStep",
     "camera": "per-shot (restricted recipes; there is no film-wide camera track)",
     "global_motion": false,
     "mode_selection": "fixed: 16:9 is the only delivery canvas (3.2.0+)",
@@ -20,8 +16,6 @@
       "16:9": {
         "width": 2560,
         "height": 1440,
-        "design_width": 1920,
-        "design_height": 1080,
         "subtitle_bounds": [
           188,
           934,
@@ -293,12 +287,6 @@
     "camera_anchor_proof_required": true,
     "camera_min_moves_per_chapter": 3,
     "camera_max_moves_per_shot": 1,
-    "camera_move_frames": [
-      30,
-      45
-    ],
-    "camera_zoom_max_text": 1.35,
-    "camera_zoom_max_graphic": 1.6,
     "camera_chrome_outside_camera": true,
     "depth_layers_max": 3,
     "depth_parallax_coefficients": [
@@ -367,9 +355,6 @@
     "boundary_review_required": true
   },
   "performance_system": {
-    "default_motion_fps": 30,
-    "default_render_fps": 30,
-    "default_delivery_fps": 30,
     "duplicate_frame_delivery": false,
     "active_scene_mounting": true,
     "transition_scene_mount_limit": 2,
