@@ -580,7 +580,8 @@ python "<SKILL_DIR>/scripts/selftest.py"
 ```
 
 Good fixtures must pass and each broken fixture (protected phrase split across cues, mismatched caption
-sync, non-video input) must be rejected by the matching gate.
+sync, non-video input, invalid `--style`, a tampered sound file) must be rejected by the matching gate.
+Repository hygiene (scripts parse, no key-like tokens) lives in `tests/test_repo_hygiene.py`.
 
 For the build-time gates, run the negative spot-check: it feeds each gate fixtures it must catch (anchor out of
 frame, pan over budget, adjacent same skeleton, no live component, timeline gap, faked `live`/media names, a

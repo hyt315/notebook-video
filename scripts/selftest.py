@@ -7,12 +7,13 @@
 - 负向夹具（每个门必须真拦，退出码非 0）：
   1. validate-semantic-breaks：受保护短语被 cue 边界切开；
   2. validate-caption-sync：cue 文本与其词级时间戳对不上；
-  3. validate-video：非媒体输入。
+  3. validate-video：非媒体输入；
+  4. 非法 --style、音效文件 sha256 被改。
+其余门禁的负向用例在 scripts/negative-gate-check.py 与 tests/，仓库卫生（语法、密钥）在 tests/test_repo_hygiene.py。
 全部通过退出 0，任一项失败退出 1。
 """
 from __future__ import annotations
 
-import ast
 import json
 import shutil
 import subprocess
@@ -134,27 +135,10 @@ def main() -> int:
     missing = [f for f in files if not (ROOT / f).is_file()]
     check("关键产物齐全", not missing, f"missing: {missing}" if missing else f"{len(files)} files")
 
-    # ---- 好夹具 1b：脚本 AST 静态语法解析门禁 ----
-    ast_errors = []
-    for py_script in (ROOT / "scripts").glob("*.py"):
-        try:
-            ast.parse(py_script.read_text(encoding="utf-8"), filename=str(py_script))
-        except SyntaxError as exc:
-            ast_errors.append(f"{py_script.name}: Syntax error: {exc}")
-    check("脚本 AST 语法解析", not ast_errors, f"errors: {ast_errors}" if ast_errors else "all scripts/*.py valid syntax")
-
     # ---- 好夹具 1c：中文字面门禁（3.5.0）。模板必须过；故意写一条 monospace 中文栈必须拦 ----
     good = run(sys.executable, "scripts/validate-glyphs.py", str(ROOT / "assets" / "lecture-template"))
     check("中文字体栈：模板通过", good.returncode == 0,
           (good.stdout.strip().splitlines() or ["<no output>"])[-1][:90])
-    with tempfile.TemporaryDirectory() as td:
-        src = Path(td) / "src"
-        src.mkdir()
-        (src / "bad.tsx").write_text("export const x = {fontFamily: 'monospace'};\n", encoding="utf-8")
-        bad = run(sys.executable, "scripts/validate-glyphs.py", td)
-        check("负向：中文栈只写 monospace 被拦", bad.returncode == 1 and "CJK" in bad.stdout,
-              f"rc={bad.returncode}")
-
     # ---- 好夹具 2：主题开关默认 flat（出厂状态，3.2.0 起） ----
     active = ROOT / "assets" / "lecture-template" / "src" / "theme" / "active.ts"
     if active.is_file():
@@ -162,38 +146,6 @@ def main() -> int:
         check("主题开关默认 flat", ok, "default" if ok else "active.ts 被改到非默认主题")
     else:
         check("主题开关默认 flat", False, "active.ts 缺失")
-
-    # ---- 好夹具 3：密钥防呆（被追踪文件里不许出现疑似 API Key）----
-    import re as _re
-    _keypat = _re.compile(r"sk-[A-Za-z0-9]{16,}")
-    try:
-        _tracked = subprocess.run(["git", "ls-files"], cwd=ROOT,
-                                  capture_output=True, text=True,
-                                  encoding="utf-8", errors="replace").stdout.splitlines()
-    except Exception:
-        _tracked = []
-    if _tracked:
-        _scan = [ROOT / p for p in _tracked if (ROOT / p).is_file() and (ROOT / p).name != "selftest.py"]
-    else:
-        _skip = {".git", "node_modules", "renders", ".cache", ".tools", "__pycache__"}
-        _suffix = {".md", ".py", ".mjs", ".tsx", ".ts", ".json", ".txt", ".cmd", ".sh", ".cjs", ".yml", ".yaml"}
-        _scan = [p for p in ROOT.rglob("*") if p.is_file() and p.suffix.lower() in _suffix
-                 and not any(part in _skip for part in p.relative_to(ROOT).parts)
-                 and p.name != "selftest.py"]
-    _hits, _unreadable = [], []
-    for _fp in _scan:
-        try:
-            _text = _fp.read_text(encoding="utf-8", errors="ignore")
-        except OSError as _e:
-            # 只吞「读不了这个文件」这一种情况；不吞解析/正则等其它异常，
-            # 并且把跳过的文件记下来，让"漏扫"可见（宽捕获 + continue = 门静默放行）。
-            _unreadable.append(f"{_fp.relative_to(ROOT)} ({_e.__class__.__name__})")
-            continue
-        if _keypat.search(_text):
-            _hits.append(str(_fp.relative_to(ROOT)))
-    if _unreadable:
-        print("WARN 密钥防呆：以下文件未能读取，未参与扫描：" + ", ".join(_unreadable))
-    check("密钥防呆", not _hits, f"leaks: {_hits}" if _hits else "no key-like tokens")
 
     # ---- 负向夹具：--style 非法值被拦 ----
     if NODE:
@@ -283,13 +235,6 @@ def main() -> int:
                 fh.write(b"x")
             r1 = run(sys.executable, str(ROOT / "scripts" / "validate-audio-levels.py"), str(proj))
             check("负向：音效文件被篡改（sha256）被拦", r1.returncode == 1 and "sha256" in r1.stdout, f"rc={r1.returncode}")
-            shutil.copy(tpl / "public" / "sfx" / "lib" / "pop.ogg", proj / "public" / "sfx" / "lib" / "pop.ogg")
-            ts = (proj / "src" / "sfx.ts").read_text(encoding="utf-8").replace("success: 0.459,", "success: 0.9,")
-            if "success: 0.9," not in ts:
-                raise SystemExit("selftest 夹具锚点没找到：src/sfx.ts 的 SFX_GAIN.success 写法变了（3.2.0 增益来自 manifest）")
-            (proj / "src" / "sfx.ts").write_text(ts, encoding="utf-8")
-            r2 = run(sys.executable, str(ROOT / "scripts" / "validate-audio-levels.py"), str(proj))
-            check("负向：音效增益越界被拦", r2.returncode == 1 and "SFX_GAIN" in r2.stdout, f"rc={r2.returncode}")
     else:
         check("音效库门禁（需要 ffmpeg）", False, "ffmpeg 不在 PATH，无法回归音效库门禁")
 
@@ -298,43 +243,9 @@ def main() -> int:
     vb = ROOT / "scripts" / "validate-backgrounds.py"
     good = run(sys.executable, str(vb), str(tpl), "--min-per-skin", "journal=8,papercut=8,archive=8,flat=4,cel=4")
     check("背景库：模板通过 validate-backgrounds", good.returncode == 0, f"rc={good.returncode}")
-    with tempfile.TemporaryDirectory() as td3:
-        proj = Path(td3) / "p"
-        (proj / "manifests").mkdir(parents=True)
-        lib = json.loads((tpl / "manifests" / "backgrounds.json").read_text(encoding="utf-8"))
-        one = next(e for e in lib["backgrounds"] if e["id"] == "journal/ruled")
-        (proj / Path(one["file"]).parent).mkdir(parents=True)
-        shutil.copy(tpl / one["file"], proj / one["file"])
-        bad = dict(lib, backgrounds=[dict(one, license="CC-BY-SA-4.0")])
-        (proj / "manifests" / "backgrounds.json").write_text(json.dumps(bad), encoding="utf-8")
-        r1 = run(sys.executable, str(vb), str(proj))
-        check("负向：背景许可不在白名单被拦", r1.returncode == 1 and "白名单" in r1.stderr, f"rc={r1.returncode}")
-        (proj / "manifests" / "backgrounds.json").write_text(json.dumps(dict(lib, backgrounds=[one])), encoding="utf-8")
-        with open(proj / one["file"], "ab") as fh:
-            fh.write(b"x")
-        r2 = run(sys.executable, str(vb), str(proj))
-        check("负向：背景文件被改（sha256）被拦", r2.returncode == 1 and "sha256" in r2.stderr, f"rc={r2.returncode}")
-        (proj / "manifests" / "shots.resolved.json").write_text(json.dumps({"theme": "journal", "bgMode": "shot", "shots": [
-            {"id": "S1", "bg": "journal/ruled", "bgFile": "bg/lib/journal-ruled.webp"},
-            {"id": "S2", "bg": "journal/ruled", "bgFile": "bg/lib/journal-ruled.webp"}]}), encoding="utf-8")
-        r3 = run(sys.executable, str(vb), str(proj), "--shots")
-        check("背景分配：相邻镜重复给出 P1 提示", r3.returncode == 0 and "相邻镜重复" in r3.stdout, f"rc={r3.returncode}")
-
-    # ---- 线稿几何：改了 path 忘了改 fit，特写就会框住半边（渲染期一声不响） ----
-    with tempfile.TemporaryDirectory() as td4:
-        src = (ROOT / "assets/lecture-template/src/linework/library.ts").read_text(encoding="utf-8")
-        broken = src.replace("fit: [62, 0, 38, 34]", "fit: [70, 6, 18, 18]")
-        if broken == src:
-            check("线稿几何：缩小的 fit 被拦", False, "夹具失效：chiplog.hull 的 fit 变了")
-        else:
-            bad_lib = Path(td4) / "library.ts"
-            bad_lib.write_text(broken, encoding="utf-8")
-            good = run(sys.executable, str(ROOT / "scripts/linework_index.py"), "--geometry")
-            bad = run(sys.executable, str(ROOT / "scripts/linework_index.py"), "--geometry", str(bad_lib))
-            check("线稿几何：模板通过", good.returncode == 0, f"rc={good.returncode}")
-            check("线稿几何：缩小的 fit 被拦",
-                  bad.returncode == 1 and "没盖住" in (bad.stderr or ""),
-                  f"rc={bad.returncode}")
+    # ---- 线稿几何：模板必须通过（改坏 fit 的负向用例在 tests/test_linework_crops.py）----
+    good = run(sys.executable, str(ROOT / "scripts/linework_index.py"), "--geometry")
+    check("线稿几何：模板通过", good.returncode == 0, f"rc={good.returncode}")
 
     failed = [r for r in results if not r[1]]
     if not failed:
