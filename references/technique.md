@@ -100,7 +100,7 @@ make-video 跑完门禁写 `renders/gates.json`（全部记录，`blocking: true
 
 ## 环境矩阵：这台机器能出什么片
 
-`notebook-video capabilities` 把环境判成三档。三档不是"好/中/差"的评分，而是**用户会看到什么差别**。
+`notebook-video capabilities` 把环境判成三档，按**用户会看到什么差别**分，不是好/中/差评分。
 
 | 判定 | 含义 | 用户会遇到的 |
 |---|---|---|
@@ -122,22 +122,18 @@ node scripts/notebook-video.mjs capabilities --json   # 给脚本用；unsupport
 
 | 平台 | 状态 | 依据 |
 |---|---|---|
-| Windows 11 x64 · Node 22 | **已实测**（2026-11-02） | `capabilities` → `full`；整片渲染链路此前完整跑通（约 3 分 25 秒）；2026-11-02 的 `tests/test_capabilities.py` 锁住判定逻辑 |
+| Windows 11 x64 · Node 22 | **已实测** | `capabilities` → `full`；整片渲染链路完整跑通（约 3 分 25 秒）；`tests/test_capabilities.py` 锁住判定逻辑 |
 | macOS | **未实测** | 只做了代码路径审查：`findPython` 认 `python3`；`npmInvocation` 非 Windows 分支走 `npm`；字体下载走 `https` |
 | Linux | **未实测** | CI 在 `ubuntu-latest` 上跑单测与门禁，但**不跑真实渲染**（无 GPU、无 Chromium 下载），所以只证明"脚本能跑"，不证明"片能出" |
 | 低配机（4 核 / 8 GB） | **未实测** | `suggestedConcurrency()` 会把它压到 2–3；但没有实测帧率与内存峰值 |
 
-未实测的三行，谁有条件谁补：跑完 `capabilities` + 一次 `preview`，把 `level`、耗时、峰值内存记进上表。
-在那之前，**本文件不承诺这三个平台的表现**。
+未实测的三行，谁有条件谁补（跑 `capabilities` + 一次 `preview`，把 `level`、耗时、峰值内存记进上表）；在那之前**本文件不承诺这三个平台的表现**。
 
 ### 已知的"能出片但不对"的陷阱
 
-- **BudouX 未装**：语义断句会以 SKIPPED 形式跳过，rc 仍是 0。交付路径带 `--require-budoux`，
-  这时会**失败**而不是静默跳过——这是刻意的：宁可拦住，也不要交出一份"看起来检查过"的字幕。
-- **缺 NotoSerifSC**：手作皮肤（journal / papercut / archive）渲染时 Chrome 抛网络错误（报错里不写"字体"两个字），
-  报错里不会提"缺字体"。`capabilities` 的 `fonts.serif` 就是提前看这个。
-- **缺 ffmpeg**：`validate-video` 与音轨合成都不可用，但 `compose` 仍能跑完写出工程——
-  于是"排版成功"容易被误当成"能出片"。
+- **BudouX 未装**：语义断句会以 SKIPPED 形式跳过，rc 仍是 0。交付路径带 `--require-budoux`，这时会**失败**而不是静默跳过——宁可拦住，也不要交出一份"看起来检查过"的字幕。
+- **缺 NotoSerifSC**：手作皮肤（journal / papercut / archive）渲染时 Chrome 抛网络错误，报错里不会提"缺字体"；用 `capabilities` 的 `fonts.serif` 提前看。
+- **缺 ffmpeg**：`validate-video` 与音轨合成都不可用，但 `compose` 仍能跑完写出工程，"排版成功"别误当成"能出片"。
 
 <a id="cross-platform-compatibility"></a>
 
@@ -170,74 +166,35 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project "./notebook-video-proj
 node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser "./notebook-video-project"
 ```
 
-### macOS notes
-
-Use Terminal with the universal Node command; executable permission on `.sh` files is optional because the Node entry does not depend on it. Do not copy `node_modules` from Windows. Install dependencies on the Mac through the launcher. On Apple Silicon and Intel, npm selects the native packages from the pinned lockfile.
-
-### Windows notes
-
-Command Prompt and PowerShell are both supported. The `.cmd` wrapper does not require changing PowerShell execution policy. Python is detected as `py -3`, `python` or `python3`. Do not copy `node_modules` from macOS. Keep rendering projects outside OneDrive or other sync folders to avoid file locks.
+Never copy `node_modules` between operating systems; install dependencies on the current machine through the launcher. On macOS, the `.sh` executable bit is optional because the Node entry does not depend on it; on Apple Silicon and Intel, npm selects the native packages from the pinned lockfile. Windows specifics: [Windows-specific compatibility notes](#windows-compatibility).
 
 ### Paths
 
-Always quote paths. Spaces and non-ASCII names are supported, but short local paths reduce Windows long-path and antivirus problems. The launcher accepts either slash style.
+Always quote paths. Spaces, non-ASCII names and either slash style are supported, but short local paths reduce Windows long-path and antivirus problems.
 
 ### Rendering browser
 
-The default is Remotion's tested browser, prepared by `prepare-browser` or automatically during render. This provides the best visual parity. In a restricted environment, set `REMOTION_BROWSER_EXECUTABLE` to an existing compatible browser executable before `prepare-browser` or `render`. A manual override is an environment workaround, not a different rendering engine, and should be followed by the full visual QA.
+The default is Remotion's tested browser, prepared by `prepare-browser` or automatically during render. This provides the best visual parity. In a restricted environment, set `REMOTION_BROWSER_EXECUTABLE` to an existing compatible browser executable before `prepare-browser` or `render`. A manual override is an environment workaround, not a different rendering engine, and should be followed by the full visual QA. If a restricted network prevents the browser binary from being prepared, resolve that environment constraint rather than changing the visual engine.
 
-Examples:
-
-macOS/Linux:
 ```text
-export REMOTION_BROWSER_EXECUTABLE="/absolute/path/to/chrome"
-```
-
-Windows Command Prompt:
-```text
-set REMOTION_BROWSER_EXECUTABLE=C:\absolute\path\to\chrome.exe
-```
-
-Windows PowerShell:
-```text
-$env:REMOTION_BROWSER_EXECUTABLE = "C:\absolute\path\to\chrome.exe"
+export REMOTION_BROWSER_EXECUTABLE="/absolute/path/to/chrome"                  # macOS/Linux
+set REMOTION_BROWSER_EXECUTABLE=C:\absolute\path\to\chrome.exe                # Windows Command Prompt
+$env:REMOTION_BROWSER_EXECUTABLE = "C:\absolute\path\to\chrome.exe"           # Windows PowerShell
 ```
 
 ### Output parity
 
-The launcher uses identical Remotion and FFmpeg settings on both platforms: H.264 video, 2560×1440, native 30fps, normalized narration near -16 LUFS, 48kHz stereo AAC at 192kbps and `faststart`. Run the same video QA after every render regardless of operating system.
+The launcher uses identical Remotion and FFmpeg settings on both platforms: H.264 video, 2560×1440, native 30fps, normalized narration near -16 LUFS, 48kHz stereo AAC at 192kbps and `faststart`. Run the same video QA after every render regardless of operating system. Details and the pinned color contract: [FFmpeg output parity](#ffmpeg-output-parity).
 
 <a id="windows-compatibility"></a>
 
 ## Windows-specific compatibility notes
 
-### Contents
+Windows support must not change the Remotion component tree, scene timing, fonts, assets, codec settings, subtitle geometry, physical-motion quantization or final aesthetic; only the command-launch and filesystem layer differs. The binding two-platform contract is [above](#cross-platform-compatibility).
 
-- [Goal](#goal)
-- [Supported entry point](#supported-entry-point)
-- [Required applications](#required-applications)
-- [Paths](#paths)
-- [Python launcher differences](#python-launcher-differences)
-- [npm and native packages](#npm-and-native-packages)
-- [Rendering browser](#rendering-browser)
-- [FFmpeg output parity](#ffmpeg-output-parity)
-- [Common Windows failures](#common-windows-failures)
+### Entry point and required applications
 
-The binding two-platform contract is `technique.md#cross-platform-compatibility`.
-
-### Goal
-
-Windows support must not change the Remotion component tree, scene timing, fonts, assets, codec settings, subtitle geometry, physical-motion quantization or final aesthetic. Only the command-launch and filesystem layer differs by operating system.
-
-### Supported entry point
-
-Use the cross-platform Node launcher from Command Prompt, PowerShell, macOS or Linux:
-
-```text
-node "<SKILL_DIR>/scripts/notebook-video.mjs" --help
-```
-
-Windows also includes a Command Prompt wrapper that does not require changing PowerShell execution policy:
+Command Prompt and PowerShell are both supported. Besides the Node launcher, Windows has a Command Prompt wrapper that does not require changing PowerShell execution policy:
 
 ```text
 "<SKILL_DIR>\scripts\notebook-video.cmd" --help
@@ -245,55 +202,17 @@ Windows also includes a Command Prompt wrapper that does not require changing Po
 
 Every subcommand (`check-deps`, `new-project`, `sync`, `render`, `validate-video`, `package`, `prepare-media`, …) goes through this one wrapper, e.g. `"<SKILL_DIR>\scripts\notebook-video.cmd" new-project .\my-video`. The only other wrapper is `make-video.cmd`.
 
-### Required applications
+Node.js 18+ (with npm), Python 3 and FFmpeg (`ffmpeg` + `ffprobe`) must be on `PATH`. A separate `zip` program, Bash, GNU `sed`, `grep`, `awk`, `install`, `cmp`, `cp` or `chmod` is not required; packaging uses Python's standard `zipfile`. After installing, close and reopen the terminal before running `check-deps`.
 
-Make these commands available on `PATH`:
+Python is detected in this order: `py -3` → `python` → `python3`. Do not hard-code `python3` in Windows workflows.
 
-- Node.js 18 or newer, including npm;
-- Python 3, exposed as `py -3`, `python`, or `python3`;
-- FFmpeg, including `ffmpeg` and `ffprobe`.
+The pinned `package-lock.json` already contains the Remotion, Rspack and esbuild Windows x64 packages; let the launcher run `npm ci`. Native packages must be installed on the current operating system.
 
-A separate `zip` program, Bash, GNU `sed`, `grep`, `awk`, `install`, `cmp`, `cp` or `chmod` is not required on Windows. Packaging uses Python's standard `zipfile` implementation.
+### Windows paths and sync folders
 
-After installation, close and reopen the terminal before running:
+Prefer short project paths, e.g. `D:/VideoProjects/notebook-video-project`. Do not create the project inside OneDrive or another cloud-sync folder while rendering: file locking by sync or antivirus software can interrupt Chromium, npm or FFmpeg temporary files. Copy the finished source ZIP into the sync folder after packaging instead.
 
-```text
-node "<SKILL_DIR>/scripts/notebook-video.mjs" check-deps
-```
-
-### Paths
-
-Always quote paths. The launcher accepts spaces, non-ASCII folder names and either slash style. Prefer short project paths when possible, for example:
-
-```text
-D:/VideoProjects/notebook-video-project
-```
-
-Do not create the project inside a cloud-sync folder while rendering. File locking by OneDrive or antivirus software can interrupt Chromium, npm or FFmpeg temporary files. Copy the finished source ZIP into the sync folder after packaging instead.
-
-### Python launcher differences
-
-The Node launcher automatically tries these commands:
-
-1. Windows `py -3`;
-2. `python`;
-3. `python3`.
-
-Do not hard-code `python3` in Windows workflows.
-
-### npm and native packages
-
-The pinned `package-lock.json` already contains the Remotion, Rspack and esbuild Windows x64 packages. Run the normal project creation workflow and let the launcher execute `npm ci`. Never copy an existing `node_modules` directory from macOS or Linux to Windows; native packages must be installed on the current operating system.
-
-### Rendering browser
-
-Prepare the pinned Remotion browser after project creation:
-
-```text
-node "<SKILL_DIR>/scripts/notebook-video.mjs" prepare-browser "D:/VideoProjects/notebook-video-project"
-```
-
-Remotion manages its rendering browser. If a restricted network prevents the browser binary from being prepared, resolve that environment constraint rather than changing the visual engine. The optional network shim remains opt-in through `REMOTION_USE_NETWORK_SHIM=1` and does not alter the rendered component tree.
+Prepare the pinned browser after project creation (`prepare-browser "D:/VideoProjects/notebook-video-project"`). The optional network shim remains opt-in through `REMOTION_USE_NETWORK_SHIM=1` and does not alter the rendered component tree.
 
 ### FFmpeg output parity
 
@@ -310,51 +229,37 @@ Therefore Windows adaptation must not produce a different visual style or timeli
 
 #### Why the color contract is pinned
 
-Remotion's own default is `--color-space=default`, which emits no color flags at all: the encoder writes `yuvj420p` (full range) with `color_space=bt470bg` and `color_transfer`/`color_primaries` missing. Players that find no transfer/matrix fall back to BT.601 and interpret a full-range signal as limited range, so saturated colors shift slightly on strict players.
+Remotion's default `--color-space=default` emits no color flags: the encoder writes `yuvj420p` (full range) with `color_space=bt470bg` and `color_transfer`/`color_primaries` missing. Players that find no transfer/matrix fall back to BT.601 and interpret a full-range signal as limited range, so saturated colors shift slightly on strict players.
 
 Two steps are required, in this order, because neither alone is enough:
 
-1. `--color-space=bt709` on the Remotion render. It passes `-colorspace:v bt709 -color_primaries:v bt709 -color_trc:v bt709 -color_range tv` **and** (since `@remotion/renderer` 4.0.83) really converts the pixels to limited range through `zscale=matrix=709:matrixin=709:range=limited`. Without this step the frames stay full-range, and merely re-tagging them would expand the contrast.
-2. A `h264_metadata=colour_primaries=1:transfer_characteristics=1:matrix_coefficients=1:video_full_range_flag=0` bitstream filter on the copy, applied in place by `scripts/notebook-video.mjs`. FFmpeg ignores `-color_primaries`/`-color_trc` on a copied stream ("has not been used for any stream"), and Remotion's own final stitch re-muxes with `-c:v copy` the same way, so `--color-space=bt709` alone still leaves `color_primaries` and `color_transfer` reported as `unknown`.
+1. `--color-space=bt709` on the Remotion render. It passes `-colorspace:v bt709 -color_primaries:v bt709 -color_trc:v bt709 -color_range tv` **and** (`@remotion/renderer` ≥ 4.0.83) really converts the pixels to limited range through `zscale=matrix=709:matrixin=709:range=limited`. Without this step the frames stay full-range, and merely re-tagging them would expand the contrast.
+2. A `h264_metadata=colour_primaries=1:transfer_characteristics=1:matrix_coefficients=1:video_full_range_flag=0` bitstream filter on the copy, applied in place by `scripts/notebook-video.mjs`. FFmpeg ignores `-color_primaries`/`-color_trc` on a copied stream, and Remotion's own final stitch re-muxes with `-c:v copy`, so `--color-space=bt709` alone still leaves `color_primaries` and `color_transfer` reported as `unknown`.
 
-Verified on `@remotion/cli` 4.0.526 and Windows FFmpeg: a 30-frame `render-range` and a full `render` both report `yuv420p / tv / bt709 / bt709 / bt709`, and a decoded frame matches the Chrome screenshot pixel-for-pixel within ±1 on a neutral background.
+Verified (`@remotion/cli` 4.0.526, Windows FFmpeg): `render-range` and full `render` both report `yuv420p / tv / bt709 / bt709 / bt709`, and a decoded frame matches the Chrome screenshot within ±1 on a neutral background.
 
 ### Common Windows failures
 
 #### `npx remotion` hangs and has to be killed
 
-Symptom: `npx remotion ...` never returns. The process burned 2.3 seconds of CPU over 15 minutes, spawned no child process and printed nothing at all, so it could only be killed.
-
-Cause: `npx` adds a package-resolution layer that this workflow does not need. The launcher, the `.cmd`/`.sh` wrappers and the template's `npm run render` / `npm run still` scripts all resolve the already-installed local CLI instead, which costs nothing extra. When the local `remotion` cannot be resolved, `npx` has to reach the registry, and that is the step that waits without output — the exact "low CPU, zero output, no children" shape above. Measured on this machine: in a project that already has `node_modules`, `npx remotion --version` returns in 1.9s (Git Bash), 1.6s (cmd.exe) and 3.1s (PowerShell) — no faster than the local CLI; in a directory without `node_modules` it either fails fast with the npm error "could not determine executable to run" (2.3s) or retries silently for ~71s before giving up with an npm ECONNREFUSED error when the registry is unreachable. There is no scenario in which `npx` is the better call.
-
-Correct command — call the local CLI directly and point it at the already-cached browser, which bundles in about 2 seconds:
+Never rewrite the documented workflow as `npx remotion ...`. `npx` adds a package-resolution layer this workflow does not need; when the local `remotion` cannot be resolved it has to reach the registry, and that step can wait with low CPU, zero output and no child process (or retry silently ~71 s before an npm ECONNREFUSED; without `node_modules` it may also fail fast with "could not determine executable to run"). Even with `node_modules` present it is no faster than the local CLI. The launcher, the `.cmd`/`.sh` wrappers and the template's `npm run render` / `npm run still` all resolve the installed local CLI instead. Manual equivalent (bundles in about 2 seconds with the cached browser):
 
 ```text
 cd "<PROJECT_DIRECTORY>"
 node node_modules/@remotion/cli/remotion-cli.js render src/index.tsx NotebookVideoFilm renders/out.mp4 --browser-executable="%LOCALAPPDATA%\remotion-browser\chrome-headless-shell\win64\chrome-headless-shell.exe"
 ```
 
-`scripts/notebook-video.mjs` already does exactly this (it also falls back to that cached browser automatically on Windows when `REMOTION_BROWSER_EXECUTABLE` is unset), so prefer `node "<SKILL_DIR>/scripts/notebook-video.mjs" render ...` or `notebook-video.cmd render ...`. Never rewrite the documented workflow as `npx remotion ...`.
+`scripts/notebook-video.mjs` already does exactly this (and on Windows falls back to that cached browser when `REMOTION_BROWSER_EXECUTABLE` is unset), so prefer `notebook-video.mjs render ...` or `notebook-video.cmd render ...`.
 
-#### Command is not recognized
+#### Other failures
 
-Reopen the terminal after installing Node, Python or FFmpeg, then run `check-deps` again. Confirm the application directory was added to the user or system `PATH`.
-
-#### PowerShell blocks scripts
-
-Use `node scripts/notebook-video.mjs ...` or the `.cmd` wrapper. Neither requires changing PowerShell execution policy.
-
-#### npm installation fails with locked files
-
-Close Remotion Studio, editors and Explorer preview panes that are using the project. Delete only the project's `node_modules` directory and run render again; do not copy `node_modules` from another operating system.
-
-#### Very long path error
-
-Move the skill and project closer to the drive root. Avoid deeply nested cloud folders. The source package preserves relative project paths, so moving the folder does not change the film.
-
-#### Antivirus blocks Chromium or FFmpeg
-
-Allow the installed Node, Remotion browser and FFmpeg executables, or render in a trusted local working directory. Do not disable asset validation or switch renderers to bypass the block.
+| Symptom | Fix |
+|---|---|
+| Command is not recognized | Reopen the terminal after installing Node, Python or FFmpeg, run `check-deps` again, and confirm the directory is on the user or system `PATH` |
+| PowerShell blocks scripts | Use `node scripts/notebook-video.mjs ...` or the `.cmd` wrapper; neither requires changing execution policy |
+| npm install fails with locked files | Close Remotion Studio, editors and Explorer preview panes using the project; delete only the project's `node_modules` and render again — never copy `node_modules` from another OS |
+| Very long path error | Move the skill and project closer to the drive root; avoid deeply nested cloud folders. The source package preserves relative paths, so moving the folder does not change the film |
+| Antivirus blocks Chromium or FFmpeg | Allow the installed Node, Remotion browser and FFmpeg executables, or render in a trusted local directory. Do not disable asset validation or switch renderers to bypass the block |
 
 ### make-video
 
@@ -365,23 +270,9 @@ Python 按 `py -3` → `python` → `python3` 顺序查找，ffmpeg 需在 PATH 
 
 ## Performance design contract
 
-### Contents
-
-1. Frame-rate policy
-2. Scene lifetime
-3. Motion implementation
-4. Static surfaces and measurement gates
-5. Concurrency
-6. Fast iteration
-7. Acceptance rules
-
 ### 1. Frame-rate policy
 
-Use one native frame rate through the whole default pipeline:
-
-- motion: 30fps;
-- Remotion composition: 30fps;
-- H.264 delivery: 30fps.
+Use one native frame rate through the whole default pipeline: motion, Remotion composition and H.264 delivery are all 30fps.
 
 Do not author 30 unique states and export them as duplicated 60fps frames. A 60fps container is allowed only when the visible motion is also authored at native 60fps, such as very fast camera movement, dense particles, real 60fps footage or an explicit user request. In that mode, update timing, duration, captions, audio cues and validation together; never use post-export frame duplication as a quality upgrade.
 
@@ -389,13 +280,11 @@ For an intentional stop-motion beat inside a 30fps film, quantize only that comp
 
 ### 2. Scene lifetime
 
-Unmount scenes that cannot contribute pixels to the current frame. Do not keep a whole film mounted and hide inactive scenes with `opacity: 0`.
-
-Use frame guards or short overlapping scene ranges. Mount one scene during normal playback and at most two during a transition. Keep shared chrome, subtitle, audio and static background outside scene guards.
+Unmount scenes that cannot contribute pixels to the current frame; never keep a whole film mounted and hide inactive scenes with `opacity: 0`. Use frame guards or short overlapping scene ranges: one scene mounted during normal playback, at most two during a transition. Keep shared chrome, subtitle, audio and static background outside scene guards.
 
 The canonical exemplar uses global-frame guards because its scene components consume global design-time frames. If using Remotion `Sequence`, pass local time deliberately and do not accidentally shift global cue constants.
 
-When extending duration with a timeline scale, use one scaled design-frame helper for **both** scene guards and internal motion. Raw delivery frames may not be used by a mount condition. Scale action-audio sequence starts through the same conversion. A scene that is visually scaled but mounted against raw frames will disappear before the film ends even though its internal animation is correct.
+When extending duration with a timeline scale, scene guards, internal motion and action-audio starts all go through one scaled design-frame helper; see the [duration extension invariant](#duration-extension-invariant).
 
 ### 3. Motion implementation
 
@@ -413,27 +302,21 @@ Wait for fonts and media before rendering. Keep the asset gate. Measure every su
 
 Default to half the available logical CPUs, clamped to 2–6 workers. Higher concurrency can slow a 2K browser render through CPU, memory and encoder contention.
 
-To pick a worker count, run a short `preview` window two or three times with different `REMOTION_CONCURRENCY` values and compare the `Done in Ns` line (a 30-second window is enough — the opening is representative for throughput). Export `REMOTION_CONCURRENCY` with the fastest setting to reuse it. Do this once per machine or after a major environment change; benchmark a representative dense range manually if the opening is unusually simple.
+To pick a worker count, run a 30-second `preview` window two or three times with different `REMOTION_CONCURRENCY` values, compare the `Done in Ns` line, and export the fastest setting. Do this once per machine or after a major environment change; benchmark a representative dense range manually if the opening is unusually simple.
 
 ### 5.5 Where the time goes
 
 Every `render` appends one line to `<project>/renders/render-log.jsonl`: stage milliseconds, frames, concurrency, scale, whether the page-curl path ran and how many segments it rendered, whether `--resume` was used, and the state of the run (`ok` / `cancelled` / `stalled` / `process-error`). Failures are logged too — the `stage` field is the breakpoint.
 
-Read it back with:
-
 ```bash
 node scripts/notebook-video.mjs timings <project> [--state=ok|failed|stalled|cancelled|all]
 ```
 
-That prints median / p95 / range per stage, so "this change made it faster" is a number, not an impression. A single render is not evidence: compare at least three runs of the same fixture, and check `resumed` and `fx.bundleCount` before believing a drop — a warm cache and a skipped bundle look exactly like an optimization.
-
-Stage names are stable and mean what they say: `prepare` (fonts + asset sync), `fx-probe`, `fingerprint`, `fast` / `render` (the Remotion pass), `bundle`, `segments`, `splice`, `tag`, `loudprobe`, `finalize`.
+`timings` prints median / p95 / range per stage. A single render is not evidence: compare at least three runs of the same fixture, and check `resumed` and `fx.bundleCount` before believing a drop — a warm cache and a skipped bundle look exactly like an optimization. Stable stage names: `prepare` (fonts + asset sync), `fx-probe`, `fingerprint`, `fast` / `render` (the Remotion pass), `bundle`, `segments`, `splice`, `tag`, `loudprobe`, `finalize`.
 
 ### 6. Fast iteration
 
-Use `render-range` for changed scenes, subtitle checks and motion reviews. Keep scene boundaries in a manifest or storyboard so review ranges are reproducible. Do not render the full film after every small edit.
-
-For long productions, keep scenes modular so unchanged sections can later be rendered and assembled independently. Treat segment concatenation as an advanced workflow: all segments must share codec, resolution, frame rate, pixel format and audio format, and transitions must not cross segment boundaries. Always perform one full final render unless a validated concat pipeline is already present in the project.
+Use `render-range` for changed scenes, subtitle checks and motion reviews, with scene boundaries kept in a manifest or storyboard so review ranges are reproducible; do not render the full film after every small edit. For long productions, keep scenes modular. Treat segment concatenation as an advanced workflow: all segments must share codec, resolution, frame rate, pixel format and audio format, and transitions must not cross segment boundaries. Always perform one full final render unless a validated concat pipeline is already present in the project.
 
 ### 7. Acceptance rules
 
@@ -500,7 +383,7 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 
 | 包 | 解决什么 |
 |---|---|
-| `shiki` + `@shikijs/langs` | **代码语法高亮**（`HighlightCode`）：VS Code 同款 TextMate 语法。用**同步核心** `createHighlighterCoreSync` + **JS 正则引擎**（不加载 WASM、不走 Promise、不需要 `delayRender`，Windows 下也没有 `.wasm` 路径问题）；语言按需 import 8 个；**主题由调色板生成**（`src/components/shiki.ts`），所以 flat / cel 的语法色永远跟皮肤一致。MIT |
+| `shiki` + `@shikijs/langs` | **代码语法高亮**（`HighlightCode`）：VS Code 同款 TextMate 语法；同步核心 + JS 正则引擎（无 WASM，Windows 下也没有 `.wasm` 路径问题），语言按需 import 8 个，主题由调色板生成，见 §4.5。MIT |
 | `lucide-react` | **线条图标**：`LineIcon`（kit，26 个 kind）与 `TopicIcon` / `IconWall` 的线条字形。1,500+ 字形、同一套 24 视窗描边语法、`strokeWidth` 可调。ISC |
 | `simple-icons` | **品牌 logo**（React / Node.js / Python / Docker / Git / npm / GitHub …）：单色 path 数据，颜色由皮肤给。CC0-1.0（无署名义务；**商标权仍归各品牌**，只用于指代该技术，不暗示背书） |
 | `diff`（jsdiff） | **补丁计算**（`DiffView` 的 `before` / `after` 模式）：`diffLines` 给出增删行，不再手写 `-`/`+`。BSD-3-Clause |
@@ -514,31 +397,26 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 |---|---|---|
 | `d3-hierarchy` | **目录树 / 组织图 / 树状图**（`TreeView` 的 `treemap` / `pack` / `sunburst` 三个变体） | 与 `d3-scale` 同族；`hierarchy()` + `tree()` 给出每个节点的坐标。⚠️ 三个布局都是**有状态地写回节点**的，共用同一个 `hierarchy()` 根会互相覆盖——每个布局各拿一个根 |
 | `d3-force` | **关系网**（`NetworkGraph`）：谁连着谁，没有层级也没有方向 | 源码级核实 `Math.random` **0 处**（用固定种子 LCG）。**必须**：初值显式给定 + 迭代次数写死 + 立刻 `.stop()` 掉内部 d3-timer；算完还要按包围盒等比归一化，否则会溢出画框（实测） |
-| `d3-geo` | 地图 / 地球 / 经纬网 | **陆地数据的接线已完成**：`GeoView` 现在画真陆地轮廓，数据来自下面两行的 `world-atlas` + `topojson-client`。无数据时（或 `graticule` 单开）仍是经纬网与投影框 |
-| `world-atlas` | **世界陆地的预简化 TopoJSON** —— `GeoView` 的陆地轮廓 | ISC、整包 8.2 MB（110m / 50m / 10m 各两个文件）。⚠️ **只用 `land-110m.json` 那一档**（**55 KB** / 130 条弧，2026-09-22 实测）：世界尺度下轮廓够用，50m / 10m 是国界与省界级细节，本件不需要、也不该进 bundle。**它没有国界、没有城市点、没有地名**——只有陆地块，想要国界得换 `countries-110m.json` 并另立一件（别偷偷扩 `GeoView` 的语义） |
-| `topojson-client` | **TopoJSON → GeoJSON**（`feature()`），转出来的 GeoJSON 交给已装的 `d3-geo` 画路径 | ISC、68 KB、Mike Bostock（TopoJSON 作者本人维护）。本仓库只用到 `feature()` 一个函数。**类型是本地声明**（`assets/lecture-template/src/external-types.d.ts`）——**没有为它加 `@types/topojson-client`**，那是第三个包；`GeoJSON.*` 命名空间来自已声明的 `@types/d3-geo` 的传递依赖 `@types/geojson`，不额外装东西 |
+| `d3-geo` | 地图 / 地球 / 经纬网 | `GeoView` 画真陆地轮廓，数据来自下面两行的 `world-atlas` + `topojson-client`。无数据时（或 `graticule` 单开）是经纬网与投影框 |
+| `world-atlas` | **世界陆地的预简化 TopoJSON** —— `GeoView` 的陆地轮廓 | ISC、整包 8.2 MB（110m / 50m / 10m 各两个文件）。⚠️ **只用 `land-110m.json` 那一档**（**55 KB** / 130 条弧）：世界尺度下轮廓够用，50m / 10m 是国界与省界级细节，本件不需要、也不该进 bundle。**它没有国界、没有城市点、没有地名**——只有陆地块，想要国界得换 `countries-110m.json` 并另立一件（别偷偷扩 `GeoView` 的语义） |
+| `topojson-client` | **TopoJSON → GeoJSON**（`feature()`），转出来的 GeoJSON 交给已装的 `d3-geo` 画路径 | ISC、68 KB、TopoJSON 作者维护。只用 `feature()` 一个函数。**类型是本地声明**（`assets/lecture-template/src/external-types.d.ts`）——**没有为它加 `@types/topojson-client`**，那是第三个包；`GeoJSON.*` 命名空间来自已声明的 `@types/d3-geo` 的传递依赖 `@types/geojson`，不额外装东西 |
 | `d3-sankey` | **流量图**（转化、分流、去向） | 带宽按数值分配 |
 | `d3-dsv` | 解析 CSV / TSV | **真实数据进图表的入口**——不再手写数据数组 |
-| `roughjs` | **手绘风图形**（线条带手抖） | 手账风的天然契合件。**seed 固定 → 每次渲染同一笔迹**；用 `rough.svg()` 而非内部路径。⚠️ **两个实测例外**（2026-09-21，接触表 ⑭ 页同帧多渲抓到）：① `fillStyle:'dots'` 的填充器在 `dotsOnLines` 里**无条件调 `Math.random()` 两次/每点**，与 seed 无关 → **已从 `SketchStyle` 移除**（同一帧渲三次三个哈希，差异全在 dots 那格）；② `seed: 0` 是假值，roughjs 的 LCG 写成 `this.seed ? … : Math.random()`，传 0 会让**所有**填充退回真随机 |
+| `roughjs` | **手绘风图形**（线条带手抖） | 手账风的天然契合件。**seed 固定 → 每次渲染同一笔迹**；用 `rough.svg()` 而非内部路径。⚠️ **两个例外**：① `fillStyle:'dots'` 的填充器在 `dotsOnLines` 里**无条件调 `Math.random()` 两次/每点**，与 seed 无关 → **已从 `SketchStyle` 移除**；② `seed: 0` 是假值，roughjs 的 LCG 写成 `this.seed ? … : Math.random()`，传 0 会让**所有**填充退回真随机 |
 | `qrcode` | 二维码（收尾"扫码看仓库"） | 纯计算、不联网；`QRCode.toString(..., {type:'svg'})` 输出 SVG 字符串 |
 | `katex` | **数学公式**静态渲染 | 需 `import 'katex/dist/katex.min.css'`；无动画，确定性 |
 | `budoux` | **中文按词组断行** | Google 出品；`loadDefaultSimplifiedChineseParser().parse(text)` 返回词组数组。用于**标题**断行（正文中文可任意字断行） |
-| `@cto.af/linebreak` | **UAX #14 断行算法**（避头尾 + "拉丁/数字串内部不断"的正解） | `new Rules({string:true}).breaks(text)` → 每个断点带 `position`。MIT、60 KB、**UAX #14 / Unicode 17**、2026-03 发版、依赖树干净（`@cto.af/unicode-trie-runtime` → `fflate`，都是现代在维护的包）、纯函数无 timer/random。此前 `fittext.tsx` 手写两张字符表做避头尾，实测只是粗糙近似且**错在中英混排**：10 条真实文本里它允许 **36 个非法断点**（`在G\|itHub`、`hyt\|315`、`第三个A\|I技能`、`S\|1：`…），换 UAX #14 后 **36 → 0**（纯中文用例两者完全一致）。⚠️ **选包口径**（用户 2026-09-21 定的原则：依赖要通用、能用新的就不用旧的）：先用的是 foliojs 的 `linebreak@1.1.0`，但它**钉死 `base64-js@0.0.8`（2014 年）**、且 2022 年后没再发版 → 换成 `@cto.af/linebreak`（自述是前者那包的 refresh），实测两包在同一批文本上**断点逐一相同**，换包零行为变化（同名页面重渲逐字节一致）。另外：**不要回头试 `Intl.Segmenter({granularity:"line"})`**——`line` 粒度不在 ECMA-402 规范内，Node 24 直接抛 `RangeError` |
+| `@cto.af/linebreak` | **UAX #14 断行算法**（避头尾 + "拉丁/数字串内部不断"的正解） | `new Rules({string:true}).breaks(text)` → 每个断点带 `position`。MIT、60 KB、**UAX #14 / Unicode 17**、依赖树干净（`@cto.af/unicode-trie-runtime` → `fflate`）、纯函数无 timer/random。手写字符表做避头尾**错在中英混排**（会放过 `在G\|itHub`、`第三个A\|I技能` 这类非法断点），UAX #14 把它们清零。⚠️ **选包口径**（用户定的原则：依赖要通用、能用新的就不用旧的）：不用 foliojs 的 `linebreak@1.1.0`（钉死 2014 年的 `base64-js@0.0.8`、久未发版），两包断点逐一相同。**不要回头试 `Intl.Segmenter({granularity:"line"})`**——`line` 粒度不在 ECMA-402 规范内，Node 24 直接抛 `RangeError` |
 
-> **已移除**（Phase 3「能用成熟开源件就不手写」）：12 个 `@radix-ui/*` 包、`react-syntax-highlighter`（+ `@types/react-syntax-highlighter`）、`react-icons`。
-> Radix 那四件（`Accordion` / `Tabs` / `ControlStack` / `OverlayFrame`）渲染期没有交互，Radix 只贡献 ARIA 外壳，
-> 却带来 Portal 落到画布外、floating-ui **异步**定位（实测 8 轮渲染才稳）、Slider 的 ResizeObserver 测量三个确定性风险 → 改成纯 `<div>`，位置与状态全部由帧号算出。
-> 随之显式声明了 `@types/react`（devDependency）：它以前是 Radix 的传递依赖，删掉 Radix 后 `tsc` 会找不到 React 类型。
+> **不再使用**：`@radix-ui/*`、`react-syntax-highlighter`、`react-icons`。`Accordion` / `Tabs` / `ControlStack` / `OverlayFrame` 渲染期没有交互，
+> Radix 只贡献 ARIA 外壳，却带来 Portal 落到画布外、floating-ui **异步**定位、Slider 的 ResizeObserver 测量三个确定性风险 → 它们是纯 `<div>`，位置与状态全部由帧号算出。
+> `@types/react` 必须显式声明为 devDependency（没有它 `tsc` 找不到 React 类型）。
 
-> **实测**：这张表的 **10 个**依赖已在独立验证工程 `demo-video` 里逐个渲染验证（目录树 / 地球 / 流量图 / CSV / 手绘 / 二维码 / 公式 / 中文词组断行 / 关系网 / UAX #14 断行），全部能在各皮肤下正确读 `THEME`（当时验证时为四套，保留 flat / cel 两套）。
-> **两个地图数据包（2026-09-22 加）的验证口径不同**：它们不是独立组件，而是 `GeoView` 的实现细节，所以不进 `demo-video`——验证落在**本模板自己的接触表 ⑬ 页**（`node scripts/notebook-video.mjs showcase <proj>`，然后 Read 那张接触表看图上的陆地轮廓与标记点）。
-> **体积**：10 个包 + 传递依赖合计约 **12 MB**（12 MB 是 2026-09-21 对当时表里 8 个包的实测值；后来补进 `d3-force` 与 `@cto.af/linebreak`——自述 60 KB——量级不变。其中 `katex` 4.6 MB 与 `budoux` 3.2 MB 是大头，且几乎全是字体与模型数据）。地图那两个再加 **8.2 MB**（`world-atlas` 整包；实际进 bundle 的只有 `land-110m.json` 的 55 KB）+ **68 KB**（`topojson-client`）。相比之下 Chrome 无头浏览器 270 MB——**这点体积可以忽略**。（图标两包：`lucide-react` 约 36 MB、`simple-icons` 约 17 MB，都按命名导出 tree-shake，进 bundle 的只有用到的字形；比被换掉的 `react-icons` 85 MB 还小。）
+> **验证**：这张表的 **10 个**计算依赖都已逐个渲染验证，能在各皮肤下正确读 `THEME`。两个地图数据包是 `GeoView` 的实现细节，验证落在**模板接触表 ⑬ 页**（`node scripts/notebook-video.mjs showcase <proj>`，然后 Read 接触表看陆地轮廓与标记点）。
+> **体积**：10 个包 + 传递依赖约 **12 MB**（大头是 `katex` 4.6 MB 与 `budoux` 3.2 MB，几乎全是字体与模型数据）；地图两包再加 **8.2 MB**（实际进 bundle 的只有 `land-110m.json` 的 55 KB）+ **68 KB**；图标两包 `lucide-react` 约 36 MB、`simple-icons` 约 17 MB，按命名导出 tree-shake，只打进用到的字形。相比 Chrome 无头浏览器 270 MB——**可以忽略**。
 
-> **这两个包给"新建工程"增加步骤吗？——不增加，一步都没有。**
-> `new-project` 复制模板时 `package.json` 里已经带着这两行，`npm install` / `npm ci` 一次到位；数据在**打包期**随 `import` 进 bundle，所以：
-> **不需要** sync 复制进 `public/`、**不需要**手工下载数据文件、**不需要**改任何配置、**不需要**额外的 lock 步骤。
-> 渲染期零 IO（没有 fetch、没有 delayRender 持柄），`notebook-video render` / `showcase` / `remotion still` 每条路径都一样。
-> 唯一要记住的是：**换档位（110m → 50m）改 `data.tsx` 的 import 一行**，文件已经在 `node_modules` 里，不用再装包。
+> **地图两包不给新建工程加任何步骤**：`npm install` / `npm ci` 一次到位，数据在**打包期**随 `import` 进 bundle——不需要 sync 进 `public/`、手工下载、改配置或额外 lock 步骤；渲染期零 IO（没有 fetch、没有 delayRender 持柄），各渲染路径都一样。
+> **换档位（110m → 50m）只改 `data.tsx` 的 import 一行**，文件已在 `node_modules` 里。
 
 #### 4.3 Remotion 官方扩展（天生帧驱动安全）
 
@@ -551,29 +429,13 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 | `@remotion/noise` | `noise2D/3D`：给同一 seed 得到同一结果，可做有机抖动、自然呼吸而不破坏可复现性 |
 | `@remotion/effects` | 画布特效（WebGL2）。本模板只用 `pageTurn()` 做真翻页 / 揭纸转场（`src/fx.tsx`）；缺省 Headless Shell 就能画，没有 WebGL2 的浏览器会报错，所以由渲染器探针决定开不开，详见 [camera.md#fx-effects](camera.md#fx-effects)。`fractalNoise()` 评估过，不进渲染期（同文件 §4） |
 
-> 选型理由：这五个与渲染引擎同厂，**按帧驱动设计**，不存在"库自带时间动画"的冲突，是引入成本最低、
-> 风险最小的一类扩展。加依赖时优先考虑这一族。
-> （曾经还有第六个 `@remotion/motion-blur`——已删：它的两个再导出件**零引用**，
-> 而唯一想用它表达的"速度峰值"并不在七种合法运镜意图里，装它等于给自己开一个不该用的后门。）
+> 选型理由：与渲染引擎同厂，**按帧驱动设计**，不存在"库自带时间动画"的冲突，加依赖时优先考虑这一族。
+> **不装 `@remotion/motion-blur`**：它要表达的"速度峰值"不在七种合法运镜意图里。
 
-> **两个名字很像的包，别搞混（也别说错）**：`@remotion/media` 与 `@remotion/media-utils`。
->
-> | | `@remotion/media` | `@remotion/media-utils` |
-> |---|---|---|
-> | 在模板 `package.json` 里声明了吗 | **有**（`<Audio>` / `<Video>` 组件，影片的音频树用它） | **没有** |
-> | 它从哪来 | 直接依赖 | **`@remotion/cli` 的传递依赖**（`remotion` 本身不依赖它） |
-> | 给什么 | 播放媒体元素 | 媒体分析工具函数 |
->
-> `@remotion/media-utils` 实测（4.0.526，读 `dist/index.d.ts`）导出的**运行时函数有 12 个**：
-> `getAudioData` · `getAudioDuration` · `getAudioDurationInSeconds` · `getWaveformPortion` ·
-> `visualizeAudio` · `visualizeAudioWaveform` · `createSmoothSvgPath` · `useAudioData` ·
-> `useWindowedAudioData` · `getImageDimensions` · `getVideoMetadata` · `audioBufferToDataUrl`
-> ——**给的是波形/时长的数据，不是一个现成的波形或频谱组件**（包里没有 `<AudioWaveform>` 这种东西，
-> 要画还是得自己画。<del>"只导出 4 个函数"是 2026-09-20 那份调研报告的错记</del>）。
-> **技能没有封装它、也没有用它**：它**不在依赖清单**里（要用得先走 §二 的"需授权"），
-> 而且说不出来它能替换掉哪个平淡表达（代码库里没有"用静态竖条假装声波"的写法要它来治）。
-> 所以：**不要因为看到 `visualizeAudioWaveform` 这个名字，就以为技能"有波形/频谱能力"**——
-> 那是这个包的函数名，不是本技能已具备的能力；也不要为它新造组件。
+> **两个名字很像的包，别搞混**：`@remotion/media` 在模板 `package.json` 里**有**声明（`<Audio>` / `<Video>` 组件，影片音频树用它）；
+> `@remotion/media-utils` **没有**声明，只是 `@remotion/cli` 的传递依赖，导出的是媒体分析函数（`getAudioData`、`visualizeAudioWaveform`、`getVideoMetadata` 等 12 个），
+> **给的是波形/时长数据，不是现成的波形或频谱组件**。技能没有封装也没有用它，它不在依赖清单里（要用先走 §二 的"需授权"）。
+> 所以**不要因为看到 `visualizeAudioWaveform` 这个名字，就以为技能"有波形/频谱能力"**，也不要为它新造组件。
 
 #### 4.4 已封装的组件（全部登记在路由表里）
 
@@ -585,7 +447,7 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 | `d3-sankey` | `SankeyChart`（流量图） | ✅ 接触表 ⑬ |
 | `d3-force` | `NetworkGraph`（关系网，固定迭代 + 显式初值） | ✅ 接触表 ⑯ |
 | `qrcode` | `QrCode`（二维码） | ✅ 接触表 ⑬ |
-| `roughjs` | `SketchFx`（手绘风，**含六种确定性 `fillStyle`**：hachure / solid / zigzag / cross-hatch / dashed / zigzag-line，即 `SketchStyle['fillStyle']` 的全部取值；`'dots'` 因内部调 `Math.random()` 已移除）+ `sketchCircleArea` / `sketchUnderline` / `sketchBox` | ✅ 接触表 ⑭ |
+| `roughjs` | `SketchFx`（手绘风，**含六种确定性 `fillStyle`**：hachure / solid / zigzag / cross-hatch / dashed / zigzag-line，即 `SketchStyle['fillStyle']` 的全部取值；`'dots'` 已移除，见 §4.2）+ `sketchCircleArea` / `sketchUnderline` / `sketchBox` | ✅ 接触表 ⑭ |
 | `katex` | `MathBlock`（公式块） | ✅ 接触表 ⑭ |
 | `d3-dsv` | 并入 `Chart` 的数据入口（`csv` prop）+ `csvToChartData()` / `csvToChartSeries()` | ✅ 接触表 ⑭ |
 | `budoux` | 并入 `fitChineseTextOnNLines()`（断行优先落词组边界） | ✅ 接触表 ⑭ |
@@ -599,15 +461,11 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 | `@remotion/shapes` / `@remotion/paths` | `SHAPES`（含 callout / arrow / heart）+ `PathDraw showArrow`（`getTangentAtLength` 沿线朝向）；`@remotion/shapes` 的 Pie 不再封装（饼图/份额改走 `Chart variant="pie"` 与 `ProgressRing`） | ✅ 接触表 ⑩⑪⑰ |
 
 **全部封装完成、全部有渲染记录、全部登记进路由表**——「零引用」判据无一触发。
-（补记：`@remotion/motion-blur` 这一行**已整行删除**——它封装出来的两个名字从未进过任何画面，
-连接触表都没上，属于本条判据的正面案例；Pie 也不再封装，理由见上一行。）
 
-> **关于 budoux 的诚实结论**：它是**辅助不是保证**。实测它对"反推"「并返回」这类词也会切错
-> （切成 `反|推该`、`并返|回断`），模型本身不够准。所以：**标题可以依赖它的断点，正文别指望**。
-> 断行仍然是"能落在词组边界就落，落不了按字断并遵守避头尾"。
+> **budoux 是辅助不是保证**：它对"反推"「并返回」这类词也会切错（`反|推该`、`并返|回断`）。**标题可以依赖它的断点，正文别指望**；
+> 断行仍是"能落在词组边界就落，落不了按字断并遵守避头尾"。
 
-> **教训留档**（这条清单本来是"待办"）：技能曾累积 23 件"从未出现在任何画面里"的组件，
-> 起因正是"装了/建了却没人用"。**引入依赖 ≠ 获得能力**——封装成组件 + 登记进路由表 + 真的渲染过，三件都做到才算。
+> **引入依赖 ≠ 获得能力**——封装成组件 + 登记进路由表 + 真的渲染过，三件都做到才算。
 
 #### 4.5 代码高亮：Shiki（替换 `react-syntax-highlighter` / PrismLight）
 
@@ -627,7 +485,7 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 
 ### 五、零依赖也能做的"炫效果"（优先做这些）
 
-社区组件库里最抓眼的效果，**八成不需要任何依赖**——它们的底层只是 CSS/SVG 数学。做成组件时优先走这条路：
+社区组件库里最抓眼的效果**八成不需要任何依赖**，底层只是 CSS/SVG 数学，做成组件时优先走这条路：
 
 | 效果 | 实现 |
 |---|---|
@@ -644,7 +502,7 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 
 #### 5.1 已知地雷：库不一定适配中文
 
-引库不是无脑照搬。**上线前必须用中文实测过**，因为有些库是按拉丁文假设写的。已知的坑：
+**引入的库上线前必须用中文实测过**，有些库是按拉丁文假设写的。已知的坑：
 
 | 库 / API | 问题 | 处置 |
 |---|---|---|
@@ -654,8 +512,7 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 
 ### 六、为什么不直接粘贴网上的组件库
 
-21st.dev、Aceternity UI、Magic UI、shadcn/ui 这类**分享型组件库**（别人写好源码、复制即用）确实是最快的
-"炫效果"来源，但**不能原样粘进本技能**，三堵墙：
+21st.dev、Aceternity UI、Magic UI、shadcn/ui 这类**分享型组件库**（复制即用的源码）**不能原样粘进本技能**，三堵墙：
 
 | 墙 | 具体表现 |
 |---|---|
@@ -663,8 +520,7 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 | **时间驱动墙** | 它们的动画是 `animation: 3s infinite` 或自动播放的 motion。视频按帧渲染，**同一帧可能被渲染多次**，时间驱动的动画每次结果都不同——这正是十四道门禁要防的事 |
 | **审美墙** | 它们绝大多数是暗色科技 SaaS 落地页风格（黑底极光、流星、光束）。本技能的皮肤是扁平几何 / 动漫赛璐璐，硬搬会打架 |
 
-**正确用法：取"效果配方"，不取"实现"。** 把它拆成第五节的 CSS/SVG 数学，重新用 `THEME` 上色、用帧号驱动，
-然后做成**本技能自己的组件**。效果是别人的，皮肤和可复现性是我们的。
+**正确用法：取"效果配方"，不取"实现"。** 拆成第五节的 CSS/SVG 数学，用 `THEME` 上色、用帧号驱动，做成**本技能自己的组件**。
 
 ### 七、引入库之后必须遵守的组件纪律
 
@@ -682,7 +538,7 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
    - `simple-icons` ＝ 品牌 logo（React / Node.js / Python / Docker / Git / npm / GitHub）。只取 `path`，
      **不用 `hex` 品牌色**；按 0.84 缩一档，让实心剪影与线条图标视觉面积相当。
    **锁定的 `LineIcon` 仍是主图标语言**（卡片小标题旁）；`TopicIcon` 只用于题材性标识。
-   图标**只用 THEME 给的 color**，不许用自带 fill 或多色。`react-icons` 已移除（Font Awesome 品牌是 CC BY 4.0，需署名）。
+   图标**只用 THEME 给的 color**，不许用自带 fill 或多色。不用 `react-icons`（Font Awesome 品牌是 CC BY 4.0，需署名）。
 6. **进路由表**：新组件必须同时登记进 [media.md#media-routing](media.md#media-routing) 的「内容→介质」与
    「修辞动作→组件」两张表，否则会重演"组件在仓库里吃灰"的老问题。
 7. **弹层不 Portal、不异步定位**：`OverlayFrame` 是父容器里的一个绝对定位 `<div>`，左上角 = 给定的 `(x, y)`
@@ -697,9 +553,9 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 
 **纪律：加一件 = 换掉一件。** 新效果优先做成既有组件的**参数或变体**（`Paper variant="glow"`、
 `FitCard tilt={...}`），**不要为新效果新开组件**——否则"引入社区效果"会把库顶到 30 件以上，重演吃灰。
-（`src/components/` 是 **27 件**：删掉 PieDraw 与 `@remotion/motion-blur` 的那两个再导出。）
+（`src/components/` 是 **27 件**。）
 
-**不要设一个拍脑袋的数字上限。** 实测过一遍：库的地板由两部分撑住，砍不动——
+**不要设一个拍脑袋的数字上限。** 库的地板由两部分撑住，砍不动——
 
 | 类别 | 件数 | 为什么砍不动 |
 |---|---|---|
@@ -707,23 +563,19 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 | 表意件（修辞动作各一件） | 42 | 逐对核对后，真正"同一修辞动作、两套实现"的只有 4–5 对，且每对都各有一点对方没有的能力 |
 
 - **故本节的合规判据是「零引用」而不是「总数」**：任何组件只要**从未出现在任何画面里**（参考片或接触表），
-  就是待删除项。按这条清掉过 23 件。
+  就是待删除项。
 - 想让库"更窄"而不是"更小"：走 [media.md#media-routing](media.md#media-routing) 的**单一首选**——每行只给一个建议，
   其余标注「何时才用」。一行并列三个平级选项 = 没给建议。
 
-> **历史教训（两条，都很硬）**：
-> ① 本技能曾累积到 49 件组件，其中 **23 件（47%）从未在任何画面里出现过**，而其中 **21 件早已登记在路由表上**——
->    说明"补决策入口"不是解药，**规矩必须同时给许可**（这就是本文件存在的原因）。
-> ② 反过来，"总数压到 20 件"同样不可达：逐件点算的地板是 **53 件**（`src/components/` 27 + 其余 8 个模块 26；口径 = 各模块对外 `export` 的大写 React 组件，与 [components.md#fxkit](components.md#fxkit) 的 27 件同口径，渲染期门禁件 `SlotGuard` 不算件），其中 `STRUCTURAL` 14 件豁免多样性检查；再往下就是删引擎件或在用的表意件。
+> **两条结论**：
+> ① 组件登记进路由表也会吃灰，"补决策入口"不是解药——**规矩必须同时给许可**（这就是本文件存在的原因）。
+> ② "总数压到 20 件"不可达：逐件点算的地板是 **53 件**（`src/components/` 27 + 其余 8 个模块 26；口径 = 各模块对外 `export` 的大写 React 组件，与 [components.md#fxkit](components.md#fxkit) 的 27 件同口径，渲染期门禁件 `SlotGuard` 不算件），其中 `STRUCTURAL` 14 件豁免多样性检查；再往下就是删引擎件或在用的表意件。
 >    **别对着一个数字做有损合并。**
 
 ### 九、模板 → 工程同步清单（改完模板不等于工程拿到了）
 
-> **一句话教训（本轮实测）**：真实工程 `overview-film` 里有一份**自己的组件副本**（`src/components/`、`src/fxkit.tsx`、
-> 五道渲染期门禁、主题包……都是复制过去的）。模板里的组件升级、新依赖、新接线**不会自动过去** ——
-> 实测：模板的 `GeoView` 已经能画真陆地轮廓（`world-atlas` + `topojson-client`，见 §4.2），
-> 而长片 `package.json` 里这两个包是 **0 处**、`src/components/data.tsx` 里也没有 `world-atlas` import，
-> 所以长片至今画的是**旧版经纬网**。要长片渲出真地图，必须跑完下面这套同步。
+> 每个工程都有一份**自己的组件副本**（`src/components/`、`src/fxkit.tsx`、五道渲染期门禁、主题包……都是复制过去的）。
+> 模板里的组件升级、新依赖、新接线**不会自动过去**（例：模板 `GeoView` 画真陆地，没同步依赖的工程仍画旧版经纬网）。要拿到它们，必须跑完下面这套同步。
 
 **共享面（要同步）**：`src/components/**`（含 `fittext.tsx`）、`src/fxkit.tsx` / `media.tsx` / `stagekit.tsx` /
 `skeletons.tsx` / `toolkit.tsx` / `kit.tsx` / `shotkit.tsx` / `insert.tsx`、**五道渲染期门禁所在的四个文件**
@@ -743,8 +595,7 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
    并在工程里跑一次 `npm install`（或 `npm install --package-lock-only` 后用 `npm ci`）让 `package-lock.json` 一起更新。
    **只拷源码不装包 = 渲染到那一帧才报"找不到模块"**，前面所有门禁都拦不住。
 4. **接线别漏**：新件要挂在设计根 / 片子上才算生效（`data-design-root`、门禁的 `mode="warn" / "block"` 两档、`CardFitGate`
-   的 `data-fit-skip`……）。**把组件文件拷过去 ≠ 生效**：实测长片的
-   `index.tsx` 里 `CanvasBoundsGate` 是 0 处挂载 —— 门禁文件搬过去了也没在跑。
+   的 `data-fit-skip`……）。**把组件文件拷过去 ≠ 生效**：`index.tsx` 里没挂载 `CanvasBoundsGate`，门禁文件搬过去了也没在跑。
 5. **同步后跑门禁（都在工程目录里跑）**：`npx tsc --noEmit`（帧参数名，`f={f}` vs `frame={f}`，以及漏传）、
    `validate-composition.py <工程>`（`live` 名字必须真的出现在场景源码里、结构/时长）、`validate-presentation.py`、
    `validate-layering.py`、`validate-motion-gaps.py`；渲染期那五道 Gate 会在 still / render 时自己报。
@@ -754,22 +605,13 @@ Accept a tiny cadence difference only when moving from the obsolete 20fps steppe
 7. **方向是单向的**：模板 → 工程。工程里为这部片子做的临时改动**不要回流模板**；只有"任何片子都该有的修复"
    才回模板，并且回完要重跑第 5 步。
 
-> 附：本机渲染的两个坑（实测）——① `npx remotion` 可能挂死（零输出、低 CPU）：改用工程内的
+> 附：① 不用 `npx remotion`（可能挂死，见 [#windows-compatibility](#windows-compatibility)），改用工程内的
 > `./node_modules/.bin/remotion`；② 工程侧没装 Chrome Headless Shell 时它会**联网下载 113 MB**，
 > 想复用已有的浏览器就传 `--browser-executable "<另一个工程>/node_modules/.remotion/chrome-headless-shell/win64/chrome-headless-shell-win64/chrome-headless-shell.exe"`。
 
 <a id="remotion-architecture"></a>
 
 ## Remotion architecture contract
-
-### Contents
-
-1. Project structure
-2. Deterministic data flow
-3. Required components
-4. Scene and layer ownership
-5. Audio ownership
-6. Rendering and fallback rules
 
 ### 1. Project structure
 
@@ -796,7 +638,7 @@ project/
 └── renders/
 ```
 
-Remotion is the only visual renderer. Python is limited to validation and deterministic data conversion.
+Remotion is the only visual renderer; Python is limited to validation and deterministic data conversion.
 
 ### 2. Deterministic data flow
 
@@ -844,11 +686,11 @@ Copy rather than recreate:
 - `Chrome`: stable chapter and technical header.
 - `Sound`: narration and action effects with frame-based `Sequence`.
 
-Keep the component implementations in the canonical example until the user approves a future rendered replacement. The preserved aesthetic system keeps the same component grammar and separates stable semantic IDs from editable display copy.
+Keep the canonical implementations until the user approves a rendered replacement; keep stable semantic IDs separate from editable display copy.
 
 ### 4. Scene and layer ownership
 
-Use a native 30fps output and 30fps design timeline. Keep the helper explicit so an intentional native-rate or longer-duration variant can update the whole timing boundary consistently:
+Keep the timing helper explicit (30fps output and design timeline, per [Performance §1](#performance-design)) so an intentional native-rate or longer-duration variant can update the whole timing boundary consistently:
 
 ```ts
 const BASE_FPS = 30;
@@ -861,11 +703,11 @@ const q = (frame: number) => Math.floor(frame / step) * step;
 const deliveryFrame = (frame: number) => Math.round(frame * FPS * TIMELINE_SCALE / BASE_FPS);
 ```
 
-Text reveal, measured TTS boundaries, physical paper poses and action audio use native 30fps frames. Keep timing conversion centralized. For a local stop-motion beat, quantize that component to 15fps; do not change the composition.
+Text reveal, measured TTS boundaries, physical paper poses and action audio use native 30fps frames. Keep timing conversion centralized.
 
 #### Duration extension invariant
 
-The default scene is a 900-frame design timeline. If narration requires a longer delivery while retaining the same authored scene geometry, set `TIMELINE_SCALE` and `DURATION` together (`DURATION = 900 * TIMELINE_SCALE`). Every scene mount guard, animation cue, caption boundary and action-audio `<Sequence from>` must derive from `useCurrentFrame()`, `q()` or `deliveryFrame()`; never read raw `useRawCurrentFrame()` in a scene. Before a full render, range-render across every scene boundary and inspect the final frame. This prevents an extended composition from unmounting all scenes or leaving sound cues at the original timing.
+The default scene is a 900-frame design timeline. If narration requires a longer delivery while retaining the same authored scene geometry, set `TIMELINE_SCALE` and `DURATION` together (`DURATION = 900 * TIMELINE_SCALE`). Every scene mount guard, animation cue, caption boundary and action-audio `<Sequence from>` must derive from `useCurrentFrame()`, `q()` or `deliveryFrame()`; never read raw `useRawCurrentFrame()` in a scene (a scene mounted against raw frames disappears before the film ends even though its internal animation is correct). Before a full render, range-render across every scene boundary and inspect the final frame. This prevents an extended composition from unmounting all scenes or leaving sound cues at the original timing.
 
 #### Long-film path: keep `TIMELINE_SCALE = 1`
 
@@ -873,95 +715,46 @@ For a newly authored long film (verified at 4996 frames / 22 chapters), the simp
 
 #### Authoring pitfall: adjacent generic-annotated arrow components
 
-The pinned bundler has been observed to misparse `const X: React.FC<A> = (props) => { ... }` when it immediately follows a component whose body ends in dense JSX (for example a `.map` returning nested elements). The reported error points at the innocent following line (`Expected identifier but found "("`), so do not edit the reported line first. Workarounds that all parse reliably: write the component as a `function` declaration, return the preceding value from an explicit `<div>` instead of a bare `<>` fragment split across lines, or separate the two components with a plain statement. Isolate the trigger by transforming growing prefixes of the file with the bundler's esbuild `tsx` loader before touching scene logic.
+The pinned bundler can misparse `const X: React.FC<A> = (props) => { ... }` right after a component whose body ends in dense JSX (e.g. a `.map` returning nested elements); the error (`Expected identifier but found "("`) points at the innocent following line, so do not edit that line first. Reliable workarounds: a `function` declaration, an explicit `<div>` instead of a bare `<>` fragment split across lines, or a plain statement between the two components. Isolate the trigger by transforming growing prefixes of the file with the bundler's esbuild `tsx` loader before touching scene logic.
 
-Mount only scenes that can contribute pixels. Keep one scene mounted normally and at most two during a transition. Never hide every inactive scene with opacity. Read `technique.md#performance-design`.
+Scene mounting follows [Performance §2](#performance-design) (one scene normally, at most two in a transition, never hide inactive scenes with opacity).
 
-Use start-inclusive and end-exclusive scene windows. A scene group owns its image, text, SVG and annotation layers. When the subject changes, unmount the outgoing group at its end frame; do not leave a hidden raster, callout or shadow under the next scene.
+Use start-inclusive, end-exclusive scene windows. A scene group owns its image, text, SVG and annotation layers; when the subject changes, unmount the outgoing group at its end frame — no hidden raster, callout or shadow left under the next scene.
 
-Assign one owner to every visible object. A parent that uses transform, opacity, filter or isolation creates a stacking context; therefore sibling z-index values do not escape it. Keep objects that must overlap across a container in the same intended stacking context.
+Assign one owner to every visible object. A parent with transform, opacity, filter or isolation creates a stacking context that sibling z-index values cannot escape, so keep objects that must overlap across a container in the same intended stacking context.
 
-Model entry, active and exit phases. At exit, move the whole component beyond the frame or set opacity to zero only after it is fully outside. Do not clip a portion and leave the remainder visible.
+Model entry, active and exit phases. At exit, move the whole component beyond the frame, or set opacity to zero only after it is fully outside; never clip a portion and leave the remainder visible.
 
 ### 5. Audio ownership
 
-Use `@remotion/media` `<Audio>` for narration. Use `<Sequence from={frame}>` for action sounds. Keep the cue in the same file or data source as the visible action frame.
-
-Do not build the action timeline in an unrelated shell script. FFmpeg may normalize and encode after Remotion, but it must not introduce an undocumented narration delay.
+Use `@remotion/media` `<Audio>` for narration and `<Sequence from={frame}>` for action sounds, with each cue in the same file or data source as the visible action frame — never in an unrelated shell script. FFmpeg may normalize and encode after Remotion, but must not introduce an undocumented narration delay.
 
 ### 6. Rendering and fallback rules
 
-Render with the pinned package versions in the canonical `package-lock.json`. The cross-platform Node launcher is authoritative on Windows, macOS and Linux; shell wrappers are only aliases and must not contain separate render logic. The bundled network-interface shim is an opt-in compatibility aid only; enable it with `REMOTION_USE_NETWORK_SHIM=1` when a restricted runtime requires it, never by default. If a cloud environment cannot run Remotion, report the constraint before changing engines. Do not silently fall back to another renderer, real-time browser capture or generated video clips because their output will not match the approved system.
+Render with the pinned versions in the canonical `package-lock.json`. The cross-platform Node launcher is authoritative on Windows, macOS and Linux; shell wrappers are only aliases and must not contain separate render logic. The network-interface shim is opt-in only (`REMOTION_USE_NETWORK_SHIM=1` when a restricted runtime requires it, never by default). If a cloud environment cannot run Remotion, report the constraint before changing engines; never silently fall back to another renderer, real-time browser capture or generated video clips — their output will not match the approved system.
 
 Use website capture only when the user explicitly asks to record an existing interactive site; see `media.md#html-capture`.
 
 <a id="skill-workflow"></a>
 
-
 ## 完整工作流（原 SKILL.md 正文）
 
-**第一原则 · 草稿纸讲解**：画面像一张边讲边写的草稿纸。画面上**没有笔**；每样东西都在旁白讲到它时才出现，一点点长出来，不整块弹出，同一时刻不冒出一堆。下面的「手账页 / 组件 / 直书页」管的是**画什么**，草稿纸讲解管的是**什么时候、怎么出现**；两者冲突时，按草稿纸讲解。
+第一原则（草稿纸讲解）、四条出现规则、手账页 / 组件 / 直书页的分工、三种 `mode` 的配比、主题物至少出现一次（否则 P0）、手账页的容器是纸、线稿只做标本速写、锤子帧、皮肤列表、选路线表与「每个选题先搜 Commons / Openverse」都以 [SKILL.md](../SKILL.md) 为准；出现规则全文见 [references/draftpaper.md#reveal-rules](draftpaper.md#reveal-rules)，版式、配色与组件搭配见 [references/draftpaper.md#draftpaper-design](draftpaper.md#draftpaper-design)。本节只补 SKILL.md 没写的细节。
 
-**出现规则**（auto 路线由引擎自动做到；手写场景路线照着写。全文见 [references/draftpaper.md#reveal-rules](draftpaper.md#reveal-rules)；版式、配色与组件搭配见 [references/draftpaper.md#draftpaper-design](draftpaper.md#draftpaper-design)）：
-1. **跟着旁白**：一样东西在讲到它的那句话开始时才开始出现，不提前。
-2. **长出来**：文字和卡片左→右展开，用时 = 字数 × 4 帧（最少 12、最多 45 帧）；线稿按部位依次描出，整幅 24–45 帧；圈注 14 帧，下划线和箭头 12 帧，手写小字 24 帧。手账页上的真图版、照片、截图可以整件「贴上」，但也要等讲到它的那句。
-3. **不扎堆**：同一镜里，相邻两样东西开始出现至少隔 12 帧（0.4 秒）；同一时刻最多 2 样在长。
-4. **不预铺**：镜头切进来时，纸上只有已经讲过的东西；开镜头 6 帧内最多 1 样东西开始出现。
-
-画面由两种东西分工，**交替出现**：
-
-| | 负责 | 长什么样 | 怎么写 |
-|---|---|---|---|
-| **手账页** | **承载**：把要讲的那个真东西摆到眼前 | 一页纸：装裱好的原版图版 / 标本、手写页眉、朱红印章、一行手写说明、放大镜 | `layout: "page"` + `content.page` = `plate` / `loupe` |
-| **组件** | **讲解**：把概念拆开、对比、算清 | 流程、对比、清单、柱条、大数字、代码 | `flow` / `compare` / `list` / `bars` / `number` / `code` |
-
-- **三种呈现模式**（`story.json` 顶层 `"mode"`），配比不同，`validate-fusion` 按模式判：
-
-| mode | 手账页 | 组件（含直书） | 什么时候用 |
-|---|---|---|---|
-| `hybrid`（默认） | 20–75% | ≥25% | 有物可看、也有结构要讲——绝大多数片 |
-| `component`（全组件） | ≤12% | ≥60% | 内容本身就是结构（流程 / 对比 / 清单 / 数据），没有实物可拍 |
-| `freeform`（全非组件） | ≥40% | 多框组件 ≤10% | 有物可看，或抽象但有几何可画；只有手账页 + 直书页 |
-
-  模式是**门禁契约**，不是风格开关：声明 `component` 却整片是手账页，会被点名「别声明一套做另一套」。
-- 主题里的那个东西全片**至少出现一次**（手账页图版说明 / 墨图标签 / 标本速写 / `see` → 全组件片还认组件镜的 `title`），否则判 **P0**。
-- 手账页的容器是**纸**，不是卡片：不要给它套圆角框，也不要把图版做成"浏览器截图卡片"。
+- 草稿纸讲解管**什么时候、怎么出现**，手账页 / 组件 / 直书页管**画什么**；两者冲突时按草稿纸讲解。auto 路线由引擎自动做到出现规则，手写场景路线照着写。
 - 手账页写法见 [references/components.md#journal-page](components.md#journal-page)；参考片 [examples/cell-notebook](../examples/cell-notebook/README.md) **仅文档**（导演层 + 分镜 + 旁白，不含 story.json 与素材，不能直接跑）；能直接跑的手账页配方是 [examples/recipes/cork-page.story.json](../examples/recipes/cork-page.story.json)（4 镜，自带导演层，素材按提示用 commons-search 取一次）；组件配方见 [references/scenes.md#recipes](scenes.md#recipes)。
-
-**线稿是可选件，只做标本速写**（一件东西 + 尺寸线 + 手写名）。不要用简笔线稿去「解释」概念——
-实测那种画面像剪贴画，比不画更差。`validate-fusion` 对「文字 + 简笔线稿」超过 20% 判 P1。线稿写法见 [references/components.md#linework](components.md#linework)。
-
-组件是信息的主体，但**不是唯一的载体**：有真东西可看时用 `page`（手账页），只有一组关系要讲时用 `type`（直书页：靠字号、行距、对齐做层级，一个框都不出）。
-直书页是「省掉框」，不是「省掉内容」——每行 ≤10 字、≤5 行，全片 ≤40%；超了就成一本排版册。写法见 [references/components.md#journal-page](components.md#journal-page)。
-另外，每片留 2–3 个**锤子帧**（整章最该被记住的一句，满屏单独出现 1.5–2.5 秒），规则见 [references/director.md#pacing-rhythm](director.md#pacing-rhythm)。
-锤子帧怎么做：组件路线用 `StampBanner`（或 `Callout` 放大到 displayL）独占一镜；手作路线用 `HandLettering` 手写满屏一句，或 `Seal` 印章大字——都放在媒介里，不是白底大字。
-只有 16:9；五个皮肤：`flat`（默认）、`cel`，以及手作皮肤 `journal`（手账水彩）/ `papercut`（红色剪纸）/ `archive`（档案灯台）。
-TTS 是正式步骤：`notebook-video tts <工程>`（默认 edge-tts；也可 `--engine=file` 用你自己的录音），字幕与镜头按**词级时间**对齐；没有真实旁白时 `--render` 会停在渲染前（静音占位只给 `--stills` / `preview`）。默认无 BGM，音效稀疏。
-
-### 先选路线
-
-| 题目 | `mode` | 路线 |
-|---|---|---|
-| 软件、产品、代码、操作教程（没有实物可拍） | `component` | `flat` / `cel` + 下面第 1–5 步 |
-| 科普、自然、历史、"为什么"（有真东西可看） | `hybrid` | `journal` / `papercut` / `archive`，先走第 0 步导演层；手账页承载 + 组件讲概念 |
-| 单位、几何、算法、纯结构（没实物但有形可画） | `freeform` | `journal`：手账页 + 直书页，多框组件 ≤10% |
-
-**不论哪条路线，每个选题都先搜一次 Commons / Openverse**（真东西几乎总能让片子更好）：
-`python scripts/commons-search.py search "<英文关键词>" --project ./my-video`，能用的 `add` 进来，交付前 `credits` 生成 `CREDITS.md`。
-许可只收公有领域 / CC0 / CC BY，署名自动上屏。见 [references/media.md#commons-media](media.md#commons-media)。
+- 线稿写法见 [references/components.md#linework](components.md#linework)；用简笔线稿「解释」概念的画面像剪贴画，比不画更差。直书页是「省掉框」，不是「省掉内容」，写法见 [references/components.md#journal-page](components.md#journal-page)。
+- 锤子帧规则见 [references/director.md#pacing-rhythm](director.md#pacing-rhythm)。组件路线用 `StampBanner`（或 `Callout` 放大到 displayL）独占一镜；手作路线用 `HandLettering` 手写满屏一句，或 `Seal` 印章大字——都放在媒介里，不是白底大字。
+- 字幕与镜头按 TTS 的**词级时间**对齐。Commons 素材交付前用 `credits` 生成 `CREDITS.md`，见 [references/media.md#commons-media](media.md#commons-media)。
 
 ### 第 0 步 · 导演层（手作路线必做）
 
-照 [references/director.md#director-method](director.md#director-method) 写 `manifests/treatment.json`（模板 `manifests/treatment.example.json`）：
-一个生活问题 → 只属于这个题的隐喻 → 媒介（皮肤）为什么是它 → 顿悟点的**原生动作** → 三个候选结构选一个 → 对标学 / 不学 → 镜头表每镜写理由。
-蓝图用 `blueprints/medium-metaphor.json`。`validate-treatment.py` 在手作皮肤下把缺项记 P0（`make-video` 自动跑）。
+照 [references/director.md#director-method](director.md#director-method) 写 `manifests/treatment.json`（模板 `manifests/treatment.example.json`），蓝图用 `blueprints/medium-metaphor.json`。`validate-treatment.py` 在手作皮肤下把缺项记 P0（`make-video` 自动跑）。
 媒介的八个轴与"不是什么"见 [references/director.md#style-recipes](director.md#style-recipes)；组件见 [references/components.md#craft-kit](components.md#craft-kit)
 （`InkPath` / `HandNote` / `HandLettering` / `WashBlob` / `CutPaper` / `Loupe` / `PinnedPhoto` / `ArchivePhoto` …）。
 开场钩子、节奏、运镜分别见 [references/director.md#narrative-hook](director.md#narrative-hook)、[references/director.md#pacing-rhythm](director.md#pacing-rhythm)、[references/camera.md#camera-language](camera.md#camera-language)。
-**手作路线只必读 4 份**：[references/director.md#director-method](director.md#director-method)、[references/components.md#craft-kit](components.md#craft-kit)、[references/camera.md#camera-language](camera.md#camera-language)、`references/themes/<皮肤>.md`；其余按需查（`references/scenes.md#lecture-composition` 等仅限组件路线）。
-
-**auto 路线（story.json）必读 2 份**：[references/technique.md#auto-engine](technique.md#auto-engine)、[references/draftpaper.md#reveal-rules](draftpaper.md#reveal-rules)；用到配方 / 线稿时再读 [references/scenes.md#recipes](scenes.md#recipes)、[references/components.md#linework](components.md#linework)。
-先做 3 张风格帧（`--stills`），像了再做全片；**整片渲染前**由新会话只看联系表 + 自动生成的 `storyboard.md` + `treatment.json` 做七项独立评审，写进 `review.rounds`（手作皮肤没评审时 `make-video --render` 给一条 P1 提示、照常渲染；`--skip-review` 关掉提示）。
+两条路线各自的必读清单见 SKILL.md「去哪读」（`references/scenes.md#lecture-composition` 等仅限组件路线）；auto 路线用到配方 / 线稿时再读 [references/scenes.md#recipes](scenes.md#recipes)、[references/components.md#linework](components.md#linework)。
+先做 3 张风格帧（`--stills`），像了再做全片；整片渲染前的独立评审（七项，规则见 SKILL.md）写进 `review.rounds`。
 
 ### 第 1 步 · 选一个蓝图
 
@@ -990,16 +783,10 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 手作路线换成 `--style=journal`（或 `papercut` / `archive`），会按需下载 Noto Serif SC Bold（字幕字体，OFL）。
 
 **翻页是缺省，不是选项。** 任何皮肤、任何 story，只要不写 `transition`，镜间一律翻页：
-`pageturn`（纸被卷起来，WebGL2）→ 画不了就退到 `pageflip`（纯 CSS 的折痕翻页，无依赖），
-两者**同向**（近乎竖直的折线、下角领先，从右往左翻）。所以 story 里**不需要**写
-`"transition": "pageturn"`，写了反而会把自定义皮肤的选择固定死。
-`whip`（甩镜）/ `zoom` / `slide` / `drop` 仍可用，但都要显式写。
-
-**翻页一定有纸声**（`page` 拟音，转场第 3 帧命中）。它是动作音，不是标点：
-`sfxDensity: sparse` 只削标点，不削动作；换章那一镜 chapter 与 page 并存，不会互相吃掉。
-
-渲染器先画一张探针验收卷页；通过就整片一遍渲完（与其余帧同一浏览器、同样并发）。探针失败时全片照常出，
-翻页自动降级成折痕版并在报告里记 P1（[references/camera.md#fx-effects](camera.md#fx-effects)）。
+`pageturn`（纸被卷起来，WebGL2）→ 画不了就退到 `pageflip`（纯 CSS 的折痕翻页，无依赖），两者**同向**（近乎竖直的折线、下角领先，从右往左翻）。
+所以 story 里**不需要**写 `"transition": "pageturn"`，写了反而会把自定义皮肤的选择固定死。`whip`（甩镜）/ `zoom` / `slide` / `drop` 仍可用，但都要显式写。
+**翻页一定有纸声**（`page` 拟音，转场第 3 帧命中）。它是动作音，不是标点：`sfxDensity: sparse` 只削标点，不削动作；换章那一镜 chapter 与 page 并存，不会互相吃掉。
+渲染器先画一张探针验收卷页；通过就整片一遍渲完（与其余帧同一浏览器、同样并发）。探针失败时全片照常出，翻页自动降级成折痕版并在报告里记 P1（[references/camera.md#fx-effects](camera.md#fx-effects)）。
 
 工程里已有一部完整的示例片（8 镜）。**照着改，不要从零写**：
 
@@ -1008,21 +795,18 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" new-project ./my-video --style=fla
 - `src/film.ts`：片名、章节标题；
 - `manifests/caption-cues.json` + `audio/narration.mp3.json`：字幕（每行 ≤16 字）。
 
-> **抄结构，不要抄片子。** 拿到模板最容易犯的错是把它再演一遍——同样的镜序、同样的招牌镜头、同样的收尾。
-> 改完跑一次 `eval-project "<SKILL_DIR>/assets/lecture-template" ./my-video`，看
-> **版式种类 / 介质种类 / 转场种类 / 镜长分布 / 最大推近**这几行有没有真的不同；全都一样就说明你只是在换文案。
-> 这是测量不是打分——"像不像"没有客观界线，但两列摆在一起你自己看得出来。
+> **抄结构，不要抄片子。** 最容易犯的错是把模板再演一遍——同样的镜序、招牌镜头、收尾。改完跑 `eval-project "<SKILL_DIR>/assets/lecture-template" ./my-video`，
+> 看**版式种类 / 介质种类 / 转场种类 / 镜长分布 / 最大推近**这几行有没有真的不同；全都一样就说明你只是在换文案。这是测量不是打分。
 
 组件怎么选：[references/media.md#media-routing](media.md#media-routing)（修辞动作 → 组件表）、[references/components.md#fxkit](components.md#fxkit)。
 完整作者手册（骨架、镜头语言、门禁细节）：[references/scenes.md#handwritten-scenes](scenes.md#handwritten-scenes)。
 
 ### 第 3 步 · 写台词与镜头表
 
-- 一镜 1–3 句，一句一个意思；字幕超 16 字由 `build-semantic-captions.py` 在合法断点自动拆（不拆词、英文、数字）。
+- 字幕超 16 字由 `build-semantic-captions.py` 在合法断点自动拆（不拆词、英文、数字）。
 - 要观众「看那里」时，在镜头表写 `cinema.focus`（推近到那个组件的矩形）；不写也有缺省缓推。
-- 相邻两镜换骨架；一镜一个概念；关键数字用 `KineticNumber` 数过去。
-- 背景：手作皮肤默认 `bgMode: "chapter"`（每章一张纸、章内沿用），flat / cel 默认 `"shot"`（逐镜轮换）；全片一张纸写 `"bgMode": "film"`，完全不轮换写 `"bgRotate": false`。不写就自动选——每个皮肤有 8–11 张风格各异的亮底背景（手账：横线本 / 方格 / 点阵 / 牛皮纸 / 水彩纸 / 便签墙 / 旧书页 / 坐标纸；剪纸：红纸衬边 / 宣纸 / 窗花 / 祥云 / 挂笺 / 洒金…；档案：档案袋 / 旧报纸 / 古地图 / 卡片目录 / 胶片 / 展柜布面…），逐镜模式按镜头角色挑、相邻两镜不重复，装饰重的（`busy`）不进常规镜。某一镜要特定的纸，就写 `"bg": "oldpage"`；清单与许可见 [references/media.md#background-library](media.md#background-library)。
-- 帧参数名：`fxkit` 组件传 `frame={f}`，其余模块传 `f={f}`（帧参数是必填类型，传错或漏传 `tsc` 报错）。
+- 一镜一个概念；关键数字用 `KineticNumber` 数过去。
+- 背景：手作皮肤默认 `bgMode: "chapter"`（每章一张纸、章内沿用），flat / cel 默认 `"shot"`（逐镜轮换）；全片一张纸写 `"bgMode": "film"`，完全不轮换写 `"bgRotate": false`。不写就自动选（每个皮肤 8–11 张亮底背景，逐镜模式按镜头角色挑、相邻两镜不重复，装饰重的 `busy` 不进常规镜）。某一镜要特定的纸写 `"bg": "oldpage"`；清单与许可见 [references/media.md#background-library](media.md#background-library)。
 
 ### 第 4 步 · 一条命令
 
@@ -1034,19 +818,15 @@ node "<SKILL_DIR>/scripts/make-video.mjs" ./my-video --render ./my-video/final.m
 Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做：resolve-shots（自动修）→ 门禁 → tsc → 静帧接触表 / 渲染 → 抽帧报告 `renders/report.md`；`--render` 后若装了 RapidOCR，会用 `validate-ocr.py` 抽字幕帧 OCR，核对字幕真的读得出（没装就跳过并提示）。
 
 **旁白顺序（auto 路线）**：`compose-story` 先写出 `narration.txt` → 你跑 `notebook-video tts <工程>` 生成音频 → `make-video` 里第二次 compose 按词级时间重排字幕与镜头。
-**改了 story 必须重跑 compose 再 tts**：`story.json` 比 `narration.txt` 新时 tts 会直接停下，告诉你先跑 compose——
-否则它会读旧的旁白，**出半截音频而且不报错**。自己手写 narration（不跟 story 走）时加 `--allow-stale`。
-**先看 `--stills` 静帧，再渲整片**（整片渲染要先征得用户同意）。手作皮肤 `treatment.json` 的 `review.rounds` 为空时 `--render` 给一条 P1 提示（建议先做独立评审；照常渲染，`--skip-review` 关掉提示）。`--render` 默认 1920×1080；响度目标 −16 LUFS（静音旁白片与真人声片相同）。
+`story.json` 比 `narration.txt` 新时 tts 会直接停下，告诉你先跑 compose（规则见 SKILL.md；`--allow-stale` 用于自己手写 narration）。
+`--render` 默认 1920×1080；响度目标 −16 LUFS（静音旁白片与真人声片相同）。
 
 **渲染中途失败别整片重渲**：`notebook-video render <工程> <输出> --resume`。raw 中间产物只在**成功交付后**才删除，
 所以渲染/响度/封装任一环节失败都能接着做；输入（场景、素材、音频、story）没变就跳过整片渲染，直接做响度与封装。
 渲染若**一动不动**（不是慢），看门狗会在 8 分钟无输出时中止并给出下一步（`REMOTION_STALL_MS` 可调）。
 
-**改完一版想确认"有没有变好"**：`node "<SKILL_DIR>/scripts/notebook-video.mjs" eval-project 旧工程 新工程`。
-它把片子拆成可比的数据（镜长分布、版式/介质/转场种类、运镜覆盖、字幕密度、空场读数）并给出 Δ。
-**它不打分**——判据只在门禁里存一处，两处各写一份阈值就会漂移。看到 Δ 之后，好坏仍由门禁 + 独立评审判。
-
-**读输出**：`✓ 自动修` = 引擎替你改了什么；`· 建议` 不拦；`✗` 才要改——每条都写了怎么改。同一个 ✗ 连续两次没改过来，停下来把报错原文告诉用户。
+**改完一版想确认"有没有变好"**：`notebook-video.mjs eval-project 旧工程 新工程`，把片子拆成可比的数据（镜长分布、版式/介质/转场种类、运镜覆盖、字幕密度、空场读数）并给出 Δ。
+**它不打分**——判据只在门禁里存一处，两处各写一份阈值就会漂移；好坏仍由门禁 + 独立评审判。
 
 **交付不止一个 mp4**。`--render` 成功后会自动再出两样（都失败不拦片，只记一笔）：
 
@@ -1061,7 +841,7 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 
 **看动起来对不对，别直接渲整片**：`node "<SKILL_DIR>/scripts/notebook-video.mjs" preview ./my-video --seconds=30`
 （默认 0.5 倍分辨率；**翻页预览里就有**——不开 fx 时走纯 CSS 的折痕翻页，速度不受影响。
-30 秒窗口的耗时看机器：作者开发机约 40 秒，2 核 / 8 GB 的 Linux 实测约 5 分钟（含打包）；同时给接触片和响度读数。单镜验：`--shot=S6`。
+30 秒窗口的耗时看机器：开发机约 40 秒，2 核 / 8 GB 的 Linux 约 5 分钟（含打包）；同时给接触片和响度读数。单镜验：`--shot=S6`。
 `--fx=on` 把翻页升级成卷页（纸真的弯起来、带纸背透光），多一次探针、几乎不增加每帧耗时；
 只看一处卷页就截转场那 30 来帧：`--from=<跨镜边界前一秒> --seconds=1.2 --fx=on`。
 跨镜边界在 `manifests/shots.resolved.json` 的 `from` 里，除以帧率就是秒。）
@@ -1069,10 +849,9 @@ Windows 用同一条 `node` 命令（或 `scripts\make-video.cmd`）。依次做
 预览结束会打一行 `FillGate coverage`：每镜 `cells`（48 格占用）/ `blank`（全空的列）/ `largest`（最大单体占画面）/ `widest`（最大横向跨度），
 `largest<0.06` 判「主体过小」，但有两条豁免：`widest≥0.45`（面积小但横跨够的条状主体——标尺、格带、时间轴）
 和 `blank=0` 且 `cells≥24`（照片+引线+网格这类多个中等元素拼成一个主体，没有单个"大件"）。
-`blank≥3/8` 判「横向空洞」。被判空时**不要放大卡片凑面积**，按 [references/checks.md#composition-gate](checks.md#composition-gate) 的写法改：空洞处补一层属于主体的东西。**不要为了让开头满而把东西提前摆上**——FillGate 量的是每镜最完整的那一帧，开头空着是草稿纸的正常状态。
+`blank≥3/8` 判「横向空洞」。被判空时怎么改见 [references/checks.md#composition-gate](checks.md#composition-gate)（SKILL.md「读输出」同）；FillGate 量的是每镜最完整的那一帧，开头空着是草稿纸的正常状态。
 
-**片子比 30 秒长时，别看开头就下结论。** `preview --seconds=30` 只覆盖前六镜，cell 的 S7/S8 就是这么漏的
-（补跑 `--from=32` 才发现 S7 右下角空 30%）。全片一次量完用 `sweep`——每镜截一张落定态、拼成一张体检表，八镜约 60 秒：
+**片子比 30 秒长时，别看开头就下结论**：`preview --seconds=30` 只覆盖前六镜。全片一次量完用 `sweep`——每镜截一张落定态、拼成一张体检表，八镜约 60 秒：
 
 ```bash
 node "<SKILL_DIR>/scripts/notebook-video.mjs" sweep ./my-video          # 0.5x，八镜一张表
@@ -1080,21 +859,17 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" sweep ./my-video --plan   # 只算
 node "<SKILL_DIR>/scripts/notebook-video.mjs" sweep ./my-video --json   # 给脚本读（stdout 只有 JSON）
 ```
 
-它按镜取「切点前最近的一个 **15 的倍数**帧」，两个条件都不是随手写的：必须是 15 的倍数，因为 FillGate 只在
-`frame % 15 === 0` 上采样，取别处会得到**零数据**——而零数据和"这镜没问题"在屏幕上长得一模一样；必须落在**后半段**，
-因为入场帧几乎必然是空的，拿它判空场会把每一镜都打成空洞（FillGate 第一版就是这么误报的）。
+它按镜取「切点前最近的一个 **15 的倍数**帧」：必须是 15 的倍数，因为 FillGate 只在 `frame % 15 === 0` 上采样，取别处会得到**零数据**——而零数据和"这镜没问题"在屏幕上长得一模一样；
+必须落在**后半段**，因为入场帧几乎必然是空的，拿它判空场会把每一镜都打成空洞。
 产出三样：终端八行表、`renders/sweep-sheet.jpg`（每镜一格，一眼看完构图）、`renders/sweep.json`（含每镜量的是第几帧，可复查）。
-数字可能比整片渲染略低（整片在整镜里扫，sweep 只取一帧，差 2–3 格属正常），但**判定用的是同一套阈值**
-（`assessCoverage()`，渲染收尾那行 `FillGate coverage` 也走它——阈值只有一处）。
+数字可能比整片渲染略低（整片在整镜里扫，sweep 只取一帧，差 2–3 格属正常），但**判定用的是同一套阈值**（`assessCoverage()`，渲染收尾那行 `FillGate coverage` 也走它——阈值只有一处）。
 
-**覆盖率留档只有两个来源**：整片 `render` 和 `sweep`。`preview` / `render-range` / `review-frames` 是**窗口**渲染，
-量到的是"窗口内最完整帧"，不是"整镜最完整帧"——实测 60 帧窗口把 S1 记成 cells=25，整镜是 28。
+**覆盖率留档只有两个来源**：整片 `render` 和 `sweep`。`preview` / `render-range` / `review-frames` 是**窗口**渲染，量到的是"窗口内最完整帧"，不是"整镜最完整帧"；
 这几个命令只打印、不写 `fill-coverage.json`，免得一次"看一眼"的预览把某镜的覆盖率改成假数字。
 
 ### 第 5 步 · （需要时）定制组件
 
-题目需要一张只属于它的图（比如「请求怎么穿过缓存」）时，照抄 `src/custom/RequestLane.tsx` 写一个组件，在 `src/custom/index.ts` 注册，
-然后在 `scenes.tsx` 里像其他组件一样用。纪律：只用 `f` 驱动动画；文字 ≥32px；文字色用 `C.ink` / `C.muted` / `C.*Ink`。
+照抄 `src/custom/RequestLane.tsx` 写组件、在 `src/custom/index.ts` 注册，然后在 `scenes.tsx` 里像其他组件一样用；纪律见 SKILL.md「逃生舱」。
 
 ### （需要时）真实截图 / 录屏
 
@@ -1110,13 +885,10 @@ node "<SKILL_DIR>/scripts/notebook-video.mjs" sweep ./my-video --json   # 给脚
 画面不静止超过约 1 秒（镜尾 >1.5 秒无事件自动补收束慢推）；音画同步；音效文件 sha256 与增益 / 提前量和 manifest 一致。
 **软建议（主观，只提示）**：同屏强调数、每镜字号种类、装饰预算、快慢交替、留白。
 
-**引擎不能保证的（P2-22，说清楚免得当成事实核查器）**：故事里的**事实、数字、历史说法是否正确**。
-门禁能验结构、时长、画面、引用格式、可读性、复现，唯独验不了「这句话对不对」——那是人工审读的事。
-`validate-facts.py` 只保证**标注本身合法**（引用的来源存在、类比不被当机制事实、AI 生成的 see/ink
-描述不当来源），并把「含数字/年份的未标注文本」列成审读清单（`--review`）供人工核对。
-**可核验断言**（数字、年份、机制）要么写 `claim: {kind:"fact", source:"<sources 里的 id>"}`，
-要么明确标成 `claim: {kind:"analogy"}`（解释性比喻，不能当机制事实）。**过渡句、观点、比喻不必逐条标注**——
-所以这不是无差别硬门禁：缺标注只提示（P1），标注自己说不通才拦（P0）。
+**引擎不能保证的**：故事里的**事实、数字、历史说法是否正确**——门禁能验结构、时长、画面、引用格式、可读性、复现，唯独验不了「这句话对不对」。
+`validate-facts.py` 只保证**标注本身合法**（引用的来源存在、类比不被当机制事实、AI 生成的 see/ink 描述不当来源），并把「含数字/年份的未标注文本」列成审读清单（`--review`）。
+**可核验断言**（数字、年份、机制）要么写 `claim: {kind:"fact", source:"<sources 里的 id>"}`，要么明确标成 `claim: {kind:"analogy"}`（解释性比喻，不能当机制事实）。**过渡句、观点、比喻不必逐条标注**——
+缺标注只提示（P1），标注自己说不通才拦（P0）。
 
 **人工审读节点**：出片前跑一次 `validate-facts PROJECT --review`，把清单里的数字/年份逐条核对。
 AI 生成的图（`content.ink` / `content.figure` 的 label）是**说明性文字**，不是事实来源。
