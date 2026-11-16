@@ -4,7 +4,9 @@
 用法：python scripts/validate-treatment.py PROJECT [--json]
 
 规则见 references/director.md#director-method 末表。要点：
-  · 手作皮肤（journal / papercut / archive）：缺 treatment.json 或必填没填 = P0（阻断）；
+  · 手作皮肤（journal / papercut / archive）：缺 treatment.json、留 <<…>> 占位、写了却自相矛盾 = P0（阻断）；
+  · 必填字段空着、facts 为空、native_move.at_sec 没写是纸面字段，一律 P1（与 validate-facts 同口径：
+    缺标注只提示，写了的标注说不通才拦）；
   · flat / cel：同样的问题只记 P1（向后兼容：老工程没有这一层）；
   · 风格 / 节奏类建议（转向你的时间点、运镜种类、评审分数）永远是 P1；
   · 3.3.0：treatment 的 move / framing 对照镜头表（shots.resolved.json）的 cameraIntent / keys 缩放（P1）；
@@ -183,7 +185,7 @@ def check(proj: Path) -> tuple[list[str], list[str], str]:
     for k in REQUIRED:
         v = get(t, k)
         if v in (None, "", [], {}):
-            hard.append(f"{k} 没填")
+            soft.append(f"{k} 没填")
         elif placeholder(v):
             hard.append(f"{k} 还留着 <<…>> 占位")
     cands = t.get("candidates") or []
@@ -232,13 +234,15 @@ def check(proj: Path) -> tuple[list[str], list[str], str]:
             pass
     secs = dur / 30 if dur else None
     at = get(t, "native_move.at_sec")
-    if not isinstance(at, (int, float)) or at <= 0:
-        hard.append("native_move.at_sec 要写原生动作发生在第几秒（> 0）")
+    if at in (None, ""):
+        soft.append("native_move.at_sec 没写：原生动作发生在第几秒（> 0）")
+    elif not isinstance(at, (int, float)) or at <= 0:
+        hard.append(f"native_move.at_sec={at!r} 要是 > 0 的秒数")
     elif secs and at > secs:
         hard.append(f"native_move.at_sec={at} 超出片长 {secs:.1f} 秒")
     facts = t.get("facts") or []
     if not facts:
-        hard.append("facts 为空 —— 每个数字 / 日期 / 人名都要有出处（url + 原文引文）")
+        soft.append("facts 为空 —— 每个数字 / 日期 / 人名都要有出处（url + 原文引文）")
     for i, fct in enumerate(facts):
         if placeholder(fct) or not re.match(r"https?://", str(fct.get("url", ""))) or not str(fct.get("quote", "")).strip():
             hard.append(f"facts[{i}]（{str(fct.get('claim', ''))[:20]}）缺 http(s) 链接或原文引文")

@@ -92,6 +92,29 @@ class TreatmentGate(unittest.TestCase):
         t = {**GOOD, "facts": [{"claim": "x", "url": "gutenberg", "quote": ""}]}
         self.assertEqual(self.run_gate(project("journal", t)), 1)
 
+    def test_paper_fields_empty_are_p1(self):
+        # 纸面字段空着只提示：必填空、facts 空、at_sec 没写 → 手作皮肤也不拦，但要点名
+        import copy
+        t = copy.deepcopy(GOOD)
+        t["logline"] = ""
+        t["facts"] = []
+        del t["native_move"]["at_sec"]
+        d = project("journal", t)
+        try:
+            hard, soft, _ = vt.check(d)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+        self.assertEqual(hard, [])
+        joined = "\n".join(soft)
+        for needle in ("logline 没填", "facts 为空", "at_sec 没写"):
+            self.assertIn(needle, joined)
+
+    def test_native_move_bad_value_blocks(self):
+        import copy
+        t = copy.deepcopy(GOOD)
+        t["native_move"]["at_sec"] = -3
+        self.assertEqual(self.run_gate(project("journal", t)), 1)
+
     def test_native_move_beyond_duration(self):
         t = {**GOOD, "native_move": {**GOOD["native_move"], "at_sec": 999}}
         self.assertEqual(self.run_gate(project("journal", t)), 1)

@@ -16,7 +16,7 @@
 ## 导演层：先找"只属于这个题"的东西，再动手
 
 > 适用：每一条片子，尤其是手作皮肤（journal / papercut / archive）。产物：`manifests/treatment.json`，
-> 由 `scripts/validate-treatment.py` 检查（手作皮肤缺它或没填完 = P0；flat / cel 缺它 = P1 提醒）。
+> 由 `scripts/validate-treatment.py` 检查（手作皮肤缺文件、留占位或写得自相矛盾 = P0；字段空着只提示 P1；flat / cel 一律 P1）。
 > 思路来源：lemo-opuscar 的 DIRECTOR.md（MIT，© 2026 LemoLab，<https://github.com/lemomo-ai/lemo-opuscar>）；
 > 独立评审借鉴 motion-video-kit（MIT）的 "builder ≠ judge"。本文是自己的写法，不是译文。
 >
@@ -131,12 +131,13 @@ python scripts/commons-search.py search "<关键词>" --source openverse --proje
 
 | 检查 | 手作皮肤 | flat / cel |
 |---|---|---|
-| treatment.json 存在、必填字段非空、不留 `<<…>>` | P0 | P1 |
+| treatment.json 存在、不留 `<<…>>` | P0 | P1 |
+| 必填字段非空、`facts` 非空、写了 `native_move.at_sec`（纸面字段） | P1 | P1 |
 | `chosen` 指向候选之一、候选的 `shape` 写完 | P0 | P1 |
 | 恰好 3 个候选（思考工具，不拦渲染） | P1 | P1 |
 | `medium.skin` 与工程的皮肤一致 | P0 | P1 |
-| `native_move.at_sec` 在片长内 | P0 | P1 |
-| 每个 `facts` 有 http(s) 链接和引文 | P0 | P1 |
+| `native_move.at_sec` 写了就要是 >0 且在片长内 | P0 | P1 |
+| 写了的每条 `facts` 有 http(s) 链接和引文 | P0 | P1 |
 | `commons.used` 都在 media.json 里 | P0 | P1 |
 | 搜过 Commons（`commons-log.json` 至少一次；断网时不拦） | P1 | P1 |
 | `turn_to_you_sec` 落在片长 35–55% | P1 | P1 |
