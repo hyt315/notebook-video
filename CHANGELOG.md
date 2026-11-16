@@ -6,7 +6,7 @@ Format follows Keep a Changelog: one section per release, one line per change. T
 更早的完整记录（1.0.0 – 3.5.4，中英双写的长条目）已归档到仓库内的 `docs/history/CHANGELOG-legacy.md`（只在仓库里，不进发布包）。
 The full earlier history (1.0.0 – 3.5.4) is archived in the repository at `docs/history/CHANGELOG-legacy.md` (repository only, not shipped).
 
-## [Unreleased]
+## [3.6.1] - 2026-11-16
 
 ### Changed
 - 审美判据只点名不阻断：骨架 / 布局 / 意图 / 介质多样性、运镜配额、声明运镜却不动、G-14/G-15/G-16 纸面字段、treatment 纸面字段降为 P1；出界、枚举闭合、beats 越界、占位与自相矛盾仍是 P0。 / Aesthetic checks (diversity, camera quotas, paper fields) are now P1 warnings; technical errors stay P0.
