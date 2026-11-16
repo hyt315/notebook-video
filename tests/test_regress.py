@@ -45,7 +45,7 @@ def run_one(story: Path, td: str) -> dict:
             return {"error": f"{step[0]} rc={r.returncode}: {(r.stdout + r.stderr).strip().splitlines()[-1:]}"}
     for rel in ARTIFACTS:
         f = proj / rel
-        out[rel] = hashlib.sha256(f.read_bytes()).hexdigest() if f.is_file() else None
+        out[rel] = hashlib.sha256(f.read_bytes().replace(b"\r\n", b"\n")).hexdigest() if f.is_file() else None  # Windows 文本模式写出 CRLF
     for g in GATES:
         jl = Path(td) / f"{story.stem}-{g}.jsonl"
         subprocess.run([sys.executable, str(ROOT / "scripts" / g), str(proj)], capture_output=True,

@@ -28,8 +28,8 @@ jobs:
           node --check scripts/notebook-video.mjs
           node --check scripts/make-video.mjs
           node --check scripts/fx-browser.mjs
-          node scripts/fx-browser.mjs --self-test   # 3.5.0 真卷页：探针判据 / 卷页窗口 / 拼接参数 / 包装脚本（不开浏览器）
-          for file in scripts/*.sh; do bash -n "$file"; done
+          node scripts/fx-browser.mjs --self-test   # 真卷页：探针判据 / 卷页窗口 / 拼接参数 / 包装脚本（不开浏览器）
+          shopt -s nullglob; for file in scripts/*.sh; do bash -n "$file"; done
           python3 -c "from pathlib import Path; [compile(path.read_text(encoding='utf-8'), str(path), 'exec') for path in [*Path('scripts').glob('*.py'), *Path('tests').glob('*.py')]]"
       - name: Validate skill and template
         run: |
