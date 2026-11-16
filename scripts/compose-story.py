@@ -775,6 +775,8 @@ def build(story, comp, p: Problems):
             if want != cam["intent"]:
                 cam["intent"] = want
                 p.fix(f"{sid}: treatment 写 move={want} → 本镜运镜按它走（原按版式给 {INTENTS[sh['layout']]}）")
+        if cam["intent"] == "still":
+            cam.update({"to": 1.0})
         if cam["intent"] == "pull-back":
             cam.update({"from": 1.03, "to": 1.0})
         if cam["intent"] == "reveal":
