@@ -125,7 +125,7 @@ export const ArchivePhoto: React.FC<Base & {catalogue?: string; title?: string; 
     const credit = creditOf(id);
     const L = archiveLayout(id, w, h, mount, Boolean(catalogue || title), label, y);
     const drop = 24 * (1 - p);
-    return <div style={{position: 'absolute', left: x, top: y - drop, width: w, height: h, opacity: Math.min(1, p * 2), transform: `rotate(${rot}deg)`}}>
+    return <div style={{position: 'absolute', left: x, top: y, width: w, height: h, opacity: Math.min(1, p * 2), transform: `translateY(${(-drop).toFixed(2)}px) rotate(${rot}deg)`}}>
       <div style={{position: 'absolute', left: L.left, top: L.top, background: C.paperWarm, padding: L.mount, border: '1px solid rgba(20,25,30,0.10)',
         boxShadow: `inset 0 1px 0 rgba(255,255,255,0.75), 0 ${1 + 3 * (1 - p)}px ${3 + 4 * (1 - p)}px rgba(20,25,30,0.18), 0 ${7 + 14 * (1 - p)}px ${20 + 18 * (1 - p)}px rgba(20,25,30,0.16)`}}>
         <div style={{position: 'relative', width: L.dw, height: L.dh}}>
@@ -162,8 +162,8 @@ export const PinnedPhoto: React.FC<Base & {caption?: string; fix?: 'tape' | 'pin
   const {dw, dh} = fitBox(id, w - border * 2, h - border - bottom);
   const cardW = Math.max(dw, textW) + border * 2;
   const top = y + Math.max(0, (h - (dh + border + bottom)) / 2);
-  return <div style={{position: 'absolute', left: x + (w - cardW) / 2, top: top - 30 * (1 - p), width: cardW, boxSizing: 'border-box', opacity: Math.min(1, p * 2.5),
-    transform: `rotate(${rot + 2 * (1 - p)}deg)`, background: '#fffdf8', padding: `${border}px ${border}px 0`, border: '1px solid rgba(60,40,15,0.08)',
+  return <div style={{position: 'absolute', left: x + (w - cardW) / 2, top, width: cardW, boxSizing: 'border-box', opacity: Math.min(1, p * 2.5),
+    transform: `translateY(${(-30 * (1 - p)).toFixed(2)}px) rotate(${rot + 2 * (1 - p)}deg)`, background: '#fffdf8', padding: `${border}px ${border}px 0`, border: '1px solid rgba(60,40,15,0.08)',
     boxShadow: `inset 0 1px 0 rgba(255,255,255,0.85), 0 ${1 + 3 * (1 - p)}px ${3 + 4 * (1 - p)}px rgba(60,40,15,0.20), 0 ${7 + 14 * (1 - p)}px ${18 + 18 * (1 - p)}px rgba(60,40,15,0.15)`}}>
     <div style={{position: 'relative', width: dw, height: dh, margin: '0 auto'}}>
       <Img src={staticFile(`media/${m.file}`)} style={{display: 'block', width: dw, height: dh, filter: filterOf(treatment)}} />

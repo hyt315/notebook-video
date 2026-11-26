@@ -27,7 +27,7 @@
 - **手账页承载，不是幻灯片**：镜头只有两种——**手账页**（贴一张真实档案图版 / 藏品照片，配放大镜、手写标注和朱印）
   和**组件**（控制台、代码差异、清单、数字行、柱条、结论条……）。**线稿是可选项**，只用来画「标本示意图」：
   一条讲不清概念的剪贴画，比不画更糟——所以它退回页内小图（`content.figure`，画宽 ≤19%），不再当镜头主角。
-- **镜头会跟着讲**：引擎级虚拟摄影机缺省缓推，讲到哪个词就推近到对应组件（线稿镜头只做 1.00→1.03 慢推，不切图），auto 路线换镜默认一律翻页（`CURL_FRAMES` = 22 帧）；推近时给线稿留边，不切断图。
+- **镜头会跟着讲**：引擎级虚拟摄影机由 `compose-story` 结合内容调度推近（`push-in`）、拉远（`pull-back`）、横移（`pan-follow`）与定机（`still`），讲到哪个词就高亮并引导焦点，换章与手作路线默认走真翻页（`CURL_FRAMES` = 22 帧），同章内组件按节奏交替 `slide` / `fade`，支持单镜覆盖。
 - **弱模型也能复刻**：7 个融合配方决定「线稿摆哪、卡片多大」，作者只填内容；10 个讲课蓝图（5 个组件路线 + 5 个手作结构族）逐镜写好该用的骨架与组件，加上黄金样例、短流程和一条命令；能客观判断的问题，引擎直接自动修。
 
 - **一本手账一张纸、评审先于成片**：手作皮肤默认 `bgMode: "chapter"`（每章一张纸，章内沿用；`"film"` 全片一张、`"shot"` 逐镜轮换），
@@ -42,7 +42,7 @@
   三套亮底手作皮肤（`journal` 手账水彩 / `papercut` 红色剪纸 / `archive` 档案灯台）和 craft 材质组件（压感墨线、"写出来"的中文、水彩晕染、剪纸、放大镜）；
   每个选题先搜 **Wikimedia Commons / Openverse** 的真实素材，许可自动过滤、署名自动上屏。
 
-只有一种画布：**16:9**（缺省交付 1920×1080，即 `make-video` 的 `--scale=0.75`；`--scale=1` 出 2560×1440；设计坐标 1920×1080，原生 30 fps）。五套皮肤：`flat`（默认，安静的现代教育插画风）、`cel`（粗描边漫画风），以及手作皮肤 `journal` / `papercut` / `archive`。
+只有一种画布：**16:9**（缺省交付 2560×1440，即 `make-video` 的 `--scale=1`；加 `--scale=0.75` 输出 1920×1080；设计坐标 1920×1080，原生 30 fps）。五套皮肤：`flat`（默认，安静的现代教育插画风）、`cel`（粗描边漫画风），以及手作皮肤 `journal` / `papercut` / `archive`。
 
 ## 核心特性
 
@@ -50,8 +50,8 @@
 | --- | --- |
 | **手账页 + 组件** | 两种镜头交替：手账页承载真东西（档案图版、放大镜、手写、朱印），组件负责讲清；线稿可选（仅标本示意图，`content.figure` ≤19% 画宽）；`validate-fusion` 按「手账页 + 组件」配比核对 |
 | **组件场景** | 4 种骨架（Stage / Split / Zoom / Corridor）+ 组件库（`ConsoleWindow`、`DiffView`、`HighlightCode`、`StatRow`、`Funnel`、`ProgressRing`、`KineticNumber`、`StampSeal`、`VerdictBar` 等），配色全部走主题 token |
-| **引擎虚拟镜头** | 每镜缺省缓推；`cinema.focus` 按台词关键词推近到对应组件、镜头横摇；甩镜 / 推穿转场；背景视差；内容太小时自动放大到安全区 60–80%；推近时自动留边，不切断标题 |
-| **对拍音效** | 9 个代码合成的语义音效（CC0，`public/sfx/lib/`），**默认无 BGM**（只有 `treatment.sound.music.use=true` 才加载音乐床，并在音效下闪避）；每条 cue 带 `gain` / `offsetMs`，提前起播让瞬态落在视觉命中帧（±1 帧）；每镜一记、间隔 ≥150 ms；`validate-silence` 核对句间静音 |
+| **引擎虚拟镜头** | 结合内容与节奏编排 `push-in` / `pull-back` / `pan-follow` / `still`；关键词聚光；翻页与同章 `slide` / `fade` 交替；背景视差与自动避让不切字 |
+| **对拍音效** | 9 个语义音效（6 个代码合成 + 3 个 Kenney RPG Audio CC0 真录音，`public/sfx/lib/`），**默认无 BGM**（只有 `treatment.sound.music.use=true` 才加载音乐床）；每条 cue 带 `gain` / `offsetMs` 并提前起播落地视觉帧（±1 帧）；`validate-silence` 核对句间静音 |
 | **真实素材** | 截图 / ≤10 秒录屏 / 动图放进 `MediaFrame`（与组件同一套卡片外观，可选浏览器 / 窗口 / 手机外壳，区域推近、描框、旁注、署名徽章）；`prepare-media` 一键转码，`validate-media` 拦糊图与许可缺失 |
 | **弱模型友好** | 7 个融合配方 + 10 个蓝图（5 个组件路线 + 5 个手作结构族），每镜的 `$components` 写明骨架与组件；黄金样例 `examples/`（含 `examples/recipes/`）；未填的 `<<占位符>>` 直接报错 |
 | **一条命令** | `make-video.mjs`：resolve-shots → 门禁 → tsc → 静帧接触表或整片渲染 → `renders/report.md`；Windows 有 `make-video.cmd` |
@@ -98,21 +98,29 @@ node scripts/notebook-video.mjs fonts   # 首次自动下载 LXGW 文楷 Lite（
 ### 3. 出片
 
 ```bash
-# 建工程（复制模板；--style=flat 或 cel）
+# 1) 建工程（复制模板；--style=flat 或 cel / journal / papercut / archive）
 node scripts/notebook-video.mjs new-project ./my-video --style=flat
 
-# 改 manifests/shots.json、src/scenes.tsx、src/film.ts、字幕后：
-node scripts/make-video.mjs ./my-video --stills                          # 先看每镜关键时刻的静帧接触表
-node scripts/make-video.mjs ./my-video --render ./my-video/final.mp4     # 满意了再渲整片
+# 2) 按 blueprints/ 或 examples/ 写好 my-story.json 后先出静帧接触表：
+node scripts/make-video.mjs my-story.json ./my-video --stills
+
+# 3) 生成真实中文配音并重排时间轴：
+node scripts/notebook-video.mjs tts ./my-video
+
+# 4) 确认报告与静帧后渲染交付成片（默认 2560×1440）：
+node scripts/make-video.mjs ./my-video --render ./my-video/final.mp4
 ```
 
 **Windows**（cmd / PowerShell）用同一条 `node` 命令，或者：
 
 ```bat
 scripts\notebook-video.cmd new-project .\my-video --style=flat
-scripts\make-video.cmd .\my-video --stills
+scripts\make-video.cmd my-story.json .\my-video --stills
+scripts\notebook-video.cmd tts .\my-video
 scripts\make-video.cmd .\my-video --render .\my-video\final.mp4
 ```
+
+如走手写场景逃生舱，修改 `manifests/shots.json`、`src/scenes.tsx` 与 `src/film.ts` 后直接执行 `make-video ./my-video --stills` / `--render`。
 
 读输出：`✓ 自动修` = 引擎替你改了什么；`· 建议` 不拦；`✗` 才需要改，每条都写了怎么改。
 
@@ -176,7 +184,7 @@ python scripts/commons-search.py credits ./my-video   # → CREDITS.md
 | `papercut` | 红色窗花剪纸：米色宣纸、红纸剪片、双轮廓、深红横批字幕 | `--style=papercut` |
 | `archive` | 档案灯台：冷白背光台面上的真实档案物件，一个信号色，放大镜 | `--style=archive` |
 
-手作皮肤的字幕是 96 px@1440 的 Noto Serif SC Bold（按需下载、校验 sha256），没有 UI 胶囊；它们要求先写导演层 `manifests/treatment.json`
+五套皮肤的字幕统一为底部居中 **64 设计像素**（1440p 下 85.3 px）无框纯文字配纸色柔光晕，合并左上紧凑章节徽标的常驻屏幕遮挡 ≤ 5%；手作皮肤同时下载 Noto Serif SC Bold（约 12 MB，校验 `sha256`）用于手账大字，并要求写导演层 `manifests/treatment.json`
 （[references/director.md#director-method](references/director.md#director-method)），组件见 [references/components.md#craft-kit](references/components.md#craft-kit)，风格配方见 [references/director.md#style-recipes](references/director.md#style-recipes)。
 
 每套皮肤有 8–11 张亮底背景，按 `bgMode` 轮换：`film` 全片一张 / `chapter` 每章一张（手作皮肤默认）/ `shot` 每镜一张（flat、cel 默认），中央约 70% 是内容安全区。清单与许可见 [references/media.md#background-library](references/media.md#background-library)。文字色有专门的 `*Ink` 安全色，保证对比度。规格：[references/themes/system.md](references/themes/system.md)、[references/themes/flat.md](references/themes/flat.md)、[references/themes/cel.md](references/themes/cel.md)、[references/themes/journal.md](references/themes/journal.md)、[references/themes/papercut.md](references/themes/papercut.md)、[references/themes/archive.md](references/themes/archive.md)。
@@ -185,9 +193,9 @@ python scripts/commons-search.py credits ./my-video   # → CREDITS.md
 
 | 阶段 | 检查 | 典型拦截 |
 | --- | --- | --- |
-| 构建期（Python） | `resolve-shots`、`validate-composition`、`validate-shot-motion`、`validate-presentation`、`validate-caption-sync`、`validate-semantic-breaks`、`validate-layering`、`validate-visual-plan`、`validate-fusion`、`validate-glyphs`、`validate-silence`、`validate-audio-levels`、`validate-media` | 内容太小、对比度不足、字幕超 16 字或读不完、线稿配比失衡或主题物缺席、线稿被裁、句间没有静音或音效压不住人声、音效增益与库不一致、素材会糊 |
-| 渲染期（浏览器内） | `OverlapGate`、`ClippingGate`、`CanvasBoundsGate`、`FillGate`、`CaptionFitGate`、`MascotGate` | 文字互相压、图形被裁、越出画布、字幕溢出 |
-| 成片 | `validate-video`、`validate-motion-gaps` | 尺寸 / 编码 / 色彩标记不对、画面静止过久 |
+| 构建期（Python） | `resolve-shots`、`validate-composition`、`validate-shot-motion`、`validate-presentation`、`validate-caption-sync`、`validate-semantic-breaks`、`validate-elem-kinds`、`validate-treatment`、`validate-opening`、`validate-facts`、`validate-layering`、`validate-visual-plan`、`validate-fusion`、`validate-glyphs`、`validate-silence`、`validate-audio-levels`、`validate-backgrounds`、`validate-media` | 内容太小、对比度不足、字幕超 16 字或超速、叠层超限、主题物缺席、缺口或元素分支、导演层招牌镜不达标、开场第 0 帧空白、事实出处矛盾、句间不安静或音效偏离、背景/素材权限与清晰度异常 |
+| 渲染期（浏览器内） | `OverlapGate`、`ClippingGate`、`CanvasBoundsGate`、`CardFitGate`、`CaptionFitGate`、`FillGate`、`SlotGuard`、`AssetGate` | 文字碰撞、图形被裁、越出画布、卡片/字幕溢出、字体或素材加载失败 |
+| 成片 | `validate-video`、`validate-motion-gaps`、`validate-opening`、`validate-silence`、`validate-ocr` | 尺寸/编码/bt709 色彩、CFR 掉帧卡顿、A/V 偏移、帧级曝光死黑/死白、超长静止、第 0 帧空白、句间底噪 |
 | 技能自检 | `validate-skill-consistency`、`selftest`、`negative-gate-check`、`dev/check-examples`、`dev/check-test-collection`、`dev/purity-smoke` | 文档写了不存在的组件、断链；每道门禁喂坏输入必须拦住；正例过门禁、负例被拦；测试文件没被收集；连续渲与单帧渲画面不同 |
 
 门禁结果（含渲染期浏览器门禁）统一写进 `renders/gates.json`：P0 只表示拦片，P1 进报告「建议（不拦）」；相邻同骨架 / 同版式、运镜配额、缺 `$asks` 这类审美与结构项只记 P1。帧参数是必填类型，由 `tsc` 检查；跨语言常量只在模板 `src/contract.json` 一处。
@@ -223,12 +231,12 @@ notebook-video/
 - **能做竖屏或 4:3 吗？** 不能，只有 16:9；早期的 4:3 / 3:4 画布、`paper` / `sticker` 皮肤与 `--classic` 示例工程已删除，旧工程不再支持。
 - **题目需要一张专属的图怎么办？** 照 `src/custom/RequestLane.tsx` 写一个组件，在 `src/custom/index.ts` 注册即可。
 - **story.json 和手写场景一样好看吗？** 接近但不等同：story.json 的版式由 `auto.tsx` 绘制。默认走 story.json + 蓝图；要逐镜手调版面时再改写成手写组件场景。
-- **渲染慢吗？** 先用 `--stills` 看静帧（只渲关键帧）；整片缺省按 1920×1080 交付。
+- **渲染慢吗？** 先用 `--stills` 看静帧（单浏览器会话一次打包出图）；整片缺省按 `2560×1440` 交付（`--scale=0.75` 可降回 `1920×1080`）。
 - **仓库里有演示视频吗？** 没有。为保持仓库轻量，演示成片不入库；用 `--stills` 在本地出静帧即可看到效果。
 
 ## 制作技能上传包
 
-不要把整个工作目录直接打包（`.git`、缓存和本地工程都不是技能运行内容）。用白名单打包器：
+不要把整个工作目录直接打包（`.git`、缓存和本地工程都不是技能运行内容）。用白名单打包器（Windows 下将命令中的 `python3` 替换为 `python`）：
 
 ```bash
 python scripts/package-skill.py --check-only   # 只检查清单与 SKILL.md 本地链接
@@ -236,7 +244,7 @@ python scripts/package-skill.py                # 生成 dist/notebook-video-skil
 python scripts/package-skill.py --include-fonts --output dist/notebook-video-offline.zip
 ```
 
-默认包只含入口、运行脚本、模板、蓝图、示例与参考资料；不含 `.git`、测试、缓存、渲染产物、发行历史和按需下载的大字体。需要完全离线运行时再使用 `--include-fonts`（Clash Display 的许可不允许再分发，任何包都不带它）。
+默认包只含入口、运行脚本、模板、蓝图、核心示例与参考资料；不含 `.git`、测试（`tests/`）、维护脚本（`scripts/dev/`）、负例/回归/弱模型测试样例、`CHANGELOG.md` 等发行管理文件、缓存、渲染产物及按需下载的大字体。需要完全离线运行时再使用 `--include-fonts`（Clash Display 的许可不允许再分发，任何包都不带它）。
 
 ## 参与贡献
 

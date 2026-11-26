@@ -20,13 +20,13 @@
    "id": "S1",
    "from": 0,
    "to": 196,
-   "layout": "statement"
+   "layout": "statement-left"
   },
   {
    "id": "S2",
    "from": 196,
    "to": 361,
-   "layout": "define"
+   "layout": "define-mirror"
   },
   {
    "id": "S3",
@@ -38,7 +38,7 @@
    "id": "S4",
    "from": 587,
    "to": 757,
-   "layout": "number"
+   "layout": "number-mirror"
   },
   {
    "id": "S5",
@@ -50,7 +50,7 @@
    "id": "S6",
    "from": 967,
    "to": 1196,
-   "layout": "statement"
+   "layout": "statement-left"
   }
  ]
 }

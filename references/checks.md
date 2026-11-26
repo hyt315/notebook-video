@@ -1,112 +1,84 @@
 # 检查：交付清单、美学纪律、构图与呈现门禁
 
-本篇说明门禁分级原则、客观硬门禁与审美软提示的精确数值，以及报告首屏评审卡的用法。跨语言常量以 `assets/lecture-template/src/contract.json` 为准。
+本篇说明门禁分级、客观硬门禁阈值与验收排雷。跨语言数值常量以 `assets/lecture-template/src/contract.json` 为准。
 
 ## 门禁分级原则
 
-- **P0（硬门禁，拦片）**：只管客观可证明的技术错误（出界、字号低于绝对地板、对比度不足、字幕超宽或超速、音画不同步、枚举非法、主题物缺失、许可违规、标注自相矛盾）；当前路线不拦的条目记 P1。
-- **P1（软提示，不拦）**：审美与结构建议（相邻同骨架/同布局、运镜配额、缺 `$asks`、次要事实缺标注、手作皮肤未评审）。
-- 全部结果统一写入 `renders/gates.json`（每条含 `gate`/`id`/`level`/`blocking`/`file`/`message`/`fix`）。同一个 `✗` 连续两轮修不掉时，**停下把报错原文告诉用户**。
+- **P0（硬门禁，拦片）**：只管客观可证明的技术错（出界、字号越底限、对比度不足、字幕超宽/超速、音画不同步、枚举非法、主题物缺席、许可违规、开场第 0 帧空白）；当前路线不拦项记 P1。
+- **P1（软提示，不拦）**：审美与结构建议（相邻同骨架/同版式、运镜意图与配额、缺 `$asks`、次要事实缺标注、手作未独立评审、叠层超 5%）。
+- 全部结果统一写入 `renders/gates.json`（含 `gate`/`id`/`level`/`blocking`/`file`/`message`/`fix`）。同个 `✗` 连修两轮不通过时，停下把原文发给用户。
 
 <a id="quality-checklist"></a>
 ## 1. 交付验收清单
 
-1. **讲稿与评审卡**：`renders/report.md` 首屏展示「讲清楚」5 项评审卡分数（未评审首行显示 **评审状态：未评审**）；手作路线建议独立评审，组件路线可选（评审卡见 [rubric.md](rubric.md)）。
-2. **事实核对**：运行 `validate-facts <工程> --review` 逐条审读含数字/年份的未标注文本。**主要事实**（核心论点依赖的数字、年份、因果）找不到出处必须停下问用户；**次要事实**缺出处记 P1。
-3. **构建期全绿**：`renders/gates.json` 中 P0 为 0，无 `did NOT run` 警告。
-4. **成片复核**：整片渲染需先征得用户同意；成片自动过 `validate-motion-gaps.py`、`validate-silence.py`，并附带 `renders/captions.srt` 与 `renders/poster.jpg`。
-5. **讲述节奏**：1.5 秒内给出具体的反常现象或张力，8 秒内抛出一个诚实的悬念，后段用证据回扣；一镜一个主意、一个物理动作；每 2–4 秒有一次有意义的状态变化；最后一句话至少停 1 秒。
-6. **人工抽看**：开场、每个镜头边界、最长的一条字幕、插入与悬停动作的中点、结尾帧。开场在 0.5 / 2 / 4 / 8 / 10 秒各看一帧。超过 60 秒的片子，联系表至少 24 帧均匀分布。
+1. **讲稿与评审卡**：`renders/report.md` 首屏显示评审状态（未评审标「未评审」）与成片摘要（镜数、运镜意图数、转场、分辨率与 P0/P1）；手作路线建议独立评审，组件路线按 [rubric.md](rubric.md) 可选执行。
+2. **事实核对**：运行 `validate-facts <工程> --review` 逐条审读含数字/年份的未标注文本；主要事实缺出处停下问用户，次要事实缺出处记 P1。
+3. **构建期全绿**：`renders/gates.json` 中 P0 归零，无 `did NOT run`。
+4. **成片复核**：整片渲染前征得用户同意；成片自动通过 `validate-video`、`validate-motion-gaps.py`、`validate-silence.py` 与 `validate-opening.py --video`，附带 `renders/captions.srt` 与 `renders/poster.jpg`。
+5. **开场与抽看**：0–1.5s 见主体与强证据、6s 内立出诚实核心问题并在 80% 前破案、结尾回扣闭合；渲染后人工抽看 0.5 / 2 / 4 / 8 / 10 秒及镜头边界/最长字幕/结尾帧（>60s 片联系表 ≥24 帧）。
 
-**默认交付物**（用户要得少时从简）：讲稿与带时间码的分镜（由镜头表导出）；镜头表（骨架、介质、活性组件、运镜意图、anchor、zones、转场、入场、beats）；`manifests/visual-assets.json`（每张位图的来源、描述、裁切策略、版权）；中文旁白与词级时间戳；一行一条的语义字幕与保护短语清单；H.264/AAC 成片（`make-video` 缺省 `--scale=0.75` 交付 1920×1080，要 2560×1440 加 `--scale=1`）；联系表；可编辑源码包（含字体、许可、音频、manifests）。不要停在提示词、静帧、无声动画或未过校验的渲染上。
+**默认交付物**：讲稿与时间码分镜表（含骨架、介质、组件、运镜、anchor、beats）、`manifests/visual-assets.json`、词级时间戳中文旁白、`manifests/caption-cues.json` 与保护短语清单、默认 `--scale=1`（`2560×1440`；可选 `--scale=0.75` 输出 `1920×1080`）H.264/AAC MP4、联系表与可编辑源码工程。
 
 <a id="official-aesthetic-system"></a>
 ## 2. 美学与视觉纪律
 
-- 遵循「草稿纸讲解：讲到哪，长到哪」，画面上没有笔，不预铺、不扎堆（详见 [draftpaper.md](draftpaper.md)）。
-- 亮底深墨：正文色对比度 ≥ 4.5:1（WCAG 2.2 SC 1.4.3），大字号 ≥ 3.0:1；仅使用当前皮肤锁定的色板令牌（见 [themes/system.md](themes/system.md)）。
-- 保留 2–3 个锤子帧（组件 `StampBanner`，手作 `HandLettering` / `Seal`），全片直书页 ≤ 40%。
+- 遵循 [draftpaper.md](draftpaper.md) 的「讲到哪、长到哪」草稿纸原则与动效契约。
+- 亮底深墨：正文对比度 ≥ `4.5:1`（WCAG 2.2 SC 1.4.3），大字 ≥ `3.0:1`，仅用所选皮肤锁定色板（[themes/system.md](themes/system.md)）。
+- 留 2–3 个锤子帧（`StampBanner` / `HandLettering` / `Seal`），全片直书页 ≤ 40%。
 
 <a id="composition-gate"></a>
 ## 3. 构图与运镜门禁
 
 | 脚本 | 检查内容 | 关键阈值（代码真源） | 等级 |
 |---|---|---|---|
-| `validate-shot-motion.py` | 镜头 anchor 出界、缩放超意图预算、安全区内容占比 | 含字缩放 ≤ `TEXT_ZOOM_MAX`（1.35）；纯图形 ≤ `GRAPHIC_ZOOM_MAX`（1.6）；`ORBIT_ROT`（6°）；`CAM_DUR` 30–45 帧；内容占比目标 60–80%（`<45%` P0，纯文字版式降 P1） | 出界/超预算/极空 P0；留白/运镜配额 P1 |
-| `validate-composition.py` | 活性组件、骨架/布局多样性、入场闭集、import 完整性、beats 下标 | 讲解镜无活性组件 P0；非法入场/断导/beats 越界 P0；相邻同骨架或同布局 P1 | 客观 P0 / 审美 P1；story.json（auto）路线全部记 P1 |
-| `validate-fusion.py` | `mode` 合法性、主题物出现、三层配比 | `mode` 非 `hybrid`/`component`/`freeform` 判 P0；主题物全片未出现 P0；配比失衡 P1 | 合法性/主题物 P0；配比 P1 |
-| `validate-opening.py` | 开场第 0 帧主体、首句 ≤ 1.0s、前 90 帧 ≥ 3 拍、非泛问句 | 写法规则（O1–O5）与成片像素复核（O6/O7，`--video`）都只进报告 | P1 |
-| `validate-treatment.py` | 手作导演层必填字段、招牌镜真推 ≥12% 或位移 ≥120px | 缺文件/`<<…>>` 占位/自相矛盾/招牌镜无动作（手作）P0；其余必填字段缺失为 P1 | 按项分级 |
+| `validate-shot-motion.py` | 镜头 anchor 出界、缩放预算、安全区占幅 | 含字 ≤ `TEXT_ZOOM_MAX`（1.35）、纯图形 ≤ `GRAPHIC_ZOOM_MAX`（1.6）、`ORBIT_ROT` 6°、`CAM_DUR` 30–45 帧；目标占幅 60–80%（`<45%` P0，纯文字降 P1） | 出界/超限/极空 P0；配额/留白 P1 |
+| `validate-composition.py` | 活性组件、闭集枚举、import 完整性、beats 下标与多样性 | 无活性组件 / 非法入场转场介质 / 断导 / beats 越界均 P0（`auto` 路线跳过 `<Shot reveal>` 独占检查）；相邻同骨架等美学项 P1 | 客观 P0 / 审美 P1 |
+| `validate-fusion.py` | `mode` 合法性、主题物出现、三层配比 | 非法 `mode` / 主题物全片缺席 P0；配比失衡 P1 | 合法性/主题物 P0；配比 P1 |
+| `validate-opening.py` | 开场第 0 帧空白与前 3 秒节奏 | 成片第 0 帧空白 `O6` 为 P0；其余写法与像素变化（`O1–O5`/`O7`）为 P1 | `O6` P0 / 其余 P1 |
+| `validate-treatment.py` | 导演层字段与招牌镜实动作（≥12% 推近或 ≥120px 位移） | 缺文件/`<<…>>` 占位/自相矛盾/招牌镜无动作（手作）P0；其余字段缺失 P1 | 按项分级 |
 
-`validate-composition.py` 的其余条款：
-
-- **P0**：每个讲解镜至少 1 个活性组件，且名字能在场景文件里找到（纯卡片堆判失败）；每镜 `zones`（功能分区数）组件皮肤 3–5、手作皮肤 1–5；转场 / 入场 / 介质 / 骨架 / 意图都是闭合集合，写错名字即失败；场景源码里 `b[k]` 与 `SHOTS.Sx.beats[k]` 两种写法的下标都必须小于该镜真实拍数。
-- **P1**：全片骨架 ≥3 种（`Stage` / `Corridor` / `Split` / `Zoom`）且相邻不同；运镜意图 ≥3 种（不含 `still`），每章 ≥3 次运镜（章节 <20 秒时 ≥1 次）；视觉介质 ≥3 种；转场 ≥2 种、入场 ≥3 种；单镜 >10 秒提示锯开（基准 4–6 秒）；同一（骨架, 意图, 转场, 入场）组合重复出现会被点名；主角要声明尺寸（图形短边 ≥255、大字 ≥144 设计像素）。
+- **P1 多样性基准**：全片骨架 ≥3 种且相邻不同；非静止运镜意图 ≥3 种，每 12 秒（章节 ≥20s 时 ≥3 次）至少 1 次运镜；介质 ≥3 种、转场 ≥2 种、入场 ≥3 种；单镜 ≤10–12 秒，同指纹不隔镜重复。
 
 <a id="render-gates"></a>
-### 3.1 渲染期门禁（`--stills` / `--render` 时在浏览器里测量）
+### 3.1 渲染期门禁（浏览器实时测量）
 
-| 门禁 | 量什么 | 成片里的处理 |
+| 门禁 | 量什么 | 处理 |
 |---|---|---|
-| `CardFitGate` | 卡片里的文字溢出卡片 padding 盒 > 2px | 拦（`cancelRender`） |
-| `OverlapGate` | 文字与文字重叠、文字被不透明元素遮住（网格 + 镜头边界 / 节拍 / 运镜关键帧前后强制抽样） | 拦 |
-| `ClippingGate` | 图形越出最近的会裁切祖先（`overflow` 非 visible 的盒子或 `<svg>` 视口） | 拦 |
-| `CaptionFitGate` | 每条字幕完全显示时，用真实字体量是否超出安全宽度 | 拦 |
-| `CanvasBoundsGate` | 含文字的叶元素墨迹越出画布 ≥6px | 成片报警；组件目录接触表在落定态 ≥20px 时拦 |
-| `FillGate` | 信息元素最低边是否铺到 y≈876（下 1/4 不留空洞），并报横向占格 | 报警（看日志自查） |
-| `SlotGuard` | `StageFrame` 主槽占用率，目标 ≥60%，<35% 出声；槽宽 `mainW = w − pad×2 − railW − 18` | 报警 |
-| `AssetGate` | 字体与媒体就绪前不截帧，缺主题字体直接失败并给修复命令 | 拦 |
+| `CardFitGate` | 卡片内文字溢出 padding 盒 > 2px | 拦（`cancelRender`） |
+| `OverlapGate` | 文字碰撞或被不透明元素遮挡（边界/节拍/关键帧强制抽样） | 拦 |
+| `ClippingGate` | 图形越出裁切容器 | 拦 |
+| `CaptionFitGate` | 字幕真字体宽度溢出安全区 | 拦 |
+| `CanvasBoundsGate` | 文字墨迹越出画布 ≥ 6px | 成片报警 / 目录接触表拦 |
+| `FillGate` | 信息元素下 1/4 填满度与横向空洞 | 报警 |
+| `SlotGuard` | `StageFrame` 主槽占幅（目标 ≥60%，<35% 提示） | 报警 |
+| `AssetGate` | 字体与媒体就绪前阻塞并报错定位 | 拦 |
 
-- **有意的覆盖**给外层标 `data-gate-allow="<理由>"`。引擎自己用到的取值是 `handoff` / `swap` / `value-swap` / `morph` / `glossary` / `sketch` / `jumpin-wave`；作者自己加只限镜头交接、页眉替换、数值替换三类，不能拿来掩盖两条不同信息相撞。
-- **自己写的缩放取景框**（像 `ZoomStage` 那样被放大的子层必然溢出）只给容器本身标 `data-fit-skip`，否则 `CardFitGate` 会把推近误判成文字被裁。
-- 拦截与报警也进 `renders/gates.json`；整片渲染里逐帧门禁没有覆盖率读数记 `did NOT run`。
-
-- **门禁反篡改红线**：严禁调松阈值、改小 `anchor` 或滥用 `data-gate-allow`（作者自加仅限 `handoff`/`swap`/`value-swap`）掩盖真碰撞。
-- **被判「空」怎么修**：在空洞处补属于本镜主体的信息层（尺寸线+刻度、局部放大+引线、标尺、引线批注、真实图版），`anchor` 如实框住它；不改小 `anchor`、不放大卡片凑面积、不把后续元素预铺到开头。
+- **有意覆盖与缩放框**：跨镜交接 `handoff` / `swap` / `value-swap` / `morph` / `glossary` / `sketch` 才可加 `data-gate-allow`；会放大溢出的取景容器须标 `data-fit-skip`。严禁调松阈值、改小 `anchor` 或滥用白名单掩盖碰撞。
+- **被判「空」怎么修**：在空洞处补本镜主体信息层（标尺/刻度/引线批注/局部放大），`anchor` 如实框住；不放大卡片凑面积，不把后续元素预铺到开镜。
 
 <a id="presentation-gate"></a>
 ## 4. 呈现效果与成片门禁
 
-| 门禁项 | 精确阈值（代码真源） | 级别 | 说明 |
+| 门禁项 | 精确阈值 | 级别 | 说明 |
 |---|---|---|---|
-| 字幕读速上限 | ≤ `CPS_MAX`（9.0）加权字/秒 | P0 | 门禁上限；无配音排时长基准另见 `READ_CPS`（4.5） |
-| 字幕字数 | ≤ `CAPTION_MAX_CHARS`（16）字 | P0 | 一行；去句末标点逐字计（ASCII 计 1），`validate-caption-sync.py` 与 `CaptionFitGate` 同口径 |
-| 节拍同步容差 | 不早于所属 cue `BEAT_SPOILER_FRAMES`（12）帧；不晚于句末 `BEAT_LATE_FRAMES`（8）帧 | P0 | 距上界 ≤ 4 帧（`BEAT_TIGHT_FRAMES`）报 P1 贴边预警 |
-| 字号地板 | 代码绝对地板 `MIN_LABEL_FONT`（13px）；标注档 `FONT_LABEL_MIN`（16px）；auto 正文 `MIN_FONT`（32px） | `<13` P0 / `13–15` P1 | 只扫描真实代码，注释与字符串不误报 |
-| 色彩对比度 | 正文与 `*Ink` 安全色 ≥ 4.5:1 | P0 | `validate-presentation.py` 自动核算主题色板 |
-| 中文字体栈 | 泛型族前必须有带 CJK 字面的字体族 | P0 | `validate-glyphs.py` 防止豆腐块 |
-| 成片静止上限 | 普通镜 ≤ `DEFAULT_MAX_STATIC`（2.5s）；锤子镜 ≤ `HAMMER_MAX_STATIC`（3.0s） | P0 | `validate-motion-gaps.py` 逐段检测 |
-| 音效与静音 | 音效峰值 ≥ `-12 dBFS` 且 `sha256` 一致；`music.use=false` 时句间真安静 | P0 | `validate-audio-levels.py` / `validate-silence.py` |
+| 字幕读速上限 | ≤ `CPS_MAX`（9.0）加权字/秒 | P0 | 无配音排时长基准另见 `READ_CPS`（4.5） |
+| 字幕行宽 | ≤ `CAPTION_MAX_CHARS`（16）字（去句末标点逐字，ASCII 计 1） | P0 | `validate-caption-sync.py` 与 `CaptionFitGate` 同口径 |
+| 节拍同步容差 | 不早于所属 cue `BEAT_SPOILER_FRAMES`（12）帧；不晚于句末 `BEAT_LATE_FRAMES`（8）帧 | P0 | 距上界 ≤4 帧（`BEAT_TIGHT_FRAMES`）报 P1 |
+| 字号与对比度 | 源码绝对地板 `MIN_LABEL_FONT`（13px，标注 `FONT_LABEL_MIN` 16px）；auto 正文 `MIN_FONT` 32px；核心句 `CORE_FONT_FLOOR` 64px；墨色对比度 ≥ `4.5:1`；CJK 字体栈 | P0 / P1 | `validate-presentation.py` + `validate-glyphs.py` |
+| 画面静止上限 | 普通镜 ≤ `DEFAULT_MAX_STATIC`（2.5s）；锤子镜 ≤ `HAMMER_MAX_STATIC`（3.0s） | P0 | `validate-motion-gaps.py` |
+| 音效与静音 | 音效峰值 ≥ `-12 dBFS` 且 `sha256` 一致；无 BGM 时句间真静音 | P0 | `validate-audio-levels.py` / `validate-silence.py` |
+| 屏幕叠层面积 | 字幕 + 角标常驻面积 ≤ 5%（超 5% 记 P1，超 30% 判 P0） | P1 / P0 | `check_overlay_budget` 核算 |
 
-**成片文件规格**（`notebook-video validate-video <mp4> <期望时长>` 校验）：默认 2560×1440（`--scale=1`，16:9；可选 `--scale=0.75` 输出 1920×1080）、原生 30fps（不做插帧）；H.264 + AAC 48kHz 立体声；色彩元数据必须是 `tv / bt709 / bt709 / bt709`（range / space / transfer / primaries），任一不符即失败；响度约 −16 LUFS、真峰 ≤ −1.5 dBTP；音画流零偏移、无丢帧卡顿、无异常过暗/过曝、旁白结束后至少留 0.7 秒；无黑帧、无截断结尾。局部复查用 `notebook-video render-range` / `review-frames`。
-
-**字幕整洁**：五套主题统一为每镜底部一行居中 64 设计 px 纯文字配纸色柔光晕（无实心底条、描边框、侧标），合并左上章节徽标的常驻屏幕遮挡 ≤ 5%；句中标点保留，句末标点（`，。！？；、,.!?;:`）不上屏；型号、产品名、数字加单位、固定术语写进保护短语清单，不跨条断开，ASCII 标识符不拆开；字幕比语音的词级时间最多提前约 80ms。
+- **成片文件规格**（`notebook-video validate-video`）：默认 2560×1440（`--scale=1`；或 `--scale=0.75` 为 1920×1080）、30fps CFR 无卡顿；H.264 + AAC 48kHz 立体声、`av_offset ≤ 0.034s`；色彩 `tv / bt709 / bt709 / bt709`；响度约 `-16 LUFS`、真峰 ≤ `-1.5 dBTP`；帧级亮度 `YAVG ≥ 35` 无死黑/死白；旁白后至少留 `0.7s`（`END_TAIL_F` 42 帧）。
+- **字幕整洁**：五套主题统一为底部单行居中 64 设计像素纯文字配纸色柔光晕（无实心框/侧标）；保护短语不跨行拆分；保留句中标点，去句末标点；音画同步 ≤ 80ms。
 
 ## 5. 包装验收与低质画面排雷
 
-- **封面（`renders/poster.jpg`）**：底图清晰明亮、主体完整、与主题一致、标题短促，杜绝「粗糙大字报式封面」或低清模糊截帧。
-- **字幕整洁度**：字体与底部安全带位置全片固定，不遮挡核心主体（主体遮挡尽量 ≤5%，禁止压住图版/数据关键区域）。
-- **低质画面排雷（红线）**：
-  1. **PPT 录屏感**：纯静态文字卡堆砌、无逐项生长或视觉推演；
-  2. **晃动与卡帧**：无意图频繁运镜、掉帧或超长静止（>2.5s，锤子镜 >3.0s）；
-  3. **剪辑戛然而止**：镜尾或片尾无呼吸缓冲直接切断（保持 `END_TAIL_F` 42 帧收尾）；
-  4. **每期高度同质化**：系列选题套死同一骨架与结构族，不按题选蓝图与皮肤；
-  5. **粗糙大字报封面**：满屏堆字、缺少视觉焦点或主体被裁切；
-  6. **机械音 + 无消化搬运**：生硬朗读加照搬网络图文，缺少专属例子与消化拆解。
-  7. **单图配大段文字、模板感图片轮播**：一张图撑一镜、靠字幕讲完，或几张图按同一节奏轮换，没有逐项推演。
-  8. **音画不相关**：画面演的不是这句台词在讲的事；每镜画面要回答 `$asks`。
+- **封面（`renders/poster.jpg`）**：明亮清晰、主体完整且与主题一致，杜绝大字报或模糊截帧。
+- **低质红线（必避）**：1）PPT 纯静态卡堆砌、无生长推演；2）无意图频繁运镜、掉帧或超长静止；3）镜尾/片尾无呼吸戛然而止；4）系列选题高度同质化（套死同一骨架/布局/节奏）；5）单图配大段字幕与模板式轮播；6）机械生硬朗读加无消化搬运；7）音画脱节（画面未回答当镜 `$asks`）。
 
 <a id="locked-surface"></a>
 ## 6. 锁定项与可改范围
 
-**锁定，不在单片里改**：`C` 语义色板、`TYPE` 字号阶梯、`AESTHETIC`（字幕宽、纸面圆角与描边、纹理、网格、调色）、`paperShadow(lift)`（阴影只随纸面抬起变化）、`LineIcon` / `CheckBadge` 线条图标语言、`Grade` 静态整片调色；左上章节卡与右上技术页眉在运镜层之外；底部字幕几何。要改美学：在一次性副本里改、渲完整片、用户明确同意后，才覆盖模板、主题文件与契约。
-
-**单片可以改**：`src/index.tsx` 的 `COPY`、`narration.txt`、语义字幕行与保护短语、旁白需要时的镜头时长、镜头表与 `manifests/visual-assets.json`、`public/illustrations/` 里的用户图、本题专属的场景物件，以及 `src/components/` 的现成封装组件（先用现成组件、按镜传参，再考虑手写 SVG）。稳定的语义 ID 与显示文字分开，改文案不能连带打乱分支、图标、层级、转场路径或插槽遮挡。
-
-**画面纪律**：
-- 不用系统字形或 emoji 当图标：线条图标用 `LineIcon`，题材标志用 `TopicIcon`（品牌用 simple-icons 单色路径，笔画对齐 `LineIcon`）。
-- 不在背景上整幅铺半透明蒙版：每套背景中间约 70% 刻意留静，蒙版会把角落元素变成幽灵；压到装饰区就用 `CoverPanel`。
-- 位图是要动的素材，不是成片：不烤字、不烤图表和 logo，精确文字、箭头、图示留在 Remotion 里；只做克制的裁切展示或推近，标注独立运动。没有图片时工程也必须能只靠 SVG 构建。
-- 互不相关的卡片间距 ≥70px（含悬浮阴影）；中央走廊同时最多一个临时传递物；每个独立运动的物件有自己的起点区和终点区，临时件要完全离场，不留半个角；插入件先越过插槽口再被遮住，最后完全藏到前唇后面。
-- 只挂载当前镜（交接时最多两镜）；用 transform 做动画，不逐帧改布局属性。
-
+- **锁定不改**：`C` 色板、`TYPE` 阶梯、`AESTHETIC`、纸影 `paperShadow`、`LineIcon`/`CheckBadge`、`Grade` 调色、运镜外层 Chrome 徽标及底部字幕几何。
+- **单片可改**：`COPY`、`narration.txt`、保护短语、镜头表、`visual-assets.json`、`public/illustrations/` 与 `src/custom/` 专属件。不用 emoji 替代线条图标；不用全幅半透明蒙版洗背景；位图不烤字或图表；非活跃镜头须卸载（只挂载当前镜或交接双镜）；动画纯 `transform`/`opacity`/`clipPath` 驱动，不逐帧改布局几何。

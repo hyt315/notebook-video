@@ -282,8 +282,8 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
       const lx = e.barX - e.x;
       return <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, width: e.w, height: e.h, opacity: dim, ...enter(f, e.at, 0, 12)}}>
         <HiBox w={w} pad={2} />
-        <div style={{position: 'absolute', left: lx, width: e.barW, bottom: 52, height: e.barH * g, backgroundColor: hot ? C.orange : C.lineBlue, backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 48%, rgba(0,0,0,0.07) 100%)', boxShadow: hot ? '0 4px 14px rgba(0,0,0,0.12)' : 'none', borderRadius: '8px 8px 0 0'}} />
-        <div style={{position: 'absolute', left: 0, right: 0, bottom: 52 + e.barH * g + 8, textAlign: 'center', fontSize: e.size, fontWeight: 700, color: hot ? C.orangeInk : C.ink, opacity: g, fontFamily: 'Space,Kai'}}>{e.valueText}</div>
+        <div style={{position: 'absolute', left: lx, width: e.barW, bottom: 52, height: e.barH, clipPath: g < 0.999 ? `inset(${((1 - g) * 100).toFixed(2)}% 0 0 0 round 8px 8px 0 0)` : undefined, backgroundColor: hot ? C.orange : C.lineBlue, backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 48%, rgba(0,0,0,0.07) 100%)', boxShadow: hot ? '0 4px 14px rgba(0,0,0,0.12)' : 'none', borderRadius: '8px 8px 0 0'}} />
+        <div style={{position: 'absolute', left: 0, right: 0, bottom: 52 + e.barH + 8, transform: `translateY(${(e.barH * (1 - g)).toFixed(2)}px)`, textAlign: 'center', fontSize: e.size, fontWeight: 700, color: hot ? C.orangeInk : C.ink, opacity: g, fontFamily: 'Space,Kai'}}>{e.valueText}</div>
         <div style={{position: 'absolute', left: 0, right: 0, bottom: 4, textAlign: 'center', fontSize: e.size, color: C.ink, fontWeight: bold, whiteSpace: 'nowrap'}}>{e.text}</div>
       </div>;
     }

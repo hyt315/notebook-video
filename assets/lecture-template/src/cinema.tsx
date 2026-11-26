@@ -38,12 +38,13 @@ export type FocusKey = {at: number; hold: number; zoom?: number; rect: Rect; set
 export type FitSpec = {x: number; y: number; s: number; fill?: number; fillAfter?: number};
 export type CinemaSpec = {
   drift?: 'auto' | 'none' | number;
+  driftDir?: 'none' | 'push' | 'pull' | 'pan-left' | 'pan-right';
   fit?: FitSpec;
   focus?: readonly FocusKey[];
   pan?: {worldW: number; at: number; dur: number; dir?: 'ltr' | 'rtl'} | null;
   /** compose-story 预算的相机路径（关键词推近 / 视线连续 / 限速）。有它就不用 fit/drift/focus。 */
   path?: readonly PathKey[];
-  /** true = 完全静止：连 pathCamAt 的微漂移（±0.5% 缩放 / ±5px 位移）也关掉。 */
+  /** true = 完全静止：连 pathCamAt 的微漂移也关掉。 */
   still?: boolean;
 };
 export type PathKey = {at: number; x: number; y: number; s: number};
@@ -115,7 +116,7 @@ export type CamState = {x: number; y: number; s: number; tx: number; fw?: number
  */
 export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: number, idx: number, sceneKeys?: readonly any[], zoomMax = TEXT_ZOOM_MAX): CamState => {
   const sp = spec ?? {};
-  if (sp.path && sp.path.length) return pathCamAt(sp.path, f, duration, sceneKeys, zoomMax, !!sp.still);
+  if (sp.path && sp.path.length) return pathCamAt(sp.path, f, duration, sceneKeys, zoomMax, !!sp.still, sp.driftDir);
   const sc = sceneKeys && sceneKeys.length ? camAt(sceneKeys as any, f) : {x: STAGE.cx, y: STAGE.cy, s: 1, rotY: 0};
   const capS = Math.max(1, zoomMax / Math.max(1, sc.s)); // 引擎缩放上限（与场景缩放相乘后 ≤ zoomMax）
   // ---- 0. fit（基准取景）+ 1. drift（围绕基准取景慢推/横移）----
@@ -185,7 +186,7 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
  * 叠加一层**永不停止的微漂移**（缩放 ±0.5%、位移 ±5px，周期 4–5 秒）+ 全镜 1.5% 慢推：
  * 推近后不会冻结，任何静止段都不超过 1 秒。fw（遮罩权重）随推近倍数上升。
  */
-export const pathCamAt = (path: readonly PathKey[], f: number, duration: number, sceneKeys?: readonly any[], zoomMax = TEXT_ZOOM_MAX, still = false): CamState => {
+export const pathCamAt = (path: readonly PathKey[], f: number, duration: number, sceneKeys?: readonly any[], zoomMax = TEXT_ZOOM_MAX, still = false, driftDir?: CinemaSpec['driftDir']): CamState => {
   const sc = sceneKeys && sceneKeys.length ? camAt(sceneKeys as any, f) : {s: 1};
   const capS = Math.max(1, zoomMax / Math.max(1, sc.s));
   let k = path[0];
@@ -200,13 +201,22 @@ export const pathCamAt = (path: readonly PathKey[], f: number, duration: number,
       break;
     }
   }
-  // still / REDUCED_MOTION：微动全关；常规镜改为电影滑轨单向慢推（去掉正弦呼吸与 8 字微晃，
-  // 避免中文笔画亚像素抖动与切镜首帧跳变）。
-  const quiet = still || REDUCED_MOTION;
+  const quiet = still || REDUCED_MOTION || driftDir === 'none';
+  let eff = driftDir;
+  if (!quiet && eff === undefined) {
+    const netS = path[path.length - 1].s - path[0].s;
+    const xs = path.map((p) => p.x), ys = path.map((p) => p.y);
+    const panSpan = (Math.max(...xs) - Math.min(...xs)) + (Math.max(...ys) - Math.min(...ys));
+    eff = (netS < -0.015 || (panSpan >= 20 && Math.abs(netS) < 0.02)) ? 'none' : 'push';
+  }
   const pushT = quiet ? 0 : interpolate(f, [0, Math.max(30, duration)], [0, 1], {...clamp, easing: easeDrift});
-  const push = 1 + 0.018 * pushT;
+  let push = 1;
+  let dx = 0;
+  if (!quiet && eff === 'pull') push = 1 + 0.018 * (1 - pushT);
+  else if (!quiet && (eff === 'pan-left' || eff === 'pan-right')) dx = (eff === 'pan-right' ? 1 : -1) * 14 * (pushT - 0.5);
+  else if (!quiet && eff === 'push') push = 1 + 0.018 * pushT;
   const ss = Math.min(capS, Math.max(1, s * push));
-  const c = clampLook(x, y, ss);
+  const c = clampLook(x + dx, y, ss);
   return {x: c.x, y: c.y, s: ss, tx: 0, fw: Math.max(0, Math.min(1, (ss - 1.02) / 0.04))};
 };
 

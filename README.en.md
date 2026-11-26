@@ -26,7 +26,7 @@ full, editable source project.
 
 - **Draft-paper narration**: no pen on screen — things appear only when the voice-over reaches them and grow in progressively: text unfolds left to right, a sketch is traced part by part, annotations are drawn as they are spoken; at most two things grow at once (rules in references/draftpaper.md#reveal-rules).
 - **A notebook page carries the shot, not slides**: every shot is either a **page** (a real archival plate or specimen photo, a magnifier over it, handwriting and a red seal) or a **component** doing the explaining (consoles, code diffs, checklists, stat rows, bars, verdict strips…). **Line drawings are optional**: they only ever draw a specimen, because a clip-art sketch that fails to explain a concept reads worse than no drawing — so they live inside the page as a figure (`content.figure`, ≤19 % of the drawing width) instead of leading the shot.
-- **The camera follows the narration**: an engine-level virtual camera pushes in by default, moves to the component the narration names (a sketch shot only does a 1.00→1.03 slow push-in, never a crop), and defaults to page turns (`CURL_FRAMES` = 22 frames); push-ins keep margins so the drawing is never cropped.
+- **The camera follows the narration**: an engine-level virtual camera directs `push-in`, `pull-back`, `pan-follow`, and `still` shots from content and pacing, highlights spoken keywords, and defaults to real page turns (`CURL_FRAMES` = 22) at chapter cuts and on craft skins while alternating `slide` and `fade` intra-chapter (overridable per shot).
 - **Reproducible by weaker models**: seven fusion recipes decide where the sketch sits and how big the cards are — the author only fills content. Ten teaching blueprints (five component routes + five hand-made structure families) name the skeleton and components for every shot, plus golden examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
 
 - **One paper per notebook, review before render**: hand-made skins default to `bgMode: "chapter"` (one paper per chapter; `"film"` keeps one for the whole film, `"shot"` rotates per shot), and decorative `busy` backgrounds stay off regular shots; `resolve-shots` generates `storyboard.md` from the real shot table; the independent review scores it with the rubric in [references/rubric.md](references/rubric.md), and the scores lead `renders/report.md`; for hand-made skins `make-video --render` prints a P1 reminder until a review round is recorded (it still renders; `--skip-review` silences it); without running TTS, caption timing is estimated at the timing pace `--cps` (component default `READ_CPS` = 4.5 weighted chars/s, handmade estimate 6.5); use `notebook-video tts` to get word-level timing for a real film.
@@ -43,7 +43,7 @@ full, editable source project.
   that writes itself, watercolour washes, paper cuts, a loupe), and a **Wikimedia Commons / Openverse** search for every topic
   with licence filtering and on-screen credits.
 
-One canvas only: **16:9** (1920×1080 delivery by default, i.e. `make-video --scale=0.75`; `--scale=1` gives 2560×1440; 1920×1080 design space, native 30 fps). Five themes:
+One canvas only: **16:9** (`2560×1440` delivery by default via `make-video --scale=1`; pass `--scale=0.75` for `1920×1080`; 1920×1080 design space, native 30 fps). Five themes:
 `flat` (default, calm modern edu illustration), `cel` (bold comic ink) and the craft skins `journal` / `papercut` / `archive`.
 
 ## Key features
@@ -56,8 +56,8 @@ One canvas only: **16:9** (1920×1080 delivery by default, i.e. `make-video --sc
 | **Compare two cuts** | `eval-project old/ new/` turns a film into comparable numbers (shot-length spread, variety of skeletons / media / transitions, camera coverage, caption density, empty-space readings) and prints the delta. No score: thresholds live in the gates, in one place only |
 | **Page + components** | Two kinds of shots alternate: a notebook page carrying the real thing (archival plate, magnifier, handwriting, seal) and components doing the explaining. Line drawings are optional specimen figures (`content.figure`, ≤19 % of drawing width); `validate-fusion` checks the page-plus-component mix |
 | **Component scenes** | 4 skeletons (Stage / Split / Zoom / Corridor) and a component library (`ConsoleWindow`, `DiffView`, `HighlightCode`, `StatRow`, `Funnel`, `ProgressRing`, `KineticNumber`, `StampSeal`, `VerdictBar`, …), all coloured from theme tokens |
-| **Virtual camera** | Default slow push-in per shot; `cinema.focus` pushes to the component a keyword names and pans between targets; whip / zoom-through transitions; background parallax; small content is enlarged to 60–80 % of the safe area; push-ins keep margins so titles are never cut |
-| **On-the-beat SFX** | 9 code-synthesised semantic sounds (CC0, `public/sfx/lib/`), **no BGM by default** (a music bed loads only when `treatment.sound.music.use=true`, and ducks under each cue); every cue carries `gain` / `offsetMs` and is pre-rolled so its transient lands on the visual hit (±1 frame); ≥150 ms spacing, ≈24/min cap; `validate-silence` checks inter-sentence silence |
+| **Virtual camera** | Directs `push-in`, `pull-back`, `pan-follow`, and `still` shots from content and layout; keyword highlights; page-turn chapter transitions with intra-chapter `slide` / `fade` variety; background parallax and title-safe framing |
+| **On-the-beat SFX** | 9 semantic sounds (6 code-synthesised + 3 real-recorded Kenney RPG Audio CC0 foley effects, `public/sfx/lib/`), **no BGM by default** (a music bed loads only when `treatment.sound.music.use=true`); every cue carries `gain` / `offsetMs` and pre-rolls to land on the visual hit (±1 frame); `validate-silence` checks inter-sentence silence |
 | **Real media** | Screenshots, ≤10 s recordings and GIFs inside `MediaFrame` (same card look as the components, optional browser / window / device chrome, region zoom, highlight boxes, callouts, credit badge); `prepare-media` transcodes, `validate-media` blocks blurry or unlicensed media |
 | **Weak-model friendly** | 7 fusion recipes + 10 blueprints (5 component routes + 5 hand-made structure families) with a per-shot `$components` pick; golden examples in `examples/` (including `examples/recipes/`); unfilled `<<placeholders>>` fail loudly |
 | **One command** | `make-video.mjs`: resolve-shots → gates → tsc → stills contact sheet or full render → `renders/report.md`; `make-video.cmd` on Windows |
@@ -100,27 +100,35 @@ node scripts/notebook-video.mjs fonts   # first run downloads LXGW WenKai Lite (
 ### 3. Make a video
 
 ```bash
-# Create a project (copies the template; --style=flat or cel)
+# 1) Create a project (--style=flat, cel, journal, papercut, or archive)
 node scripts/notebook-video.mjs new-project ./my-video --style=flat
 
-# After editing manifests/shots.json, src/scenes.tsx, src/film.ts and the captions:
-node scripts/make-video.mjs ./my-video --stills                          # contact sheet of each shot's key moments
-node scripts/make-video.mjs ./my-video --render ./my-video/final.mp4     # full render once the stills look right
+# 2) Write my-story.json from blueprints/ or examples/, then render the stills contact sheet:
+node scripts/make-video.mjs my-story.json ./my-video --stills
+
+# 3) Generate real Chinese voice-over and retime captions/shots:
+node scripts/notebook-video.mjs tts ./my-video
+
+# 4) Once stills & report look right, render the delivery MP4 (2560×1440 by default):
+node scripts/make-video.mjs ./my-video --render ./my-video/final.mp4
 ```
 
 On **Windows** (cmd / PowerShell) use the same `node` commands, or:
 
 ```bat
 scripts\notebook-video.cmd new-project .\my-video --style=flat
-scripts\make-video.cmd .\my-video --stills
+scripts\make-video.cmd my-story.json .\my-video --stills
+scripts\notebook-video.cmd tts .\my-video
 scripts\make-video.cmd .\my-video --render .\my-video\final.mp4
 ```
+
+For the handwritten-scene escape hatch (`manifests/shots.json`, `src/scenes.tsx`, `src/film.ts`), run `make-video ./my-video --stills` / `--render` directly.
 
 Reading the output: `✓ 自动修` (auto-fixed) lists what the engine changed for you; `· 建议` (advice) never blocks; only `✗` needs a fix, and each one says how.
 
 ## What a blueprint looks like
 
-All blueprints follow the same teaching arc: **hook → one key term → break it down → example → pitfall → recap**. Only the `<<…>>` parts are edited, and `$components` tells the model what to use:
+Five component blueprints cover structured explainers and five handwritten-craft families cover metaphor/discovery stories (`blueprints/`). Only the `<<…>>` placeholders are edited, and `$components` tells the model what to use:
 
 ```json
 {
@@ -179,19 +187,19 @@ Details: [references/media.md#commons-media](references/media.md#commons-media).
 | `papercut` | Red window paper-cut: rice paper, red cut-outs with double contours, a deep-red banner subtitle | `--style=papercut` |
 | `archive` | Archive light table: real archival objects on a cool backlit surface, one signal colour, a loupe | `--style=archive` |
 
-Craft skins use 96 px@1440 Noto Serif SC Bold subtitles (downloaded on demand, sha256-checked) with no UI pill, and require a director
+All five themes use clean bottom-centred **64 design-px** (`85.3 px` @ 1440p) borderless text with a paper-tinted halo, keeping combined chrome + subtitle occlusion ≤ 5 %; craft skins also fetch Noto Serif SC Bold (~12 MB, sha256-checked) for hand-lettered display text and require a director
 treatment `manifests/treatment.json` ([references/director.md#director-method](references/director.md#director-method)); components in
 [references/components.md#craft-kit](references/components.md#craft-kit), style recipes in [references/director.md#style-recipes](references/director.md#style-recipes).
 
-Each theme ships three locked backgrounds (main / chapter / quiet) with a calm central ~70 % safe area; the engine picks one per shot. Text uses dedicated `*Ink` colours so contrast always passes. Specs: [references/themes/system.md](references/themes/system.md), [references/themes/flat.md](references/themes/flat.md), [references/themes/cel.md](references/themes/cel.md), [references/themes/journal.md](references/themes/journal.md), [references/themes/papercut.md](references/themes/papercut.md), [references/themes/archive.md](references/themes/archive.md).
+Each theme includes 8–11 light-ground backgrounds rotated by `bgMode` (`film` whole film / `chapter` per chapter, default for craft / `shot` per shot, default for flat & cel) with a calm central ~70 % safe area; see [references/media.md#background-library](references/media.md#background-library). Text uses dedicated `*Ink` colours so contrast always passes. Specs: [references/themes/system.md](references/themes/system.md), [references/themes/flat.md](references/themes/flat.md), [references/themes/cel.md](references/themes/cel.md), [references/themes/journal.md](references/themes/journal.md), [references/themes/papercut.md](references/themes/papercut.md), [references/themes/archive.md](references/themes/archive.md).
 
 ## Gates at a glance
 
 | Stage | Checks | Typical catches |
 | --- | --- | --- |
-| Build time (Python) | `resolve-shots`, `validate-composition`, `validate-shot-motion`, `validate-presentation`, `validate-caption-sync`, `validate-semantic-breaks`, `validate-layering`, `validate-visual-plan`, `validate-fusion`, `validate-glyphs`, `validate-silence`, `validate-audio-levels`, `validate-media` | Content too small, low contrast, caption lines over 16 characters or too fast to read, unbalanced sketch ratio or a missing subject, a cropped sketch, no silence between sentences or SFX drowning the voice, SFX gain out of sync with the library, blurry media |
-| Render time (in the browser) | `OverlapGate`, `ClippingGate`, `CanvasBoundsGate`, `FillGate`, `CaptionFitGate`, `MascotGate` | Overlapping text, clipped graphics, content off-canvas, caption overflow |
-| Final film | `validate-video`, `validate-motion-gaps` | Wrong size / codec / colour tags, frames frozen too long |
+| Build time (Python) | `resolve-shots`, `validate-composition`, `validate-shot-motion`, `validate-presentation`, `validate-caption-sync`, `validate-semantic-breaks`, `validate-elem-kinds`, `validate-treatment`, `validate-opening`, `validate-facts`, `validate-layering`, `validate-visual-plan`, `validate-fusion`, `validate-glyphs`, `validate-silence`, `validate-audio-levels`, `validate-backgrounds`, `validate-media` | Content too small, low contrast, captions >16 chars or too fast, overlay >5% / >30%, missing subject or unhandled element kind, under-moving signature shot, blank frame 0, conflicting source claims, non-silent pauses, SFX drift, unverified backgrounds or blurry media |
+| Render time (in the browser) | `OverlapGate`, `ClippingGate`, `CanvasBoundsGate`, `CardFitGate`, `CaptionFitGate`, `FillGate`, `SlotGuard`, `AssetGate` | Overlapping text, clipped graphics, content off-canvas, card/caption overflow, missing fonts or media |
+| Final film | `validate-video`, `validate-motion-gaps`, `validate-opening`, `validate-silence`, `validate-ocr` | Wrong size/codec/bt709 tags, CFR stutter, A/V offset, dark/blown-out exposure, frozen frames, blank frame 0, noise floor |
 | Skill self-checks | `validate-skill-consistency`, `selftest`, `negative-gate-check`, `dev/check-examples`, `dev/check-test-collection`, `dev/purity-smoke` | Docs naming components that do not exist, broken links; every gate must block a deliberately broken input; positive examples must pass and negatives must be blocked; a test file collects nothing; continuous and single-frame renders differ |
 
 Gate results (including the in-browser render-time gates) are written to `renders/gates.json`: P0 only ever means the film is blocked, P1 goes to the report as advice; aesthetic and structural items (same skeleton / layout in adjacent shots, camera quotas, missing `$asks`) are P1 only. Frame props are required types checked by `tsc`; cross-language constants live in the template's `src/contract.json` only.
@@ -227,12 +235,12 @@ notebook-video/
 - **Portrait or 4:3?** No. The only canvas is 16:9; the earlier 4:3 / 3:4 canvases, the `paper` / `sticker` skins and the `--classic` example project are gone, and older projects are not supported.
 - **My topic needs a one-off diagram.** Copy `src/custom/RequestLane.tsx`, write your component and register it in `src/custom/index.ts`.
 - **Does story.json look as good as hand-written scenes?** Close, but not identical: its layouts are drawn by `auto.tsx`. Start with story.json + a blueprint; switch to hand-written component scenes when you need shot-by-shot layout control.
-- **Is rendering slow?** Check with `--stills` first (key frames only). Full renders default to 1920×1080 delivery.
+- **Is rendering slow?** Check `--stills` first (single browser session after one bundle). Full renders default to `2560×1440` (`--scale=0.75` gives `1920×1080`).
 - **Are demo videos included?** No. To keep the repository light, rendered demos are not committed; run `--stills` to see the look locally.
 
 ## Making the skill package
 
-Do not zip the whole working directory (`.git`, caches and local projects are not skill runtime content). Use the whitelist packager:
+Do not zip the whole working directory (`.git`, caches and local projects are not skill runtime content). Use the whitelist packager (use `python` instead of `python3` on Windows):
 
 ```bash
 python scripts/package-skill.py --check-only   # only check the manifest and local links in SKILL.md
@@ -240,7 +248,7 @@ python scripts/package-skill.py                # write dist/notebook-video-skill
 python scripts/package-skill.py --include-fonts --output dist/notebook-video-offline.zip
 ```
 
-The default package holds the entry point, runtime scripts, template, blueprints, examples and reference material; it leaves out `.git`, tests, caches, rendered output, release history and the large on-demand fonts. Use `--include-fonts` only when you need a fully offline run (Clash Display's licence forbids redistribution, so no package ever includes it).
+The default package holds the entry point, runtime scripts, template, blueprints, core examples and reference material; it leaves out `.git`, `tests/`, `scripts/dev/`, `examples/{negative,regress,weak-model-test}/`, release-admin files such as `CHANGELOG.md`, caches, rendered output and the large on-demand fonts. Use `--include-fonts` only when you need a fully offline run (Clash Display's licence forbids redistribution, so no package ever includes it).
 
 ## Contributing
 

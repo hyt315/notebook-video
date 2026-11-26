@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -161,11 +162,86 @@ def audio_duration_ms(path: Path) -> int | None:
         return None
 
 
-def even_split(chars: list[str], total_ms: int) -> list[dict]:
-    """没有对齐时的估计：留 200ms 尾部，其余按字数均分（标点也占时长）。"""
-    usable = max(1, total_ms - 200)
-    return [{"part": ch, "start": round(usable * i / len(chars)), "end": round(usable * (i + 1) / len(chars))}
-            for i, ch in enumerate(chars)]
+def _char_weight(ch: str) -> float:
+    if "\u4e00" <= ch <= "\u9fff":
+        return 1.0
+    if ch.isalnum():
+        return 0.55
+    if ch in "，、；：,:;":
+        return 0.45
+    if ch in "。！？.!?":
+        return 0.90
+    return 0.15
+
+
+def detect_speech_bounds(audio: Path, total_ms: int) -> tuple[int, int]:
+    """用 ffmpeg silencedetect 探测首尾真实发声边界，找不到则返回缺省区间。"""
+    default_bounds = (0, max(1, total_ms - 200))
+    try:
+        r = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-i", str(audio), "-af", "silencedetect=noise=-38dB:d=0.08", "-f", "null", "-"],
+            capture_output=True, text=True, timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return default_bounds
+    if r.returncode != 0:
+        return default_bounds
+    log = f"{r.stdout}\n{r.stderr}"
+    starts = [round(float(x) * 1000) for x in re.findall(r"silence_start:\s*([0-9.]+)", log)]
+    ends = [round(float(x) * 1000) for x in re.findall(r"silence_end:\s*([0-9.]+)", log)]
+    sp_start = 0
+    if starts and starts[0] <= 50 and ends:
+        sp_start = max(0, min(total_ms - 100, ends[0]))
+    sp_end = total_ms
+    if starts and (not ends or starts[-1] > ends[-1]) and starts[-1] > sp_start + 50:
+        sp_end = min(total_ms, starts[-1])
+    if sp_end <= sp_start + 10:
+        return default_bounds
+    return sp_start, sp_end
+
+
+def check_spoken_form(lines: list[str]) -> list[str]:
+    """检查台词里未口语化的符号/URL（非阻断提示）。"""
+    hits = []
+    pat = re.compile(r"(>=|<=|!=|->|=>|::|https?://|_{3,})")
+    for i, ln in enumerate(lines, 1):
+        m = pat.search(ln)
+        if m:
+            hits.append(f"第 {i} 行含未口语化符号 {m.group(1)!r}，TTS 可能直接逐字符或跳过朗读")
+    return hits
+
+
+def check_audio_clipping(audio: Path) -> str | None:
+    """用 ffmpeg volumedetect 检查 --engine=file 自备音频是否削波。"""
+    try:
+        r = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-i", str(audio), "-af", "volumedetect", "-f", "null", "-"],
+            capture_output=True, text=True, timeout=60,
+        )
+        m = re.search(r"max_volume:\s*([-0-9.]+)\s*dB", f"{r.stdout}\n{r.stderr}")
+        if m and float(m.group(1)) >= -0.1:
+            return f"自备音频峰值 {float(m.group(1)):.1f} dB >= -0.1 dB，可能存在削波失真"
+    except (OSError, ValueError, subprocess.SubprocessError):
+        pass
+    return None
+
+
+def even_split(chars: list[str], total_ms: int, speech_start_ms: int = 0, speech_end_ms: int | None = None) -> list[dict]:
+    """没有对齐时的加权估计：限定真实发声首尾区间，并按汉字 / 英文 / 停顿标点分配时长。"""
+    if not chars:
+        return []
+    end_ms = speech_end_ms if speech_end_ms is not None else max(speech_start_ms + 1, total_ms - 200)
+    span = max(1, end_ms - speech_start_ms)
+    weights = [_char_weight(ch) for ch in chars]
+    total_w = sum(weights) or float(len(chars))
+    out: list[dict] = []
+    acc = 0.0
+    for ch, w in zip(chars, weights):
+        st = round(speech_start_ms + span * acc / total_w)
+        acc += w
+        en = round(speech_start_ms + span * acc / total_w)
+        out.append({"part": ch, "start": st, "end": max(st, en)})
+    return out
 
 
 def whisper_words(audio: Path, prompt: str) -> list[tuple[str, int, int]] | None:
@@ -256,13 +332,17 @@ def synth_file(project: Path, lines: list[str]) -> tuple[list[dict], str, bool]:
     chars = [c for c in text if not c.isspace()]
     if not chars:
         raise RuntimeError("narration.txt 是空的：先写每行一句的旁白")
+    clip_warn = check_audio_clipping(audio)
+    if clip_warn:
+        print(f"⚠ {clip_warn}", file=sys.stderr)
     heard = whisper_words(audio, text)
     if heard is not None:
         aligned = align_to_script(chars, heard, total)
         if aligned is not None:
             return aligned, "file+faster-whisper", False
-        print("⚠ faster-whisper 识别结果和 narration.txt 对不上（对上的字不到六成），退回按字数均分。", file=sys.stderr)
-    return even_split(chars, total), "file", True
+        print("⚠ faster-whisper 识别结果和 narration.txt 对不上（对上的字不到六成），退回加权估算。", file=sys.stderr)
+    sp_start, sp_end = detect_speech_bounds(audio, total)
+    return even_split(chars, total, sp_start, sp_end), "file", True
 
 
 def main() -> int:
@@ -320,6 +400,8 @@ def main() -> int:
         )
     out_mp3 = project / "audio" / "narration.mp3"
     out_mp3.parent.mkdir(parents=True, exist_ok=True)
+    for w_msg in check_spoken_form(lines):
+        print(f"⚠ {w_msg}", file=sys.stderr)
     try:
         if a.engine == "edge":
             source = "\n".join(lines)

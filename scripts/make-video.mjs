@@ -144,7 +144,7 @@ if (!fs.existsSync(path.join(project, 'src', 'index.tsx'))) {
   if (r.code) die('new-project 失败');
   // 示例自带导演层（STORY 旁边的 <名>.treatment.json）时，新工程直接用它，
   // 不然模板示例片的 treatment（别的选题、招牌镜 S4）会套到这支片上，手作皮肤的门禁按错的导演层判。
-  const sibling = storyPath && storyPath.replace(/\.story\.json$/i, '.treatment.json');
+  const sibling = storyPath && storyPath.replace(/(?:\.story)?\.json$/i, '.treatment.json');
   if (sibling && sibling !== storyPath && fs.existsSync(sibling)) {
     fs.copyFileSync(sibling, path.join(project, 'manifests', 'treatment.json'));
     step(`沿用示例自带的导演层 ${path.basename(sibling)} → manifests/treatment.json`);
@@ -425,8 +425,20 @@ const reviewSummaryLines = () => {
   const summary = parts.length ? parts.join(' · ') : `已完成 ${rounds.length} 轮评审`;
   return [`- **评审卡（第 ${rounds.length} 轮）**：${summary}`];
 };
+const objectiveDigestLine = () => {
+  try {
+    const table = JSON.parse(fs.readFileSync(path.join(project, 'manifests', 'shots.resolved.json'), 'utf8'));
+    const shots = table.shots ?? [];
+    const intents = [...new Set(shots.map((s) => s.cameraIntent || s.camera?.intent || 'still').filter((x) => x !== 'still'))];
+    const transitions = [...new Set(shots.map((s) => s.transition || 'auto'))];
+    const res = scale === '1' ? '2560×1440' : `${Math.round(2560 * Number(scale))}×${Math.round(1440 * Number(scale))}`;
+    const p0 = records.filter((r) => r.level === 'P0').length;
+    const p1 = records.filter((r) => r.level === 'P1').length;
+    return [`- **成片摘要**：${shots.length} 镜 · 运镜意图 ${intents.length} 种（${intents.join('/') || 'still'}） · 转场 ${transitions.join('/')} · ${res} · 门禁 P0=${p0} P1=${p1}`];
+  } catch { return []; }
+};
 const writeReport = (frames, sheets, extra = '') => {
-  const lines = [`# make-video 报告 · ${story.title ?? ''}`, '', ...reviewSummaryLines(), `- 时长：${rep.frames} 帧（${(rep.frames / 30).toFixed(1)} 秒）`, `- 自动修：${rep.fixes.length} 条 · 建议：${rep.hints.length} 条`, ...fxNote(), '',
+  const lines = [`# make-video 报告 · ${story.title ?? ''}`, '', ...reviewSummaryLines(), ...objectiveDigestLine(), `- 时长：${rep.frames} 帧（${(rep.frames / 30).toFixed(1)} 秒）`, `- 自动修：${rep.fixes.length} 条 · 建议：${rep.hints.length} 条`, ...fxNote(), '',
     '## 门禁', ...results.map((r) => `- ${r.code ? (r.hard ? '✗' : '·') : '✓'} ${r.gate} — ${r.verdict}`), '',
     '## 自动修', ...rep.fixes.map((x) => `- ${x}`), '', '## 建议（不拦）', ...rep.hints.map((x) => `- ${x}`), '',
     '## 静帧（看：字是否完整、强调是否对上台词关键词、镜头是否切到标题）', ...frames.map((x) => `- f${x.f} ${x.shot} ${x.what}`), '',

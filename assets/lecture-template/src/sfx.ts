@@ -10,12 +10,8 @@
 //   "sfx": [{"event": "success", "beat": 2}]        替换第 2 拍的自动音效
 //   "sfx": [{"event": "error", "at": 40, "vol": 0.3}] 在本镜本地帧 40 额外加一个
 //   "sfxAuto": false                               关掉本镜自动规则，只用显式条目
-// 事件名只能是 SFX_EVENTS 里的九个（瘦身：16 → 9；保留 4 个手作拟音 page / place / stamp）；
-// 音量缺省取 SFX_GAIN（已按「人声下方 8–12 LU」调好）。
-//
-// 删掉的是「重复」与「几乎用不到」的七种：whoosh（所有转场已改走 page）、
-// click / rustle（中拍只在 normal 出现，与 highlight 重叠）、typing（只在代码镜的中拍）、
-// riser（只在 normal 出现，且是库里唯一被 earshot 判 no match 的）、snip / latch（papercut 专用，极窄）。
+// 事件名只能是 SFX_EVENTS 里的九个（含四个手作拟音 page / place / stamp 等）；
+// 音量缺省取 SFX_GAIN（已按「人声下方 8–12 LU」校准）。
 // ============================================================================
 
 import {THEME} from './theme/active';
@@ -102,7 +98,7 @@ const PRIORITY: SfxEvent[] = ['chapter', 'success', 'stamp', 'error', 'page', 'c
  * 只换**自动**排的音效；分镜表 sfx 字段里显式写的事件原样保留。
  * 判断改为 isHandmadeMedium —— flat / cel 也声明 craft（线稿色、字体、转场），
  * 但它们的自动音效仍是 UI 音，不再被误映射成纸片声。
- * 瘦身后只剩这两条映射（whoosh→page 已由转场分支直接排 page，click→rustle 随 click 一起删除）。
+ * 自动映射仅保留两项（翻页由转场分支直接排 page）。
  */
 const CRAFT_SFX: Partial<Record<SfxEvent, SfxEvent>> = {pop: 'place', success: 'stamp'};
 const mediaSound = (e: SfxEvent, theme: MediumTheme = THEME): SfxEvent =>
@@ -222,15 +218,16 @@ export const bedDuckAt = (f: number, plan: readonly SfxCue[]): number => {
   return k;
 };
 
-/** 人声闪避：非翻页/章节类音效落在旁白发声区间内时降 ~4 dB，避免压人声。 */
+/** 人声闪避：音效落在旁白发声区间内时降幅（翻页 / 章节略降以保冷开首音干净，其余标点降 ~4 dB）。 */
 export const voiceDuckFactor = (
   hitFrame: number,
   event: SfxEvent,
   ranges: readonly {startFrame: number; endFrame: number}[],
 ): number => {
-  if (event === 'page' || event === 'chapter') return 1;
   for (const r of ranges) {
-    if (hitFrame >= r.startFrame - 2 && hitFrame <= r.endFrame + 2) return 0.62;
+    if (hitFrame >= r.startFrame - 2 && hitFrame <= r.endFrame + 2) {
+      return event === 'page' || event === 'chapter' ? 0.78 : 0.62;
+    }
   }
   return 1;
 };

@@ -26,10 +26,12 @@ audio/narration.mp3.json、src/{caption-cues.json,story.ts,film.ts,scenes.tsx}
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import math
 import re
 import sys
+import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -178,15 +180,11 @@ def signature_shot_id(p: "Problems") -> str | None:
     return f"S{m.group(1)}" if m else None
 
 
-def sweep_track(els, base, keep=None):
-    """招牌镜的横移：找出同一行里并排放的元素，给出 (起幅 look, 落幅 look)。
+def sweep_track(els, base, keep=None, min_span=300):
+    """横向扫镜：找出同一行里并排放的元素，给出 (起幅 look, 落幅 look)。
 
-    为什么需要它：一行 4 个节点并排的流程镜，在 16:9 里任何真推都会切断邻居的文字
-    （安全框放不下「整行 + 一截」），但镜头沿这行扫过去既合法又有力——这正是
-    treatment.move 里 pan-follow 的意思。返回 None = 这镜没有可横移的并排结构。
-
-    起幅对准最左的元素、落幅对准最右的元素；两端都用 frame_rect 收口，
-    保证「停住的时候」没有字被切断（运镜途中扫过是正常的，停留点不能切），keep（anchor）两端都在画面里。
+    一行多节点并排的流程 / 对比 / 柱状镜，在 16:9 里沿行横移既不切断邻居又富动感（pan-follow）。
+    起幅对准最左元素、落幅对准最右元素；停留点校验不切字且 anchor（keep）始终完整在画。
     """
     cand = [e for e in els if e["kind"] not in ("arrow", "timer", "codebox", "title")
             and e.get("w", 0) > 0 and e.get("h", 0) > 0]
@@ -210,16 +208,27 @@ def sweep_track(els, base, keep=None):
     first, last = row[0], row[-1]
     if last["x"] - first["x"] < 220:      # 挤在一起的两块，扫起来看不出位移
         return None
-    # 起幅 / 落幅 = 对准最左 / 最右元素，倍率取「能扫出最大位移、且两端都不切字」的那个。
-    # 为什么必须放大倍率才扫得动：s=1.01 时画面比设计稿只宽出 10px，clamp_look 把视点锁死在
-    # 正中，位移恒为 0；倍率越大，视点才越能离开中心。但每档都要校验停留点不切字。
-    scy = (SAFE[1] + SAFE[3]) / 2       # 安全框中心在 529，略高于画面中心（与 frame_rect 同源）
+    scy = (SAFE[1] + SAFE[3]) / 2
     best, best_span = None, 0.0
-    s = max(1.0, base["s"])
+    s = max(1.04 if keep else 1.0, base["s"])
     while s <= ZOOM_MAX + 1e-9:
-        def aim(e, s=s):
-            x, y = clamp_look(e["x"] + e["w"] / 2, e["y"] + e["h"] / 2 - (scy - 540) / s, s)
-            return {"x": round(x, 1), "y": round(y, 1), "s": round(s, 3)}
+        hx, hy = 960.0 / s, 540.0 / s
+        lo_x, hi_x = hx, 1920.0 - hx
+        lo_y, hi_y = hy, 1080.0 - hy
+        if keep is not None:
+            lo_x = max(lo_x, keep["x"] + keep["w"] - hx + 0.5)
+            hi_x = min(hi_x, keep["x"] + hx - 0.5)
+            lo_y = max(lo_y, keep["y"] + keep["h"] - hy + 0.5)
+            hi_y = min(hi_y, keep["y"] + hy - 0.5)
+        if lo_x > hi_x or lo_y > hi_y:
+            s = round(s + 0.02, 3)
+            continue
+
+        def aim(e, s=s, lo_x=lo_x, hi_x=hi_x, lo_y=lo_y, hi_y=hi_y):
+            tx = min(hi_x, max(lo_x, e["x"] + e["w"] / 2))
+            ty = min(hi_y, max(lo_y, e["y"] + e["h"] / 2 - (scy - 540) / s))
+            return {"x": round(tx, 1), "y": round(ty, 1), "s": round(s, 3)}
+
         a, b = aim(first), aim(last)
         span = abs((b["x"] - a["x"]) * s)
         if span > best_span and not partial_clips((a["x"], a["y"]), a["s"], els) \
@@ -227,7 +236,7 @@ def sweep_track(els, base, keep=None):
                 and (keep is None or (in_frame(keep, (a["x"], a["y"]), s) and in_frame(keep, (b["x"], b["y"]), s))):
             best, best_span = (a, b), span
         s = round(s + 0.02, 3)
-    if best is None or best_span < 300:    # 扫不开 = 观众看不出来，不如不扫
+    if best is None or best_span < min_span:
         return None
     return best
 
@@ -235,9 +244,19 @@ def sweep_track(els, base, keep=None):
 def path_intent(path) -> str:
     """镜头表的 cameraIntent 从真实路径读出来（门禁按它数运镜配额、意图种类），不按版式贴标签。"""
     ss = [k["s"] for k in path]
+    scale_inc = max(ss) - ss[0]
+    scale_dec = ss[0] - min(ss)
+    net = ss[-1] - ss[0]
     pan = max(k["x"] for k in path) - min(k["x"] for k in path) + max(k["y"] for k in path) - min(k["y"] for k in path)
-    return ("push-in" if max(ss) - ss[0] >= 0.02 else "pull-back" if ss[0] - min(ss) >= 0.02
-            else "pan-follow" if pan >= 20 else "still")
+    if pan >= 120 and scale_inc < 0.08 and scale_dec < 0.08:
+        return "pan-follow"
+    if net <= -0.02 or (scale_dec >= 0.02 and scale_dec > scale_inc):
+        return "pull-back"
+    if scale_inc >= 0.02:
+        return "push-in"
+    if pan >= 20:
+        return "pan-follow"
+    return "still"
 
 
 def shot_anchor(sh) -> dict:
@@ -295,6 +314,15 @@ def compose(story: dict, p: Problems):
     prev_variant = None
     seen_terms = set()
     chapter_first = []
+    title_seed = zlib.crc32(str(story.get("title") or "").encode("utf-8"))
+    AUTO_VARIANTS = {
+        "statement": ("", "left"),
+        "define": ("", "mirror"),
+        "number": ("", "mirror"),
+        "media": ("", "mirror"),
+        "bars": ("", "center"),
+        "code": ("", "mirror"),
+    }
     for ci, ch in enumerate(chapters):
         if ci > 0:
             t_ms += CHAPTER_BREATH_MS
@@ -308,13 +336,20 @@ def compose(story: dict, p: Problems):
             if lay not in LAYOUTS:
                 p.err(f"{sid}: layout={lay!r} 不是 {LAYOUTS} 之一 —— 不确定就用 define / list / compare 这类组件版式（手账页用 page）")
                 continue
-            variant = sh.get("variant", "")
+            explicit_var = "variant" in sh and sh.get("variant") is not None
+            variant = str(sh.get("variant") or "")
+            if not explicit_var and lay == prev_layout:
+                variant = prev_variant
+            elif not explicit_var and lay in AUTO_VARIANTS:
+                choices = AUTO_VARIANTS[lay]
+                variant = choices[(title_seed + zlib.crc32(lay.encode("utf-8"))) % len(choices)]
             # 自动修：相邻同版式 → 换镜像变体
             if lay == prev_layout and variant == prev_variant:
-                alt = {"statement": "left", "number": "mirror", "define": "mirror"}.get(lay)
-                if alt and variant != alt:
+                alt_pair = AUTO_VARIANTS.get(lay)
+                alt = next((x for x in (alt_pair or ()) if x != variant), None)
+                if alt is not None:
                     variant = alt
-                    p.fix(f"{sid}: 与上一镜同版式 {lay}，自动换成变体 {alt}")
+                    p.fix(f"{sid}: 与上一镜同版式 {lay}，自动换成变体 {alt or 'default'}")
                 else:
                     p.hint(f"{sid}: 与上一镜同为 {lay} 版式且没有可换的变体 —— 换一个组件版式（例如 list / compare / flow），或在两镜之间插一镜")
             content = sh.get("content") or {}
@@ -389,6 +424,7 @@ def compose(story: dict, p: Problems):
                           "first_in_chapter": si == 0, "els": els, "line_cues": line_cues, "terms": terms_all, "content": content,
                           "start_ms": shot_start_ms, "icons": int(sh.get("icons", 0)), "custom": content.get("component"),
                           "role": sh.get("role") or ch.get("role"), "recipe": recipe, "sketch": sk_raw,
+                          "transition": sh.get("transition"),
                           # 有意复现：recallOf=回扣先前那张图，variantOf=同一主题物的另一态。
                           # 两者都表示「这镜是故意再现的」，门禁据此放行；没有它们的同图同局部同动作才是无意重复。
                           "recallOf": sh.get("recallOf") or content.get("recallOf"),
@@ -434,6 +470,7 @@ def build(story, comp, p: Problems):
     seen_gloss = set()
     used_skel = None
     minute_icons = 0
+    recent_intents: list[str] = []
     # 叙事动作（validate-presentation 要求同一 move 不连续 ≥3 镜）：按蓝图角色 / 版式取，撞了就换近义动作
     ROLE_MOVE = {"hook": "引入", "pre": "定位", "breakdown": "拆分/合并", "example": "传递", "misconception": "反证", "recap": "收束"}
     LAY_MOVE = {"statement": "收束", "define": "定位", "number": "引入", "bars": "反证", "compare": "对比", "code": "定位",
@@ -517,8 +554,7 @@ def build(story, comp, p: Problems):
         # 并列项本来就是一个整体，应当跨整镜铺开：起点在首句字幕起后（第一项跟着标题走），
         # 终点在镜尾前留出 SETTLE 帧让最后一张被读得完。
         PEER_SETTLE = 40
-        # 本镜「全部字幕句」的本地起帧（不是 story.json 的 lines 组——S4 写了 2 条 lines，
-        # 旁白却读成 4 句；并列项要跟的是后者）。
+        # 本镜「全部字幕句」的本地起帧（而非 story.json 分行组；并列项对齐拆分后的真实句流）。
         _cue_all = [ci_ for ix in sh["line_cues"] for ci_ in ix]
         cue_locals_peer = [frame(cues[ci_]["start_ms"]) - frm for ci_ in _cue_all]
         for group in ("node", "item"):
@@ -530,15 +566,8 @@ def build(story, comp, p: Problems):
             if any(e["kind"] == "text" for e in els):
                 t0 = max(t0, 10)
             # 排布策略，按「字幕句数 vs 并列项数」二分：
-            #   (a) 句数 >= 项数：一项一句，跟着旁白走。这是**最好**的读法——说到「先是植物」
-            #       时第二张纸正好贴上，声音和画面同一拍。S4 有 4 句字幕 4 个节点，属于这类。
-            #   (b) 句数 <  项数：隔一句塞不下，就只能跨整镜均摊（旧逻辑），并留 SETTLE 帧收尾。
-            # 早先一律走 (b)，结果 S4 的四个节点被均摊成 79 帧一格（2.6 秒一张），
-            # 观众看到第 32 秒时画面里还只有三张，会误以为流程只有三步。
-            #
-            # 用 cue_list（**全部字幕句**）而不是 line_start（story.json 的 lines 组）：
-            # story 里 S4 只写了 2 条 lines，但 TTS 把它读成了 4 句字幕；
-            # 拿 2 去比 4 个节点会永远走 (b)，节点就永远跟不上旁白。
+            #   (a) 句数 >= 项数：一项一句，跟着旁白走，保证声音和画面同拍。
+            #   (b) 句数 <  项数：跨整镜均摊（前 42%），并留 SETTLE 帧收尾，留出阅读停顿。
             n_cue = len(cue_locals_peer) if cue_locals_peer else len(line_start)
             if n_cue >= len(peers):
                 for i, e in enumerate(peers):
@@ -546,9 +575,6 @@ def build(story, comp, p: Problems):
                     j = round(i * (n_cue - 1) / max(1, len(peers) - 1))
                     e["at"] = int(max(t0, cue_locals_peer[j] - 2))
             else:
-                # 终点不再贴近镜尾（dur - 40）：三张卡片摊到 141/181 帧，
-                # 观众看到第 23 秒时画面里还是只有两张，最后一张只剩 1 秒可读。
-                # 结构型版面（flow / list）要**先立起来再讲**，所以压到前 42%。
                 t1 = max(t0 + 8 * len(peers), min(dur - PEER_SETTLE, dur * 0.42))
                 step = (t1 - t0) / max(1, len(peers) - 1)
                 for i, e in enumerate(peers):
@@ -628,7 +654,60 @@ def build(story, comp, p: Problems):
                                first_["y"] + first_["h"] / 2 - (gaze_in[1] - 540) / s0, s0)
             return {"x": round(look_[0], 1), "y": round(look_[1], 1), "s": round(s0, 3)}
 
-        if prev_gaze is not None and focus:
+        is_sig = bool(sig_id and sid == sig_id and not frozen)
+        pref_move = TREATMENT_MOVES.get(sid)
+        director_done = False
+
+        if not frozen and not is_sig and dur >= 75:
+            # 1) 横移扫镜（pan-follow）：flow / compare / bars 或 treatment 显式指定
+            want_pan = (pref_move == "pan-follow") or (
+                pref_move is None and sh["layout"] in ("flow", "compare", "bars") and recent_intents[-1:] != ["pan-follow"]
+            )
+            if want_pan:
+                sw = sweep_track(els, over, U, min_span=120)
+                if sw:
+                    a, b = sw
+                    hold_a = max(10, min(36, int(dur * 0.16)))
+                    end_b = max(hold_a + 32, min(dur - 12, hold_a + max(36, move_frames(a, b))))
+                    if end_b > hold_a:
+                        path = [{"at": 0, **a}, {"at": hold_a, **a}, {"at": end_b, **b}]
+                        cur = b; last_at = end_b
+                        director_done = True
+            # 2) 拉远交代全局（pull-back）：非冷开首镜，从主元素或特写取景缓缓拉回全景
+            if not director_done and k > 0:
+                want_pull = (pref_move == "pull-back") or (
+                    pref_move is None and sh["layout"] in ("define", "statement", "list", "number", "compare", "code")
+                    and (recent_intents[-1:] == ["push-in"] or ("pull-back" not in recent_intents[-2:] and k >= 1))
+                )
+                if want_pull:
+                    cand_els = [e for e in content_els if e["kind"] not in ("arrow", "timer")]
+                    focal = (next((x for x in els if x["id"] == focus[0]["id"]), None) if focus else None) or (
+                        max(cand_els, key=lambda e: e["w"] * e["h"]) if cand_els else None
+                    )
+                    close_tgt = None
+                    if focal is not None:
+                        ct, _ = frame_rect(focal, els, max_s=1.22, min_s=1.06, keep=U)
+                        if ct["s"] >= 1.06:
+                            close_tgt = ct
+                    if close_tgt is None and over["s"] >= 1.05:
+                        close_tgt = over
+                    if close_tgt is not None:
+                        wide_end = {"x": 960.0, "y": 540.0, "s": 1.0}
+                        if over["s"] >= 1.04 and close_tgt["s"] - over["s"] >= 0.04:
+                            wide_end = over
+                        hold_c = max(14, min(54, int(dur * 0.28)))
+                        pull_end = max(hold_c + 34, min(dur - 12, hold_c + max(36, move_frames(close_tgt, wide_end))))
+                        if pull_end > hold_c:
+                            path = [{"at": 0, **close_tgt}, {"at": hold_c, **close_tgt}, {"at": pull_end, **wide_end}]
+                            cur = wide_end; last_at = pull_end
+                            director_done = True
+            # 3) 呼吸推近或定机收束（still / push-in）
+            if not director_done and k > 0 and sh.get("role") == "recap" and dur <= 165 and "still" not in recent_intents[-2:]:
+                path = [{"at": 0, "x": 960.0, "y": 540.0, "s": 1.0}]
+                cur = path[0]; last_at = 0
+                director_done = True
+
+        if not director_done and prev_gaze is not None and focus:
             # 视线连续：本镜第一个出现的元素放在上一镜最后注视的屏幕位置附近，再滑到全景
             first = min(content_els, key=lambda e: e["at"])
             gx, gy = prev_gaze
@@ -636,12 +715,13 @@ def build(story, comp, p: Problems):
             look = clamp_look(first["x"] + first["w"] / 2 - (gx - 960) / s0, first["y"] + first["h"] / 2 - (gy - 540) / s0, s0)
             path.append({"at": 0, "x": round(look[0], 1), "y": round(look[1], 1), "s": s0})
             path.append({"at": 30, **over})
-        elif k == 0 and any(e["kind"] not in ("arrow", "timer") for e in content_els):
+        elif not director_done and k == 0 and any(e["kind"] not in ("arrow", "timer") for e in content_els):
             # 冷开的第一镜：题眼在第 0 帧已落定，开场画面就是建立镜，取全景 1.00×；
             # 往里推交给本镜的关键词运镜，不在开场先裁掉一圈。
             path.append({"at": 0, "x": 960.0, "y": 540.0, "s": 1.0})
-        else:
+        elif not director_done:
             path.append({"at": 0, **over})
+
         cur = {k_: path[-1][k_] for k_ in ("x", "y", "s")}  # 只带位置；不能带 at（{"at": t, **cur} 会被它覆盖）
         last_at = path[-1]["at"]
         focus_out = []
@@ -650,24 +730,26 @@ def build(story, comp, p: Problems):
             if focus_out and focus_out[-1]["id"] == fk["id"] and fk["at"] - focus_out[-1]["at"] < 90:
                 focus_out[-1]["until"] = max(focus_out[-1]["until"], fk["at"] + 45)
                 continue
-            tgt, tries = frame_rect(fk["rect"] if not fk["sub"] else next(e for e in els if e["id"] == fk["id"]), els,
-                                    max_s=ZOOM_MAX, min_s=1.0, keep=U)
-            if tgt["s"] < ZOOM_MIN_FOCUS or frozen:
-                # 推不进去（会切到标题 / 标签、或 anchor 出画）或本镜不推 → 只高亮、不推近
+            if director_done:
                 tgt = None
-            d = move_frames(cur, tgt) if tgt else 0
-            start = max(last_at + 2, fk["at"] - int(d * 0.6))
-            if tgt and start + d > dur - 6:
-                tgt = None
-            if tgt:
-                path.append({"at": start, **cur}) if start > last_at + 2 else None
-                path.append({"at": start + d, **tgt})
-                cur = tgt; last_at = start + d
+            else:
+                tgt, tries = frame_rect(fk["rect"] if not fk["sub"] else next(e for e in els if e["id"] == fk["id"]), els,
+                                        max_s=ZOOM_MAX, min_s=1.0, keep=U)
+                if tgt["s"] < ZOOM_MIN_FOCUS or frozen:
+                    tgt = None
+                d = move_frames(cur, tgt) if tgt else 0
+                start = max(last_at + 2, fk["at"] - int(d * 0.6))
+                if tgt and start + d > dur - 6:
+                    tgt = None
+                if tgt:
+                    path.append({"at": start, **cur}) if start > last_at + 2 else None
+                    path.append({"at": start + d, **tgt})
+                    cur = tgt; last_at = start + d
             nxt = focus[i + 1]["at"] if i + 1 < len(focus) else dur
             until = min(nxt - 4, fk["at"] + max(60, int(len(fk["term"]) * _cap.CHAR_MS * FPS / 1000) + 45), dur - 4)
             focus_out.append({"id": fk["id"], "at": fk["at"], "until": until, "term": fk["term"], "sub": fk["rect"] if fk["sub"] else None, "cam": bool(tgt)})
             # 回全景：下一焦点离得远（> 75 帧）才回，否则直接移到下一个
-            if tgt and nxt - until > 75:
+            if not director_done and tgt and nxt - until > 75:
                 back_d = move_frames(cur, over)
                 path.append({"at": until, **cur})
                 path.append({"at": until + back_d, **over})
@@ -755,13 +837,24 @@ def build(story, comp, p: Problems):
                 else:
                     p.hint(f"{sid}: treatment.signature_shot 点名了本镜，但本镜只有一个静的主体——"
                            f"换成有并列元素（flow / list / compare）或有独占大主体的镜")
-        # 结尾不留 >1.2 秒的「无新事件」：最后一个事件到镜尾太远 → 收束推近（慢推 3%）
-        events = [e["at"] for e in els] + [f["at"] for f in focus_out] + line_end
+        # 结尾不留 >1.2 秒的「无新事件」：非 pull-back / pan-follow 时补收束运镜
+        events = [e["at"] for e in els] + [f["at"] for f in focus_out] + line_end + [path[-1]["at"]]
         tail_gap = dur - max(events)
-        if tail_gap > 36 and not frozen:
-            path.append({"at": max(last_at + 1, dur - tail_gap + 6), **cur})
-            path.append({"at": max(last_at + 12, dur - 8), "x": cur["x"], "y": cur["y"], "s": round(min(ZOOM_MAX, cur["s"] * 1.03), 3)})
-            p.fix(f"{sid}: 结尾 {tail_gap} 帧无新事件 → 自动加收束慢推")
+        cur_intent = path_intent(path)
+        if tail_gap > 36 and not frozen and cur_intent not in ("pull-back", "pan-follow"):
+            t_st = max(last_at + 1, dur - tail_gap + 6)
+            t_en = max(t_st + 8, dur - 8)
+            if t_en < dur:
+                next_s = round(max(1.0, cur["s"] * 0.97), 3) if (cur["s"] >= 1.04 and recent_intents[-1:] == ["push-in"]) else round(min(ZOOM_MAX, cur["s"] * 1.03), 3)
+                nx, ny = clamp_look(cur["x"], cur["y"], next_s)
+                if in_frame(U, (nx, ny), next_s) and not partial_clips((nx, ny), next_s, els):
+                    path.append({"at": t_st, **cur})
+                    path.append({"at": t_en, "x": round(nx, 1), "y": round(ny, 1), "s": next_s})
+                    cur = path[-1]; last_at = t_en
+                    if next_s > path[-2]["s"]:
+                        p.fix(f"{sid}: 结尾 {tail_gap} 帧无新事件 → 自动加收束慢推")
+                    else:
+                        p.fix(f"{sid}: 结尾 {tail_gap} 帧无新事件 → 自动加收束缓拉")
         # 释义气泡（术语第一次出现）
         tips = []
         for fk in focus_out:
@@ -888,23 +981,50 @@ def build(story, comp, p: Problems):
         # 不推不扫的镜，路径在这里定死（前面已跳过推近、招牌镜、收束慢推，不留假的自动修记录）：
         # 线稿镜只做 1.00→1.03 的慢推——线稿在画面边上，任何 >1.05 的缩放都会把它顶出画框；
         # 其余冻结在一帧（只写 drift:"none" 不够：有 path 时引擎直接走 pathCamAt）。静止片的动效只来自笔画、压章、翻页、逐字。
+        # 路径最终自检：严格递增、不超缩放/平移安全窗、不切 anchor；任一越界退回安全全景
+        clean_path = []
+        for pk in path:
+            s_val = max(1.0, min(ZOOM_MAX, float(pk["s"])))
+            lx, ly = clamp_look(float(pk["x"]), float(pk["y"]), s_val)
+            at_val = max(0, min(dur, int(pk["at"])))
+            if clean_path and at_val <= clean_path[-1]["at"]:
+                continue
+            cand_k = {"at": at_val, "x": round(lx, 1), "y": round(ly, 1), "s": round(s_val, 3)}
+            if in_frame(U, (cand_k["x"], cand_k["y"]), cand_k["s"]):
+                clean_path.append(cand_k)
+        if not clean_path or clean_path[0]["at"] != 0:
+            clean_path = [{"at": 0, **over}]
+        path = clean_path
         if frozen:
             path = [{"at": 0, "x": 960.0, "y": 540.0, "s": 1.0}] + (
                 [{"at": max(31, dur - 12), "x": 960.0, "y": 540.0, "s": 1.03}] if sh.get("sketch") else [])
         if still_film or sh.get("sketch"):
             focus_out = []
-        cam = {"intent": path_intent(path)}
+        intent_now = path_intent(path)
+        recent_intents.append(intent_now)
+        cam = {"intent": intent_now}
+        tr_sh = sh.get("transition")
+        tr_top = story.get("transition")
+        if k == 0:
+            tr = "auto"
+        elif tr_sh:
+            tr = str(tr_sh)
+        elif tr_top:
+            tr = str(tr_top)
+        elif sh.get("first_in_chapter") or IS_HANDMADE or sh["layout"] == "page":
+            tr = "auto"
+        else:
+            tr = "slide" if sh["layout"] in ("flow", "compare", "bars") else "fade"
+        drift_dir = "none" if (still_film or frozen or intent_now in ("pull-back", "pan-follow", "still")) else None
         rec = {"id": sid, "chapter": sh["chapter"], "skeleton": skel, "layout": f"{sh['layout']}{('-' + sh['variant']) if sh['variant'] else ''}",
                "from": frm, "to": to, "cues": [sh["line_cues"][0][0], sh["line_cues"][-1][-1]],
                "media": MEDIA[sh["layout"]], "live": ["AutoShot"], "camera": cam, "anchor": a, "contentBand": BAND,
                "hero": {"name": sh["layout"], "size": int(max(U["w"], U["h"]) * 0.5), "kind": "text"}, "zones": 3, "bottomFill": True,
                "cover": "paper", "entry": "build", "beats": beats, "move": moves[k],
                "evidence": "AutoShot", "hold": 40, "noMisconception": True, "why": "auto 版式：内容由 story.json 给出",
-               # 镜间转场：story 写了就一律用它；没写就是 "auto" —— 交给引擎按皮肤决定，
-               # 而皮肤的缺省是翻页（pageturn / 无 GPU 时 pageflip）。
-               # 这里不写 fade 之类的缺省，否则会覆盖皮肤的翻页默认值。默认值只能有一处。
-               "transition": (str(story.get("transition")) if (story.get("transition") and k > 0) else "auto"),
+               "transition": tr,
                "cinema": {"drift": "none", "fit": "none", "path": path,
+                          **({"driftDir": drift_dir} if drift_dir is not None else {}),
                           **({"still": True} if still_film else {})}, "sfxEvents": sfx}
         if sh["layout"] == "quiz":
             rec["misconception"] = sh["content"].get("question"); rec.pop("noMisconception")
@@ -997,11 +1117,15 @@ def tts_words(proj: Path) -> list[dict] | None:
     return words if isinstance(words, list) and words else None
 
 
+def _is_spoken_ch(ch: str) -> bool:
+    return ch.isalnum() or ch in "0123456789.%+-" or "\u4e00" <= ch <= "\u9fff"
+
+
 def retime_to_tts(comp: dict, words: list[dict], p: "Problems") -> bool:
     """把字幕 cues 与镜头起点重排到 TTS 的真实词级时间上。
 
-    字幕文本来自 compose 的语义断句，TTS 词表来自音频。两边按"可发音字符"逐个对；
-    一旦对不上（数字读法、英文缩写差异）就整体放弃并说明——半套时间比没对齐更糟。
+    优先按字符精确匹配；若因数字/标点/英文缩写出现少量失配，则用 SequenceMatcher 按可发音字符对齐，
+    对齐率 ≥ 0.90 时线性插值未对上的标点/字符并记录自动修；低于 0.90 时整片安全退回并提示。
     """
     timeline: list[tuple[str, int, int]] = []
     for w in words:
@@ -1014,30 +1138,104 @@ def retime_to_tts(comp: dict, words: list[dict], p: "Problems") -> bool:
             continue
         for i, ch in enumerate(cs):
             timeline.append((ch, round(a + (b - a) * i / len(cs)), round(a + (b - a) * (i + 1) / len(cs))))
-    # 词表里要**连标点一起**对：validate-caption-sync 比对的是 cue.text 与 words 的逐字拼接，
-    # 只对齐"可发音字符"会让每条 cue 都少一个句号，同步校验不过。
     flat = timeline
     if not flat:
         return False
     idx = 0
     old_start: dict[int, int] = {}
     cues = comp["cues"]
-    # 先整片对一遍、全对上才改：边对边改的话，第 13 句对不上时前 12 句已经换成 TTS 时间，
-    # 后面仍是估算时间，镜头节拍就落到镜外（validate-presentation 报 beat 超出本镜）。
     segs: dict[int, list] = {}
+    exact_ok = True
+    mismatch_ci = 0
     for ci, cue in enumerate(cues):
         chars = [c for c in cue["text"] if not c.isspace()]
         if not chars:
             continue
         seg = flat[idx:idx + len(chars)]
         if [c for c, _, _ in seg] != chars:
+            exact_ok = False
+            mismatch_ci = ci
+            break
+        segs[ci] = seg
+        idx += len(chars)
+    if not exact_ok:
+        all_chars: list[tuple[int, str]] = [
+            (ci, ch) for ci, cue in enumerate(cues) for ch in cue["text"] if not ch.isspace()
+        ]
+        spoken_idx = [i for i, (_, ch) in enumerate(all_chars) if _is_spoken_ch(ch)]
+        heard = [(ch, st, en) for (ch, st, en) in flat if _is_spoken_ch(ch)]
+        if not spoken_idx or not heard:
             p.hint(
-                f"TTS 词表与第 {ci + 1} 句字幕对不上（音频说的字与字幕文本不一致）——"
+                f"TTS 词表与第 {mismatch_ci + 1} 句字幕对不上（音频说的字与字幕文本不一致）——"
                 f"字幕/镜头沿用原有时序。修法：让 narration.txt 与字幕同文，或重跑 tts。"
             )
             return False
-        segs[ci] = seg
-        idx += len(chars)
+        a_str = "".join(all_chars[i][1] for i in spoken_idx)
+        b_str = "".join(h[0] for h in heard)
+        times: dict[int, tuple[int, int]] = {}
+        for blk in difflib.SequenceMatcher(None, a_str, b_str, autojunk=False).get_matching_blocks():
+            for k in range(blk.size):
+                _, s, e = heard[blk.b + k]
+                times[spoken_idx[blk.a + k]] = (s, e)
+        ratio = len(times) / len(spoken_idx)
+        if ratio < 0.90:
+            p.hint(
+                f"TTS 词表与第 {mismatch_ci + 1} 句字幕对不上（匹配率 {ratio:.0%} < 90%）——"
+                f"字幕/镜头沿用原有时序。修法：让 narration.txt 与字幕同文，或重跑 tts。"
+            )
+            return False
+        first_sp: dict[int, int] = {}
+        last_sp: dict[int, int] = {}
+        for idx_a, (ci_a, ch_a) in enumerate(all_chars):
+            if _is_spoken_ch(ch_a):
+                if ci_a not in first_sp:
+                    first_sp[ci_a] = idx_a
+                last_sp[ci_a] = idx_a
+        total_audio_ms = max((en for _, _, en in flat), default=0)
+        aligned_flat: list[tuple[int, str, int, int]] = []
+        i, prev_end_ms = 0, 0
+        while i < len(all_chars):
+            if i in times:
+                s, e = times[i]
+                s = max(s, prev_end_ms)
+                e = max(e, s)
+                aligned_flat.append((all_chars[i][0], all_chars[i][1], s, e))
+                prev_end_ms = e
+                i += 1
+                continue
+            j = i
+            while j < len(all_chars) and j not in times:
+                j += 1
+            nxt = max(prev_end_ms, times[j][0] if j < len(all_chars) else total_audio_ms)
+            # 先把句末标点（位于本句最后一个可读字符之后）紧贴前一音结尾，不吞掉句间静音间隔
+            while i < j and not _is_spoken_ch(all_chars[i][1]) and all_chars[i][0] in last_sp and i > last_sp[all_chars[i][0]]:
+                p_end = min(nxt, prev_end_ms + 1)
+                aligned_flat.append((all_chars[i][0], all_chars[i][1], prev_end_ms, p_end))
+                prev_end_ms = p_end
+                i += 1
+            # 再把句首符号/标点（位于本句第一个可读字符之前）收集出来，紧贴下一音起点
+            lead_buf: list[int] = []
+            while j > i and not _is_spoken_ch(all_chars[j - 1][1]) and all_chars[j - 1][0] in first_sp and (j - 1) < first_sp[all_chars[j - 1][0]]:
+                lead_buf.append(j - 1)
+                j -= 1
+            lead_buf.reverse()
+            if i < j:
+                span_hi = max(prev_end_ms, nxt - len(lead_buf))
+                n = j - i
+                for k in range(n):
+                    s = prev_end_ms + (span_hi - prev_end_ms) * k // n
+                    e = prev_end_ms + (span_hi - prev_end_ms) * (k + 1) // n
+                    aligned_flat.append((all_chars[i + k][0], all_chars[i + k][1], s, max(s, e)))
+                prev_end_ms = span_hi
+            for pos in lead_buf:
+                l_start = max(prev_end_ms, nxt - 1)
+                aligned_flat.append((all_chars[pos][0], all_chars[pos][1], l_start, nxt))
+                prev_end_ms = nxt
+            i = j + len(lead_buf)
+        segs = {}
+        for ci, ch, st, en in aligned_flat:
+            segs.setdefault(ci, []).append((ch, st, en))
+        p.fix(f"TTS 词表存在少量数字/标点差异，已按可读音字流兜底对齐（匹配率 {ratio:.0%}）")
     for ci, seg in segs.items():
         cue = cues[ci]
         old_start[ci] = int(cue["start_ms"])
@@ -1045,15 +1243,28 @@ def retime_to_tts(comp: dict, words: list[dict], p: "Problems") -> bool:
         cue["start_ms"], cue["speech_end_ms"], cue["reveal_end_ms"] = seg[0][1], seg[-1][2], seg[-1][2]
         cue["start"], cue["speech_end"], cue["reveal_end"] = (
             round(cue["start_ms"] / 1000, 3), round(cue["speech_end_ms"] / 1000, 3), round(cue["reveal_end_ms"] / 1000, 3))
-    # 镜头起点跟着它第一句字幕走（保持"台词前多久起镜"的相对关系）
+    # 镜头切点落在句间真实停顿中点：绝不切在前一句句尾发声完成之前，也不晚于下一句起音
     prev = 0
-    for sh in comp["shots"]:
-        ix = sh.get("line_cues") or []
-        if ix and ix[0][0] in old_start:
-            ci = ix[0][0]
-            sh["start_ms"] = max(prev + 1, int(sh["start_ms"]) + (int(cues[ci]["start_ms"]) - old_start[ci]))
+    prev_end_ms = 0
+    for k_sh, sh in enumerate(comp["shots"]):
+        ix = [ci_ for grp in (sh.get("line_cues") or []) for ci_ in grp]
+        cur_end_ms = max((int(cues[ci_]["speech_end_ms"]) for ci_ in ix), default=prev_end_ms)
+        if k_sh == 0:
+            if ix and ix[0] in old_start:
+                ci = ix[0]
+                sh["start_ms"] = max(0, int(sh["start_ms"]) + (int(cues[ci]["start_ms"]) - old_start[ci]))
+            else:
+                sh["start_ms"] = max(0, int(sh.get("start_ms", 0)))
+        elif ix and ix[0] in old_start:
+            ci = ix[0]
+            cur_start_ms = int(cues[ci]["start_ms"])
+            if cur_start_ms - prev_end_ms >= 100:
+                target_cut = min(cur_start_ms - 60, max(prev_end_ms + 80, (prev_end_ms + cur_start_ms) // 2))
+                sh["start_ms"] = max(prev + 1, prev_end_ms, min(cur_start_ms, target_cut))
+            else:
+                sh["start_ms"] = max(prev + 1, prev_end_ms, int(sh["start_ms"]) + (cur_start_ms - old_start[ci]))
         else:
-            sh["start_ms"] = max(prev + 1, int(sh.get("start_ms", prev + 1)))
+            sh["start_ms"] = max(prev + 1, prev_end_ms, int(sh.get("start_ms", prev + 1)))
         # 同步重算每镜关键词的时间戳 terms[].ms（漏算会让配音后中后段高亮/推近错拍）
         for tm in sh.get("terms") or []:
             ci = tm.get("cue")
@@ -1064,6 +1275,7 @@ def retime_to_tts(comp: dict, words: list[dict], p: "Problems") -> bool:
                 wi = max(0, min(wi, len(cws) - 1))
                 tm["ms"] = int(cws[wi]["start"])
         prev = int(sh["start_ms"])
+        prev_end_ms = max(prev_end_ms, cur_end_ms)
     last_end = max((c["speech_end_ms"] for c in cues), default=0)
     # 有真实音频时间就**以它为准**（可以缩短）：compose 的估算是按 4.5 字/秒排的，
     # 而口播的实际语速常常到 5 字/秒以上，照估算值播出会留十几秒画面空转。

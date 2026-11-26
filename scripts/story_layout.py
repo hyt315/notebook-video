@@ -256,7 +256,8 @@ def lay_bars(p, sid, c, variant):
     title = c.get("title", "")
     if title:
         tls, ts, tw, th = fit_text(p, f"{sid}.title", title, TYPE["title"], 1300, 1)
-        els.append(el("title", "text", X + 40, Y + 4, tw, th, title, ts, "title", 0))
+        tx = X + (W - tw) / 2 if variant == "center" else X + 40
+        els.append(el("title", "text", tx, Y + 4, tw, th, title, ts, "title", 0))
     # 柱区上下收一点（整组高 ≈560）：整张图在 1.16 倍下仍放得进安全框，
     # 关键词 / 招牌镜推近到柱子时不切标题和柱底标签。
     top, bottom = Y + 110, Y + H - 112
@@ -273,8 +274,7 @@ def lay_bars(p, sid, c, variant):
         bh = max(8, (bottom - top - 60) * v / vmax)
         bx = x0 + i * (bw + gap)
         lab = str(d["label"])
-        # 柱顶标签必须一行放下：>8 个汉字就报 P1（不自动折行——折下来的第二行会压在柱子上，
-        # 成片 45 秒处「13公斤燃料 / 公斤干重」就是这么糊成两行的）。
+        # 柱顶标签必须单行放下（超长文字会压在柱子上），长标签应改写进 title 或旁白。
         if len(lab) > 8:
             p.hint(f"{sid}: 柱标签「{lab}」{len(lab)} 字 > 8 —— 柱顶只放一个短标签，细节写进 title 或台词。")
         lsz = TYPE["body"]
@@ -390,14 +390,17 @@ def lay_code(p, sid, c, variant):
         p.err(f"{sid}: 代码 {len(lines)} 行，屏上最多 {maxl} 行 —— 只保留讲到的那几行（其余用 # ... 代替）")
         lines = lines[:maxl]
     boxh = 90 + len(lines) * row + 30
-    bx, by = X + 20, Y + max(0, (H - boxh) / 2)
+    mirror = bool(note) and variant == "mirror"
+    nwid = X + W - (X + 20 + boxw + 40) - 40 if note else 0
+    nx = X + 20 if mirror else X + 20 + boxw + 40
+    bx = (nx + nwid + 40) if mirror else (X + 20)
+    by = Y + max(0, (H - boxh) / 2)
     els = [el("code", "codebox", bx, by, boxw, boxh, c.get("title", ""), size, "body", 0, lang=c.get("lang", ""), lh=lh, nlines=len(lines))]
     for i, l in enumerate(lines):
         els.append(el(f"L{i + 1}", "codeline", bx + 30, by + 90 + i * row, boxw - 60, row, l, size, "body", 0, n=i + 1))
     if note:
-        nwid = X + W - (bx + boxw + 40) - 40
         nls, ns, nw, nh = fit_text(p, f"{sid}.note", note, TYPE["title"], nwid - 50, 4, lh=1.4)
-        els.append(el("note", "note", bx + boxw + 40, by + 20, nwid, nh + 50, note, ns, "accent", c.get("noteAt", 1), lines=nls, lh=1.4))
+        els.append(el("note", "note", nx, by + 20, nwid, nh + 50, note, ns, "accent", c.get("noteAt", 1), lines=nls, lh=1.4))
     return els
 
 
@@ -686,9 +689,7 @@ def lay_page(p, sid, c, variant):
         els.append(el("note", "handnote", PAGE_LEFT_X, note_y, max(220.0, text_w(str(note), nsize) * 1.15), nsize * 1.35,
                       str(note), nsize, "title", 1))
         note_y += nsize * 1.35 + 26
-    # 页内示意图（可选）：手账页空白处随手画的一张小题图，配一行手写名。
-    # 这是 a2e 那套线稿在本 skill 里唯一合适的位置：它不解释概念，只帮观众认出「说的是哪件东西」。
-    # 尺寸硬压 360（画宽 19%）：再大就变成"线稿当解释图"，比不画更差。
+    # 页内示意图：尺寸上限 360px（画宽 19%），仅做实物指代不作概念流程图。
     fig = c.get("figure")
     if fig:
         if not isinstance(fig, dict) or not fig.get("draw"):

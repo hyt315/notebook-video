@@ -59,13 +59,11 @@ class PageTurnContract(unittest.TestCase):
             self.assertEqual(m.group(1), kind, skin)
 
     def test_compose_leaves_the_transition_to_the_engine(self):
-        # 缺省值只能有一处。compose 缺省写 "auto"，由皮肤的 craft.transition 决定；
-        # 3.9.0 之前它缺省写 fade，把皮肤声明的翻页**覆盖**掉了 ——
-        # 于是只要 story 没显式写 "pageturn"，全片就一处翻页都没有（观众看到的是淡入淡出）。
+        # 换章与手作路线缺省保留 "auto"（由皮肤决定 pageturn / peel），同时尊重单镜与顶层覆盖。
         src = read("scripts/compose-story.py")
-        self.assertIn(
-            '"transition": (str(story.get("transition")) if (story.get("transition") and k > 0) else "auto")',
-            src)
+        self.assertIn('tr_sh = sh.get("transition")', src)
+        self.assertIn('elif sh.get("first_in_chapter") or IS_HANDMADE or sh["layout"] == "page":', src)
+        self.assertIn('tr = "auto"', src)
 
     def test_transition_whitelist_covers_engine_kinds(self):
         # 转场种类有两处列表：引擎的 TransitionKind（TS 类型）与分镜表校验的白名单。

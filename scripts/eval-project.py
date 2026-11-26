@@ -89,11 +89,19 @@ def measure(project: Path) -> dict:
     cam_shots = 0
     max_zoom = 1.0
     over_text_cap = 0
+    cam_intents: set[str] = set()
     for s in shots:
         keys = s.get("keys") or []
-        zs = [float(k.get("s") or 1.0) for k in keys if isinstance(k, dict)]
+        path = (s.get("cinema") or {}).get("path") or []
+        zs = [float(k.get("s") or 1.0) for k in keys if isinstance(k, dict)] + [
+            float(k.get("s") or 1.0) for k in path if isinstance(k, dict)
+        ]
         peak = max(zs) if zs else 1.0
-        if s.get("cinema") or s.get("cameraIntent"):
+        intent = str(s.get("cameraIntent") or (s.get("camera") or {}).get("intent") or "still")
+        if intent != "still":
+            cam_intents.add(intent)
+            cam_shots += 1
+        elif s.get("cinema") and (peak >= 1.02 or len(path) >= 2):
             cam_shots += 1
         max_zoom = max(max_zoom, peak)
         # 1.35 = TEXT_ZOOM_MAX（references/camera.md#shot-language）；只在这里统计，不当判据。
@@ -126,6 +134,7 @@ def measure(project: Path) -> dict:
         "转场种类": len(set(transitions)),
         "硬切占比%": pct(hard_cut, len(transitions)),
         "有运镜镜占比%": pct(cam_shots, len(shots)),
+        "运镜意图种类": len(cam_intents),
         "最大推近": round(max_zoom, 2),
         "文字镜超1.35": over_text_cap,
         "字幕条数": len(cues),

@@ -231,6 +231,8 @@ def resolve_cinema(s: dict, sid: str, frm: int, duration: int, cues: list, probl
         else:
             out["path"] = [{"at": int(k["at"]), "x": float(k["x"]), "y": float(k["y"]), "s": float(k["s"])} for k in path]
             out["fit"] = {"x": 960.0, "y": 540.0, "s": 1.0, "fill": out["fit"].get("fill", 1.0), "fillAfter": out["fit"].get("fillAfter", 1.0)}
+    if c.get("driftDir") in ("none", "push", "pull", "pan-left", "pan-right"):
+        out["driftDir"] = c["driftDir"]
     if s.get("transition") is not None and s["transition"] not in TRANSITIONS:
         problems.append(f"{sid}: transition={s['transition']!r} 不是 {TRANSITIONS} 之一")
     return out
@@ -609,8 +611,7 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
         # 音效覆盖（见 src/sfx.ts）。不写就不出键，旧分镜表解析结果逐字节不变。
         if s.get("sfx") is not None:
             sfx = s["sfx"]
-            # 瘦身：16 → 9。删掉 whoosh / click / typing / riser / snip / latch / rustle，
-            # 理由见 src/sfx.ts 顶部注释；旧分镜表若写了这些名字，这里会明确报错而不是出无声。
+            # 合法音效事件名（见 src/sfx.ts）；不写白名单里的事件直接报错，防止静默无声。
             events = {"pop", "success", "error", "chart", "highlight", "chapter", "page", "place", "stamp"}
             if sfx != "none" and not (isinstance(sfx, list) and all(isinstance(o, dict) and o.get("event") in events and ("beat" in o or "at" in o) for o in sfx)):
                 problems.append(f"{sid}: sfx 必须是 \"none\" 或 [{{event, beat|at, vol?}}]，event ∈ {sorted(events)}")

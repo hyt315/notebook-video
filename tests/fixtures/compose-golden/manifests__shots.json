@@ -9,7 +9,7 @@
    "id": "S1",
    "chapter": "一个现象",
    "skeleton": "Stage",
-   "layout": "statement",
+   "layout": "statement-left",
    "from": 0,
    "to": 196,
    "cues": [
@@ -26,9 +26,9 @@
     "intent": "push-in"
    },
    "anchor": {
-    "x": 420.0,
+    "x": 240,
     "y": 397.5,
-    "w": 1080.0,
+    "w": 1080,
     "h": 223.0
    },
    "contentBand": {
@@ -80,7 +80,7 @@
      },
      {
       "at": 102,
-      "x": 960.0,
+      "x": 780.0,
       "y": 491.3,
       "s": 1.32
      }
@@ -97,7 +97,7 @@
    "id": "S2",
    "chapter": "先懂一个词",
    "skeleton": "Split",
-   "layout": "define",
+   "layout": "define-mirror",
    "from": 196,
    "to": 361,
    "cues": [
@@ -111,12 +111,12 @@
     "AutoShot"
    ],
    "camera": {
-    "intent": "push-in"
+    "intent": "pan-follow"
    },
    "anchor": {
     "x": 240,
     "y": 399.6,
-    "w": 1480,
+    "w": 1068.0,
     "h": 258.8
    },
    "contentBand": {
@@ -127,7 +127,7 @@
    },
    "hero": {
     "name": "define",
-    "size": 740,
+    "size": 534,
     "kind": "text"
    },
    "zones": 3,
@@ -164,36 +164,26 @@
     "path": [
      {
       "at": 0,
-      "x": 960.0,
-      "y": 540.0,
-      "s": 1.0
+      "x": 908.9,
+      "y": 482.5,
+      "s": 1.22
      },
      {
-      "at": 30,
-      "x": 960.0,
-      "y": 540.0,
-      "s": 1.0
+      "at": 46,
+      "x": 908.9,
+      "y": 482.5,
+      "s": 1.22
      },
      {
-      "at": 125,
-      "x": 960.0,
-      "y": 540.0,
-      "s": 1.0
-     },
-     {
-      "at": 141,
-      "x": 986.7,
-      "y": 500.0,
-      "s": 1.08
+      "at": 82,
+      "x": 813.6,
+      "y": 538.3,
+      "s": 1.18
      }
-    ]
+    ],
+    "driftDir": "none"
    },
-   "sfxEvents": [
-    {
-     "event": "highlight",
-     "at": 134
-    }
-   ]
+   "sfxEvents": []
   },
   {
    "id": "S3",
@@ -214,7 +204,7 @@
     "AutoShot"
    ],
    "camera": {
-    "intent": "push-in"
+    "intent": "pan-follow"
    },
    "anchor": {
     "x": 330.0,
@@ -264,7 +254,7 @@
      {
       "at": 0,
       "x": 813.6,
-      "y": 551.8,
+      "y": 593.2,
       "s": 1.18
      },
      {
@@ -309,7 +299,8 @@
       "y": 527.0,
       "s": 1.21
      }
-    ]
+    ],
+    "driftDir": "none"
    },
    "sfxEvents": [
     {
@@ -319,6 +310,10 @@
     {
      "event": "highlight",
      "at": 122
+    },
+    {
+     "event": "highlight",
+     "at": 175
     }
    ]
   },
@@ -326,7 +321,7 @@
    "id": "S4",
    "chapter": "拆开看",
    "skeleton": "Stage",
-   "layout": "number",
+   "layout": "number-mirror",
    "from": 587,
    "to": 757,
    "cues": [
@@ -341,7 +336,7 @@
     "AutoShot"
    ],
    "camera": {
-    "intent": "push-in"
+    "intent": "pull-back"
    },
    "anchor": {
     "x": 305.6,
@@ -387,45 +382,36 @@
    "hold": 40,
    "noMisconception": true,
    "why": "auto 版式：内容由 story.json 给出",
-   "transition": "auto",
+   "transition": "fade",
    "cinema": {
     "drift": "none",
     "fit": "none",
     "path": [
      {
       "at": 0,
-      "x": 868.0,
-      "y": 488.2,
-      "s": 1.106
-     },
-     {
-      "at": 30,
-      "x": 960.0,
-      "y": 539.0,
-      "s": 1.106
+      "x": 944.9,
+      "y": 486.9,
+      "s": 1.22
      },
      {
       "at": 47,
+      "x": 944.9,
+      "y": 486.9,
+      "s": 1.22
+     },
+     {
+      "at": 83,
       "x": 960.0,
       "y": 539.0,
       "s": 1.106
-     },
-     {
-      "at": 63,
-      "x": 946.7,
-      "y": 487.1,
-      "s": 1.2
      }
-    ]
+    ],
+    "driftDir": "none"
    },
    "sfxEvents": [
     {
      "event": "pop",
      "at": 35
-    },
-    {
-     "event": "highlight",
-     "at": 56
     }
    ]
   },
@@ -448,7 +434,7 @@
     "AutoShot"
    ],
    "camera": {
-    "intent": "push-in"
+    "intent": "pan-follow"
    },
    "anchor": {
     "x": 300.0,
@@ -501,35 +487,26 @@
     "path": [
      {
       "at": 0,
-      "x": 901.7,
+      "x": 875.1,
       "y": 498.3,
       "s": 1.097
      },
      {
-      "at": 30,
-      "x": 960.0,
-      "y": 542.2,
+      "at": 33,
+      "x": 875.1,
+      "y": 498.3,
       "s": 1.097
      },
      {
-      "at": 119,
-      "x": 960.0,
+      "at": 69,
+      "x": 1044.9,
       "y": 542.2,
       "s": 1.097
-     },
-     {
-      "at": 135,
-      "x": 976.7,
-      "y": 541.4,
-      "s": 1.2
      }
-    ]
+    ],
+    "driftDir": "none"
    },
    "sfxEvents": [
-    {
-     "event": "highlight",
-     "at": 128
-    },
     {
      "event": "pop",
      "at": 26
@@ -540,7 +517,7 @@
    "id": "S6",
    "chapter": "误区与回顾",
    "skeleton": "Stage",
-   "layout": "statement",
+   "layout": "statement-left",
    "from": 967,
    "to": 1196,
    "cues": [
@@ -557,9 +534,9 @@
     "intent": "push-in"
    },
    "anchor": {
-    "x": 420.0,
+    "x": 240,
     "y": 397.5,
-    "w": 1080.0,
+    "w": 1080,
     "h": 223.0
    },
    "contentBand": {
@@ -596,7 +573,7 @@
    "hold": 40,
    "noMisconception": true,
    "why": "auto 版式：内容由 story.json 给出",
-   "transition": "auto",
+   "transition": "fade",
    "cinema": {
     "drift": "none",
     "fit": "none",
@@ -604,48 +581,48 @@
      {
       "at": 0,
       "x": 813.6,
-      "y": 492.3,
+      "y": 492.2,
       "s": 1.18
      },
      {
       "at": 30,
-      "x": 960.0,
+      "x": 813.6,
       "y": 518.3,
       "s": 1.18
      },
      {
       "at": 36,
-      "x": 960.0,
+      "x": 813.6,
       "y": 518.3,
       "s": 1.18
      },
      {
       "at": 52,
-      "x": 960.0,
+      "x": 780.0,
       "y": 491.3,
       "s": 1.32
      },
      {
       "at": 116,
-      "x": 960.0,
+      "x": 780.0,
       "y": 491.3,
       "s": 1.32
      },
      {
       "at": 132,
-      "x": 960.0,
+      "x": 813.6,
       "y": 518.3,
       "s": 1.18
      },
      {
       "at": 193,
-      "x": 960.0,
+      "x": 813.6,
       "y": 518.3,
       "s": 1.18
      },
      {
       "at": 221,
-      "x": 960.0,
+      "x": 813.6,
       "y": 518.3,
       "s": 1.215
      }
