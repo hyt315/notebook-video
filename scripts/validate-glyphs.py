@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """validate-glyphs.py · 中文字面门禁：上屏文字用的字体栈里，必须有一个真正带 CJK 字形的族。
 
-为什么需要（2026-10-30 实测）：`CODE_FONT` 写成 `…,monospace,Kai` —— CSS 里**泛型族之后的名字
+为什么需要：`CODE_FONT` 写成 `…,monospace,Kai` —— CSS 里**泛型族之后的名字
 一律被忽略**，于是 Kai 从未参与回退；渲染机（Linux）没有 Consolas / Menlo，`monospace` 落到
 DejaVu Sans Mono（无 CJK 字面），代码卡里的「输出：」就渲成豆腐块。调换字体顺序"看起来修了"，
 但没有门禁时，下一次任何人写 `fontFamily:'Space,monospace'` 都会重犯。

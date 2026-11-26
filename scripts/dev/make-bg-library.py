@@ -787,13 +787,13 @@ LEGACY_NAMES = {
 
 
 def legacy_entries() -> list[dict]:
-    """The 3.3.0 main / chapter / quiet rasters join the library unchanged (legacy: role)."""
+    """The per-skin main / chapter / quiet backgrounds (WebP q88) join the library unchanged (legacy: role)."""
     va = {a["id"]: a for a in json.loads((TPL / "manifests" / "visual-assets.json").read_text(encoding="utf-8"))["assets"]}
     out = []
     for skin in ("flat", "cel", "journal", "papercut", "archive"):
         zh, en = LEGACY_NAMES[skin]
         for role in ("main", "chapter", "quiet"):
-            rel = f"public/bg/bg-{skin}-{role}.jpg"
+            rel = f"public/bg/bg-{skin}-{role}.webp"
             a = va.get(f"bg-{skin}-{role}", {})
             ai = a.get("source_type") == "ai-generated"
             out.append({

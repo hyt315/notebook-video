@@ -65,19 +65,15 @@
       "line": "rgba(28,32,36,0.34)",
       "lineOrange": "rgba(229,77,46,0.60)",
       "lineBlue": "rgba(0,144,255,0.60)",
-      "lineGreen": "rgba(41,163,131,0.60)",
       "white": "#ffffff",
       "skyTint": "#e6f4fe",
       "blueLine": "rgba(0,144,255,0.42)",
       "dotIdle": "#cdced6",
       "mutedFill": "rgba(96,100,108,0.26)",
       "mutedBar": "rgba(96,100,108,0.22)",
-      "mutedWash": "rgba(96,100,108,0.14)",
-      "orangeSoft": "#f5a898",
       "orangeDeep": "#d13415",
       "gaugeTrack": "rgba(28,32,36,0.14)",
       "greenGlow": "rgba(41,163,131,0.35)",
-      "stageTint": "rgba(230,244,254,0.55)",
       "headerAccent": "#113264",
       "headerSub": "#60646c"
     },
@@ -104,19 +100,15 @@
       "line": "rgba(17,17,17,0.50)",
       "lineOrange": "rgba(229,72,77,0.62)",
       "lineBlue": "rgba(0,144,255,0.62)",
-      "lineGreen": "rgba(70,167,88,0.62)",
       "white": "#ffffff",
       "skyTint": "#e6f4fe",
       "blueLine": "rgba(0,144,255,0.42)",
       "dotIdle": "#cfceca",
       "mutedFill": "rgba(99,99,94,0.30)",
       "mutedBar": "rgba(99,99,94,0.26)",
-      "mutedWash": "rgba(99,99,94,0.16)",
-      "orangeSoft": "#f4a9aa",
       "orangeDeep": "#ce2c31",
       "gaugeTrack": "rgba(17,17,17,0.20)",
       "greenGlow": "rgba(70,167,88,0.35)",
-      "stageTint": "rgba(255,250,184,0.45)",
       "headerAccent": "#111111",
       "headerSub": "#63635e"
     }
@@ -131,14 +123,14 @@
     ],
     "files": {
       "flat": {
-        "main": "bg/bg-flat-main.jpg",
-        "chapter": "bg/bg-flat-chapter.jpg",
-        "quiet": "bg/bg-flat-quiet.jpg"
+        "main": "bg/bg-flat-main.webp",
+        "chapter": "bg/bg-flat-chapter.webp",
+        "quiet": "bg/bg-flat-quiet.webp"
       },
       "cel": {
-        "main": "bg/bg-cel-main.jpg",
-        "chapter": "bg/bg-cel-chapter.jpg",
-        "quiet": "bg/bg-cel-quiet.jpg"
+        "main": "bg/bg-cel-main.webp",
+        "chapter": "bg/bg-cel-chapter.webp",
+        "quiet": "bg/bg-cel-quiet.webp"
       }
     },
     "selection": "shot-table bg field if present; else first shot of a chapter -> chapter; zones >= 4 -> quiet; else main",

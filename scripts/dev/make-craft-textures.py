@@ -2,7 +2,7 @@
 """make-craft-textures.py · DEV-ONLY: regenerate the craft skins' locked paper / light-table rasters.
 
 Ordinary users never run this. The finished files are committed under
-assets/lecture-template/public/bg/ (backgrounds, 2560×1440 JPEG) and public/craft/ (tiles, PNG with alpha),
+assets/lecture-template/public/bg/ (backgrounds, 2560×1440 WebP q88) and public/craft/ (tiles, lossless WebP with alpha),
 and registered with sha256 in manifests/visual-assets.json by --register.
 
 Deterministic: every texture is a pure function of a fixed seed (numpy.random.default_rng(seed)).
@@ -167,6 +167,11 @@ def fibre_tile(seed, size=512):
     return t
 
 
+def save_bg(img: Image.Image, p: Path) -> None:
+    """背景统一存 WebP q88（与 flat / cel 背景、背景库同一格式）。"""
+    img.convert("RGB").save(p, "WEBP", quality=88, method=6)
+
+
 def build() -> list[Path]:
     BG.mkdir(parents=True, exist_ok=True)
     CRAFT.mkdir(parents=True, exist_ok=True)
@@ -178,8 +183,8 @@ def build() -> list[Path]:
         if v == "chapter":
             wash_bloom(img, rng, W * 0.06, H * 0.92, 420, (120, 156, 170), 70)
             wash_bloom(img, rng, W * 0.95, H * 0.06, 260, (214, 150, 110), 55)
-        p = BG / f"bg-journal-{v}.jpg"
-        img.convert("RGB").save(p, quality=90, optimize=True)
+        p = BG / f"bg-journal-{v}.webp"
+        save_bg(img, p)
         out.append(p)
     # papercut
     for i, v in enumerate(("main", "chapter", "quiet")):
@@ -193,17 +198,17 @@ def build() -> list[Path]:
             shadow.putalpha(sh.getchannel("A").point(lambda a: a * 0.35))
             img.alpha_composite(shadow, (4, 5))
             img.alpha_composite(strip)
-        p = BG / f"bg-papercut-{v}.jpg"
-        img.convert("RGB").save(p, quality=90, optimize=True)
+        p = BG / f"bg-papercut-{v}.webp"
+        save_bg(img, p)
         out.append(p)
     # archive
     for i, v in enumerate(("main", "chapter", "quiet")):
-        p = BG / f"bg-archive-{v}.jpg"
-        light_table(300 + i, v).convert("RGB").save(p, quality=92, optimize=True)
+        p = BG / f"bg-archive-{v}.webp"
+        save_bg(light_table(300 + i, v), p)
         out.append(p)
-    for name, img in (("fibre-tile.png", fibre_tile(400)),):  # 颜料颗粒改由 WashBlob 的 SVG feTurbulence 实时生成（3.3.0）
+    for name, img in (("fibre-tile.webp", fibre_tile(400)),):  # 颜料颗粒由 WashBlob 的 SVG feTurbulence 实时生成
         p = CRAFT / name
-        img.save(p, optimize=True)
+        img.save(p, "WEBP", lossless=True, quality=100, method=6)  # 纤维纹理带透明度，无损
         out.append(p)
     return out
 

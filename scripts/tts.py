@@ -18,7 +18,7 @@
           与台词对不上时按字数均分（estimated=true，标点也占时长），字幕只能大致对上。
 
 失败一律 rc=3 并给出**两条可走的路**（装 edge-tts / 换 --engine=file），
-不许悄悄退回静音占位——那正是旧版"成片没人说话"的来源。
+不许悄悄退回静音占位——否则"成片没人说话"。
 """
 from __future__ import annotations
 
@@ -72,8 +72,15 @@ def merge_punctuation(words: list[dict], source: str) -> list[dict]:
         elif not ch.isalnum():
             out.append({"part": ch, "start": prev_end, "end": prev_end + 1})
         else:
-            return words
-    return out if wi == len(words) else words
+            break
+    else:
+        if wi == len(words):
+            return out
+    # 中英/数字/符号归一化导致严格逐字失配时，降级用 difflib 锚点对齐，不丢整段标点
+    heard = [(w["part"], int(w["start"]), int(w["end"])) for w in words]
+    total_ms = max((int(w["end"]) for w in words), default=0)
+    aligned = align_to_script(src, heard, total_ms, min_ratio=0.75) if heard and total_ms else None
+    return aligned if aligned is not None else words
 
 
 def synth_edge(text: str, voice: str, rate: str, out_mp3: Path) -> tuple[list[dict], str]:
@@ -105,13 +112,25 @@ def synth_edge(text: str, voice: str, rate: str, out_mp3: Path) -> tuple[list[di
                                       "start": round(a + (b - a) * i / max(1, len(cs))),
                                       "end": round(a + (b - a) * (i + 1) / max(1, len(cs)))})
 
-    try:
-        asyncio.run(run())
-    except Exception as e:  # 网络 / 服务端 403 / 证书……
-        detail = f"{e.__class__.__name__}: {e}"
+    import time as _time
+    last_err: Exception | None = None
+    for attempt in range(3):
+        words.clear()
+        try:
+            asyncio.run(run())
+            last_err = None
+            break
+        except Exception as e:  # 网络 / 服务端 403 / 证书……
+            last_err = e
+            detail = f"{e.__class__.__name__}: {e}"
+            if any(k in detail for k in ("403", "401", "Sec-MS-GEC", "Unauthorized")) or attempt == 2:
+                break
+            _time.sleep(1.0 * (attempt + 1))
+    if last_err is not None:
+        detail = f"{last_err.__class__.__name__}: {last_err}"
         hint = ""
         if any(k in detail for k in ("403", "401", "Sec-MS-GEC", "Unauthorized")):
-            # 实测：edge-tts 7.2.8 会被服务端 403（Sec-MS-GEC 校验变更），升到 7.3.1 即恢复。
+            # edge-tts 7.2.8 会被服务端 403（Sec-MS-GEC 校验变更），7.3.1 起正常。
             # 这时候「检查网络」是最没用的建议——网络是好的，是客户端太旧。
             hint = ("**这是 edge-tts 版本过旧的典型症状**（服务端改了 Sec-MS-GEC 校验），不是网络问题。\n"
                     "先升级再重试：pip install -U edge-tts\n\n")
@@ -121,7 +140,7 @@ def synth_edge(text: str, voice: str, rate: str, out_mp3: Path) -> tuple[list[di
             "两条路：\n"
             "  1) 检查网络后重试（edge-tts 需要连 speech.platform.bing.com）\n"
             "  2) 用你自己的录音：把音频放到 audio/narration.mp3，再跑 --engine=file"
-        ) from e
+        ) from last_err
     if not words:
         raise RuntimeError(
             "edge-tts 合成完成但没有返回词边界（boundary=WordBoundary 为空）——"
@@ -162,17 +181,21 @@ def whisper_words(audio: Path, prompt: str) -> list[tuple[str, int, int]] | None
         from faster_whisper import WhisperModel
     except ImportError:
         return None
-    model = WhisperModel(os.environ.get("NV_WHISPER_MODEL", "small"), device="auto", compute_type="int8")
-    segments, _info = model.transcribe(str(audio), language="zh", word_timestamps=True,
-                                       initial_prompt=prompt[:200], vad_filter=False)
-    out: list[tuple[str, int, int]] = []
-    for seg in segments:
-        for w in seg.words or []:
-            text = [c for c in str(w.word) if not c.isspace()]
-            a, b = round(float(w.start) * 1000), round(float(w.end) * 1000)
-            for i, ch in enumerate(text):  # 一个识别词里的字按字数均分它的时间
-                out.append((ch, a + (b - a) * i // len(text), a + (b - a) * (i + 1) // len(text)))
-    return out
+    try:
+        model = WhisperModel(os.environ.get("NV_WHISPER_MODEL", "small"), device="auto", compute_type="int8")
+        segments, _info = model.transcribe(str(audio), language="zh", word_timestamps=True,
+                                           initial_prompt=prompt[:200], vad_filter=False)
+        out: list[tuple[str, int, int]] = []
+        for seg in segments:
+            for w in seg.words or []:
+                text = [c for c in str(w.word) if not c.isspace()]
+                a, b = round(float(w.start) * 1000), round(float(w.end) * 1000)
+                for i, ch in enumerate(text):  # 一个识别词里的字按字数均分它的时间
+                    out.append((ch, a + (b - a) * i // len(text), a + (b - a) * (i + 1) // len(text)))
+        return out
+    except Exception as e:
+        print(f"提示：faster-whisper 离线/加载失败（{e.__class__.__name__}: {e}），自动退回均分对齐（可设 NV_WHISPER=off 关闭）", file=sys.stderr)
+        return None
 
 
 def align_to_script(chars: list[str], heard: list[tuple[str, int, int]], total_ms: int,
@@ -257,8 +280,8 @@ def main() -> int:
     if not project.is_dir():
         print(f"没有这个工程目录：{project}", file=sys.stderr)
         return 2
-    # 内容契约（P1-07）：compose 写出旁白的内容指纹，这里核对。
-    # 旧实现只比 mtime——旧文本重新保存一次就比 narration.txt 新，检查直接被绕过；
+    # 内容契约：compose 写出旁白的内容指纹，这里核对。
+    # 不比 mtime：旧文本重新保存一次就比 narration.txt 新，检查会被绕过；
     # 而 mtime 也挡不住"内容没变但被 checkout 刷新"的假警报。
     story = project / "story.json"
     narr = project / "narration.txt"
@@ -345,7 +368,7 @@ def main() -> int:
             "synthesized_at": datetime.now().isoformat(timespec="seconds"),
             "words": len(words), "lines": len(lines)}
     meta_p.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    # 3.5.1：手写场景路线（没有 manifests/fusion.json = 不是 compose 生成的工程）没人会重建字幕，
+    # 手写场景路线（没有 manifests/fusion.json = 不是 compose 生成的工程）没人会重建字幕，
     # 不重建 validate-caption-sync 必挂（spec §5 E8）。auto 路线由 compose 按词级时间重排，这里不动。
     if not (project / "manifests" / "fusion.json").is_file():
         lines_txt = project / "manifests" / "semantic-caption-lines.txt"
@@ -360,7 +383,7 @@ def main() -> int:
             if r.returncode != 0:
                 return fail("✗ 字幕没能按新旁白重建：\n" + (r.stderr or r.stdout)[-800:]
                             + "\n  手动重跑：python scripts/build-semantic-captions.py audio/narration.mp3.json manifests/semantic-caption-lines.txt manifests/caption-cues.json")
-            legacy = project / "src" / "caption-cues.json"  # 旧工程的 index.tsx 还 import 这份
+            legacy = project / "src" / "caption-cues.json"  # 兼容 import 这份的手写工程
             if legacy.is_file():
                 shutil.copyfile(cues_out, legacy)
             print(f"tts：手写工程 → 已按词级时间重建字幕 {cues_out.relative_to(project)}")

@@ -135,19 +135,26 @@ class ContentOrderTest(unittest.TestCase):
     """
 
     def test_every_element_has_a_legal_appear_time(self):
-        """每个元素都要有明确的出现时刻（at ≥ 0、有限）——去掉动画后仍按 at 逐个到位。
+        """每个元素都要有明确的出现时刻（整数 at）——去掉动画后仍按 at 逐个到位。
 
         不能要求 at 单调：flow 的并列项是**交错铺开**的（S3 实测 [8, 80, 76, 141, 137]），
         那是设计，不是乱序。要保证的是「每个元素都有时刻」，不是「时刻排成一条线」。
+        负数只留给冷开：第一镜最先出现的那一个元素（题眼）提前落定，第 0 帧已在画面上
+        （reduced motion 下 f >= at 同样成立）；其余元素一律 at ≥ 0。
         """
         ts = GOLDEN_STORY.read_text(encoding="utf-8")
         start = ts.index("{", ts.index("export const STORY"))
         d = json.loads(ts[start:ts.rindex("}") + 1])
+        first = next(iter(d))
         for sid, shot in d.items():
+            early = []
             for e in shot.get("elements") or []:
                 at = e.get("at")
                 self.assertIsInstance(at, int, f"{sid}.{e.get('id')} 没有 at —— 去掉动画后它会在第 0 帧就出现")
-                self.assertGreaterEqual(at, 0, f"{sid}.{e.get('id')} at={at} 是负数")
+                if at < 0:
+                    early.append(e.get("id"))
+            allowed = 1 if sid == first else 0
+            self.assertLessEqual(len(early), allowed, f"{sid}: at 为负的元素 {early}（只有第一镜的冷开题眼可以提前落定）")
 
     def test_reduced_motion_does_not_change_story_table(self):
         """reduced motion 是渲染侧开关，**不能**改 story.ts 的内容——成片语义不变。"""

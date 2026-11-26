@@ -30,7 +30,7 @@ class ContractTest(unittest.TestCase):
             ("validate-motion-gaps", "FPS", C["FPS"]),
             ("validate-ocr", "FPS", C["FPS"]),
             ("story_caption", "MAX_CHARS", C["CAPTION_MAX_CHARS"]),
-            ("validate-presentation", "LINE_MAX", C["CAPTION_MAX_CHARS"]),
+            ("validate-caption-sync", "MAX_CHARS", C["CAPTION_MAX_CHARS"]),
             ("story_caption", "CPS", C["READ_CPS"]),
             ("silent-timing", "CPS_COMPONENT", C["READ_CPS"]),
             ("story_text", "SAFE_LH", C["SAFE_LH"]),

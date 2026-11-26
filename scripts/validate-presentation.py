@@ -3,8 +3,7 @@
 
 它回答的是**其它门禁都没问过**的问题：观众此刻该看哪里、读不读得过来。
 现有的门禁查的是"画面里有没有 / 够不够多 / 会不会撞"；这一道查"讲与画对不对得上、读得动吗"。
-（数量口径 2026-09-22 复核：全技能 14 道门禁 = 构建期 6 + 渲染期 7 + 成片后验 1，
-  表见 SKILL.md 的 The gates；本道是构建期那 6 道之一 —— 数字变了以那张表为准，别在本文件里改。）
+（全技能门禁总表见 SKILL.md 的 The gates，本道属于构建期；数量以那张表为准。）
 每条判据都是纯算术（读 manifests 与源码字面量），零新增数据模型、不需要渲染。
 
 判据（可计算形式见下）：
@@ -14,20 +13,19 @@
     ② 每个 beat 声明的 cue ∈ [cueFirst, cueLast] 或 = cueLast+1（同上）
     ③ 每个 beat 的 offset ≥ −12 帧（元素不得早于它那句 0.4s 以上出现 = 防提前剧透）
     ③b 每个 beat 的 offset ≤ 该句帧数 + 8（**不得晚于那句讲完**：台词讲完了元素才出现 = 脱节）。
-       上界与下界缺一不可——第一版只有③，`{cue:0, offset:200}`（讲完 6.7s 才出现）照样 PASS。
+       上界与下界缺一不可：只有③时，`{cue:0, offset:200}`（讲完 6.7s 才出现）照样 PASS。
     ⚠️ 8 帧这条容差是**承重墙**：模板最紧的合法拍就是 `offset = 该句帧数`（"句末那拍"是设计约定），
        把容差整个吃掉。所以另外报一条 P1（`BEAT_TIGHT_FRAMES=4`）：距上界 ≤4 帧就预警。
-       实测口径见 references/checks.md#presentation-gate §G-1；**每次换配音 / 重算 cue 都要重跑本门禁**。
+       口径见 references/checks.md#presentation-gate；**每次换配音 / 重算 cue 都要重跑本门禁**。
     ④ 每条 cue 在本镜内至少有一个 beat；确实不需要的必须在 shots.json 里显式声明
        `silentCues: [cueIndex, ...]`（显式声明才放行——这就是"要求写出结论"的做法）
-    ⚠️ 与调研报告原文的差异（报告写的是 `|beat − cueStart| ≤ 6`）：**照抄会给正确的数据报错**。
-       我们的 beats 本来就允许句内偏移（`{cue:13, offset:100}` 是"同一句的第二拍"，
-       S7/S8 各有一处，实测会被逐字判为偏差 96–100 帧）。所以真正的可检查形式是
+    ⚠️ 不用 `|beat − cueStart| ≤ 6` 这种判法：**它会给正确的数据报错**。
+       beats 允许句内偏移（`{cue:13, offset:100}` 是"同一句的第二拍"）。所以真正的可检查形式是
        "beat 落在它声明的那句/那一镜的范围内、且不提前也不拖后"，而不是"必须贴住句首 6 帧"。
 
   G-2 字幕阅读预算（P0）——Netflix 中文（简体）Timed Text Style Guide
     · 阅读速度 ≤ 9 加权字/秒（成人档；加权：CJK 计 1，ASCII/数字计 0.5，**不需要分词**）
-    · 单行 ≤ 16 加权字；≤ 2 行
+    · 行长不在这里：字幕只有一行，由 validate-caption-sync（构建期）与 CaptionFitGate（渲染期）按同一口径判
 
   G-3 可读性底线（P0 地板 + P1 档位）
     · P0：任何 `fontSize: <13` 的字面量（13 = 技能自己的 `MIN_LABEL_FONT` 口径，不是新魔数）
@@ -35,8 +33,7 @@
     · P0：正文色（ink / white）落在主题各表面上 < 4.5:1（WCAG 2.2 SC 1.4.3，不四舍五入）
     · P1：`muted` on 表面 < 4.5（它是装饰性 kicker，按大字 3:1 判）
     · P1：强调色当**文字色**时低于要求（<24px 要 4.5、≥24px 或 ≥18.5px 粗体要 3.0）
-      —— 这一条是**已知的真实缺陷**（v3.x 时四套皮肤里 gold/green 当文字色只有 1.4–3.3:1），
-      怎么处置（调深色值 / 约定这些色只用于图形）是审美决定，留给用户，见 CHANGELOG。
+      —— 部分皮肤的 gold/green 当文字色对比度不足；当文字时用主题的 *Ink 变体，或只把这些色用于图形。
     · `--strict` 才会报的另一条：**白字压在强调色填充上**。它检的是色板组合而不是这一片，
       四套皮肤都不过，所以默认不占 P1 条数（理由见 STRICT 的注释）。
 
@@ -57,12 +54,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
+from story_time import frame as ms_frame  # noqa: E402  ms→帧只有一份（与渲染端同式取整）
 from gate_report import finish  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
 FPS = C["FPS"]
 BEAT_SPOILER_FRAMES = 12   # 3-③：不得早于所属 cue 超过 12 帧（0.4s）
 BEAT_LATE_FRAMES = 8       # G-1③b：允许晚于该句结束的容差（帧）
-# G-1③b 贴边预警：这条容差是**承重墙**不是安全边际。实测（模板）最紧的合法拍
+# G-1③b 贴边预警：这条容差是**承重墙**不是安全边际。模板最紧的合法拍
 # offset = 该句帧数（"元素在这句讲完时出现"就是设计约定），把 8 帧全部吃掉——
 # 也就是说任何一次配音重跑（句子变短）都会先从这里把合法拍挤成 P0。
 # 所以剩余容差 ≤4 帧时先报 P1：让"脆"这件事在变成 P0 之前就被看见。
@@ -70,7 +68,6 @@ BEAT_TIGHT_FRAMES = 4      # G-1③b-P1：距上界只剩这么多帧 = 贴边
 BEAT_CLUSTER_FRAMES = 12   # G-5：聚簇窗口
 BEAT_CLUSTER_MAX = 3       # G-5：窗口内 ≥3 个 beat 才算拥挤
 CPS_MAX = 9.0              # G-2：Netflix 中文成人档
-LINE_MAX = C["CAPTION_MAX_CHARS"]  # G-2：单行加权字上限（只共用这个数，计法仍是加权字）
 FONT_FLOOR = C["MIN_LABEL_FONT"]  # G-3：绝对地板（与 components/data.tsx 同读 contract.json）
 FONT_LABEL_MIN = 16        # G-3：标注档
 CONTRAST_TEXT = 4.5        # WCAG 2.2 SC 1.4.3 正文
@@ -82,13 +79,13 @@ CONTRAST_LARGE = 3.0       # 大字号（≥24px 或 ≥18.5px 粗体）
 CORE_FONT_FLOOR = 64       # 核心句设计字号地板（= 360px 下 12px）：role=display/hero
 SMALL_SCREEN_W = 360       # 验收口径的缩图宽度
 DESIGN_W = 1920            # 设计画布宽
-SCREEN_READ_BUDGET = 40    # 每镜画面内文字的加权字上限（不含字幕；实测示例 8–30）
+SCREEN_READ_BUDGET = 40    # 每镜画面内文字的加权字上限（不含字幕；示例工程在 8–30 之间）
 
-# 「彩色填充上的白字」这条只在 --strict 下报（3.9.0）。
+# 「彩色填充上的白字」这条只在 --strict 下报。
 #
 # 它检的是**色板组合**，不是这一片画错了：四套皮肤里 gold / green 承载白字都只有
 # 1.3–2.3:1，所以只要皮肤还是这套色，这条就永远为真、每场交付都报一次。
-# 实测模板里没有任何地方把白字放在这些强调色上（gold 只用于 conic-gradient、边框、
+# 模板里没有任何地方把白字放在这些强调色上（gold 只用于 conic-gradient、边框、
 # boxShadow、18% 透明的水彩底）。一条永远为真、又指不出改了哪里的告警，读久了就等于没有。
 #
 # 保留成 --strict 的理由：改色板时它有用（想知道哪些强调色不能承载白字）。
@@ -104,23 +101,21 @@ def noncode(text: str) -> str:
     """把"不是代码"的位置（注释内部 + **字符串字面量内部**）换成空格，**长度与行号一字不动**。
 
     为什么是"抹掉"而不是"按行过滤"：抹掉之后正则照旧能跑，行号与列位置都还是原始的，
-    所以报出来的行号永远等于编辑器里那一行（第二轮复核抓到过 464 vs 真实 467 的漂移）。
+    所以报出来的行号永远等于编辑器里那一行。
 
-    四条必须同时成立，每条都是实测踩出来的：
+    四条必须同时成立：
     ① 注释里写历史反例（"fontSize: 9 是禁止的写法"）不该判 P0；
     ② 块注释**按跨行数补回等量换行**，否则整体行号上移；
     ③ `//` 只有在**字符串外**才是注释——否则 `background:"url(https://…)"` 之后写的 fontSize
        会被整行吃掉，成了漏检面；
     ④ 引号只在**值位置**才开字符串（前一个代码位置的非空白字符属于 `=([{,:;?|&!+*-<>~^` 或行首）：
        JSX 文本里的撇号（`don't`）不该毒化整行；而 `'…'` / `"…"` 不跨行，行尾未闭合就收尾。
-    ⑤（第三轮复核指出）**字符串里放代码样例**是本仓库的常规写法——接触表/测试页里
+    ⑤ **字符串里放代码样例**是本仓库的常规写法——接触表/测试页里
        `const CODE = `import {...} from './x';`` 就是。字符串里的 import / `fontSize: 8`
        不是真的代码，扫进去就是假 P0；反过来，它也不该给 import_integrity 贡献"幽灵导出"。
 
-    ⚠️ 这份实现原先是 `check_readability` 里的闭包（函数体一字未改，只是搬到模块层），
-    因为 G-15（`evidence` 有没有被当成 JSX 用）也要用同一套口径：**注释里写到的组件名不算"用到"** ——
-    这正是 overview-film S2 的实况（`evidence: MetricGrid` 只出现在一行注释里，代码里已换成手绘）。
-    一份实现两个用点，改这里两个判据同时生效。
+    放在模块层，因为 G-3 与 G-15（`evidence` 有没有被当成 JSX 用）共用同一套口径：
+    **注释里写到的组件名不算"用到"**。一份实现两个用点，改这里两个判据同时生效。
     """
     out = [ch if ch not in "\n" else "\n" for ch in text]
     i, n, quote, prev = 0, len(text), "", ""
@@ -163,27 +158,12 @@ def noncode(text: str) -> str:
     return "".join(out)
 
 
-def ms_frame(ms: float) -> int:
-    return int(round(ms * FPS / 1000))
-
-
 def weighted_len(text: str) -> float:
     """加权字数：CJK 计 1，ASCII/数字计 0.5，标点计 0.5（不需要分词）。"""
     out = 0.0
     for ch in re.sub(r"\s+", "", text):
         out += 1.0 if ord(ch) > 0x2E80 else 0.5
     return out
-
-
-def weighted_line_lens(text: str) -> list[float]:
-    """**逐行**加权字数（Netflix 的 16 字/行是**每行**的上限，不是整条）。
-
-    ⚠️ 复核抓到的实现错（第一版）：我把文本先 `re.sub(r"\\s+","")` 再去量整条，
-    于是"两行、每行 9 字（合计 18）"被判成 `单行 19 加权字 > 16` —— **误杀合法的两行字幕**，
-    而报错文案还自称"单行"。现在按字面实现：先按换行切行，再逐行量。
-    """
-    lines = [l for l in text.split("\n")] or [text]
-    return [weighted_len(l) for l in lines if l.strip()] or [0.0]
 
 
 # ---------------------------------------------------------------- G-1 / G-2 / G-5
@@ -197,9 +177,8 @@ def check_timeline(project: Path) -> tuple[list, list]:
 
     by_id = {s["id"]: s for s in resolved}
     # ---- resolved 与 declared 的一致性 = G-1 判据能否真的跑成 ----
-    # 病因（2026-09 修复）：旧版 `if not rec: continue` —— 改了 shots.json 却没重跑
-    # resolve-shots 时，resolved 陈旧/缺镜，整段 G-1 判据被静默跳过，脚本还能 exit 0。
-    # "测量没跑成"不是内容问题，必须报 P0（疑未重跑 resolve-shots），不再 continue 放行。
+    # 改了 shots.json 却没重跑 resolve-shots 时，resolved 陈旧/缺镜，G-1 判据跑不成。
+    # "测量没跑成"不是内容问题，必须报 P0（疑未重跑 resolve-shots），不 continue 放行。
     if len(resolved) != len(declared):
         p0.append({"id": "-", "issue": (
             f"G-1 判据无法可信执行：resolved 清单有 {len(resolved)} 镜，"
@@ -230,8 +209,7 @@ def check_timeline(project: Path) -> tuple[list, list]:
             if off < -BEAT_SPOILER_FRAMES:
                 p0.append({"id": sid, "issue": f"beat(cue{ci}) offset={off} 早于该句 {abs(off)} 帧（上限 {BEAT_SPOILER_FRAMES}）"})
             # ③b **也不能太晚**：beat 必须落在它声明那句的区间内（+ 容差）。
-            # 复核抓到的口径漏洞：第一版只防"早"，`offset=+200`（台词讲完 6.7s 才出现）
-            # 照样 PASS —— 契约"元素出现帧绑到讲到它的那一句"是**双向**的。
+            # 只防"早"时 `offset=+200`（台词讲完 6.7s 才出现）照样 PASS —— 契约"元素出现帧绑到讲到它的那一句"是**双向**的。
             # 上界 = 该句时长 + 容差，且不得晚于本镜结束。
             cue_ms = int(cues[ci]["speech_end_ms"]) - int(cues[ci]["start_ms"]) if 0 <= ci < len(cues) else 0
             limit = ms_frame(cue_ms) + BEAT_LATE_FRAMES
@@ -257,16 +235,10 @@ def check_timeline(project: Path) -> tuple[list, list]:
     for i, cu in enumerate(cues, 1):
         text = str(cu.get("text", ""))
         dur = max(0.001, (int(cu["speech_end_ms"]) - int(cu["start_ms"])) / 1000.0)
-        line_lens = weighted_line_lens(text)      # 逐行量（Netflix 的 16 字/行是每行的上限）
-        wl = sum(line_lens)
+        wl = weighted_len(text)
         cps = wl / dur
         if cps > CPS_MAX:
             p0.append({"id": f"cue{i}", "issue": f"阅读速度 {cps:.1f} 字/秒 > {CPS_MAX}（{wl:.0f} 加权字 / {dur:.1f}s）：{text[:16]}"})
-        worst = max(line_lens)
-        if worst > LINE_MAX:
-            p0.append({"id": f"cue{i}", "issue": f"某一**行** {worst:.0f} 加权字 > {LINE_MAX}（本 cue 共 {len(line_lens)} 行）：{text[:16]}"})
-        if len([l for l in text.split("\n") if l.strip()]) > 2:
-            p0.append({"id": f"cue{i}", "issue": f"字幕超过 2 行：{text[:16]}"})
     return p0, p1
 
 
@@ -346,18 +318,9 @@ def check_readability(project: Path) -> tuple[list, list]:
 
     # ---- 主题对比度：只判"真的会同时出现"的配对 ----
     #
-    # ⚠️ 第一版这里犯了个典型的假阳性：把"每个文字色 × 每个表面"全都交叉算了一遍，
-    # 于是 `white on paper = 1.00:1` 被报成 P0——而白字**永远不会**放在白纸上。
-    # 现在改成按代码里真实出现的用法取配对（同一次运行里扫出来的 `color: C.x` / `background: C.x`）：
-    #   · 正文：ink on {paper, paperWarm, paperBase}
-    #   · 深底上的字：white on ink
-    #   · 反白按钮：white on <任何被当 background 用过的强调色>
-    #   · 次要文字：muted on {paper, paperWarm, paperBase}（按大字 3:1 判，低于 4.5 只提示）
-    #   · 强调色当文字色：<被当 color 用过的强调色> on {paper, paperWarm, paperBase}（P1，按主题聚合）
-    # ⚠️ 第二处假阳性（第一版与第二版都踩过）：**不能用"静态交叉"去猜"谁会压在谁上面"**。
-    # 第一版把 white × paper 报成 P0（白字永远不压白纸）；第二版又靠 `background: C.x` 推断，
-    # 结果 `background: C.paper`（卡片底色）把 `white on paper` 又请了回来。
-    # 结论：这里的配对必须是**声明的契约**，不是推断。契约来自本技能自己的用法：
+    # ⚠️ 不把"每个文字色 × 每个表面"全都交叉算（`white on paper = 1.00:1` 会被报成 P0，而白字永远不放在白纸上），
+    # 也不靠 `background: C.x` 推断"谁压在谁上面"（卡片底色 `background: C.paper` 会把同一个假配对请回来）。
+    # 配对必须是**声明的契约**，不是推断。契约来自本技能自己的用法：
     #   · 正文      ink   on {paper, paperWarm, paperBase}            → P0（<4.5 阻断）
     #   · 深底反白  white on {ink}                                     → P0
     #   · 彩色反白  white on {blue, orange, orangeDeep, green, gold, red, navy}  → P1 聚合
@@ -365,9 +328,9 @@ def check_readability(project: Path) -> tuple[list, list]:
     #   · 次要文字  muted on {paper, paperWarm, paperBase}             → 大字档 3:1
     #   · 彩字      <强调色> on {paper, paperWarm, paperBase}          → P1 聚合
     ACCENT_FILLS = ("blue", "orange", "orangeDeep", "green", "gold", "red", "navy")
-    # 文字安全色（2026-09-21 加）：主题里为每种强调色提供的 *Ink 变体，**专门用于当文字**。
+    # 文字安全色：主题里为每种强调色提供的 *Ink 变体，**专门用于当文字**。
     # 它们必须过 4.5:1（正文档），否则"压暗到能当文字用"这个约定就是空话 ——
-    # 这一条同时是**新增机制的自检**：没有它，加了 Ink 也不会有人验。
+    # 这一条同时是 Ink 机制的自检。
     ACCENT_INKS = ("blueInk", "orangeInk", "greenInk", "goldInk", "redInk")
     used_as_text: dict[str, set[str]] = {}
     for f in files:
@@ -438,7 +401,7 @@ def check_readability(project: Path) -> tuple[list, list]:
 # ----------------------------------------------------------------------- G-18
 # 小屏（360px）语境：桌面原图看着够 ≠ 手机上读得清。
 #
-# 三条验收（清单 P2-21）：
+# 三条验收：
 #   ① 360px 宽缩图仍能读核心句  → 核心句（role=display/hero）字号 ≥ CORE_FONT_FLOOR
 #   ② 对比度与阅读预算不只看桌面原图 → 阅读预算按「每镜画面文字总量」算；
 #      对比度把「大字 3:1」的豁免按缩图换算（设计 64px 缩到 360px 是 12px = 小字，不能按大字放行）
@@ -484,10 +447,20 @@ def check_small_screen(project: Path) -> tuple[list, list]:
         total = 0.0
         parts = []
         for e in shot.get("elements") or []:
-            txt = e.get("text") or ""
-            if e.get("lines"):
-                txt = "".join(e["lines"])
-            wl = weighted_len(txt)
+            chunks = ["".join(e["lines"]) if e.get("lines") else str(e.get("text") or "")]
+            for it in (e.get("items") or []):
+                if isinstance(it, dict):
+                    chunks.append("".join(it["lines"]) if it.get("lines") else str(it.get("text") or ""))
+                elif isinstance(it, str):
+                    chunks.append(it)
+            if e.get("noteLines"):
+                chunks.append("".join(e["noteLines"]))
+            elif e.get("note"):
+                chunks.append(str(e["note"]))
+            for extra_k in ("caption", "catalogue"):
+                if e.get(extra_k):
+                    chunks.append(str(e[extra_k]))
+            wl = weighted_len("".join(chunks))
             if wl > 0:
                 total += wl
                 parts.append(f"{e.get('id')}:{wl:.0f}")
@@ -518,20 +491,11 @@ def check_small_screen(project: Path) -> tuple[list, list]:
 
 
 # ------------------------------------------------- G-14/G-15/G-16 讲法字段完整性
-# 编号说明（2026-09-21 修撞号）：这一组原来标成 "G-6"，而 **G-6 是调研报告里"对比层结构闭合"**
-# 的编号（见 references/checks.md#presentation-gate 的"还没做的"）。本组的编号以
-# references/director.md#narrative-moves §4 为准：G-14 `move` 闭合 / G-15 `evidence` 被当成 JSX 用 /
-# G-16 误解与留白（G-17 known→new 闭合尚未实现）。
-# ⚠️ G-15 的档次在 2026-09-22 从"真的会动（本镜 + 帧驱动链）"退回"名字被当成 JSX 用"：
-#    口径、代价与"不做哪半边"逐条写在下面 check_evidence 那一节，也写回了 references/director.md#narrative-moves §2。
+# 编号以 references/director.md#narrative-moves 为准：G-14 `move` 闭合 / G-15 `evidence` 被当成 JSX 用 /
+# G-16 误解与留白（G-17 known→new 闭合尚未实现）。G-15 的口径与"不做哪半边"写在下面 check_evidence 那一节。
 #
-# 为什么加这一条（2026-09-21）：`references/director.md#narrative-moves` 把 move / evidence / hold /
-# misconception 四个槽位写成**必填**，但**十道门禁没有一道读过它们**，而且：
-#   · `resolve-shots.py` 在把 shots.json 解析成 shots.resolved.json 时**把这四个字段整组丢掉**
-#     （那份解析结果里只有 skeleton/live/keys/beats… 没有 move/evidence/hold/misconception）
-#     → 下游所有读 resolved 的门禁**根本看不到它们**，想查也没得查；
-#   · 实测：把 S19 的 move 删掉，改前全部门禁照旧 PASS。
-# 这一条读**作者手写的 shots.json**（字段的唯一定源），并把 resolve 的透传一并修好（同一轮）。
+# `references/director.md#narrative-moves` 把 move / evidence / hold / misconception 四个槽位写成**必填**；
+# 这一组读**作者手写的 shots.json**（字段的唯一定源），resolve-shots 也把它们原样透传进 shots.resolved.json。
 MOVES = {"引入", "定位", "推进", "传递", "对比", "拆分/合并", "累积", "收束", "反证", "回看"}
 HOLD_MIN = 40        # 留白预算下限：references/director.md#narrative-moves 里**标定**出来的线（不是拍的）
 MOVE_MIN_KINDS = 5   # 全片至少用到几种叙事动作（10 种里挑）：只写 1–2 种等于没有编排
@@ -579,9 +543,8 @@ def check_narrative(project: Path) -> tuple[list, list]:
     # 口径：按 shots.json 的镜序逐镜比较（= 成片顺序：resolve-shots 要求 from 连续，两者必然一致），
     #      同一 move 的**极大连续段** ≥3 镜即报一条，报出**哪几镜、连续了几个、什么 move**。
     #      缺 move / 不在闭集的镜**打断计数**：它自己已经另报，既不在这里重复刷屏，
-    #      也不许把它两侧的段接成一条假的"连续"——第一版写成 `continue`（跳过但不打断），
-    #      于是 `引入,引入,缺move,引入` 被报成"S1→S2→S4 连续 3 镜"，那是一句用户照着改不了的假话
-    #      （负向夹具 AE 抓到的）。
+    #      也不许把它两侧的段接成一条假的"连续"（否则 `引入,引入,缺move,引入` 会被报成
+    #      "S1→S2→S4 连续 3 镜"，负向夹具 AE 钉住这一条）。
     runs: list[tuple[str, list[str]]] = []
     run_move: str | None = None
     run_ids: list[str] = []
@@ -611,40 +574,34 @@ def check_narrative(project: Path) -> tuple[list, list]:
     return p0, p1
 
 
-# ------------------------------------------------- G-15 `evidence` 是不是真用在源码里（v2 简版）
+# ------------------------------------------------- G-15 `evidence` 是不是真用在源码里
 #
-# ⚠️ 这条判据此前**名存实亡**：文档（`references/director.md#narrative-moves` §2 / `references/checks.md#presentation-gate` §G-15）把它写成
-# 必填且"静态元素不算证据"，而本脚本读 `evidence` 的唯一一处是 `if not ev:`（**只查字段非空**）——
-# 名字写成源码里根本不存在的，门禁一声不响（负向夹具 AF 钉的就是这个）。
-#
-# v2（2026-09-22 按实测简化，替掉上一版 465 行的手写 JSX 结构解析）**只查一件事**：
+# 文档（`references/director.md#narrative-moves` §2 / `references/checks.md#presentation-gate` §G-15）把它写成
+# 必填且"静态元素不算证据"。判据**只查一件事**（负向夹具 AF 钉住"名字不存在"这一侧）：
 #
 #   `evidence` 的名字必须**作为 JSX 用法**（`<名字 …>` / `<名字/>`）出现在该工程的**场景源码**里。
 #
 # 口径（三句话说完，没有隐藏的第四句）：
 #   · 扫描前用 `noncode()` 把注释与字符串抹成空格 → **注释里写到的名字不算"用到"**
-#     （真实工程 overview-film 的 S2 就是这么烂掉的：`MetricGrid` 被换成手绘行 + `Chart`，
-#      只在注释里留了一句"这里本来用 MetricGrid"；"文件里搜得到名字"那种判法会**假通过**）。
+#     （组件被换掉、只在注释里留名时，"文件里搜得到名字"那种判法会**假通过**）。
 #     同理，import 行与字符串里的代码样例也都不算 —— 只有 JSX 用法算。
 #   · 场景源码 = `src/**` 里名字带 `scene` 的 .tsx；
 #     一个都没有时退到 `src/**/*.tsx`；连 .tsx 都没有就报一条 P1 说明**这条判据没生效**
 #     （让"没报"与"没跑"可区分，与其它门禁的覆盖率日志同一用意）。
 #   · 名字后面必须紧跟空白 / `/` / `>`（`(?![A-Za-z0-9_$])`），免得 `Widget2` 被 `Widget` 蒙混过去。
 #
-# **不做**的（口径已同步写回 `references/director.md#narrative-moves` §2 与 `references/checks.md#presentation-gate` §G-15，别高估它）：
+# **不做**的（口径同 `references/director.md#narrative-moves` §2 与 `references/checks.md#presentation-gate` §G-15）：
 #   · 不做**本镜作用域**：名字只要在该工程的场景源码里被 JSX 用到就算过 ——
-#     **一个名字在本镜没用到、但在别的镜用了，会漏**。这正是"降复杂度"买来的代价，
-#     负向夹具 AG 把这个口径**钉住**（它现在必须 rc=0，谁哪天加回本镜作用域，这条夹具会先失败）。
+#     **一个名字在本镜没用到、但在别的镜用了，会漏**。这是不做本镜作用域的代价，
+#     负向夹具 AG 把这个口径**钉住**（它必须 rc=0）。
 #   · 不做**帧驱动判定**（"那个元素到底动不动"）：那要解析 JSX 结构 + 维护一张帧驱动白名单，
-#     而它的误报面已经实测到了 —— 帧经 `ctx` 这类不透明参数传进组件的写法会被判成静态，
+#     而帧经 `ctx` 这类不透明参数传进组件的写法会被判成静态，
 #     而动作表「推进」推荐的 `PhaseRail` 恰好就是这种写法。判成 P0 等于"照文档写、门禁拦你"。
-#   · 不做**降级**：v1 在"切不出本镜"时要降级并自报一条 P1 —— 现在没有"本镜"这一层，无级可降。
+#   · 不做**降级**：没有"本镜"这一层，无级可降。
 #
-# 代价与取舍（写清楚，免得下一个人以为它比实际更强）：
-#   这条判据现在拦得住「名字写错 / 只出现在注释里 / 只出现在 import 行或字符串里」，
+# 取舍：拦得住「名字写错 / 只出现在注释里 / 只出现在 import 行或字符串里」，
 #   **拦不住**「指向一个在本镜里从头到尾不动的静态卡片」（只要那个名字在别处被 JSX 用到过）。
-#   要把那半边找回来，得把本镜作用域 + 帧驱动白名单一起加回来 —— 就是被砍掉的那 465 行。
-#   本仓库的取舍：**宁可少报，也不要一堆假报告 + 一条没人愿意维护的判据**。
+#   **宁可少报，也不要一堆假报告。**
 
 _EVIDENCE_NAME = "(?![A-Za-z0-9_$])"
 
@@ -691,7 +648,68 @@ def check_evidence(project: Path) -> tuple[list, list]:
             f"evidence=«{ev}» 在场景源码（{where}）里**找不到这个用法**：名字要么写错了、"
             f"要么从来没被当成 JSX 用渲染出来（只写在注释 / 字符串 / import 行里都不算「用到」）。"
             f"G-15 要求 `evidence` 指向真的会变的那件东西，指向一个不存在的用法 = 这条声明无法被验证"
-            f"（判据与**已知边界**见 references/director.md#narrative-moves §2）")})
+            f"（判据与**已知边界**见 references/director.md#narrative-moves）")})
+    return p0, p1
+
+
+
+CONTRACT_SYNC_KEYS = tuple(k for k in C if not k.startswith("_"))
+
+
+def check_contract_sync(project: Path) -> tuple[list, list]:
+    """P0：工程 src/contract.json 必须与模板契约一致，防止渲染端与门禁端数值分叉。"""
+    p0, p1 = [], []
+    proj_c = project / "src" / "contract.json"
+    if not proj_c.is_file():
+        return p0, p1
+    try:
+        data = json.loads(proj_c.read_text(encoding="utf-8"))
+    except Exception as exc:
+        p0.append({"id": "contract", "issue": f"src/contract.json 解析失败：{exc}"})
+        return p0, p1
+    if not isinstance(data, dict):
+        p0.append({"id": "contract", "issue": "src/contract.json 根节点必须是 JSON 对象"})
+        return p0, p1
+    for k in CONTRACT_SYNC_KEYS:
+        if k in C and data.get(k) != C[k]:
+            p0.append({"id": "contract", "issue": (
+                f"src/contract.json 与模板契约漂移：{k} 工程={data.get(k)!r} vs 模板={C[k]!r} —— "
+                f"请同步模板 src/contract.json，不要在单个工程里私改门禁常量")})
+    return p0, p1
+
+
+def check_rhythm_bounds(project: Path) -> tuple[list, list]:
+    """极短闪切与片尾戛然而止检查（P0 物理截断 / P1 节奏呼吸提示）。"""
+    p0, p1 = [], []
+    rp = project / "manifests" / "shots.resolved.json"
+    cp = project / "manifests" / "caption-cues.json"
+    if not rp.is_file():
+        return p0, p1
+    try:
+        resolved = json.loads(rp.read_text(encoding="utf-8"))
+    except Exception:
+        return p0, p1
+    shots = resolved.get("shots") or []
+    for s in shots:
+        sid = str(s.get("id") or "?")
+        dur = int(s.get("duration") or (int(s.get("to") or 0) - int(s.get("from") or 0)))
+        if dur < 15:
+            p0.append({"id": sid, "issue": f"单镜仅 {dur} 帧（{dur / FPS:.2f}s < 0.5s），物理过短无法观看 —— 拉长镜头或并入相邻镜"})
+        elif dur < 45 and not s.get("insert"):
+            p1.append({"id": sid, "issue": f"单镜仅 {dur} 帧（{dur / FPS:.2f}s < 1.5s），闪切过短来不及阅读 —— 适当延长或改为 insert 镜"})
+    if cp.is_file() and shots:
+        try:
+            cues = (json.loads(cp.read_text(encoding="utf-8")) or {}).get("cues") or []
+        except Exception:
+            cues = []
+        if cues:
+            last_end_ms = max(float(c.get("speech_end_ms") or 0) for c in cues)
+            total_f = int(resolved.get("duration") or max(int(s.get("to") or 0) for s in shots))
+            tail_f = total_f - ms_frame(last_end_ms)
+            if tail_f < 0:
+                p0.append({"id": "ending", "issue": f"末句台词被片尾截断（超出 {-tail_f} 帧）—— 延长末镜或重跑 compose-story"})
+            elif tail_f < 15:
+                p1.append({"id": "ending", "issue": f"片尾留白仅 {tail_f} 帧（{tail_f / FPS:.2f}s），节奏戛然而止 —— 建议保留 ≥15 帧收束呼吸"})
     return p0, p1
 
 
@@ -724,10 +742,16 @@ def main() -> int:
     a, b = check_narrative(project)
     p0 += a
     p1 += b
-    a, b = check_evidence(project)      # G-15：`evidence` 被当成 JSX 用出现在场景源码里（v2 简版口径）
+    a, b = check_evidence(project)      # G-15：`evidence` 被当成 JSX 用出现在场景源码里
     p0 += a
     p1 += b
     a, b = check_small_screen(project)  # G-18：小屏（360px）语境 —— 核心句地板 / 阅读预算 / 小屏对比度
+    p0 += a
+    p1 += b
+    a, b = check_contract_sync(project)
+    p0 += a
+    p1 += b
+    a, b = check_rhythm_bounds(project)
     p0 += a
     p1 += b
 

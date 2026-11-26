@@ -1,5 +1,5 @@
 // ============================================================================
-// craft/lens.tsx · 放大镜（3.3.0）
+// craft/lens.tsx · 放大镜
 //
 //   <Loupe f x y r zoom target={{x,y}} render={(inside) => <…/>} />
 //
@@ -11,8 +11,8 @@
 import React from 'react';
 import {interpolate, Easing} from 'remotion';
 import {THEME} from '../theme/active';
+import {clamp} from '../motion';
 
-const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
 
 export type LoupeProps = {
   f: number;

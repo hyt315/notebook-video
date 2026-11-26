@@ -19,14 +19,10 @@ from pathlib import Path
 OVERLAYS = ("StampSeal", "Burst", "Callout", "ChipContract", "Funnel", "ChatThread")
 # 老模块里的覆盖层类件（不在 src/components/ 下，但同样是"场景坐标"语义）
 LEGACY_OVERLAYS = ("StampBanner",)
-# 负整数字面量**已进识别、暂不设负向阈值（知情边界）**。批5 提交话术曾暗示 `-220`
-# 这类写法从此会被拦——收回：三档阈值（OFF-CANVAS >1920/1440、软档 >1000/700、
-# SMOOSH 0<y<170）全在正向，负值进得了 COORD 却够不着任何一档（实测 `x={-2000}` rc=0）。
-# 不补负向阈值的依据是本轮扫描：**合法负坐标在模板与成片工程里真实存在**——
-#   · lecture-template src/components/chart.tsx:82/354/445（SVG 局部坐标 `x={-18}`/`y={-14}`/`y={-34}` 刻度与徽标）
-#   · 成片工程 overview-film src/scenes.tsx:791 `Callout x={80} y={-40}`（覆盖层骑跨卡片上沿，正常构图）
-# 任何"负即出画"的阈值都会先把这些合法写法打假。要补须先按"覆盖层短边整件离开
-# 舞台半幅"（如 x < -960）立据并重扫全部工程，属改判据动作——留给有实证的下批。
+# 负整数字面量**已进识别、但不设负向阈值（知情边界）**：三档阈值（OFF-CANVAS >1920/1440、
+# 软档 >1000/700、SMOOSH 0<y<170）全在正向，负值够不着任何一档（`x={-2000}` 也是 rc=0）。
+# 原因是**合法负坐标真实存在**——SVG 局部坐标（chart.tsx 里的 `x={-18}`/`y={-14}` 刻度与徽标）、
+# 覆盖层骑跨卡片上沿（`Callout x={80} y={-40}`）。任何"负即出画"的阈值都会先把这些合法写法打假。
 # 边界钉死在 `\{` 与 `\}` 之间：只认**纯整数字面量**，`x={a-1}` / `x={w-40}` 这类
 # 表达式里 `-` 前面还有标识符字符，落不进 `\{(-?\d+)\}`，不会被误配。
 COORD = re.compile(r"\b([xy])=\{(-?\d+)\}")
@@ -36,16 +32,13 @@ PROP_BLOCK = re.compile(r"export\s+const\s+([A-Z]\w*)\s*:\s*React\.FC<\{(.*?)\}>
 def overlays_of(root: Path) -> tuple[str, ...]:
     """名单 = 写死的历史件 ∪ **从源码推导**的覆盖层类组件。
 
-    推导范围 = `src/components/**`（v3.1 封装层）+ `src/theme/**`（皮肤 extras 里的贴纸件）
+    推导范围 = `src/components/**`（封装层）+ `src/theme/**`（皮肤 extras 里的贴纸件）
     ∪ 上面两份明确名单。两处的 x/y 都是"场景坐标"语义：前者是弹层/贴纸件，后者是 `extras.Tape`
     这类贴在纸面上的贴纸。
 
-    ⚠️ 第一版扫了整棵树，于是在标准模板上多报一条假阳性
-    `VERIFY-FRAME scenes.tsx:180 ZoomStage x=1250`（复核实测：旧版只有 1 条 WARN）——
-    `ZoomStage` / `StageFrame` / `Corridor` / `CoverPanel` / `ConsoleWindow` 这些是**布局件**，
-    它们的 x/y 是版面坐标，写 1250 完全合法，不该进"场景坐标还是卡片相对坐标？"的人工确认档。
-    收紧到这两层后实测：components → {OverlayFrame}、theme → {Burst, Tape}，布局件一个不进。
-    `Tape` 因此回到名单里（第二轮复核指出它掉出去了）：它与 `Burst` 同族，都是贴在画面上的贴纸。
+    ⚠️ 只扫这两层，不扫整棵树：`ZoomStage` / `StageFrame` / `Corridor` / `CoverPanel` / `ConsoleWindow`
+    这些是**布局件**，它们的 x/y 是版面坐标，写 1250 完全合法，不该进"场景坐标还是卡片相对坐标？"的
+    人工确认档。按这两层推导出的是 components → {OverlayFrame}、theme → {Burst, Tape}。
     """
     found = set()
     for sub in ("components", "theme"):
@@ -71,7 +64,7 @@ def main() -> int:
         if not src.is_dir():
             print(f"no src/ under {root}")
             return 2
-        # 递归扫子目录：v3.1 起组件封装层在 src/components/，不递归会整层漏检
+        # 递归扫子目录：组件封装层在 src/components/，不递归会整层漏检
         for tsx in sorted(src.rglob("*.tsx")):
             text = tsx.read_text(encoding="utf-8", errors="ignore")
             for match in COORD.finditer(text):

@@ -8,7 +8,7 @@ import {
 } from './craft';
 
 // ============================================================================
-// craft-sheet · craft 组件样张（Composition: NotebookVideoCraftSheet，3.3.0）
+// craft-sheet · craft 组件样张（Composition: NotebookVideoCraftSheet）
 //
 // 一页 4×3 = 12 格，把 src/craft/ 的组件全部摆出来，用当前皮肤的纸面与颜色。
 // 用途：改 craft 组件 / 换皮肤后**看一眼**——墨线粗细、晕染边缘、剪纸切口、放大镜、署名签是否好看。

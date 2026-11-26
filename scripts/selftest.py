@@ -40,12 +40,15 @@ def run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
                           text=True, encoding="utf-8", errors="replace")
 
 
-def expect_blocked(name: str, args: list[str], cwd: Path | None = None) -> None:
+def expect_blocked(name: str, args: list[str], must: str, cwd: Path | None = None) -> None:
+    """负向夹具：非零退出，且输出里有这道门自己的拦截语句（`must`）。
+
+    只看退出码或宽泛关键词（error / missing…）会把脚本崩溃、路径写错也算成「拦住了」。
+    """
     proc = run(*args, cwd=cwd)
-    combined = f"{proc.stdout}{proc.stderr}".lower()
-    blocked = proc.returncode != 0 and ("error" in combined or "unknown" in combined
-                                        or "failure" in combined or "not found" in combined
-                                        or "missing" in combined or "invalid" in combined)
+    combined = f"{proc.stdout}{proc.stderr}"
+    blocked = (proc.returncode != 0 and must in combined
+               and "Traceback (most recent call last)" not in combined)
     check(name, blocked, f"rc={proc.returncode} (blocked as expected)" if blocked else f"rc={proc.returncode} (unexpectedly allowed)")
 
 
@@ -63,7 +66,7 @@ def main() -> int:
         "scripts/export-srt.py",
         "scripts/eval-project.py",
         "scripts/validate-semantic-breaks.py",
-        # 3.9.0：随技能分发的 BudouX 切片。缺了它，上面那条断句规则会静默跳过而不是报错，
+        # 随技能分发的 BudouX 切片。缺了它，上面那条断句规则会静默跳过而不是报错，
         # 所以把入口也算进"关键产物"——文件不在了，自检直接失败。
         "assets/vendor/budoux/module/index.js",
         "scripts/validate-layering.py",
@@ -99,21 +102,21 @@ def main() -> int:
         "assets/lecture-template/src/theme/papercut.tsx",
         "assets/lecture-template/src/theme/archive.tsx",
         "assets/lecture-template/src/fonts.tsx",
-        "assets/lecture-template/public/bg/bg-flat-main.jpg",
-        "assets/lecture-template/public/bg/bg-flat-chapter.jpg",
-        "assets/lecture-template/public/bg/bg-flat-quiet.jpg",
-        "assets/lecture-template/public/bg/bg-cel-main.jpg",
-        "assets/lecture-template/public/bg/bg-cel-chapter.jpg",
-        "assets/lecture-template/public/bg/bg-cel-quiet.jpg",
-        "assets/lecture-template/public/bg/bg-journal-main.jpg",
-        "assets/lecture-template/public/bg/bg-journal-chapter.jpg",
-        "assets/lecture-template/public/bg/bg-journal-quiet.jpg",
-        "assets/lecture-template/public/bg/bg-papercut-main.jpg",
-        "assets/lecture-template/public/bg/bg-papercut-chapter.jpg",
-        "assets/lecture-template/public/bg/bg-papercut-quiet.jpg",
-        "assets/lecture-template/public/bg/bg-archive-main.jpg",
-        "assets/lecture-template/public/bg/bg-archive-chapter.jpg",
-        "assets/lecture-template/public/bg/bg-archive-quiet.jpg",
+        "assets/lecture-template/public/bg/bg-flat-main.webp",
+        "assets/lecture-template/public/bg/bg-flat-chapter.webp",
+        "assets/lecture-template/public/bg/bg-flat-quiet.webp",
+        "assets/lecture-template/public/bg/bg-cel-main.webp",
+        "assets/lecture-template/public/bg/bg-cel-chapter.webp",
+        "assets/lecture-template/public/bg/bg-cel-quiet.webp",
+        "assets/lecture-template/public/bg/bg-journal-main.webp",
+        "assets/lecture-template/public/bg/bg-journal-chapter.webp",
+        "assets/lecture-template/public/bg/bg-journal-quiet.webp",
+        "assets/lecture-template/public/bg/bg-papercut-main.webp",
+        "assets/lecture-template/public/bg/bg-papercut-chapter.webp",
+        "assets/lecture-template/public/bg/bg-papercut-quiet.webp",
+        "assets/lecture-template/public/bg/bg-archive-main.webp",
+        "assets/lecture-template/public/bg/bg-archive-chapter.webp",
+        "assets/lecture-template/public/bg/bg-archive-quiet.webp",
         "assets/lecture-template/manifests/visual-assets.json",
         "assets/lecture-template/manifests/backgrounds.json",
         "scripts/validate-backgrounds.py",
@@ -135,11 +138,11 @@ def main() -> int:
     missing = [f for f in files if not (ROOT / f).is_file()]
     check("关键产物齐全", not missing, f"missing: {missing}" if missing else f"{len(files)} files")
 
-    # ---- 好夹具 1c：中文字面门禁（3.5.0）。模板必须过；故意写一条 monospace 中文栈必须拦 ----
+    # ---- 好夹具 1c：中文字面门禁。模板必须过；故意写一条 monospace 中文栈必须拦 ----
     good = run(sys.executable, "scripts/validate-glyphs.py", str(ROOT / "assets" / "lecture-template"))
     check("中文字体栈：模板通过", good.returncode == 0,
           (good.stdout.strip().splitlines() or ["<no output>"])[-1][:90])
-    # ---- 好夹具 2：主题开关默认 flat（出厂状态，3.2.0 起） ----
+    # ---- 好夹具 2：主题开关默认 flat（出厂状态，） ----
     active = ROOT / "assets" / "lecture-template" / "src" / "theme" / "active.ts"
     if active.is_file():
         ok = "from './flat'" in active.read_text(encoding="utf-8")
@@ -152,7 +155,7 @@ def main() -> int:
         with tempfile.TemporaryDirectory() as td:
             expect_blocked("负向：非法 --style 被拦", [
                 str(NODE), str(ROOT / "scripts" / "notebook-video.mjs"),
-                "new-project", str(Path(td) / "proj"), "--style=neon"])
+                "new-project", str(Path(td) / "proj"), "--style=neon"], must='Unknown style "neon"')
             leftover = Path(td) / "proj"
             if leftover.exists() and any(leftover.iterdir()):
                 check("负向：非法 --style 不产生半成品", False, "目标目录被污染")
@@ -174,7 +177,7 @@ def main() -> int:
         ok = proc.returncode == 0
         detail = "passed" if ok else "failed"
         if ok and "did NOT run" in ((proc.stdout or "") + (proc.stderr or "")):
-            detail = "passed（但短语规则没跑：assets/vendor 丢了？）"
+            ok, detail = False, "短语规则没跑（assets/vendor 丢了？）"
         check("validate-skill 通过", ok, detail)
 
     # ---- 负向夹具 ----
@@ -195,7 +198,8 @@ def main() -> int:
             }, ensure_ascii=False), encoding="utf-8")
             expect_blocked("负向：保护短语跨 cue 被拦", [
                 str(NODE), str(ROOT / "scripts" / "notebook-video.mjs"),
-                "validate-semantic-breaks", str(bad_cues), str(bad_protected)])
+                "validate-semantic-breaks", str(bad_cues), str(bad_protected)],
+                must="protected phrase crosses a cue boundary")
 
             # 2. 字幕同步门：cue 文本与词级时间戳不一致
             words = [{"part": "你", "start": 0, "end": 100},
@@ -214,14 +218,15 @@ def main() -> int:
             }, ensure_ascii=False), encoding="utf-8")
             expect_blocked("负向：字幕同步失败被拦", [
                 str(NODE), str(ROOT / "scripts" / "notebook-video.mjs"),
-                "validate-caption-sync", str(tts_json), str(sync_cues)])
+                "validate-caption-sync", str(tts_json), str(sync_cues)],
+                must="SYNC ERROR")
 
             # 3. 视频门：非媒体输入
             expect_blocked("负向：非视频输入被拦", [
                 str(NODE), str(ROOT / "scripts" / "notebook-video.mjs"),
-                "validate-video", str(__file__), "30"])
+                "validate-video", str(__file__), "30"], must="ffprobe")
 
-    # ---- 3.2.0 音效库：好夹具必须通过；篡改文件 / 增益越界必须被拦 ----
+    # ---- 音效库：好夹具必须通过；篡改文件 / 增益越界必须被拦 ----
     if shutil.which("ffmpeg"):
         tpl = ROOT / "assets" / "lecture-template"
         good = run(sys.executable, str(ROOT / "scripts" / "validate-audio-levels.py"), str(tpl))
@@ -238,7 +243,7 @@ def main() -> int:
     else:
         check("音效库门禁（需要 ffmpeg）", False, "ffmpeg 不在 PATH，无法回归音效库门禁")
 
-    # ---- 3.3.0 背景库：模板库必须通过；改坏许可 / 改动文件（sha256）/ 相邻重复必须被拦或提示 ----
+    # ---- 背景库：模板库必须通过；改坏许可 / 改动文件（sha256）/ 相邻重复必须被拦或提示 ----
     tpl = ROOT / "assets" / "lecture-template"
     vb = ROOT / "scripts" / "validate-backgrounds.py"
     good = run(sys.executable, str(vb), str(tpl), "--min-per-skin", "journal=8,papercut=8,archive=8,flat=4,cel=4")

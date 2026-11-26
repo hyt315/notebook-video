@@ -1,13 +1,14 @@
 import React, {useEffect} from 'react';
-import {Easing, cancelRender, interpolate} from 'remotion';
+import {Easing, cancelRender, getInputProps, interpolate} from 'remotion';
 import {THEME} from './theme/active';
 import {isHandmadeMedium} from './theme/medium';
 import {KineticNumber, drawOn} from './cinema';
 import {REDUCED_MOTION} from './reduced-motion';
-import {GROW_VAR} from './glyph-snap';
+import {GROW_VAR, REVEAL_BLEED, revealClip} from './glyph-snap';
 import {STORY} from './story';
 import {CUSTOM} from './custom';
 import {MediaFrame} from './media-frame';
+import {highlightTokens} from './components/shiki';
 import {SketchLayer} from './linework/sketch';
 import type {SketchSpec} from './linework/types';
 import {HandLettering, HandNote, InkCircle, InkPath, Underline} from './craft/ink';
@@ -18,13 +19,13 @@ import CONTRACT from './contract.json';
 const G = CONTRACT.GROW;  // 展开时长参数，scripts/story_acts.py grow_dur 读同一份
 
 // ============================================================================
-// auto.tsx · 3.2.0 内容驱动的镜头渲染器（AutoShot）
+// auto.tsx · 内容驱动的镜头渲染器（AutoShot）
 //
 // story.json（纯内容）→ scripts/compose-story.py（排版 / 关键词 / 相机 / 自动修）→ src/story.ts → 这里画。
 // 本层只负责「画」，几何全部在 compose-story 里算好（门禁也在那里跑），所以弱模型写不坏版面。
 //
 // 克制原则：
-//   · 出现（3.5.1 草稿纸）：沿阅读方向左→右展开，线性；不淡入、不上浮、不回弹。见 references/draftpaper.md#reveal-rules
+//   · 出现（草稿纸）：沿阅读方向左→右展开，线性；不淡入、不上浮、不回弹。见 references/draftpaper.md#reveal-rules
 //   · 强调 = 底色带 + 左侧标记条 + 加粗（不只靠颜色，色弱观众也看得出）；同时只强调一个元素，其余略暗。
 //   · 文字色一律走主题的 *Ink 变体（WCAG AA ≥4.5:1），原色只做填充 / 描边。
 //   · 帧的纯函数：没有任何 useState / 随机 / 实时动画。
@@ -42,9 +43,9 @@ export type Tip = {term: string; x: number; y: number; w: number; h: number; lin
 export type StoryShot = {
   layout: string; variant: string; elements: Elem[]; focus: FocusOut[]; tips: Tip[];
   lines: number[]; lineEnds: number[]; think: number; custom: string | null; icons: number;
-  /** 3.5.0：线稿层（compose 已把 acts 换算成本镜帧号，并给好画面方框） */
+  /** 线稿层（compose 已把 acts 换算成本镜帧号，并给好画面方框） */
   sketch?: (SketchSpec & {box: {x: number; y: number; w: number; h: number}}) | null;
-  /** 3.5.0：讲解层的圈注 / 下划线 / 引线 / 手写小字（design 坐标） */
+  /** 讲解层的圈注 / 下划线 / 引线 / 手写小字（design 坐标） */
   annotate?: Array<{kind: 'circle' | 'underline' | 'arrow' | 'note'; x: number; y: number; w: number; h: number; at: number; text?: string; seed: string}> | null;
 };
 
@@ -59,15 +60,20 @@ export const tone = (t?: string) => {
   }
 };
 
-/** 出现（3.5.1 草稿纸）：沿阅读方向左→右展开，线性，dur 帧；不淡入、不上浮、不缩放。见 references/draftpaper.md#reveal-rules
- *  reduced-motion（P2-21）：直接到位——元素仍按 `at` 出现（内容顺序不变），只是不动。 */
+/** 出现（草稿纸）：沿阅读方向左→右展开，线性，dur 帧；不淡入、不上浮、不缩放。见 references/draftpaper.md#reveal-rules
+ *  reduced-motion：直接到位——元素仍按 `at` 出现（内容顺序不变），只是不动。 */
 export const enter = (f: number, at: number, _rise = 14, dur = 18): React.CSSProperties => {
   if (REDUCED_MOTION) return {opacity: f >= at ? 1 : 0};
   const p = interpolate(f, [at, at + dur], [0, 1], {...clamp, easing: Easing.linear});
   if (p <= 0) return {opacity: 0};
-  // 3.5.4：展开中带上 --nv-grow，GlyphSnap（src/glyph-snap.tsx）据此把展开边退到字与字之间，
-  // 不再把字切成半个。落定（p=1）不带——落定态 DOM 与 3.5.3 完全相同。
-  const style: React.CSSProperties = {clipPath: `inset(-6% ${((1 - p) * 100).toFixed(2)}% -6% -2%)`};
+  // 落定后不再裁切：展开用的 clip-path 只服务于「左→右长出来」。落定态若还留着
+  // inset(… 0% …)，元素盒外的部分（卡片偏移影、强调描边、柔影）会被齐边切掉，
+  // 画面上就是缺了右边的描边框、硬边的阴影块。
+  if (p >= 1) return {};
+  // 展开中带上 --nv-grow，GlyphSnap（src/glyph-snap.tsx）据此把展开边退到字与字之间，
+  // 不再把字切成半个。
+  // 展开边扫过「盒宽 + REVEAL_BLEED」：盒外的偏移影 / 柔影随展开边一起长出来，落定那一帧不再突然冒出一截。
+  const style: React.CSSProperties = {clipPath: revealClip(`calc(${((1 - p) * 100).toFixed(2)}% - ${(p * REVEAL_BLEED).toFixed(2)}px)`)};
   if (p < 1) (style as Record<string, string>)[GROW_VAR] = p.toFixed(4);
   return style;
 };
@@ -94,9 +100,7 @@ const anyHi = (shot: StoryShot, f: number) => Math.max(0, ...shot.focus.filter((
 
 const Lines: React.FC<{lines?: string[]; text: string; size: number; lh?: number; color?: string; weight?: number; align?: string}> = ({lines, text, size, lh = 1.35, color = C.ink, weight = 400, align}) => {
   // 中文行高下限 1.42：汉字字形（含标点、括号）在高过 lineHeight 时会直接压到上一行。
-  // 实测（flow 节点，字号 46）：lh=1.25 压住 414px²；1.32 仍压 274px²（「1665/借来」）
-  // 和 282px²（「今天/住户」，纯汉字——所以这不是「数字字形特殊」，是 46px 中文本身就需要更高行距）。
-  // 1.42（= 65.3px）之后两行彻底分开。这里统一兜底，而不是在每个调用点记一个魔法数。
+  // 46px 中文在 lh=1.32 时上下行仍会互压，1.42（= 65.3px）起两行彻底分开。这里统一兜底，不在每个调用点记魔法数。
   // 行高下限与排版端 SAFE_LH（scripts/story_text.py）同读 src/contract.json——
   // 排版按更小的 lh 算框高 → 下一行压进上一行的行盒（OverlapGate 硬拦）。
   const safeLh = Math.max(lh, CONTRACT.SAFE_LH);
@@ -107,12 +111,12 @@ const Lines: React.FC<{lines?: string[]; text: string; size: number; lh?: number
   );
 };
 
-// ---------------------------------------------------------------- 3.6.2 手作皮肤的纸感变体
-// 问题（3.6.1 样张实测）：手账纸上，compare 的 panel / flow 的 node 仍是「白卡片 + 圆角 + 2px 边框」，
+// ---------------------------------------------------------------- 手作皮肤的纸感变体
+// 手账纸上，compare 的 panel / flow 的 node 若是「白卡片 + 圆角 + 2px 边框」，
 // 一眼就是贴上去的 PPT 组件。纸上的东西应该是：一张裁下的纸、一条和纸胶带、两条淡彩，
 // 勾边用墨而不是 UI 描边。只在手作皮肤（THEME.craft 存在）下换，flat / cel 保持原样。
 // 纸卡、胶带、倾角与墨圈只属于手作媒介。flat / cel 也声明 craft（线稿色、字体、转场），
-// 但那是能力配置，不是“手作”；旧版把两者混成一个布尔值，导致中立皮肤也长出纸卡。
+// 但那是能力配置，不是“手作”；两者必须分开判断，否则中立皮肤也会长出纸卡。
 const HANDMADE_MEDIUM = isHandmadeMedium(THEME);
 /** 纸片倾角：由元素 id 确定性算出（±0.8°），同一元素每一帧都一样。 */
 const tiltOf = (id: string) => {
@@ -121,24 +125,35 @@ const tiltOf = (id: string) => {
   return ((h / 1000) * 2 - 1) * 0.8;
 };
 const paperCard: React.CSSProperties = HANDMADE_MEDIUM
-  ? {background: C.paper, borderRadius: 2, border: '1px solid rgba(70,50,25,0.16)',
-     boxShadow: '0 3px 10px rgba(70,50,25,0.22), 0 0 0 1px rgba(70,50,25,0.06)'}
-  : {background: C.paper, borderRadius: 16, border: `2px solid ${C.line}`};
+  ? {
+      background: C.paper,
+      borderRadius: THEME.aesthetic.paperRadius,
+      border: THEME.id === 'archive' ? '1px solid rgba(29,35,40,0.16)' : '1px solid rgba(70,50,25,0.16)',
+      boxShadow: THEME.paperShadow(0),
+    }
+  : {
+      background: C.paper,
+      borderRadius: THEME.aesthetic.paperRadius,
+      border: `${Math.max(2, THEME.aesthetic.paperOutline)}px solid ${THEME.id === 'cel' ? C.ink : 'rgba(28,32,36,0.14)'}`,
+      boxShadow: THEME.paperShadow(0),
+    };
 /** 和纸胶带：贴在纸片左上角，半透明淡彩，随纸片一起倾。
- *  0.5 的不透明度在纸色底上几乎看不见（实测截图里完全没存在感），
- *  改成 0.72 + 两端撕口 + 一条亮边——「贴上去的」这件事必须一眼能认出来。 */
+ *  不透明度 0.72 + 两端撕口 + 一条亮边（更淡在纸色底上看不见）——「贴上去的」必须一眼能认出来。 */
 const Tape: React.FC<{color: string}> = ({color}) => (
-  <div style={{position: 'absolute', left: -22, top: -13, width: 104, height: 28, background: color,
-    opacity: 0.72, transform: 'rotate(-3.5deg)', borderRadius: 1, pointerEvents: 'none',
-    boxShadow: '0 1px 3px rgba(70,50,25,0.18), inset 0 0 0 1px rgba(255,255,255,0.25)',
-    WebkitClipPath: 'polygon(2% 0, 100% 3%, 98% 100%, 0 96%)', clipPath: 'polygon(2% 0, 100% 3%, 98% 100%, 0 96%)'}} />
+  <div style={{position: 'absolute', left: -22, top: -13, width: 104, height: 28, backgroundColor: color,
+    backgroundImage: 'linear-gradient(112deg, rgba(255,255,255,0.26) 0%, transparent 48%, rgba(70,50,25,0.08) 100%)',
+    opacity: 0.78, transform: 'rotate(-3.5deg)', pointerEvents: 'none',
+    boxShadow: '0 1px 3px rgba(70,50,25,0.20), inset 0 1px 0 rgba(255,255,255,0.32)',
+    clipPath: 'polygon(0 7%,5% 0,10% 8%,15% 0,85% 0,90% 8%,95% 0,100% 7%,100% 93%,95% 100%,90% 92%,85% 100%,15% 100%,10% 92%,5% 100%,0 93%)'}} />
 );
 /** 纸片上的强调：墨圈（手画的、略不齐）而不是 UI 描边 + 抬升阴影。 */
-const InkFrame: React.FC<{w: number; t?: string; pad?: number; rad?: number}> = ({w, t, pad = 10, rad = 4}) => {
+const InkFrame: React.FC<{w: number; t?: string; pad?: number; rad?: number}> = ({w, t, pad = 10, rad}) => {
   if (w <= 0.01) return null;
+  // 组件皮肤的描边框与卡片同心：圆角 = 卡片圆角 + 外扩距离，四角不留缺口
+  const r = rad ?? (HANDMADE_MEDIUM ? 4 : THEME.aesthetic.paperRadius + pad);
   const tt = tone(t);
   // 手作：墨线勾一圈（不粗、不发光，随强调淡入）；组件皮肤：仍是描边 + 抬升阴影
-  return <div style={{position: 'absolute', inset: -pad, borderRadius: rad, opacity: w,
+  return <div style={{position: 'absolute', inset: -pad, borderRadius: r, opacity: w,
     border: `2.5px solid ${HANDMADE_MEDIUM ? tt.ink : tt.fill}`,
     boxShadow: HANDMADE_MEDIUM ? 'none' : `0 10px 28px rgba(0,0,0,${0.12 * w})`, boxSizing: 'border-box'}} />;
 };
@@ -147,7 +162,7 @@ const InkFrame: React.FC<{w: number; t?: string; pad?: number; rad?: number}> = 
 const HiBox: React.FC<{w: number; t?: string; pad?: number; radius?: number}> = ({w, t, pad = 10, radius = 14}) => {
   if (w <= 0.01) return null;
   const tt = tone(t);
-  return <div style={{position: 'absolute', inset: -pad, borderRadius: radius, border: `3px solid ${tt.fill}`, boxShadow: `0 10px 28px rgba(0,0,0,${0.12 * w})`, opacity: w, boxSizing: 'border-box'}} />;
+  return <div style={{position: 'absolute', inset: -pad, borderRadius: radius, border: `2px solid ${tt.fill}`, boxShadow: `0 0 0 4px ${tt.light}, 0 2px 6px rgba(20,25,30,${0.06 * w}), 0 10px 28px rgba(20,25,30,${0.11 * w})`, opacity: w, boxSizing: 'border-box', pointerEvents: 'none'}} />;
 };
 
 const Box: React.FC<{e: Elem; f: number; dim: number; style?: React.CSSProperties; children: React.ReactNode; rise?: number}> = ({e, f, dim, style, children, rise}) => (
@@ -171,7 +186,7 @@ const RevealText: React.FC<{lines: string[]; size: number; lh: number; color: st
   const per = Math.max(0.6, Math.min(3, (dur || chars * 1.5) / chars));
   let k = 0;
   return (
-    <div style={{position: 'relative', fontSize: size, lineHeight: Math.max(lh, 1.42), color, fontWeight: weight,
+    <div style={{position: 'relative', fontSize: size, lineHeight: Math.max(lh, CONTRACT.SAFE_LH), color, fontWeight: weight,
       textAlign: (align as any) ?? 'left', whiteSpace: 'nowrap'}}>
       {lines.map((l, i) => (
         <div key={i}>
@@ -209,18 +224,19 @@ const InkRule: React.FC<{f: number; at: number; w: number; y: number; color: str
 // 旧值 `…,monospace,Kai` 于是让 Kai 从未参与回退——Linux 渲染机上 Consolas/Menlo 都不在，
 // monospace 落到 DejaVu Sans Mono（无 CJK 字面），代码注释里的中文就成了豆腐块。
 const CODE_FONT = "'JetBrains Mono','DejaVu Sans Mono',Consolas,Menlo,Kai,monospace";
-const codeTokens = (line: string) => {
-  const out: {t: string; c: string}[] = [];
-  const re = /(#.*$|\/\/.*$)|("[^"]*"|'[^']*')|\b(def|return|import|from|class|if|else|for|in|const|let|function|await|async|new)\b|(@[\w.]+)|(\d+(?:\.\d+)?)/g;
-  let last = 0, m: RegExpExecArray | null;
-  while ((m = re.exec(line))) {
-    if (m.index > last) out.push({t: line.slice(last, m.index), c: C.ink});
-    out.push({t: m[0], c: m[1] ? C.muted : m[2] ? C.greenInk : m[3] ? C.blueInk : m[4] ? C.orangeInk : C.goldInk});
-    last = m.index + m[0].length;
-  }
-  if (last < line.length) out.push({t: line.slice(last), c: C.ink});
-  return out;
-};
+/** 代码行着色：整段交给 Shiki 按 codebox 的 lang 切词（多行字符串 / 注释跨行也对），取本行；不认识的语言为纯墨色。只取颜色，字重随行。 */
+const codeTokens = (shot: StoryShot, e: Elem) =>
+  highlightTokens(shot.elements.filter((x) => x.kind === 'codeline').map((x) => x.text).join('\n'), shot.elements.find((x) => x.kind === 'codebox')?.lang ?? '')[(e.n ?? 1) - 1] ?? [];
+
+/** 流程节点的步骤序号：两位数字 + 一截细线。高度 = size × SAFE_LH + 10，与排版端 story_layout.lay_flow 的 badge_h 一致。 */
+const StepBadge: React.FC<{n: number; size: number; hot: boolean}> = ({n, size, hot}) => (
+  <div style={{display: 'flex', alignItems: 'center', gap: 12, height: Math.round(size * CONTRACT.SAFE_LH), marginBottom: 10,
+    fontSize: size, lineHeight: 1, fontWeight: 700, color: hot ? C.orangeInk : C.blueInk, fontFamily: HANDMADE_MEDIUM ? 'Kai' : 'Clash,Space,Kai',
+    fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap'}}>
+    <span>{String(n).padStart(2, '0')}</span>
+    <span style={{width: 34, height: 3, borderRadius: 2, background: hot ? C.orange : C.lineBlue, opacity: 0.7}} />
+  </div>
+);
 
 const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = ({e, f, shot}) => {
   const w = hiWeight(shot, e.id, f);
@@ -244,11 +260,11 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
     }
     case 'card': case 'note': case 'quote': {
       return <Box e={e} f={f} dim={dim}>
-        <HiBox w={w} pad={4} />
+        <HiBox w={w} pad={4} radius={THEME.aesthetic.paperRadius + 4} />
         <div style={{...paperCard, position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
           background: e.kind === 'quote' ? 'transparent' : C.paper,
           border: e.kind === 'quote' ? 'none' : (HANDMADE_MEDIUM ? '1px solid rgba(70,50,25,0.10)' : `2px solid ${C.line}`),
-          borderLeft: `6px solid ${e.kind === 'note' ? C.orange : e.kind === 'quote' ? C.mutedBar : C.blue}`,
+          borderLeft: `3.5px solid ${e.kind === 'note' ? C.orange : e.kind === 'quote' ? C.mutedBar : C.blue}`,
           boxShadow: e.kind === 'quote' ? 'none' : paperCard.boxShadow,
           padding: e.pad ?? 22, boxSizing: 'border-box'}}>
           <Lines lines={e.lines} text={e.text} size={e.size} lh={e.lh} color={e.kind === 'quote' ? C.muted : C.ink} weight={bold} align={e.align} />
@@ -256,7 +272,7 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
       </Box>;
     }
     case 'number':
-      // 3.5.2：整串左→右展开、直接写终值（不弹簧放大、不滚动计数）
+      // 整串左→右展开、直接写终值（不弹簧放大、不滚动计数）
       return <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, opacity: dim, ...enter(f, e.at, 0, Math.max(G.min, Math.min(G.max, `${e.prefix ?? ''}${e.value}${e.unit ?? ''}`.length * G.perChar)))}}>
         <KineticNumber f={f} at={e.at} from={e.from_ ?? 0} to={e.value} decimals={e.decimals} prefix={e.prefix} suffix={e.unit} size={e.size} color={tt.fill} ink={tt.ink} dur={30} draft />
       </div>;
@@ -266,23 +282,24 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
       const lx = e.barX - e.x;
       return <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, width: e.w, height: e.h, opacity: dim, ...enter(f, e.at, 0, 12)}}>
         <HiBox w={w} pad={2} />
-        <div style={{position: 'absolute', left: lx, width: e.barW, bottom: 52, height: e.barH * g, background: hot ? C.orange : C.lineBlue, borderRadius: '10px 10px 0 0'}} />
+        <div style={{position: 'absolute', left: lx, width: e.barW, bottom: 52, height: e.barH * g, backgroundColor: hot ? C.orange : C.lineBlue, backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 48%, rgba(0,0,0,0.07) 100%)', boxShadow: hot ? '0 4px 14px rgba(0,0,0,0.12)' : 'none', borderRadius: '8px 8px 0 0'}} />
         <div style={{position: 'absolute', left: 0, right: 0, bottom: 52 + e.barH * g + 8, textAlign: 'center', fontSize: e.size, fontWeight: 700, color: hot ? C.orangeInk : C.ink, opacity: g, fontFamily: 'Space,Kai'}}>{e.valueText}</div>
         <div style={{position: 'absolute', left: 0, right: 0, bottom: 4, textAlign: 'center', fontSize: e.size, color: C.ink, fontWeight: bold, whiteSpace: 'nowrap'}}>{e.text}</div>
       </div>;
     }
     case 'codebox':
       return <Box e={e} f={f} dim={1} rise={10}>
-        <div style={{position: 'absolute', inset: 0, background: C.paper, border: `2px solid ${C.line}`, borderRadius: 18, boxShadow: '0 10px 30px rgba(0,0,0,0.06)'}} />
-        <div style={{position: 'absolute', left: 28, top: 22, fontSize: e.size, color: C.muted, fontFamily: 'Space,Kai', whiteSpace: 'nowrap'}}>{e.text}{e.lang ? ` · ${e.lang}` : ''}</div>
-        <div style={{position: 'absolute', left: 0, right: 0, top: 76, height: 2, background: C.line}} />
+        <div style={{position: 'absolute', inset: 0, background: C.paper, border: '1px solid rgba(28,32,36,0.14)', borderRadius: THEME.aesthetic.paperRadius, overflow: 'hidden', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 6px rgba(20,25,30,0.06), 0 14px 34px rgba(20,25,30,0.08)'}}>
+          <div style={{position: 'absolute', left: 0, right: 0, top: 0, height: 76, background: C.paperWarm, borderBottom: '1px solid rgba(28,32,36,0.10)'}} />
+        </div>
+        <div style={{position: 'absolute', left: 28, top: 22, fontSize: e.size, color: C.muted, fontFamily: 'Space,Kai', letterSpacing: 0.3, whiteSpace: 'nowrap'}}>{e.text}{e.lang ? ` · ${e.lang}` : ''}</div>
       </Box>;
     case 'codeline': {
-      // 3.5.2：代码行和别的文字一样左→右展开，时长取排程写进来的 dur（不再自己定 8 帧淡入）
+      // 代码行和别的文字一样左→右展开，时长取排程写进来的 dur（不再自己定 8 帧淡入）
       return <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, width: e.w, height: e.h, opacity: dim, ...enter(f, e.at, 0, (e as any).dur ?? growDur(e))}}>
         <HiBox w={w} pad={4} radius={8} />
         <div style={{position: 'relative', fontFamily: CODE_FONT, fontSize: e.size, lineHeight: `${e.h}px`, whiteSpace: 'pre', fontWeight: bold}}>
-          {codeTokens(e.text).map((t, i) => <span key={i} style={{color: t.c}}>{t.t}</span>)}
+          {codeTokens(shot, e).map((t, i) => <span key={i} style={{color: t.color}}>{t.content}</span>)}
         </div>
       </div>;
     }
@@ -292,20 +309,18 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
       const isAfter = !!e.morph;
       const op = isAfter ? interpolate(f, [e.at, e.at + 16], [0, 1], clamp) : outP;
       const t2 = tone(e.tone);
-      const num = e.value != null ? countVal(f, e) : null;
+      const num = e.value != null ? Number(e.value).toFixed(e.decimals ?? 0) : null;
       const en = enter(f, e.at, 14);
-      // 3.5.4 P0：enter() 入场后只返回 {clipPath}、不带 opacity。旧写法 `Math.min(Number(en.opacity), op)`
-      // 在入场后得到 NaN → React 把 "NaN" 写进 inline style → 浏览器拒收非法值、**保留上一帧的旧值**。
-      // 单帧 still 的旧值是空（=1，卡片在），从 f0 连续渲时旧值是入场前写下的 0（卡片整段消失）——
-      // 同一帧的画面取决于这个标签页之前渲过哪些帧。入场后按 1 计，opacity 永远是有限数。
+      // enter() 入场后只返回 {clipPath}、不带 opacity：此时按 1 计，保证 opacity 永远是有限数。
+      // NaN 会被浏览器拒收并保留上一帧的值，画面就取决于之前渲过哪些帧（still 与连续渲不一致）。
       const enOp = typeof en.opacity === 'number' ? en.opacity : 1;
       return <div data-auto-el={e.id} {...(isAfter || e.morphTo ? {'data-gate-allow': 'morph'} : {})} style={{position: 'absolute', left: e.x, top: e.y, width: e.w, height: e.h, transform: `${en.transform ?? ''} rotate(${HANDMADE_MEDIUM && !isAfter ? tiltOf(e.id) : 0}deg)`, opacity: Math.min(enOp, op) * dim}}>
         <InkFrame w={w} pad={4} t={e.tone} />
         <div style={{...paperCard, position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
-          borderTop: HANDMADE_MEDIUM ? `5px solid ${t2.fill}` : `8px solid ${t2.fill}`,
-          padding: HANDMADE_MEDIUM ? '30px 34px' : '26px 34px', boxSizing: 'border-box'}}>
+          borderTop: HANDMADE_MEDIUM ? `3px solid ${t2.fill}` : `4px solid ${t2.fill}`,
+          padding: HANDMADE_MEDIUM ? '30px 34px' : '26px 34px', paddingTop: (HANDMADE_MEDIUM ? 30 : 26) + (e.padY ?? 0), boxSizing: 'border-box'}}>
           {HANDMADE_MEDIUM && <Tape color={t2.light} />}
-          <div style={{fontSize: e.size, fontWeight: 700, color: t2.ink, whiteSpace: 'nowrap', fontFamily: HANDMADE_MEDIUM ? 'Kai' : undefined}}>{e.title}</div>
+          <div style={{fontSize: e.size, lineHeight: 1.3, fontWeight: 700, color: t2.ink, whiteSpace: 'nowrap', fontFamily: HANDMADE_MEDIUM ? 'Kai' : undefined}}>{e.title}</div>
           {num !== null && <div style={{fontSize: 120, fontWeight: 700, color: C.ink, fontFamily: 'Clash,Space,Kai', lineHeight: 1.15, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap'}}>{num}<span style={{fontSize: 52, marginLeft: 8}}>{e.unit}</span></div>}
           {(e.items as any[]).map((it, i) => <div key={i} style={{marginTop: 22, ...enter(f, e.at + 6 + i * 5, 8), borderLeft: HANDMADE_MEDIUM ? `2px solid ${C.line}` : 'none', paddingLeft: HANDMADE_MEDIUM ? 16 : 0}}><Lines lines={it.lines} text="" size={it.size} /></div>)}
         </div>
@@ -323,11 +338,14 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
       return <Box e={e} f={f} dim={dim}>
         <InkFrame w={w} pad={4} />
         <div style={{...paperCard, position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
-          borderTop: HANDMADE_MEDIUM ? `5px solid ${e.hot ? C.orange : C.lineBlue}` : undefined,
+          ...(HANDMADE_MEDIUM ? {
+            border: THEME.id === 'archive' ? '1px solid rgba(29,35,40,0.14)' : '1px solid rgba(70,50,25,0.10)',
+            borderTop: `5px solid ${e.hot ? C.orange : C.lineBlue}`,
+          } : {}),
           borderLeft: HANDMADE_MEDIUM ? 'none' : `2px solid ${e.hot ? C.orange : C.line}`,
-          border: HANDMADE_MEDIUM ? '1px solid rgba(70,50,25,0.10)' : undefined,
-          padding: HANDMADE_MEDIUM ? '26px 24px' : '24px 22px', boxSizing: 'border-box'}}>
+          padding: HANDMADE_MEDIUM ? '26px 24px' : '24px 22px', paddingTop: (HANDMADE_MEDIUM ? 26 : 24) + (e.padY ?? 0), boxSizing: 'border-box'}}>
           {HANDMADE_MEDIUM && <Tape color={e.hot ? C.orangeLight : C.blueLight} />}
+          {e.badge ? <StepBadge n={e.n} size={e.badge} hot={!!e.hot} /> : null}
           <Lines lines={e.lines} text={e.text} size={e.size} weight={700} lh={1.25} color={e.hot ? C.orangeInk : C.ink} />
           {e.note && <div style={{marginTop: 16, opacity: 0.85}}><Lines lines={e.noteLines} text={e.note} size={e.noteSize} color={C.muted} lh={1.4} /></div>}
         </div>
@@ -368,7 +386,7 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
         <div style={{position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: e.size, fontWeight: 700, color: C.blueInk}}>{e.text}</div>
       </div>;
     }
-    // ---------------------------------------------------------------- 3.6.0 手账页
+    // ---------------------------------------------------------------- 手账页
     // 这一组不是「卡片」，是纸上的东西：装裱的真图版、手写大字、印章、批注、放大镜。
     // 语法抄自 cell 片（journal 皮肤）：容器是纸，不是圆角矩形；位置由 compose 的 page 版式算好。
     case 'archive':
@@ -391,13 +409,13 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
     case 'figure':
       // 页内示意图：手账页上「随手画的那张小图」。a2e 那套线稿在这里才有位置——
       // 它不解释概念，只帮观众认出「说的是哪件东西」，所以尺寸压在画宽 25% 以内。
-      // 3.9.0：content.ink.acts 已由 compose 换算成本镜帧号（e.frames）。不写就只入场——
+      // content.ink.acts 已由 compose 换算成本镜帧号（e.frames）。不写就只入场——
       // 旧 story 的画面因此一个像素都不变。
       return <SketchLayer f={f} box={{x: e.x, y: e.y, w: e.w, h: e.h}}
         spec={{id: e.id, draw: e.draw, label: e.label, parts: e.parts,
                frames: e.frames ?? [{at: e.figAt ?? 0, do: 'enter' as const}]}} />;
     case 'media':
-      // 3.2.0 真实素材：MediaFrame 自带卡片外壳 / 署名徽章；区域推近由 content.region 指定
+      // 真实素材：MediaFrame 自带卡片外壳 / 署名徽章；区域推近由 content.region 指定
       return <Box e={e} f={f} dim={dim}><MediaFrame f={f} id={e.media} x={0} y={0} w={e.w} h={e.h} chrome={e.chrome} at={e.at} focus={e.region ?? undefined} focusAt={e.at + 24} highlight={shot.focus.filter((k) => f >= k.at && f <= k.until + 12 && shot.elements.some((x) => x.id === k.id && x.kind === 'region')).map((k) => k.id)} highlightAt={e.at} /></Box>;
     case 'region':
       return null; // 区域的高亮框由 MediaFrame 画（随区域推近一起缩放）；这里只提供被点名 / 推近的矩形
@@ -408,18 +426,19 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
 
 // morph 版式：after 面板出现的时刻
 const STORY_AFTER = (shot: StoryShot) => shot.elements.find((x) => x.morph) ?? null;
-const countVal = (f: number, e: Elem) => {
-  const v = Number(e.value);
-  const p = interpolate(f, [e.at + 4, e.at + 30], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
-  return (v * p).toFixed(e.decimals ?? 0);
-};
+
+/** 封面静帧（poster 传 hideCaptions）：与字幕一样，释义气泡是随旁白出现的临时浮层，不进封面。 */
+const COVER_STILL: boolean = (() => {
+  try { return !!(getInputProps() as {hideCaptions?: boolean})?.hideCaptions; } catch { return false; }
+})();
 
 const TipView: React.FC<{t: Tip; f: number}> = ({t, f}) => {
+  if (COVER_STILL) return null;
   const grow = interpolate(f, [t.at, t.at + 10], [0, 1], {...clamp, easing: Easing.linear});
   const o = interpolate(f, [t.until - 10, t.until], [1, 0], clamp);
   if (grow <= 0 || o <= 0) return null;
-  return <div data-gate-allow="glossary" style={{position: 'absolute', left: t.x, top: t.y, width: t.w, height: t.h, opacity: o, clipPath: `inset(-6% ${((1 - grow) * 100).toFixed(2)}% -6% -2%)`, zIndex: 5}}>
-    <div style={{position: 'absolute', inset: 0, background: C.navy, borderRadius: 14}} />
+  return <div data-gate-allow="glossary" style={{position: 'absolute', left: t.x, top: t.y, width: t.w, height: t.h, opacity: o, clipPath: grow >= 1 ? undefined : `inset(calc(-12% - ${REVEAL_BLEED}px) calc(${((1 - grow) * 100).toFixed(2)}% - ${(grow * REVEAL_BLEED).toFixed(2)}px) calc(-24% - ${REVEAL_BLEED}px) calc(-6% - ${REVEAL_BLEED}px))`, zIndex: 5}}>
+    <div style={{position: 'absolute', inset: 0, background: C.navy, borderRadius: 14, border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 4px 12px rgba(15,23,42,0.22), 0 14px 30px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.14)'}} />
     <div style={{position: 'absolute', left: 25, top: 18, color: C.white, fontSize: t.size, lineHeight: 1.35, whiteSpace: 'nowrap'}}>{t.lines.map((l, i) => <div key={i}>{l}</div>)}</div>
   </div>;
 };
@@ -439,7 +458,7 @@ export type CustomProps = {
 const AnnotLayer: React.FC<{list: NonNullable<StoryShot['annotate']>; f: number}> = ({list, f}) => (
   <>
     {list.map((a, i) => {
-      const p = interpolate(f, [a.at, a.at + 12], [0, 1], clamp);
+      const p = interpolate(f, [a.at, a.at + CONTRACT.ANNOT.mark], [0, 1], clamp);
       if (p <= 0) return null;
       if (a.kind === 'circle') return <InkCircle key={i} cx={a.x + a.w / 2} cy={a.y + a.h / 2} rx={a.w / 2 + 18} ry={a.h / 2 + 14} p={p} seed={a.seed} />;
       if (a.kind === 'underline') return <Underline key={i} x={a.x + 8} y={a.y + a.h - 6} w={a.w - 16} p={p} seed={a.seed} />;

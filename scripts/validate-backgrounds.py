@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""validate-backgrounds.py · 背景库门禁（3.3.0）。
+"""validate-backgrounds.py · 背景库门禁。
 
 两种用法：
 
@@ -10,8 +10,8 @@
   # 2. 工程的分镜结果（manifests/shots.resolved.json）：每镜的背景存在、属于当前皮肤、相邻两镜不重复（P1 提示）。
   python scripts/validate-backgrounds.py PROJECT_DIR --shots
 
-只用标准库；指标（亮度 / 对比度 / 中央起伏）在生成时由 scripts/dev/make-bg-library.py 算好写进 manifest，
-并和 sha256 绑定——文件变了 sha 就对不上。维护者可用 scripts/dev/bg_metrics.py（numpy + pillow）按同一算法重算比对（unittest 会跑）。
+只用标准库；指标（亮度 / 对比度 / 中央起伏）在生成时算好写进 manifest，
+并和 sha256 绑定——文件变了 sha 就对不上。
 
 判据（交付分辨率 2560×1440；字幕区 = 字幕实际落点外扩一圈：x 391–2169，y 1236–1404）：
   P0  manifest 缺字段 / 文件缺失 / sha256 不符 / 许可不在白名单 / CC BY 缺署名或来源链接 / 皮肤未知
@@ -173,7 +173,7 @@ def check_shots(root: Path) -> tuple[list[str], list[str]]:
         return [f"缺 {rp}（先跑 resolve-shots）"], p1
     res = json.loads(rp.read_text(encoding="utf-8"))
     theme = res.get("theme")
-    # 3.3.0：相邻重复只在逐镜轮换（bgMode=shot）时算问题；chapter / film 模式同章同纸是设计如此。
+    # 相邻重复只在逐镜轮换（bgMode=shot）时算问题；chapter / film 模式同章同纸是设计如此。
     # 旧 resolved 没有 bgMode 键：手作皮肤按 chapter、其余按 shot 推断（与 resolve-shots 的默认一致）。
     mode = res.get("bgMode") or ("chapter" if theme in ("journal", "papercut", "archive") else "shot")
     try:

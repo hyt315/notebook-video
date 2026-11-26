@@ -7,14 +7,13 @@ import {fitsWithin} from './fittext';
 // ============================================================================
 // overlay.tsx — 拟真弹层（dialog / popover / tooltip / menu）
 //
-// 3.2.0（Phase 3）：去掉 Radix（dialog / popover / tooltip / dropdown-menu 四个包）。
-// 以前的实测结论正是去掉它的理由：
+// 不用 Radix（dialog / popover / tooltip / dropdown-menu）的理由：
 //   1. Portal 默认落到 document.body（画布之外），必须手动把 container 指回画面；
 //   2. popover / tooltip / menu 走 floating-ui，落位是**异步**测量出来的
-//      （实测要 8 轮渲染才稳定）——我们本来就把锚点钉死在给定坐标上，
+//      （要多轮渲染才稳定）——我们本来就把锚点钉死在给定坐标上，
 //      所以那层测量只剩风险、没有收益。
-// 现在弹层就是父容器里一个绝对定位的 <div>：dialog 的左上角 = (x, y)；
-// popover / tooltip / menu 的左上角 = (x, y + 间距)，与原来 side="bottom" align="start" 的落点一致。
+// 弹层就是父容器里一个绝对定位的 <div>：dialog 的左上角 = (x, y)；
+// popover / tooltip / menu 的左上角 = (x, y + 间距)，（相当于 side="bottom" align="start"）。
 // 落点是 f(帧号) 的确定值，不测量、不 Portal、不异步。
 //
 // 纪律：只读 THEME；显隐与入场都是 f(帧号) 的纯函数；不用 CSS transition。

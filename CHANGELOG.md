@@ -6,6 +6,39 @@ Format follows Keep a Changelog: one section per release, one line per change. T
 更早的完整记录（1.0.0 – 3.5.4，中英双写的长条目）已归档到仓库内的 `docs/history/CHANGELOG-legacy.md`（只在仓库里，不进发布包）。
 The full earlier history (1.0.0 – 3.5.4) is archived in the repository at `docs/history/CHANGELOG-legacy.md` (repository only, not shipped).
 
+## [3.7.0] - 2026-11-26
+
+### Added
+- 讲稿标准 `references/narration.md`（误解优先、每镜一问、好坏讲稿对照），组件路线与手作路线共用。 / Shared narration guide `references/narration.md` with good-vs-bad pairs.
+- 「讲清楚」评审卡 `references/rubric.md`（5 项、1–5 分）；`validate-treatment` 按这五项读 `review.rounds`，`renders/report.md` 首屏显示评审分数或「未评审」。 / 5-item clarity rubric; review scores (or "unreviewed") lead `renders/report.md`.
+- 蓝图与随包示例每镜写 `$asks`（这一镜回答观众的哪个问题），未填记 P1。 / `$asks` on every blueprint and example shot; P1 when missing.
+- `notebook-video showcase` 改走独立入口 `src/showcase-entry.tsx`，成片入口不带样张依赖。 / Component sheets render from their own entry point.
+- `validate-skill-consistency` 也核对文档引用的 `src/contract.json` 数值与脚本常量（如 `CPS_MAX`）。 / Consistency check covers contract values and script constants quoted in docs.
+
+### Changed
+- `references/` 精简为 11 篇 + `themes/` 6 篇，SKILL 路由加讲稿与评审卡；门禁执行的规则都有对应说明。 / References condensed to 11 + 6 files; every enforced rule stays documented.
+- 画面：五套主题椭圆暗角与定向光，手作纸张双层投影，镜头去掉正弦呼吸，媒体框与卡片边线收细。 / Lighter framing, vignettes and paper shadows; no sine "breathing" camera.
+- 动效统一为不过冲的缓动（`src/motion.ts`）；代码块按语言高亮（Shiki）；手写批注时长写进 `contract.json` 的 `ANNOT`。 / No-overshoot easing shared in `src/motion.ts`; Shiki code colouring; annotation timing in `ANNOT`.
+- 主题背景与纸纤维纹理改用 WebP（`public/bg/bg-*.webp`、`public/craft/fibre-tile.webp`），包更小。 / Theme backgrounds and fibre tile are WebP (smaller package).
+- 冷开：各皮肤第一镜的首个元素在第 0 帧已落定（O6 手作皮肤 P0、组件皮肤 P1）。 / Cold open: the first element is settled at frame 0 on every skin.
+- 招牌镜推不进也扫不开时，compose 改选最近能推的一镜并写回 treatment。 / Compose reassigns an unmovable signature shot to the nearest movable one.
+- 门禁口径：字幕行长 Python 与浏览器同一种数法（去句末标点、ASCII 计 1）；P0 只表示拦片；浏览器门禁结论写进 `renders/gates.json`；「画面空」的修法不再与「不改小 anchor」冲突。 / One caption-length count; P0 means blocking only; browser gates report to `gates.json`.
+- 排版与运镜：代码行估宽、行高、ms→帧取整与浏览器一致；门禁按真实相机路径判；compare / flow 保持各自位置。 / Layout and camera estimates match the renderer; gates read the real camera path.
+- 音频：与人声重叠的音效自动压低约 4 dB，带裁剪的音效起播微淡入；TTS 标点对齐失配时降级对齐，网络瞬断重试，缺 Whisper 模型时退回按字数均分。 / Voice-aware SFX ducking; resilient TTS alignment and retries.
+
+### Fixed
+- 配音后关键词高亮与推近跟着 TTS 重算；codebox 的失效音效 `typing` 改为 `highlight`。 / Term timings follow TTS; codebox uses the `highlight` SFX.
+- 组件路线按作者的 `treatment.json` 运镜，模板示例 treatment 不套用（P1）；手作 story 工程留着模板 treatment 时只报一条 P0。 / Author treatment honoured; leftover template treatment gives one clear message.
+- 直书页每行的 `reveal` 各自生效；flow 步骤缺 `label` 时给出可照改的报错。 / Per-row `reveal` on type pages; actionable error for flow steps without `label`.
+- 手写场景蓝图（`$route: handwritten-craft`）喂给 `compose-story` 时直接说明路线；SKILL 选路线表指向可跑的 `examples/recipes/*.story.json`。 / Handwritten blueprints are named as such; route table points to runnable recipes.
+- `medium-metaphor` 蓝图补上可省的片名拍，节拍不留空档。 / `medium-metaphor` blueprint timing has no gap.
+- 文档与实现对齐：交付尺寸（缺省 `--scale=0.75` 出 1920×1080）、门禁等级、`data-gate-allow` 取值、锤子帧与 `recipe: "hammer"`、CC BY-SA 口径；补上 `recipe` / `sketch` / `annotate`、`sources` / `claim`、`cinema` 块与 `poster` / `deliver` / `clean` 的写法。 / Docs match the code on delivery size, gate levels and syntax.
+- `selftest` 负例按各门禁自己的拦截语句判，崩溃不算拦住。 / Selftest negatives match each gate's own message; crashes no longer count as blocked.
+
+### Removed
+- `references/MOVED.md`；旧文档名锚点仍保留在新文件里。 / Removed `references/MOVED.md`; legacy anchors remain.
+- JPEG / PNG 版主题背景与纸纤维纹理（由 WebP 取代）。 / JPEG / PNG backgrounds and tile (replaced by WebP).
+
 ## [3.6.1] - 2026-11-16
 
 ### Changed

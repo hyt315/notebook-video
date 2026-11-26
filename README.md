@@ -27,12 +27,12 @@
 - **手账页承载，不是幻灯片**：镜头只有两种——**手账页**（贴一张真实档案图版 / 藏品照片，配放大镜、手写标注和朱印）
   和**组件**（控制台、代码差异、清单、数字行、柱条、结论条……）。**线稿是可选项**，只用来画「标本示意图」：
   一条讲不清概念的剪贴画，比不画更糟——所以它退回页内小图（`content.figure`，画宽 ≤19%），不再当镜头主角。
-- **镜头会跟着讲**：引擎级虚拟摄影机缺省缓推，讲到哪个词就推近到对应组件（线稿镜头只做 1.00→1.03 慢推，不切图），换镜用甩镜 / 推穿；推近时给线稿留边，不切断图。
+- **镜头会跟着讲**：引擎级虚拟摄影机缺省缓推，讲到哪个词就推近到对应组件（线稿镜头只做 1.00→1.03 慢推，不切图），auto 路线换镜默认一律翻页（`CURL_FRAMES` = 22 帧）；推近时给线稿留边，不切断图。
 - **弱模型也能复刻**：7 个融合配方决定「线稿摆哪、卡片多大」，作者只填内容；10 个讲课蓝图（5 个组件路线 + 5 个手作结构族）逐镜写好该用的骨架与组件，加上黄金样例、短流程和一条命令；能客观判断的问题，引擎直接自动修。
 
 - **一本手账一张纸、评审先于成片**：手作皮肤默认 `bgMode: "chapter"`（每章一张纸，章内沿用；`"film"` 全片一张、`"shot"` 逐镜轮换），
-  装饰重的背景（`busy`）不进常规镜；`resolve-shots` 从实际镜头表自动生成 `storyboard.md` 给独立评审用；
-  手作皮肤没做评审时 `make-video --render` 给一条 P1 提示、照常渲染（`--skip-review` 关掉提示）；没有跑 TTS 时按读速 `--cps`（缺省 6.5 字/秒）估计字幕时间；正式片用 `notebook-video tts` 拿词级时间。
+  装饰重的背景（`busy`）不进常规镜；`resolve-shots` 从实际镜头表自动生成 `storyboard.md`，独立评审按 [references/rubric.md](references/rubric.md) 的评审卡打分，分数显示在 `renders/report.md` 首屏；
+  手作皮肤没做评审时 `make-video --render` 给一条 P1 提示、照常渲染（`--skip-review` 关掉提示）；没有跑 TTS 时按读速 `--cps`（组件默认 `READ_CPS` = 4.5 字/秒，手作估算 6.5 字/秒）估计字幕时间；正式片用 `notebook-video tts` 拿词级时间。
 
 - **背景库**：每个手作皮肤再加 8 张、flat / cel 各加 5 张亮底背景（横线本、宣纸、窗花、古地图、胶片、网点、mesh 渐变……），
   不写就按镜头角色自动轮换、相邻两镜不重复；每张都登记了来源与许可（Paper Shaders 离线预渲、Commons 公有领域 / CC0 纹理、确定性程序生成），
@@ -42,7 +42,7 @@
   三套亮底手作皮肤（`journal` 手账水彩 / `papercut` 红色剪纸 / `archive` 档案灯台）和 craft 材质组件（压感墨线、"写出来"的中文、水彩晕染、剪纸、放大镜）；
   每个选题先搜 **Wikimedia Commons / Openverse** 的真实素材，许可自动过滤、署名自动上屏。
 
-只有一种画布：**16:9**（交付 2560×1440，缺省按 1920×1080 渲染；设计坐标 1920×1080，原生 30 fps）。五套皮肤：`flat`（默认，安静的现代教育插画风）、`cel`（粗描边漫画风），以及手作皮肤 `journal` / `papercut` / `archive`。
+只有一种画布：**16:9**（缺省交付 1920×1080，即 `make-video` 的 `--scale=0.75`；`--scale=1` 出 2560×1440；设计坐标 1920×1080，原生 30 fps）。五套皮肤：`flat`（默认，安静的现代教育插画风）、`cel`（粗描边漫画风），以及手作皮肤 `journal` / `papercut` / `archive`。
 
 ## 核心特性
 
@@ -57,9 +57,9 @@
 | **一条命令** | `make-video.mjs`：resolve-shots → 门禁 → tsc → 静帧接触表或整片渲染 → `renders/report.md`；Windows 有 `make-video.cmd` |
 | **交付不只是一个 mp4** | 整片渲完自动再出 `renders/captions.srt`（画面里那套断句，不是重新识别）和 `renders/poster.jpg`（取 `treatment.signature_shot` 的落定帧，且不画字幕）。单独重出：`poster` / `export-srt` / `deliver` |
 | **改完能对比** | `eval-project 旧工程 新工程` 把片子拆成可比的数据（镜长分布、版式 / 介质 / 转场种类、运镜覆盖、字幕密度、空场读数）并给 Δ。**不打分**：阈值只在门禁里存一处 |
-| **先看 30 秒再渲全片** | `notebook-video preview <工程>` 只渲一段（缺省前 30 秒、半分辨率）并出接触片和响度读数；`--shot=S6` 只看一镜。改一版看一版不必等整片。30 秒片段耗时随机器差异很大：作者开发机约 40 秒；2 核 / 8 GB 的 Linux aarch64 实测渲染约 170 秒、含打包约 5 分钟 |
+| **先看 30 秒再渲全片** | `notebook-video preview <工程>` 只渲一段（缺省前 30 秒、半分辨率）并出接触片和响度读数；`--shot=S6` 只看一镜。改一版看一版不必等整片。30 秒片段的耗时随机器差异很大，首次还要加上打包时间 |
 | **全片一镜不漏** | `notebook-video sweep <工程>` 每镜截一张落定态、拼成一张体检表（`renders/sweep-sheet.jpg`），八镜约 60 秒跑完，判空场用的是渲染期同一套阈值。`preview` 只看开头，片子长了尾巴容易漏——这一步补的就是它 |
-| **门禁与自动修** | 硬门禁只管客观问题（取景切字、字号地板、对比度 ≥4.5:1、字幕每行 ≤16 字、读速（组件路线 ≤4.5 字/秒，手作路线 6.5 字/秒）、画面静止、音画同步、音效电平），能修的自动修；主观项只给建议 |
+| **门禁与自动修** | 硬门禁只管客观问题（取景切字、字号地板、对比度 ≥4.5:1、字幕每行 ≤16 字、字幕读速硬上限 `CPS_MAX` ≤9 加权字/秒（无配音排时长基准 `READ_CPS` = 4.5 字/秒，手作估算可用 6.5 字/秒）、画面静止、音画同步、音效电平），能修的自动修；主观项只给建议 |
 | **确定可复现** | 所有动画都是帧号的纯函数（不用 `Math.random`、CSS 动画、计时器）；不依赖生图模型，不需要在线 API |
 
 ## 近期变化
@@ -185,12 +185,12 @@ python scripts/commons-search.py credits ./my-video   # → CREDITS.md
 
 | 阶段 | 检查 | 典型拦截 |
 | --- | --- | --- |
-| 构建期（Python） | `resolve-shots`、`validate-composition`、`validate-shot-motion`、`validate-presentation`、`validate-caption-sync`、`validate-semantic-breaks`、`validate-layering`、`validate-visual-plan`、`validate-fusion`、`validate-glyphs`、`validate-silence`、`validate-audio-levels`、`validate-media` | 相邻两镜同版式、内容太小、对比度不足、字幕超 16 字或读不完、线稿配比失衡或主题物缺席、线稿被裁、句间没有静音或音效压不住人声、音效增益与库不一致、素材会糊 |
+| 构建期（Python） | `resolve-shots`、`validate-composition`、`validate-shot-motion`、`validate-presentation`、`validate-caption-sync`、`validate-semantic-breaks`、`validate-layering`、`validate-visual-plan`、`validate-fusion`、`validate-glyphs`、`validate-silence`、`validate-audio-levels`、`validate-media` | 内容太小、对比度不足、字幕超 16 字或读不完、线稿配比失衡或主题物缺席、线稿被裁、句间没有静音或音效压不住人声、音效增益与库不一致、素材会糊 |
 | 渲染期（浏览器内） | `OverlapGate`、`ClippingGate`、`CanvasBoundsGate`、`FillGate`、`CaptionFitGate`、`MascotGate` | 文字互相压、图形被裁、越出画布、字幕溢出 |
 | 成片 | `validate-video`、`validate-motion-gaps` | 尺寸 / 编码 / 色彩标记不对、画面静止过久 |
 | 技能自检 | `validate-skill-consistency`、`selftest`、`negative-gate-check`、`dev/check-examples`、`dev/check-test-collection`、`dev/purity-smoke` | 文档写了不存在的组件、断链；每道门禁喂坏输入必须拦住；正例过门禁、负例被拦；测试文件没被收集；连续渲与单帧渲画面不同 |
 
-门禁结果统一写进 `renders/gates.json`：P0 拦片，P1 进报告「建议（不拦）」。帧参数是必填类型，由 `tsc` 检查（取代原 `validate-frame-props`）；跨语言常量只在模板 `src/contract.json` 一处。
+门禁结果（含渲染期浏览器门禁）统一写进 `renders/gates.json`：P0 只表示拦片，P1 进报告「建议（不拦）」；相邻同骨架 / 同版式、运镜配额、缺 `$asks` 这类审美与结构项只记 P1。帧参数是必填类型，由 `tsc` 检查；跨语言常量只在模板 `src/contract.json` 一处。
 
 细节：[references/checks.md#composition-gate](references/checks.md#composition-gate)、[references/checks.md#presentation-gate](references/checks.md#presentation-gate)、[references/checks.md#quality-checklist](references/checks.md#quality-checklist)。
 
@@ -204,14 +204,14 @@ notebook-video/
 ├── examples/                    # 正例 story.json（CI 要求全部过门禁）、真实素材样例、弱模型测试；negative/ 故意的负例；cell-notebook/ 仅文档
 ├── assets/
 │   ├── lecture-template/        # 唯一的工程模板（Remotion + React + TS）
-│   │   ├── src/                 # 引擎（index / cinema / sfx）、组件、主题、门禁、custom/ 逃生口
+│   │   ├── src/                 # 引擎（index / cinema / sfx）、组件、主题、门禁、custom/ 逃生口；showcase-entry 是组件样张的独立入口
 │   │   ├── manifests/           # shots.json、字幕、素材清单
-│   │   ├── public/              # 字体、背景、音效库 sfx/、真实素材 media/
+│   │   ├── public/              # 字体、背景（WebP）、音效库 sfx/、真实素材 media/
 │   │   └── scripts/             # 可选 TTS 适配、变速后处理
 │   └── fonts/                   # LXGW 文楷 Lite（OFL-1.1）与 Clash Display（ITF FFL）的下载缓存，不入库，首次使用时自动下载
 ├── scripts/                     # make-video、notebook-video CLI、compose / resolve、各门禁、自检；Windows 入口只有 notebook-video.cmd / make-video.cmd
 │   └── dev/                     # 维护者工具（一条命令全检 test-all.py、音效库与背景库构建；不进发布包）
-├── references/                  # 作者手册与规格（镜头、版式、主题、线稿、配方、音效、字幕、门禁、跨平台）
+├── references/                  # 作者手册与规格（讲稿、评审卡、镜头、版式、主题、线稿、配方、音效、字幕、门禁、跨平台），11 篇 + themes/ 6 篇
 ├── tests/                       # 离线单元测试（少数在缺可选依赖或未设 NV_ONLINE=1 时跳过）（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 融合配方 / TTS / 静音 / 门禁 / 评审 …）
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · REUSE.toml（逐文件许可）· LICENSE
 ```

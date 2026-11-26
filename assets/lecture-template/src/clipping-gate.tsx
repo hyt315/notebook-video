@@ -1,17 +1,12 @@
 import React from 'react';
 import {useCurrentFrame} from 'remotion';
-import {effectiveOpacity, useLayoutProbe, useSampledFrame} from './layout-probe';
+import {REPORT_EVERY, effectiveOpacity, useLayoutProbe, useSampledFrame} from './layout-probe';
 
 // ============================================================================
-// ClippingGate · 渲染期「图形被裁」门禁（v1）
+// ClippingGate · 渲染期「图形被裁」门禁
 //
-// 为什么需要它（2026-09-21，用户在成片 2:58 亲眼看出来的那一类）：
-//   `CardFitGate` 只量 **div/span 里的文字**有没有溢出自己的卡片；
-//   `OverlapGate` 只量 **文字与文字**互相压。
-//   两者都不看**图形**。于是「SVG 图形越出容器被裁掉」这件事**两道门都管不着**：
-//   实测 S19 的走廊把站点圆心算在 x=0，圆从 −52 跨到 +52，左半边被 `<svg>` 视口裁掉
-//   （对勾路径从 −14 起笔也一起没了）—— 渲出来是一颗缺了半边的球，**零报错、零警告**，
-//   只有人眼看出来。这一件门就是补这个洞。
+// `CardFitGate` 只量 div/span 里的文字是否溢出卡片，`OverlapGate` 只量文字互压；
+// 这道门管**图形**：例如圆心落在 x=0 的圆，左半边会被 `<svg>` 视口静默裁掉。
 //
 // 判据：**图形元素的真实 rect 越出最近的「会裁切」祖先盒子** 即报。
 //   · 会裁切祖先（HTML 侧）= 第一个 overflow-x/y ≠ visible 的祖先；
@@ -20,13 +15,13 @@ import {effectiveOpacity, useLayoutProbe, useSampledFrame} from './layout-probe'
 //     不裁切，继续往上找 —— 这一点必须按**计算样式**判，不能假设。
 //
 // 与 OverlapGate 同一条纪律：
-//   · 测量排在 rAF 里 → **必须持 delayRender**，否则截帧先于测量，门禁等于不存在（那边踩过）；
-//   · 字体未就绪时 `document.fonts.ready` **要等**，不能 return（那边也踩过）；
+//   · 测量排在 rAF 里 → **必须持 delayRender**，否则截帧先于测量，门禁等于不存在；
+//   · 字体未就绪时 `document.fonts.ready` **要等**，不能 return；
 //   · 只有**落定**（元素与裁切祖先的有效不透明度都 ≥0.98）的越界才硬拦，
 //     入场途中被位移/缩放甩出一点的只报不拦 —— 那是运动，不是版面错误；
 //   · 每 150 帧打一次覆盖率：让「没报」与「没跑」可区分。
 //   · **硬拦时必须让 handle 保持未释放、并且不让自家 catch 吞掉 cancelRender 的异常**
-//     —— 这条是 v2 补的，v1 命中硬拦照样出图 rc=0（见 measure() 里的长注释）。
+//     （否则命中硬拦照样出图 rc=0）。
 //
 // 刻意**排除**的东西：
 //   · 文字（`text`/`tspan` 除外由它自己管）——文字溢出归 CardFitGate；
@@ -51,13 +46,11 @@ const BLOCK_PX = 24;
 const OPAQUE_FOR_SETTLED = 0.98;
 const SAMPLE_EVERY = 15;
 const EVENT_PAD = 2;
-const REPORT_EVERY = 150;
 
 /**
  * 只挑**会落在画面上的图形元素**。
  * 刻意**不含** `svg` / `g` 这类纯容器：它们自己不上色，而「容器盒子比画布宽」是常事
- * —— 实测 Corridor 的 `<svg width={1920}>` 放在 design x=140 的盒子里，盒子一直伸到 2060，
- * 越出 1920 画布 140px，但它**什么都不画**在那里，报它就是纯噪音。
+ * （例如 `<svg width={1920}>` 放在 x=140 的盒子里会越出画布 140px，但那里什么都不画）。
  * 真正会被裁的是**画东西的那些元素**（圆、路径、线、文字…），它们各自的 rect 才是判据。
  * 也刻意不含 `div/span`：文字与版面归 CardFitGate，HTML 侧的取景框（ZoomStage 那种）
  * 是**有意**裁切，应该由作者标 `data-gate-allow` 声明，而不是让门禁去猜。

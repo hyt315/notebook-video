@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================================
-// make-video.mjs · 3.2.0 一条命令出片（Windows / macOS / Linux 同一套 Node 实现）
+// make-video.mjs · 一条命令出片（Windows / macOS / Linux 同一套 Node 实现）
 //
 //   node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel] [--stills] [--render OUT.mp4] [--skip-review]
 //   --skip-review：手作皮肤 treatment.review.rounds 为空时 --render 会给一条 P1 评审提示（不拦），用它关掉提示
@@ -57,7 +57,8 @@ const renderOut = flag('render') ? path.resolve(flagVal('render', path.join(proj
 const run = (cmd, argv, opts = {}) => new Promise((resolve) => {
   const child = spawn(cmd, argv, {cwd: opts.cwd, env: opts.env, stdio: opts.capture ? ['ignore', 'pipe', 'pipe'] : 'inherit', windowsHide: true, shell: opts.shell ?? false});
   let out = '';
-  if (opts.capture) { child.stdout.on('data', (d) => { out += d; }); child.stderr.on('data', (d) => { out += d; }); }
+  // tee：边收边原样打印（整片渲染既要给人看进度，又要事后读渲染期门禁的行）
+  if (opts.capture) for (const [src, dst] of [[child.stdout, process.stdout], [child.stderr, process.stderr]]) src.on('data', (d) => { out += d; if (opts.tee) dst.write(d); });
   child.on('close', (code) => resolve({code, out}));
   child.on('error', (e) => resolve({code: 127, out: String(e)}));
 });
@@ -73,15 +74,15 @@ const PY = findPython();
 const PY_UTF8_ENV = {...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1'};
 const py = (script, argv, opts = {}) => run(PY.c, [...PY.pre, path.join(SCRIPT_DIR, script), ...argv], {...opts, env: {...PY_UTF8_ENV, ...(opts.env ?? {})}});
 const node = (argv, opts) => run(process.execPath, argv, opts);
-// 3.7.0：Windows 上 Remotion 不设 windowsHide，每帧收尾的 taskkill 都会闪一个 CMD 窗口
+// Windows 上 Remotion 不设 windowsHide，每帧收尾的 taskkill 都会闪一个 CMD 窗口
 // （--stills 逐帧模式下 = 每帧闪一次）。预加载 scripts/windows-hide-console.cjs 强制隐藏，
-// 不改 node_modules（重装依赖就会失效）。详见该文件头部的实测记录。
+// 不改 node_modules（重装依赖就会失效）。详见该文件头部的说明。
 const HIDE_CONSOLE_SHIM = path.join(SCRIPT_DIR, 'windows-hide-console.cjs');
 const hideConsoleArgs = () => (IS_WIN && fs.existsSync(HIDE_CONSOLE_SHIM) ? ['--require', HIDE_CONSOLE_SHIM] : []);
 const nodeRemotion = (argv, opts) => run(process.execPath, [...hideConsoleArgs(), ...argv], opts);
 const step = (t) => console.log(`\n── ${t}`);
 const die = (m) => { console.error(`\n✗ ${m}`); process.exit(1); };
-// 3.5.2：浏览器路径指错时一行报错（不打印堆栈）
+// 浏览器路径指错时一行报错（不打印堆栈）
 const browserArgsOrDie = () => {
   try {
     return browserArgs();
@@ -90,19 +91,43 @@ const browserArgsOrDie = () => {
   }
 };
 
-// 3.5.0 · 成片必须有真实旁白：静音占位只允许用于 --stills / preview。
-// 旧版无条件写静音占位，于是"成片"可以是一个没人说话的空壳，而所有门禁照样全绿。
+// 成片必须有真实旁白：静音占位只允许用于 --stills / preview（否则"成片"可以是一个没人说话的空壳，而门禁照样全绿）。
+const activeSkinName = () => {
+  try {
+    const m = fs.readFileSync(path.join(project, 'src', 'theme', 'active.ts'), 'utf8').match(/from\s+'\.\/(\w+)'/);
+    return m ? m[1] : style;
+  } catch { return style; }
+};
+const failFast = args.includes('--fail-fast');
+const allowStale = args.includes('--allow-stale');
+
 const requireNarrationForRender = () => {
   if (!renderOut) return;
   const marker = path.join(project, 'audio', '.silent-placeholder');
-  if (!fs.existsSync(marker)) return;
+  if (!fs.existsSync(marker)) {
+    if (!allowStale) {
+      const metaP = path.join(project, 'audio', 'narration.meta.json');
+      const conP = path.join(project, 'manifests', 'narration.contract.json');
+      if (fs.existsSync(metaP) && fs.existsSync(conP)) {
+        try {
+          const meta = JSON.parse(fs.readFileSync(metaP, 'utf8'));
+          const con = JSON.parse(fs.readFileSync(conP, 'utf8'));
+          if (meta.text_sha256 && con.text_sha256 && meta.text_sha256 !== con.text_sha256) {
+            console.error('\n✗ 停在渲染前：audio/narration.mp3 对应的台词指纹已过期（改稿后未重跑 TTS）。\n  修法：node scripts/notebook-video.mjs tts ' + project + '（或加 --allow-stale 强制放行）');
+            process.exit(3);
+          }
+        } catch {}
+      }
+    }
+    return;
+  }
   console.error([
     '',
     '══════════════════════════════════════════════════════════════════',
     '✗ 停在渲染前：audio/narration.mp3 还是静音占位，不是真实旁白。',
     '',
     '  为什么停：静音占位是为 --stills / preview 看画面用的；把它当成交付片，',
-    '  观众会看到一支从头到尾没人说话的视频（旧版默认行为）。',
+    '  观众会看到一支从头到尾没人说话的视频。',
     '',
     '  怎么修（二选一）：',
     '    node scripts/notebook-video.mjs tts <工程> --voice=zh-CN-YunxiNeural',
@@ -117,7 +142,7 @@ if (!fs.existsSync(path.join(project, 'src', 'index.tsx'))) {
   step(`新建工程 ${project}（${style}）`);
   const r = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'new-project', project, `--style=${style}`]);
   if (r.code) die('new-project 失败');
-  // 3.5.4：示例自带导演层（STORY 旁边的 <名>.treatment.json）时，新工程直接用它，
+  // 示例自带导演层（STORY 旁边的 <名>.treatment.json）时，新工程直接用它，
   // 不然模板示例片的 treatment（别的选题、招牌镜 S4）会套到这支片上，手作皮肤的门禁按错的导演层判。
   const sibling = storyPath && storyPath.replace(/\.story\.json$/i, '.treatment.json');
   if (sibling && sibling !== storyPath && fs.existsSync(sibling)) {
@@ -132,8 +157,8 @@ if (HAND) {
   step('手写场景工程：跳过 compose-story，沿用工程自己的旁白与字幕');
   const sj = JSON.parse(fs.readFileSync(path.join(project, 'manifests', 'shots.json'), 'utf8'));
   rep = {frames: sj.duration ?? sj.total ?? Math.max(...(sj.shots ?? []).map((x) => x.to ?? 0)), fixes: [], hints: []};
-  // 3.3.0 修：手写工程没有 audio/narration.mp3 时（新建工程直接 --stills 的常见情形），
-  // 以前会在「同步渲染输入」处 ENOENT 崩溃。现在与 auto 路线一致：补一条静音旁白占位（不覆盖已有旁白）。
+  // 手写工程没有 audio/narration.mp3 时（新建工程直接 --stills 的常见情形），与 auto 路线一致：
+  // 补一条静音旁白占位（不覆盖已有旁白），否则「同步渲染输入」处会 ENOENT。
   const narr = path.join(project, 'audio', 'narration.mp3');
   if (!fs.existsSync(narr)) {
     step('没有 audio/narration.mp3：生成静音旁白占位（只给 --stills / preview 看画面）');
@@ -152,8 +177,8 @@ rep = JSON.parse(fs.readFileSync(reportJson, 'utf8'));
 fs.writeFileSync(SOURCE_FILE(project), JSON.stringify({story: storyPath}, null, 1) + '\n');
 if (linkedStory) step(`工程由 ${path.basename(storyPath)} 生成：已按它重跑 compose（字幕按最新旁白重排）`);
 
-// 2b. 3.5.4 素材前置检查：story 引用的 media id 必须已登记在 manifests/media.json。
-//     旧版缺素材时一路绿到渲染，才在 React 里抛「craft media: ……没有 id」——用户看到的是渲染栈。
+// 2b. 素材前置检查：story 引用的 media id 必须已登记在 manifests/media.json。
+//     不提前拦的话，要到渲染时才在 React 里抛「craft media: ……没有 id」。
 //     这里提前给出可直接执行的命令；只看门禁（不出图）时只提示，--stills / --render 才停。
 {
   const refs = new Set();
@@ -199,7 +224,7 @@ if (fs.existsSync(narrationPath)) {
 step('resolve-shots');
 if ((await py('resolve-shots.py', [project])).code) die('resolve-shots 失败');
 // 手写工程的分镜表只写 cues，帧数由 resolve-shots 算出来；报告里的「时长」要读它，
-// 否则 cells 这类工程会写成「0 帧 / 0.0 秒」（3.3.0 修）。
+// 否则 cells 这类工程会写成「0 帧 / 0.0 秒」。
 {
   const rp = path.join(project, 'manifests', 'shots.resolved.json');
   if (fs.existsSync(rp)) {
@@ -210,9 +235,7 @@ if ((await py('resolve-shots.py', [project])).code) die('resolve-shots 失败');
 
 // 4b. 评审提示（P1，不拦）：手作皮肤出成片前应有一轮独立评审（references/director.md#director-method 第 4 步）。
 //     review.rounds 为空时只提示并写进报告的「建议」，照常渲染；--skip-review 关掉这条提示。
-const activeSkin = (() => {
-  try { return fs.readFileSync(path.join(project, 'src', 'theme', 'active.ts'), 'utf8').match(/from\s+'\.\/(\w+)'/)?.[1] ?? style; } catch { return style; }
-})();
+const activeSkin = activeSkinName();
 if (renderOut && ['journal', 'papercut', 'archive'].includes(activeSkin) && !flag('skip-review')) {
   let rounds = null;
   try { rounds = JSON.parse(fs.readFileSync(path.join(project, 'manifests', 'treatment.json'), 'utf8'))?.review?.rounds ?? []; } catch { rounds = null; }
@@ -226,27 +249,79 @@ if (renderOut && ['journal', 'papercut', 'archive'].includes(activeSkin) && !fla
 }
 
 // 5. gates
+// 每道门禁的结论都是同一形状的记录（scripts/gate_report.py：gate/id/level/file/message/fix），全部写进 renders/gates.json。
+// level 只有一个含义：P0 = 拦片。本路径不拦的门禁（hard=false）把它的 P0 记成 P1，所以 blocking 恒等于 level === 'P0'。
 const results = [];
+const records = [];
+const jsonl = path.join(os.tmpdir(), `nv-gates-${process.pid}.jsonl`);
+process.on('exit', () => fs.rmSync(jsonl, {force: true}));  // 任何退出路径都不留下它
+const say = (x) => `${x.message}${x.fix ? ` —— ${x.fix}` : ''}`;
+const saveGates = () => fs.writeFileSync(path.join(project, 'renders', 'gates.json'), JSON.stringify(records, null, 1) + '\n');
+const record = (recs, hard) => {
+  const out = recs.map((x) => ({...x, level: x.level === 'P0' && !hard ? 'P1' : x.level, blocking: x.level === 'P0' && hard}));
+  records.push(...out);
+  rep.hints.push(...out.filter((x) => x.level === 'P1').map((x) => `${x.gate}：${say(x)}`));
+  return out;
+};
+const gate = async (g, argv, hard, label = g) => {
+  fs.rmSync(jsonl, {force: true});
+  const r = await py(g, argv, {capture: true, env: {NV_GATE_JSON: jsonl}});
+  const name = g.replace(/\.py$/, '');
+  const recs = fs.existsSync(jsonl) ? fs.readFileSync(jsonl, 'utf8').split('\n').filter(Boolean).flatMap((l) => { try { return [JSON.parse(l)]; } catch { return []; } }) : [];
+  // 门禁没写出任何 P0 却非零退出（缺文件、自身报错）：补一条 P0，免得报告里看不到它为什么停
+  if (r.code && !recs.some((x) => x.level === 'P0')) {
+    const last = r.out.split('\n').map((l) => l.trim()).filter(Boolean).slice(-1)[0] ?? `退出码 ${r.code}`;
+    recs.push({gate: name, id: `${name}-P0-1`, level: 'P0', file: '', message: last, fix: ''});
+  }
+  const verdict = (r.out.match(/结论[^\n]*|SKIPPED[^\n]*/) ?? [r.code ? 'FAIL' : 'PASS'])[0];
+  results.push({gate: label, code: r.code, hard, verdict});
+  console.log(`  ${r.code ? (hard ? '✗' : '·') : '✓'} ${label.padEnd(30)} ${verdict}`);
+  return {...r, recs: record(recs, hard)};
+};
+// 渲染期门禁在浏览器 console 里出声（`[OverlapGate] @150 …`；整片渲染的 FillGate 由渲染器汇总成 `FillGate…` 行）。
+// 每道一条记录：被它拦下 → P0；报警 → P1（条数 + 前三条原文）；整片渲染里逐帧门禁没有一条覆盖率读数 → P1 did NOT run。
+const BROWSER_GATES = ['AssetGate', 'CardFitGate', 'CaptionFitGate', 'OverlapGate', 'ClippingGate', 'CanvasBoundsGate', 'FillGate', 'SlotGuard', 'MascotGate'];
+const BLOCK_SIGNS = [[/Card overflow/, 'CardFitGate'], [/Subtitle (too long|overflow|measurement)/, 'CaptionFitGate'], [/Missing theme font|waiting for fonts/, 'AssetGate']];
+const browserGates = (out, {failed, full, file}) => {
+  const said = new Map();
+  let stop = null;
+  for (const line of out.split('\n')) {
+    // 只认 console 行（`[Tab 0, 文件:行] [OverlapGate] …`）与渲染器的 FillGate 汇总行；报错后的源码摘录里也有 `[XxxGate]` 字样
+    const g = BROWSER_GATES.find((n) => new RegExp(`^(\\[Tab [^\\]]*\\]\\s*)?\\[${n}\\]|^${n}[: ]`).test(line)) ?? null;
+    const hit = failed && !stop && /Error/.test(line) && !/^\s*\d+ │/.test(line) && (BROWSER_GATES.find((n) => line.includes(`[${n}]`)) ?? BLOCK_SIGNS.find(([re]) => re.test(line))?.[1]);
+    if (hit) stop = {g: hit, line};
+    if (!g) continue;
+    if (!said.has(g)) said.set(g, []);
+    if (!/无越界|无重叠|无被裁|无溢出|槽占用|coverage/.test(line)) said.get(g).push(line.slice(line.indexOf(g) + g.length).replace(/^\]?:?\s*/, '').trim());
+  }
+  const recs = [...said].filter(([, w]) => w.length).map(([g, w]) => ({gate: g, level: 'P1', message: `${w.length} 条报警：${[...new Set(w)].slice(0, 3).join(' | ')}`}));
+  if (full && !failed) recs.push(...['OverlapGate', 'ClippingGate', 'CanvasBoundsGate'].filter((g) => !said.has(g)).map((g) => ({gate: g, level: 'P1', message: 'did NOT run：整片渲染日志里没有它的覆盖率读数'})));
+  if (stop) recs.push({gate: stop.g, level: 'P0', message: stop.line.trim().slice(0, 400)});
+  const p0 = recs.filter((x) => x.level === 'P0').length;
+  results.push({gate: '渲染期门禁（浏览器）', code: p0 ? 1 : 0, hard: true, verdict: `P0=${p0} P1=${recs.length - p0}`});
+  record(recs.map((x, i) => ({...x, id: `${x.gate}-${x.level}-${i + 1}`, file, fix: x.level === 'P0' ? '' : '见 references/checks.md#render-gates'})), true);
+  saveGates();
+  return stop?.g;
+};
 if (!flag('no-gates')) {
   step('构建期门禁（硬门禁失败即停；P1 只是建议）');
   const gates = [
     ['validate-shot-motion.py', [project], true],
     ['validate-presentation.py', [project], true],
-    // 3.5.0 中文字面：字体栈里必须在泛型族之前有一个带 CJK 字面的族（代码卡豆腐块的根因）
+    // 中文字面：字体栈里必须在泛型族之前有一个带 CJK 字面的族（代码卡豆腐块的根因）
     ['validate-glyphs.py', [project], true],
-    // 3.6.2 元素种类：compose-story 产出的每个 kind，auto.tsx 的 ElemView 里必须有 case。
-    // 实测漏过一次：flow 的 node 没有分支 → 节点整镜不画；补上分支时 CSS 写错又让整片在
-    // 第 566 帧炸掉（React #130）。--stills 只截前几镜，前一条门禁全都不看这里。
+    // 元素种类：compose-story 产出的每个 kind，auto.tsx 的 ElemView 里必须有 case。
+    // 缺分支时节点整镜不画，或在渲染中途才抛 React 错误；--stills 只截前几镜，其他门禁都不看这里。
     ['validate-elem-kinds.py', [project], true],
-    // 3.5.0 画面三层：主题物必须出现、配比不能回到「全是组件」（P0 只有主题物一条）
+    // 画面三层：主题物必须出现、配比不能回到「全是组件」（P0 只有主题物一条）
     ['validate-fusion.py', [project], true],
     ['validate-audio-levels.py', [project], true],
     ['validate-media.py', [project], true],
-    // 3.3.0 导演层：手作皮肤缺 treatment.json / 没搜过 Commons 即停；flat / cel 只提示
+    // 导演层：手作皮肤缺 treatment.json / 没搜过 Commons 即停；flat / cel 只提示
     ['validate-treatment.py', [project], true],
-    // 3.3.0 开场 3 秒：第 0 帧就有事件、首条字幕 ≤ 1 s、片名不当第一镜、前 3 秒 ≥ 3 拍、第一句不是泛问句（手作 P0，flat / cel 只提示）
+    // 开场 3 秒：第 0 帧就有事件、首条字幕 ≤ 1 s、片名不当第一镜、前 3 秒 ≥ 3 拍、第一句不是泛问句（写法规则所有皮肤都是 P1；成片像素复核见 --render 段）
     ['validate-opening.py', [project], true],
-    // 3.3.0 背景库：库本身（来源 / 许可 / sha256 / 对比度）硬拦；分镜里相邻镜同一张背景只提示
+    // 背景库：库本身（来源 / 许可 / sha256 / 对比度）硬拦；分镜里相邻镜同一张背景只提示
     ['validate-backgrounds.py', [project], true],
     ['validate-backgrounds.py', [project, '--shots'], true],
     ['validate-caption-sync.py', [path.join(project, 'audio', 'narration.mp3.json'), path.join(project, 'manifests', 'caption-cues.json')], true],
@@ -255,41 +330,28 @@ if (!flag('no-gates')) {
     // 正常安装一定能找到，只有包真的坏了才会硬失败。
     ['validate-semantic-breaks.py', [path.join(project, 'manifests', 'caption-cues.json'),
       path.join(project, 'manifests', 'protected-caption-phrases.txt'), '--require-budoux'], true],
+    ...((fs.existsSync(path.join(project, 'story.json')) || fs.existsSync(path.join(project, 'manifests', 'story.json'))) ? [['validate-facts.py', [project], true]] : []),
     // 手写场景的结构门禁（骨架 / 组件多样性）：auto 版式由引擎保证结构，这里只作参考
     ['validate-composition.py', [project], HAND],
   ];
-  // 每个门禁把 P0 / P1 逐条写成同一形状的 JSON 行（scripts/gate_report.py：gate/id/level/file/message/fix），
-  // 这里只读这一种格式：P1 进报告「建议（不拦）」，全部记录进 renders/gates.json。终端文字只给人看。
-  const records = [];
-  const jsonl = path.join(os.tmpdir(), `nv-gates-${process.pid}.jsonl`);
-  process.on('exit', () => fs.rmSync(jsonl, {force: true}));  // 任何退出路径都不留下它
   for (const [g, argv, hard] of gates) {
-    fs.rmSync(jsonl, {force: true});
-    const r = await py(g, argv, {capture: true, env: {NV_GATE_JSON: jsonl}});
-    const name = g.replace(/\.py$/, '');
-    const recs = fs.existsSync(jsonl) ? fs.readFileSync(jsonl, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
-    // 门禁没写出任何 P0 却非零退出（缺文件、自身报错）：补一条 P0，免得报告里看不到它为什么停
-    if (r.code && !recs.some((x) => x.level === 'P0')) {
-      const last = r.out.split('\n').map((l) => l.trim()).filter(Boolean).slice(-1)[0] ?? `退出码 ${r.code}`;
-      recs.push({gate: name, id: `${name}-P0-1`, level: 'P0', file: '', message: last, fix: ''});
-    }
-    records.push(...recs.map((x) => ({...x, blocking: x.level === 'P0' && hard})));
-    const verdict = (r.out.match(/结论[^\n]*/) ?? [r.code ? 'FAIL' : 'PASS'])[0];
-    results.push({gate: g, code: r.code, hard, verdict});
-    console.log(`  ${r.code ? (hard ? '✗' : '·') : '✓'} ${g.padEnd(30)} ${verdict}`);
-    const say = (x) => `${x.message}${x.fix ? ` —— ${x.fix}` : ''}`;
-    rep.hints.push(...recs.filter((x) => x.level === 'P1').map((x) => `${name}：${say(x)}`));
-    if (r.code && hard) {
-      fs.mkdirSync(path.join(project, 'renders'), {recursive: true});
-      fs.writeFileSync(path.join(project, 'renders', 'gates.json'), JSON.stringify(records, null, 1) + '\n');
-      console.log(recs.filter((x) => x.level === 'P0').slice(0, 12).map((x) => `  P0 ${x.id}: ${say(x)}`).join('\n'));
+    const r = await gate(g, argv, hard);
+    if (r.code && hard && failFast) {
+      saveGates();
+      console.log(r.recs.filter((x) => x.blocking).slice(0, 12).map((x) => `  P0 ${x.id}: ${say(x)}`).join('\n'));
       die(`${g} 未通过（全部记录：renders/gates.json）`);
     }
   }
-  fs.rmSync(jsonl, {force: true});
-  fs.mkdirSync(path.join(project, 'renders'), {recursive: true});
-  fs.writeFileSync(path.join(project, 'renders', 'gates.json'), JSON.stringify(records, null, 1) + '\n');
+  saveGates();
+  const failedHard = results.filter((x) => x.code && x.hard);
+  if (failedHard.length) {
+    console.log(records.filter((x) => x.blocking).slice(0, 20).map((x) => `  P0 ${x.id}: ${say(x)}`).join('\n'));
+    die(`${failedHard.map((x) => x.gate).join(', ')} 未通过（全部记录：renders/gates.json）`);
+  }
 }
+
+// 5b. 整片渲染前先拦静音占位，避免缺真实旁白时白跑 npm ci 与 tsc
+requireNarrationForRender();
 
 // 6. tsc
 step('TypeScript 检查');
@@ -330,7 +392,7 @@ const sheet = async (pngs, out) => {
   const scaleF = Array.from({length: n}, (_, i) => `[${i}]scale=640:360[v${i}]`).join(';');
   const layout = Array.from({length: n}, (_, i) => `${(i % cols) ? Array.from({length: i % cols}, () => 'w0').join('+') : '0'}_${Math.floor(i / cols) ? Array.from({length: Math.floor(i / cols)}, () => 'h0').join('+') : '0'}`).join('|');
   return run('ffmpeg', ['-y', '-loglevel', 'error', ...inputs, ...blank, '-filter_complex', `${scaleF};${Array.from({length: n}, (_, i) => `[v${i}]`).join('')}xstack=inputs=${n}:layout=${layout}`,
-    // 3.5.4：补位格是 lavfi color（无限长的流），xstack 于是一直出帧，image2 写同名文件第二帧就报
+    // 补位格是 lavfi color（无限长的流），xstack 于是一直出帧，image2 写同名文件第二帧就报
     // 「Cannot write more than one file with the same name」。联系表只要一帧。
     '-frames:v', '1', out]);
 };
@@ -344,8 +406,27 @@ const fxNote = () => {
       : [`- **P1 卷页降级**：${fx.reason}。本片的翻页已改用纯 CSS 的折痕版（pageflip）——**仍然是翻页**，只是没有纸的卷曲和纸背透光；修好浏览器后跑 \`node scripts/notebook-video.mjs fx-probe <工程> --force\` 重探（见 references/camera.md#fx-effects）`];
   } catch { return []; }
 };
+const reviewSummaryLines = () => {
+  const keys = ['复述核心概念', '先打掉常见误解', '专属例子或隐喻', '画面时机帮助理解', '记住的锤子句'];
+  let rounds = [];
+  for (const rel of ['treatment.json', 'review.json']) {
+    try {
+      const obj = JSON.parse(fs.readFileSync(path.join(project, 'manifests', rel), 'utf8'));
+      const r = obj?.review?.rounds ?? obj?.rounds;
+      if (Array.isArray(r) && r.length) { rounds = r; break; }
+    } catch { /* ignore */ }
+  }
+  if (!rounds.length) {
+    return ['- **评审状态：未评审**（手作路线建议评审，组件路线可选；评审卡见 `references/rubric.md`）'];
+  }
+  const latest = rounds.at(-1) ?? {};
+  const scores = latest.scores ?? latest;
+  const parts = keys.filter((k) => scores[k] !== undefined).map((k) => `${k} ${scores[k]}/5`);
+  const summary = parts.length ? parts.join(' · ') : `已完成 ${rounds.length} 轮评审`;
+  return [`- **评审卡（第 ${rounds.length} 轮）**：${summary}`];
+};
 const writeReport = (frames, sheets, extra = '') => {
-  const lines = [`# make-video 报告 · ${story.title ?? ''}`, '', `- 时长：${rep.frames} 帧（${(rep.frames / 30).toFixed(1)} 秒）`, `- 自动修：${rep.fixes.length} 条 · 建议：${rep.hints.length} 条`, ...fxNote(), '',
+  const lines = [`# make-video 报告 · ${story.title ?? ''}`, '', ...reviewSummaryLines(), `- 时长：${rep.frames} 帧（${(rep.frames / 30).toFixed(1)} 秒）`, `- 自动修：${rep.fixes.length} 条 · 建议：${rep.hints.length} 条`, ...fxNote(), '',
     '## 门禁', ...results.map((r) => `- ${r.code ? (r.hard ? '✗' : '·') : '✓'} ${r.gate} — ${r.verdict}`), '',
     '## 自动修', ...rep.fixes.map((x) => `- ${x}`), '', '## 建议（不拦）', ...rep.hints.map((x) => `- ${x}`), '',
     '## 静帧（看：字是否完整、强调是否对上台词关键词、镜头是否切到标题）', ...frames.map((x) => `- f${x.f} ${x.shot} ${x.what}`), '',
@@ -354,7 +435,7 @@ const writeReport = (frames, sheets, extra = '') => {
 };
 
 // 同步渲染输入
-// 字幕只读 manifests/caption-cues.json（index.tsx 直接 import）；旧工程还留着 src/ 那份时继续同步它。
+// 字幕只读 manifests/caption-cues.json（index.tsx 直接 import）；工程里还留着 src/ 那份时继续同步它。
 if (fs.existsSync(path.join(project, 'src', 'caption-cues.json'))) {
   fs.copyFileSync(path.join(project, 'manifests', 'caption-cues.json'), path.join(project, 'src', 'caption-cues.json'));
 }
@@ -373,24 +454,34 @@ if (flag('stills')) {
   const dir = path.join(project, 'renders', 'stills');
   fs.mkdirSync(dir, {recursive: true});
   const pngs = [];
+  let logs = '';
   for (const x of frames) {
     const out = path.join(dir, `f${String(x.f).padStart(5, '0')}.png`);
-    const r = await nodeRemotion([cli, 'still', bundle, 'NotebookVideoFilm', out, `--frame=${x.f}`, '--scale=0.5', ...browserArgsOrDie()], {cwd: project, capture: true});
+    // 用单帧 render 而不是 still：still 不转发浏览器 console，渲染期门禁的报警就进不了 gates.json
+    const seq = fs.mkdtempSync(path.join(os.tmpdir(), 'nv-still-'));
+    const r = await nodeRemotion([cli, 'render', bundle, 'NotebookVideoFilm', seq, `--frames=${x.f}-${x.f}`, '--sequence', '--image-format=png', '--scale=0.5', ...browserArgsOrDie()], {cwd: project, capture: true});
+    const png = fs.readdirSync(seq).find((n) => n.endsWith('.png'));
+    if (png) fs.copyFileSync(path.join(seq, png), out);
+    fs.rmSync(seq, {recursive: true, force: true});
+    logs += r.out;
     if (r.code) {
+      const blocked = browserGates(r.out, {failed: true, full: false, file: path.relative(project, out)});
       console.log(r.out.split('\n').filter((l) => /Error|Gate|overflow|溢出|越出/.test(l)).slice(0, 6).join('\n'));
       // 缺字体时 Chrome 抛的是 NetworkError（cancelRender），报错里一个字都不提字体——
       // 只看输出会误判成「渲染进程报错」。所以先问文件系统：工程里到底有没有那几个必需字体。
-      const missingFonts = ['LXGWWenKaiLite-Regular.ttf', 'LXGWWenKaiLite-Medium.ttf', 'NotoSerifSC-Bold.otf']
+      const reqFonts = ['LXGWWenKaiLite-Regular.ttf', 'LXGWWenKaiLite-Medium.ttf', ...(['journal', 'papercut', 'archive'].includes(activeSkinName()) ? ['NotoSerifSC-Bold.otf'] : [])];
+      const missingFonts = reqFonts
         .filter((n) => !fs.existsSync(path.join(project, 'public', n)));
       const why = missingFonts.length ? `缺字体文件（跑 node scripts/notebook-video.mjs fonts 补齐）——缺 ${missingFonts.join(' / ')}`
+        : blocked ? `渲染期门禁 ${blocked} 拦下了，见上`
         : /font|字体|ENOENT.*\.(ttf|otf|woff2?)/i.test(r.out) ? '缺字体文件（跑 node scripts/notebook-video.mjs fonts 补齐）'
-        : /Gate|溢出|越出|overflow/i.test(r.out) ? '渲染期门禁拦下了，见上'
         : '渲染进程报错，见上（不是门禁）';
       die(`静帧 f${x.f} 渲染失败：${why}`);
     }
     pngs.push(out);
     process.stdout.write('.');
   }
+  browserGates(logs, {failed: false, full: false, file: 'renders/stills'});
   const sheets = [];
   for (let i = 0; i < pngs.length; i += 12) {
     const out = path.join(project, 'renders', `stills-${i / 12 + 1}.jpg`);
@@ -402,22 +493,18 @@ if (flag('stills')) {
 }
 
 if (renderOut) {
-  requireNarrationForRender();
   step(`整片渲染 → ${renderOut}（scale ${scale}）`);
   process.env.NOTEBOOK_VIDEO_SCALE = scale;
-  // 3.3.0：静音旁白片也规范到 −16 LUFS（真峰 ≤ −1.5 dBTP），与有人声的片子同一目标。3.3.0 及以前是 −24：
+  // 静音旁白片也规范到 −16 LUFS（真峰 ≤ −1.5 dBTP），与有人声的片子同一目标（不用 −24）：
   // AES TD1004 建议流媒体 −16…−20 LUFS，并点名 −23/−24 在手机上开到最大也不够响；YouTube 只压低过响的内容、不抬高轻的。
   // 要回到旧电平：NOTEBOOK_VIDEO_LUFS=-24。
-  const r = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'render', project, renderOut]);
+  const r = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'render', project, renderOut], {capture: true, tee: true});
+  browserGates(r.out, {failed: Boolean(r.code), full: true, file: path.relative(project, renderOut)});
   if (r.code) die('渲染失败（渲染期门禁或 Remotion 报错，见上）');
   step('成片门禁：静止段 / 编码 / 时长');
-  const mg = await py('validate-motion-gaps.py', [project, '--video', renderOut], {capture: true});
-  results.push({gate: 'validate-motion-gaps.py', code: mg.code, hard: true, verdict: (mg.out.match(/结论[^\n]*/) ?? [mg.code ? 'FAIL' : 'PASS'])[0]});
-  console.log(`  ${mg.code ? '✗' : '✓'} validate-motion-gaps ${results.at(-1).verdict}`);
-  // 3.5.0：句间必须是真安静（music.use=false 时）。旧版音乐床关不掉，145 秒里没有一处 0.4 秒静音。
-  const sil = await py('validate-silence.py', [project, renderOut], {capture: true});
-  results.push({gate: 'validate-silence.py', code: sil.code, hard: true, verdict: (sil.out.match(/结论[^\n]*/) ?? [sil.code ? 'FAIL' : 'PASS'])[0]});
-  console.log(`  ${sil.code ? '✗' : '✓'} validate-silence ${results.at(-1).verdict}`);
+  const mg = await gate('validate-motion-gaps.py', [project, '--video', renderOut], true);
+  // 句间必须是真安静（music.use=false 时）。
+  const sil = await gate('validate-silence.py', [project, renderOut], true);
   if (sil.code) console.log(sil.out.split('\n').filter((l) => /P0|句间|检测到/.test(l)).slice(0, 4).map((l) => `    ${l}`).join('\n'));
   const frames = frameList();
   const dir = path.join(project, 'renders', 'frames');
@@ -430,27 +517,22 @@ if (renderOut) {
   }
   const sheets = [];
   for (let i = 0; i < pngs.length; i += 12) { const out = path.join(project, 'renders', `frames-${i / 12 + 1}.jpg`); await sheet(pngs.slice(i, i + 12), out); sheets.push(out); }
-  // 3.3.0：开场像素复核（第 0 / 15 / 45 / 90 帧有主体、在变化）。成片已出，不拦，P0 记进报告。
-  const op = await py('validate-opening.py', [project, '--video', renderOut], {capture: true});
-  results.push({gate: 'validate-opening.py --video', code: op.code, hard: false, verdict: (op.out.match(/结论[^\n]*/) ?? [op.code ? 'FAIL' : 'PASS'])[0]});
-  console.log(`  ${op.code ? '·' : '✓'} validate-opening --video ${results.at(-1).verdict}`);
-  if (op.code) console.log(op.out.split('\n').filter((l) => /P0/.test(l)).slice(0, 6).map((l) => `    ${l}`).join('\n'));
-  // 3.3.0：字幕真的读得出吗？（RapidOCR 可选；没装 → SKIPPED，不阻断；P0 记进报告并提示，不自动拦）
+  // 开场像素复核（第 0 / 15 / 45 / 90 帧有主体、在变化）：成片已出，只进报告（P1）。
+  await gate('validate-opening.py', [project, '--video', renderOut], false, 'validate-opening.py --video');
+  // 字幕真的读得出吗？（RapidOCR 可选；没装 → SKIPPED）成片已出，不拦，结论记 P1 进报告。
   step('字幕 OCR 复核（validate-ocr，可选）');
-  const ocr = await py('validate-ocr.py', [project, '--video', renderOut, '--json', path.join(project, 'renders', 'ocr.json')], {capture: true});
-  const ocrVerdict = /SKIPPED/.test(ocr.out) ? 'SKIPPED（未装 RapidOCR）' : (ocr.out.match(/结论[^\n]*/) ?? [ocr.code ? 'FAIL' : 'PASS'])[0];
-  results.push({gate: 'validate-ocr.py', code: ocr.code, hard: false, verdict: ocrVerdict});
-  console.log(ocr.out.split('\n').filter((l) => /validate-ocr|✗|·|结论/.test(l)).slice(0, 12).map((l) => `  ${l}`).join('\n'));
-  // 3.9.0：交付附件。mp4 之外，拿到片子的人还需要一份字幕和一张能当缩略图的封面。
+  await gate('validate-ocr.py', [project, '--video', renderOut, '--json', path.join(project, 'renders', 'ocr.json')], false);
+  // 交付附件。mp4 之外，拿到片子的人还需要一份字幕和一张能当缩略图的封面。
   // 失败不拦片：只记一笔，成片照出（跟 OCR 复核同一个处理级别）。
   step('交付附件（字幕 / 封面）');
   const deliverRun = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'deliver', project], {capture: true});
   for (const [gate, verdict] of [['export-srt.py', 'captions.srt'], ['poster', 'poster.jpg']]) {
     const line = (deliverRun.out || '').split('\n').find((l) => new RegExp(verdict.replace('.', '\\.')).test(l)) ?? '';
-    const ok = deliverRun.code === 0 && !/未生成|失败/.test(line);
+    const ok = Boolean(line) && deliverRun.code === 0 && !/未生成|失败/.test(line);
     results.push({gate, code: ok ? 0 : 1, hard: false, verdict: ok ? verdict : 'FAIL'});
     console.log(`  ${ok ? '✓' : '·'} ${ok ? line.trim().replace(/^(Subtitle|Poster): /, '') : `${verdict} 未生成（可单独跑 notebook-video deliver <工程>）`}`);
   }
+  saveGates();
   writeReport(frames, sheets, `\n成片：${renderOut}`);
   if (mg.code) die('validate-motion-gaps 未通过（画面有超长静止段）');
   if (sil.code) die('validate-silence 未通过（句间不安静：music.use=false 时不该有配乐 / 持续底噪）');

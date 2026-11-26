@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """resolve-shots.py · 分镜表解析器（cue 帧号 → 生成 TS 常量）
 
-解决 v2.8 的老问题：帧号是手写魔法数字（`ease(l,95,130)`、`starts=[0,213,416,682]`、
-7 组音效绝对帧数组）。改一句台词就要手改几十处，且极易漏改。
+为什么需要它：帧号若是手写魔法数字（`ease(l,95,130)`、`starts=[0,213,416,682]`、
+7 组音效绝对帧数组），改一句台词就要手改几十处，且极易漏改。
 
 本工具的做法（借 anything2explainer 的 token 思路，但拒绝它"把帧号硬编码进源码"的落法）：
     1. 你在 manifests/shots.json 里**只声明这台镜头覆盖哪几句 cue**（`cues: [起, 止]`），
@@ -30,13 +30,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from contract import C  # noqa: E402  跨语言常量：assets/lecture-template/src/contract.json
+from story_time import frame as ms_frame  # noqa: E402  ms→帧只有一份（与渲染端同式取整）
 
 FPS = C["FPS"]
 STAGE_CX, STAGE_CY = float(C["STAGE"]["cx"]), float(C["STAGE"]["cy"])
-
-
-def ms_frame(ms: float) -> int:
-    return int(round(ms * FPS / 1000))
 
 
 # ---- shotCam 的隐式默认（TS 权威 = assets/lecture-template/src/shotkit.tsx，逐条对应行号）----
@@ -76,7 +73,7 @@ def expand_cam(cam: dict, duration: int) -> list[dict]:
         return [head, {"f": at, "x": x, "y": y, "s": k1}, {"f": at + span, "x": x, "y": y, "s": to}, {"f": hold, "x": x, "y": y, "s": to}]
     if intent == "pan-follow":
         # 平移想走多远，缩放就自动抬到能覆盖它（maxPan = 960*(1-1/s)），否则运行时会被静默削减
-        # 成几乎不动（旧版演示片 S6 只剩 ±37px）。显式写了更大的 from/to 照用。
+        # 成几乎不动。显式写了更大的 from/to 照用。
         need_dx = max(abs(fx - STAGE_CX), abs(x - STAGE_CX))
         need_dy = max(abs(fy - STAGE_CY), abs(y - STAGE_CY))
         need = max(STAGE_CX / max(1.0, STAGE_CX - need_dx), STAGE_CY / max(1.0, STAGE_CY - need_dy))
@@ -88,12 +85,11 @@ def expand_cam(cam: dict, duration: int) -> list[dict]:
     if intent == "micro-orbit":
         return [{**head, "rotY": 0}, {"f": at, "x": x, "y": y, "s": frm, "rotY": 0}, {"f": at + span, "x": x, "y": y, "s": to, "rotY": rot}, {"f": hold, "x": x, "y": y, "s": to, "rotY": rot}]
     # still：尾帧缩放对齐 shotkit 的 tail `s: o.to ?? o.from ?? 1`（shotkit.tsx:109/:130）——
-    # 显式写了 to 的 still 以前在这里被**整枚丢掉**（PY 用 frm，TS 用 to），Δ 可达 0.20；
-    # 现在 to 默认回落 frm，两者一致，只有"写了 to 却不动"的镜会按新行为真的推到 to。
+    # to 默认回落 frm，与 TS 一侧一致；写了 to 的 still 会推到 to。
     return [head, {"f": duration, "x": x, "y": y, "s": to}]
 
 
-# 3.2.0 内容自动放大（与 src/cinema.tsx 的 CINEMA.fit* 同值）：anchor（本镜内容的外接矩形）占内容带
+# 内容自动放大（与 src/cinema.tsx 的 CINEMA.fit* 同值）：anchor（本镜内容的外接矩形）占内容带
 # （安全区）面积不足 FIT_MIN 时，引擎把整镜按 anchor 中心推近到 FIT_TARGET；推近受三条上限钳制：
 # anchor 放大后仍完整落在内容带内、TEXT_ZOOM_MAX（与场景 ShotCamera 相乘后）、FIT_MAX_S。
 FIT_MIN, FIT_TARGET, FIT_HI = 0.60, 0.72, 0.80
@@ -194,7 +190,7 @@ def resolve_cinema(s: dict, sid: str, frm: int, duration: int, cues: list, probl
             item["slide"] = False
         # keep = 推近时也必须完整入画的矩形（引擎会把推近倍数降到能装下「焦点 ∪ keep」，但不低于 focusMinZoom）。
         # 显式 keep:{x,y,w,h} / region；hero-number 版式缺省 keep = anchor（大数字在 anchor 里），左右各加 8% 字号的字形外溢余量；
-        # keep:false 关掉。修演示片 S1：推近右侧终端时左侧「1.2 秒」被切掉半个字。
+        # keep:false 关掉。（否则推近一侧时另一侧的字会被切掉半个。）
         kp = fk.get("keep")
         hero = s.get("hero") or {}
         if isinstance(kp, dict) and all(k in kp for k in ("x", "y", "w", "h")):
@@ -208,7 +204,7 @@ def resolve_cinema(s: dict, sid: str, frm: int, duration: int, cues: list, probl
             problems.append(f"{sid}: cinema.focus[{i}].keep 必须是 {{x,y,w,h}} / region / false")
         focus.append(item)
     # 镜尾收束。最后一个事件（拍点 / 焦点结束）到镜尾 > 45 帧（1.5 秒）时，画面只剩缓推，读起来是「卡住了」
-    # （演示片 S6 / S8 的实测问题）。自动补一个轻推近到 anchor 的收束焦点；`cinema.settle: false` 关掉。
+    # 自动补一个轻推近到 anchor 的收束焦点；`cinema.settle: false` 关掉。
     last_evt = max([b for b in beats if b < duration] + [k["at"] + k["hold"] + 24 for k in focus] + [0])
     if c.get("settle", True) and not c.get("path") and duration - last_evt > 45:
         a = s.get("anchor") or band
@@ -287,7 +283,7 @@ BG_MODES = ("film", "chapter", "shot")
 
 
 def bg_mode(shots_doc: dict, problems: list[str] | None = None) -> str:
-    """3.3.0：背景切换粒度。显式 bgMode 优先；否则手作皮肤 chapter、flat / cel shot。"""
+    """背景切换粒度。显式 bgMode 优先；否则手作皮肤 chapter、flat / cel shot。"""
     m = shots_doc.get("bgMode")
     if m is None:
         return "chapter" if shots_doc.get("theme", "cel") in CRAFT_SKINS else "shot"
@@ -302,10 +298,10 @@ SFX_DENSITIES = ("sparse", "normal")
 
 
 def sfx_density(shots_doc: dict, problems: list[str] | None = None) -> str:
-    """3.3.0：音效密度。缺省 sparse（每镜一记）；normal 是 3.3.0 的「一拍一个」。
+    """音效密度。缺省 sparse（每镜一记）；normal 是「一拍一个」。
 
-    为什么缺省改成 sparse：旁白由使用者自行后配（任意 TTS 或真人），技能不知道以后有没有人声，
-    按 24 条/分钟铺满会跟说话抢注意力。老工程想要原样，写 "sfxDensity": "normal"。
+    为什么缺省 sparse：旁白由使用者自行后配（任意 TTS 或真人），技能不知道以后有没有人声，
+    按 24 条/分钟铺满会跟说话抢注意力。想要一拍一个，写 "sfxDensity": "normal"。
     """
     d = shots_doc.get("sfxDensity")
     if d is None:
@@ -317,16 +313,20 @@ def sfx_density(shots_doc: dict, problems: list[str] | None = None) -> str:
     return d
 
 
+# chapter 模式换纸时允许的内容区亮度差（backgrounds.json 的 metrics.zone_mean_lum，0–1）
+SHEET_LUM_BAND = 0.06
+
+
 def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems: list[str]) -> None:
-    """3.3.0 背景库：给每镜定一张背景，写进 rec["bg"]（库 id）+ rec["bgFile"]（public/ 下相对路径）。
+    """背景库：给每镜定一张背景，写进 rec["bg"]（库 id）+ rec["bgFile"]（public/ 下相对路径）。
 
     · 显式 `bg`：库 id（'journal/ruled' 或简写 'ruled'）→ 用它；main / chapter / quiet → 用本皮肤的 legacy 那张。
     · 未写 `bg`：按镜头角色（章节首镜 chapter / zones ≥ 4 quiet / 其余 main）从「roles 含该角色」的库背景里轮换：
       先挑最久没用过的（从没用过的最优先），同分按 sha1(bgSeed:镜号:id) 定序；永不与上一镜同一张（候选只剩一张时除外）。
       纯函数：同一分镜表 + 同一 bgSeed → 同一结果。
-    · 没有 manifests/backgrounds.json，或 shots.json 写了 "bgRotate": false → 不轮换（3.3.0 行为：
-      引擎按 main / chapter / quiet 三张图自动选）；此时不出 bgFile 键，旧工程解析结果逐字节不变。
-    · 3.3.0 `bgMode`（shots.json 工程级）：
+    · 没有 manifests/backgrounds.json，或 shots.json 写了 "bgRotate": false → 不轮换（引擎按
+      main / chapter / quiet 三张图自动选）；此时不出 bgFile 键，解析结果与不带背景库时一致。
+    · `bgMode`（shots.json 工程级）：
         "shot"    逐镜轮换（上面的规则；flat / cel 默认）
         "chapter" 只在章节首镜换纸，章内沿用（journal / papercut / archive 默认：一本手账的媒介连续性）
         "film"    全片一张纸
@@ -351,11 +351,16 @@ def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems
     last_used: dict[str, int] = {}
     prev_file = None
     sheet = None          # chapter / film 模式下当前沿用的那张纸
+    base_lum = None       # chapter 模式下第一章那张纸的内容区亮度（全片底纸）
+
+    def sheet_lum(e: dict) -> float:
+        m = e.get("metrics") or {}
+        return float(m.get("zone_mean_lum", m.get("mean_lum", 0.8)))
     calm = [e for e in mine if "main" in (e.get("roles") or []) and not e.get("busy")] or [e for e in mine if not e.get("busy")] or mine
 
     # 「这张图能不能承载这种版式」——由库里的 use.layouts 声明（人工定，量不出来：
     # centre_std 只反映中心纹理，边角装饰完全量不到 —— papercut/hongzhi 中心 std 只有 0.0059，
-    # 但红边极抢，放真图版就废）。没写 use 的旧库一律视为「哪种都行」，行为与 3.3.0 一致。
+    # 但红边极抢，放真图版就废）。没写 use 的旧库一律视为「哪种都行」，行为与 一致。
     def admits(e: dict, layout_cls: str) -> bool:
         use = e.get("use") or {}
         ls = use.get("layouts")
@@ -363,7 +368,7 @@ def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems
 
     # 题材：story.json 的 topic（经 compose 写进 shots.json）。
     # 写了就优先挑 use.fits 命中该题材的纸——这是「按内容选纸」的唯一入口，
-    # 不写则完全按版式 + 角色轮换（与 3.3.0 一致）。
+    # 不写则完全按版式 + 角色轮换（与 一致）。
     want_topic = str(shots_doc.get("topic") or "").strip()
 
     def fits_topic(e: dict) -> bool:
@@ -387,16 +392,14 @@ def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems
         """这一镜**画面形态**属于哪一类（决定它需要什么样的纸）。
 
         版式优先于「是不是章节首镜」：一镜如果本身是手账页（要放真图版 + 大字 + 印章），
-        就算它刚好开了一章，也不能按章节卡去挑花纸——实测 bug：S1 是 page 但因为是章节首镜，
-        拿到了 cel/speedlines（全幅集中线）与 flat/chapter（带吉祥物），图版直接废掉。
+        就算它刚好开了一章，也不能按章节卡去挑花纸（全幅集中线、带吉祥物的章节纸会把图版废掉）。
         章节的「视觉重音」交给转场和章节卡去给，不靠牺牲这一镜的纸。
         """
         lay = str(r.get("layout") or "")
         if lay.startswith("page"):
             return "page"
         # 只有**纯字卡**才算章节卡。不能把「开了一章」当理由：一章的第一镜往往就是内容镜
-        # （清单 / 流程），给它配章节卡那种花纸，画面会盖过内容（实测 cel 的 list 拿到 speedlines，
-        # flat 的 flow 拿到带吉祥物的 chapter）。章节的视觉重音交给转场去给。
+        # （清单 / 流程），给它配章节卡那种花纸，画面会盖过内容。章节的视觉重音交给转场去给。
         if lay.startswith(("statement", "define", "quiz")):
             return "chapter"
         return "component"
@@ -408,7 +411,7 @@ def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems
     for i, r in enumerate(out):
         bg = r.get("bg")
         choice = None
-        # P2-18：选材要能解释。以前只能看结果（bg=journal/ruled），看不出「为什么不是另一张」。
+        # 选材要能解释：只看结果（bg=journal/ruled）看不出「为什么不是另一张」。
         # why 是一句人话，写进 shots.json 的 bgWhy，`--explain` 逐镜打印。
         why = ""
         if bg is not None:
@@ -439,16 +442,23 @@ def assign_backgrounds(project: Path, shots_doc: dict, out: list[dict], problems
             if sheet is None or (mode == "chapter" and r["id"] in chapters):
                 prev_sheet = file_of(sheet) if sheet is not None else None
                 # 章节模式下一张纸要撑满整章（含图版页），所以**必须**是能承载 page 的那几张。
-                # 早先还要求「page 与 component 都认」，结果每族只剩 1–2 张可选，
-                # 整本书从头到尾一张纸（实测 journal/archive 八镜全是同一张），比换纸更难看。
+                # 不再额外要求「page 与 component 都认」：那样每族只剩 1–2 张可选，整本书从头到尾一张纸。
                 paper = [e for e in calm if admits(e, "page")] or calm
                 # 有题材时先取「题材 + 版式」都认的那几张；取空了就退回只按版式。
                 by_topic = [e for e in paper if fits_topic(e)]
                 if not by_topic:
                     note_topic_miss()
                 paper = by_topic or paper
+                # 换纸不换底色：第一章定下的那张是全片的「底纸」，之后各章只在亮度相近（±SHEET_LUM_BAND）
+                # 的纸里换。亮度差大的纸往往色温也差一截（牛皮纸、旧书页明显更暗更黄），
+                # 章与章之间就会整屏跳色。带内没有别的纸时宁可沿用上一章那张。
+                if base_lum is not None:
+                    near = [e for e in paper if abs(sheet_lum(e) - base_lum) <= SHEET_LUM_BAND]
+                    paper = near or [e for e in paper if file_of(e) == prev_sheet] or paper
                 fresh = [e for e in paper if file_of(e) != prev_sheet] or paper
                 sheet = min(fresh, key=lambda e: (last_used.get(e["id"], -1), hashlib.sha1(f"{seed}:{i}:{e['id']}".encode()).hexdigest()))
+                if base_lum is None:
+                    base_lum = sheet_lum(sheet)
                 why = (f"{mode} 模式 · 章节首镜换纸：{len(paper)} 张能承载 page 的纸里选最久没用过的"
                        + (f"，且契合 topic={want_topic}" if want_topic and by_topic else ""))
             else:
@@ -499,8 +509,7 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
     # shots.json 的 theme 只当声明，两者不一致时**按 active.ts 走**——注意这不是错误：
     # 下面所有下游（背景库、resolved 的 theme、storyboard）都用这个 theme，不会渲出
     # 「A 皮肤的组件 + B 皮肤的纸」。所以只在 main() 里打一行提示，不进 problems（不阻断构建）。
-    # 早先把它当错误，结果测试夹具与旧工程（两者本来就不同步）全被判失败：
-    # 门禁应该抓「真正会出错的事」，不能抓「两个键写法不同但结果正确」。
+    # 门禁应该抓「真正会出错的事」，不抓「两个键写法不同但结果正确」。
     declared = shots_doc.get("theme")
     actual = _active_skin(project, None)
     theme = actual or declared or "cel"
@@ -549,7 +558,8 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
             problems.append(f"{sid}: duration={duration} 非正")
             continue
         cam = dict(s.get("camera") or {"intent": "still"})
-        keys = expand_cam(cam, duration)
+        # 有 cinema.path 的镜（auto 路线）没有场景相机：keys 恒为 1.0，引擎只拿它算缩放上限，真运镜全在 path
+        keys = expand_cam({"intent": "still"} if (s.get("cinema") or {}).get("path") else cam, duration)
         rec = {
             "id": sid,
             "chapter": s.get("chapter", ""),
@@ -567,7 +577,7 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
             "cover": s.get("cover"),
             # 缺省 auto（皮肤的翻页，见 cinema.tsx resolveTransition）；cut/reveal 是旧写法，引擎按 auto 处理，hard = 真硬切
             "transition": s.get("transition", "auto"),
-            # v3.0.1：由分镜表推导，场景层不再手写这个布尔（消除"表说 cut、代码写 reveal"的不一致）
+            # 由分镜表推导，场景层不再手写这个布尔（消除"表说 cut、代码写 reveal"的不一致）
             "reveal": s.get("transition", "auto") == "reveal",
             "entry": s.get("entry", "rise"),
             "explanation": bool(s.get("explanation", True)),
@@ -579,10 +589,8 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
             "beats": [(ms_frame(cues[int(bt["cue"])]["start_ms"]) + int(bt.get("offset", 0)) - frm) for bt in (s.get("beats") or [])],
             # beatsAbs：绝对帧（门禁消费）
             "beatsAbs": [(ms_frame(cues[int(bt["cue"])]["start_ms"]) + int(bt.get("offset", 0))) for bt in (s.get("beats") or [])],
-            # ---- 讲法字段（2026-09-21 补：以前这四项**在这一步被整组丢掉**）----
-            # 后果：shots.resolved.json 与 src/shots.ts 里都没有 move/evidence/hold/misconception，
-            # 于是「讲法规范要求必填」这件事**下游根本看不见**，任何门禁都查不到（实测删掉也不报错）。
-            # 现在原样透传：resolved 与 TS 两侧都能被门禁读到。
+            # ---- 讲法字段：move/evidence/hold/misconception 原样透传 ----
+            # resolved 与 TS 两侧都要有，「讲法规范要求必填」这件事下游门禁才查得到。
             "move": s.get("move"),
             "evidence": s.get("evidence"),
             "hold": s.get("hold"),
@@ -590,9 +598,9 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
             "noMisconception": s.get("noMisconception"),
             "why": s.get("why"),
         }
-        # 可选的背景覆盖：main / chapter / quiet（3.3.0 起的三张锁定图），或背景库里的一张（3.3.0：
-        # 'journal/ruled' 或简写 'ruled'）。合法性与库背景的文件路径在 assign_backgrounds() 里统一解析。
-        # 不写就不出这个键；没有 manifests/backgrounds.json 的旧工程解析结果逐字节不变。
+        # 可选的背景覆盖：main / chapter / quiet（三张锁定图），或背景库里的一张
+        # （'journal/ruled' 或简写 'ruled'）。合法性与库背景的文件路径在 assign_backgrounds() 里统一解析。
+        # 不写就不出这个键；没有 manifests/backgrounds.json 的工程解析结果不变。
         if s.get("bg") is not None:
             if not isinstance(s["bg"], str) or not s["bg"].strip():
                 problems.append(f"{sid}: bg 必须是字符串（main / chapter / quiet 或背景库 id）")
@@ -601,7 +609,7 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
         # 音效覆盖（见 src/sfx.ts）。不写就不出键，旧分镜表解析结果逐字节不变。
         if s.get("sfx") is not None:
             sfx = s["sfx"]
-            # 3.8.0 瘦身：16 → 9。删掉 whoosh / click / typing / riser / snip / latch / rustle，
+            # 瘦身：16 → 9。删掉 whoosh / click / typing / riser / snip / latch / rustle，
             # 理由见 src/sfx.ts 顶部注释；旧分镜表若写了这些名字，这里会明确报错而不是出无声。
             events = {"pop", "success", "error", "chart", "highlight", "chapter", "page", "place", "stamp"}
             if sfx != "none" and not (isinstance(sfx, list) and all(isinstance(o, dict) and o.get("event") in events and ("beat" in o or "at" in o) for o in sfx)):
@@ -611,7 +619,7 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
         # 可选版式名（validate-composition 要求相邻两镜不同）。不写就不出键。
         if s.get("layout") is not None:
             rec["layout"] = str(s["layout"])
-        # 3.3.0 插入镜标记：{"of": "S3"} = 这一镜是对 S3 某处的硬切特写（场景按特写尺寸重新排版，不靠放大）。
+        # 插入镜标记：{"of": "S3"} = 这一镜是对 S3 某处的硬切特写（场景按特写尺寸重新排版，不靠放大）。
         # 门禁据此认景别（validate-treatment 的「特写」、validate-composition 的 >12s 构图）。不写就不出键。
         if s.get("insert") is not None:
             ins = s["insert"]
@@ -650,9 +658,9 @@ def resolve(project: Path) -> tuple[str, list[dict], list[str]]:
     return "\n".join(head + body + tail_lines), out, problems
 
 
-# ---- 3.3.0：storyboard.md 由实际镜头表生成（独立评审拿到的必须是这部片自己的镜头表）----
+# ---- storyboard.md 由实际镜头表生成（独立评审拿到的必须是这部片自己的镜头表）----
 STORYBOARD_MARK = "AUTO-GENERATED by resolve-shots"
-# 3.3.0 及以前模板自带的手写示例（new-project 原样拷进每个工程）：认得它，照样覆盖
+# 模板自带的手写示例（new-project 原样拷进每个工程）：认得它，照样覆盖
 TEMPLATE_STORYBOARD_HEAD = "# 时间码分镜：GitHub 开源三部曲 EP0（官方模板示例片）"
 FRAMING_SHORT = {"全": "最松 ≤1.05", "中": "最松 ≤1.20", "近": "峰值 ≥1.20", "特写": "峰值 ≥1.35", "插入": "插入镜"}
 
@@ -663,7 +671,6 @@ def _active_skin(project: Path, fallback: str | None = None) -> str | None:
     为什么需要读它：皮肤的**真源**是 active.ts（渲染端 import 的是它），
     而背景库按 shots.json 的 `theme` 挑图。这两处一旦不一致，出来的片就是
     「flat 的组件 + journal 的纸」这种最坏组合，而且**没有任何门禁看得见**
-    （实测：2026-10-31 想跨皮肤对照，只改了 active.ts，五族渲出来全是点阵纸）。
     所以这里统一由 active.ts 定皮肤，shots.json 的 theme 只当声明与兜底。
     """
     a = project / "src" / "theme" / "active.ts"
@@ -700,14 +707,14 @@ def storyboard_text(project: Path, shots_doc: dict, out: list[dict], cues: list[
         "| 镜 | 起–止 (s) | 景别 | 运镜 | 意图缩放 | 实际缩放 | 转场 | 背景 | 主要组件 | 字幕摘要 |",
         "|---|---|---|---|---|---|---|---|---|---|",
     ]
-    # 老工程显式写了非翻页转场：照用（尊重显式声明），但在分镜表里点一句怎么对齐新缺省。
+    # 显式写了非翻页转场：照用（尊重显式声明），但在分镜表里点一句怎么对齐缺省的翻页。
     # 只写进 storyboard，不进 problems——这是迁移提示，不是缺陷。
     legacy = [r["id"] for r in out if r.get("transition") in ("fade", "zoom", "whip", "whip-left", "whip-right")]
     if legacy:
         lines.append(f"- ⚠ {len(legacy)} 镜显式写了非翻页转场（{', '.join(legacy[:8])}）。缺省已是翻页：要统一语言，删掉这些 transition 字段（或不写、写 auto）即可。")
     for r in out:
         t = tshots.get(r["id"], {})
-        ks = [float(k["s"]) for k in (r.get("keys") or []) if isinstance(k.get("s"), (int, float))] or [1.0]
+        ks = [float(k["s"]) for k in ((r.get("cinema") or {}).get("path") or r.get("keys") or []) if isinstance(k.get("s"), (int, float))] or [1.0]
         focus = [f for f in ((r.get("cinema") or {}).get("focus") or []) if not f.get("settle")]
         fz = max([float(f.get("zoom") or 1.0) for f in focus] + [1.0])
         peak = max(ks) * fz
@@ -749,7 +756,7 @@ def main() -> int:
     ap.add_argument("project")
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--explain", action="store_true",
-                    help="逐镜打印「为什么选这张背景/纸」（P2-18）：角色、版式、候选数、轮换与题材")
+                    help="逐镜打印「为什么选这张背景/纸」：角色、版式、候选数、轮换与题材")
     args = ap.parse_args()
     project = Path(args.project).resolve()
     if not project.is_dir():
@@ -784,7 +791,7 @@ def main() -> int:
     shots_doc = json.loads((project / "manifests" / "shots.json").read_text(encoding="utf-8"))
     resolved["sfxDensity"] = sfx_density(shots_doc, problems)
     if (project / "manifests" / "backgrounds.json").is_file():
-        # 3.3.0：告诉 validate-backgrounds 本片按什么粒度换背景（没有背景库的旧工程不出这个键，输出逐字节不变）
+        # 告诉 validate-backgrounds 本片按什么粒度换背景（没有背景库的工程不出这个键）
         resolved["bgMode"] = bg_mode(shots_doc) if shots_doc.get("bgRotate", True) is not False else "off"
     with io.open(project / "manifests" / "shots.resolved.json", "w", encoding="utf-8", newline="") as fh:
         fh.write(json.dumps(resolved, ensure_ascii=False, indent=2))

@@ -110,7 +110,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const skinFile = path.join(tmp, 'src', 'theme', 'journal.tsx');
   const shotsFile = path.join(tmp, 'src', 'shots.ts');
   const setSkin = (kind) => fs.writeFileSync(skinFile, `craft: {transition: '${kind}'}`);
-  // ① 分镜表只写 auto：用不用卷页完全由皮肤决定（旧工程没有 manifest，走 shots.ts 兜底）
+  // ① 分镜表只写 auto：用不用卷页完全由皮肤决定（没有 manifest 的工程走 shots.ts 兜底）
   fs.writeFileSync(shotsFile, "export const SHOTS = {\n  S1: {id:'S1',from:0,to:100,transition:'auto'},\n  S2: {id:'S2',from:100,to:200,transition:'auto'},\n};\n");
   setSkin('slide');
   const unused = projectUsesCurl(tmp);

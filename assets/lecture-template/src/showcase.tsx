@@ -1,35 +1,33 @@
 import React from 'react';
 import {AbsoluteFill, Series, useCurrentFrame} from 'remotion';
 import {THEME} from './theme/active';
-import {SHOTKIT_VERSION, camAt, shotCam} from './shotkit';
-import {PhaseRail, STAGEKIT_VERSION, useStageMachine} from './stagekit';
-import {INSERT_VERSION, TRANSITIONS} from './insert';
-import {ConsoleWindow, MEDIA_VERSION, MetricGrid} from './media';
+import {camAt, shotCam} from './shotkit';
+import {PhaseRail, useStageMachine} from './stagekit';
+import {TRANSITIONS} from './insert';
+import {ConsoleWindow, MetricGrid} from './media';
 import {Corridor, SKELETONS, SplitStage, ZoomStage} from './skeletons';
 import {
   ChatThread, DiffView, FitCard, Funnel, ProgressRing, SkeletonCard, StaggerList, StampSeal, Typewriter,
 } from './fxkit';
-import {Callout, Checklist, JumpInText, TOOLKIT_VERSION} from './toolkit';
-import {Accordion, Chart, ClipReveal, COMPONENTS_VERSION, ControlStack, FitTextBox, FocusFx, GeoView, GlowFrame, HighlightCode, IconWall, MathBlock, MorphShape, NetworkGraph, NoiseJitter, OverlayFrame, PathDraw, QrCode, SankeyChart, SceneTransitions, ShapeDraw, SHAPES, ShimmerText, SketchFx, Tabs, TopicIcon, TreeView} from './components';
+import {Callout, Checklist, JumpInText} from './toolkit';
+import {Accordion, Chart, ClipReveal, ControlStack, FitTextBox, FocusFx, GeoView, GlowFrame, HighlightCode, IconWall, MathBlock, MorphShape, NetworkGraph, NoiseJitter, OverlayFrame, PathDraw, QrCode, SankeyChart, SceneTransitions, ShapeDraw, SHAPES, ShimmerText, SketchFx, Tabs, TopicIcon, TreeView} from './components';
 
 // ============================================================================
 // showcase · 组件接触表（Composition: NotebookVideoShowcase）
 //
 // 目的：让执行 AI **看见**库组件长什么样，而不是读文字描述。
-// 这是「能力存在但不可达」的直接解法——此前零调用的组件在这里全部渲染一遍，
-// 抽成接触表后，AI 用 Read 看图选型，比读 props 文档准确得多。
+// 库组件在这里全部渲染一遍，抽成接触表后，AI 用 Read 看图选型，比读 props 文档准确得多。
 //
 // 用法：
 //   node scripts/notebook-video.mjs showcase <proj>          # 渲染接触表 mp4
 //   node scripts/notebook-video.mjs showcase-sheet <proj>    # 抽接触表 jpg（select 精确取每页第 6/21 帧）
 //
 // 每页 30 帧（1 秒），共 SHOWCASE_PAGES 页；抽帧用 select 滤镜按帧号取**每页第 6 与第 21 帧**
-// 两张中段图，6×6=36 格正好装 18 页（旧版 1fps 只抽页首帧，转场这类"动作在页中段的件"
-// 在抽图上根本看不见，第 ⑪ 页就是这么"等于没上"的）。
+// 两张中段图，6×6=36 格正好装 18 页（只抽页首帧时，转场这类"动作在页中段的件"在抽图上看不见）。
 // 注：KenBurnsImg / EvidenceZoom 依赖位图素材，不进接触表（不给模板塞示例图片）。
 //
 // ⚠️ 本文件是接触表的**渲染实现**，不是组件清单：页标题里的名字也不构成一份"有哪些件"的清单。
-//    **件的权威索引只有一处** —— references/media.md#media-routing §5.1「组件权威索引」
+//    **件的权威索引只有一处** —— references/media.md#component-index
 //    （53 件逐件：用途 / 何时用 / 何时别用 / 接触表页 / 真实使用记录；含 10 件未上接触表的原因）。
 //    要核对"某件有没有上接触表"看那张表，别从本文件反推。
 // ============================================================================
@@ -39,7 +37,7 @@ const F = 150; // 所有组件渲染在「已落定」帧，便于一眼看清�
 const PAGE = 30;
 
 // ⑬ 页 GeoView 用的经纬度标记（源站 / 边缘节点这类）：经纬度是**手填**的，
-// 本技能不做地理编码、也不含城市/国界数据（见 references/technique.md#dependency-policy §4.2）。
+// 本技能不做地理编码、也不含城市/国界数据（见 references/technique.md#dependency-policy）。
 const GEO_MARKERS = [
   {lon: 116.4, lat: 39.9, label: '北京', tone: C.orange},
   {lon: 8.7, lat: 50.1, label: '法兰克福', tone: C.green},
@@ -48,7 +46,7 @@ const GEO_MARKERS = [
 ];
 
 // 格子外壳。`stage` 只影响内部舞台的缩放与落位：不传 = 900×470 格子用的那套
-// （舞台 860×430、左上角 (0,30)、scale(0.98)），与旧版逐像素一致，⑨–⑰ 页不走第二个分支。
+// （舞台 860×430、左上角 (0,30)、scale(0.98)），⑨–⑰ 页不走第二个分支。
 const Tile: React.FC<{name: string; children?: React.ReactNode; stage?: {scale: number; left: number; top: number}}> = ({name, children, stage}) => {
   const st = stage ?? {scale: 0.98, left: 0, top: 30};
   return (
@@ -82,10 +80,8 @@ const Grid4: React.FC<{items: {name: string; node: React.ReactNode}[]}> = ({item
 
 /** 5 格（3 列 × 2 行，格子 610×470）：一页 5 件时用。
  *
- *  为什么需要它：接触表上每个组件都必须**看得见**，而 `Grid4` 只有 4 格 —— 第 5 件被摆到
- *  `top = 76 + 2*500 = 1076`，整格落在 1080 高的画布**外面** 466px：渲出来的第 ③ 页只有 4 格，
- *  第 5 件在接触表上**根本看不见**（CanvasBoundsGate 上线当天就抓到的真缺陷，图已核）。
- *  所以「一页 5 件」必须有自己的格子表，不能往 4 格里塞第 5 件。
+ *  为什么需要它：接触表上每个组件都必须**看得见**，而 `Grid4` 只有 4 格 —— 往里塞第 5 件会被摆到
+ *  `top = 76 + 2*500 = 1076`，整格落在 1080 高的画布外面。所以「一页 5 件」必须有自己的格子表。
  *
  *  横向：3×610 + 2×25 间隙 + 2×20 边距 = 1920，恰好铺满且左右对称（左右边距都是 20）；
  *  纵向：沿用 `Grid4` 的 76 / 576 两行、格子仍 470 高 —— 页与页之间的节奏不变。
@@ -210,8 +206,7 @@ export const Showcase: React.FC = () => {
     {name: 'Tabs · 标签页（封装层，纯 div）', node: <div style={{transform: 'scale(0.6)'}}><Tabs f={F} startAt={0} step={30} width={1180} height={620} tabs={[{key: 'a', label: '标签一', title: '激活项由帧号决定', body: '内容随帧更替，不做 CSS 过渡。', points: [{mark: '01', text: '要点一'}, {mark: '02', text: '要点二'}], verdict: '验证通过', tone: 'green'}, {key: 'b', label: '标签二', title: '第二个面板', body: '面板下半用要点行填满。', points: [{mark: '01', text: '要点三'}, {mark: '02', text: '要点四'}], verdict: '验证通过', tone: 'gold'}]} /></div>},
   ];
 
-  // ⑦⑧⑨ 修辞工具件（v3.0.1 从 index.tsx 迁出到 toolkit.tsx；此前接触表**一页都没有**，
-  // 于是 11 个组件虽然能 import 了，却谁也没被渲染过——接触表是"看见才会用"的唯一入口。
+  // ⑦⑧⑨ 修辞工具件（toolkit.tsx 的 11 个组件）——接触表是"看见才会用"的唯一入口。
   const p7 = [
     {name: 'Callout · 画圈标注', node: <div style={{position: 'relative', width: 840, height: 400}}>
       <div style={{position: 'absolute', left: 80, top: 150, width: 420, height: 80, borderRadius: 10, background: C.paper, border: `2px solid ${C.line}`, display: 'grid', placeItems: 'center', fontFamily: 'Space,Kai', fontSize: 26, fontWeight: 700, color: C.muted}}>(没有远程仓库，只有本地)</div>
@@ -237,16 +232,16 @@ export const Showcase: React.FC = () => {
     <AbsoluteFill>
       <Series>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="① 数据 / 结论介质" note={SHOTKIT_VERSION}><Grid4 items={p1} /></Page>
+          <Page title="① 数据 / 结论介质"><Grid4 items={p1} /></Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="② 控制台 / 指标 / 代码 介质" note={MEDIA_VERSION}><Grid4 items={p2} /></Page>
+          <Page title="② 控制台 / 指标 / 代码 介质"><Grid4 items={p2} /></Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="③ 卡片 / 漏斗 / 标注构件" note={STAGEKIT_VERSION}><Grid5 items={p3} /></Page>
+          <Page title="③ 卡片 / 漏斗 / 标注构件"><Grid5 items={p3} /></Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="④ 对话 / 邮件 / 状态轨" note={INSERT_VERSION}><Grid4 items={p4} /></Page>
+          <Page title="④ 对话 / 邮件 / 状态轨"><Grid4 items={p4} /></Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
           <Page title="⑤ 六种镜头意图（同一内容，不同取景）" note="每格显示 60 帧处的真实相机参数；s=缩放，x=注视点横坐标">
@@ -284,13 +279,13 @@ export const Showcase: React.FC = () => {
           </Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="⑦ 修辞工具件 · 圈 / 连 / 单" note={TOOLKIT_VERSION}><Grid4 items={p7} /></Page>
+          <Page title="⑦ 修辞工具件 · 圈 / 连 / 单"><Grid4 items={p7} /></Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
           <Page title="⑧ 字效与效果" note="JumpInText / ShimmerText / GlowFrame"><Grid4 items={p9} /></Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="⑨ 封装层 · 结构件（src/components）" note={`${COMPONENTS_VERSION} · 库提供结构，本层提供皮肤与帧驱动`}>
+          <Page title="⑨ 封装层 · 结构件（src/components）" note={`库提供结构，本层提供皮肤与帧驱动`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
               <Tile name="Accordion · 手风琴（纯 div，帧驱动）">
                 <div style={{transform: 'scale(0.6)'}}>
@@ -366,7 +361,7 @@ export const Showcase: React.FC = () => {
           </Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="⑩ 封装层 · 效果与几何" note={`${COMPONENTS_VERSION} · 流光/倾斜/描线/参数化图形/中文反推字号`}>
+          <Page title="⑩ 封装层 · 效果与几何" note={`流光/倾斜/描线/参数化图形/中文反推字号`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
               <Tile name="GlowFrame · 流光边框（零依赖）">
                 <GlowFrame f={F} durationInFrames={300} width={620} height={330} tone={C.blue}>
@@ -404,7 +399,7 @@ export const Showcase: React.FC = () => {
           </Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="⑪ 封装层 · 路径与几何" note={`${COMPONENTS_VERSION} · 描线生长 / 形状变形 / 标注引线 / 转场`}>
+          <Page title="⑪ 封装层 · 路径与几何" note={`描线生长 / 形状变形 / 标注引线 / 转场`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
               <Tile name="PathDraw · 描线生长 + 沿线运动点">
                 <PathDraw f={F} path="M 0 180 C 160 40, 300 320, 460 180 S 760 30, 900 180" startAt={0} durationInFrames={60} width={820} height={330} viewBox="-40 0 980 360" showDot strokeWidth={11} />
@@ -416,9 +411,7 @@ export const Showcase: React.FC = () => {
               </Tile>
             </div>
             <div style={{position: 'absolute', left: 20, top: 576, width: 900, height: 470}}>
-              {/* 原格子是 `PieDraw`（v3.1.1 删除：被 Chart variant="pie" 与 ProgressRing 上下夹住，
-                  自己没标签/没图例/没数值）。换成 pathfx 家族自己的**组合用法** —— 标注框 + 引线，
-                  本页主题仍是"路径与几何"。坐标是按实测几何定的：SHAPES.callout(300,190,70) 的
+              {/* pathfx 家族的**组合用法** —— 标注框 + 引线（本页主题是"路径与几何"）。坐标按几何算定：SHAPES.callout(300,190,70) 的
                   path bbox 是 300×230（尖角在正下方），ShapeDraw 的 viewBox = bbox±26、size=210
                   → scale 0.5966、纵向居中偏移 20.87，尖角落在 svg 内 (84.1,173.6)；
                   ShapeDraw 摆在 (10,44) → 引线起点 (94,218)。 */}
@@ -463,7 +456,7 @@ export const Showcase: React.FC = () => {
           </Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="⑫ 封装层 · 效果件" note={`${COMPONENTS_VERSION} · 控件状态 / 抖动 / 擦除 / 题材图标`}>
+          <Page title="⑫ 封装层 · 效果件" note={`控件状态 / 抖动 / 擦除 / 题材图标`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
               <Tile name="ControlStack · 控件状态随旁白变化（六种控件，纯 div）">
                 <div style={{transform: 'scale(0.64)', transformOrigin: 'center'}}>
@@ -527,7 +520,7 @@ export const Showcase: React.FC = () => {
           </Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="⑬ 封装层 · 结构化数据 → 图形" note={`${COMPONENTS_VERSION} · d3-hierarchy / d3-geo / d3-sankey / qrcode`}>
+          <Page title="⑬ 封装层 · 结构化数据 → 图形" note={`d3-hierarchy / d3-geo / d3-sankey / qrcode`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
               <Tile name="TreeView · 目录树（d3-hierarchy）">
                 <TreeView f={F} startAt={0} width={800} height={380} nodeW={116} nodeH={34}
@@ -569,7 +562,7 @@ export const Showcase: React.FC = () => {
           </Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="⑭ 封装层 · 手绘风与公式" note={`${COMPONENTS_VERSION} · roughjs / katex / d3-dsv 入口`}>
+          <Page title="⑭ 封装层 · 手绘风与公式" note={`roughjs / katex / d3-dsv 入口`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
               <Tile name="SketchFx · 手绘风（roughjs）">
                 <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>
@@ -631,7 +624,7 @@ export const Showcase: React.FC = () => {
           </Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="⑮ 封装层 · 图表变体（d3-shape 62 个导出，此前只用了 2 个）" note={`${COMPONENTS_VERSION} · 同一个 Chart，换 variant：面积 / 百分比堆叠 / 雷达 / 饼图`}>
+          <Page title="⑮ 封装层 · 图表变体（d3-shape 62 个导出，此前只用了 2 个）" note={`同一个 Chart，换 variant：面积 / 百分比堆叠 / 雷达 / 饼图`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
               <Tile name="Chart variant=area · 面积图（份额随时间）">
                 <div style={{transform: 'scale(0.66)'}}>
@@ -677,7 +670,7 @@ export const Showcase: React.FC = () => {
           </Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="⑯ 封装层 · 层级与关系（d3-hierarchy 18 个导出 + d3-force）" note={`${COMPONENTS_VERSION} · 面积=数值的三种图 + 谁连着谁的力导向布局`}>
+          <Page title="⑯ 封装层 · 层级与关系（d3-hierarchy 18 个导出 + d3-force）" note={`面积=数值的三种图 + 谁连着谁的力导向布局`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
               <Tile name="TreeView variant=treemap · 矩形树图">
                 <TreeView f={F} variant="treemap" startAt={0} width={830} height={400}
@@ -732,7 +725,7 @@ export const Showcase: React.FC = () => {
           </Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="⑰ 封装层 · 弹层与形状（纯 div 弹层 + @remotion/shapes 余量）" note={`${COMPONENTS_VERSION} · 弹层钉在给定坐标（无 Portal、无异步定位）；引线朝向由 getTangentAtLength 给`}>
+          <Page title="⑰ 封装层 · 弹层与形状（纯 div 弹层 + @remotion/shapes 余量）" note={`弹层钉在给定坐标（无 Portal、无异步定位）；引线朝向由 getTangentAtLength 给`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
               <Tile name="OverlayFrame · Dialog 与 DropdownMenu">
                 <div style={{position: 'relative', width: 860, height: 430}}>
@@ -803,9 +796,8 @@ export const Showcase: React.FC = () => {
 export const SHOWCASE_PAGES = 18;
 
 // 「件」的口径 = 逐个数过**本文件里真实出现过的旧模块 JSX 标签**：fxkit 9 + media 2 +
-// stagekit 1（PhaseRail）+ skeletons 3 + toolkit 3 = **18 件**（与 references/media.md#media-routing §6 同一口径）。
+// stagekit 1（PhaseRail）+ skeletons 3 + toolkit 3 = **18 件**（与 references/media.md#component-index 同一口径）。
 // ⚠️ 别把旧模块**对外 export** 的 26 件（见 components/index.ts 的「53 件地板」注释）填到这里 ——
 // 那是"能 import 的件数"，不是"接触表渲染出来的件数"，两者差 8 件。
 // ⚠️ 这个串**不在任何画面上渲染**（本文件没有页脚，`Page` 只用 title / note；全仓库没有一处读它）
 //    —— 它是给人读的版本串，改它**不会**改变任何渲染结果，所以也没有"下次渲染自动生效"这回事。
-export const SHOWCASE_VERSION = 'showcase-v9 · 18 pages · 18 件旧件 + 新封装层 10 页（含 ⑱ FocusFx 整页） + v3.1 新能力 3 页';

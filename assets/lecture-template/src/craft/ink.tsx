@@ -1,5 +1,5 @@
 // ============================================================================
-// craft/ink.tsx · 墨线与手写（3.3.0）
+// craft/ink.tsx · 墨线与手写
 //
 //   InkPath       一笔有压感的墨线，按进度 p 从起点「画出来」（perfect-freehand，MIT，steveruizok）
 //   Underline     手划的下划线 / 圈注（InkPath 的便捷封装）
@@ -16,9 +16,10 @@ import {getLength, getPointAtLength} from '@remotion/paths';
 import {noise2D} from '@remotion/noise';
 import {parse as parseFont, type Font} from 'opentype.js';
 import {THEME} from '../theme/active';
+import CONTRACT from '../contract.json';
+import {clamp} from '../motion';
 
 const C = THEME.palette;
-const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
 export const easeInk = Easing.bezier(0.45, 0, 0.2, 1);
 
 /** 手作场景的字号阶梯（设计 px）。画内必读标签 ≥ label（≈ 64 px@1440，用户规范），每帧 ≤ 3 个。 */
@@ -30,7 +31,7 @@ export const prog = (f: number, at: number, dur: number) => interpolate(f, [at, 
 /** 把 SVG 路径采样成点列（等弧长），给 InkPath 用。 */
 export const samplePath = (d: string, n = 64): [number, number][] => {
   const L = getLength(d);
-  // getPointAtLength 在终点（length === L）偶尔返回 null；不能退回 (0,0)——那会从画布左上角拉出一条线（样张实测）。
+  // getPointAtLength 在终点（length === L）偶尔返回 null；不能退回 (0,0)——那会从画布左上角拉出一条线。
   const out: [number, number][] = [];
   for (let i = 0; i <= n; i++) {
     const q = getPointAtLength(d, Math.min(L * 0.99999, (L * i) / n));
@@ -98,10 +99,10 @@ export type HandNoteProps = {
   size?: number; color?: string; family?: string; maxWidth?: number;
 };
 
-/** 钢笔批注：引线 8 帧长到目标，字随后从左往右「写」出（clip），纸色光晕保证 ≥ 7:1。 */
+/** 钢笔批注：引线 noteLead 帧长到目标，字随后从左往右「写」出（clip，时长见 contract.json 的 ANNOT），纸色光晕保证 ≥ 7:1。 */
 export const HandNote: React.FC<HandNoteProps> = ({f, at, x, y, text, to, size = CRAFT_TYPE.note, color = C.ink, family = THEME.craft?.handFamily ?? 'Kai', maxWidth = 900}) => {
   const lead = to ? prog(f, at, 10) : 1;
-  const write = prog(f, at + (to ? 8 : 0), Math.max(10, text.length * 2.2));
+  const write = prog(f, at + (to ? CONTRACT.ANNOT.noteLead : 0), Math.max(CONTRACT.ANNOT.noteMin, text.length * CONTRACT.ANNOT.notePerChar));
   if (f < at) return null;
   const halo = C.paper;
   const startX = x - 10, startY = y + size * 0.62;
@@ -118,8 +119,7 @@ export const HandNote: React.FC<HandNoteProps> = ({f, at, x, y, text, to, size =
  * opentype.js 的 Path 命令 → SVG d（自己拼，不用 `path.toPathData()`）。
  * opentype.js 2.0.0 的 roundDecimal 把小数部分拼成字符串再 `+(… + "e+2")`：小数部分是 1e-14 这类
  * 浮点残差时会拼出 "1.42e-14e+2" → NaN，于是 d 里出现 `LNaN 95.26`，该字后半截轮廓整段丢失
- * （cell 演示片实测：「细」的「田」变成一块楔形、第二个「胞」的「月」只剩一撇；同一个字放在不同 x 上
- * 时好时坏，因为残差取决于横向偏移）。这里按 2 位小数自己格式化，结果与位置无关。
+ * （残差取决于横向偏移，同一个字放在不同 x 上时好时坏）。这里按 2 位小数自己格式化，结果与位置无关。
  */
 const num = (v: number) => String(Math.round(v * 100) / 100);
 export const glyphPathD = (cmds: ReadonlyArray<{type: string; x?: number; y?: number; x1?: number; y1?: number; x2?: number; y2?: number}>) => cmds.map((c) => {

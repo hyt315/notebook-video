@@ -19,7 +19,7 @@ for (const [from, to] of pairs) {
 }
 console.log('Synchronized canonical render inputs into public/.');
 
-// 3.5.0 · 声音配置：默认无 BGM。只有 manifests/treatment.json 明确写 sound.music.use=true 才加载音乐床。
+// 声音配置：默认无 BGM。只有 manifests/treatment.json 明确写 sound.music.use=true 才加载音乐床。
 // 生成 src/audio-config.ts 而不是让 TSX 去读 manifests：渲染包只认 src/ 下的静态 import。
 const treatmentPath = path.join(root, 'manifests', 'treatment.json');
 let music = false;
@@ -39,9 +39,8 @@ fs.writeFileSync(
 );
 console.log(`Sound config: music ${music ? 'ON (treatment.sound.music.use=true)' : 'OFF (default)'}.`);
 
-// 3.6.0 · 素材表：src/media.json 是渲染包里唯一被读的那份（craft/media.tsx 的 MEDIA）。
-// 以前没人同步它，于是 manifests/media.json 加了素材、画面照样报
-// 「manifests/media.json 里没有 id=…」——素材在，图出不来。
+// 素材表：src/media.json 是渲染包里唯一被读的那份（craft/media.tsx 的 MEDIA）。
+// 不同步时 manifests/media.json 加了素材、画面仍报「manifests/media.json 里没有 id=…」。
 const mediaSrc = path.join(root, 'manifests', 'media.json');
 const mediaOut = path.join(root, 'src', 'media.json');
 if (fs.existsSync(mediaSrc)) {

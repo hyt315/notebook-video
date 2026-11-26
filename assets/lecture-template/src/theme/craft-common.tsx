@@ -3,14 +3,14 @@ import {AbsoluteFill, Img, staticFile} from 'remotion';
 import type {BgVariant, ChromeProps, Theme} from './types';
 
 // ============================================================================
-// 手作皮肤共用件（3.3.0，LOCKED）：journal / papercut / archive 三套皮肤共用的背景、纸纤维、
+// 手作皮肤共用件（LOCKED）：journal / papercut / archive 三套皮肤共用的背景、纸纤维、
 // 字幕衬底与章节标识写法。皮肤之间只换「材料参数」，不在场景层做任何风格判断。
 //
 // 方法来源：材质 + 字幕 + 运镜 + 声音 + 原生动作的「配方」拆法，借鉴 lemo-opuscar 的 styles/*/STYLE.md
 // （MIT，© 2026 LemoLab，https://github.com/lemomo-ai/lemo-opuscar）。此处为 Remotion 重写，无代码复制。
 // ============================================================================
 
-/** 位图背景（2560×1440，与画布逐像素），由 scripts/dev/make-craft-textures.py 确定性生成。 */
+/** 位图背景（2560×1440，与画布逐像素），确定性生成、随包发布。 */
 export const makeBackground = (base: string, files: Record<BgVariant, string>): Theme['Background'] =>
   ({variant = 'main'}) => (
     <AbsoluteFill style={{background: base}}>
@@ -21,7 +21,7 @@ export const makeBackground = (base: string, files: Record<BgVariant, string>): 
 /** 纸纤维覆盖层：叠在卡片里，让「白卡」变成「一张纸」。opacity 0 = 不画。 */
 export const FibreOverlay: React.FC<{opacity: number; radius?: number}> = ({opacity, radius = 0}) =>
   opacity <= 0 ? null : <div aria-hidden style={{position: 'absolute', inset: 0, borderRadius: radius, pointerEvents: 'none',
-    backgroundImage: `url(${staticFile('craft/fibre-tile.png')})`, backgroundSize: '512px 512px', opacity, mixBlendMode: 'multiply'}} />;
+    backgroundImage: `url(${staticFile('craft/fibre-tile.webp')})`, backgroundSize: '512px 512px', opacity, mixBlendMode: 'multiply'}} />;
 
 /** 由卡片位置哈希出的确定性微倾角（±maxDeg），手放上去的纸不会横平竖直。 */
 export const tiltOf = (style: React.CSSProperties | undefined, maxDeg: number) => {
@@ -49,7 +49,7 @@ export const PaperSubtitle = (o: {ink: string; halo: string; family?: string; si
         background: `radial-gradient(ellipse at center, ${o.halo} 0%, ${o.halo} 52%, transparent 76%)`, filter: 'blur(6px)'}} />}
       <div style={{position: 'relative', fontFamily: o.family ?? 'NotoSerifSC,Kai', fontSize: o.size, fontWeight: 700, lineHeight: 1.16,
         letterSpacing: o.letterSpacing ?? 2, color: o.ink, whiteSpace: 'nowrap',
-        // 3.3.0：全角标点收半宽（「 」、，。两侧不再像多了一个空格）
+        // 全角标点收半宽（「 」、，。两侧不再像多了一个空格）
         fontFeatureSettings: '"halt"',
         textShadow: o.plate ? undefined : `0 0 10px ${o.halo}, 0 0 4px ${o.halo}`}}>
         {children}

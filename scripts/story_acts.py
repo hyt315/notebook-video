@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""story_acts.py — compose-story 的「动作怎么落到帧」与「复现算不算重复」（P2-24 第三切片）
+"""story_acts.py — compose-story 的「动作怎么落到帧」与「复现算不算重复」
 
 从 `compose-story.py` 切出的第四块（前三块：`story_camera.py` / `story_text.py` / `story_caption.py`）。
 切它的直接原因是版式层：`lay_page` 要调 `resolve_ink_acts` 与 `check_draw`。若这层还留在主文件，
@@ -7,14 +7,15 @@
 
 边界：
   - **在这里**：`@L1` / `@L1.3` 怎么换算成本镜帧号（`resolve_act_at`）、墨图与速写两套动词表、
-    `content.ink.acts` 的校验（`resolve_ink_acts`）、跨镜复现的指纹与判定（P2-19）、
-    线稿规格的构建期核对（P1-09，`check_draw` / `resolve_sketch`）、标注层的矩形与起始帧。
+    `content.ink.acts` 的校验（`resolve_ink_acts`）、跨镜复现的指纹与判定、
+    线稿规格的构建期核对（`check_draw` / `resolve_sketch`）、标注层的矩形与起始帧。
   - **不在这里**：元素怎么摆（`lay_*`）、旁白与字幕（`story_caption`）、时间轴怎么串（`build`）。
   - **共享底座**：帧号换算只走 `story_time.frame`；不在这里定义 FPS。
   - 依赖收集器只看 `p.err / p.fix / p.hint`，不需要 `Problems` 类本身。
 """
 from __future__ import annotations
 
+import math
 import re
 import sys
 from pathlib import Path
@@ -25,14 +26,19 @@ from story_time import frame  # noqa: E402
 from contract import C  # noqa: E402
 
 
-# ---------- 3.5.1 出现排程（references/draftpaper.md#reveal-rules 规则 ③）----------
+# ---------- 出现排程（references/draftpaper.md#reveal-rules 规则 ③）----------
 REVEAL_GAP = 12          # 同一镜里相邻两次「开始出现」至少隔 12 帧
 REVEAL_CONC = 2          # 同一时刻最多 2 个东西在长
 SKETCH_ENTER_SCHED = 45  # 线稿描出时长按上限 45 帧排（sketch.tsx 实际 clamp(12×部位数, 24, 45)）
 ACT_DUR = 12             # 线稿 point / swap / mark / count
-ANNOT_DUR = {"circle": 14, "underline": 12, "arrow": 12, "note": 24}
-CUT_TAIL = 4             # 3.5.2：镜尾 4 帧内不能还在长
-MIN_GROW = 12            # 3.5.2：赶时压缩展开时长的下限
+CUT_TAIL = 4             # 镜尾 4 帧内不能还在长
+MIN_GROW = 12            # 赶时压缩展开时长的下限
+
+
+def annot_dur(a: dict) -> int:
+    """标注画完的帧数（contract.json 的 ANNOT，与 auto.tsx AnnotLayer / craft HandNote 同源）：圈注 / 下划线 / 箭头 mark 帧；手写小字 = 引线 noteLead + 逐字写出。"""
+    A = C["ANNOT"]
+    return A["mark"] if a["kind"] != "note" else A["noteLead"] + math.ceil(max(A["noteMin"], len(a.get("text") or "") * A["notePerChar"]))
 
 
 def grow_dur(e: dict) -> int:
@@ -47,7 +53,7 @@ def grow_dur(e: dict) -> int:
 def schedule_reveals(els: list, sk_out, ann_out: list, tips: list, shot_len: int | None = None) -> list:
     """把一镜里所有「开始出现」事件排开：间隔 ≥ REVEAL_GAP，同时在长 ≤ REVEAL_CONC。只会往后推，不会提前。
 
-    3.5.2：① 标注最后排，等它标的元素**排定以后**长完 +2 帧才开始；
+    ① 标注最后排，等它标的元素**排定以后**长完 +2 帧才开始；
     ② 给了 shot_len 时，元素要在镜尾前 CUT_TAIL 帧长完：放不下先把展开时长压到 MIN_GROW，
        仍放不下的记进返回值（compose 据此提示「删元素或拆镜」）。返回 [(名字, 结束帧, 上限帧)]。"""
     ev = []  # (期望帧, 类别序, 时长, 写回对象)
@@ -89,7 +95,7 @@ def schedule_reveals(els: list, sk_out, ann_out: list, tips: list, shot_len: int
         tgt = next((x for x in els if x["x"] == a["x"] and x["y"] == a["y"]), None)
         if tgt:
             want = max(want, tgt["at"] + tgt["dur"] + 2)
-        a["at"] = place(want, ANNOT_DUR.get(a["kind"], 12))
+        a["at"] = place(want, annot_dur(a))
 
     late: list = []
     if shot_len:
@@ -98,7 +104,7 @@ def schedule_reveals(els: list, sk_out, ann_out: list, tips: list, shot_len: int
             if e["at"] + e["dur"] > limit and limit - e["at"] >= MIN_GROW:
                 e["dur"] = limit - e["at"]
         for name, at, du in ([(e["id"], e["at"], e["dur"]) for e in els]
-                             + [("标注 " + a["kind"], a["at"], ANNOT_DUR.get(a["kind"], 12)) for a in anns]
+                             + [("标注 " + a["kind"], a["at"], annot_dur(a)) for a in anns]
                              + [("线稿 " + fr["do"], fr["at"], SKETCH_ENTER_SCHED if fr["do"] == "enter" else ACT_DUR)
                                 for fr in (sk_out or {}).get("frames", []) if fr["do"] in ("enter", "point", "swap", "mark", "count")]):
             if at + du > limit:
@@ -187,7 +193,7 @@ def resolve_ink_acts(p, sid, raw, line_start, line_cues, cues, frm, draw, dur, v
     return frames
 
 
-# ---------------------------------------------------------------- 有意复现 vs 无意重复（P2-19）
+# ---------------------------------------------------------------- 有意复现 vs 无意重复
 # 跨镜复现不该一律禁止：回忆、前后对照、结论回扣都需要再现同一个主题物。
 # 但「同图 + 同局部 + 同动作」连续出现两次、又没声明意图，观众读到的就是「这段我看过」。
 # 所以门禁只拦**无意**的完全重复；构图、动作、信息量三者至少一项有变化即放行。
@@ -281,7 +287,7 @@ def check_reprises(p: "Problems", shots: list) -> None:
 
 
 def check_draw(p, sid, where, spec):
-    """任何进画面的线稿规格都要在构建期核对（P1-09）。
+    """任何进画面的线稿规格都要在构建期核对。
 
     `content.ink` / `content.figure` 走的是 el(...) 直接进元素表，不经过 resolve_sketch；
     只查 shot.sketch 会漏掉这两条最常见的路径。
@@ -297,7 +303,7 @@ def resolve_sketch(p, sid, sk, line_start, line_cues, cues, frm):
     if not isinstance(sk, dict) or not sk.get("draw"):
         p.err(f"{sid}: sketch 需要 draw（lib:<名字> / shapes:[…]）")
         return None
-    # 线稿名与部位名必须在**构建期**核对：名字错了引擎只会画空或画整图（P1-09），
+    # 线稿名与部位名必须在**构建期**核对：名字错了引擎只会画空或画整图，
     # 成片看起来「少了一张图」，却在渲染日志里只留一行 warn。
     problems = linework_index.check_selection(sk.get("draw"), sk.get("parts"))
     for msg in problems:
@@ -306,7 +312,7 @@ def resolve_sketch(p, sid, sk, line_start, line_cues, cues, frm):
         return None
     frames = []
     if not (sk.get("acts") or []):
-        sk = dict(sk, acts=[{"at": "@L1", "do": "enter"}])  # 3.5.1：acts 不写 = 第 1 句开始时描出（不再整镜静态出现）
+        sk = dict(sk, acts=[{"at": "@L1", "do": "enter"}])  # acts 不写 = 第 1 句开始时描出（不再整镜静态出现）
     for i, a in enumerate(sk.get("acts") or []):
         verb = a.get("do")
         if verb not in SKETCH_VERBS:

@@ -1,20 +1,21 @@
-import React from 'react';
-import {staticFile} from 'remotion';
+import React,{useEffect,useState} from 'react';
+import {cancelRender,continueRender,delayRender,staticFile} from 'remotion';
+import {THEME} from './theme/active';
 
 // ============================================================================
 // 字体表（LOCKED）：全部字体都随工程打包在 public/ 下，渲染**从不**依赖系统字体
 // （Windows / macOS / Linux / CI 容器出图一致）。
 //
-// CJK 兜底：Clash / Space / Caveat 是只含拉丁字形的展示字体。旧版页眉
-// `fontFamily:'Clash,Space'` 遇到中文时落到系统字体，在没有中文字体的环境里渲成豆腐块。
-// 现在给这三个族各追加一条 **unicode-range 限定的 @font-face**，指向随包的 LXGW WenKai Lite
+// CJK 兜底：Clash / Space / Caveat 是只含拉丁字形的展示字体，
+// `fontFamily:'Clash,Space'` 遇到中文时会落到系统字体，在没有中文字体的环境里渲成豆腐块。
+// 所以给这三个族各追加一条 **unicode-range 限定的 @font-face**，指向随包的 LXGW WenKai Lite
 // （OFL-1.1，public/LICENSE-OFL-1.1-LXGW.txt）：浏览器按字符挑字面，拉丁字符仍用原字体，
 // 中日韩字符与全角标点自动落到 WenKai。于是任何 `fontFamily:'Space'` / `'Clash,Space'`
 // 的写法都不会再出豆腐，调用处不用记得补 Kai。
-// 3.3.0：NotoSerifSC = Noto Serif SC Bold（OFL-1.1，notofonts/noto-cjk Serif2.003，按需下载，不入库）。
+// NotoSerifSC = Noto Serif SC Bold（OFL-1.1，notofonts/noto-cjk Serif2.003，按需下载，不入库）。
 // 只有手作皮肤（journal / papercut / archive）用它，皮肤在 THEME.craft.fonts 里声明，AssetGate 校验；
 // flat / cel 工程里这个 @font-face 指向的文件不存在也没关系（浏览器只在用到时才下载字体）。
-// 3.6.0：Clash Display（ITF Free Font License，禁止经仓库再分发）不随仓库发，CLI 首次用到时从 Fontshare
+// Clash Display（ITF Free Font License，禁止经仓库再分发）不随仓库发，CLI 首次用到时从 Fontshare
 // 按 sha256 锁定下载到工程 public/fonts/；离线缺文件时调用处的 'Clash,Space,Kai' 栈回落到 Space Grotesk。
 // ============================================================================
 
@@ -51,3 +52,11 @@ ${cjkFallbackFaces('Space', ['400', '500', '600', '700'])}
 ${cjkFallbackFaces('Caveat', ['400 700'])}
 *{box-sizing:border-box}html,body{margin:0;background:${bg}}body{font-family:Kai,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
 `}</style>;
+
+// 主题字体一次性加载（AssetGate 与 FontGate 共用同一份清单）。
+// 含 700 Clash：数字镜（KineticNumber）用它，不预载时单帧 still 量字框的那一刻它还没加载，GlyphSnap 的展开边
+// 会与连续渲不同。只加这一个字重：预载 Space 700 会改变章节标题的排版。
+// ⚠️ 先等一帧并强制一次样式计算再 load：FontFaces 的 <style> 刚插入时 @font-face 还没注册进
+// document.fonts，此刻 load() 匹配不到任何字体、立即 resolve。FontGate 不先挂画面层，必须自己触发加载。
+export const loadThemeFonts=()=>new Promise<void>((r)=>requestAnimationFrame(()=>r())).then(()=>{void document.body.offsetHeight;}).then(()=>Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash').catch(()=>[]),document.fonts.load('700 40px Clash').catch(()=>[]),document.fonts.load('500 40px Space'),document.fonts.load('400 40px Caveat'),...(THEME.craft?.fonts??[]).map(fd=>document.fonts.load(fd)),document.fonts.ready]));
+export const AssetGate=()=>{const [handle]=useState(()=>delayRender('waiting for fonts',{timeoutInMilliseconds:120000}));useEffect(()=>{let live=true;loadThemeFonts().then(()=>{if(!live)return;const missing=(THEME.craft?.fonts??[]).filter(fd=>!document.fonts.check(fd,'细胞'));if(missing.length){cancelRender(new Error(`Theme font missing: ${missing.join(', ')} — run: node scripts/notebook-video.mjs fonts --serif, then new-project/sync again (Noto Serif SC, OFL)`));return}continueRender(handle)}).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);return null};

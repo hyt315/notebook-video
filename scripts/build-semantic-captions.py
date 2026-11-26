@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Bind editor-approved semantic subtitle lines to exact TTS word boundaries.
 
-The approved lines stay the semantic authority. What changed (2026-09-22) is that a cue
-boundary is no longer trusted just because it lands on a TTS word: it must also land where
+The approved lines stay the semantic authority. A cue boundary is not trusted just
+because it lands on a TTS word: it must also land where
 the *language* allows a break. A fixed-width character wrap is not a rule, it is a patch --
 wrapping `很多人以为 push 就是把文件传到服务器。` at 17 characters produced `传到服` / `务器。`
 and no gate could see it, because Chinese TTS reports one word per character, so every
@@ -106,9 +106,8 @@ def find_budoux_root(explicit: str | None, bases: list[Path]) -> Path | None:
     `node_modules` (so the model version tracks `package-lock.json`), and only
     then the copy bundled with the skill.
 
-    That last fallback is the point of this function's 3.9.0 change.  The skill
-    ships no `node_modules`, so on a fresh clone the phrase rule had nothing to
-    load and quietly reported "SKIPPED" — which, in a report, reads almost
+    That last fallback matters: the skill ships no `node_modules`, so without it
+    a fresh clone would have nothing to load and quietly report "SKIPPED" — which, in a report, reads almost
     exactly like "passed".  `assets/vendor` is an ~80 KB slice of BudouX
     (Apache-2.0, see NOTICE) that makes the rule run without any project deps.
     """

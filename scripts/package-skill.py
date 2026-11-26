@@ -22,9 +22,8 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
-# README 里链到 CHANGELOG / CONTRIBUTING / SECURITY / README.en，这四个都很小。
-# 早先把它们排除在包外，结果是**用户解包后点 README 就断链**，而入口文档完全正常——
-# 打包自检（在解包目录里跑 validate-skill-consistency）当场就报出来了。带上更便宜。
+# README 里链到 CHANGELOG / CONTRIBUTING / SECURITY / README.en，这四个都很小；
+# 不带上的话用户解包后点 README 就断链（打包自检在解包目录里跑 validate-skill-consistency 会报出来）。
 ROOT_FILES = ("SKILL.md", "README.md", "README.en.md", "LICENSE", "NOTICE", "DEPENDENCIES.md",
               "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", "manifest.json")
 RUNTIME_DIRS = ("agents", "assets", "blueprints", "examples", "references", "scripts")

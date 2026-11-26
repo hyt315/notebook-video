@@ -1,13 +1,11 @@
 import React from 'react';
 import {useCurrentFrame} from 'remotion';
-import {effectiveOpacity, useLayoutProbe, useSampledFrame} from './layout-probe';
+import {REPORT_EVERY, effectiveOpacity, useLayoutProbe, useSampledFrame} from './layout-probe';
 
 // ============================================================================
-// OverlapGate · 渲染期重叠 / 遮挡门禁（v2.11 修复版）
+// OverlapGate · 渲染期重叠 / 遮挡门禁
 //
-// 为什么需要它：这一版反复出现的缺陷（标题压列表、状态标签压站点编号、轨道圆点压进度环的
-// 95%、印章压结论尾部、四张卡塌到同一点…）本质是**同一类**问题，靠"逐帧看图 + 手改坐标"
-// 永远抓不全。CardFitGate 只管"文字是否溢出自己的卡片"，管不了"元素之间互相压"。
+// 管「元素之间互相压」（标题压列表、标签压编号、印章压结论…）；CardFitGate 只管文字溢出自己的卡片。
 //
 // 本门禁做两件事（都在真实浏览器里量真实渲染结果）：
 //   1. **文字两两重叠**：取每个含文字的叶元素**画出来的**矩形（Range + getClientRects，
@@ -16,22 +14,13 @@ import {effectiveOpacity, useLayoutProbe, useSampledFrame} from './layout-probe'
 //      返回的是**绘制顺序**（自顶向下）。若文字之上还有"不透明、且不是它的祖先、
 //      也没标 data-gate-allow"的元素，判定为被遮挡。
 //
-// v2.11 修掉四处"看不见"（都是实测出来的，不是推测）：
-//   a. **抽样窗口**：只每 15 帧量一次，而本技能最密集的重叠都发生在短窗口里——
-//      镜头交接 10 帧、页眉滑变 7–16 帧、数值滑动 14 帧。只按格子抽样必然漏掉它们。
-//      现在改为：基础网格 15 帧 + **事件帧强制抽样**（镜头边界 ±2、节拍 ±2、相机关键帧 ±2，
-//      由 index.tsx 通过 watch 传入）。
-//   b. **渐变遮挡物看不见**：looksSolid 只看 backgroundColor，而本项目大量面板是
-//      linear/radial-gradient（backgroundColor 解析为 transparent）→ 永远不算遮挡。现在把
-//      backgroundImage !== 'none' 也算实心。
-//   c. **顶部标题层被整体跳过**：SKIP_Z=140 把 z=140 的页眉连内容带祖先一起跳过，
-//      页眉压正文这一类既不进成对检查、也不算遮挡。现在阈值提到 145（只跳过
-//      章节卡 150 / 字幕 200 这两个锁定覆盖层），页眉 z=140 参与检查。
-//   d. **多文本节点只按整块矩形量**：块级元素会被误判成"横跨整行"。现在只要有文本节点
-//      就用 Range 取并集。
-//
-// 另外：每 5 秒打一次覆盖率。旧版"零输出"既可能是真干净、也可能是根本没跑——
-// 这两件事必须能区分开，否则门禁等于没有。
+// 口径：
+//   a. **抽样**：基础网格 15 帧 + **事件帧强制抽样**（镜头边界 / 节拍 / 相机关键帧各 ±2，
+//      由 index.tsx 通过 watch 传入）——最密集的重叠发生在镜头交接、页眉滑变这类 7–16 帧的短窗口里。
+//   b. **渐变也算实心**：backgroundImage !== 'none' 视同不透明背景（大量面板是渐变底）。
+//   c. **SKIP_Z = 145**：只跳过章节卡 150 / 字幕 200 两个锁定覆盖层，页眉 z=140 参与检查。
+//   d. **多文本节点用 Range 取并集**，块级元素不按整块矩形量（否则误判成横跨整行）。
+//   每 5 秒打一次覆盖率，让「没报」与「没跑」可区分。
 //
 // 用法：
 //   <OverlapGate />                                  // 只警告（抽样调参时用）
@@ -52,29 +41,14 @@ const OPAQUE_MIN = 0.35;    // 低于此透明度视为有意蒙层
 const SKIP_Z = 145;         // 该 z 以上的层（章节卡 150 / 字幕 200）跳过；页眉 140 参与检查
 const SAMPLE_EVERY = 15;    // 基础抽样桶（帧）
 const EVENT_PAD = 2;        // 事件帧前后各多测几帧
-const REPORT_EVERY = 150;   // 覆盖率日志间隔（帧）
 
-// 非文字字符（2026-09-21，实测量出来的两轮）：
-//   ① KaTeX 会插零宽字（U+200B 零宽空格、U+2061 函数应用符…）当排版占位，
-//      而 `String.prototype.trim()` **不去掉它们**（它们不在 Unicode White_Space 里）。
-//   ② KaTeX 还用**私有区码位**（U+E000–U+F8FF，如 U+E020 = "not" 斜杠）拼复合符号：
-//      `≠` 就是"等号 + 一条斜杠"**故意叠着画**出来的。
-// 这两类都不是"字"，却都会被当成含文字的叶元素。后果实测两次：
-//   零宽字那次判成压住 `=` **6437px²**；私有区斜杠那次判成压住 `=` **6440px²**（且已落定，
-//   直接硬拦）——两次都把整片渲染打断，而画面两次都是对的。
-// 判据是"文字互相压"，字形级的私有区码位与不可见占位当然不算文字；
-// 公式里的**真字**（P、记住、∣…）照旧参与判定，所以覆盖损失只限"复合符号内部"。
-// ⚠️⚠️ 这个字符类**必须带 `u` 标志**，补充平面私用区必须写成 `\u{…}`。2026-09-21 独立核验实测：
-// 原写法 `…\uf0000-\uffffd]/g`（无 u）会被正则引擎拆成 `\uf000` + `0` + `-` + `\uffff` + `d`，
-// 于是字符类里凭空多出 **`U+0030`–`U+FFFF` 这一整段（65488 个码点）** ——
-// 全部汉字、全部数字、除 `空格 ! " # $ % & ' ( ) * + , - . /` 以外的全部可打印 ASCII
-// 都被替换成空串。后果不是"少判几个字"，而是**结构性失明**：
-//   · `visibleText('重叠甲文字') === ''`、`visibleText('alpha') === ''`、`visibleText('12345') === ''`；
-//   · 下面 texts 的收集条件是 `if (!visibleText(rawText).trim() …) continue`，
-//     于是**任何整块是汉字的文字叶元素都进不了 texts**；
-//   · 成片实测：87 条字幕文本 100% 被整条吞空；覆盖率日志里全片每帧只"已测 2 个文字块"
-//     （最大值 13），而第 4200 帧画面上光 z<145 的汉字文字块就有 7 处以上。
-// 修法就是补上 `u` 标志、把补充平面写成 `\u{…}`。为了不再悄悄复发，下面加了一次自检。
+// 非文字字符：不参与「文字互相压」判定。
+//   ① KaTeX 插的零宽字（U+200B、U+2061…）——`trim()` 去不掉它们；
+//   ② KaTeX 的私有区码位（U+E000–U+F8FF）——如 `≠` 是"等号 + 斜杠"故意叠画出来的。
+// 公式里的真字照旧参与判定，覆盖损失只限复合符号内部。
+// ⚠️ 这个字符类**必须带 `u` 标志**，补充平面私用区必须写成 `\u{…}`：不带 u 时
+// `\uf0000-\uffffd` 会被拆成 `\uf000` `0` `-` `\uffff` `d`，等于把 U+0030–U+FFFF（全部汉字、数字、字母）
+// 都当成不可见字符吞掉，门禁对文字结构性失明。下面的自检就是防这个。
 const INVISIBLE_CHARS = /[\u200b-\u200f\u2060-\u2064\ufeff\u00ad\ue000-\uf8ff\u{f0000}-\u{ffffd}\u{100000}-\u{10fffd}]/gu;
 const visibleText = (s: string) => s.replace(INVISIBLE_CHARS, '');
 // 自检：普通汉字 / 字母 / 数字**绝不能被吞**。吞掉即说明字符类又写坏了（少了 u 标志、或转义写错），
@@ -104,8 +78,7 @@ const looksSolid = (el: Element) => {
   const alpha = m ? (m[4] === undefined ? 1 : parseFloat(m[4])) : 0;
   const border = (parseFloat(s.borderTopWidth) || 0) > 0 ? 1 : 0;
   const gradient = s.backgroundImage && s.backgroundImage !== 'none' ? 1 : 0;
-  // tsc TS2362：原来写成 `(布尔) * (数字) > 0.2` —— JS 能跑，但不是合法 TS 算术。
-  // 语义等价改写：既要有实心/边框/渐变，自身不透明度也要过线。
+  // 既要有实心/边框/渐变，自身不透明度也要过线。
   const op = parseFloat(s.opacity || '1') || 1;
   return op > 0.2 && (alpha > OPAQUE_MIN || border > 0 || gradient > 0);
 };
@@ -121,13 +94,11 @@ export const OverlapGate: React.FC<{
   const {hot, should} = useSampledFrame(raw, sampleEvery, watch, EVENT_PAD);
   const ignoreKey = ignore.join('|');
   // 骨架（逐帧持柄、等字体就绪再量、硬拦时 handle 不释放且异常不被自家 catch 吞）在 layout-probe.tsx。
-  // 这几条都是实测踩过的静默失效：没有 delayRender 时截帧先于测量；字体未就绪直接 return 等于每帧都跳过；
+  // 缺任一条都会静默失效：没有 delayRender 时截帧先于测量；字体未就绪直接 return 等于每帧都跳过；
   // cancelRender 的异常被自家 catch 吞掉再 release，会报了硬拦却照样出图 rc=0。
   useLayoutProbe({label: `OverlapGate @${raw}`, tag: '[OverlapGate]', active: should}, ({block}) => {
-    // SVG 分支（2026-09-21 修，实测）：选择器原来只有 `div,span,p`，
-    // **整幅画在 <text>/<tspan> 里的字一个字都不看**——Chart 的轴标、PathDraw 的
-    // 沿线标签、GeoView 的地名，这些元素互相压、被面板压，门禁是瞎的。
-    // 现在把 SVG 文字节点一并纳入（getBoundingClientRect / elementsFromPoint 对 SVG 同样有效）。
+    // SVG 文字节点一并纳入（Chart 轴标、PathDraw 沿线标签、GeoView 地名都画在 <text>/<tspan> 里；
+    // getBoundingClientRect / elementsFromPoint 对 SVG 同样有效）。
     const all = Array.from(document.querySelectorAll<HTMLElement>('div,span,p,text,tspan'));
     // 收集"文字叶元素"：有文字、没有子元素、不在跳过名单里、z<145、可见
     const texts: {el: HTMLElement; rect: DOMRect; text: string}[] = [];
@@ -179,16 +150,9 @@ export const OverlapGate: React.FC<{
       texts.push({el, rect, text});
     }
     const issues: OverlapIssue[] = [];
-    // ---- 「落定」判据（2026-09-21 实测补，第三条假阳性的正解）----
-    // 本片的入场一律带位移+缩放（22 帧 easeOut 上浮 / 逐字波浪 / KaTeX 公式的缩放入场），
-    // **入场途中元素的盒必然短暂互相咬住**：那是运动，不是版面错误。
-    // 实测代价：JumpInText 的逐字波浪被判成"讲"压"得"1161px²；
-    // KaTeX 的私有区字形在入场第 3 帧被判成压住 `=` 6315px² —— 两次都把整片渲染打断，
-    // 而两次画面都是对的。
-    // 判据改为：**只有参与双方都处在"落定"（有效不透明度 ≥ 0.98）的重叠才硬拦**，
-    // 未落定的照旧进日志（报，不拦）。真正该拦的是"落定之后还压着"的版面错误
-    // ——S14 那处遮挡正是落定态（弹层与手风琴都不透明度 1），所以这一改**不会放过它**。
-    // （这也解释了为什么它必须先被修好才第一次响：没修 delayRender 之前它连"入场途中"都看不到。）
+    // ---- 「落定」判据 ----
+    // 入场一律带位移+缩放，入场途中元素的盒必然短暂互相咬住：那是运动，不是版面错误。
+    // 所以**只有参与双方都已落定（有效不透明度 ≥ 0.98）的重叠才硬拦**，未落定的只进日志。
     const SETTLED_MIN = 0.98;
     const settled = (el: Element) => effectiveOpacity(el) >= SETTLED_MIN;
     // ---- 1) 文字两两重叠 ----
@@ -215,13 +179,8 @@ export const OverlapGate: React.FC<{
     }
     // ---- 2) 文字被遮挡 ----
     for (const t of texts) {
-      // 2026-09-21 修（**第三条，也是"明明看得见却报无重叠"的真凶**）：
-      // 原来三个采样点全落在文字框的**垂直中线**上（y 全是 height/2）。
-      // 实测 S14 的那处遮挡是"弹层标题条把正文下半截切掉"——
-      // 正文字形的墨迹在 685..703，标题条从 702 开始压；
-      // 中线在 ~699，**正好落在压线之上**，三个点全判"没被压"，
-      // 于是门禁报「已测 19 个文字块，无重叠」——画面上一眼能看见的遮挡，它看不见。
-      // 现在补上 22% / 78% 两个高度层（各带左右两点）：**"上缘被切"和"下缘被切"都能命中**。
+      // 采样点取 22% / 50% / 78% 三个高度层：只取垂直中线会漏掉「上缘被切」或「下缘被切」
+      // （例如弹层标题条只压住正文下半截时，中线恰好在压线之上）。
       const pts: [number, number][] = [
         [t.rect.left + t.rect.width / 2, t.rect.top + t.rect.height * 0.22],
         [t.rect.left + t.rect.width / 2, t.rect.top + t.rect.height / 2],
@@ -239,10 +198,8 @@ export const OverlapGate: React.FC<{
           if (el === t.el) return false;
           if (el.closest('[data-gate-allow]')) return false;            // 有意覆盖
           if (el.closest('[data-gate-skip]')) return false;
-          // 锁定覆盖层（章节卡 150 / 字幕 200）按设计就压在场景之上，
-          // 不能算遮挡——否则每片都会在片头被自己的章节卡拦下（实测踩到过）。
-          // 锁定覆盖层：自身或其**祖先**带锁定 z（章节卡 150 / 字幕 200）都不算遮挡物。
-          // 只看自身会漏——字幕的文字 span 自身 z 是 auto，于是字幕被当成"遮挡物"误报（实测）。
+          // 锁定覆盖层（章节卡 150 / 字幕 200）按设计压在场景之上，不算遮挡物。
+          // 自身或其**祖先**带锁定 z 都算：字幕的文字 span 自身 z 是 auto，只看自身会误报。
           let zc = parseInt(getComputedStyle(el).zIndex || '0', 10);
           if (Number.isNaN(zc)) zc = 0;
           if (zc >= SKIP_Z) return false;
@@ -277,9 +234,7 @@ export const OverlapGate: React.FC<{
       const msg =
         `[OverlapGate] @${raw} 共 ${issues.length} 处（其中落定态 ${blocking.length} 处）：${head}` +
         (blocking.length ? ` ｜ 硬拦：${blocking.slice(0, 3).map((x) => (x.kind === 'pair' ? `“${x.text}”压“${x.other}”` : `“${x.text}”被“${x.other}”遮挡`)).join(' / ')}` : '');
-      // block 模式下也**先出声再拦**（2026-09-21 修）：旧版 block 只 cancelRender 不打印，
-      // 一次整片渲染挂在某一帧，日志里只有一句"第几处"——想看全貌还得重渲一次。
-      // 现在无论 warn / block 都打完整清单，一次中断就能定位全部问题。
+      // block 模式下也**先出声再拦**：无论 warn / block 都打完整清单，一次中断就能定位全部问题。
       if (typeof console !== 'undefined') console.warn(msg);
       if (mode === 'block' && severe) {
         // 失败路径**不释放 handle**：handle 留在 `remotion_delayRenderHandles` 里 →
@@ -287,7 +242,7 @@ export const OverlapGate: React.FC<{
         block(msg);
       }
     } else if (raw % REPORT_EVERY === 0 && typeof console !== 'undefined') {
-      // 覆盖率：让"没报"与"没跑"可区分（旧版零输出两种含义混在一起）
+      // 覆盖率：让"没报"与"没跑"可区分
       console.warn(`[OverlapGate] @${raw} 已测 ${texts.length} 个文字块，无重叠`);
     }
   }, [raw, should, mode, ignoreKey, sampleEvery, hot]);

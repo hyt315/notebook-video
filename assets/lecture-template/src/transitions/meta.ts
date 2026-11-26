@@ -1,16 +1,10 @@
 import CONTRACT from '../contract.json';
 // ============================================================================
-// transitions/meta.ts · 转场元数据的唯一真源（P2-23 解耦）
+// transitions/meta.ts · 转场元数据的唯一真源
 //
-// 以前时长 / 方向 / 是否翻页 / 无 GPU 退回散在四处：
-//   · 时长    cinema.tsx 的 transitionFrames（CURL_FRAMES / 硬编码 22 / CINEMA.transition）
-//   · 方向    fx.tsx 的 PAGETURN_FOLD_DIRECTION
-//   · 翻页    sfx.ts 的 PAGE_TURN_TRANSITIONS + cinema.tsx 的 resolveTransition + fx.tsx 的 isCurl
-//   · 退回    fx.tsx 的 FX_FALLBACK
-// 新增一种转场要改三四个文件，漏一处的症状是「渲出来是对的、音效不对」或「预览与成片翻向相反」。
-//
-// 现在：**新增一种转场 = 在 TRANSITION_META 里加一个条目 + 一个实现模块**。
-// 时长 / 方向 / 翻页 / 退回 / 拟音都从这张表读，不再各处抄。
+// 时长 / 方向 / 是否翻页 / 无 GPU 退回 / 拟音都从 TRANSITION_META 读（cinema.tsx、fx.tsx、sfx.ts 共用），
+// **新增一种转场 = 在这里加一个条目 + 一个实现模块**。各处各抄一份时，漏一处就会出现
+// 「画面对、音效不对」或「预览与成片翻向相反」。
 //
 // CURL_FRAMES 与 scripts/transition-plan.mjs 同读 src/contract.json：
 // 转场计划（构建期算窗口）与渲染器（画卷页）必须用同一个帧数，否则窗口盖不住整段卷页。

@@ -137,7 +137,7 @@ class RotationTest(unittest.TestCase):
             self.assertEqual(p, [])
             self.assertEqual(out[0]["bgFile"], "bg/lib/journal-ruled.webp")
             self.assertEqual(out[1]["bg"], "journal/kraft")
-            self.assertEqual(out[2]["bgFile"], "bg/bg-journal-quiet.jpg")
+            self.assertEqual(out[2]["bgFile"], "bg/bg-journal-quiet.webp")
             self.assertNotIn("bgAuto", out[0])
         finally:
             shutil.rmtree(d)

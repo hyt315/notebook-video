@@ -5,11 +5,12 @@ import {camAt, STAGE, TEXT_ZOOM_MAX} from './shotkit';
 import {FX_ENABLED} from './fx';
 import {REDUCED_MOTION} from './reduced-motion';
 import {FX_FALLBACK, transitionFramesOf, type TransitionKind as MetaTransitionKind} from './transitions/meta';
+import {clamp} from './motion';
 
 // ============================================================================
 // cinema.tsx · 引擎级虚拟摄影机
 //
-// 为什么有这一层：早期版本每一镜都是「静止舞台 + 卡片依次出现」，即使 ShotCamera 推了 3%，
+// 为什么有这一层：每一镜若只是「静止舞台 + 卡片依次出现」，即使 ShotCamera 推了 3%，
 // 观众感受仍是翻 PPT。本层在**引擎**里（index.tsx 的 FinalDemo / Backdrop）给每一镜套一台
 // 虚拟摄影机，分镜表什么都不写也有：
 //   0. fit     内容自动放大：anchor 占安全区（内容带）不足 60% 时，整镜按 anchor 中心推近到 72%
@@ -46,7 +47,7 @@ export type CinemaSpec = {
   still?: boolean;
 };
 export type PathKey = {at: number; x: number; y: number; s: number};
-// TransitionKind 的真源在 transitions/meta.ts（P2-23：转场元数据一处注册）。re-export 保持旧 API。
+// TransitionKind 的真源在 transitions/meta.ts（转场元数据一处注册），这里 re-export。
 export type TransitionKind = MetaTransitionKind;
 
 /** 默认值：观感调好的常数，普通作者不需要改。 */
@@ -67,8 +68,8 @@ export const CINEMA = {
   maskCut: 160, // 门禁口径：y < maskCut 视作已被遮罩隐去
 } as const;
 
-const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
-const easeIO = Easing.bezier(0.45, 0, 0.2, 1); // 起步柔、收尾长 —— 「运动模糊」式的缓动
+const easeIO = Easing.bezier(0.38, 0, 0.18, 1);
+const easeDrift = Easing.bezier(0.25, 0.1, 0.25, 1); // 起步柔、收尾长 —— 「运动模糊」式的缓动
 const smooth = (f: number, a: number, b: number) => interpolate(f, [a, Math.max(a + 1, b)], [0, 1], {...clamp, easing: easeIO});
 
 /** 内容带（与模板 contentBand 缺省一致）→ region 简写对应的矩形。 */
@@ -122,7 +123,7 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
   // reduced-motion：相机完全静止（drift / 微漂移全关）
   const amt = REDUCED_MOTION ? 0 : sp.drift === 'none' ? 0 : typeof sp.drift === 'number' ? Math.max(0, Math.min(0.08, sp.drift)) : CINEMA.driftAmt;
   const pat = driftPattern(idx);
-  const t = smooth(f, 0, Math.max(30, duration));
+  const t = interpolate(f, [0, Math.max(30, duration)], [0, 1], {...clamp, easing: easeDrift});
   const ds = pat.pull ? 1 + amt * (1 - t) : 1 + amt * t;
   const s0 = Math.max(1, Math.min(capS, fit.s * ds));
   const look0 = clampLook(fit.x + (pat.dx * CINEMA.driftPanPx * (t - 0.5) * 2) / Math.max(1, fit.s), fit.y, s0);
@@ -131,9 +132,9 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
   // ---- 2. focus（弹簧推近、缓拉回；多个焦点首尾相接时直接从一个移到下一个）----
   for (const k of sp.focus ?? []) {
     const end = k.at + k.hold;
-    if (f < k.at - 1 || f > end + CINEMA.focusOut + 1) continue;
-    const pin = spring({frame: f - k.at, fps: 30, config: {damping: 20, stiffness: 120, mass: 0.9}, durationInFrames: CINEMA.focusIn});
-    const pout = smooth(f, end, end + CINEMA.focusOut);
+    if (f < k.at - 1 || (!k.settle && f > end + CINEMA.focusOut + 1)) continue;
+    const pin = spring({frame: f - k.at, fps: 30, config: {damping: 26, stiffness: 110, mass: 1}, durationInFrames: CINEMA.focusIn});
+    const pout = k.settle ? 0 : smooth(f, end, end + CINEMA.focusOut);
     const w = Math.max(0, Math.min(1, pin) * (1 - pout));
     if (w <= 0) continue;
     fw = Math.max(fw, w);
@@ -144,7 +145,7 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
     const rw = r.w * sc.s, rh = r.h * sc.s;
     const fit = CINEMA.focusFill * Math.min(STAGE.w / rw, STAGE.h / rh);
     let fs = Math.min(capS, Math.max(CINEMA.focusMinZoom, k.zoom ?? fit), Math.min(STAGE.w / rw, STAGE.h / rh));
-    // 3.2.0 keep：「焦点 ∪ keep」留 FOCUS_PAD 边距能装下所需的倍数 ≥ focusMinZoom 时，用它（只降不升）并以并集为取景范围；否则忽略 keep。
+    // keep：「焦点 ∪ keep」留 FOCUS_PAD 边距能装下所需的倍数 ≥ focusMinZoom 时，用它（只降不升）并以并集为取景范围；否则忽略 keep。
     let ux0 = mx(r.x), ux1 = mx(r.x) + rw, uy0 = my(r.y), uy1 = my(r.y) + rh, useKeep = false;
     if (k.keep) {
       const kx0 = Math.min(ux0, mx(k.keep.x)), kx1 = Math.max(ux1, mx(k.keep.x + k.keep.w));
@@ -152,7 +153,7 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
       const need = Math.min((STAGE.w - 2 * FOCUS_PAD) / (kx1 - kx0), (STAGE.h - 2 * FOCUS_PAD) / (ky1 - ky0));
       if (need >= CINEMA.focusMinZoom) { fs = Math.min(fs, need); ux0 = kx0; ux1 = kx1; uy0 = ky0; uy1 = ky1; useKeep = true; }
     }
-    // 3.2.0 自动修（不切字）：焦点矩形留 FOCUS_PAD 屏幕边距完整入画的前提下，注视点横向尽量滑回基准取景中心，
+    // 自动修（不切字）：焦点矩形留 FOCUS_PAD 屏幕边距完整入画的前提下，注视点横向尽量滑回基准取景中心，
     // 让非焦点内容（例如左侧大标题）少被推出画面；矩形比取景窗还宽时退回矩形中心。`slide: false` 关掉。
     const slide = (lo: number, hi: number, half: number, base: number) => {
       const a = hi - half + FOCUS_PAD / fs, b = lo + half - FOCUS_PAD / fs;
@@ -163,7 +164,7 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
       ? clampLook(rx0 + rw / 2, ry0 + rh / 2, fs)
       : useKeep
         ? clampLook(slide(ux0, ux1, STAGE.cx / fs, look0.x), slide(uy0, uy1, STAGE.cy / fs, ry0 + rh / 2), fs)
-        : clampLook(slide(rx0, rx0 + rw, STAGE.cx / fs, look0.x), ry0 + rh / 2, fs); // 只横向滑：纵向下滑会把顶部标题推进页眉遮罩（实测演示片 S5）
+        : clampLook(slide(rx0, rx0 + rw, STAGE.cx / fs, look0.x), ry0 + rh / 2, fs); // 只横向滑：纵向下滑会把顶部标题推进页眉遮罩
     x = x + (fl.x - x) * w;
     y = y + (fl.y - y) * w;
     s = s + (fs - s) * w;
@@ -180,7 +181,7 @@ export const cinemaCamAt = (spec: CinemaSpec | undefined, f: number, duration: n
 };
 
 /**
- * 3.2.0 路径摄影机：在 compose-story 预算的关键帧之间用 easeIO 插值（速度上限已在预算时保证），
+ * 路径摄影机：在 compose-story 预算的关键帧之间用 easeIO 插值（速度上限已在预算时保证），
  * 叠加一层**永不停止的微漂移**（缩放 ±0.5%、位移 ±5px，周期 4–5 秒）+ 全镜 1.5% 慢推：
  * 推近后不会冻结，任何静止段都不超过 1 秒。fw（遮罩权重）随推近倍数上升。
  */
@@ -199,19 +200,18 @@ export const pathCamAt = (path: readonly PathKey[], f: number, duration: number,
       break;
     }
   }
-  // still：这三下微动全关。它们本来是为了「画面永不完全静止」，但静止片里
-  // 观众看到的就是画面在呼吸——那正是要消掉的东西。动效改由笔、章、翻页、逐字提供。
-  const push = still ? 1 : 1 + 0.015 * Math.min(1, Math.max(0, f / Math.max(30, duration)));
-  const ms = still ? 1 : 1 + 0.005 * Math.sin((f / 140) * Math.PI * 2);
-  const ss = Math.min(capS, Math.max(1, s * push * ms));
-  const dx = still ? 0 : 5 * Math.sin((f / 150) * Math.PI * 2 + 0.7) / ss;
-  const dy = still ? 0 : 3.5 * Math.cos((f / 125) * Math.PI * 2) / ss;
-  const c = clampLook(x + dx, y + dy, ss);
+  // still / REDUCED_MOTION：微动全关；常规镜改为电影滑轨单向慢推（去掉正弦呼吸与 8 字微晃，
+  // 避免中文笔画亚像素抖动与切镜首帧跳变）。
+  const quiet = still || REDUCED_MOTION;
+  const pushT = quiet ? 0 : interpolate(f, [0, Math.max(30, duration)], [0, 1], {...clamp, easing: easeDrift});
+  const push = 1 + 0.018 * pushT;
+  const ss = Math.min(capS, Math.max(1, s * push));
+  const c = clampLook(x, y, ss);
   return {x: c.x, y: c.y, s: ss, tx: 0, fw: Math.max(0, Math.min(1, (ss - 1.02) / 0.04))};
 };
 
 /**
- * 推近时的顶部羽化遮罩：焦点推近会把非焦点内容推到页眉 / 章节卡底下（实测 S3 卡片标题被页眉压住）。
+ * 推近时的顶部羽化遮罩：焦点推近会把非焦点内容推到页眉 / 章节卡底下。
  * 世界层在 y < CINEMA.maskTop 处按 fw 渐隐（羽化 38px），chrome 下方永远干净；不推近时（fw=0）完全不生效。
  * 门禁（OverlapGate）对带 data-cinema-focus 的世界层，只量 y ≥ maskCut 的可见部分（与遮罩同口径）。
  */
@@ -238,45 +238,42 @@ export const parallaxTransform = (c: CamState, whipX = 0) => {
 /**
  * 自动转场：首镜无；其余**一律翻页**（皮肤的 craft.transition，缺省 pageturn → 无 GPU 时 pageflip）。
  * 显式写的照用（hard = 硬切；whip / zoom / slide / drop 也仍然保留，但要写才生效）。
- * 3.9.0 之前 auto 落到「章节首镜 zoom / 其余 whip」，于是 story 不写 pageturn 的片子一处翻页都没有。
- * `_isChapter` 仍留在签名里（调用方按位置传参），但章节首镜不再特殊——翻到新一章和翻到下一页是同一个动作。
+ * `_isChapter` 留在签名里（调用方按位置传参），但章节首镜不特殊——翻到新一章和翻到下一页是同一个动作。
  * 下划线前缀是 TS 对「保留但不用」的约定写法，不要再加 void 语句占位。
  */
 export const resolveTransition = (declared: string | undefined, idx: number, _isChapter: boolean, fx: boolean = FX_ENABLED): TransitionKind | null => {
   if (idx === 0) return null;
-  // reduced-motion（P2-21）：转场一律退化为 fade —— 保「换镜」的语义，去掉卷页/甩镜的剧烈运动。
+  // reduced-motion：转场一律退化为 fade —— 保「换镜」的语义，去掉卷页/甩镜的剧烈运动。
   // 不用 hard：hard 是「切断」，fade 是「换过来」，后者才和翻页同义。
   if (REDUCED_MOTION) return 'fade';
   const d = declared ?? 'auto';
   if (d === 'hard') return 'hard';
   if (d === 'fade' || d === 'zoom' || d === 'whip-left' || d === 'whip-right' || d === 'slide' || d === 'drop') return d;
-  // 3.3.0：真卷页。渲染器没开 fx（浏览器没有 WebGL2 / HTML-in-canvas）→ 走 FX_FALLBACK，片子照样出。
-  // 3.7.0 起 pageturn 退回的不是 slide（那是「横移」），而是 pageflip（纯 CSS 折痕翻页）：
+  // 真卷页。渲染器没开 fx（浏览器没有 WebGL2 / HTML-in-canvas）→ 走 FX_FALLBACK，片子照样出。
+  // pageturn 退回的不是 slide（那是「横移」），而是 pageflip（纯 CSS 折痕翻页）：
   // 卷页是「纸在弯」，折页是「纸沿一条折痕翻过去」——后者不要 GPU，而观众看到的是同一件事。
   if (d === 'pageturn') return fx ? d : FX_FALLBACK.pageturn;
   if (d === 'peel') return fx ? d : FX_FALLBACK.peel;
   if (d === 'whip') return idx % 2 ? 'whip-left' : 'whip-right';
-  // 3.3.0：手作皮肤的媒介内转场（纸在本子上横移 = 一张长卷上的横移镜头；新纸放下来 = drop）。
+  // 手作皮肤的媒介内转场（纸在本子上横移 = 一张长卷上的横移镜头；新纸放下来 = drop）。
   // 皮肤声明了 craft.transition 时，auto 用它。
-  // 3.9.0：所有皮肤的 craft.transition 都是 pageturn（papercut 是 peel），所以 auto = 翻页。
+  // 所有皮肤的 craft.transition 都是 pageturn（papercut 是 peel），所以 auto = 翻页。
   const craft = THEME.craft?.transition;
   if (craft === 'pageturn') return fx ? craft : FX_FALLBACK.pageturn;
   if (craft === 'peel') return fx ? craft : FX_FALLBACK.peel;
   if (craft === 'slide' || craft === 'drop') return craft;
-  // 3.9.0：没有声明媒介转场的皮肤也一律翻页。
+  // 没有声明媒介转场的皮肤也一律翻页。
   // 这是「笔记本影片」的基本语法——换一页就是翻一页，不该由每个 story 或每套皮肤重新决定；
-  // 之前 auto 落到 whip / zoom，于是只要 story 没显式写 pageturn，观众就看不到翻页。
   // whip（甩镜）与 zoom 保留为**显式**选项，写 transition 才用。
-  // 章节首镜不再单独 zoom：翻页片里「翻到新一章」和「翻到下一页」是同一个动作，
+  // 章节首镜不单独 zoom：翻页片里「翻到新一章」和「翻到下一页」是同一个动作，
   // 中途插一个 zoom 会把观众从本子里拽出来。
   return 'pageflip';
 };
 
 export type TransStyle = {transform: string; opacity: number; blur: number; origin?: string; bg?: string; shadow?: string};
 
-/** 转场时长（帧）：注册表 transitions/meta.ts 是唯一真源（P2-23）。
- *  以前 pageflip 的 22 在这里硬编码，与 fx.tsx 的 CURL_FRAMES 是两个独立的 22——
- *  改一处漏一处时，卷页窗口盖不住整段折痕翻页。 */
+/** 转场时长（帧）：注册表 transitions/meta.ts 是唯一真源（与 fx.tsx 的 CURL_FRAMES 共用，
+ *  两处各写一份时卷页窗口会盖不住整段折痕翻页）。 */
 export const transitionFrames = (kind: TransitionKind | null): number => transitionFramesOf(kind);
 
 /**
@@ -325,21 +322,6 @@ export const whipOffset = (kind: TransitionKind | null, p: number) => {
 // 运动助手（场景与组件可直接用；全部是帧的纯函数）
 // ---------------------------------------------------------------------------
 
-/** 带回弹的入场（stagger 由调用方给 at）：返回 {opacity, transform}。 */
-export const popIn = (f: number, at: number, opts: {from?: 'up' | 'down' | 'left' | 'right' | 'scale'; dist?: number; overshoot?: boolean} = {}): React.CSSProperties => {
-  const sp = spring({frame: f - at, fps: 30, config: opts.overshoot === false ? {damping: 22, stiffness: 140} : {damping: 11, stiffness: 150, mass: 0.8}});
-  const o = interpolate(f, [at, at + 8], [0, 1], clamp);
-  const d = opts.dist ?? 40;
-  const inv = 1 - sp;
-  const tr = opts.from === 'left' ? `translateX(${-d * inv}px)` : opts.from === 'right' ? `translateX(${d * inv}px)` : opts.from === 'down' ? `translateY(${-d * inv}px)` : opts.from === 'scale' ? '' : `translateY(${d * inv}px)`;
-  const sc = opts.from === 'scale' ? 0.6 + 0.4 * sp : 0.94 + 0.06 * sp;
-  return {opacity: o, transform: `${tr} scale(${sc})`};
-};
-
-/** 空闲微动：极小的正弦漂浮（px），让「动完就静止」的元素保持呼吸。phase 用于错开。 */
-export const idleFloat = (f: number, phase = 0, amp = 3, period = 120): string =>
-  `translateY(${(amp * Math.sin(((f + phase * 37) / period) * Math.PI * 2)).toFixed(2)}px)`;
-
 /** 计数数字：从 from 数到 to（ease-out），返回格式化字符串。 */
 export const countUp = (f: number, at: number, to: number, opts: {from?: number; dur?: number; decimals?: number} = {}): string => {
   const p = interpolate(f, [at, at + (opts.dur ?? 34)], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
@@ -347,33 +329,26 @@ export const countUp = (f: number, at: number, to: number, opts: {from?: number;
   return v.toFixed(opts.decimals ?? 0);
 };
 
-/** 数字落定时的放大弹跳（kinetic typography）：返回 scale。 */
-export const landPop = (f: number, landAt: number, amp = 0.18): number => {
-  if (f < landAt) return 1;
-  const sp = spring({frame: f - landAt, fps: 30, config: {damping: 8, stiffness: 220, mass: 0.6}});
-  return 1 + amp * Math.sin(Math.PI * Math.min(1, sp)) * Math.max(0, 1 - (f - landAt) / 18);
-};
-
 /** 描线进度（连接线/箭头绘入）：0→1，配合 strokeDasharray/strokeDashoffset。 */
 export const drawOn = (f: number, at: number, dur = 18) => interpolate(f, [at, at + dur], [0, 1], {...clamp, easing: Easing.inOut(Easing.cubic)});
 
 /**
- * KineticNumber · 关键数字的动态排版（计数 + 落定缩放弹出 + 强调下划线扫入）。
+ * KineticNumber · 关键数字的动态排版（计数 + 缩放入场 + 强调下划线扫入）。
  * 用在「讲到这个数」的那一拍：at = 该拍本地帧。全部是帧的纯函数。
  *   <KineticNumber f={f} at={at(1)} to={5} suffix="×" size={260} color={C.orange} label="更快" />
- * from→to 计数 dur 帧（缺省 30），落定瞬间放大 1.18 回弹；数字用等宽数字（tabular-nums）防止计数时抖宽。
+ * from→to 计数 dur 帧（缺省 30），入场不过冲；数字用等宽数字（tabular-nums）防止计数时抖宽。
  */
 export const KineticNumber: React.FC<{
   f: number; at: number; to: number; from?: number; dur?: number; decimals?: number;
   prefix?: string; suffix?: string; size?: number; color?: string; ink?: string; label?: string; labelSize?: number;
   align?: 'left' | 'center' | 'right'; style?: React.CSSProperties;
-  /** 3.5.2 草稿纸：不弹簧放大、不滚动计数，直接写出终值；出现方式交给外层 */
+  /** 草稿纸：不弹簧放大、不滚动计数，直接写出终值；出现方式交给外层 */
   draft?: boolean;
 }> = ({f, at, to, from = 0, dur = 30, decimals = 0, prefix = '', suffix = '', size = 200, color = '#f08a24', ink, label, labelSize, align = 'left', style, draft = false}) => {
-  const enter = spring({frame: f - at, fps: 30, config: {damping: 13, stiffness: 160, mass: 0.7}});
+  const enter = spring({frame: f - at, fps: 30, config: {damping: 13, stiffness: 160, mass: 0.7, overshootClamping: true}});
   const o = draft ? 1 : interpolate(f, [at, at + 6], [0, 1], clamp);
   const land = at + dur;
-  const sc = draft ? 1 : (0.55 + 0.45 * enter) * landPop(f, land, 0.18);
+  const sc = draft ? 1 : 0.55 + 0.45 * enter;
   const bar = interpolate(f, [land - 2, land + 12], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
   const origin = align === 'center' ? '50% 70%' : align === 'right' ? '100% 70%' : '0% 70%';
   return (
@@ -393,4 +368,3 @@ export const KineticNumber: React.FC<{
   );
 };
 
-export const CINEMA_VERSION = 'cinema-v1 · fit · drift · focus · world-pan · whip/zoom/pageturn transitions · parallax · kinetic numbers';

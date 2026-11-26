@@ -36,7 +36,6 @@ const palette: Theme['palette'] = {
   line: 'rgba(17,17,17,0.50)',
   lineOrange: 'rgba(229,72,77,0.62)',
   lineBlue: 'rgba(0,144,255,0.62)',
-  lineGreen: 'rgba(70,167,88,0.62)',
   white: '#ffffff',
   // 场景层柔色
   skyTint: '#e6f4fe',      // blue 3
@@ -44,12 +43,9 @@ const palette: Theme['palette'] = {
   dotIdle: '#cfceca',      // sand 7
   mutedFill: 'rgba(99,99,94,0.30)',
   mutedBar: 'rgba(99,99,94,0.26)',
-  mutedWash: 'rgba(99,99,94,0.16)',
-  orangeSoft: '#f4a9aa',   // red 7
   orangeDeep: '#ce2c31',   // red 11
   gaugeTrack: 'rgba(17,17,17,0.20)',
   greenGlow: 'rgba(70,167,88,0.35)',
-  stageTint: 'rgba(255,250,184,0.45)',
   headerAccent: '#111111',
   headerSub: '#63635e',
 };
@@ -60,7 +56,7 @@ const aesthetic: Theme['aesthetic'] = {
   subtitleWeight: 700, subtitleLetterSpacing: 1.6, subtitlePadX: 78,
 };
 
-// 硬偏移墨影：比旧版更有冲击力（4px 起步，举起时加到 8px），仍然无模糊。
+// 硬偏移墨影：4px 起步，举起时加到 8px，无模糊。
 const paperShadow = (lift: number) =>
   `${4 + 4 * lift}px ${4 + 4 * lift}px 0 ${palette.ink}`;
 
@@ -77,9 +73,9 @@ const panelTilt = (style?: React.CSSProperties) => {
 //   quiet   最安静：四角各一个小元素，给信息密集的镜头
 // 禁止改回代码自绘背景；换图要连同 manifests/visual-assets.json 的 sha256 一起换。
 const BACKGROUNDS: Record<BgVariant, string> = {
-  main: 'bg/bg-cel-main.jpg',
-  chapter: 'bg/bg-cel-chapter.jpg',
-  quiet: 'bg/bg-cel-quiet.jpg',
+  main: 'bg/bg-cel-main.webp',
+  chapter: 'bg/bg-cel-chapter.webp',
+  quiet: 'bg/bg-cel-quiet.webp',
 };
 
 const Background: Theme['Background'] = ({variant = 'main'}) => (
@@ -95,9 +91,8 @@ const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) => {
 };
 
 // 赛璐璐只保留极轻墨角暗角，不加暖色柔光。
-const Grade: React.FC = () => <AbsoluteFill style={{pointerEvents: 'none', zIndex: 190}}>
-  <AbsoluteFill style={{boxShadow: `inset 0 0 120px rgba(17,17,17,${aesthetic.gradeVignette})`}} />
-</AbsoluteFill>;
+const Grade: React.FC = () => <AbsoluteFill style={{pointerEvents: 'none', zIndex: 190,
+  background: `radial-gradient(ellipse 86% 80% at 48% 45%, transparent 60%, rgba(17,17,17,${(aesthetic.gradeVignette * 1.6).toFixed(3)}) 100%)`}} />;
 
 // 字幕：白底对白框 + 3px 墨边 + 黄色硬偏移影（漫画对白框的「贴纸」感），左侧一枚红色三角指针。
 const SubtitleChrome: Theme['SubtitleChrome'] = ({mode, children}) =>
@@ -155,7 +150,7 @@ export const THEME: Theme = {
   id: 'cel',
   palette,
   aesthetic,
-  // 3.5.0：cel 的线稿是「粗一档描边 + 平涂色块」，与吉祥物同一套语言。
+  // cel 的线稿是「粗一档描边 + 平涂色块」，与吉祥物同一套语言。
   craft: {
     medium: 'cel', fibre: 0, inkLine: palette.ink, handFamily: 'Kai', bodyFamily: 'Kai',
     accent: palette.orange, transition: 'pageturn',

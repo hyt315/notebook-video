@@ -3,183 +3,183 @@
   "assets": [
     {
       "id": "bg-flat-main",
-      "path": "public/bg/bg-flat-main.jpg",
+      "path": "public/bg/bg-flat-main.webp",
       "source_type": "ai-generated",
-      "provider": "Hark generate_image, recomposed with a scripted NumPy pass (outside the skill) (corner characters masked out, scaled down and re-placed at the bottom corners; chapter = mirrored main + cream centre glow; quiet = main with clouds removed and characters scaled further), JPEG q85",
+      "provider": "Hark generate_image, recomposed with a scripted NumPy pass (outside the skill) (corner characters masked out, scaled down and re-placed at the bottom corners; chapter = mirrored main + cream centre glow; quiet = main with clouds removed and characters scaled further), JPEG q85 re-encoded as WebP q88",
       "prompt_summary": "Flat vector edu background: soft pale sky-blue to cream gradient with paper grain; small round blue robot mascot (antenna with sunny-yellow ball, big eyes, pink cheeks) peeking up from the bottom-right edge; low mint hill with a coral rounded-square buddy peeking bottom-left; tiny clouds and yellow dots in the corners; central ~70% empty.",
       "use_context": "flat theme Background variant 'main' (regular shots), 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned",
       "baked_text": false,
-      "sha256": "7827abd435ff5231a8b43a07ad6de296703dc947e8201385f74a9b9f4128f46a"
+      "sha256": "6a89db1d1133a10837284143d6dbfa54c42b41b8fd8e90d70b66a5a4df2a3bda"
     },
     {
       "id": "bg-flat-chapter",
-      "path": "public/bg/bg-flat-chapter.jpg",
+      "path": "public/bg/bg-flat-chapter.webp",
       "source_type": "ai-generated",
-      "provider": "Hark generate_image, recomposed with a scripted NumPy pass (outside the skill) (corner characters masked out, scaled down and re-placed at the bottom corners; chapter = mirrored main + cream centre glow; quiet = main with clouds removed and characters scaled further), JPEG q85",
+      "provider": "Hark generate_image, recomposed with a scripted NumPy pass (outside the skill) (corner characters masked out, scaled down and re-placed at the bottom corners; chapter = mirrored main + cream centre glow; quiet = main with clouds removed and characters scaled further), JPEG q85 re-encoded as WebP q88",
       "prompt_summary": "Flat vector edu chapter background: slightly richer sky blue with a soft cream glow behind the centre; the blue robot mascot waving from the bottom-left corner; coral buddy behind a mint hill bottom-right; confetti dots and small clouds along the top corners; central ~70% empty.",
       "use_context": "flat theme Background variant 'chapter' (first shot of each chapter), 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned",
       "baked_text": false,
-      "sha256": "5388140dfd270f2ac36b9da60552f6fc84c13990b4aac431c18dde07df1e8d66"
+      "sha256": "e9910249f94c4a3047f82cb89b60f0b49ef5cc319b018b826c073631c9db6faa"
     },
     {
       "id": "bg-flat-quiet",
-      "path": "public/bg/bg-flat-quiet.jpg",
+      "path": "public/bg/bg-flat-quiet.webp",
       "source_type": "ai-generated",
-      "provider": "Hark generate_image, recomposed with a scripted NumPy pass (outside the skill) (corner characters masked out, scaled down and re-placed at the bottom corners; chapter = mirrored main + cream centre glow; quiet = main with clouds removed and characters scaled further), JPEG q85",
+      "provider": "Hark generate_image, recomposed with a scripted NumPy pass (outside the skill) (corner characters masked out, scaled down and re-placed at the bottom corners; chapter = mirrored main + cream centre glow; quiet = main with clouds removed and characters scaled further), JPEG q85 re-encoded as WebP q88",
       "prompt_summary": "Flat vector edu quiet background for dense scenes: almost flat pale sky to cream; only the top of the blue robot mascot's head and antenna at the bottom-right edge and a thin mint hill sliver bottom-left; central ~80% empty.",
       "use_context": "flat theme Background variant 'quiet' (dense shots (zones >= 4)), 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned",
       "baked_text": false,
-      "sha256": "0e346418b8dea17262f2a464c6a8b9cb586b7ad58638eafa16c25d3202ca0dca"
+      "sha256": "b2c9ce76d2ae3d100024187f2f23faeee9ad4f1ff914b67d23cf679bdaada3c8"
     },
     {
       "id": "bg-cel-main",
-      "path": "public/bg/bg-cel-main.jpg",
+      "path": "public/bg/bg-cel-main.webp",
       "source_type": "ai-generated",
-      "provider": "Hark generate_image (upscaled to 2560x1440 with ImageMagick Lanczos, JPEG q85)",
+      "provider": "Hark generate_image (upscaled to 2560x1440 with ImageMagick Lanczos, JPEG q85 re-encoded as WebP q88)",
       "prompt_summary": "Comic/manga pop-art background: off-white comic paper; corner-only decorations - black halftone fan with yellow ink-outlined starburst bottom-left, black speed lines top-right, red halftone with blue ink-outlined star bottom-right, blue halftone wedge top-left; central ~70% empty.",
       "use_context": "cel theme Background variant 'main' (regular shots), 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned",
       "baked_text": false,
-      "sha256": "6155d11de9865a463475238cebe05c8db3d8f7f700d894ab60b149a38fc0b349"
+      "sha256": "4400c75c6e80abe771974d84cdf300e8d153fd4e9218483a8a6c0696f4bc24f8"
     },
     {
       "id": "bg-cel-chapter",
-      "path": "public/bg/bg-cel-chapter.jpg",
+      "path": "public/bg/bg-cel-chapter.webp",
       "source_type": "ai-generated",
-      "provider": "Hark generate_image (upscaled to 2560x1440 with ImageMagick Lanczos, JPEG q85)",
+      "provider": "Hark generate_image (upscaled to 2560x1440 with ImageMagick Lanczos, JPEG q85 re-encoded as WebP q88)",
       "prompt_summary": "Comic/manga pop-art chapter background: off-white comic paper; short black speed-line ticks along the left and right edges, yellow ink-outlined starburst top-right, red halftone wedge top-left, red star over halftone fan bottom-left, blue halftone with speed lines bottom-right; central ~75% empty.",
       "use_context": "cel theme Background variant 'chapter' (first shot of each chapter), 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned",
       "baked_text": false,
-      "sha256": "834d9266df2e3780e1dbc9bdf44df9beb0cab12c199e6d0d879c0ffa4116d521"
+      "sha256": "5b47be5a74e37a69e06cabcda0aba3059e691b9ba8c76599f37b99afab87aefa"
     },
     {
       "id": "bg-cel-quiet",
-      "path": "public/bg/bg-cel-quiet.jpg",
+      "path": "public/bg/bg-cel-quiet.webp",
       "source_type": "ai-generated",
-      "provider": "Hark generate_image (upscaled to 2560x1440 with ImageMagick Lanczos, JPEG q85)",
+      "provider": "Hark generate_image (upscaled to 2560x1440 with ImageMagick Lanczos, JPEG q85 re-encoded as WebP q88)",
       "prompt_summary": "Comic/manga pop-art quiet background for dense scenes: plain off-white comic paper; one small element per corner (yellow starburst top-left, speed lines top-right, halftone fan bottom-left, blue halftone bottom-right); central ~80% empty.",
       "use_context": "cel theme Background variant 'quiet' (dense shots (zones >= 4)), 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned",
       "baked_text": false,
-      "sha256": "d32beba960ccd686afe047de79944dcc6cda04a31c43ce771b1e7c8e113fd9a7"
+      "sha256": "d5b6a897e7b2930097699e09ae6813ae96b36df01e00b861d6113695f161e839"
     },
     {
       "id": "bg-journal-main",
-      "path": "public/bg/bg-journal-main.jpg",
+      "path": "public/bg/bg-journal-main.webp",
       "source_type": "code-generated",
-      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model)",
+      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model), re-encoded as WebP q88",
       "prompt_summary": "procedural journal texture, variant main",
       "use_context": "journal theme Background variant 'main', 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned (Apache-2.0, generated by this repository)",
       "baked_text": false,
-      "sha256": "3294eaf2ee8cb2ba3d39a82a0e628ad8dd1c097de8762187650bcd4dcbd54c7d"
+      "sha256": "a571f15f24d8679514eb313c27f5ea55205bd920e7c51bab8c162abb1c41f001"
     },
     {
       "id": "bg-journal-chapter",
-      "path": "public/bg/bg-journal-chapter.jpg",
+      "path": "public/bg/bg-journal-chapter.webp",
       "source_type": "code-generated",
-      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model)",
+      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model), re-encoded as WebP q88",
       "prompt_summary": "procedural journal texture, variant chapter",
       "use_context": "journal theme Background variant 'chapter', 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned (Apache-2.0, generated by this repository)",
       "baked_text": false,
-      "sha256": "7b3cd50f0e78f0e39d5a167f5167fc499b0881675bc7719be50a76a1e702936d"
+      "sha256": "1e808c5dcb3dcdda6069bfffda19e4efc0800ef62d9bf472185ba3ba2cbc5a97"
     },
     {
       "id": "bg-journal-quiet",
-      "path": "public/bg/bg-journal-quiet.jpg",
+      "path": "public/bg/bg-journal-quiet.webp",
       "source_type": "code-generated",
-      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model)",
+      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model), re-encoded as WebP q88",
       "prompt_summary": "procedural journal texture, variant quiet",
       "use_context": "journal theme Background variant 'quiet', 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned (Apache-2.0, generated by this repository)",
       "baked_text": false,
-      "sha256": "8ee4eb7213a386237100c2e66db3466d7b6fc923d15fd25d5a367b191d793ff7"
+      "sha256": "bd44369d487099796e205bd10cb1afca7836bb6f74d0c6a1a85a881c0529c118"
     },
     {
       "id": "bg-papercut-main",
-      "path": "public/bg/bg-papercut-main.jpg",
+      "path": "public/bg/bg-papercut-main.webp",
       "source_type": "code-generated",
-      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model)",
+      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model), re-encoded as WebP q88",
       "prompt_summary": "procedural papercut texture, variant main",
       "use_context": "papercut theme Background variant 'main', 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned (Apache-2.0, generated by this repository)",
       "baked_text": false,
-      "sha256": "5137537e9b9c53fbb3b05b1f6d8960cb61a3e36bc7560e4f5b832209e1b2fa01"
+      "sha256": "defe179edd3d02f58fd7540853358d5295a8d6b552298d1af9c4cc6ba997238b"
     },
     {
       "id": "bg-papercut-chapter",
-      "path": "public/bg/bg-papercut-chapter.jpg",
+      "path": "public/bg/bg-papercut-chapter.webp",
       "source_type": "code-generated",
-      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model)",
+      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model), re-encoded as WebP q88",
       "prompt_summary": "procedural papercut texture, variant chapter",
       "use_context": "papercut theme Background variant 'chapter', 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned (Apache-2.0, generated by this repository)",
       "baked_text": false,
-      "sha256": "a5b6d1ff77db5c2907bb0ec066f4173527474b69a60d60a87866b57f55e5eb37"
+      "sha256": "1fdb5fd92ee2645eea4c8dd78c8002d5a34e30e4fcadc2c4ef139d3745cb9370"
     },
     {
       "id": "bg-papercut-quiet",
-      "path": "public/bg/bg-papercut-quiet.jpg",
+      "path": "public/bg/bg-papercut-quiet.webp",
       "source_type": "code-generated",
-      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model)",
+      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model), re-encoded as WebP q88",
       "prompt_summary": "procedural papercut texture, variant quiet",
       "use_context": "papercut theme Background variant 'quiet', 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned (Apache-2.0, generated by this repository)",
       "baked_text": false,
-      "sha256": "0fe336ce765c2da40af50dd544a07bd579b992b5d449e00d2ff64e188d8148cc"
+      "sha256": "269dbf0820aab205f1ffda88e684f3bc9d278444835efd8b545585ff42cb1b95"
     },
     {
       "id": "bg-archive-main",
-      "path": "public/bg/bg-archive-main.jpg",
+      "path": "public/bg/bg-archive-main.webp",
       "source_type": "code-generated",
-      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model)",
+      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model), re-encoded as WebP q88",
       "prompt_summary": "procedural archive texture, variant main",
       "use_context": "archive theme Background variant 'main', 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned (Apache-2.0, generated by this repository)",
       "baked_text": false,
-      "sha256": "74c722e4bc5b841b2320b056de2594168b03788f6453452d127174bfdd340225"
+      "sha256": "8d9d07c314e5b2b537a45af5292a53f9462d8cb342e96bf6e31c70c1b412bab5"
     },
     {
       "id": "bg-archive-chapter",
-      "path": "public/bg/bg-archive-chapter.jpg",
+      "path": "public/bg/bg-archive-chapter.webp",
       "source_type": "code-generated",
-      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model)",
+      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model), re-encoded as WebP q88",
       "prompt_summary": "procedural archive texture, variant chapter",
       "use_context": "archive theme Background variant 'chapter', 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned (Apache-2.0, generated by this repository)",
       "baked_text": false,
-      "sha256": "56457e2223fbc684ae0f1072f95e2d8d0e0bb6d45f5e3162508afee94566589b"
+      "sha256": "d7ad178b3ec300338a538110d3bb78f4b05967f3746423aad0db2686540e0b80"
     },
     {
       "id": "bg-archive-quiet",
-      "path": "public/bg/bg-archive-quiet.jpg",
+      "path": "public/bg/bg-archive-quiet.webp",
       "source_type": "code-generated",
-      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model)",
+      "provider": "code-generated by scripts/dev/make-craft-textures.py (maintainer-only dev tool, fixed seed; no AI model), re-encoded as WebP q88",
       "prompt_summary": "procedural archive texture, variant quiet",
       "use_context": "archive theme Background variant 'quiet', 16:9 canvas, full-bleed Background layer",
       "crop_policy": "cover-pixel-exact (2560x1440 = canvas)",
       "rights": "project-owned (Apache-2.0, generated by this repository)",
       "baked_text": false,
-      "sha256": "79ddbd58663c6627a5d01e16c8294352d16577ace42c0367c2d8749c6660f3f3"
+      "sha256": "48cc2fbf2614aa733e33bff86bb87b24d25bdd3f60a71c0fc215519b6a218ca0"
     }
   ]
 }

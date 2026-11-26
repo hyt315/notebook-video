@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""silent-timing.py — 无旁白片的字幕时间轴（静音占位的「假 TTS 词边界」），读速可配置（3.3.0）。
+"""silent-timing.py — 无旁白片的字幕时间轴（静音占位的「假 TTS 词边界」），读速可配置。
 
-没有 TTS 时，字幕的读速就是整片的节奏。以前手写工程只能照 4.5 字/秒手搓 audio/narration.mp3.json，
-那是给"有人念"的组件路线定的速度，在纯字幕的手作片里只有 Netflix 成人上限（9 字/秒）的一半，片子慢、静帧全是半句话。
+没有 TTS 时，字幕的读速就是整片的节奏。4.5 字/秒是给"有人念"的组件路线定的速度，在纯字幕的手作片里只有 Netflix 成人上限（9 字/秒）的一半，片子慢、静帧全是半句话。
 
 用法：
     python scripts/silent-timing.py LINES_TXT OUT_JSON [--cps N] [--project DIR]

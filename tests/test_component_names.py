@@ -56,15 +56,15 @@ class ComponentNames(unittest.TestCase):
         for mod in LIB_MODULES:
             exported |= _react_exports((SRC / f"{mod}.tsx").read_text(encoding="utf-8"))
         md = (ROOT / "references" / "media.md").read_text(encoding="utf-8")
-        listed = _table_names(md, "### 5.1 ", "### 6.") - ENGINE_ONLY - {"SHAPES"}
-        self.assertEqual(sorted(exported - listed), [], "导出了但 media.md §5.1 没登记")
-        self.assertEqual(sorted(listed - exported), [], "media.md §5.1 登记了但没有导出")
+        listed = _table_names(md, "### 2.1 ", "### 2.2 ") - ENGINE_ONLY - {"SHAPES"}
+        self.assertEqual(sorted(exported - listed), [], "导出了但 media.md §2.1 没登记")
+        self.assertEqual(sorted(listed - exported), [], "media.md §2.1 登记了但没有导出")
 
     def test_craft_matches_components_index(self):
         exported = _component_like(_barrel_names((SRC / "craft" / "index.ts").read_text(encoding="utf-8")))
         md = (ROOT / "references" / "components.md").read_text(encoding="utf-8")
         mentioned = set(re.findall(r"`<?([A-Z]\w+)", md))
-        rows = _table_names(md, "## craft 组件", "### 组合配方")
+        rows = {n for n in re.findall(r"`([A-Z]\w+)`", md[md.index("## 2. craft"):md.index("## 3. ")]) if not n.startswith("NotebookVideo")}
         self.assertEqual(sorted(rows - exported), [], "components.md 的 craft 表登记了但没有导出")
         listed = mentioned
         self.assertEqual(sorted(exported - listed), [], "craft/index.ts 导出了但 components.md 没提到")

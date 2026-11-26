@@ -1,5 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {AbsoluteFill,Composition,Easing,Img,Sequence,cancelRender,continueRender,delayRender,interpolate,registerRoot,spring,staticFile,useCurrentFrame as useRawCurrentFrame} from 'remotion';
+import {AbsoluteFill,Composition,Easing,Img,Sequence,cancelRender,continueRender,delayRender,interpolate,registerRoot,staticFile,useCurrentFrame as useRawCurrentFrame} from 'remotion';
 import {Audio} from '@remotion/media';
 import cueData from '../manifests/caption-cues.json';  // 字幕只有这一份（manifests/），不再复制进 src/
 import CONTRACT from './contract.json';
@@ -28,9 +28,9 @@ import CONTRACT from './contract.json';
 // Keep authored scene time separate from delivery frames.
 import {MODES, CanvasContext, useCanvas} from './theme/canvas';
 import {THEME} from './theme/active';
-import {JumpInText} from './toolkit';
 import {PillTag, TYPE} from './kit';
-// v2.10 视觉体系四层：镜头 / 骨架 / 介质 / 门禁。用法见 references/camera.md#shot-language、
+import {clamp, EASE} from './motion';
+// 视觉体系四层：镜头 / 骨架 / 介质 / 门禁。用法见 references/camera.md#shot-language、
 // references/scenes.md#scene-skeletons、references/media.md#media-routing、references/checks.md#composition-gate。
 // 四层组件按需 import —— tsconfig 开了 noUnusedLocals，导了不用会被 tsc 判错，
 // 所以这里只留本文件真用到的，其余列名备查：
@@ -39,22 +39,20 @@ import {PillTag, TYPE} from './kit';
 //   insert     RevealMask / TRANSITIONS / useHandoff
 //   media      ConsoleWindow / MetricGrid / StampBanner
 //   skeletons  Corridor / SplitStage / ZoomStage
-import {Showcase, SHOWCASE_PAGES} from './showcase';
-import {CraftSheet, CRAFT_SHEET_FRAMES} from './craft-sheet';
 import {OverlapGate} from './overlap-gate';
 import {ClippingGate} from './clipping-gate';
 import {FillGate} from './fill-gate';
 import {CanvasBoundsGate} from './canvas-bounds-gate';
 import {MascotGate} from './mascot-gate';
-import {GlyphSnap} from './glyph-snap';
-import {planSfx, bedDuckAt, SFX_BED, BED_GAIN} from './sfx';
+import {GROW_VAR, GlyphSnap, REVEAL_BLEED, revealClip} from './glyph-snap';
+import {planSfx, bedDuckAt, voiceDuckFactor, SFX_BED, BED_GAIN} from './sfx';
 import {MUSIC_ON} from './audio-config';
 import {CINEMA, cinemaCamAt, cinemaMask, cinemaTransform, parallaxTransform, resolveTransition, transitionFrames, transitionStyle, whipOffset} from './cinema';
 import {FxProbe, PageCurl, curlShadow, isCurl} from './fx';
 import {PageFold} from './transitions/pagefold';
 import {SHOTS, SHOT_IDS, SHOT_TOTAL, SFX_DENSITY} from './shots';
 import {SCENES} from './scenes';
-import {FontFaces} from './fonts';
+import {AssetGate, FontFaces, loadThemeFonts} from './fonts';
 import type {BgVariant} from './theme/types';
 const BASE_FPS=30,FPS=CONTRACT.FPS,MOTION_FPS=30,TIMELINE_SCALE=1,DURATION=SHOT_TOTAL,DESIGN_SCALE=4/3;
 const useCurrentFrame=()=>useRawCurrentFrame()*BASE_FPS/FPS/TIMELINE_SCALE;
@@ -71,7 +69,7 @@ const Grade=THEME.Grade;
 import {COPY, CHAPTER_SHOTS} from './film';
 import * as FILM from './film';
 import {captionGap} from './caption-gap';
-// 3.8.0：章节卡标题的自适应字号改用它（同一能力的唯一实现，别再在调用处估算）。
+// 章节卡标题的自适应字号（同一能力的唯一实现，不在调用处另行估算）。
 import {fitChineseTextOnNLines} from './components/fittext';
 
 /** 方向模糊滤镜（SVG feGaussianBlur，只在 X 方向）。id 唯一，按帧给 stdDeviation。
@@ -86,61 +84,33 @@ const WhipBlur: React.FC<{id: string; amount: number}> = ({id, amount}) => (
 
 const CHAPTER_STARTS=CHAPTER_SHOTS.map((id)=>SHOTS[id].from);
 
-const clamp={extrapolateLeft:'clamp' as const,extrapolateRight:'clamp' as const};
 const msFrame=(ms:number)=>Math.round(ms*FPS/1000);
 const captions=((cueData as any).cues as any[]).map(c=>({...c,startFrame:msFrame(c.start_ms),endFrame:msFrame(c.speech_end_ms),words:c.words.map((w:any)=>({...w,startFrame:msFrame(w.start),endFrame:msFrame(w.end)}))}));
 const q=(f:number)=>{const step=BASE_FPS/MOTION_FPS;return Math.floor(f/step)*step};
-const pop=(f:number,start:number,stiffness=132)=>spring({frame:f-start,fps:BASE_FPS,config:{damping:17,stiffness,mass:.86}});
 
-// 3.5.4：主题字体一次性加载（AssetGate 与 FontGate 共用同一份清单）。
-// 含 700 Clash：数字镜（KineticNumber）用它；不预载时单帧 still 量字框那一刻它还没加载，GlyphSnap 的展开边
-// 与连续渲不同（purity-smoke S4 f597–605 实测）。只加这一个字重：顺手预载 Space 700 会改变章节标题的排版（实测）。
-// ⚠️ 先等一帧并强制一次样式计算再 load：FontFaces 的 <style> 刚插入时 @font-face 还没注册进
-// document.fonts，此刻 load() 匹配不到任何字体、立即 resolve（实测：各 face 仍是 unloaded）。
-// 3.5.3 之所以没事，是画面层同一次提交就挂上了、排版用到这些字体才触发加载；FontGate 不先挂画面层，必须自己触发。
-const loadThemeFonts=()=>new Promise<void>((r)=>requestAnimationFrame(()=>r())).then(()=>{void document.body.offsetHeight;}).then(()=>Promise.all([document.fonts.load('400 40px Kai'),document.fonts.load('700 40px Kai'),document.fonts.load('600 40px Clash').catch(()=>[]),document.fonts.load('700 40px Clash').catch(()=>[]),document.fonts.load('500 40px Space'),document.fonts.load('400 40px Caveat'),...(THEME.craft?.fonts??[]).map(fd=>document.fonts.load(fd)),document.fonts.ready]));
-// 3.6.0：Clash Display 不入库（ITF FFL 禁止经仓库再分发），按需从 Fontshare 下载到工程 public/fonts/；离线没下到时
+// Clash Display 不入库（ITF FFL 禁止经仓库再分发），按需从 Fontshare 下载到工程 public/fonts/；离线没下到时
 // 这两条 load 会因 404 拒绝，catch 掉后 CSS 栈 'Clash,Space,Kai' 自然落到 Space Grotesk（P1 提示由 CLI 打出）。
-// 3.5.4 FontGate：字体就绪之前**不挂载画面层**。
-// 为什么：章节卡标题（fitChineseTextOnNLines）等组件在 render 里同步量字宽，而量字宽的两层缓存
-// （fittext.tsx 的 widthCache、@remotion/layout-utils 的 wordCache）会把**字体就绪前**的回退字体宽度
-// 永久记下。单帧 still 的第一次 render 必然早于字体就绪，连续渲染的第 N 镜却在字体就绪之后——
-// 于是同一帧两种渲法量出不同字号（渲染结果取决于历史帧，与 3.5.4 P0 同类）。现在画面层只在
-// 字体就绪后才挂载，所有量测都在真字体上做；就绪标志是单调的（只会 false→true），两种渲法截图时都为 true。
+// FontGate：字体就绪之前**不挂载画面层**。章节卡标题等组件在 render 里同步量字宽，而量字宽的两层缓存
+// （fittext.tsx 的 widthCache、@remotion/layout-utils 的 wordCache）会永久记下字体就绪前的回退宽度；
+// 单帧 still 与连续渲染会因此量出不同字号。就绪标志是单调的（只会 false→true），两种渲法截图时都为 true。
 let FONTS_OK=false;
 const useFontGate=()=>{const [ok,setOk]=useState(FONTS_OK);const [handle]=useState(()=>FONTS_OK?null:delayRender('FontGate: theme fonts before mounting the film',{timeoutInMilliseconds:120000}));useEffect(()=>{if(ok){if(handle!==null)continueRender(handle);return}let live=true;loadThemeFonts().then(()=>{FONTS_OK=true;if(live)setOk(true)}).catch(()=>{/* AssetGate 会 cancelRender 并给出可读的报错 */});return()=>{live=false}},[ok,handle]);return ok};
-const AssetGate=()=>{const [handle]=useState(()=>delayRender('waiting for fonts',{timeoutInMilliseconds:120000}));useEffect(()=>{let live=true;loadThemeFonts().then(()=>{if(!live)return;const missing=(THEME.craft?.fonts??[]).filter(fd=>!document.fonts.check(fd,'细胞'));if(missing.length){cancelRender(new Error(`Theme font missing: ${missing.join(', ')} — run: node scripts/notebook-video.mjs fonts --serif, then new-project/sync again (Noto Serif SC, OFL)`));return}continueRender(handle)}).catch(error=>{if(live)cancelRender(error)});return()=>{live=false}},[handle]);return null};
 
-// CardFitGate：卡片防出格门。逐桶（15 帧）扫描已挂载场景：每个含文字的叶元素，
-// 用 offset 链（天然无视 transform 位移动画）累加其相对"最近卡片祖先"
-// （首个有不透明底 + 实线边框的祖先，即 Paper/FitCard 类卡片）的位置，
-// 超出卡片 padding 盒 2px 即 cancelRender。z>=140 的 chrome/字幕层跳过
-// （模板锁定层，各自有门）。无 delayRender NFC 阻塞；字体未就绪的桶跳过。
+// CardFitGate：卡片防出格门。逐桶（15 帧）扫描已挂载场景里会裁切的卡片（不透明/渐变底 + 实线边框），
+// 内容超出卡片即 cancelRender。z>=200 的字幕层跳过（由 CaptionFitGate 量）。
 const CardFitGate=()=>{
   const f=q(useCurrentFrame());
   const bucket=Math.floor(f/15);
-  // 2026-09-21 实测修掉一处**静默失效**（由 demo 的 `CardFitFixture` 负例逼出来）：
-  // 本门禁的测量排在 requestAnimationFrame 里，却**没有 delayRender 兜住截帧**，
-  // 于是 still 渲染会先截图、门禁永远来不及量——"260px 卡片里塞 560px 图表"这种
-  // 397px 的真溢出照样出图，门禁等于不存在（字幕门一直是 delayRender+continueRender 的，
-  // 本门禁漏了这一步）。现在持有 handle 到首次测量完成，门禁才真的会拦。
+  // 测量排在 requestAnimationFrame 里，必须持 delayRender 到首次测量完成，否则 still 渲染先截图、门禁来不及量。
   const [fitHandle]=useState(()=>delayRender('cardfit measure',{timeoutInMilliseconds:60000}));
   const firstDone=useRef(false);
-  // v2.11 修复三处静默失效（实测量出来的，不是推测）：
-  //   a. 旧版开头 `if(document.fonts.status!=='loaded') return;` —— 实测某帧 fonts=loading，
-  //      整桶直接跳过，且从不等待字体就绪（字幕门是 await document.fonts.ready 的）；
-  //      被压到 40px 的卡片明明算出溢出，也走不到报警那一步。现改为等字体就绪后补测。
-  //   b. 旧版用 offsetParent 链做累加再 `if(m!==card) return;` —— 实测 87 个文字块里 18 个
-  //      在链上断裂（逐字动画的 span、Takeaway 文本等），这些文字**从未被校验过**。
-  //      现改用 getBoundingClientRect 与卡片的 padding 盒比较（与 OverlapGate 同一口径，
-  //      天然包含 transform，不依赖 offsetParent）。
-  //   c. 旧版零输出既可能是"全部合格"也可能是"根本没跑"。现每 5 秒打一次覆盖率。
+  //   · 字体未就绪时等 document.fonts.ready 后补测，不跳过该桶；
+  //   · 用 getBoundingClientRect / scrollHeight 判定（天然包含 transform，不依赖 offsetParent 链）；
+  //   · 每 5 秒打一次覆盖率，让「全部合格」与「根本没跑」可区分。
   useEffect(()=>{
     let cancelled=false;
-    // 2026-09-21 独立核验：本门禁**目前是拦得住的**，因为 cancelRender 之后的
-    // `continueRender(fitHandle)` 还在 try 块内，抛异常就跳过了。但这纯属结构巧合：
-    // 谁把 continueRender 挪到 try 之外，它就会静默退化成「报而不拦」（另三道门禁踩过）。
-    // 故补上与其余门禁同一处置：判定作出后 blocked 置位（handle 永不释放），异常原样抛出。
+    // 判定作出后 blocked 置位（handle 永不释放）、异常原样抛出：continueRender 一旦被执行，
+    // 门禁就会退化成「报而不拦」（与其余门禁同一处置）。
     let blocked=false;
     const measure=()=>{
       try{
@@ -153,21 +123,20 @@ const CardFitGate=()=>{
           return ((alpha>0.9||grad>0)&&parseFloat(s.borderTopWidth)>0);};
         let cards=0;
         // 判据是"卡片内容是否超出卡片"（overflow 的定义）：
-        // 逐叶元素比较 rect 会被内联元素的行盒外延误报（实测单字“费”出 3px，其实没溢出）。
+        // 逐叶元素比较 rect 会被内联元素的行盒外延误报（单字可出 3px，其实没溢出）。
         // scrollHeight 会把溢出的内容也算进去，和 overflow 属性无关，是最稳的口径。
         document.querySelectorAll<HTMLElement>('div,span').forEach((card)=>{
           if(!solid(card)) return;
           // 只跳"标记者自己"（hasAttribute），**不用 closest**：closest 会连后代一起放过，
-          // 于是缩放取景框里所有卡片的真实裁切都会漏检（交叉复核用 A/B 实渲证明过 248px 的裁切被漏）。
+          // 于是缩放取景框里所有卡片的真实裁切都会漏检。
           if(card.hasAttribute('data-fit-skip')) return;
           if(!card.textContent||!card.textContent.trim()) return;
           if(card.getBoundingClientRect().width<8) return;
           // 只判会被裁剪的容器：overflow:visible 的容器用 scrollHeight 会把绝对定位子元素
-          // 也算进去（实测 MetricGrid 虚增 180–213px，其实没有任何文字被裁）
+          // 也算进去（如 MetricGrid 会虚增上百像素，其实没有任何文字被裁）
           if(getComputedStyle(card).overflow==='visible') return;
           const cz=parseInt(getComputedStyle(card).zIndex||'0',10);
-          // 字幕 200 仍跳过（它由 CaptionFitGate 量）；章节卡 150 改为**量测并 warn**：
-          // v3.0.2 之前它被静默跳过，于是"章节标题太长被裁"从来没有任何门禁报警（实测踩过）。
+          // 字幕 200 跳过（它由 CaptionFitGate 量）；章节卡 150 **量测并 warn**（章节标题过长被裁）。
           if(cz>=200) return;
           if(cz>=145){
             const oBmc=card.scrollHeight-card.clientHeight, oRmc=card.scrollWidth-card.clientWidth;
@@ -193,8 +162,7 @@ const CardFitGate=()=>{
               if (o > textOver) { textOver = o; textSample = (tel.textContent || '').trim().slice(0, 10); }
             });
           }
-          // 竖向容差 10px：不足一行高（≥30px）的差异读作降部/行盒舍入，不是“丢了一行”；
-          // 真裁切实测都在 25px 以上（S2 卡片 25px、控制台 27px）。
+          // 竖向容差 10px：不足一行高（≥30px）的差异读作降部/行盒舍入，不是“丢了一行”（真裁切通常 ≥25px）。
           if (oB > 10 || textOver > 8) bad.push(`@${f} \u5361\u7247\u201c${(card.textContent||'').trim().slice(0,10)}\u201d\u6ea2\u51fa ${Math.round(Math.max(oB, textOver))}px${textSample ? '\uff08\u6587\u5b57\uff1a' + textSample + '\uff09' : ''}`);
         });
         if(bad.length){blocked=true;cancelRender(new Error(`Card overflow: ${bad.slice(0,4).join(' | ')}`));}
@@ -216,11 +184,11 @@ const CardFitGate=()=>{
 // 字号 / 字重 / 字距 / 安全宽全部取自 16:9 canvas（MODES['16:9']）与当前主题，
 // 并计入主题字幕框的内边距（cel 64px / flat 108px）。
 // 判定：> mode.safe 记 fail（真的会被裁切）；> mode.safe - subtitlePadX 只 warn（会顶到内边）。
-// 字幕每行 ≤ CAPTION_MAX_CHARS 字（去掉句末标点与空白后逐字计，ASCII 也按 1 字计）。
-// 与 build-semantic-captions.py --max-chars / validate-caption-sync.py --max-chars 同口径；超了直接拦。
+// 字幕只有一行，≤ CAPTION_MAX_CHARS 字：去掉句末标点与空白后逐字计，ASCII 也按 1 字计（= scripts/story_text.py 的 cap_chars）。
 const CAPTION_MAX_CHARS=CONTRACT.CAPTION_MAX_CHARS;
-const captionChars=(t:string)=>[...String(t).replace(/[，。！？；：、,.!?;:\s]+$/g,'').replace(/\s+/g,'')].length;
-const CaptionFitGate=()=>{const {mode:baseMode}=useCanvas();const mode={...baseMode,subFont:AESTHETIC.subtitleSize??baseMode.subFont};const subFamily=AESTHETIC.subtitleFamily??'Kai';const safe=mode.safe,innerSafe=safe-(AESTHETIC.subtitlePadX??0),weight=AESTHETIC.subtitleWeight??400,ls=AESTHETIC.subtitleLetterSpacing??1.6;const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;let blocked=false;Promise.all([document.fonts.load(`${weight} ${mode.subFont}px ${subFamily}`),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){blocked=true;cancelRender(new Error('Subtitle measurement node is unavailable'));return}const longCues=captions.map((c:any,index:number)=>({index,n:captionChars(c.text),text:String(c.text)})).filter(x=>x.n>CAPTION_MAX_CHARS);if(longCues.length){blocked=true;cancelRender(new Error(`Subtitle too long (>${CAPTION_MAX_CHARS} chars per line): ${longCues.map(x=>`#${x.index+1} ${x.n}字 ${x.text}`).join(' | ')}`));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const widths=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''}));const overflow=widths.filter(row=>row.width>safe+.5);const tight=widths.filter(row=>row.width>innerSafe+.5&&row.width<=safe+.5);if(tight.length&&typeof console!=='undefined')console.warn(`[CaptionFitGate] ${tight.length} 条字幕超过内边距安全宽 ${innerSafe}px（未裁切但会顶到字幕框内边）：${tight.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px`).join(' | ')}`);if(overflow.length){blocked=true;cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px>${safe}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live&&!blocked){blocked=true;cancelRender(error)}});return()=>{live=false}},[handle,mode.subFont,subFamily,safe,innerSafe,weight,ls]);if(done)return null;return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:`${subFamily},Kai,sans-serif`,fontSize:mode.subFont,fontWeight:weight,whiteSpace:'nowrap',letterSpacing:ls}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{String(cue.text).replace(/[，。！？；：、,.!?;:\s]+$/g,'')}</span>)}</div>};
+const cleanTail=(s:string)=>s.replace(/[，。！？；：、,.!?;:\s]+$/g,'');
+const captionChars=(t:string)=>[...cleanTail(String(t)).replace(/\s+/g,'')].length;
+const CaptionFitGate=()=>{const {mode:baseMode}=useCanvas();const mode={...baseMode,subFont:AESTHETIC.subtitleSize??baseMode.subFont};const subFamily=AESTHETIC.subtitleFamily??'Kai';const safe=mode.safe,innerSafe=safe-(AESTHETIC.subtitlePadX??0),weight=AESTHETIC.subtitleWeight??400,ls=AESTHETIC.subtitleLetterSpacing??1.6;const ref=useRef<HTMLDivElement>(null),[done,setDone]=useState(false),[handle]=useState(()=>delayRender('measuring subtitle width',{timeoutInMilliseconds:60000}));useEffect(()=>{let live=true;let blocked=false;Promise.all([document.fonts.load(`${weight} ${mode.subFont}px ${subFamily}`),document.fonts.ready]).then(()=>requestAnimationFrame(()=>{if(!live)return;if(!ref.current){blocked=true;cancelRender(new Error('Subtitle measurement node is unavailable'));return}const longCues=captions.map((c:any,index:number)=>({index,n:captionChars(c.text),text:String(c.text)})).filter(x=>x.n>CAPTION_MAX_CHARS);if(longCues.length){blocked=true;cancelRender(new Error(`Subtitle too long (>${CAPTION_MAX_CHARS} chars per line): ${longCues.map(x=>`#${x.index+1} ${x.n}字 ${x.text}`).join(' | ')}`));return}const rows=[...ref.current.querySelectorAll<HTMLElement>('[data-caption-fit]')];const widths=rows.map((row,index)=>({index,width:row.getBoundingClientRect().width/DESIGN_SCALE,text:row.textContent||''}));const overflow=widths.filter(row=>row.width>safe+.5);const tight=widths.filter(row=>row.width>innerSafe+.5&&row.width<=safe+.5);if(tight.length&&typeof console!=='undefined')console.warn(`[CaptionFitGate] ${tight.length} 条字幕超过内边距安全宽 ${innerSafe}px（未裁切但会顶到字幕框内边）：${tight.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px`).join(' | ')}`);if(overflow.length){blocked=true;cancelRender(new Error(`Subtitle overflow: ${overflow.map(x=>`#${x.index+1} ${Math.ceil(x.width)}px>${safe}px ${x.text}`).join(' | ')}`));return}setDone(true);continueRender(handle)})).catch(error=>{if(live&&!blocked){blocked=true;cancelRender(error)}});return()=>{live=false}},[handle,mode.subFont,subFamily,safe,innerSafe,weight,ls]);if(done)return null;const fitText=(cue:any)=>{const full=cleanTail(String(cue.text));const target=full.replace(/\s+/g,'').length;const ws=Array.isArray(cue.words)?cue.words:[];if(!ws.length)return full;let seq=0;return ws.map((w:any,wi:number)=>{const raw=String(w.part);const sp=wi>0?captionGap(String(ws[wi-1].part),raw):'';const cs=raw.split('').filter((ch:string)=>(!/\s/.test(ch))&&seq++<target).join('');return cs?sp+cs:'';}).join('');};return <div ref={ref} style={{position:'absolute',left:-10000,top:-10000,visibility:'hidden',fontFamily:`${subFamily},Kai,sans-serif`,fontSize:mode.subFont,fontWeight:weight,whiteSpace:'nowrap',letterSpacing:ls,fontFeatureSettings:THEME.craft?'"halt"':undefined}}>{captions.map((cue:any,index:number)=><span key={index} data-caption-fit style={{display:'block',width:'max-content'}}>{fitText(cue)}</span>)}</div>};
 
 // 字体表（含 Clash / Space / Caveat 的 CJK 兜底）已抽到 src/fonts.tsx，成片与接触表共用。
 
@@ -229,21 +197,11 @@ const CaptionFitGate=()=>{const {mode:baseMode}=useCanvas();const mode={...baseM
 // Paper：卡片容器，皮肤由主题包提供（src/theme/active.ts）。
 const Paper=THEME.Paper;
 
-// LineIcon / PillTag / CheckBadge 已抽到 src/kit.tsx（主题无关原子，工程侧同样可引用）。
-// smoothStep / SPRINGS+popS / easeOutSoft 在 toolkit.tsx / fxkit.tsx 里各有自己的一份
-// （两个模块为免循环依赖刻意各自持有，不是遗漏）；本文件没人调用就不再留副本 ——
-// tsconfig 开了 noUnusedLocals，未被读取的局部声明会直接判错。
-
-// JumpInText：完全移植 Tibo 源码的“4段双轴弹性波浪回弹 + 字色激活”动效（经视效平衡调谐）
-
-
-
-
+// LineIcon / PillTag / CheckBadge 在 src/kit.tsx；clamp / 缓动 / SPRINGS 在 src/motion.ts。
 
 // 严谨消除句末标点符号（保留句中逗号，句末逗号句号等一概消除）
-const cleanTail=(s:string)=>s.replace(/[，。！？；：、,.!?;:\s]+$/g,'');
-// 3.3.0 字幕出现方式：'line' = 整行一次出现（5 帧淡入）；'type' = 逐字淡入（卡拉 OK 式，配真人声时用）。
-// 缺省：手作皮肤 line（无旁白片的整片节奏就是读速，逐字出现让每张静帧都是半句话），flat / cel 保持 type（既有行为）。
+// 字幕出现方式：'line' = 整行一次出现（5 帧淡入）；'type' = 逐字淡入（卡拉 OK 式，配真人声时用）。
+// 缺省：手作皮肤 line（无旁白片的整片节奏就是读速，逐字出现让每张静帧都是半句话），flat / cel 用 type。
 // 工程可在 src/film.ts 里 `export const CAPTION_REVEAL = 'line' | 'type'` 覆盖。
 const CAPTION_REVEAL:'line'|'type'=((FILM as any).CAPTION_REVEAL??AESTHETIC.captionReveal??(THEME.craft?'line':'type'))==='type'?'type':'line';
 const LINE_FADE=5;
@@ -260,13 +218,12 @@ const Subtitle=({off=false}:{off?:boolean})=>{
   const targetChars=full.replace(/\s+/g,'').length;
   const line=CAPTION_REVEAL==='line';
   const words=cue?cue.words.filter((w:any)=>(line?cue.startFrame:w.startFrame)<=f+lead):[];
-  // 3.3.0：一个字都还没出来时不画字幕（否则纸色光晕会先出现一团空白）
+  // 一个字都还没出来时不画字幕（否则纸色光晕会先出现一团空白）
   if(!cue||!targetChars||!words.length)return null;
-  // 3.5.2：type 模式外框跟着第一个字出现——以前外框提前满不透明度画出，句间会出现空字幕条
+  // type 模式外框跟着第一个字出现，句间不出现空字幕条
   if(!line&&f<(cue.words[0]?.startFrame??cue.startFrame))return null;
-  // 占位层与可见层用**同一套**分词加空格规则渲染。旧版占位层只放 cue.text，而可见层会在
-  // 中英文词之间补 \u00a0 —— 于是「三个 AI 技能」这类句子可见宽度大于占位宽度，最后一个字
-  // 顶进字幕框的右侧装饰点。现在两层字符完全一致，占位宽 = 最终宽。
+  // 占位层与可见层用**同一套**分词加空格规则渲染（含中英文词之间补的 \u00a0），占位宽 = 最终宽，
+  // 末字不会顶进字幕框的右侧装饰点。
   const allWords=cue.words;
   const renderWords=(list:any[],animate:boolean)=>{
     let charSeq=0;
@@ -278,42 +235,46 @@ const Subtitle=({off=false}:{off?:boolean})=>{
         const idx=charSeq++;
         if(idx>=targetChars) return null; // 铁律：严格消除任何词尾带出的句末标点符号
         if(!animate) return <span key={ci} style={{display:'inline-block'}}>{ch}</span>;
-        const p=interpolate(f,[w.startFrame+ci*.9,w.startFrame+ci*.9+2.5],[0,1],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
+        const p=interpolate(f,[w.startFrame+ci*.9,w.startFrame+ci*.9+2.5],[0,1],{...clamp,easing:EASE.out});
         return <span key={ci} style={{display:'inline-block',opacity:p,transform:`translateY(${6*(1-p)}px)`}}>{ch}</span>;
       })}</span>;
     });
   };
+  const isLast=captions.length>0&&cue===captions[captions.length-1];
+  const endFade=isLast&&f>cue.endFrame+12?interpolate(f,[cue.endFrame+12,cue.endFrame+27],[1,0],clamp):1;
+  if(endFade<=0.01)return null;
   if(line){
-    const p=interpolate(f,[cue.startFrame-lead,cue.startFrame-lead+LINE_FADE],[0,1],clamp);
-    // 3.5.2：外框也用同一个 p 控制，不再先画空盒子
+    const p=interpolate(f,[cue.startFrame-lead,cue.startFrame-lead+LINE_FADE],[0,1],clamp)*endFade;
+    // 外框也用同一个 p 控制，不先画空盒子
     return <div style={{opacity:p}}><THEME.SubtitleChrome mode={mode}>
       <span data-caption-line style={{position:'relative',display:'inline-block'}}>{renderWords(allWords,false)}</span>
     </THEME.SubtitleChrome></div>;
   }
-  return <THEME.SubtitleChrome mode={mode}>
+  return <div style={{opacity:endFade}}><THEME.SubtitleChrome mode={mode}>
     <span style={{position:'relative'}}>
         <span style={{visibility:'hidden'}}>{renderWords(allWords,false)}</span>
         <span style={{position:'absolute',left:0,top:0}}>{renderWords(words,true)}</span>
     </span>
-  </THEME.SubtitleChrome>;
+  </THEME.SubtitleChrome></div>;
 };
 
 const Chrome=()=>{
-  const f=q(useCurrentFrame()),stage=Math.max(0,CHAPTER_STARTS.filter((x)=>f>=x).length-1),local=f-CHAPTER_STARTS[stage],p=pop(local,-8),titles=COPY.chapterTitles;
-  // 3.3.0：皮肤自带章节标识（手作皮肤）时整块替换，不画 SaaS 式章节卡与技术页眉。
+  const f=q(useCurrentFrame()),stage=Math.max(0,CHAPTER_STARTS.filter((x)=>f>=x).length-1),local=f-CHAPTER_STARTS[stage],titles=COPY.chapterTitles;
+  // 皮肤自带章节标识（手作皮肤）时整块替换，不画 SaaS 式章节卡与技术页眉。
   if(THEME.Chrome){const ThemeChrome=THEME.Chrome;return <ThemeChrome stage={stage} title={String(titles[stage]??'')} kicker={COPY.chromeKicker} header={COPY.header} headerSub={COPY.headerSub} local={local}/>;}
+  // 章节卡与正文同一种出现方式：左→右展开 18 帧、不回弹（展开边交给 GlyphSnap 退到字缝）。
+  const g=interpolate(local,[0,18],[0,1],clamp),grow=g<1?{clipPath:revealClip(`calc(${((1-g)*100).toFixed(2)}% - ${(g*REVEAL_BLEED).toFixed(2)}px)`),[GROW_VAR]:g.toFixed(4)}:{};
   return <>
-    <Paper lift={0.3} style={{left:92,top:74,width:392,height:90,zIndex:150,display:'flex',alignItems:'center',opacity:p,transform:`translateY(${14*(1-p)}px) scale(${.96+.04*p})`,overflow:'hidden',padding:0}}>
-      <div style={{width:72,height:'100%',background:`linear-gradient(135deg,${C.orange},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash,Space,Kai',fontWeight:600,fontSize:31,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
+    <Paper lift={0.3} style={{left:92,top:74,width:392,height:90,zIndex:150,display:'flex',alignItems:'center',...grow,overflow:'hidden',padding:0}}>
+      <div style={{width:72,height:'100%',background:`linear-gradient(135deg,${C.orangeInk},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash,Space,Kai',fontWeight:600,fontSize:31,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
       <div style={{padding:'8px 16px',flex:1,minWidth:0}}>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           <PillTag text={COPY.chromeKicker} color={C.blue} bg={C.blueLight} fontSize={TYPE.microS}/>
         </div>
         {(() => {
-          // 3.8.0：不再用「CJK 1 字宽 / ASCII 0.55 折算」估字号，改为**实测反推**。
-          // 同一能力在 components/fittext.tsx 里已有一份正经实现（measureText + UAX #14 + budoux），
-          // 这里的估算既重复、又处在「差不到 1px 就折行」的临界——估算永远证明不了「不会折」。
-          // 可用内宽 286px（392 − 2 描边 − 72 编号块 − 32 内边距）；下限 19 保持与旧版一致。
+          // 字号用 components/fittext.tsx 量字反推（measureText + UAX #14 + budoux），不按字数估算：
+          // 标题处在「差 1px 就折行」的临界，估算证明不了不会折。
+          // 可用内宽 286px（392 − 2 描边 − 72 编号块 − 32 内边距）；下限 19。
           const title = String(titles[stage] ?? '');
           const availW = 286;
           const {fontSize: measured} = fitChineseTextOnNLines({
@@ -321,9 +282,7 @@ const Chrome=()=>{
             fontFamily: 'Kai', fontWeight: 700, maxFontSize: TYPE.titleS, minFontSize: 19,
           });
           const fitSize = Math.max(19, Math.min(TYPE.titleS, Math.floor(measured)));
-          return <JumpInText key={stage} frame={f} items={[{text:title}]} fontSize={fitSize}
-            start={CHAPTER_STARTS[stage]+8} stagger={1.1}
-            style={{marginTop:3,justifyContent:'flex-start',flexWrap:'nowrap',whiteSpace:'nowrap',overflow:'hidden',maxWidth:availW}}/>;
+          return <div style={{marginTop:3,fontSize:fitSize,fontWeight:700,color:C.ink,whiteSpace:'nowrap',overflow:'hidden',maxWidth:availW}}>{title}</div>;
         })()}
       </div>
     </Paper>
@@ -336,12 +295,11 @@ const Chrome=()=>{
 
 // 3.2.0 引擎级虚拟摄影机（src/cinema.tsx）：每镜自动慢推/漂移、按分镜表 `cinema.focus` 推近当前拍、
 // 宽画布横摇、镜间 whip/zoom 转场、背景视差。分镜表什么都不写也有默认运动。
-const TRANS=CINEMA.transition; // 镜间转场帧数（替代旧版 10 帧交叉淡化）
 const shotIndexAt=(f:number)=>{let idx=0;for(let i=0;i<SHOT_IDS.length;i++){ if(f>=SHOTS[SHOT_IDS[i]].from) idx=i; }return idx;};
 const camFor=(i:number,local:number)=>{const s:any=(SHOTS as any)[SHOT_IDS[i]];return cinemaCamAt(s.cinema,local,s.duration,i,s.keys);};
 const transFor=(i:number)=>{const s:any=(SHOTS as any)[SHOT_IDS[i]];return resolveTransition(s.transition,i,(CHAPTER_STARTS as readonly number[]).includes(s.from));};
 
-// 3.9.0 · 折痕翻页（卷页探针不通过时的纯 CSS 版）已抽到 transitions/pagefold.tsx（P2-23 解耦）。
+// 折痕翻页（卷页探针不通过时的纯 CSS 版）在 transitions/pagefold.tsx。
 // 折线几何（FOLD_K / FOLD_DEG / FOLD_SPAN）与 PageFold 组件都在那里；折线方向与 GPU 卷页
 // 共用 transitions/meta.ts 的 PAGETURN_FOLD_DIRECTION，预览（CSS）与成片（GPU）永远同向。
 
@@ -359,7 +317,7 @@ const FinalDemo=()=>{
   const kind=transFor(idx);
   const p=kind&&kind!=='hard'?local/transitionFrames(kind):1;
   const inTrans=p<1&&!!PrevScene;
-  const curl=inTrans&&isCurl(kind)?kind:null; // 3.3.0 真卷页（只有渲染器探针通过、开了 fx 才会走到这里）
+  const curl=inTrans&&isCurl(kind)?kind:null; // 真卷页（只有渲染器探针通过、开了 fx 才会走到这里）
   const out=inTrans&&kind?transitionStyle(kind,p,'out'):null;
   const inn=inTrans&&kind?transitionStyle(kind,p,'in'):{transform:'none',opacity:1,blur:0};
   const cam=camFor(idx,local);
@@ -401,10 +359,10 @@ const FinalDemo=()=>{
 };
 
 
-// 背景：每镜一张，由分镜表推导，镜头交接时与上一镜的背景交叉淡化 TRANS 帧。
-//   · 3.3.0 背景库：resolve-shots 已给每镜定好 `bgFile`（manifests/backgrounds.json 里的一张，显式 `bg` 或按角色自动轮换、
+// 背景：每镜一张，由分镜表推导，镜头交接时与上一镜的背景交叉淡化 tfDur 帧。
+//   · 背景库：resolve-shots 已给每镜定好 `bgFile`（manifests/backgrounds.json 里的一张，显式 `bg` 或按角色自动轮换、
 //     相邻不重复）→ 直接画这张图；
-//   · 否则（旧工程 / `bgRotate:false`）：分镜表写了 `bg: 'main' | 'chapter' | 'quiet'` → 照写的用；
+//   · 否则（没有 bgFile / `bgRotate:false`）：分镜表写了 `bg: 'main' | 'chapter' | 'quiet'` → 照写的用；
 //     不写：章节首镜 → chapter；信息密集（zones ≥ 4）→ quiet；其余 → main。
 // 所有背景的中央约 70% 都是安静的安全区，所以镜头内容直接压在背景上，不再铺整幅半透明底托。
 // 背景按 CINEMA.parallax 跟随摄影机（视差），转场时随甩镜一起移动。
@@ -434,8 +392,9 @@ const Backdrop=()=>{
   // 翻页（GPU 卷页与 CSS 折页都一样）时旧背景跟着那一页一起走，这里只画新背景。
   // 折页漏判的话，新页上还会叠着旧纸 14 帧——两张纸的纹理叠在一起，像印刷套色没对准。
   const carried=isCurl(kind)||kind==='pageflip';
-  const p=!carried&&bgKeyFor(prevId)!==bgKeyFor(curId)?Math.max(0,1-local/TRANS):0;
-  const tf=parallaxTransform(camFor(idx,local),whipOffset(kind,local/TRANS));
+  const tfDur=transitionFrames(kind);
+  const p=!carried&&bgKeyFor(prevId)!==bgKeyFor(curId)?Math.max(0,1-local/tfDur):0;
+  const tf=parallaxTransform(camFor(idx,local),whipOffset(kind,local/tfDur));
   return <AbsoluteFill style={{transform:tf,transformOrigin:'960px 540px'}}>
     <ShotBackground id={curId}/>
     {p>0.01&&<AbsoluteFill style={{opacity:p}}><ShotBackground id={prevId}/></AbsoluteFill>}
@@ -447,45 +406,37 @@ const Backdrop=()=>{
 // 混音：音效库统一 -18 LUFS(100ms)，SFX_GAIN 把它们压到人声（-16 LUFS）下方 8–12 LU；音乐床 ≈ -36 LUFS。
 const SFX_PLAN=planSfx(SHOT_IDS.map((id)=>SHOTS[id] as any),CHAPTER_STARTS,DURATION,SFX_DENSITY);
 const Sound=()=>{
+  const captionRanges=captions.map((c:any)=>({startFrame:c.startFrame as number,endFrame:c.endFrame as number}));
   // 音乐床在每个音效下闪避（bedDuckAt），音量是帧的纯函数
   const bedVol=(fr:number)=>interpolate(fr,[0,30,DURATION-45,DURATION],[0,BED_GAIN,BED_GAIN,0],{...clamp,easing:Easing.linear})*bedDuckAt(fr,SFX_PLAN);
   return <>
     <Audio src={staticFile('narration.mp3')} volume={1}/>
-    {/* 3.5.0：默认无 BGM。MUSIC_ON 由 sync-render-inputs.cjs 从 treatment.sound.music.use 生成；
-        没有 treatment / use=false / 组件路线 → false，音乐床根本不加载（旧版无条件循环 bed.ogg，
-        把 use=false 也关不掉）。 */}
+    {/* 默认无 BGM。MUSIC_ON 由 sync-render-inputs.cjs 从 treatment.sound.music.use 生成；
+        没有 treatment / use=false / 组件路线 → false，音乐床不加载。 */}
     {MUSIC_ON && <Audio src={staticFile(SFX_BED)} volume={(fr:number)=>bedVol(fr)} loop/>}
-    {SFX_PLAN.map((x,i)=><Sequence key={`${x.event}-${i}`} from={deliveryFrame(x.at)} layout="none"><Audio src={staticFile(x.src)} volume={x.vol} trimBefore={x.trim||undefined}/></Sequence>)}
+    {SFX_PLAN.map((x,i)=>{const v=x.vol*voiceDuckFactor(x.hit,x.event,captionRanges);return <Sequence key={`${x.event}-${i}`} from={deliveryFrame(x.at)} layout="none"><Audio src={staticFile(x.src)} volume={x.trim?(fr:number)=>v*Math.min(1,(fr+1)/2):v} trimBefore={x.trim||undefined}/></Sequence>;})}
   </>;
 };
 
 
-// 门禁事件帧（v2.11）：本技能最密集的重叠都发生在短窗口里——镜头交接 10 帧、页眉滑变 7–16 帧、数值滑动 14 帧。
-// 只按 15 帧网格抽样必然漏掉它们，所以把镜头边界、节拍、相机关键帧都交给 OverlapGate 强制抽样。
-// ⚠️ 2026-09-21 独立核验补：本项目约定「落定帧 = 镜尾 − 12」（抽帧留档看的就是它），
-// 而 `to−12` 一般不是 15 的倍数、也不在下面那些事件帧里 —— 实测上一版 21 张落定帧里
-// **只有 1 张**落在抽样集合上，于是「对每一镜跑一遍门禁」等于什么都没量。
-// 处置：把每镜的落定帧显式加进 WATCH —— **你要看的那一帧，门禁必须先看过**。
+// 门禁事件帧：最密集的重叠发生在短窗口里（镜头交接 10 帧、页眉滑变 7–16 帧、数值滑动 14 帧），
+// 只按 15 帧网格抽样会漏掉，所以把镜头边界、节拍、相机关键帧交给门禁强制抽样。
+// 每镜的落定帧（镜尾 − 12，抽帧留档看的就是它）一般不在网格上，也显式加进 WATCH。
 const WATCH=(()=>{const out:number[]=[];SHOT_IDS.forEach((id:string)=>{const s:any=(SHOTS as any)[id];out.push(s.from-1,s.from,s.from+1,s.to-1,s.to);out.push(s.to-12);(s.beats||[]).forEach((b:number)=>out.push(s.from+b));(s.keys||[]).forEach((k:any)=>out.push(s.from+k.f));});return out;})();
 const FilmLayout:React.FC<{hideCaptions?:boolean}>=({hideCaptions})=>{
   const mode=MODES['16:9'];
   const fontsOk=useFontGate();
   return <CanvasContext.Provider value={{canvas:'16:9',mode}}>
     <AbsoluteFill style={{overflow:'hidden',background:C.paperBase}}>
-      {/* data-design-root：FillGate 靠它把「输出像素」折回「设计像素」（ratio 实测，不假设 --scale）。
+      {/* data-design-root：FillGate 靠它把「输出像素」折回「设计像素」（比例从设计根量，不假设 --scale）。
     缺了它 FillGate 会静默 return —— 门禁装了等于没装，所以这个属性是门禁契约的一部分。 */}
       <div data-design-root style={{position:'absolute',left:0,top:0,width:mode.designW,height:mode.designH,transform:`scale(${mode.scale})`,transformOrigin:'0 0',fontFamily:'Kai,sans-serif',color:C.ink,overflow:'hidden'}}>
         <FontFaces bg={C.paperBase}/><AssetGate/><Sound/>{fontsOk&&<><CaptionFitGate/><CardFitGate/><OverlapGate mode="block" watch={WATCH}/><ClippingGate mode="block" watch={WATCH}/>
-        {/* CanvasBoundsGate（v2 简版）：只判「**含文字的叶元素**的墨迹 rect 越出画布」。
-            片子这条取 warn 而不是 block（2026-09-22 改，与接触表那条**不再同档**）：
-            v2 的判据实测来源全是接触表，它在**片子**上还没有抓到过真缺陷；
-            而这条门禁的硬拦发生在**交付渲染的最后一刻** —— 判据一旦误报，
-            代价是「整片渲到最后一帧被打断、不出片」，比漏报一处 20px 的裁切贵得多。
-            出水照样进渲染日志（每 150 帧还有一条覆盖率），交付前人工确认；
-            等它在片子上抓到第一处真缺陷，再谈升回 block。
-            口径与实测见 references/checks.md#composition-gate §5.2 / §6。 */}
+        {/* CanvasBoundsGate：只判「含文字的叶元素的墨迹 rect 越出画布」。片子用 warn（接触表用 block）：
+            硬拦发生在交付渲染的最后一刻，误报代价是整片不出；出声进渲染日志，交付前人工确认。
+            口径见 references/checks.md#render-gates。 */}
         <CanvasBoundsGate mode="warn"/>
-        {/* FillGate 默认 warn：P0-4 是"观感线"，为它打断整片渲染不划算；出水进日志、可复查 */}
+        {/* FillGate 默认 warn：下 1/4 是"观感线"，为它打断整片渲染不划算；出声进日志、可复查 */}
         <FillGate mode="warn" watch={WATCH}/><MascotGate watch={WATCH}/><GlyphSnap/><Backdrop/>
         {<><Chrome/><FinalDemo/></>}
         <Grade/>
@@ -498,53 +449,12 @@ const FilmLayout:React.FC<{hideCaptions?:boolean}>=({hideCaptions})=>{
 // 只有 16:9 一种交付画布（2560×1440，设计坐标 1920×1080）。
 const Film16x9=({hideCaptions}:{hideCaptions?:boolean}={})=> <FilmLayout hideCaptions={hideCaptions}/>;
 
-// 接触表 composition 的渲染期门禁（v1）：
-// `NotebookVideoShowcase` 此前**一道门禁都没有** —— 第 ⑥ 页第三站的标签块越出画布右缘被裁
-// （文案「按 Flash 结算」渲成「按 Flash 结」）就是这么漏掉的，这是**结构性**原因：
-// 门禁全挂在 FilmLayout 里，接触表那条 composition 不经过它。
-// 挂 CanvasBoundsGate 而不是整套：接触表是**组件目录**，格子里的件被 Tile 的
-// overflow:hidden 裁住是有意设计（那是取景框），闸门只该管「有没有越出画布」这一件。
-//
-// 这条取 **block**（**与片子那条不同档**：片子是 warn，理由见 FilmLayout 里的注释），
-// 经过两轮实测才敢这么取：
-//   · 第一轮：门禁上线当天就抓出接触表自己的一处**真实同类缺陷** —— 第 ③ 页声明 5 件，
-//     而 `Grid4` 只有 4 格，第 5 件（`FitTextBox · 中文反推字号（封装层）`）被摆到 top=1076，
-//     整格落在 1080 高的画布**外面** 466px：渲出来的第 ③ 页只有 4 格，那件组件在接触表上
-//     **根本看不见**（图已核）。那一轮为不阻断 `showcase` / `showcase-sheet`，先取 warn 让它出声。
-//   · 第二轮（本轮）：`showcase.tsx` 第 ③ 页改成 5 格表（`Grid5`，3 列 × 2 行，格子 610×470、
-//     舞台等比 0.7），5 件全部落在画布内；18 页在 block 下逐页抽帧跑过一遍，每页 rc=0 且有图，
-//     无一处误报 —— 于是把 warn 收敛回 block。
-// 判据上的理由：越出画布 = 件**整件看不见**或被切掉一块，属于**画错了**，
-// 与「图形被裁」「文字互相压」同级，不是 FillGate 那种观感线；
-// 而接触表是「看见才会用」的唯一入口（references/media.md#media-routing §6），件看不见就该中断渲染，
-// 不能默默出一张缺件的目录页。
-// v2 简版换实现后的复验（2026-09-22）：原样 6 页（帧 35/65/95/155/275/395）rc=0 有图零报告；
-// 把 `showcase.tsx` 的两处历史缺陷各改回去一次，这条 block 档仍然**各自抓住**（26px×2 / 27px，rc=1 不出图）。
-// 口径与实测表见 references/checks.md#composition-gate §5.2。
-const ShowcaseComposition=()=> <>
-  <FontFaces bg={C.paperBase}/>
-  <Showcase/>
-  <CanvasBoundsGate mode="block"/>
-</>;
-
-// craft 组件样张（3.3.0）：一页 12 格，当前皮肤下的全部 craft 组件；渲染期只挂越界闸门（与接触表同理）。
-const CraftSheetComposition=()=> <>
-  <FontFaces bg={C.paperBase}/><AssetGate/>
-  <CraftSheet/>
-  <CanvasBoundsGate mode="block"/>
-</>;
-
-// 3.3.0 fx 探针（`notebook-video.mjs` 渲一帧读像素，决定这台机器能不能开真卷页）。320×180，不进成片。
+// fx 探针（`notebook-video.mjs` 渲一帧读像素，决定这台机器能不能开真卷页）。320×180，不进成片。
 const FxProbeComposition=()=> <FxProbe/>;
 
 const Root=()=> <>
   {/* 官方模板示例片（8 镜 / 4 骨架），按 1920×1080 设计空间编写，交付 2560×1440（见 references/scenes.md#canvas-modes）。 */}
   <Composition id="NotebookVideoFilm" component={Film16x9} durationInFrames={DURATION} fps={FPS} width={2560} height={1440}/>
-  {/* 组件接触表：18 页 × 1 秒（`SHOWCASE_PAGES`）；抽帧用 select 滤镜按帧号取每页第 6/21 帧两张中段图，
-      6×6=36 格一张 JPG，供 AI 看图选型（时长 = SHOWCASE_PAGES*30，加页自动跟随） */}
-  <Composition id="NotebookVideoShowcase" component={ShowcaseComposition} durationInFrames={SHOWCASE_PAGES*30} fps={FPS} width={1920} height={1080}/>
-  {/* craft 组件样张（`notebook-video.mjs craft-sheet`），设计坐标 1920×1080 */}
-  <Composition id="NotebookVideoCraftSheet" component={CraftSheetComposition} durationInFrames={CRAFT_SHEET_FRAMES} fps={FPS} width={1920} height={1080}/>
   {/* 真卷页能力探针（`notebook-video.mjs fx-probe`）：WebGL2 + HTML-in-canvas 画得出来才给成片开 pageturn / peel */}
   <Composition id="NotebookVideoFxProbe" component={FxProbeComposition} durationInFrames={1} fps={FPS} width={320} height={180}/>
 </>;

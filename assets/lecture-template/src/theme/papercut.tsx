@@ -3,7 +3,7 @@ import type {BgVariant, Theme} from './types';
 import {FibreOverlay, PaperSubtitle, chromeIn, makeBackground, tiltOf} from './craft-common';
 
 // ============================================================================
-// PAPERCUT 主题（3.3.0，LOCKED）：红色窗花剪纸，正面光、米色宣纸底。
+// PAPERCUT 主题（LOCKED）：红色窗花剪纸，正面光、米色宣纸底。
 // 媒介：一切都是剪刀剪出来、平铺在另一张纸上的纸片；细节只来自「剪掉了什么」（洞即是线）。
 // 适合：对称 / 复制 / 一变多 / 缺一块还能补回 / 结构与镂空（纠错码、细胞分裂、雪花、编码）。
 // 原生动作：对折一刀展开成多份、碎纸片飞回原位、剪掉一角、背光透洞（见 references/themes/papercut.md）。
@@ -19,12 +19,12 @@ const palette: Theme['palette'] = {
   gold: '#c9a13b', goldInk: '#735610',                                            // 金箔（全片只用一次）
   red: '#c8102e', redInk: '#990f21', navy: '#2a1a14',
   paper: '#fbf3e3', paperWarm: '#f4e7cf', paperBase: '#efe2c8',
-  line: 'rgba(42,26,20,0.34)', lineOrange: 'rgba(210,32,31,0.6)', lineBlue: 'rgba(47,78,122,0.6)', lineGreen: 'rgba(62,125,104,0.6)',
+  line: 'rgba(42,26,20,0.34)', lineOrange: 'rgba(210,32,31,0.6)', lineBlue: 'rgba(47,78,122,0.6)',
   white: '#fffaf0',
   skyTint: '#efe2c8', blueLine: 'rgba(47,78,122,0.42)', dotIdle: '#dccbb0',
-  mutedFill: 'rgba(101,75,59,0.22)', mutedBar: 'rgba(101,75,59,0.18)', mutedWash: 'rgba(101,75,59,0.12)',
-  orangeSoft: '#e9938a', orangeDeep: '#a3151a', gaugeTrack: 'rgba(42,26,20,0.14)',
-  greenGlow: 'rgba(62,125,104,0.35)', stageTint: 'rgba(244,231,207,0.6)',
+  mutedFill: 'rgba(101,75,59,0.22)', mutedBar: 'rgba(101,75,59,0.18)',
+  orangeDeep: '#a3151a', gaugeTrack: 'rgba(42,26,20,0.14)',
+  greenGlow: 'rgba(62,125,104,0.35)',
   headerAccent: '#2a1a14', headerSub: '#654b3b',
 };
 
@@ -37,10 +37,10 @@ const aesthetic: Theme['aesthetic'] = {
 
 // 纸片的厚度：紧贴的软影 + 右下 1px 切口暗边（不是 UI 悬浮影）。
 const paperShadow = (lift: number) =>
-  `${1 + lift}px ${2 + 2 * lift}px ${2 + 4 * lift}px rgba(60,20,10,${0.22 + 0.08 * lift}), 1px 1px 0 rgba(60,20,10,0.25)`;
+  `1px 1px 0 rgba(60,20,10,0.25), ${1 + lift}px ${2 + 2 * lift}px ${3 + 4 * lift}px rgba(60,20,10,${(0.19 + 0.06 * lift).toFixed(2)}), ${2 + 2 * lift}px ${5 + 6 * lift}px ${12 + 14 * lift}px rgba(60,20,10,${(0.10 + 0.06 * lift).toFixed(2)})`;
 
 const BACKGROUNDS: Record<BgVariant, string> = {
-  main: 'bg/bg-papercut-main.jpg', chapter: 'bg/bg-papercut-chapter.jpg', quiet: 'bg/bg-papercut-quiet.jpg',
+  main: 'bg/bg-papercut-main.webp', chapter: 'bg/bg-papercut-chapter.webp', quiet: 'bg/bg-papercut-quiet.webp',
 };
 const Background = makeBackground(palette.paperBase, BACKGROUNDS);
 
@@ -58,13 +58,13 @@ const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) => {
 };
 
 const Grade: React.FC = () => <div style={{position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 190,
-  boxShadow: `inset 0 0 200px rgba(80,30,10,${aesthetic.gradeVignette})`}} />;
+  background: `radial-gradient(ellipse 82% 76% at 50% 44%, rgba(255,248,232,0.06) 0%, transparent 56%, rgba(76,28,12,${(aesthetic.gradeVignette * 1.25).toFixed(3)}) 100%)`}} />;
 
 // 字幕 = 一张米纸横条，字是刻出来的红（红只做线色，不做面）。
-// 为什么不再用「深红横批 + 米色字」：纸这一族里已经有三个红——朱砂印章、页内速写的红线、
+// 为什么不用「深红横批 + 米色字」：纸这一族里已经有三个红——朱砂印章、页内速写的红线、
 // 页眉的红色序号。再来一条**实心大红条**横贯底部，红就从「点缀」变成「主色」，
-// 印章那枚唯一的朱砂立刻失去分量（实测成片：画面最重的元素变成字幕条，像警告横幅）。
-// 改成米纸底 + 红字 + 上下两道细红刻线：同一套颜色关系（红是刻痕，不是色块），重量回到主体上。
+// 印章那枚唯一的朱砂立刻失去分量（画面最重的元素变成字幕条，像警告横幅）。
+// 所以用米纸底 + 红字 + 上下两道细红刻线：同一套颜色关系（红是刻痕，不是色块），重量回到主体上。
 const SubtitleChrome = PaperSubtitle({ink: '#8f1216', halo: 'transparent', size: 72, letterSpacing: 3, bottom: 30,
   plate: {background: '#fdf6e8', padding: '8px 60px 12px',
     borderTop: '3px solid #8f1216', borderBottom: '3px solid #8f1216',

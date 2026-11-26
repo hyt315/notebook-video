@@ -1,6 +1,6 @@
 // 静音旁白占位：make-video --stills / preview 共用的那一条 ffmpeg。
-// 3.5.0 起「成片必须有真实旁白」，静音占位只许给看画面用（见 make-video.mjs 的 requireNarrationForRender）。
-// 抽出来是为了让 preview 与 --stills 用的是**同一条**命令，不再各写一份。
+// 「成片必须有真实旁白」，静音占位只许给看画面用（见 make-video.mjs 的 requireNarrationForRender）。
+// 抽出来是为了让 preview 与 --stills 用的是**同一条**命令。
 import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

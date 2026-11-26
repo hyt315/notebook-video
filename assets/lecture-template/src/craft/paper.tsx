@@ -1,5 +1,5 @@
 // ============================================================================
-// craft/paper.tsx · 纸与颜料（3.3.0）
+// craft/paper.tsx · 纸与颜料
 //
 //   PaperSheet  一张自由放置的纸（不是 UI 卡片）：毛边 / 撕边、纤维、贴面投影、可选胶带；可「放下来」入场
 //   WashBlob    一团水彩淡彩：噪声边缘 + 三遍叠色（积水深边）+ 颗粒，按进度「晕开」
@@ -94,7 +94,7 @@ export const WashBlob: React.FC<WashBlobProps> = ({f, at, dur = 26, cx, cy, rx, 
   return <svg style={{position: 'absolute', left: ox, top: oy, overflow: 'visible', clipPath: sweepClip}} width={W} height={H} aria-hidden>
     <defs>
       <filter id={`${id}-soft`} x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation={1.4} /></filter>
-      {/* 颜料颗粒：SVG feTurbulence（分辨率无关、确定性 seed），只取暗部当颗粒——位图平铺在 2560 上会出马赛克块（样张实测） */}
+      {/* 颜料颗粒：SVG feTurbulence（分辨率无关、确定性 seed），只取暗部当颗粒——位图平铺在 2560 上会出马赛克块 */}
       <filter id={`${id}-gran`} x="0" y="0" width="100%" height="100%">
         <feTurbulence type="fractalNoise" baseFrequency={0.75} numOctaves={2} seed={seedNum(seed)} result="n" />
         <feColorMatrix in="n" type="matrix" values={`0 0 0 0 ${grainRGB(color)[0]}  0 0 0 0 ${grainRGB(color)[1]}  0 0 0 0 ${grainRGB(color)[2]}  0 0 0 -2.4 1.45`} />
@@ -159,7 +159,7 @@ export const Seal: React.FC<{f: number; at: number; x: number; y: number; size?:
     const inner = size - 2 * pad;
     // 字号必须按「可用内框 / 行列数」算，不能拍脑袋定比例：
     // 2 字竖排时 size*0.4 的字号 × 2 行 ≈ 内框高度，字一挤就会字形互相压住
-    // （实测 124px 章里「胡克」两字重叠 2266px²，渲染直接被 OverlapGate 拦下）。
+    // （会被 OverlapGate 拦下）。
     const cols = chars.length > 2 ? 2 : 1;
     const rows = Math.ceil(chars.length / cols);
     const fs = Math.min(size * 0.62, Math.floor(inner / Math.max(cols, rows) * 1.02));

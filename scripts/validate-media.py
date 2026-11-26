@@ -190,7 +190,7 @@ def main(argv: list[str]) -> int:
             continue
         unknown = [k for k in ("w", "h") if not isinstance(u[k], (int, float))]
         # 尺寸是布局对象 / props / 函数算出来的，静态量不出 —— 按最坏情况（占满 1920×1080 画布）估，
-        # 最坏情况也不糊就放行，否则降为 P1 提醒去看静帧（以前这里直接跳过，等于没查）。
+        # 最坏情况也不糊就放行，否则降为 P1 提醒去看静帧（不能直接跳过）。
         w = 1920.0 if "w" in unknown else float(u["w"])
         h = 1080.0 if "h" in unknown else float(u["h"])
         iw, ih = e["_px"]

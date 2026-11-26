@@ -1,11 +1,12 @@
 import React from 'react';
-import {Easing, interpolate, spring} from 'remotion';
+import {interpolate} from 'remotion';
 import {diffLines} from 'diff';
 import {THEME} from './theme/active';
+import {easeIn, easeOut, popS} from './motion';
 
 // ============================================================================
-// fxkit · 固定动效组件库 v1（反 PPT 专用）
-// 设计原则：动画只用 remotion 原生 spring/interpolate（3.2.0 起 DiffView 用 jsdiff 只做「算行」）、只做
+// fxkit · 固定动效组件库（反 PPT 专用）
+// 设计原则：动画只用 remotion 原生 spring/interpolate（DiffView 用 jsdiff 只做「算行」）、只做
 // transform/opacity 位移动画、cel 皮肤（2.5px 墨线 + 硬偏移阴影 + 纯平填充，
 // 无渐变无模糊阴影）、30fps 确定性（无随机数，伪方差来自序号哈希）。
 // 防出格铁律：所有文字容器高度必须由 fitH() 显式算出，禁止手写"看着差不多"
@@ -19,29 +20,13 @@ import {THEME} from './theme/active';
 
 const C = THEME.palette;
 // extras 是可选契约：flat 没有 extras，cel 只有 Burst。必须用可选链，
-// 否则默认 flat 主题在 import 本文件的瞬间就会崩（v2.10 引入 fxkit 后才暴露）。
-// （这里原有一个读 `THEME.extras?.Burst` 的 const Burst，本文件从未用过 —— tsc TS6133。）
+// 否则默认 flat 主题在 import 本文件的瞬间就会崩。
 
 // 与主模板一致的字阶镜像（只取本库用到的档位）
 export const FX_T = {displayL:50, displayS:36, titleM:28, titleS:27, titleXS:26, bodyM:24, labelL:22, labelM:21, labelS:20, microL:18} as const;
 
-const clamp = {extrapolateLeft:'clamp' as const, extrapolateRight:'clamp' as const};
-const BASE_FPS = 30;
-// 原来这里还有 `q`（恒等量化）与 `ease`（easeInOutCubic）两个局部 helper —— 是**那两件**
-// 从头到尾没被调用过（tsc TS6133），已删；需要它们时从 index / 其它模块取。
-// ⚠️ 下面三个（easeOutSoft / SPRINGS / popS）是**本库自己在用的**，别跟着一起删。
-const easeOutSoft = (f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,b],[from,to],{...clamp,easing:Easing.bezier(.16,1,.3,1)});
-// SPRINGS + popS 导出（2026-09-21）：`references/draftpaper.md#motion-design` 的 Locked motion pack 明写
-// "use `popS(f, start, preset)` with `SPRINGS` … Do not hand-tune new damping/stiffness values per scene"，
-// 而这两个名字此前**没有 export** —— 场景文件在物理上 import 不到，那条纪律等于只能靠自觉。
-// 导出之后它才可执行：场景直接取这一份，不许再手写 damping/stiffness。
-// （toolkit.tsx 里还有一份同名私有副本，是那两个模块为免循环依赖刻意各自持有的，不走这里。）
-export const SPRINGS = {snappy:{damping:16,stiffness:200,mass:.8},soft:{damping:17,stiffness:132,mass:.86},bouncy:{damping:11,stiffness:160,mass:.9}} as const;
-export const popS = (f:number,start:number,preset:keyof typeof SPRINGS='soft')=>spring({frame:f-start,fps:BASE_FPS,config:SPRINGS[preset]});
 /** 单向脉冲 0-1-0：一次性强调（砸中/刷新），不是永久呼吸。 */
 const pulse=(f:number,at:number,dur=14)=>Math.sin(Math.PI*Math.max(0,Math.min(1,(f-at)/dur)));
-/** 出场曲线：比入场快而急（motion-design 六律之二）。 */
-const easeInQuad=(f:number,a:number,b:number,from=0,to=1)=>interpolate(f,[a,Math.max(a+1,b)],[from,to],{...clamp,easing:Easing.in(Easing.quad)});
 // 序号哈希伪方差（确定性）：0~1
 const hash01 = (i:number)=>{const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x);};
 
@@ -55,7 +40,7 @@ export const fitH = (rows:{h:number;gapAfter?:number}[],padTop:number,padBottom:
 /** 离场样式：exitStart 之后 15 帧整体下移淡出（完整离场契约）。 */
 const exitStyle = (f:number,exitStart:number|undefined):React.CSSProperties=>{
   if(exitStart===undefined) return {};
-  const p = easeInQuad(f,exitStart,exitStart+9);
+  const p = easeIn(f,exitStart,exitStart+9);
   return {opacity:1-p, transform:`translateY(${40*p}px)`};
 };
 
@@ -69,7 +54,7 @@ export const FitCard:React.FC<{
 }> = ({x,y,w,h,pad=24,borderColor=C.line,z=70,frame,start=0,exitStart,children,style})=>{
   const f = frame;
   const p = popS(f,start,'soft');
-  const opP = easeOutSoft(f,start,start+16);
+  const opP = easeOut(f,start,start+16);
   return <div style={{position:'absolute',left:x,top:y,width:w,height:h,zIndex:z,background:C.paper||'#ffffff',border:`2.5px solid ${borderColor}`,borderRadius:10,boxShadow:`3px 3px 0 ${C.ink}`,padding:pad,overflow:'hidden',opacity:opP,transform:`translateY(${26*(1-p)}px)`,...exitStyle(f,exitStart),...style}}>{children}</div>;
 };
 
@@ -125,12 +110,10 @@ export const StampSeal:React.FC<{
 }> = ({text,color=C.red,size=110,x=0,y=0,start=0,frame})=>{
   const f = frame;
   if(f<start) return null;
-  const p = easeOutSoft(f,start,start+9);
-  // 第二半：9 帧压到 1 之后再来一次 1 -> 1.06 -> 1 的回弹，外加一圈冲击波。
-  // 只有"压下去"的印章只是"一个圆变小了"；有回弹才读作"砸在纸上"。
-  const rebound = pulse(f,start+9,8);
+  const p = easeOut(f,start,start+9);
+  // 9 帧压到 1，落定时一圈冲击波读作「砸在纸上」；不回弹。
   const shock = pulse(f,start+9,12);
-  const scale = interpolate(p,[0,1],[2.6,1]) * (1 + 0.06*rebound);
+  const scale = interpolate(p,[0,1],[2.6,1]);
   return <div style={{position:'absolute',left:x,top:y,width:size,height:size,zIndex:98,opacity:Math.min(1,p*1.6),transform:`scale(${scale}) rotate(-8deg)`}}>
     {shock>0.02&&<span style={{position:'absolute',inset:-2,borderRadius:999,opacity:0.4*(1-shock),boxShadow:`0 0 0 ${shock*12}px ${color}`}}/>}
     <div style={{width:'100%',height:'100%',borderRadius:999,border:`4px solid ${color}`,display:'grid',placeItems:'center',background:'rgba(255,255,255,0.82)'}}>
@@ -148,7 +131,7 @@ export const Funnel:React.FC<{
   return <div style={{position:'absolute',left:x,top:y,width:w,...exitStyle(f,exitStart)}}>
     {rows.map((r,i)=>{
       const s = start+i*stagger, p = popS(f,s,'soft');
-      const wp = easeOutSoft(f,s+8,s+34);
+      const wp = easeOut(f,s+8,s+34);
       return <div key={r.label} style={{position:'relative',opacity:p,transform:`translateX(${-30*(1-p)}px)`,marginBottom:i<rows.length-1?10:0}}>
         <div style={{display:'flex',alignItems:'baseline',gap:10,marginBottom:6}}>
           <span style={{fontSize:FX_T.titleXS,fontWeight:700,color:C.ink}}>{r.label}</span>
@@ -199,16 +182,15 @@ export const ProgressRing:React.FC<{
   // 弧与数字用**不同时钟**（30 / 约 24 帧，数字晚 2 帧起步）：同一条曲线会让"数字就是那条弧"，
   // 错开后读作"表盘在走、读数是跟读数"。默认总时长 30 帧（约 Magic UI 的 1s 节拍）。
   const dur = duration===36?30:duration;
-  const p = easeOutSoft(f,start,start+dur);
-  const tp = easeOutSoft(f,start+2,start+2+Math.max(16,Math.round(dur*0.8)));
+  const p = easeOut(f,start,start+dur);
+  const tp = easeOut(f,start+2,start+2+Math.max(16,Math.round(dur*0.8)));
   const shown = Math.max(0,Math.min(1,pct));
-  // 描边、读数、标签随 size 等比（旧版写死 11px 描边 / 22px 读数 / 13px 标签，放大到 300+ 时读数缩成一个点）
+  // 描边、读数、标签随 size 等比（写死像素时放大到 300+ 读数会缩成一个点）
   const sw = Math.max(11, Math.round(size*0.06)), numFs = Math.max(22, Math.round(size*0.23)), labFs = Math.max(16, Math.round(size*0.075));
   const R = (size-sw-3)/2, len = 2*Math.PI*R;
   const angD = -90 + 360*shown*p;
   const capX = size/2 + R*Math.cos(angD*Math.PI/180), capY = size/2 + R*Math.sin(angD*Math.PI/180);
-  const land = pulse(f,start+dur,12); // 过冲只给容器：数值类动画不能弹（会短暂显示错误的数）
-  return <div style={{width:size,height:size,position:'relative',flex:'0 0 auto',transform:`scale(${1+0.03*land})`}}>
+  return <div style={{width:size,height:size,position:'relative',flex:'0 0 auto'}}>
     <svg width={size} height={size}>
       <circle cx={size/2} cy={size/2} r={R} fill="none" stroke={C.gaugeTrack} strokeWidth={sw}/>
       <circle cx={size/2} cy={size/2} r={R} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeDasharray={len} strokeDashoffset={len*(1-shown*p)} transform={`rotate(-90 ${size/2} ${size/2})`}/>
@@ -226,7 +208,7 @@ export const StaggerList:React.FC<{
   const f = frame;
   return <div style={{position:'absolute',left:x,top:y,width:w,...exitStyle(f,exitStart)}}>
     {items.map((it,i)=>{
-      const s = start+i*stagger, p = popS(f,s,'soft'), opP = easeOutSoft(f,s,s+14);
+      const s = start+i*stagger, p = popS(f,s,'soft'), opP = easeOut(f,s,s+14);
       return <div key={it.text} style={{display:'flex',alignItems:'center',gap:12,marginBottom:i<items.length-1?10:0,opacity:opP,transform:`translateX(${30*(1-p)}px) rotate(${(1-p)*1.2}deg)`}}>
         <span style={{width:34,height:34,borderRadius:99,background:it.color,color:'#fff',display:'grid',placeItems:'center',fontFamily:'Space',fontWeight:700,fontSize:16,flex:'0 0 auto',border:`2px solid ${C.ink}`}}>{it.icon??i+1}</span>
         <span style={{fontSize:FX_T.titleXS,fontWeight:700,color:C.ink}}>{it.text}</span>
@@ -236,9 +218,8 @@ export const StaggerList:React.FC<{
   </div>;
 };
 
-export const FXKIT_VERSION = 'fxkit-v4 · 9 components · multi-clock motion · scaleX bars · DiffView via jsdiff';
 
-// ---- DiffView：补丁 diff。3.2.0 起由 jsdiff（`diff` 包，BSD-3-Clause）计算 +/- 行 ----
+// ---- DiffView：补丁 diff。由 jsdiff（`diff` 包，BSD-3-Clause）计算 +/- 行 ----
 // 两种喂法（二选一）：
 //   1. before/after 两段文本 → diffLines 自动算出增删行，按 startAt + i*step 依次入场；
 //   2. 旧的手写 lines[{k,text,at}]（向后兼容，参考片 S3 仍用这种）。
@@ -291,7 +272,7 @@ export const DiffView:React.FC<{
         // 删除行从**左**退出、更快（12 帧 ease-in）；新增行从**右**进入、更稳（16 帧 ease-out）。
         // 同向同速会毁掉补丁的语义——"这一行被拿走了 / 这一行被放进来了"。
         const dir = ln.k==='-'?-1:1;
-        const mp = ln.k==='-'?easeInQuad(f,ln.at,ln.at+12):easeOutSoft(f,ln.at,ln.at+16);
+        const mp = ln.k==='-'?easeIn(f,ln.at,ln.at+12):easeOut(f,ln.at,ln.at+16);
         const sweep = pulse(f,ln.at,16);
         const col = ln.k==='-'?delInk:ln.k==='+'?addInk:`${C.white}c4`;
         return <div key={i} style={{position:'relative',display:'flex',gap:10,fontFamily:'Space,monospace',fontWeight:600,fontSize,color:ln.k===' '?C.white:col,background:ln.k===' '?'none':ln.k==='-'?`${C.red}26`:`${C.green}26`,borderRadius:6,padding:`${Math.round(fontSize*0.2)}px ${Math.round(fontSize*0.67)}px`,opacity:p*mp,transform:`translateX(${dir*Math.round(fontSize*1.07)*(1-mp)}px)`,whiteSpace:'pre',overflow:'hidden'}}>{sweep>0.02&&<span style={{position:'absolute',inset:0,background:`${C.white}${Math.round(0.18*sweep*255).toString(16).padStart(2,'0')}`,pointerEvents:'none'}}/>}<span>{ln.k}</span><span>{ln.text}</span></div>;
@@ -305,7 +286,7 @@ export const SkeletonCard:React.FC<{
 }> = ({x,y,w,h,rows=3,start=0,revealAt=60,frame,children})=>{
   const f = frame;
   const shown = f>=revealAt, p = shown?popS(f,revealAt,'soft'):0;
-  // 等待中的骨架：呼吸幅度 ±5%、周期约 60 帧。原来的 0.55±0.25 读作「闪灯」而不是「在等」。
+  // 等待中的骨架：呼吸幅度 ±5%、周期约 60 帧（幅度再大就读作「闪灯」而不是「在等」）。
   const pulse = 0.9+0.05*Math.sin(f*0.048);
   return <div style={{position:'absolute',left:x,top:y,width:w,height:h,background:'#ffffff',border:`2.5px solid ${C.ink}`,borderRadius:10,boxShadow:`3px 3px 0 ${C.ink}`,padding:20,overflow:'hidden',opacity:popS(f,start,'soft')}}>
     {!shown&&<div style={{display:'flex',flexDirection:'column',gap:12,opacity:pulse}}>{Array.from({length:rows}).map((_,i)=><div key={i} style={{height:22,borderRadius:6,background:'#e8e2d6',width:`${92-hash01(i)*30}%`}}/>)}</div>}

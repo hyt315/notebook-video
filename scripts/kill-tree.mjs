@@ -1,5 +1,5 @@
 /**
- * kill-tree.mjs — 连子进程树一起结束（P1-14）
+ * kill-tree.mjs — 连子进程树一起结束
  *
  * 为什么需要单独一个文件：`child.kill('SIGKILL')` 在 Windows 上是 TerminateProcess，
  * 只结束**直接子进程**；它再拉起的进程（Remotion 的 Chrome Headless、ffmpeg、分段渲染的子 node）

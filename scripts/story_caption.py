@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""story_caption.py — compose-story 的「字幕怎么切、每句多久」（P2-24 第二切片）
+"""story_caption.py — compose-story 的「字幕怎么切、每句多久」
 
 从 `compose-story.py` 切出的第三块（前两块：`story_camera.py` 取景、`story_text.py` 文字）。
 切它的理由同样是**变化原因**：字幕行宽、断点规则、朗读速度、标点停顿是一类改动；
@@ -12,7 +12,7 @@
     时间轴怎么衔接镜头（`compose-story.build` 的 `LINE_GAP_MS` / `SHOT_GAP_MS`）。
   - **状态**：`_RULE` 是断点规则模块的缓存（由 `setup_break_rule(project)` 装载），只增不减；
     `CPS` / `CHAR_MS` 是运行期可变的（`--cps` / story.cps），**只能通过 `set_cps()` 改**——
-    外部直接赋值会让 `time_cue` 读到旧值，这正是把常量搬进模块时最容易踩的坑。
+    外部直接赋值会让 `time_cue` 读到旧值。
 """
 from __future__ import annotations
 
@@ -55,7 +55,7 @@ def parse_line(raw: str):
 
 
 # 断点规则与 validate-semantic-breaks 同一份（build-semantic-captions.py 里的 BudouX + 避头尾 + ASCII 词内不断）。
-# 找得到 BudouX（工程 node_modules）就用它挑断点，保证拆出来的行一定过语义断点门禁（弱模型实测补上的）。
+# 找得到 BudouX（工程 node_modules）就用它挑断点，保证拆出来的行一定过语义断点门禁。
 _RULE = {"mod": None, "node": None, "root": None, "cache": {}}
 
 
@@ -123,13 +123,18 @@ def split_caption(text: str, terms: list, protected: list[str]):
     n = len(text)
     legal = legal_breaks(text)
     ok = (lambda i: i in legal) if legal is not None else (lambda i: True)
-    cands = [i + 1 for i, ch in enumerate(text[:-1]) if ch in "，、；：,;:" and i + 1 not in banned and ok(i + 1)]
+    cands = [i + 1 for i, ch in enumerate(text[:-1]) if ch in "，、；：,;:" and i + 1 not in banned and ok(i + 1)
+             and line_len(text[:i + 1]) >= 5 and line_len(text[i + 1:]) >= 5]
     if not cands:
         cands = [i for i in range(2, n - 1) if i not in banned and text[i] not in PUNCT and ok(i)]
     if not cands:
         cands = [i for i in range(2, n - 1) if i not in banned and text[i] not in PUNCT]
+    if not cands:
+        return [(text, terms)]
     mid = n / 2
-    cut = min(cands, key=lambda i: (line_len(text[:i]) > MAX_CHARS) + (line_len(text[i:]) > MAX_CHARS) * 1 + abs(i - mid) / n)
+    _hang = set("的了着过要从在把被将和与或及对向让给")
+    cut = min(cands, key=lambda i: (line_len(text[:i]) > MAX_CHARS) + (line_len(text[i:]) > MAX_CHARS)
+              + (2.0 if text[:i].rstrip()[-1:] in _hang else 0.0) + abs(i - mid) / n)
     a, b = text[:cut], text[cut:]
     lead = len(b) - len(b.lstrip())
     b = b.lstrip()

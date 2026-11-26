@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""validate-fusion.py · 「手账页承载 + 组件讲概念」配比门禁（3.6.0）
+"""validate-fusion.py · 「手账页承载 + 组件讲概念」配比门禁
 
 它回答两件事，都是成片评审里最刺眼的：
   · 讲细胞，全片没有一张细胞图（只有组件卡片在讲）；
   · 反过来，全片都是手账页，概念其实一句没讲清。
 
-3.6.0 改口径：**线稿不再是主线**。实测（cell 片 vs 线稿样张）线稿当解释图时
-画面像剪贴画，比不画更差；讲解视频需要的是「一页有人在研究的手账」——
+口径：**线稿不是主线**。线稿当解释图时画面像剪贴画，比不画更差；讲解视频需要的是「一页有人在研究的手账」——
 真图版 / 标本 + 手写批注，再由组件把概念讲透。所以：
   手账页（layout=page）  = 承载：演示某件事、给你看那个真东西
   组件（flow/compare/…） = 讲解：把概念拆开、对比、算清
@@ -19,7 +18,7 @@
   P1  手账页 > 75%：变成图册，概念没有讲清的部分。
   P1  组件 < 25%：概念靠什么讲？手账页只负责「看」，不负责「懂」。
   P1  「简笔线稿当解释图」> 20%（layout=statement/define + sketch、且不是手账页）：
-      实测这种镜头比不画更差；要么换成手账页放真素材，要么删掉线稿只留文字。
+      这种镜头比不画更差；要么换成手账页放真素材，要么删掉线稿只留文字。
   P1  锤子帧 > 3。
   P1  see 写成了文字描述（以「出现/显示」开头，或含「字幕/文字」）。
 
@@ -119,7 +118,7 @@ def main() -> int:
     text_share = share(lambda sid, s: s.get("layout") in TEXT_LAYOUTS and s.get("recipe") != "hammer")
     typeface_share = share(lambda sid, s: s.get("layout") in TYPEFACE_LAYOUTS and s.get("recipe") != "hammer")
     component_share += typeface_share
-    # 线稿当解释图：文字版式里塞一张简笔插画。实测比不画更差（P2 样张 / cell 片对比）
+    # 线稿当解释图：文字版式里塞一张简笔插画，比不画更差
     sketch_as_explainer = share(lambda sid, s: s.get("layout") in TEXT_LAYOUTS
                                 and s.get("sketch") and s.get("layout") not in PAGE_LAYOUTS
                                 and s.get("recipe") != "hammer")
@@ -218,6 +217,24 @@ def main() -> int:
                           "component": round(component_share, 3), "typeface": round(typeface_share, 3), "text": round(text_share, 3),
                           "annotated": round(annotated_share, 3),
                           "sketch_as_explainer": round(sketch_as_explainer, 3)}}
+    # 反 PPT 录屏感与反版式同质化（审美 P1，不拦存量）
+    ordered = list(shots.items())
+    text_run, max_run, run_ids, best_ids = 0, 0, [], []
+    for sid, s in ordered:
+        lay = str(s.get("layout") or "").split("-")[0]
+        if lay in (TEXT_LAYOUTS | TYPEFACE_LAYOUTS | {"list"}):
+            text_run += 1; run_ids.append(sid)
+            if text_run > max_run:
+                max_run, best_ids = text_run, list(run_ids)
+        else:
+            text_run, run_ids = 0, []
+    if max_run >= 4:
+        p1.append(f"连续 {max_run} 镜全为纯文字（{'/'.join(best_ids)}），易产生 PPT 录屏感 —— 插入手账页 / 图表 / 流程 / 代码打破单调")
+    if len(ordered) >= 6:
+        base_lays = sorted({str(s.get("layout") or "").split("-")[0] for _, s in ordered if s.get("layout")})
+        if len(base_lays) < 3:
+            p1.append(f"全片 {len(ordered)} 镜仅用到 {len(base_lays)} 种版式（{', '.join(base_lays)}），视觉结构高度同质化 —— 建议 ≥3 种版式交替")
+
     return finish("validate-fusion", p0, p1, "manifests/shots.resolved.json",
                   payload=payload if a.json else None, notes=notes,
                   header=f"validate-fusion · 模式 {mode}（{rule['why']}）· 手账页 {page_share:.0%} · 组件 {component_share:.0%}（含直书 {typeface_share:.0%}）· 纯文字 {text_share:.0%}"

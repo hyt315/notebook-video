@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """validate-elem-kinds.py · 元素种类必须在渲染器里真有实现
 
-为什么需要这条门禁（3.6.2，实测漏过一次）：
-`flow` 版式生成 `kind: "node"` 的节点。`auto.tsx` 的 `ElemView` 早期只处理到
+为什么需要这条门禁：
+`flow` 版式生成 `kind: "node"` 的节点。若 `auto.tsx` 的 `ElemView` 只处理到
 `archive / lettering / stamp / handnote / loupe / figure / media / region`，
-**没有 `node`** → switch 落到 default 返回 null，节点整个不画；
-后来加了 `case 'node'` 又把 `Box` 的 CSS 写成了非法的 `inset: 0, border: ..., border: ...`，
-React 抛 error #130，整片渲染在第 566 帧直接失败。
+**没有 `node`** → switch 落到 default 返回 null，节点整个不画；分支里写了非法 CSS 时，
+React 抛错，整片渲染中途失败。
 
-两次都是「排版器生成了一个渲染器不认识的 kind」。片长几十秒，`--stills` 只截前几镜，
-`validate-fusion` / `validate-composition` / `validate-opening` 全都不看这个，于是整片渲染
-才发现——那时已经跑了几分钟。
+这类都是「排版器生成了一个渲染器不认识的 kind」。`--stills` 只截前几镜，
+`validate-fusion` / `validate-composition` / `validate-opening` 全都不看这个，要到整片渲染
+才发现。
 
 判据很窄，只做一件事：**compose-story 能产出的每一种 `kind`，`auto.tsx` 里必须有对应的
 `case '<kind>'`**。两个方向都读源码，不引入运行期依赖。
@@ -48,7 +47,7 @@ def kinds_emitted(*sources: str) -> set[str]:
     逐个 `el(` 起头扫描括号深度，避免正则跨过嵌套的 `el(...)` 或把参数里的字符串当 id。
     一行里两次 el 调用很常见（`els += [el(...), el(...)]`），所以不能只按行切。
 
-    P2-24 第四切片起版式在 `story_layout.py`（主文件只剩流水线），所以要接受多份源码拼着扫。
+    版式在 `story_layout.py`（主文件只剩流水线），所以要接受多份源码拼着扫。
     """
     compose_src = "\n".join(sources)
     found: set[str] = set()
@@ -155,7 +154,7 @@ def check(project: Path) -> list[str]:
     auto = project / "src" / "auto.tsx"
     # 工程目录（new-project 会拷一份 compose 进 scripts/）与技能模板（compose 在技能根）
     # 两种布局都要能查：找不到工程内那份就退到技能自带的这份。
-    # 版式在 story_layout.py（P2-24 起），主文件只剩 compose/build；旧工程可能只有前者。
+    # 版式在 story_layout.py，主文件只剩 compose/build；工程里拷的可能只有主文件。
     # 优先用工程里自带的那份（用户工程可能落后于技能），都没有才退到技能模板。
     here = Path(__file__).resolve().parent
     local = [project / "scripts" / "story_layout.py", project / "scripts" / "compose-story.py"]
@@ -196,7 +195,7 @@ def check(project: Path) -> list[str]:
 def stale_shots(project: Path) -> list[str]:
     """`src/shots.ts` 必须来自 `manifests/shots.json`。
 
-    实测踩过：手改 story.json 后只跑了 compose-story（只写 manifests/shots.json、
+    常见情形：手改 story.json 后只跑了 compose-story（只写 manifests/shots.json、
     src/story.ts），漏跑 resolve-shots，于是 `src/shots.ts` 还是**模板带来的 8 镜**，
     而 story 里只有 3 镜。渲染器按 shots.ts 取镜号，`SCENES['S5']` 拿不到 → 白屏；
     storyboard 与片子对不上，静帧却是对的（前几镜号刚好重合），整片渲染才崩。

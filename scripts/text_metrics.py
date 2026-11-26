@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""text_metrics.py · 文字宽度的真源（P2-17）
+"""text_metrics.py · 文字宽度的真源
 
-排版端（compose）必须在**真实字体**上量字宽。此前用的是字符类系数
-（全角 1.0 / ASCII 0.56 / 空格 0.3），再叠一个 `LEAN = 1.06` 当保险——
-系数叠系数，换字体就失效，标点一多就切字。
+排版端（compose）必须在**真实字体**上量字宽。字符类系数（全角 1.0 / ASCII 0.56 / 空格 0.3）
+再叠一个保险系数，换字体就失效，标点一多就切字。
 
 本模块做三件事：
   1. 解析 TTF/OTF 的 cmap + hmtx，取出每个码点的**前进宽度**（em 为单位）；
   2. 把结果缓存成 `assets/fonts/metrics.json`（字体本体 12 MB 不入库，缓存可再生成）；
   3. 给出 `advance_em` / `text_width`，供 compose 的 `text_w` 调用。
 
-边界（P2-17 要求写清）：
+边界：
   - **compose 侧**（本模块）：字宽、折行、框高、字号收敛——只依赖前进宽度，真字体可解。
   - **浏览器侧**（fittext.tsx 的 measureText）：字距、hinting、复杂排版、最终 FitTextBox 复核。
     排版端估出的框给浏览器用，浏览器不推翻布局，只做最后一道 `fitChineseTextOnNLines`。
@@ -49,11 +48,11 @@ CACHE_RANGES = (
     RANGE_CJK_SYM, RANGE_HALFWIDTH, RANGE_HALFWIDTH2,
 )
 
-# 表意文字默认前进宽度（em）。解析后会用实测值覆盖/确认。
+# 表意文字默认前进宽度（em）。解析字体后会用真实值覆盖/确认。
 CJK_IDEO_DEFAULT = 1.0
 
 # 无字体、也无缓存时的最后一张表：**只**放字符类估算会错得离谱的标点
-# （实测 LXGW WenKai：破折号/省略号 1.0em，弯曲引号 0.35em——字符类会估成 0.56）。
+# （LXGW WenKai：破折号/省略号 1.0em，弯曲引号 0.35em——字符类会估成 0.56）。
 # 有真字体或缓存时这张表不用。宁可这张表粗一点，也不要用一个全局系数去乘。
 FALLBACK_PUNCT = {
     ord("—"): 1.0, ord("…"): 1.0, ord("†"): 1.0, ord("‡"): 1.0,
@@ -181,7 +180,7 @@ def parse_font(path: Path | str) -> FontMetrics:
     cmap = _parse_cmap(data, tables["cmap"][0])
     advances: dict[int, float] = {}
     # gid ≥ numberOfHMetrics 的字形没有自己的前进宽度，按规范沿用最后一条（等宽尾段）；
-    # 以前直接跳过，LXGW 的 U+1D5B/U+1DBB 因此退成 0.56 估算（与 fontTools 对照查出，scripts/dev/compare-text-metrics.py）
+    # （跳过的话，LXGW 的 U+1D5B/U+1DBB 这类字形会退成 0.56 估算）
     last = advances_by_gid[-1] if advances_by_gid else 0
     for cp, gid in cmap.items():
         advances[cp] = (advances_by_gid[gid] if gid < len(advances_by_gid) else last) / units_per_em

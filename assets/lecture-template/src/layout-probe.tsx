@@ -15,6 +15,9 @@ import {cancelRender, continueRender, delayRender} from 'remotion';
 //      此后 release() 一律空转（handle 永不释放），blocked 之后异常原样抛出。
 // ============================================================================
 
+/** 覆盖率日志间隔（帧）：门禁每隔这么多帧报一次「量过、无问题」，日志里没有它 = 没跑。 */
+export const REPORT_EVERY = 150;
+
 /** 测量回调收到的控制柄：block(msg) 硬拦（先由门禁自己 console.warn 出声，再调它）。 */
 export type ProbeControl = {block: (msg: string) => never};
 

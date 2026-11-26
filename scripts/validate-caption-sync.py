@@ -11,6 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gate_report import emit  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
+from story_caption import MAX_CHARS  # noqa: E402  上限与生成端同源（contract.json）
+from story_text import cap_chars  # noqa: E402  字幕行长唯一口径（CaptionFitGate 的 captionChars 与之同义）
 
 
 def normalized(text: str) -> str:
@@ -26,9 +28,9 @@ def main() -> None:
     parser.add_argument("tts_words_json", type=Path)
     parser.add_argument("caption_cues_json", type=Path)
     parser.add_argument("--max-lead-ms", type=int, default=80)
-    parser.add_argument("--max-chars", type=int, default=16,
-                        help=" characters per subtitle line after stripping trailing punctuation (0 = off)")
-    # 3.3.0 单条字幕在屏时长（到下一条出现为止；最后一条不查）：Netflix 通用字幕要求最短 5/6 s、最长 7 s
+    parser.add_argument("--max-chars", type=int, default=MAX_CHARS,
+                        help="characters per subtitle line after stripping trailing punctuation (0 = off)")
+    # 单条字幕在屏时长（到下一条出现为止；最后一条不查）：Netflix 通用字幕要求最短 5/6 s、最长 7 s
     # （https://partnerhelp.netflixstudios.com/hc/en-us/articles/215758617）。短于下限读不完 = 失败；长于上限只警告。
     parser.add_argument("--min-cue-sec", type=float, default=0.83, help="minimum on-screen seconds per cue (0 = off)")
     parser.add_argument("--max-cue-sec", type=float, default=7.0, help="warn above this many on-screen seconds per cue (0 = off)")
@@ -54,7 +56,7 @@ def main() -> None:
         joined = "".join(str(word["part"]) for word in words)
         if normalized(joined) != normalized(str(cue.get("text", ""))):
             failures.append(f"cue {index}: text differs from its TTS words")
-        n = len(re.sub(r"[，。！？；：、,.!?;:\s]+$", "", normalized(str(cue.get("text", "")))))
+        n = cap_chars(str(cue.get("text", "")))
         if args.max_chars > 0 and n > args.max_chars:
             failures.append(f"cue {index}: {n} characters > {args.max_chars} per line ({cue.get('text')!r}); "
                             f"re-run build-semantic-captions.py (it splits at legal breaks) or shorten the line")

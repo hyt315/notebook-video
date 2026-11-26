@@ -11,6 +11,8 @@ import {RevealMask} from './insert';
 import {Callout, Checklist} from './toolkit';
 import {FitTextBox, StatRow, VerdictBar} from './components';
 import {SHOTS} from './shots';
+import {REVEAL_BLEED} from './glyph-snap';
+import {clamp, easeIO, easeOut} from './motion';
 
 // ============================================================================
 // 官方模板场景层 · 「GitHub 开源三部曲 EP0」（8 镜 / 4 骨架 / 5 种镜头意图）
@@ -20,25 +22,24 @@ import {SHOTS} from './shots';
 //
 // 两条时序铁律：
 //   1. 元素出现帧绑定到"讲到它的那一句"（SHOTS.Sx.beats），禁止开头一次性铺完；
-//   2. 出现统一 enterAt()：左→右展开 22 帧，线性（3.5.1 草稿纸；见 references/draftpaper.md#reveal-rules）。
+//   2. 出现统一 enterAt()：左→右展开 22 帧，线性（草稿纸；见 references/draftpaper.md#reveal-rules）。
 //
 // 几何：内容留在 [80,1840] × [80,930]；带平移的镜头再内缩平移预算。
 // ============================================================================
 
 const C = THEME.palette;
-const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
-const easeOut = (f: number, a: number, b: number, from = 0, to = 1) => interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.bezier(0.16, 1, 0.3, 1)});
-const easeIO = (f: number, a: number, b: number, from = 0, to = 1) => interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.inOut(Easing.cubic)});
 
 const IN = 22;
-/** 出现（3.5.1 草稿纸）：左→右展开 22 帧，线性；不淡入、不上浮、不缩放。所有元素统一用它。见 references/draftpaper.md#reveal-rules */
+/** 出现（草稿纸）：左→右展开 22 帧，线性；不淡入、不上浮、不缩放。所有元素统一用它。见 references/draftpaper.md#reveal-rules */
+// 竖直方向不是展开方向，裁切框上下放开到整个画面高：有的包裹层只负责定时、高度为 0
+// （里面是绝对定位的 DiffView 等），按百分比留边会把内容整块裁掉，直到落定才一下子出现。
 const enterAt = (f: number, at: number): React.CSSProperties => {
   const p = interpolate(f, [at, at + IN], [0, 1], {...clamp, easing: Easing.linear});
   if (p <= 0) return {opacity: 0};
-  return {clipPath: `inset(-4% ${((1 - p) * 100).toFixed(2)}% -4% -2%)`};
+  if (p >= 1) return {};   // 落定后不裁：盒外的阴影与描边要完整
+  return {clipPath: `inset(-1080px calc(${((1 - p) * 100).toFixed(2)}% - ${(p * REVEAL_BLEED).toFixed(2)}px) -1080px calc(-2% - ${REVEAL_BLEED}px))`};
 };
-// 原来这里还有一个 exitAt()，本文件从未调用（tsc TS6133）：各镜的离场要么交给
-// RevealMask/ShotCamera，要么写成行内表达式，没有一处用得上它。
+// 各镜的离场交给 RevealMask/ShotCamera 或写成行内表达式，这里不提供 exitAt()。
 type Entry = 'rise' | 'slide' | 'fade' | 'zoom';
 const useEntry = (f: number, entry: Entry) => {
   const p = easeOut(f, 0, IN);
@@ -51,14 +52,14 @@ const useEntry = (f: number, entry: Entry) => {
 
 /**
  * 每镜外壳：受限相机 + 入场 + 可选揭示转场。
- * 3.2.0 起**不再**铺整幅半透明羽化底托：它盖住了背景四角的角色与装饰，把吉祥物洗成"幽灵"。
+ * **不再**铺整幅半透明羽化底托：它盖住了背景四角的角色与装饰，把吉祥物洗成"幽灵"。
  * 背景图的中央约 70% 本身就是安静的安全区；内容真压到装饰区时，按 readability 规则单独用
  * CoverPanel（tone='paper'）垫那一块。
  */
 const Shot: React.FC<{id: keyof typeof SHOTS; f: number; entry: Entry; reveal?: boolean; children: React.ReactNode}> = ({id, f, entry, reveal, children}) => {
   const s = SHOTS[id];
   const e = useEntry(f, entry);
-  // 不再在镜末淡到全透明：那会在镜头边界留下 1–2 个空帧（逐帧审计实测）。
+  // 镜末不淡到全透明：那会在镜头边界留下 1–2 个空帧。
   // 交接由 index.tsx 的 FinalDemo 负责——下一镜开始时把上一镜的末帧叠在上面淡出。
   const body = (
     <div style={{position: 'absolute', inset: 0, opacity: e.opacity, transform: e.transform}}>
@@ -154,7 +155,8 @@ const S2ThreeSteps: React.FC<{f: number}> = ({f}) => {
       <div style={{position: 'absolute', left: 300, top: 690, width: 1320, textAlign: 'center', ...enterAt(f, t0 + 30)}}>
         <div style={{fontSize: TYPE.titleM, fontWeight: 700, color: C.muted}}>想入场，其实只要三步</div>
       </div>
-      <div style={{position: 'absolute', left: 1360, top: 640, ...enterAt(f, t0 + 48)}}><StampSeal text="三步" x={0} y={0} size={130} frame={f} start={t0 + 48} color={C.orange} /></div>
+      {/* 印章自带「压下」入场（压章），外层不再套展开裁切：这一层是 0×0 的定位盒，裁切会把整个印章藏到落定 */}
+      <div style={{position: 'absolute', left: 1360, top: 640}}><StampSeal text="三步" x={0} y={0} size={130} frame={f} start={t0 + 48} color={C.orange} /></div>
     </Shot>
   );
 };
@@ -182,8 +184,7 @@ const S3FirstPr: React.FC<{f: number}> = ({f}) => {
           </div>
         </div>
       </ZoomStage>
-      {/* 这里原来多传了一个 `f={f}`：FitCard 不认这个 prop（它要的是 frame/start），
-          React 会把未知 prop 静默丢掉 —— tsc TS2322 才把它翻出来。 */}
+      {/* FitCard 取 frame/start，不认 `f`（未知 prop 会被 React 静默丢掉）。 */}
       <FitCard x={1250} y={240} w={510} h={300} pad={24} frame={f} borderColor={C.orange} style={enterAt(f, at(1, 10))}>
         <div style={{fontSize: TYPE.labelL, fontWeight: 700, color: C.muted}}>第一次参与的路径</div>
         {/* 三步路径＝一份清单，交给 Checklist（带序号圆牌），不再手写行 */}
@@ -283,7 +284,7 @@ const S6Skills: React.FC<{f: number}> = ({f}) => {
       <div style={{position: 'absolute', left: 300, top: 676, width: 1320, textAlign: 'center', ...enterAt(f, t0 + 30)}}>
         <div style={{fontSize: TYPE.titleM, fontWeight: 700, color: C.muted}}>这三步，我做成了三个 AI 技能</div>
       </div>
-      <div style={{position: 'absolute', left: 1380, top: 620, ...enterAt(f, t0 + 52)}}><StampSeal text="三个技能" x={0} y={0} size={130} frame={f} start={t0 + 52} color={C.blue} /></div>
+      <div style={{position: 'absolute', left: 1380, top: 620}}><StampSeal text="三个技能" x={0} y={0} size={130} frame={f} start={t0 + 52} color={C.blue} /></div>
     </Shot>
   );
 };
@@ -297,7 +298,7 @@ const S7Agent: React.FC<{f: number}> = ({f}) => {
       <ZoomStage x={210} y={220} w={1000} h={560} f={f} focus={{fx: 0.5, fy: 0.5}} zoom={1.24}
         contentW={920} contentH={340}
         at={{focus: at(0), annotate: at(0) + 40, back: at(0) + 96}} label="让智能体陪你走完全程">
-        {/* 3.5.2：纸面在讲到的前 8 帧才展开，不再开镜就摆一张空纸 */}
+        {/* 纸面在讲到的前 8 帧才展开，不再开镜就摆一张空纸 */}
         <div style={{position: 'absolute', inset: 0, padding: 30, background: C.paper, ...enterAt(f, at(0) - 8)}}>
           <CardHead icon="user" text="与智能体协作" />
           <div style={{position: 'absolute', left: 30, top: 92}}>
@@ -309,7 +310,7 @@ const S7Agent: React.FC<{f: number}> = ({f}) => {
           </div>
         </div>
       </ZoomStage>
-      {/* 3.5.2：卡片整张在讲到时展开，不再先摆 60 帧灰色骨架条 */}
+      {/* 卡片整张在讲到时展开，不再先摆 60 帧灰色骨架条 */}
       <div style={{position: 'absolute', left: 1250, top: 320, width: 510, ...enterAt(f, at(0, 80))}}>
         <SkeletonCard x={0} y={0} w={510} h={200} frame={f} start={at(0, 80)} revealAt={at(0, 80)} rows={2}>
           <div style={{display: 'flex', alignItems: 'center', gap: 12}}>

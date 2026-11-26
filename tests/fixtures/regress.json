@@ -1,20 +1,18 @@
 {
  "examples/code-change-cache.story.json": {
-  "manifests/caption-cues.json": "9b4c471c873b6cbc1bea936cea9b505b94149af5c820a6eb9b04ad39cdc4ea5f",
+  "manifests/caption-cues.json": "0e314186643894b6bfa4d8eb315cd922c4060aad099aebc2172531f0ce7aef37",
   "manifests/protected-caption-phrases.txt": "de99ff7bdd41002d37797fc96e4ab7e9a5aaed87eb8961aeed4a9e678223735a",
-  "manifests/shots.json": "b6a7b7da7c205de479283680378c18fc6c5a5cd1d0c4245abe5e19ab2526a060",
-  "manifests/shots.resolved.json": "8c65e1e6611d36136e7fe5b6d1a30e346fe91df96346e2fbe9ea9def14d7ae12",
+  "manifests/shots.json": "ba1f4974f35c7b9ce8a59953e40ca0c74cc98f09199094a58957a701372a9692",
+  "manifests/shots.resolved.json": "4da223e6ed8e98b470af06555ced91d614c2a40158f499786a4ed749f5a03d09",
   "narration.txt": "b98237e3c5b1faaba92bad9aebdddba8d9335c093ead6e74e1c8db70a17cf490",
   "src/film.ts": "84d5d0b5d8b8b1f1fc5a865f34e918940db12f8b9dcf5cc29c40115d587594b1",
   "src/scenes.tsx": "e13db802e3f90cea9d22a75510362c6f9e237e8eb29d611b1b4da048d9748336",
-  "src/shots.ts": "cb56f1b55faaa594548613a65a47c6447c5ee205917ba6e3ceaea1ba3124fa0a",
-  "src/story.ts": "e917468565980ab9cc408b9c0f8051fd2767032c72a1b42fcb045c14f803135e",
+  "src/shots.ts": "b7f796784cb2a894582b655933042c04df7bfa5558ba8a311e868843533862c5",
+  "src/story.ts": "0dd269b43687e18fb83b4753ca9633f52371194204a4e0f7e012e8c6d3e5ab3b",
   "validate-audio-levels.py": {
    "P0": 0,
-   "P1": 1,
-   "rules": [
-    "P1|音效密度 # 个/# 秒 >"
-   ]
+   "P1": 0,
+   "rules": []
   },
   "validate-backgrounds.py": {
    "P0": 0,
@@ -23,16 +21,20 @@
   },
   "validate-composition.py": {
    "P0": 0,
-   "P1": 8,
+   "P1": 12,
    "rules": [
     "P1|# 处变化间隔 ># 帧（#",
     "P1|# 处变化间隔在 #–#s（",
+    "P1|#/# 镜落在同一时长档（#",
     "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
     "P1|全片没有 ≤#s 的短镜；插",
     "P1|可选组件只用了 # 件（[]",
     "P1|最长/最短镜头仅 # 倍（#",
     "P1|镜长变异系数 # < #（平",
-    "P1|骨架指纹 ('Split',"
+    "P1|骨架指纹 ('Split',",
+    "P1|骨架指纹 ('Stage',",
+    "P1|骨架指纹 ('Zoom', "
    ]
   },
   "validate-elem-kinds.py": {
@@ -78,20 +80,32 @@
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 6,
+   "P1": 12,
    "rules": [
     "P1|S1",
+    "P1|S1",
     "P1|S3",
+    "P1|S4",
+    "P1|S5",
     "P1|S5",
     "P1|S6",
     "P1|S7",
-    "P1|S8"
+    "P1|S7",
+    "P1|S8",
+    "P1|S8",
+    "P1|全片仅 # 种镜头意图（不含"
    ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 3,
+   "P1": 9,
    "rules": [
+    "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|S6",
+    "P1|S7",
+    "P1|S8",
     "P1|S8",
     "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
@@ -99,21 +113,19 @@
   }
  },
  "examples/concept-hash-table.story.json": {
-  "manifests/caption-cues.json": "81c0b57f873c80e08e96747c6ea60e5c3d4e4991b96367ad1bff13b3fe360510",
+  "manifests/caption-cues.json": "bf9e67939e0406f9b00b221aa28d95efa9b3ade6844be5faccbde592d718d58c",
   "manifests/protected-caption-phrases.txt": "6672d01207516326695fd5ea6dc6179fca186eea2163385bbcc3ac7a6dda2700",
-  "manifests/shots.json": "f1dc3093d15b6169f9c806e09cb84e8ea72c0b7eb460be2d81fcf7782ac21c1c",
-  "manifests/shots.resolved.json": "8c39b32b8a3494c88721e7b21db42f614c2395c730aac9bf10c911a7bcfeef72",
+  "manifests/shots.json": "5da9adbf7af204d1d3639c338ce35783964c7df52aed95588c7aa162d811807f",
+  "manifests/shots.resolved.json": "553df55fd982ab98968a2db7b488ba396ad880213845eef683e5c166aae39606",
   "narration.txt": "68ff99bf39ed2ed928c33313409cbe2768ad59d2c4600ca79544d02b8b48598a",
   "src/film.ts": "2eb3206a43c5c4b1e2a933593a793d09edf7713721da850f6e65417e2f37ca03",
   "src/scenes.tsx": "528796fd4404d7deb0c6ccfbd56376b7393bec356754971912a1e01756fc2e2f",
-  "src/shots.ts": "68e408b7b1a77d8158ab241f7c154691aab2fbfcfe01e4770a7bf4e01a8ceab1",
-  "src/story.ts": "07de86898cb8a80c080f4be250fc94e25f440d7f47b5952c512f40e501b6538e",
+  "src/shots.ts": "8f4c2a692e2cbf5b88efa0a998e00c49892c67227560516076de9f5110b5d80a",
+  "src/story.ts": "d41492967d08caf168fa86e5ca2fba924108111ceaea5776670af9eb0b51efa0",
   "validate-audio-levels.py": {
    "P0": 0,
-   "P1": 1,
-   "rules": [
-    "P1|音效密度 # 个/# 秒 >"
-   ]
+   "P1": 0,
+   "rules": []
   },
   "validate-backgrounds.py": {
    "P0": 0,
@@ -122,15 +134,18 @@
   },
   "validate-composition.py": {
    "P0": 0,
-   "P1": 7,
+   "P1": 10,
    "rules": [
     "P1|# 处变化间隔在 #–#s（",
     "P1|#/# 镜落在同一时长档（#",
     "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
     "P1|全片没有 ≤#s 的短镜；插",
     "P1|可选组件只用了 # 件（[]",
     "P1|最长/最短镜头仅 # 倍（#",
-    "P1|镜长变异系数 # < #（平"
+    "P1|镜长变异系数 # < #（平",
+    "P1|骨架指纹 ('Split',",
+    "P1|骨架指纹 ('Stage',"
    ]
   },
   "validate-elem-kinds.py": {
@@ -176,21 +191,29 @@
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 6,
+   "P1": 11,
    "rules": [
     "P1|S1",
     "P1|S2",
     "P1|S3",
+    "P1|S3",
+    "P1|S4",
     "P1|S4",
     "P1|S5",
-    "P1|S6"
+    "P1|S5",
+    "P1|S6",
+    "P1|S6",
+    "P1|全片仅 # 种镜头意图（不含"
    ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 4,
+   "P1": 7,
    "rules": [
     "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|S6",
     "P1|turn_to_you_se",
     "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
@@ -200,13 +223,13 @@
  "examples/data-ssd-vs-hdd.story.json": {
   "manifests/caption-cues.json": "e29439d8b884387e259bfe98a3ebfef5ab2d86ce3ef7d6bea7659d50b320c4d9",
   "manifests/protected-caption-phrases.txt": "74aa6fee06220e07ef9184f02c355edc6f1d172e3a4a61961af5d61745b5000e",
-  "manifests/shots.json": "15375422778db061d504d157801960fdb4148c4a13bd369e1ed3d78c582e33d0",
-  "manifests/shots.resolved.json": "f64dbef3f9d58b9b7d9e2fb25006f0c12c1c0c94d9531abab1485465d1fd3867",
+  "manifests/shots.json": "29131e831a6368f2cfd7df227e5480adf08f9bd093f62ccc644c5708c6705030",
+  "manifests/shots.resolved.json": "cb4f1a774f26a10570c066c51ed6f69c296ad5026ad72a2d1975c1132ad962ac",
   "narration.txt": "3482bb5cd7ad72473e45911d890c2610705d8da67a2c8095a2af50c41b060836",
   "src/film.ts": "865cadc9fc7d50a970e189000677aef714d96717a1f27346ff68fba2292f71e4",
   "src/scenes.tsx": "528796fd4404d7deb0c6ccfbd56376b7393bec356754971912a1e01756fc2e2f",
-  "src/shots.ts": "e1741a71567059704c74c0955feb5d6bc0c327857ae477c01f1d8e3595e78ccc",
-  "src/story.ts": "04a032944fa2f47f279bca9b4cf971d27014add2c2fceaaffb7d764d85013300",
+  "src/shots.ts": "11da6ef1fd46a900a86f3c02e3305c84b63fcfcd7790018a3442d32f475c0cd4",
+  "src/story.ts": "5f93bb459b959749014864cb6999a4102d509e457998f9c3c835a9983e618c63",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -219,16 +242,18 @@
   },
   "validate-composition.py": {
    "P0": 0,
-   "P1": 8,
+   "P1": 10,
    "rules": [
     "P1|# 处变化间隔 ># 帧（#",
     "P1|# 处变化间隔在 #–#s（",
     "P1|#/# 镜落在同一时长档（#",
     "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
     "P1|全片没有 ≤#s 的短镜；插",
     "P1|可选组件只用了 # 件（[]",
     "P1|最长/最短镜头仅 # 倍（#",
-    "P1|镜长变异系数 # < #（平"
+    "P1|镜长变异系数 # < #（平",
+    "P1|骨架指纹 ('Stage',"
    ]
   },
   "validate-elem-kinds.py": {
@@ -274,20 +299,29 @@
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 5,
+   "P1": 11,
    "rules": [
     "P1|S1",
+    "P1|S1",
+    "P1|S2",
+    "P1|S4",
     "P1|S4",
     "P1|S5",
+    "P1|S5",
     "P1|S6",
-    "P1|S6"
+    "P1|S6",
+    "P1|S6",
+    "P1|全片仅 # 种镜头意图（不含"
    ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 4,
+   "P1": 7,
    "rules": [
     "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|S6",
     "P1|turn_to_you_se",
     "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
@@ -297,13 +331,13 @@
  "examples/negative/rocket-components-only.story.json": {
   "manifests/caption-cues.json": "4e4d2c76fa93edce8b4f45c096bb9254d5c5955ef053a40c6b90ffb30a739559",
   "manifests/protected-caption-phrases.txt": "857e1f6beba316bbcf11ba93bf2142d8bf993709914f50ae55cd16e39afecd7c",
-  "manifests/shots.json": "b01ccc3fec5b4609cc4f48f8fd9f5428cef76fabd244d24ccc47e2fa9b08c27d",
-  "manifests/shots.resolved.json": "956ba2445c99f4c31298472454483dba35910acea5e40d15989d4c1791e3cf47",
+  "manifests/shots.json": "8a96d85882cf9a2fe9d8b021e86beb15ec7f78cdfb28d49f7dec992c9ec1dd66",
+  "manifests/shots.resolved.json": "42daf0845eea4eb039917a2b969f72ae1fe26b78e324e06cc6c470c0b740bc35",
   "narration.txt": "df8ba6323f58fa8770dfe2c0e050b4938183fc3b00ac34a6a73cd484e5ed7b16",
   "src/film.ts": "23471f68f61be9da919c9f00f1d72d8ad14be2ff044c03a4e18784836820f2f1",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "202a9197db3d596dfb6952bfac787d51258113b51c3cbc289f6fa5e41f080a25",
-  "src/story.ts": "958a1aeb7a26135ac62a90ad4606fe690017041e5baaba108b50c2612dd29e4c",
+  "src/shots.ts": "08346bb5181ba3fa029ea356d8ec930823c6c16291acb5109cbcb494aa7b9498",
+  "src/story.ts": "5118f6ebafb765afc718d49784c1c7f3620a69fa0c28b6dd64da6286a0ff1fe6",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -316,10 +350,11 @@
   },
   "validate-composition.py": {
    "P0": 0,
-   "P1": 5,
+   "P1": 6,
    "rules": [
     "P1|# 处变化间隔在 #–#s（",
     "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
     "P1|可选组件只用了 # 件（[]",
     "P1|最长/最短镜头仅 # 倍（#",
     "P1|镜长变异系数 # < #（平"
@@ -369,20 +404,25 @@
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 4,
+   "P1": 6,
    "rules": [
     "P1|S1",
     "P1|S3",
     "P1|S4",
-    "P1|S4"
+    "P1|S4",
+    "P1|全片仅 # 次运镜，按片长 ",
+    "P1|全片仅 # 种镜头意图（不含"
    ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 3,
+   "P1": 6,
    "rules": [
     "P1|S1",
+    "P1|S2",
+    "P1|S3",
     "P1|turn_to_you_se",
+    "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
    ]
   }
@@ -390,13 +430,13 @@
  "examples/real-media/git-pr.story.json": {
   "manifests/caption-cues.json": "a5fcd9dbcc09c89d4115f6a9fb8ffbaff409baee3bd34f150948a34ed52437e6",
   "manifests/protected-caption-phrases.txt": "4608079b2084891ba25330ad2d7f5f0d2fa0ec1ca54662cc268d8edb5578a3bb",
-  "manifests/shots.json": "c0d5cdc404300e1e3b26b37ac4e6a30319ecd5f40938e7de28323e73fb780960",
-  "manifests/shots.resolved.json": "a44bf484ddf84b6389b74567bf80f0f3208cd46bd479d4dbd392839ad1ccd1b9",
+  "manifests/shots.json": "3ec173e3e66795552dc4aeb04737483917d6831590dbccff4bfbdc8d7b0d068c",
+  "manifests/shots.resolved.json": "23648aee7d6379c108c8047ed48a8107c31bddbb507297078c7c19a5d211a54f",
   "narration.txt": "50e93faa60e9046ee484e2d63b47b179a9052746b5ee59481f57c8e47562d49b",
   "src/film.ts": "fd71b96427d3a18f8b72b4ae73b1aa03a011624c21ebafe75baab3aa7b209aff",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "8c55acfd5e6c67ce625dbe90bc9d78cf739236b0774629c0061532bda7cfec99",
-  "src/story.ts": "b12cc026c5ca6a452a0fedc6ad7c89918ee95149803e58c848fe0dd30b60a93e",
+  "src/shots.ts": "ed5e4cde4e4acbcea4284dece88e2120dd619565839a4ed2ebc98f1a4024e2e3",
+  "src/story.ts": "8602040d4a200d1b1a1c0d7a5be67934fa158e783c3ded05720a141529c854f8",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -409,9 +449,10 @@
   },
   "validate-composition.py": {
    "P0": 0,
-   "P1": 3,
+   "P1": 4,
    "rules": [
     "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
     "P1|可选组件只用了 # 件（[]",
     "P1|镜长变异系数 # < #（平"
    ]
@@ -458,19 +499,24 @@
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 5,
+   "P1": 7,
    "rules": [
     "P1|S1",
     "P1|S3",
     "P1|S3",
     "P1|S4",
-    "P1|S4"
+    "P1|S4",
+    "P1|全片仅 # 次运镜，按片长 ",
+    "P1|全片仅 # 种镜头意图（不含"
    ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 3,
+   "P1": 6,
    "rules": [
+    "P1|S1",
+    "P1|S2",
+    "P1|S3",
     "P1|turn_to_you_se",
     "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
@@ -480,561 +526,13 @@
  "examples/recipes/annotated.story.json": {
   "manifests/caption-cues.json": "edad7aa0916bf9e1ca31d2dc08936560c5e8c53de2b466007bbb0c926e8f4e25",
   "manifests/protected-caption-phrases.txt": "9764e152eb788b9a2b192192e44b053db734165f63922788545adc2f4e1a24db",
-  "manifests/shots.json": "79811518b793093c8f0642478752fac4014b99abc0c50f7b8348b9d7ce2d2858",
-  "manifests/shots.resolved.json": "3c4e247286d71f4f2ab373e7a56e654ff2be79e78a753292e069db14a56025cd",
+  "manifests/shots.json": "c7bd11be3e97a2c93f5a48168937a45b4ef377d6fb09d1520c97f856f694f449",
+  "manifests/shots.resolved.json": "14f4f8f22955d3ddb7e6152c560476655cdd28e181bbec2334c133eccb6e9881",
   "narration.txt": "a21cc7f1845ccab0ca5c46130e31eee0bac9e6560bac37d32db3b46ce74486de",
   "src/film.ts": "aeb67c28f0dcb1399b01a5e0e535f30a341e6cf5f20bac889d5e9ca722c46bb2",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "ef80a1208eac48787da7e5f91edbb3067e739b028cb7bcb7008287bf4c508002",
-  "src/story.ts": "91a4604f1f886690fafcc8d6a0610de60c3546232152b41e29a4600839b41d85",
-  "validate-audio-levels.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-backgrounds.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-composition.py": {
-   "P0": 0,
-   "P1": 7,
-   "rules": [
-    "P1|#/# 镜落在同一时长档（#",
-    "P1|全片仅 # 种转场，建议 ≥",
-    "P1|全片没有 ≤#s 的短镜；插",
-    "P1|可选组件只用了 # 件（[]",
-    "P1|最长/最短镜头仅 # 倍（#",
-    "P1|镜长变异系数 # < #（平",
-    "P1|骨架指纹 ('Stage',"
-   ]
-  },
-  "validate-elem-kinds.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-fusion.py": {
-   "P0": 0,
-   "P1": 3,
-   "rules": [
-    "P1|[hybrid] 手账页只占",
-    "P1|「文字 + 简笔线稿」镜头占",
-    "P1|纯文字镜头占 #% > #%"
-   ]
-  },
-  "validate-glyphs.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-media.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-opening.py": {
-   "P0": 0,
-   "P1": 2,
-   "rules": [
-    "P1|O# 前 # 秒只有 # 个",
-    "P1|O# 第一个可见事件在第 #"
-   ]
-  },
-  "validate-presentation.py": {
-   "P0": 0,
-   "P1": 4,
-   "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
-    "P1|全片只用到 # 种叙事动作（"
-   ]
-  },
-  "validate-shot-motion.py": {
-   "P0": 0,
-   "P1": 1,
-   "rules": [
-    "P1|S2"
-   ]
-  },
-  "validate-treatment.py": {
-   "P0": 0,
-   "P1": 5,
-   "rules": [
-    "P1|S2",
-    "P1|S4",
-    "P1|turn_to_you_se",
-    "P1|招牌镜头 S# 既没真推（#",
-    "P1|还没有独立评审（review"
-   ]
-  }
- },
- "examples/recipes/cork-page.story.json": {
-  "manifests/caption-cues.json": "376cf07ca2fde4f92432cc729a0e6cbb850af4202493715fb267c11b878b31d2",
-  "manifests/protected-caption-phrases.txt": "1fcfb8b448c7b101ca55a75f91fa25008c3a6a99350f6504f0261747789c6a44",
-  "manifests/shots.json": "1669542272e8c24007c9a73c3300bf3e5d152bfdc8656305ea0db4f535d93238",
-  "manifests/shots.resolved.json": "7ab92ad0c616ee3ff060338c5fb529482d3321460eac6a18d7313ce15dd0f1b5",
-  "narration.txt": "1ad11579bd54bff5eae9a4f7ab2f65830bdee04e9227a46821ee1df3d9e26490",
-  "src/film.ts": "f80d3de03addeeaed63f72c199556c1d31465ac9257b9ad35102d84ca4c497a8",
-  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "bc113e8493c795dfbada3ffbb505d591f3aae4cfe480105620b2ccbd6d2fdf43",
-  "src/story.ts": "c047c69082aa8db64e279482cc63601f7ccc33148c42d429e93f125307193bf9",
-  "validate-audio-levels.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-backgrounds.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-composition.py": {
-   "P0": 0,
-   "P1": 7,
-   "rules": [
-    "P1|# 处变化间隔在 #–#s（",
-    "P1|#/# 镜落在同一时长档（#",
-    "P1|全片仅 # 种转场，建议 ≥",
-    "P1|全片没有 ≤#s 的短镜；插",
-    "P1|可选组件只用了 # 件（[]",
-    "P1|最长/最短镜头仅 # 倍（#",
-    "P1|镜长变异系数 # < #（平"
-   ]
-  },
-  "validate-elem-kinds.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-fusion.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-glyphs.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-media.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-opening.py": {
-   "P0": 0,
-   "P1": 1,
-   "rules": [
-    "P1|O# 第一个可见事件在第 #"
-   ]
-  },
-  "validate-presentation.py": {
-   "P0": 0,
-   "P1": 4,
-   "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
-    "P1|全片只用到 # 种叙事动作（"
-   ]
-  },
-  "validate-shot-motion.py": {
-   "P0": 0,
-   "P1": 3,
-   "rules": [
-    "P1|S1",
-    "P1|S3",
-    "P1|S4"
-   ]
-  },
-  "validate-treatment.py": {
-   "P0": 0,
-   "P1": 3,
-   "rules": [
-    "P1|turn_to_you_se",
-    "P1|招牌镜头 S# 既没真推（#",
-    "P1|还没有独立评审（review"
-   ]
-  }
- },
- "examples/recipes/data-with-object.story.json": {
-  "manifests/caption-cues.json": "aa91607c169092766803edd71d37469f40b2a186f1b64b1759f251ba5e52efb1",
-  "manifests/protected-caption-phrases.txt": "cfebe88e8aeb9a08ebe97a0372380573f904db2ba335479ce159c067fc75d11a",
-  "manifests/shots.json": "89a5ceb1786495d0baa8634a8ca1908ee8d183d510929beb8f40e74658b9d4b7",
-  "manifests/shots.resolved.json": "75f02a97fccd870e4155f3158e50e6cebc1a207f4fd6ad0c38f0e84cbe9a52b7",
-  "narration.txt": "b253efe0a173e1626abc5d6c1e68eeaaee122deec1ae2694d97d726d40f44c3b",
-  "src/film.ts": "9b492f8b4c51773d6ae3433bcbd8e24bde3f3a7bc1983d7404f7e251426156fa",
-  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "0f0cba108c509e091ef35f46fccc4d5d80038ea4ef8dcd6e484fb31eb5a6a904",
-  "src/story.ts": "ccb5c1d4f1c33fda2f45f7ff4713f2ab47423a0690014aa18ba5ced68d5df1d1",
-  "validate-audio-levels.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-backgrounds.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-composition.py": {
-   "P0": 0,
-   "P1": 7,
-   "rules": [
-    "P1|#/# 镜落在同一时长档（#",
-    "P1|全片仅 # 种转场，建议 ≥",
-    "P1|全片没有 ≤#s 的短镜；插",
-    "P1|可选组件只用了 # 件（[]",
-    "P1|最长/最短镜头仅 # 倍（#",
-    "P1|镜长变异系数 # < #（平",
-    "P1|骨架指纹 ('Stage',"
-   ]
-  },
-  "validate-elem-kinds.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-fusion.py": {
-   "P0": 0,
-   "P1": 3,
-   "rules": [
-    "P1|[hybrid] 手账页只占",
-    "P1|「文字 + 简笔线稿」镜头占",
-    "P1|纯文字镜头占 #% > #%"
-   ]
-  },
-  "validate-glyphs.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-media.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-opening.py": {
-   "P0": 0,
-   "P1": 2,
-   "rules": [
-    "P1|O# 前 # 秒只有 # 个",
-    "P1|O# 第一个可见事件在第 #"
-   ]
-  },
-  "validate-presentation.py": {
-   "P0": 0,
-   "P1": 4,
-   "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
-    "P1|全片只用到 # 种叙事动作（"
-   ]
-  },
-  "validate-shot-motion.py": {
-   "P0": 0,
-   "P1": 1,
-   "rules": [
-    "P1|S2"
-   ]
-  },
-  "validate-treatment.py": {
-   "P0": 0,
-   "P1": 5,
-   "rules": [
-    "P1|S2",
-    "P1|S4",
-    "P1|turn_to_you_se",
-    "P1|招牌镜头 S# 既没真推（#",
-    "P1|还没有独立评审（review"
-   ]
-  }
- },
- "examples/recipes/jie-component.story.json": {
-  "manifests/caption-cues.json": "1a25b339becf46646a31efc595f30002e474e38924f046ab51ab735f36218cd4",
-  "manifests/protected-caption-phrases.txt": "ab21dd9663471de19939aeb6d49b402ef3d437681bc76d6bead801d5a80f6d6c",
-  "manifests/shots.json": "79d503122a3a7c55a06e5016a777330a6bfdc9ff7806bd2d42fd978de7f93bf9",
-  "manifests/shots.resolved.json": "1db63b414237b7845aca4ef853b670f3fa052d95f96089cbfb39d87e2dfc438d",
-  "narration.txt": "466dc8ee192d8bf4c12215c9920ab5416cebd8b1ded3aa3b142d7edcec7ab8cc",
-  "src/film.ts": "34339f875eac5970d8a01319d5fd5275fe630bf81f198407b5d564dba40fd134",
-  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "a341bb65f6f5669cdc6d3391133b16c6d549bd40eddbd3d6e3cce00f5b738b7a",
-  "src/story.ts": "a0312c921c0538d81f6752f4b2990716f084d5d2fccada9520959f45093bbde3",
-  "validate-audio-levels.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-backgrounds.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-composition.py": {
-   "P0": 0,
-   "P1": 6,
-   "rules": [
-    "P1|# 处变化间隔在 #–#s（",
-    "P1|全片仅 # 种转场，建议 ≥",
-    "P1|全片没有 ≤#s 的短镜；插",
-    "P1|可选组件只用了 # 件（[]",
-    "P1|最长/最短镜头仅 # 倍（#",
-    "P1|镜长变异系数 # < #（平"
-   ]
-  },
-  "validate-elem-kinds.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-fusion.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-glyphs.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-media.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-opening.py": {
-   "P0": 0,
-   "P1": 1,
-   "rules": [
-    "P1|O# 第一个可见事件在第 #"
-   ]
-  },
-  "validate-presentation.py": {
-   "P0": 0,
-   "P1": 4,
-   "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
-    "P1|全片只用到 # 种叙事动作（"
-   ]
-  },
-  "validate-shot-motion.py": {
-   "P0": 0,
-   "P1": 2,
-   "rules": [
-    "P1|S1",
-    "P1|S3"
-   ]
-  },
-  "validate-treatment.py": {
-   "P0": 0,
-   "P1": 2,
-   "rules": [
-    "P1|turn_to_you_se",
-    "P1|还没有独立评审（review"
-   ]
-  }
- },
- "examples/recipes/jie-freeform.story.json": {
-  "manifests/caption-cues.json": "a4073edbb5481ba69e4123eb91847483401d711b894c9109683cfea251731c2e",
-  "manifests/protected-caption-phrases.txt": "7c03c914a6fddfcb4165443c31316712bebce29a6432f178bb737f92c5f84aeb",
-  "manifests/shots.json": "ac07a4410a1acb6968702e147af2b9fcb918e441505706d32c85c3700d0455aa",
-  "manifests/shots.resolved.json": "a3c6239d1438ed9fd33d18b276eb43248613e8c0f14dc6b870e3aaed6540be73",
-  "narration.txt": "b3e7ca8afab109a4a50f66489aff4ca570948c409d51bd9693a01c82bfa41b68",
-  "src/film.ts": "07765d1fb28b5f06d70ca6f704b8c3f2bc2ffa6b26ee94bb29238033080db2b5",
-  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "9a8b82f05502e64c7bb9b465d6d879ed6b8fdc57cad44d0784558bc390a02865",
-  "src/story.ts": "957c17e100cd755032415872468723e2307ad3e206d5ac0b2501805ae5f0e80b",
-  "validate-audio-levels.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-backgrounds.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-composition.py": {
-   "P0": 0,
-   "P1": 12,
-   "rules": [
-    "P1|# 处变化间隔 ># 帧（#",
-    "P1|S2",
-    "P1|S3",
-    "P1|S3",
-    "P1|S4",
-    "P1|全片仅 # 种视觉介质 ['",
-    "P1|全片仅 # 种转场，建议 ≥",
-    "P1|全片仅 # 种骨架，要求 ≥",
-    "P1|全片没有 ≤#s 的短镜；插",
-    "P1|可选组件只用了 # 件（[]",
-    "P1|最长/最短镜头仅 # 倍（#",
-    "P1|镜长变异系数 # < #（平"
-   ]
-  },
-  "validate-elem-kinds.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-fusion.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-glyphs.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-media.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-opening.py": {
-   "P0": 0,
-   "P1": 1,
-   "rules": [
-    "P1|O# 第一个可见事件在第 #"
-   ]
-  },
-  "validate-presentation.py": {
-   "P0": 0,
-   "P1": 4,
-   "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
-    "P1|全片只用到 # 种叙事动作（"
-   ]
-  },
-  "validate-shot-motion.py": {
-   "P0": 0,
-   "P1": 3,
-   "rules": [
-    "P1|S1",
-    "P1|S3",
-    "P1|S4"
-   ]
-  },
-  "validate-treatment.py": {
-   "P0": 0,
-   "P1": 3,
-   "rules": [
-    "P1|turn_to_you_se",
-    "P1|招牌镜头 S# 既没真推（#",
-    "P1|还没有独立评审（review"
-   ]
-  }
- },
- "examples/recipes/jie-hybrid.story.json": {
-  "manifests/caption-cues.json": "6d4211417c6539e11ab208f521c0b529eb86cf723cb99b4b767ccc0f98f4e8ed",
-  "manifests/protected-caption-phrases.txt": "3f13a8fce8c53805a9daa1181b0377d9d410987d444691d4d1e0e2b57a230d3f",
-  "manifests/shots.json": "a983db93a2482172385eb2f141d53da66a00105359c8b63732e7a7e473cb5840",
-  "manifests/shots.resolved.json": "6fd18b1da83a35a6a6d7ab4cb7c0ec706cc1222fe2e479a85de19ae450e3598d",
-  "narration.txt": "2abe56b3e6dcec12cde1e0afa2f0341739af386ae4e4f7dc59579ce7e27e5ef4",
-  "src/film.ts": "45fcca21fb88c5f578287d102421b2b6c4ac717344981cb28fd3c56361f0da22",
-  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "8f957ad43bf43828e60d1b65caeafb57df83a769362a8234eb5baaa30054c3a4",
-  "src/story.ts": "2e047d3f5516da91c79378f78d23fcc5db0751a926a63d8902ab9f4cc47deb1b",
-  "validate-audio-levels.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-backgrounds.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-composition.py": {
-   "P0": 0,
-   "P1": 9,
-   "rules": [
-    "P1|# 处变化间隔 ># 帧（#",
-    "P1|# 处变化间隔在 #–#s（",
-    "P1|S4",
-    "P1|全片仅 # 种转场，建议 ≥",
-    "P1|全片仅 # 种骨架，要求 ≥",
-    "P1|全片没有 ≤#s 的短镜；插",
-    "P1|可选组件只用了 # 件（[]",
-    "P1|最长/最短镜头仅 # 倍（#",
-    "P1|镜长变异系数 # < #（平"
-   ]
-  },
-  "validate-elem-kinds.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-fusion.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-glyphs.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-media.py": {
-   "P0": 0,
-   "P1": 0,
-   "rules": []
-  },
-  "validate-opening.py": {
-   "P0": 0,
-   "P1": 1,
-   "rules": [
-    "P1|O# 第一个可见事件在第 #"
-   ]
-  },
-  "validate-presentation.py": {
-   "P0": 0,
-   "P1": 4,
-   "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
-    "P1|全片只用到 # 种叙事动作（"
-   ]
-  },
-  "validate-shot-motion.py": {
-   "P0": 0,
-   "P1": 3,
-   "rules": [
-    "P1|S1",
-    "P1|S3",
-    "P1|S4"
-   ]
-  },
-  "validate-treatment.py": {
-   "P0": 0,
-   "P1": 3,
-   "rules": [
-    "P1|turn_to_you_se",
-    "P1|招牌镜头 S# 既没真推（#",
-    "P1|还没有独立评审（review"
-   ]
-  }
- },
- "examples/recipes/list-icons.story.json": {
-  "manifests/caption-cues.json": "f34694284e33f3d2f0e62180a0612201888e7463b129dd4fbf6213da3d0f1dfd",
-  "manifests/protected-caption-phrases.txt": "2d6e51f51074b44ccdfc2d06ea9d7faa4001e7fa1091baf5fa828b9db107f27d",
-  "manifests/shots.json": "3544694160cbfaed52f903a159c35a614dec00c3f36136b1f954baff59fb0e62",
-  "manifests/shots.resolved.json": "dabb1dfadad884c52ee10601db785d7ec9434b01d63d88199fecf7b00827e278",
-  "narration.txt": "bbf1beb7e3c54a7ce09c159d37431cc3f4a6a7f7e9f324a4e3a83784a922edbb",
-  "src/film.ts": "0832ab83963dd84c915c62bf4216b9150b49569f13110d336ac4c1a635a82048",
-  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "7e40cb7d84f9cc4f85ddea6478d0a7737330fbdcf8a24a31d871d0546ed38d20",
-  "src/story.ts": "c7147ed03d9ad87103b0b4dd9252c68464360bd356ab3cfc15fd1f802c08e30a",
+  "src/shots.ts": "4eb721c7f2b38d07af08bf9230eef352d1aa6e42b77a7f6f5fb062fcaf7035be",
+  "src/story.ts": "4c9cf921ed26adb04ba315859d2284c9d4858c42309f9181aa226d50a0cb7341",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -1050,8 +548,8 @@
    "P1": 8,
    "rules": [
     "P1|#/# 镜落在同一时长档（#",
-    "P1|全片仅 # 种视觉介质 ['",
     "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
     "P1|全片没有 ≤#s 的短镜；插",
     "P1|可选组件只用了 # 件（[]",
     "P1|最长/最短镜头仅 # 倍（#",
@@ -1103,31 +601,36 @@
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 0,
-   "rules": []
+   "P1": 3,
+   "rules": [
+    "P1|S3",
+    "P1|S4",
+    "P1|全片仅 # 种镜头意图（不含"
+   ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 5,
+   "P1": 6,
    "rules": [
+    "P1|S1",
     "P1|S2",
-    "P1|S4",
+    "P1|S3",
     "P1|turn_to_you_se",
     "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
    ]
   }
  },
- "examples/recipes/rocket-fusion.story.json": {
-  "manifests/caption-cues.json": "0b5724c15b3b102eb3c520102fa3a69944ef639f43ca248bb2f117874a5d22b4",
-  "manifests/protected-caption-phrases.txt": "cfebe88e8aeb9a08ebe97a0372380573f904db2ba335479ce159c067fc75d11a",
-  "manifests/shots.json": "d610c9b19d84e74226a35522c7a555bf68fa5991058559b455f572120d05d349",
-  "manifests/shots.resolved.json": "3c7a87142e7a16d1fcc58f998d948636ad0f7fb5fa98716f69bf9de97a144c68",
-  "narration.txt": "3ec66aeb1f0c7596cdbc77e07645158818e68785562de226dbf9c2de7ced63d4",
-  "src/film.ts": "6edd16ce64bac49f1f8b7c8e23578e9156c6a3743f0125e50cf79c1e099920f7",
+ "examples/recipes/cork-page.story.json": {
+  "manifests/caption-cues.json": "4a2fddd624c89417ab165f3daef1049c5e160b7dd158597dea959963433af6f4",
+  "manifests/protected-caption-phrases.txt": "1fcfb8b448c7b101ca55a75f91fa25008c3a6a99350f6504f0261747789c6a44",
+  "manifests/shots.json": "99042dee5976d8525432c89228e5944ff834b46540d6bb94f84412b85887d9a4",
+  "manifests/shots.resolved.json": "0561364667a1b03507b3a6b4a004cc8a4c1f15f83857729f0a31c0d795e0ceab",
+  "narration.txt": "1ad11579bd54bff5eae9a4f7ab2f65830bdee04e9227a46821ee1df3d9e26490",
+  "src/film.ts": "f80d3de03addeeaed63f72c199556c1d31465ac9257b9ad35102d84ca4c497a8",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "c05076e4581b94f7bfe7e0b031e6b3f8ef1396fb2b8bafcd6a8fff9cb4116aa6",
-  "src/story.ts": "5a2f59b433b22fe2d1e4beb30e21075363130df9066faffd194186abeba2923a",
+  "src/shots.ts": "5d96de7930a4373d163d0e96825503a0a749efe30a95da05200d0f0f6bf209e9",
+  "src/story.ts": "7db5e3ee7cc62e002cc80a4b4e2d19b78041926ea92b66147c47d782318cd973",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -1144,8 +647,599 @@
    "rules": [
     "P1|# 处变化间隔在 #–#s（",
     "P1|#/# 镜落在同一时长档（#",
+    "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
+    "P1|全片没有 ≤#s 的短镜；插",
+    "P1|可选组件只用了 # 件（[]",
+    "P1|最长/最短镜头仅 # 倍（#",
+    "P1|镜长变异系数 # < #（平",
+    "P1|骨架指纹 ('Stage',"
+   ]
+  },
+  "validate-elem-kinds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-fusion.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-glyphs.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-media.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-opening.py": {
+   "P0": 0,
+   "P1": 1,
+   "rules": [
+    "P1|O# 第一个可见事件在第 #"
+   ]
+  },
+  "validate-presentation.py": {
+   "P0": 0,
+   "P1": 5,
+   "rules": [
+    "P1|S2",
+    "P1|src/media.tsx ",
+    "P1|src/showcase.t",
+    "P1|src/stagekit.t",
+    "P1|全片只用到 # 种叙事动作（"
+   ]
+  },
+  "validate-shot-motion.py": {
+   "P0": 0,
+   "P1": 6,
+   "rules": [
+    "P1|S1",
+    "P1|S3",
+    "P1|S4",
+    "P1|chapter:一个词",
+    "P1|全片仅 # 次运镜，按片长 ",
+    "P1|全片仅 # 种镜头意图（不含"
+   ]
+  },
+  "validate-treatment.py": {
+   "P0": 0,
+   "P1": 6,
+   "rules": [
+    "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|turn_to_you_se",
+    "P1|招牌镜头 S# 既没真推（#",
+    "P1|还没有独立评审（review"
+   ]
+  }
+ },
+ "examples/recipes/data-with-object.story.json": {
+  "manifests/caption-cues.json": "aa91607c169092766803edd71d37469f40b2a186f1b64b1759f251ba5e52efb1",
+  "manifests/protected-caption-phrases.txt": "cfebe88e8aeb9a08ebe97a0372380573f904db2ba335479ce159c067fc75d11a",
+  "manifests/shots.json": "870ea483d766177a25fca8adffe0de4e5aa0c6d4cd3638c41a125683a8a9babf",
+  "manifests/shots.resolved.json": "49544ffa60201b7e86b4a284c26726b182c921e439cb752a36a91f805662b16c",
+  "narration.txt": "b253efe0a173e1626abc5d6c1e68eeaaee122deec1ae2694d97d726d40f44c3b",
+  "src/film.ts": "9b492f8b4c51773d6ae3433bcbd8e24bde3f3a7bc1983d7404f7e251426156fa",
+  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
+  "src/shots.ts": "49ec6cf2f4a20d5b8d75c2fe1e17dd6282cc88287d4f80d75cf125eb58a387b6",
+  "src/story.ts": "c9d7b16b574fa46a50cfd7011a7b94ef95ea60873027bc8c80d67abdcbd5b738",
+  "validate-audio-levels.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-backgrounds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-composition.py": {
+   "P0": 0,
+   "P1": 8,
+   "rules": [
+    "P1|#/# 镜落在同一时长档（#",
+    "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
+    "P1|全片没有 ≤#s 的短镜；插",
+    "P1|可选组件只用了 # 件（[]",
+    "P1|最长/最短镜头仅 # 倍（#",
+    "P1|镜长变异系数 # < #（平",
+    "P1|骨架指纹 ('Stage',"
+   ]
+  },
+  "validate-elem-kinds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-fusion.py": {
+   "P0": 0,
+   "P1": 3,
+   "rules": [
+    "P1|[hybrid] 手账页只占",
+    "P1|「文字 + 简笔线稿」镜头占",
+    "P1|纯文字镜头占 #% > #%"
+   ]
+  },
+  "validate-glyphs.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-media.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-opening.py": {
+   "P0": 0,
+   "P1": 2,
+   "rules": [
+    "P1|O# 前 # 秒只有 # 个",
+    "P1|O# 第一个可见事件在第 #"
+   ]
+  },
+  "validate-presentation.py": {
+   "P0": 0,
+   "P1": 4,
+   "rules": [
+    "P1|src/media.tsx ",
+    "P1|src/showcase.t",
+    "P1|src/stagekit.t",
+    "P1|全片只用到 # 种叙事动作（"
+   ]
+  },
+  "validate-shot-motion.py": {
+   "P0": 0,
+   "P1": 3,
+   "rules": [
+    "P1|S2",
+    "P1|S3",
+    "P1|全片仅 # 种镜头意图（不含"
+   ]
+  },
+  "validate-treatment.py": {
+   "P0": 0,
+   "P1": 6,
+   "rules": [
+    "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|turn_to_you_se",
+    "P1|招牌镜头 S# 既没真推（#",
+    "P1|还没有独立评审（review"
+   ]
+  }
+ },
+ "examples/recipes/jie-component.story.json": {
+  "manifests/caption-cues.json": "8cdbe05afe700803aa20d91ed491e6baef999fe6b85a722c3f89795879ea716f",
+  "manifests/protected-caption-phrases.txt": "ab21dd9663471de19939aeb6d49b402ef3d437681bc76d6bead801d5a80f6d6c",
+  "manifests/shots.json": "b564d7c771b3884369aaea2cf9b2347ee2c5a4ff8fa8bcb8b3ce8d40dc5b9106",
+  "manifests/shots.resolved.json": "0a0dcb6f9771dcdead084f8e1157d791f4015e3a5e2eba19ff7da7162c231c67",
+  "narration.txt": "466dc8ee192d8bf4c12215c9920ab5416cebd8b1ded3aa3b142d7edcec7ab8cc",
+  "src/film.ts": "34339f875eac5970d8a01319d5fd5275fe630bf81f198407b5d564dba40fd134",
+  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
+  "src/shots.ts": "9e49b883f9f030bc52481644d3bb2f51675ea8ace18f975ee66845066fe9df6d",
+  "src/story.ts": "b4065bfcd66c09aea89bda40efe3eb838e95fadc6652b2e54855842ee4a6be4a",
+  "validate-audio-levels.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-backgrounds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-composition.py": {
+   "P0": 0,
+   "P1": 7,
+   "rules": [
+    "P1|# 处变化间隔在 #–#s（",
+    "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
+    "P1|全片没有 ≤#s 的短镜；插",
+    "P1|可选组件只用了 # 件（[]",
+    "P1|最长/最短镜头仅 # 倍（#",
+    "P1|镜长变异系数 # < #（平"
+   ]
+  },
+  "validate-elem-kinds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-fusion.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-glyphs.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-media.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-opening.py": {
+   "P0": 0,
+   "P1": 1,
+   "rules": [
+    "P1|O# 第一个可见事件在第 #"
+   ]
+  },
+  "validate-presentation.py": {
+   "P0": 0,
+   "P1": 5,
+   "rules": [
+    "P1|S3",
+    "P1|src/media.tsx ",
+    "P1|src/showcase.t",
+    "P1|src/stagekit.t",
+    "P1|全片只用到 # 种叙事动作（"
+   ]
+  },
+  "validate-shot-motion.py": {
+   "P0": 0,
+   "P1": 5,
+   "rules": [
+    "P1|S1",
+    "P1|S3",
+    "P1|chapter:一个速度单位",
+    "P1|全片仅 # 次运镜，按片长 ",
+    "P1|全片仅 # 种镜头意图（不含"
+   ]
+  },
+  "validate-treatment.py": {
+   "P0": 0,
+   "P1": 6,
+   "rules": [
+    "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|turn_to_you_se",
+    "P1|招牌镜头 S# 既没真推（#",
+    "P1|还没有独立评审（review"
+   ]
+  }
+ },
+ "examples/recipes/jie-freeform.story.json": {
+  "manifests/caption-cues.json": "fd19c3b604a5256fc01073f56b650311d6e44fbb8ddedcdc12f1b4f855e18884",
+  "manifests/protected-caption-phrases.txt": "7c03c914a6fddfcb4165443c31316712bebce29a6432f178bb737f92c5f84aeb",
+  "manifests/shots.json": "6aa633fa2705e9cbd87c611fb92115097d79220875f873fa19ea03f073814e68",
+  "manifests/shots.resolved.json": "4c78bf2700300c252635f1cc5c2ea4c099ae13a46884e224db7a8cd8e5b4e911",
+  "narration.txt": "b3e7ca8afab109a4a50f66489aff4ca570948c409d51bd9693a01c82bfa41b68",
+  "src/film.ts": "07765d1fb28b5f06d70ca6f704b8c3f2bc2ffa6b26ee94bb29238033080db2b5",
+  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
+  "src/shots.ts": "8ad38e4624da325301ff1c7cdb5de4a3915c16a95e4bc9e0638d8d9a913a79ab",
+  "src/story.ts": "92e1b62d9e7d6b3f65535faaa6522e7f644dcf6910227b30ce92354bc16e494d",
+  "validate-audio-levels.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-backgrounds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-composition.py": {
+   "P0": 0,
+   "P1": 14,
+   "rules": [
+    "P1|# 处变化间隔 ># 帧（#",
+    "P1|S2",
+    "P1|S3",
+    "P1|S3",
+    "P1|S4",
     "P1|全片仅 # 种视觉介质 ['",
     "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
+    "P1|全片仅 # 种骨架，要求 ≥",
+    "P1|全片没有 ≤#s 的短镜；插",
+    "P1|可选组件只用了 # 件（[]",
+    "P1|最长/最短镜头仅 # 倍（#",
+    "P1|镜长变异系数 # < #（平",
+    "P1|骨架指纹 ('Stage',"
+   ]
+  },
+  "validate-elem-kinds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-fusion.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-glyphs.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-media.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-opening.py": {
+   "P0": 0,
+   "P1": 1,
+   "rules": [
+    "P1|O# 第一个可见事件在第 #"
+   ]
+  },
+  "validate-presentation.py": {
+   "P0": 0,
+   "P1": 4,
+   "rules": [
+    "P1|src/media.tsx ",
+    "P1|src/showcase.t",
+    "P1|src/stagekit.t",
+    "P1|全片只用到 # 种叙事动作（"
+   ]
+  },
+  "validate-shot-motion.py": {
+   "P0": 0,
+   "P1": 6,
+   "rules": [
+    "P1|S1",
+    "P1|S3",
+    "P1|S4",
+    "P1|chapter:绳上的结",
+    "P1|全片仅 # 次运镜，按片长 ",
+    "P1|全片仅 # 种镜头意图（不含"
+   ]
+  },
+  "validate-treatment.py": {
+   "P0": 0,
+   "P1": 6,
+   "rules": [
+    "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|turn_to_you_se",
+    "P1|招牌镜头 S# 既没真推（#",
+    "P1|还没有独立评审（review"
+   ]
+  }
+ },
+ "examples/recipes/jie-hybrid.story.json": {
+  "manifests/caption-cues.json": "91d430924420737bbd1de250787233e09b78534d04ea2e07c10ff1e5ec01e918",
+  "manifests/protected-caption-phrases.txt": "3f13a8fce8c53805a9daa1181b0377d9d410987d444691d4d1e0e2b57a230d3f",
+  "manifests/shots.json": "325b4b4d11ebf9968b182002c9446df7f5aac3e1381ce2e0041dca87c98247e5",
+  "manifests/shots.resolved.json": "c3fb23e1a3d016685a9242ec73a0c0daa5c4e9924b6a9bc1a40c9b9d7cabf124",
+  "narration.txt": "2abe56b3e6dcec12cde1e0afa2f0341739af386ae4e4f7dc59579ce7e27e5ef4",
+  "src/film.ts": "45fcca21fb88c5f578287d102421b2b6c4ac717344981cb28fd3c56361f0da22",
+  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
+  "src/shots.ts": "d08fb4b314149d25c39d06b11f79efdb4cfa91c7f0f0876ab2c4974991ae0c17",
+  "src/story.ts": "bfc5825fb784880d7cef4911130bacce22c0a3306b896c6a228810da6e7a4671",
+  "validate-audio-levels.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-backgrounds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-composition.py": {
+   "P0": 0,
+   "P1": 11,
+   "rules": [
+    "P1|# 处变化间隔 ># 帧（#",
+    "P1|# 处变化间隔在 #–#s（",
+    "P1|S4",
+    "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
+    "P1|全片仅 # 种骨架，要求 ≥",
+    "P1|全片没有 ≤#s 的短镜；插",
+    "P1|可选组件只用了 # 件（[]",
+    "P1|最长/最短镜头仅 # 倍（#",
+    "P1|镜长变异系数 # < #（平",
+    "P1|骨架指纹 ('Stage',"
+   ]
+  },
+  "validate-elem-kinds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-fusion.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-glyphs.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-media.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-opening.py": {
+   "P0": 0,
+   "P1": 1,
+   "rules": [
+    "P1|O# 第一个可见事件在第 #"
+   ]
+  },
+  "validate-presentation.py": {
+   "P0": 0,
+   "P1": 4,
+   "rules": [
+    "P1|src/media.tsx ",
+    "P1|src/showcase.t",
+    "P1|src/stagekit.t",
+    "P1|全片只用到 # 种叙事动作（"
+   ]
+  },
+  "validate-shot-motion.py": {
+   "P0": 0,
+   "P1": 5,
+   "rules": [
+    "P1|S1",
+    "P1|S4",
+    "P1|chapter:绳上的结",
+    "P1|全片仅 # 次运镜，按片长 ",
+    "P1|全片仅 # 种镜头意图（不含"
+   ]
+  },
+  "validate-treatment.py": {
+   "P0": 0,
+   "P1": 6,
+   "rules": [
+    "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|turn_to_you_se",
+    "P1|招牌镜头 S# 既没真推（#",
+    "P1|还没有独立评审（review"
+   ]
+  }
+ },
+ "examples/recipes/list-icons.story.json": {
+  "manifests/caption-cues.json": "f34694284e33f3d2f0e62180a0612201888e7463b129dd4fbf6213da3d0f1dfd",
+  "manifests/protected-caption-phrases.txt": "2d6e51f51074b44ccdfc2d06ea9d7faa4001e7fa1091baf5fa828b9db107f27d",
+  "manifests/shots.json": "6115c2622cf9403694d67fdc3f1232d48fac5ed9d46fff431526b80b3db49d95",
+  "manifests/shots.resolved.json": "02c764b1cc256713f714951cbb98d0ecff01d6216e364dab11a9a311fb353a8e",
+  "narration.txt": "bbf1beb7e3c54a7ce09c159d37431cc3f4a6a7f7e9f324a4e3a83784a922edbb",
+  "src/film.ts": "0832ab83963dd84c915c62bf4216b9150b49569f13110d336ac4c1a635a82048",
+  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
+  "src/shots.ts": "a8914b7d3d6b86b4936f4f30837f0d3603dd0356d334767fd159f2c008218a0a",
+  "src/story.ts": "f84d4af4e883274f5bf7f19227d0c72ac76d79beecec8e693dd5828499f2451c",
+  "validate-audio-levels.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-backgrounds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-composition.py": {
+   "P0": 0,
+   "P1": 9,
+   "rules": [
+    "P1|#/# 镜落在同一时长档（#",
+    "P1|全片仅 # 种视觉介质 ['",
+    "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
+    "P1|全片没有 ≤#s 的短镜；插",
+    "P1|可选组件只用了 # 件（[]",
+    "P1|最长/最短镜头仅 # 倍（#",
+    "P1|镜长变异系数 # < #（平",
+    "P1|骨架指纹 ('Stage',"
+   ]
+  },
+  "validate-elem-kinds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-fusion.py": {
+   "P0": 0,
+   "P1": 3,
+   "rules": [
+    "P1|[hybrid] 手账页只占",
+    "P1|「文字 + 简笔线稿」镜头占",
+    "P1|纯文字镜头占 #% > #%"
+   ]
+  },
+  "validate-glyphs.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-media.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-opening.py": {
+   "P0": 0,
+   "P1": 2,
+   "rules": [
+    "P1|O# 前 # 秒只有 # 个",
+    "P1|O# 第一个可见事件在第 #"
+   ]
+  },
+  "validate-presentation.py": {
+   "P0": 0,
+   "P1": 4,
+   "rules": [
+    "P1|src/media.tsx ",
+    "P1|src/showcase.t",
+    "P1|src/stagekit.t",
+    "P1|全片只用到 # 种叙事动作（"
+   ]
+  },
+  "validate-shot-motion.py": {
+   "P0": 0,
+   "P1": 3,
+   "rules": [
+    "P1|S3",
+    "P1|S4",
+    "P1|全片仅 # 种镜头意图（不含"
+   ]
+  },
+  "validate-treatment.py": {
+   "P0": 0,
+   "P1": 6,
+   "rules": [
+    "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|turn_to_you_se",
+    "P1|招牌镜头 S# 既没真推（#",
+    "P1|还没有独立评审（review"
+   ]
+  }
+ },
+ "examples/recipes/rocket-fusion.story.json": {
+  "manifests/caption-cues.json": "0b5724c15b3b102eb3c520102fa3a69944ef639f43ca248bb2f117874a5d22b4",
+  "manifests/protected-caption-phrases.txt": "cfebe88e8aeb9a08ebe97a0372380573f904db2ba335479ce159c067fc75d11a",
+  "manifests/shots.json": "cd095de964d2879d258ad18f0a362c9dc0b033e40776a1c48e0112c872ac969a",
+  "manifests/shots.resolved.json": "d1e0f5450fab026fd780360a4071bdc4c2fdcd75ae009b751150c5bf4d5ef035",
+  "narration.txt": "3ec66aeb1f0c7596cdbc77e07645158818e68785562de226dbf9c2de7ced63d4",
+  "src/film.ts": "6edd16ce64bac49f1f8b7c8e23578e9156c6a3743f0125e50cf79c1e099920f7",
+  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
+  "src/shots.ts": "2862314380810272e564c3afd1c579725b92685b43f5c73d517772e5c6b6fcce",
+  "src/story.ts": "3f703e6cabc6085a43badf6ba8b340344b01c5734d3d62398fdec607d53a8baa",
+  "validate-audio-levels.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-backgrounds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-composition.py": {
+   "P0": 0,
+   "P1": 10,
+   "rules": [
+    "P1|# 处变化间隔在 #–#s（",
+    "P1|#/# 镜落在同一时长档（#",
+    "P1|全片仅 # 种视觉介质 ['",
+    "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
     "P1|全片没有 ≤#s 的短镜；插",
     "P1|可选组件只用了 # 件（[]",
     "P1|最长/最短镜头仅 # 倍（#",
@@ -1198,17 +1292,20 @@
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 1,
+   "P1": 3,
    "rules": [
-    "P1|S2"
+    "P1|S2",
+    "P1|S3",
+    "P1|全片仅 # 种镜头意图（不含"
    ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 5,
+   "P1": 6,
    "rules": [
+    "P1|S1",
     "P1|S2",
-    "P1|S4",
+    "P1|S3",
     "P1|turn_to_you_se",
     "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
@@ -1216,15 +1313,15 @@
   }
  },
  "examples/regress/curl-window-smoke.story.json": {
-  "manifests/caption-cues.json": "b2aed70f99b9ccb18c92a5f37a3cd28ddc3f3ae541f60e6ab711d707c93dc429",
+  "manifests/caption-cues.json": "fcec97f46d0fda263356bdbda1f4ef2f916953052edb4d25827a0e3063e8e3b4",
   "manifests/protected-caption-phrases.txt": "407813f14279cb18f67a48f495ec476a3c386eae0ec0b8d810091c689d5dc146",
-  "manifests/shots.json": "cb1d69930b488e88732bf5c8938336ec395c143baedce6aab0d788fa8ba528be",
-  "manifests/shots.resolved.json": "4a6a9326510e707a75c4605866ac0e2279393753b75bd3c6113e11970fc8502b",
+  "manifests/shots.json": "9928da0ed18eaecdf883c50361f53766526c75f6544c0711bbae3a49a6cc7a1a",
+  "manifests/shots.resolved.json": "d2fdccb084b4b597acfc5ec913517c93b36f5d8f9524969cba24fd1da65d1491",
   "narration.txt": "c4638f3d60844c3170f1acc5d1faea8774a0366c58b51ba374c3286776251033",
   "src/film.ts": "25df7e971590311fcc1065b04a9a8a4205b1f350da99bc4bd57c12d1025f3265",
   "src/scenes.tsx": "528796fd4404d7deb0c6ccfbd56376b7393bec356754971912a1e01756fc2e2f",
-  "src/shots.ts": "de3ab2384c61684f93bf0f328bf0694d2f217d0b00481a6fefbc3369c2a8d62d",
-  "src/story.ts": "94f232e832de78aecdf735b3b4a0b09675f22c7f2bf5d9b3f04b233895581fa3",
+  "src/shots.ts": "2a63d5bc820ce9b8417ed3c860bc3737317f6c32c39e238b5e6ad822270ea844",
+  "src/story.ts": "f19ab7ff0719198218808994549c0ccf013287c9faea756c377fe7037fd44a29",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -1237,12 +1334,15 @@
   },
   "validate-composition.py": {
    "P0": 0,
-   "P1": 4,
+   "P1": 7,
    "rules": [
     "P1|# 处变化间隔在 #–#s（",
     "P1|#/# 镜落在同一时长档（#",
     "P1|全片仅 # 种转场，建议 ≥",
-    "P1|可选组件只用了 # 件（[]"
+    "P1|全片仅 # 种镜头意图，要求",
+    "P1|可选组件只用了 # 件（[]",
+    "P1|镜长变异系数 # < #（平",
+    "P1|骨架指纹 ('Stage',"
    ]
   },
   "validate-elem-kinds.py": {
@@ -1283,34 +1383,43 @@
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 5,
+   "P1": 7,
    "rules": [
     "P1|S1",
     "P1|S4",
     "P1|S4",
     "P1|S6",
-    "P1|S6"
+    "P1|S6",
+    "P1|全片仅 # 次运镜，按片长 ",
+    "P1|全片仅 # 种镜头意图（不含"
    ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 2,
+   "P1": 9,
    "rules": [
+    "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|S4",
+    "P1|S5",
+    "P1|S6",
     "P1|turn_to_you_se",
+    "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
    ]
   }
  },
  "examples/regress/list-card-variants.story.json": {
-  "manifests/caption-cues.json": "117b143c62d85ebf6074c52e03bdefd3b43bb954093fc415d80f42cd524a647d",
+  "manifests/caption-cues.json": "a8a8577f962d679b7422947df49c8c33821dc3e16b601350b496c92f862fcc8c",
   "manifests/protected-caption-phrases.txt": "407813f14279cb18f67a48f495ec476a3c386eae0ec0b8d810091c689d5dc146",
-  "manifests/shots.json": "df5fe3b1e4f03259cde2124faa76c607ab52788dc2911f6964a4dcb5ba9123f9",
-  "manifests/shots.resolved.json": "61f6454b79b874a4e7a9431874277bc00567ccb31901b775599abdcb28e31299",
+  "manifests/shots.json": "bce3e4fc5df56e1f6854a74d02b5cab528a07e567f79e3f0650ad298b8fb1ca0",
+  "manifests/shots.resolved.json": "3415449da5c3f98d3758e2c9215d6760ad923f963dd0da84014ba97578c10301",
   "narration.txt": "66170bf309a2ac6957ca11d5f1f2da23f475624e6fddb30c7660fa5dd9915636",
   "src/film.ts": "2813d4bd8632fade43731748ffe2b341b0b0d8f2d0cf1e49f7900c6476ebd4d4",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "3616d7dccd434fdfe671247fd37ce91f6edf14b890576cde38dbc859f9d0ce8e",
-  "src/story.ts": "e2d3948a1a1ad02e01d1f602ba5d84a704f25086113a34cf46e0a14d582d7bca",
+  "src/shots.ts": "7c01f540450fdb26112c531e2bd830497a28683bbc41a52d11421c2290fe113f",
+  "src/story.ts": "dfdbf728da622e49874fc8cf03bf89f2b267f479eeb4ada11b24c46c4c107720",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -1323,18 +1432,21 @@
   },
   "validate-composition.py": {
    "P0": 0,
-   "P1": 10,
+   "P1": 13,
    "rules": [
     "P1|# 处变化间隔 ># 帧（#",
     "P1|S2",
     "P1|S3",
     "P1|全片仅 # 种视觉介质 ['",
     "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
     "P1|全片仅 # 种骨架，要求 ≥",
     "P1|全片没有 ≤#s 的短镜；插",
     "P1|可选组件只用了 # 件（[]",
     "P1|最长/最短镜头仅 # 倍（#",
-    "P1|镜长变异系数 # < #（平"
+    "P1|镜长变异系数 # < #（平",
+    "P1|骨架指纹 ('Corrido",
+    "P1|骨架指纹 ('Stage',"
    ]
   },
   "validate-elem-kinds.py": {
@@ -1367,11 +1479,12 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 7,
+   "P1": 8,
    "rules": [
     "P1|S1",
     "P1|S2",
     "P1|S3",
+    "P1|S4",
     "P1|src/media.tsx ",
     "P1|src/showcase.t",
     "P1|src/stagekit.t",
@@ -1380,16 +1493,23 @@
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 2,
+   "P1": 5,
    "rules": [
     "P1|S1",
-    "P1|S3"
+    "P1|S3",
+    "P1|chapter:清单纸卡边界",
+    "P1|全片仅 # 次运镜，按片长 ",
+    "P1|全片仅 # 种镜头意图（不含"
    ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 3,
+   "P1": 7,
    "rules": [
+    "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|S4",
     "P1|turn_to_you_se",
     "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
@@ -1397,15 +1517,15 @@
   }
  },
  "examples/weak-model-test/float.story.json": {
-  "manifests/caption-cues.json": "b752730c56485959003b41f90e48addcc339dd23592b203faf15184df1302b8c",
+  "manifests/caption-cues.json": "fbd84773fce9881acff784383f0b38c01e5c84993da18599eadf3a60d3211104",
   "manifests/protected-caption-phrases.txt": "5d4f7d66f7e9b2e37b96d152153c67e158adb04f3affdf05e557bd8395e176a1",
-  "manifests/shots.json": "870c87925eee804081a11caaa8006f796519788754fbb063d0b70db3704a7f8e",
-  "manifests/shots.resolved.json": "0b99cfa61f5237b90d4e133653beea36c102cb0ba7f1de6e5b4569328e106fd8",
+  "manifests/shots.json": "67ce7b486446b93ee6876ba081549c34842ca0d1de5ceb3570c1fb140bd1c61e",
+  "manifests/shots.resolved.json": "5a5389d64fa9cad4b8384d8e71a0f63a80e07a1a2cd86015bfb4829d856e2691",
   "narration.txt": "7e7e8ba4f2c3a394ee03dc1edaa296d9cbf1ad2f53f34996ef2d0a71fd1f3996",
   "src/film.ts": "186190eb6fef0f2c130304b624828c20c09c1b930aa34f5819c4394b6e4fe0c1",
   "src/scenes.tsx": "528796fd4404d7deb0c6ccfbd56376b7393bec356754971912a1e01756fc2e2f",
-  "src/shots.ts": "685ec0fa17dee5339521b97c630687b77ae407714f67f756a3a40b2040de1dcb",
-  "src/story.ts": "e8c5cd823519e3e71679a916ccb106c2e07e7f078ef21b45b435ed17f03612bc",
+  "src/shots.ts": "ee3dc5a4c408c934feef5c350c1a9e0373fd0ddc0fd3a3fda34bfae67c1c8d64",
+  "src/story.ts": "780d9a268f6bee1bfe368a81401f82bcf8b2d8c610d694762dcdb25e82951b8a",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -1418,16 +1538,19 @@
   },
   "validate-composition.py": {
    "P0": 0,
-   "P1": 8,
+   "P1": 11,
    "rules": [
     "P1|# 处变化间隔 ># 帧（#",
     "P1|# 处变化间隔在 #–#s（",
     "P1|#/# 镜落在同一时长档（#",
     "P1|全片仅 # 种转场，建议 ≥",
+    "P1|全片仅 # 种镜头意图，要求",
     "P1|全片没有 ≤#s 的短镜；插",
     "P1|可选组件只用了 # 件（[]",
     "P1|最长/最短镜头仅 # 倍（#",
-    "P1|镜长变异系数 # < #（平"
+    "P1|镜长变异系数 # < #（平",
+    "P1|骨架指纹 ('Split',",
+    "P1|骨架指纹 ('Stage',"
    ]
   },
   "validate-elem-kinds.py": {
@@ -1474,20 +1597,30 @@
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 5,
+   "P1": 10,
    "rules": [
     "P1|S1",
     "P1|S2",
     "P1|S3",
+    "P1|S3",
     "P1|S4",
-    "P1|S5"
+    "P1|S4",
+    "P1|S5",
+    "P1|S5",
+    "P1|S6",
+    "P1|全片仅 # 种镜头意图（不含"
    ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 2,
+   "P1": 7,
    "rules": [
     "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|S6",
+    "P1|turn_to_you_se",
+    "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
    ]
   }

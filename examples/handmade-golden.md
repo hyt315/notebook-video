@@ -1,6 +1,6 @@
 # 模板示例片：导演层怎么填
 
-`examples/` 里的 `*.story.json` 是 **auto 路线**的样例（`recipes/` 下 4 个是配方样例）。手写场景路线没有 story.json，它的参照是模板工程自带的示例片：
+`examples/` 里的 `*.story.json` 是 **auto 路线**的样例（`recipes/` 下是配方样例，部分带同名 `.treatment.json`）。手写场景路线没有 story.json，它的参照是模板工程自带的示例片：
 
 ```bash
 node scripts/notebook-video.mjs new-project ./my-video --style=journal
@@ -18,7 +18,7 @@ node scripts/notebook-video.mjs new-project ./my-video --style=journal
 
 ## 为什么示例片要自带出处
 
-手作皮肤的 `validate-treatment.py` 把「导演层」当硬门禁：没有 `facts` 出处、没搜过 Commons、招牌镜头没真推 12%，都会以 P0 拦住渲染。这不是为难人——手作片的说服力来自「真材料 + 真出处」，模板先按这个标准写一遍，用户照着改就不会漏。
+手作皮肤的 `validate-treatment.py` 把「导演层」当门禁：招牌镜头没真推 12%（也没有实质位移）以 P0 拦住渲染；`facts` 为空、没搜过 Commons 记 P1 提示。这不是为难人——手作片的说服力来自「真材料 + 真出处」，模板先按这个标准写一遍，用户照着改就不会漏。
 
 详细方法见 `references/director.md#director-method`。
 

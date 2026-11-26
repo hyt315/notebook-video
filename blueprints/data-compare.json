@@ -4,6 +4,10 @@
  "$howto": "只改 <<…>> 里的内容（改完不许留下任何 <<）。不想要的镜可以删；想多讲一点可以复制一镜。layout 只能用 compose-story 认得的 13 个：statement / define / number / bars / compare / code / flow / list / quiz / custom / media / page / type，content 字段照本蓝图或其他蓝图里同 layout 的镜抄。直接跑 make-video 就是主路线；每镜的 $components 是改写成手写场景（逃生舱，见 references/scenes.md#handwritten-scenes）时该用的骨架与组件。",
  "title": "<<片名>>",
  "theme": "flat",
+ "mode": "component",
+ "subject_of_film": "<<主题物（至少在一镜 see 或 title 出现）>>",
+ "protect": [],
+ "$protect_note": "只填旁白 lines 里原样出现的词（不能放只出现在代码或画面里而旁白没念的词，否则 validate-semantic-breaks 判 P0）",
  "kicker": "<<4–8 字栏目名>>",
  "header": "<<短标题 / ENGLISH>>",
  "headerSub": "<<副标题>>",
@@ -16,9 +20,10 @@
     {
      "role": "hook",
      "layout": "statement",
+     "see": "<<本镜画面说明（须包含顶层 subject_of_film 主题物）>>",
      "$why": "钩子",
      "lines": [
-      "<<一个问题，含 {{关键词}}>>",
+      "<<一个问题，含 {{须与下方content文字一致的短语}}>>",
       "<<我们拿数据说话>>"
      ],
      "content": {
@@ -31,7 +36,8 @@
        "StampBanner",
        "FitTextBox"
       ]
-     }
+     },
+     "$asks": "例：观众原本深信的直觉是什么，哪个反常事实或数字当场打脸？"
     }
    ]
   },
@@ -61,7 +67,8 @@
        "Checklist",
        "StaggerList"
       ]
-     }
+     },
+     "$asks": "例：在拆开机制前，必须用一句大白话先说清哪个关键前提？"
     }
    ]
   },
@@ -97,7 +104,8 @@
        "BarChart",
        "StatRow"
       ]
-     }
+     },
+     "$asks": "例：去掉术语外壳，底层因果是哪一步推倒了哪一步？"
     },
     {
      "role": "example",
@@ -122,7 +130,8 @@
        "StatRow",
        "ProgressRing"
       ]
-     }
+     },
+     "$asks": "例：落到一个具体数字或真实场景里，效果究竟差多少？"
     }
    ]
   },
@@ -160,7 +169,8 @@
        "VerdictBar",
        "Checklist"
       ]
-     }
+     },
+     "$asks": "例：大家最容易信错的直觉和实际情况到底差在哪？"
     },
     {
      "role": "recap",
@@ -182,7 +192,8 @@
        "StampBanner",
        "FitTextBox"
       ]
-     }
+     },
+     "$asks": "例：回到开场问题，只用 ≤16 字让观众记住哪一句锤子句？"
     }
    ]
   }

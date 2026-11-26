@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""validate-silence.py · 「句间必须是真安静」的成片门禁（3.5.0）
+"""validate-silence.py · 「句间必须是真安静」的成片门禁
 
 病因：`treatment.sound.music.use=false` 也关不掉音乐床（src/index.tsx 无条件循环 bed.ogg），
 成片 145 秒里没有一处低于 −45 dB 持续 0.4 秒的静音——配乐一直在，用户没法关。

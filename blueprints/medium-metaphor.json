@@ -1,67 +1,165 @@
 {
-  "$blueprint": "medium-metaphor",
-  "$route": "handwritten-craft",
-  "family": "medium-metaphor",
-  "fits": "一个东西的“本义 / 来历 / 为什么叫这个名字”，观众有一个真实的错误直觉可以推翻",
-  "$about": "媒介即隐喻：用一种物质把一件事演出来——冷开（最怪的画面 / 数字）→ 反差 → 错误直觉被演出 → 原生动作推翻 → 数得出来的证据 → 转向你 → 首尾呼应。配手作皮肤（journal / papercut / archive）与 src/craft/ 组件。",
-  "$howto": "这是手写组件路线的分镜蓝图，不走 compose-story。先按 references/director.md#director-method 写 manifests/treatment.json（隐喻 / 媒介 / 原生动作 / 三候选），再照下面每拍的 $components 写 scenes.tsx。把 <<…>> 换成内容；秒数是 70–90 秒片子的建议位置，按台词长度伸缩。字幕每行 ≤14 字（硬上限 16），约 1/3 时长无字幕。",
-  "theme": "<<journal | papercut | archive>>",
-  "beats": [
-    {
-      "id": "B1", "role": "cold-open", "at": "0–1.5 s",
-      "$why": "冷开：第 0 帧就给全片最怪的那个画面或数字（真铜版画上的格子 / “一立方英寸软木里有十二亿间屋子”），主体 ≥ 1/3 画高、动作已经在发生。不配片名、不寒暄、第一句不用“X 这个词 / 你知道吗”。validate-opening 会查。",
-      "caption": ["<<最怪的那个已核事实（≤14 字），0.3–1.0 s 内出现>>"],
-      "$components": {"skeleton": "Stage", "craft": ["ArchivePhoto | LoupeMedia（Commons 真素材）| InkPath（已画到一半）", "HandNote"], "camera": "push-in（第 0 帧就在推）"}
-    },
-    {
-      "id": "B2", "role": "tension", "at": "1.5–4 s",
-      "$why": "反差：为什么这件事怪——把开头那个画面和观众的常识并排（大 vs 小、活 vs 空、旧 vs 新）。前 3 秒至少 3 个节拍（主体落定、两个元素入场或变化）。",
-      "caption": ["<<一句反差 / 张力（≤14 字）>>"],
-      "$components": {"skeleton": "Split", "craft": ["WashBlob", "InkCircle", "HandNote"], "camera": "pan-follow 或 cinema.focus（在两样东西之间）"}
-    },
-    {
-      "id": "B2b", "role": "title", "at": "≥ 10 s，可省",
-      "$why": "片名推迟：要有就放在开放问题抛出之后，在媒介里出现（写出来 HandLettering / 剪出来 CutPaper / 贴编目签）。短片可以不要片名。",
-      "caption": [],
-      "$components": {"skeleton": "Stage", "craft": ["HandLettering", "Seal"], "camera": "pull-back（让出片名的位置）"}
-    },
-    {
-      "id": "B3", "role": "wrong-intuition", "at": "10–28 s",
-      "$why": "把观众真有的那个错误直觉『演出来』，让它看起来很对。",
-      "caption": ["<<多数人以为……>>", "<<看起来确实如此>>"],
-      "$components": {"skeleton": "Split", "craft": ["PinnedPhoto | ArchivePhoto（Commons 真素材）", "WashBlob", "HandNote"], "camera": "pan-follow（在两样东西之间横移）"}
-    },
-    {
-      "id": "B4", "role": "native-move", "at": "28–40 s",
-      "$why": "原生动作推翻它：只有这个媒介做得出的那一下。动作之前留 0.5–1 s 安静，第一声是全片最重要的声音。",
-      "caption": ["<<可是……>>"],
-      "$components": {"skeleton": "Zoom", "craft": ["Loupe | LoupeMedia | CutPaper(backlit) | WashBlob(sweep)"], "camera": "招牌镜头：推近 + 慢，主体 ≥ 1/3 画高"}
-    },
-    {
-      "id": "B5", "role": "evidence", "at": "40–55 s",
-      "$why": "数得出来的证据：大数字画成『数得出来的多』（格子、点、刻度），不是一个滚动数字。",
-      "caption": ["<<一个能核对的数字>>"],
-      "$components": {"skeleton": "Corridor", "craft": ["InkPath（刻度 / 计数线）", "HandNote", "Seal"], "camera": "pull-back 或 pan-follow"}
-    },
-    {
-      "id": "B6", "role": "turn-to-you", "at": "片长 40–45%",
-      "$why": "转向『你』：观众手边 / 身上的那个同样的东西。",
-      "caption": ["<<你……>>"],
-      "$components": {"skeleton": "Stage", "craft": ["PaperSheet", "InkCircle"], "camera": "push-in"}
-    },
-    {
-      "id": "B7", "role": "echo", "at": "最后 10–14 s",
-      "$why": "回到开头画面，但有一处变化，并回答开头的问题；最后一句之后留 2–3 s 呼吸。",
-      "caption": ["<<回答开头的问题（≤14 字）>>"],
-      "$components": {"skeleton": "Stage", "craft": ["同 B1 的构图", "一处变化"], "camera": "still → 极缓推"}
-    }
-  ],
-  "$rules": [
-    "相邻两镜换骨架；每个构图 ≤ 12–15 s；全片 ≥ 4 种运镜 + 一个招牌镜头",
-    "转场在媒介里：分镜表 transition 写 auto（皮肤缺省：journal / archive 真翻页 pageturn、papercut 揭纸 peel，画不了 WebGPU 时退回 slide / drop），或显式 slide / drop",
-    "开场照 references/director.md#narrative-hook 的冷开合约；节奏照 references/director.md#pacing-rhythm；镜头动机与景别见 references/camera.md#camera-language",
-    "画内必读标签 ≥ 48 设计 px（CRAFT_TYPE.label），每帧 ≤ 3 个",
-    "每个选题先 commons-search；真素材进 ArchivePhoto / PinnedPhoto / LoupeMedia，署名自动上屏",
-    "避免：暗底发光线、粒子、金色/冰蓝科技风、电子 BGM、名词→定义→升华"
-  ]
+ "$blueprint": "medium-metaphor",
+ "$route": "handwritten-craft",
+ "family": "medium-metaphor",
+ "fits": "一个东西的“本义 / 来历 / 为什么叫这个名字”，观众有一个真实的错误直觉可以推翻",
+ "$about": "媒介即隐喻：用一种物质把一件事演出来——冷开（最怪的画面 / 数字）→ 反差 → 错误直觉被演出 → 原生动作推翻 → 数得出来的证据 → 转向你 → 首尾呼应。配手作皮肤（journal / papercut / archive）与 src/craft/ 组件。",
+ "$howto": "这是手写组件路线的分镜蓝图，不走 compose-story。先按 references/director.md#director-method 写 manifests/treatment.json（隐喻 / 媒介 / 原生动作 / 三候选），再照下面每拍的 $components 写 scenes.tsx。把 <<…>> 换成内容；秒数是 70–90 秒片子的建议位置，按台词长度伸缩。字幕每行 ≤14 字（硬上限 16），约 1/3 时长无字幕。",
+ "theme": "<<journal | papercut | archive>>",
+ "mode": "hybrid",
+ "beats": [
+  {
+   "id": "B1",
+   "role": "cold-open",
+   "at": "0–1.5 s",
+   "$why": "冷开：第 0 帧就给全片最怪的那个画面或数字（真铜版画上的格子 / “一立方英寸软木里有十二亿间屋子”），主体 ≥ 1/3 画高、动作已经在发生。不配片名、不寒暄、第一句不用“X 这个词 / 你知道吗”。validate-opening 会查。",
+   "caption": [
+    "<<最怪的那个已核事实（≤14 字），0.3–1.0 s 内出现>>"
+   ],
+   "$components": {
+    "skeleton": "Stage",
+    "craft": [
+     "ArchivePhoto | LoupeMedia（Commons 真素材）| InkPath（已画到一半）",
+     "HandNote"
+    ],
+    "camera": "push-in（第 0 帧就在推）"
+   },
+   "$asks": "例：第 0 帧摆出什么真实物件，能让观众一眼盯住并产生疑问？"
+  },
+  {
+   "id": "B2",
+   "role": "tension",
+   "at": "1.5–4 s",
+   "$why": "反差：为什么这件事怪——把开头那个画面和观众的常识并排（大 vs 小、活 vs 空、旧 vs 新）。前 3 秒至少 3 个节拍（主体落定、两个元素入场或变化）。",
+   "caption": [
+    "<<一句反差 / 张力（≤14 字）>>"
+   ],
+   "$components": {
+    "skeleton": "Split",
+    "craft": [
+     "WashBlob",
+     "InkCircle",
+     "HandNote"
+    ],
+    "camera": "pan-follow 或 cinema.focus（在两样东西之间）"
+   },
+   "$asks": "例：哪两组反差画面并排摆出，能瞬间引出观众的疑问？"
+  },
+  {
+   "id": "B2b",
+   "role": "title",
+   "at": "≥ 10 s，可省",
+   "$why": "片名推迟：要有就放在开放问题抛出之后，在媒介里出现（写出来 HandLettering / 剪出来 CutPaper / 贴编目签）。短片可以不要片名。",
+   "caption": [],
+   "$components": {
+    "skeleton": "Stage",
+    "craft": [
+     "HandLettering",
+     "Seal"
+    ],
+    "camera": "pull-back（让出片名的位置）"
+   },
+   "$asks": "例：片名放在哪个开放问题之后出现，才不打断开场的悬念？"
+  },
+  {
+   "id": "B3",
+   "role": "wrong-intuition",
+   "at": "4–28 s",
+   "$why": "把观众真有的那个错误直觉『演出来』，让它看起来很对。",
+   "caption": [
+    "<<多数人以为……>>",
+    "<<看起来确实如此>>"
+   ],
+   "$components": {
+    "skeleton": "Split",
+    "craft": [
+     "PinnedPhoto | ArchivePhoto（Commons 真素材）",
+     "WashBlob",
+     "HandNote"
+    ],
+    "camera": "pan-follow（在两样东西之间横移）"
+   },
+   "$asks": "例：观众原本深信的错误直觉是什么，怎么先把它演得像真的？"
+  },
+  {
+   "id": "B4",
+   "role": "native-move",
+   "at": "28–40 s",
+   "$why": "原生动作推翻它：只有这个媒介做得出的那一下。动作之前留 0.5–1 s 安静，第一声是全片最重要的声音。",
+   "caption": [
+    "<<可是……>>"
+   ],
+   "$components": {
+    "skeleton": "Zoom",
+    "craft": [
+     "Loupe | LoupeMedia | CutPaper(backlit) | WashBlob(sweep)"
+    ],
+    "camera": "招牌镜头：推近 + 慢，主体 ≥ 1/3 画高"
+   },
+   "$asks": "例：用什么只有这套手作媒介演得出的原生动作，点破核心机制？"
+  },
+  {
+   "id": "B5",
+   "role": "evidence",
+   "at": "40–55 s",
+   "$why": "数得出来的证据：大数字画成『数得出来的多』（格子、点、刻度），不是一个滚动数字。",
+   "caption": [
+    "<<一个能核对的数字>>"
+   ],
+   "$components": {
+    "skeleton": "Corridor",
+    "craft": [
+     "InkPath（刻度 / 计数线）",
+     "HandNote",
+     "Seal"
+    ],
+    "camera": "pull-back 或 pan-follow"
+   },
+   "$asks": "例：哪个具体数字或细节把核心原理彻底坐实？"
+  },
+  {
+   "id": "B6",
+   "role": "turn-to-you",
+   "at": "55–65 s（≈15%）",
+   "$why": "转向『你』：观众手边 / 身上的那个同样的东西。",
+   "caption": [
+    "<<你……>>"
+   ],
+   "$components": {
+    "skeleton": "Stage",
+    "craft": [
+     "PaperSheet",
+     "InkCircle"
+    ],
+    "camera": "push-in"
+   },
+   "$asks": "例：把反转落回观众身边，为什么这件事和今天有关？"
+  },
+  {
+   "id": "B7",
+   "role": "echo",
+   "at": "最后 10–14 s",
+   "$why": "回到开头画面，但有一处变化，并回答开头的问题；最后一句之后留 2–3 s 呼吸。",
+   "caption": [
+    "<<回答开头的问题（≤14 字）>>"
+   ],
+   "$components": {
+    "skeleton": "Stage",
+    "craft": [
+     "同 B1 的构图",
+     "一处变化"
+    ],
+    "camera": "still → 极缓推"
+   },
+   "$asks": "例：回到开场物件，只改哪一处细节就能闭合全片悬念？"
+  }
+ ],
+ "$rules": [
+  "相邻两镜换骨架；每个构图 ≤ 12–15 s；全片 ≥ 4 种运镜 + 一个招牌镜头",
+  "转场在媒介里：分镜表 transition 写 auto（皮肤缺省：journal / archive 真翻页 pageturn、papercut 揭纸 peel，画不了 WebGPU 时退回 slide / drop），或显式 slide / drop",
+  "开场照 references/director.md#narrative-hook 的冷开合约；节奏照 references/director.md#pacing-rhythm；镜头动机与景别见 references/camera.md#camera-language",
+  "画内必读标签 ≥ 48 设计 px（CRAFT_TYPE.label），每帧 ≤ 3 个",
+  "每个选题先 commons-search；真素材进 ArchivePhoto / PinnedPhoto / LoupeMedia，署名自动上屏",
+  "避免：暗底发光线、粒子、金色/冰蓝科技风、电子 BGM、名词→定义→升华"
+ ]
 }

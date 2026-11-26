@@ -1,5 +1,5 @@
 // ============================================================================
-// linework/sketch.tsx · 线稿层渲染器（3.5.0）
+// linework/sketch.tsx · 线稿层渲染器
 //
 // 输入：一镜的 sketch spec（compose 已把 acts 的 @引用换算成本镜帧号）+ 一个画面方框。
 // 输出：皮肤墨色的简笔线稿，7 个动词（enter / point / drop / swap / count / mark / exit）。
@@ -16,9 +16,9 @@ import {useSvgId, warnOnce} from '../uid';
 import {PART_CROP} from './crops';
 import {SKETCHES} from './library';
 import type {Fill, Prim, SketchAct, SketchDef, SketchSpec} from './types';
+import {clamp} from '../motion';
 
 const C = THEME.palette;
-const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
 const INK = () => THEME.craft?.inkLine ?? C.ink;
 const ACCENT = () => THEME.craft?.accent ?? C.orange;
 
@@ -92,7 +92,7 @@ const PrimView: React.FC<{p: Prim; prog: number; color: string; sw: number; pain
     strokeLinejoin: 'round' as const,
     fill: 'none',
   };
-  const o = Math.max(0, prog * 2 - 1);  // 3.5.1：闭合形也沿路径描出，填色在描到一半后补上
+  const o = Math.max(0, prog * 2 - 1);  // 闭合形也沿路径描出，填色在描到一半后补上
   const fillLayer = fill === 'none' ? null : p.k === 'path'
     ? <path d={p.d} fill={fill} stroke="none" opacity={o} filter={paint ? `url(#${paint})` : undefined} />
     : p.k === 'rect'
@@ -137,7 +137,6 @@ const partAnchor = (def: SketchDef, id: string, crop?: Fit): [number, number] =>
     else if (p.k === 'line') { x0 = Math.min(x0, p.x1, p.x2); x1 = Math.max(x1, p.x1, p.x2); y0 = Math.min(y0, p.y1, p.y2); y1 = Math.max(y1, p.y1, p.y2); }
   }
   // 只有 path 的部位算不出包围盒（这一层不做路径解析）：用构建期生成的缺省取景框中心。
-  // 以前一律 [50,50]，于是「绳与结」「灯丝」这类全 path 部位的引线总是指向画面正中。
   if (x0 > x1) return crop ? [crop[0] + crop[2] / 2, crop[1] + crop[3] / 2] : [50, 50];
   return [(x0 + x1) / 2, (y0 + y1) / 2];
 };
@@ -174,13 +173,12 @@ export const SketchLayer: React.FC<{spec: SketchSpec; f: number; box: {x: number
   const svgUid = useSvgId('paint');
   const def = resolveSketchDef(spec);
   if (!def) {
-    // 名字写错时引擎什么都不画：必须留痕，否则成片里只是"这一镜少了张图"（P1-09 构建期已拦，
+    // 名字写错时引擎什么都不画：必须留痕，否则成片里只是"这一镜少了张图"（构建期已拦，
     // 这里兜住手写 shots.ts 的情况）。
     warnOnce(`draw:${spec.id}`, `[Sketch] ${spec.id}: draw=${spec.draw} 解析不出线稿（lib 名字不存在 / shapes JSON 无效），这一镜是空的`);
     return null;
   }
   // 墨图页的 parts 数组是「只画这些部位」，不是 point 的标注表。
-  // 旧版把它原样传进来却从不筛选，S1 写 ['hull','line']、S4 写 ['plank'] 结果都画整张 chiplog。
   const selected = Array.isArray(spec.parts) ? new Set(spec.parts) : null;
   const visibleParts = Object.entries(def.parts).filter(([id]) => !selected || selected.has(id));
   // 一个已知部位都没命中时不能悄悄画空：退回整图并保留渲染日志，让作者能修正拼写。
@@ -201,7 +199,7 @@ export const SketchLayer: React.FC<{spec: SketchSpec; f: number; box: {x: number
   const st = stateAt(acts, f);
   const start = spec.persist ? -999 : st.entered;
   if (f < start) return null;
-  // 3.5.1：按部位依次描出（先各部位、最后底座），整幅 clamp(12 × 部位数, 24, 45) 帧；整体不淡入
+  // 按部位依次描出（先各部位、最后底座），整幅 clamp(12 × 部位数, 24, 45) 帧；整体不淡入
   const nParts = partEntries.length + (def.base ? 1 : 0);
   const DUR = Math.max(24, Math.min(45, 12 * nParts));
   const enter = spec.persist ? 1 : (f >= start ? 1 : 0);
@@ -212,11 +210,11 @@ export const SketchLayer: React.FC<{spec: SketchSpec; f: number; box: {x: number
   const ink = INK();
   const accent = ACCENT();
   // 颜料滤镜的 seed 由 spec.id 定死：每帧重算也得是同一张图，否则渲染不可重放。
-  // 但 **DOM id 不能用它**——转场期间两镜同时挂载，同名 spec.id 会渲染出两个同 id 的 filter（P1-08）。
+  // 但 **DOM id 不能用它**——转场期间两镜同时挂载，同名 spec.id 会渲染出两个同 id 的 filter。
   const seedKey = String(spec.id ?? 'sk').replace(/[^\w-]/g, '');
   const paintSeed = [...seedKey].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 900;
   // 三档线（仿 a2e 的「大外壳 > 内部结构 > 细节」）：轮廓最粗、内部次之、细节再细一档且偏暖灰。
-  // 旧版所有线一个宽度 → 看起来像卡通用色块拼的剪贴画。
+  // 所有线一个宽度时看起来像卡通用色块拼的剪贴画。
   const base = (THEME.id === 'cel' ? 1.35 : 0.95) / Math.max(0.6, scale);
   const pointId = st.point?.target;
   const pointP = st.point ? interpolate(f, [st.point.at, st.point.at + 8], [0, 1], clamp) : 0;

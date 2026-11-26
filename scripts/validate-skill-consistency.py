@@ -16,7 +16,7 @@ SKILL = Path(__file__).resolve().parent.parent
 if '--root' in sys.argv:
     SKILL = Path(sys.argv[sys.argv.index('--root') + 1]).resolve()
 
-# 断句短语规则要 BudouX。3.9.0 起技能自带一份（`assets/vendor/budoux/`，Apache-2.0，80 KB 中文切片），
+# 断句短语规则要 BudouX。技能自带一份（`assets/vendor/budoux/`，Apache-2.0，80 KB 中文切片），
 # 所以新克隆的仓库里这条规则也能真跑；`build-semantic-captions.py` 的 find_budoux_root 会兜底到它。
 # 工程里装了 node_modules 时优先用工程那份（版本跟 package-lock.json 走）。
 #   python scripts/validate-skill-consistency.py --budoux-dir <某工程的 node_modules>   # 覆盖自带那份
@@ -43,9 +43,8 @@ def reusable_file(path: Path) -> bool:
 # ---------------------------------------------------------------------------
 # 文档反引号里的 PascalCase 名字必须能在源码里找到定义
 #
-# 为什么加这一条：A1（`Attach`）/ A6（`CameraRig`）/ A7（`camScript`）/ A8（六件不可达组件）/
-# B11（代码注释层的已删件名）这一整类"会误导执行 AI"的缺陷，之前的门禁一条都拦不住 ——
-# 它只查相对链接，不查名字。这一条是同构检查：**文档写了不存在的名字 → 直接报错**。
+# 为什么加这一条：文档里写了不存在的组件名 / 已删件名，是一整类"会误导执行 AI"的缺陷，
+# 只查相对链接的检查拦不住。这一条是同构检查：**文档写了不存在的名字 → 直接报错**。
 #
 # 判据与边界：
 #   · 真值来源 = 模板/示例工程的源码里**定义过的一切标识符**（含未导出的）∪ manifests 里的字符串取值
@@ -53,7 +52,7 @@ def reusable_file(path: Path) -> bool:
 #   · `CHANGELOG.md` **不查**：它是历史记录，按历史处理（写已删组件的名字是它的职责）。
 #   · 白名单只装"本来就不属于本仓库的东西"，每类都写了理由；**不要为了消红把自家组件名塞进来**。
 #   · **提到已删除的名字时不要加反引号**：本技能里反引号 = "这是可直接使用的标识符"。
-#     写历史对照（"X 已于 v3.1 删除"）时用纯文本写名字，检查就不会误报，读者也不会以为它还能用。
+#     写"X 已删除"这类对照时用纯文本写名字，检查就不会误报，读者也不会以为它还能用。
 # ---------------------------------------------------------------------------
 DOC_IDENT_SKIP_FILES = {"CHANGELOG.md", "CHANGELOG-legacy.md"}
 DOC_IDENT_WHITELIST = {
@@ -70,7 +69,7 @@ DOC_IDENT_WHITELIST = {
     'FFmpeg', 'FFprobe', 'TrueType', 'Typekit', 'Tailwind', 'Emotion', 'Panda', 'Mantine', 'Chakra',
     'HeroUI', 'DaisyUI', 'Storybook', 'Lottie', 'GIF', 'WebP', 'LineBreaker', 'Fflate', 'Lucide',
     'Feather', 'Tabler', 'Simple', 'Icons', 'OpenSCAD',
-    'Shiki', 'CodeHike', 'LinePath', 'AreaClosed', 'Area', 'Bar', 'GridRows', 'AxisLeft', 'AxisBottom',  # 3.2.0 第三方库的 API 名
+    'Shiki', 'CodeHike', 'LinePath', 'AreaClosed', 'Area', 'Bar', 'GridRows', 'AxisLeft', 'AxisBottom',  # 第三方库的 API 名
     # 规范 / 标准 / 许可
     'WCAG', 'OFL', 'MIT', 'ISC', 'Apache', 'MPL', 'UAX', 'CJK', 'SDH', 'TTS', 'ASR', 'LLM', 'AI',
     'BM25', 'EEG', 'ANN', 'SaaS', 'PDF', 'PDFs', 'PPT', 'VIP', 'IDE', 'LRU',
@@ -88,10 +87,10 @@ DOC_IDENT_WHITELIST = {
     'Chloe', 'Dean', 'Mia', 'Milo', 'TransitionSeries',      # 供应商音色名 / Remotion API
     'FiZoomOut', 'LuZoomOut',                                 # react-icons 的两个字形名（政策里做字节级对照）
     'DeepSeek', 'Opus',                                       # 模型名
-    'NOTICE', 'UNLICENSED', 'Vulkan', 'VK_ICD_FILENAMES',      # 仓库文件名 / npm 许可字段 / Chromium feature / Vulkan loader 环境变量（3.3.0 references/camera.md#fx-effects）
+    'NOTICE', 'UNLICENSED', 'Vulkan', 'VK_ICD_FILENAMES',      # 仓库文件名 / npm 许可字段 / Chromium feature / Vulkan loader 环境变量（references/camera.md#fx-effects）
     # —— 以下名字在文档里**只允许以"已删除/历史对照"的身份出现**（写它们的用途是告诉读者"别再用"）——
     'BackgroundMute', 'CameraRig', 'SceneContribute', 'SceneShip', 'SceneSkills',
-    'Film4x3', 'Film3x4',                                        # 3.2.0 删除的 4:3 / 3:4 Composition
+    'Film4x3', 'Film3x4',                                        # 删除的 4:3 / 3:4 Composition
     'ElderPhone', 'FamilyShield', 'Robot', 'Scammer', 'SrcIcon',   # 已删除的竖屏示例题材插画命名，从来不是模板组件
 }
 
@@ -100,14 +99,14 @@ def doc_defined_names() -> set[str]:
     """本仓库"真实存在过"的标识符集合：模板源码 ∪ **脚本里的常量与函数** ∪ manifests 字符串取值。
 
     ⚠️ 第三项是必须的：文档会**正当**引用脚本常量（`BEAT_LATE_FRAMES`、`BEAT_TIGHT_FRAMES` 这类门禁口径），
-    只扫 TS 源码会把它们当成"文档编出来的名字"报 P0 —— 复核第二轮我自己就踩了这条假阳性。
+    只扫 TS 源码会把它们当成"文档编出来的名字"报 P0（假阳性）。
     """
     names: set[str] = set()
     for f in (SKILL / 'scripts').glob('*.py'):
         t = f.read_text(encoding='utf-8', errors='ignore')
         names |= set(re.findall(r'^([A-Za-z_][\w]*)\s*=', t, re.M))   # 模块级常量/变量
         names |= set(re.findall(r'^def\s+([A-Za-z_][\w]*)', t, re.M)) # 函数名
-    # Node 脚本（3.3.0 起 fx-browser.mjs 有导出常量与环境变量）：`export const NAME`、`env.NAME` / `process.env.NAME` 都是真名字。
+    # Node 脚本（fx-browser.mjs 有导出常量与环境变量）：`export const NAME`、`env.NAME` / `process.env.NAME` 都是真名字。
     for f in (SKILL / 'scripts').glob('*.mjs'):
         t = f.read_text(encoding='utf-8', errors='ignore')
         names |= set(re.findall(r'export\s+(?:const|function|class)\s+([A-Za-z_$][\w$]*)', t))
@@ -130,7 +129,7 @@ def doc_defined_names() -> set[str]:
                     if m2:
                         names.add(m2.group(1))
             # Remotion 合成 id（`<Composition id="NotebookVideoCraftSheet" …/>`）也是文档会引用的真名字：
-            # 3.3.0 的 references/components.md#craft-kit 写了 `NotebookVideoCraftSheet`，旧版只认 TS 声明，于是报"文档编出来的名字"。
+            # references/components.md#craft-kit 写了 `NotebookVideoCraftSheet`，只认 TS 声明会误报"文档编出来的名字"。
             names |= set(re.findall(r'<Composition\s+id="([A-Za-z_$][\w$]*)"', t))
             for m in re.finditer(r'export\s*\{([^}]*)\}', t):
                 for part in m.group(1).split(','):
@@ -151,6 +150,12 @@ def doc_defined_names() -> set[str]:
                 stack.extend(node)
             elif isinstance(node, str) and re.fullmatch(r'[A-Z][A-Za-z0-9]{1,30}', node):
                 names.add(node)
+    cpath = SKILL / 'assets' / 'lecture-template' / 'src' / 'contract.json'
+    if cpath.is_file():
+        try:
+            names |= {k for k in json.loads(cpath.read_text(encoding='utf-8')).keys() if not k.startswith('_')}
+        except Exception:
+            pass
     return names
 
 
@@ -250,7 +255,7 @@ def check_canvas_mode_dual_source() -> list[str]:
 
 
 def check_skill_description() -> list[str]:
-    """3.5.4：SKILL.md 的 description ≤ 1024 字符（Agent Skills 规范上限），且纯标量里不能有「: 」。
+    """SKILL.md 的 description ≤ 1024 字符（Agent Skills 规范上限），且纯标量里不能有「: 」。
 
     事故：description 长到 1805 字符；不加引号的纯标量里还夹着「comes first: there is」，
     严格 YAML 解析直接报错，frontmatter 整个读不出来。详见 tests/test_skill_frontmatter.py。
@@ -277,7 +282,7 @@ def check_skill_description() -> list[str]:
 # ---------------------------------------------------------------------------
 # 过程词 / 内部版本号守护（思路借自 lemo-opuscar tools/release.py 的 PROCESS_WORDS，MIT，此处重写）
 # 面向 agent 的指令文档（SKILL.md、references/）只写"现在怎么做"，不写版本史、事故复述、
-# 评审过程。那些写进 CHANGELOG.md 或不发布的 MAINTAINING.md。依赖库自己的版本号不算（见豁免）。
+# 评审过程（版本变化只写进 CHANGELOG.md）。依赖库自己的版本号不算（见豁免）。
 # ---------------------------------------------------------------------------
 PROCESS_WORDS = ('踩过', '事故', '上一版', '那一轮', '复核第二轮', r'(?:提交|commit) [0-9a-f]{7}\b')
 INTERNAL_VERSION = (r'(?<![\w@./\-])v?[1-3]\.\d+\.(?:\d+|x)(?![\w.])',   # 3.6.0 / v3.1.1 / 3.1.x
@@ -317,6 +322,58 @@ def check_process_words() -> list[str]:
     return problems
 
 
+
+def check_contract_numeric_consistency() -> list[str]:
+    """检查文档中引用的 contract.json 常量数值是否与 src/contract.json 一致。"""
+    cpath = SKILL / 'assets' / 'lecture-template' / 'src' / 'contract.json'
+    if not cpath.is_file():
+        return ['missing contract.json: assets/lecture-template/src/contract.json']
+    contract = json.loads(cpath.read_text(encoding='utf-8'))
+    scalars: dict[str, float] = {
+        k: float(v) for k, v in contract.items()
+        if isinstance(v, (int, float)) and not isinstance(v, bool)
+    }
+    # 脚本里的模块级数值常量（如 CPS_MAX = 9.0）同样会被文档以 `NAME`（值）引用；
+    # 同名常量在不同脚本里取值不同时无法判定真源，跳过。
+    script_consts: dict[str, set[float]] = {}
+    const_re = re.compile(r'^([A-Z][A-Z0-9_]{2,})\s*=\s*(-?\d+(?:\.\d+)?)\s*(?:#.*)?$')
+    for py in sorted((SKILL / 'scripts').glob('*.py')):
+        for line in py.read_text(encoding='utf-8', errors='ignore').splitlines():
+            m = const_re.match(line)
+            if m:
+                script_consts.setdefault(m.group(1), set()).add(float(m.group(2)))
+    origin = {k: 'contract.json' for k in scalars}
+    for k, vals in script_consts.items():
+        if k not in scalars and len(vals) == 1:
+            scalars[k] = next(iter(vals))
+            origin[k] = 'scripts/*.py'
+    if not scalars:
+        return []
+    key_alt = '|'.join(sorted(scalars, key=len, reverse=True))
+    # 匹配 `KEY` = 1.35 / `KEY`（4.5） / `KEY`: 16 / `KEY` 为 22 等紧邻数值写法
+    pat = re.compile(
+        rf'`({key_alt})`\s*(?:=|==|:|：|为|约|≤|>=|<=|\(|（)\s*(\d+(?:\.\d+)?)',
+    )
+    problems: list[str] = []
+    docs = [SKILL / 'SKILL.md', SKILL / 'README.md', SKILL / 'README.en.md']
+    docs += sorted((SKILL / 'references').rglob('*.md'))
+    for doc in docs:
+        if not doc.is_file() or doc.name in DOC_IDENT_SKIP_FILES:
+            continue
+        for lineno, line in enumerate(doc.read_text(encoding='utf-8', errors='ignore').splitlines(), 1):
+            for m in pat.finditer(line):
+                key, raw = m.group(1), m.group(2)
+                expected = scalars[key]
+                actual = float(raw)
+                if abs(actual - expected) > 1e-6:
+                    exp_s = str(int(expected)) if expected.is_integer() else str(expected)
+                    problems.append(
+                        f"contract numeric drift: {doc.relative_to(SKILL)}:{lineno} "
+                        f"`{key}`={raw} != {origin[key]} {exp_s}"
+                    )
+    return problems
+
+
 def check_linework_geometry() -> list[str]:
     """线稿取景框必须盖得住图形，生成的缺省框必须与 library.ts 同步。
 
@@ -344,8 +401,8 @@ def main() -> None:
         if reusable_file(p) and p.suffix.lower() in TEXT_SUFFIXES and not p.name.startswith('validate-')
     ]
     joined = '\n'.join(p.read_text(encoding='utf-8', errors='ignore') for p in text_files)
-    # 3.3.0：维护者专用的开发期工具（scripts/dev/，不随运行时调用）可以用 Pillow 生成入库位图；
-    # 「旧渲染器残留」检查只针对运行时代码与文档，所以把 PIL 系 token 的扫描范围排除 scripts/dev/。
+    # 「旧渲染器残留」检查只针对运行时代码与文档；开发期工具目录 scripts/dev/（若存在）
+    # 可以用 Pillow 生成位图，所以 PIL 系 token 的扫描范围排除它。
     runtime_joined = '\n'.join(p.read_text(encoding='utf-8', errors='ignore') for p in text_files
                                 if p.relative_to(SKILL).parts[:2] != ('scripts', 'dev'))
     for token in ('from PIL', 'import PIL', 'Pillow', 'build-caption-timing.py', 'aesthetic-candidate-project',
@@ -403,7 +460,7 @@ def main() -> None:
         if not required.is_file():
             problems.append(f"missing cross-platform entry: {required.relative_to(SKILL)}")
 
-    # Theme pack integrity: five locked skins (flat default, cel, and the 3.3.0 craft skins
+    # Theme pack integrity: five locked skins (flat default, cel, and the craft skins
     # journal / papercut / archive) plus the engine contract and docs.
     theme_dir = SKILL / 'assets' / 'lecture-template' / 'src' / 'theme'
     for theme_file in ('types.ts', 'canvas.ts', 'cel.tsx', 'flat.tsx', 'active.ts',
@@ -422,12 +479,12 @@ def main() -> None:
         for theme_id in THEME_IDS:
             src_text = (theme_dir / f'{theme_id}.tsx').read_text(encoding='utf-8', errors='ignore') if (theme_dir / f'{theme_id}.tsx').is_file() else ''
             for variant in ('main', 'chapter', 'quiet'):
-                rel = f'bg/bg-{theme_id}-{variant}.jpg'
+                rel = f'bg/bg-{theme_id}-{variant}.webp'
                 if not (SKILL / 'assets' / 'lecture-template' / 'public' / rel).is_file():
                     problems.append(f"missing theme background: assets/lecture-template/public/{rel}")
                 if f"'{rel}'" not in src_text:
                     problems.append(f"theme {theme_id}.tsx does not map variant {variant} to '{rel}'")
-        # 3.3.0 背景库：manifest 在、每张图在、每个手作皮肤 ≥ 8 张 / flat、cel ≥ 4 张新增库背景、
+        # 背景库：manifest 在、每张图在、每个手作皮肤 ≥ 8 张 / flat、cel ≥ 4 张新增库背景、
         # 门禁里的皮肤墨色与 theme/*.tsx 的 palette.ink 一致（完整的 sha256 / 许可 / 对比度由 validate-backgrounds.py 查）。
         bg_lib = SKILL / 'assets' / 'lecture-template' / 'manifests' / 'backgrounds.json'
         if not bg_lib.is_file():
@@ -500,6 +557,7 @@ def main() -> None:
     problems.extend(check_enum_dual_source())
     problems.extend(check_canvas_mode_dual_source())
     problems.extend(check_linework_geometry())
+    problems.extend(check_contract_numeric_consistency())
 
     if problems:
         for problem in problems:

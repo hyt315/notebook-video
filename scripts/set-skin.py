@@ -4,8 +4,7 @@
 为什么需要这个命令：皮肤的**真源是 src/theme/active.ts**（渲染端 import 它），
 但背景库按 `manifests/shots.json` 的 `theme` 挑图，而 `story.json` 的 theme 会被
 compose-story 写回 shots.json。三处任意一处漏改，出来的就是
-「A 皮肤的组件 + B 皮肤的纸」——2026-10-31 实测踩过：只改 active.ts 做跨皮肤对照，
-五族渲出来全是点阵纸，结论全废。
+「A 皮肤的组件 + B 皮肤的纸」（例如只改 active.ts 做跨皮肤对照，五族渲出来会全是同一种纸）。
 
 这个命令只做一件事：把三处写成同一个值，然后告诉你下一步要重跑什么。
 不改内容、不改画面、不碰排版。
@@ -89,6 +88,24 @@ def main(argv: list[str]) -> int:
     ok = set_active(project, skin)
     ok &= set_json_theme(project / "story.json", skin, "story.json")
     ok &= set_json_theme(project / "manifests" / "shots.json", skin, "manifests/shots.json")
+    tp = project / "manifests" / "treatment.json"
+    if tp.is_file():
+        try:
+            td = json.loads(tp.read_text(encoding="utf-8"))
+            if isinstance(td, dict) and isinstance(td.get("medium"), dict):
+                td["medium"]["skin"] = skin
+                tp.write_text(json.dumps(td, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                print(f"  ✓ manifests/treatment.json → medium.skin={skin}")
+        except (ValueError, OSError):
+            pass
+    if skin in ("journal", "papercut", "archive"):
+        serif_dst = project / "public" / "NotoSerifSC-Bold.otf"
+        serif_src = Path(__file__).resolve().parent.parent / "assets" / "fonts" / "NotoSerifSC-Bold.otf"
+        if not serif_dst.is_file() and serif_src.is_file():
+            import shutil as _shutil
+            serif_dst.parent.mkdir(parents=True, exist_ok=True)
+            _shutil.copyfile(serif_src, serif_dst)
+            print("  ✓ 已补齐 public/NotoSerifSC-Bold.otf")
     if not ok:
         return 1
 
@@ -100,6 +117,10 @@ def main(argv: list[str]) -> int:
             r = subprocess.run([sys.executable, str(here / "compose-story.py"), str(story), str(project)],
                                cwd=str(project), capture_output=True, text=True, encoding="utf-8", errors="ignore")
             print("   ", (r.stdout or "").strip().splitlines()[-1] if r.stdout.strip() else f"rc={r.returncode}")
+            if r.returncode:
+                for line in (r.stderr or r.stdout or "").strip().splitlines()[:8]:
+                    print("   ", line, file=sys.stderr)
+                return 1
         print("  … resolve-shots")
         r = subprocess.run([sys.executable, str(here / "resolve-shots.py"), str(project)],
                            cwd=str(project), capture_output=True, text=True, encoding="utf-8", errors="ignore")

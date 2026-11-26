@@ -1,9 +1,9 @@
 import React from 'react';
-import {Easing, interpolate} from 'remotion';
 import {THEME} from './theme/active';
+import {easeIn, easeIO, easeOut} from './motion';
 
 // ============================================================================
-// media · 视觉介质层 v2（内容 → 视觉形式 的落地件）
+// media · 视觉介质层（内容 → 视觉形式 的落地件）
 //
 // 介质清单与对应组件（references/media.md#media-routing 有完整路由表）：
 //   数据/对比   → fxkit: CompareBars / ProgressRing      本文件: MetricGrid
@@ -15,24 +15,16 @@ import {THEME} from './theme/active';
 //   证据细节    → fxkit: EvidenceZoom
 //   场景衔接    → shotkit 运镜 + insert 转场
 //
-// ── v2 的动效原则（"丝滑"来自多时钟，不是更花的曲线）────────────────────
+// ── 动效原则（"丝滑"来自多时钟，不是更花的曲线）────────────────────
 // 1. **同一元素的多个属性用不同时钟**（number-flow：位移 900ms / 透明度 450ms）。
 //    同长同曲线读作"一个刚体弹出"，错开 4–14 帧才读作"东西落下来"。
 // 2. **入场与出场曲线不同**：出场快而急（ease-in quad），入场慢而稳（bezier(.16,1,.3,1)）。
 // 3. **不要只动透明度**：每个淡入都配 10–24px 位移或 2–6% 缩放。
 // 4. **数值用 tabular-nums + 固定小数位**，否则数字会横向抖动（"不丝滑"的常见真因）。
 // 5. **进度条动 scaleX，不动 width**：width 是布局属性，会重排，且会让圆角胶囊在动画中间被拉变形。
-// 6. **过冲只给物体，不给数值**：印章/横幅可以弹，百分比不能弹（会显示错误的数）。
+// 6. **不过冲回弹**：草稿纸动效先快后稳、落定即止；数值更不能弹（会显示错误的数）。
 // ============================================================================
 
-const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
-// BASE_FPS 已删：本文件没有一处 spring（全走 interpolate 显式曲线），tsc TS6133。
-const easeOut = (f: number, a: number, b: number, from = 0, to = 1) =>
-  interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.bezier(0.16, 1, 0.3, 1)});
-const easeIn = (f: number, a: number, b: number, from = 0, to = 1) =>
-  interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.in(Easing.quad)});
-const easeIO = (f: number, a: number, b: number, from = 0, to = 1) =>
-  interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.inOut(Easing.cubic)});
 /** 单向脉冲 0→1→0（强调一下，而不是永久呼吸）。 */
 const pulse = (f: number, at: number, dur = 14) => Math.sin(Math.PI * Math.max(0, Math.min(1, (f - at) / dur)));
 
@@ -50,10 +42,10 @@ const parseNum = (s: string): NumParts | null => {
 
 // ---------------------------------------------------------------------------
 // ConsoleWindow：控制台/终端窗口介质。
-// v2：行"被写出来"（clip 擦除 + 位移 + 光标接棒）、ok/warn 行一闪、状态胶囊脉冲刷新、
-//     末行一道扫描、高度按内容自适应（旧版默认高度比内容高约 120px，整块死黑）。
+// 行"被写出来"（clip 擦除 + 位移 + 光标接棒）、ok/warn 行一闪、状态胶囊脉冲刷新、
+//     末行一道扫描、高度按内容自适应（不留大块空黑）。
 // ---------------------------------------------------------------------------
-const ROW_INTERVAL = 16; // 行间默认节奏（帧）。旧的 9 帧（300ms）太快，光标读不出"移动"
+const ROW_INTERVAL = 16; // 行间默认节奏（帧）。再快光标就读不出"移动"
 const ROW_REVEAL = 14;
 
 export const ConsoleWindow: React.FC<{
@@ -149,7 +141,7 @@ export type Metric = {label: string; before: string; after: string; win: boolean
 
 // ---------------------------------------------------------------------------
 // MetricGrid：指标网格介质。
-// v2：数值按双时钟滚动（位移 27 帧 / 透明度 14 帧）+ tabular-nums + 固定小数位；
+// 数值按双时钟滚动（位移 27 帧 / 透明度 14 帧）+ tabular-nums + 固定小数位；
 //     before→after 是"替换"（旧的快速向上退场、新的从下方稳稳落位），不是同时可见的交叉淡入；
 //     进度条动 scaleX；对勾用显式 1.12 过冲落定。
 // ---------------------------------------------------------------------------
@@ -215,18 +207,17 @@ export const MetricGrid: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// StampBanner：结论吸底条。三段式落定（冲击 6 帧 → 过冲到 1.03 → 回落 1）+ 底色一闪，
-// 于是存在一个能指出来的"砸中那一帧"；原来的 spring 是渐近的，永远不会真正落定。
+// StampBanner：结论吸底条。冲击 6 帧落定（不过冲）+ 底色一闪，
+// 于是存在一个能指出来的"砸中那一帧"（渐近的 spring 永远不会真正落定）。
 // ---------------------------------------------------------------------------
 export const StampBanner: React.FC<{x: number; y: number; w: number; f: number; at: number; text: string; color?: string; z?: number}> = ({x, y, w, f, at, text, color, z}) => {
   const C = THEME.palette;
   const c = color ?? C.orange;
   if (f < at) return null;
   const impact = easeOut(f, at, at + 6);
-  const over = pulse(f, at + 6, 14);   // 显式过冲，峰值在 at+13
   const flash = pulse(f, at, 22);
   const shock = pulse(f, at + 2, 20);
-  const scale = 0.94 + 0.06 * impact + 0.03 * over;
+  const scale = 0.94 + 0.06 * impact;
   return (
     <div style={{position: 'absolute', left: x, top: y, width: w, zIndex: z ?? 92, opacity: impact, transform: `translateY(${(1 - impact) * 18}px) scale(${scale})`, transformOrigin: 'center'}}>
       <div style={{position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, height: 62, background: `${c}${Math.round((0.08 + 0.16 * flash) * 255).toString(16).padStart(2, '0')}`, border: `2px solid ${c}`, borderRadius: 14, fontSize: 28, fontWeight: 700, color: c}}>
@@ -242,4 +233,3 @@ export const StampBanner: React.FC<{x: number; y: number; w: number; f: number; 
 export const MEDIA_KINDS = ['graphic', 'chart', 'console', 'code', 'text', 'metric'] as const;
 export type MediaKind = (typeof MEDIA_KINDS)[number];
 
-export const MEDIA_VERSION = 'media-v2 · ConsoleWindow + MetricGrid + StampBanner · multi-clock motion';

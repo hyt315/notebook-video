@@ -1,55 +1,22 @@
 import React from 'react';
-import {interpolate, interpolateColors, spring, useCurrentFrame} from 'remotion';
+import {interpolateColors} from 'remotion';
 import {THEME} from './theme/active';
 import {TYPE, LineIcon} from './kit';
+import {popS} from './motion';
 
 // ============================================================================
-// toolkit.tsx · 可被场景直接 import 的"修辞工具"组件（v3.0.1 从 index.tsx 迁出）
+// toolkit.tsx · 可被场景直接 import 的"修辞工具"组件
 //
-// 为什么独立成文件：这些组件原先定义在 index.tsx 里且**没有 export**，场景文件在物理上无法
-// import —— 这是"仓库里 54 件组件、成片里 27 件零使用"的结构性真因之一。直接在 index.tsx 上
-// export 会造成循环依赖（index → scenes → index），因此迁到本模块。
+// 为什么独立成文件：场景要能 import 这些组件，而直接在 index.tsx 上 export 会造成循环依赖
+// （index → scenes → index）。
 //
-// 与 index.tsx 的关系：本文件**刻意不 import index.tsx**；下面几个 helper 与 index.tsx 的同名
-// 实现一致但各自持有——这是为避免循环依赖而做的重复，不是疏忽。
-// 注意：本项目的 MOTION_FPS == BASE_FPS == 30，所以 index.tsx 的 q() 实为恒等，这里同样不做量化。
 //
 // 怎么选：**先查 references/media.md#media-routing 的「修辞动作 → 组件」表**（含"何时别用"），
 // 再决定用哪一件。表里标了禁用的动作请照做。
 // ============================================================================
 
 const C = THEME.palette;
-// `Paper` / `clamp` / `easeOutSoft` 三个局部 helper 本文件从未用上（tsc TS6133）；
-// easeOutSoft 是 clamp 与 Easing 的唯一使用者，三个一起删，连带去掉 Easing 的 import。
-const BASE_FPS = 30;
 const smoothStep = (v: number) => { const t = Math.max(0, Math.min(1, v)); return t * t * (3 - 2 * t); };
-// 与 index.tsx 的三档**逐参数一致**：v3.0.1 迁移时这两个值被写成 20/190 与 12/170，
-// 与工程其它地方（fxkit.tsx / index.tsx）不一致，会让搬到本模块的组件动感偏移。
-const SPRINGS = {
-  soft: {damping: 17, stiffness: 132, mass: .86},
-  snappy: {damping: 16, stiffness: 200, mass: .8},
-  bouncy: {damping: 11, stiffness: 160, mass: .9},
-} as const;
-const popS = (f: number, start: number, preset: keyof typeof SPRINGS = 'soft') =>
-  spring({frame: f - start, fps: BASE_FPS, config: SPRINGS[preset]});
-
-/**
- * 停帧点缀（`references/draftpaper.md#motion-design` 的 Stop-motion accent，LOCKED motion pack 里的一条）：
- * "`useSteppedFrame(15)` quantizes a component to 15fps so each pose holds two output frames.
- *  Reserve it for occasional hand-made charm; never apply it to subtitles, transfers or the camera."
- *
- * ⚠️ 2026-09-21：这条契约此前**全树没有实现** —— 文档在教作者用一个不存在的名字
- * （正是本技能自己定义的缺陷类「文档里有、代码里没有」）。现在放回**场景可 import 的这一层**，
- * 而不是删文档：停帧是定格质感的正经手法，删掉等于丢掉一种动效，
- * 而实现只有一行、零依赖。
- * 两个入口，按拿到的是哪一种帧号选：
- *   · `stepped(f, 15)` —— 组件拿的是**镜内局部帧**（`<Scene f={f-s.from}/>`）时用这个，
- *     与 `enterAt(f, …)` / `popS(f, …)` 同一口径；这是场景里的常规写法。
- *   · `useSteppedFrame(15)` —— 组件不接帧参数、只能读**全局帧**时用（chrome / 接触表）。
- *     场景里误用它 = 又一次"局部帧 vs 全局帧"事故（帧参数必填后由 tsc 拦的那一类）。
- */
-export const stepped = (f: number, stepFps = 15) => Math.floor((f * stepFps) / BASE_FPS) * BASE_FPS / stepFps;
-export const useSteppedFrame = (stepFps = 15) => stepped(useCurrentFrame(), stepFps);
 
 export const JumpInText:React.FC<{
   items:{text:string;color?:string;colorActive?:string;fontFamily?:string;fontSize?:number;fontWeight?:number|string;letterSpacing?:number}[];
@@ -63,28 +30,22 @@ export const JumpInText:React.FC<{
 }>=({items,fontSize,fontWeight=700,start,stagger=1.2,letterSpacing=0,style,frame})=>{
   const f=frame;
   let seq=0;
-  // data-gate-allow 的理由（2026-09-21 —— OverlapGate 修好之后**第一次整片渲染就撞上**）：
-  // 本件的动效是**逐字弹性波浪**：每个字独立 translate + rotateX(40°→0)，transformOrigin 在字脚
-  // （50% 100%），波浪期间相邻字的**盒**必然互相咬住。这是设计好的运动，不是版面压字。
-  // 但每个字都是"含文字的叶 span"，于是被 OverlapGate 的成对检查判成
-  //   “讲”压“得”(1161px²) → severe → 整片渲染在第 2 帧就中止。
-  // delayRender 补上之前这条永远不响，所以从来没人给它加白名单；现在必须**显式声明**。
+  // data-gate-allow 的理由：本件的动效是**逐字波浪**：每个字独立 translate + rotateX(40°→0)，不过冲，transformOrigin 在字脚
+  // （50% 100%），起势期间相邻字的**盒**必然互相咬住。这是设计好的运动，不是版面压字。
+  // 每个字都是"含文字的叶 span"，不声明就会被 OverlapGate 的成对检查判成互压而中止渲染。
   // （与 Callout 的分工：标注文字是"另一条信息"，继续参与判定；这里压的是同一句话自己的字。）
   return <div data-gate-allow="jumpin-wave" style={{display:'inline-flex',flexWrap:'wrap',justifyContent:'center',alignItems:'baseline',perspective:1000,...style}}>
     {items.map((seg,si)=>String(seg.text).split('').map((ch,ci)=>{
       const globalIdx=seq++;
       const letterStart=start+globalIdx*stagger;
       const age=f-letterStart;
-      const waveProgress=smoothStep(age/7.5);
-      const waveY=interpolate(waveProgress,[0,0.28,0.64,1],[14,-6,1.5,0]);
-      const waveX=interpolate(waveProgress,[0,0.28,0.64,1],[3,-1,0,0]);
-      const rotX=interpolate(waveProgress,[0,0.35,1],[40,-5,0]);
+      const lift=1-smoothStep(age/7.5);
       const targetColor=seg.color||C.ink;
       const activeColor=seg.colorActive||(seg.color===C.ink?C.orange:seg.color||C.blue);
       const colorProgress=smoothStep(age/5.5);
       const charColor=interpolateColors(colorProgress,[0,1],[activeColor,targetColor]);
       const opacity=smoothStep((age+0.45)/1.4);
-      return <span key={`${si}-${ci}`} style={{display:'inline-block',fontSize:seg.fontSize||fontSize,fontWeight:seg.fontWeight||fontWeight,fontFamily:seg.fontFamily||'inherit',letterSpacing:seg.letterSpacing??letterSpacing,color:charColor,opacity,transform:`translate(${waveX}px,${waveY}px) rotateX(${rotX}deg)`,transformOrigin:'50% 100%'}}>{ch===' '?'\u00a0':ch}</span>;
+      return <span key={`${si}-${ci}`} style={{display:'inline-block',fontSize:seg.fontSize||fontSize,fontWeight:seg.fontWeight||fontWeight,fontFamily:seg.fontFamily||'inherit',letterSpacing:seg.letterSpacing??letterSpacing,color:charColor,opacity,transform:`translate(${3*lift}px,${14*lift}px) rotateX(${40*lift}deg)`,transformOrigin:'50% 100%'}}>{ch===' '?'\u00a0':ch}</span>;
     }))}
   </div>;
 };
@@ -101,7 +62,7 @@ export const Checklist:React.FC<{items:string[];start:number;frame:number;stagge
 };
 export const Callout:React.FC<{x:number;y:number;w:number;h:number;text:string;textDy?:number;textDx?:number;color?:string;rotate?:number;start:number;frame:number;fontSize?:number;style?:React.CSSProperties}>=({x,y,w,h,text,textDy=-46,textDx=0,color=C.orange,rotate=-2,start,frame,fontSize=22,style})=>{
   const f=frame;
-  const p=popS(f,start,'bouncy');
+  const p=popS(f,start);
   // 画圈的两道椭圆是 `fill="none"` 的 SVG，不是实心层——OverlapGate 的 looksSolid 本来就不会把它判成遮挡物，
   // 所以这里**不加** data-gate-allow：标注文字是"另一条信息"，必须继续参与重叠判定（白名单只留给"同位置换信息"和镜头交接）。
   return <div style={{position:'absolute',left:x,top:y,width:w,height:h,zIndex:96,opacity:p,transform:`scale(${.7+.3*p}) rotate(${rotate}deg)`,transformOrigin:'50% 50%',...style}}>
@@ -114,4 +75,3 @@ export const Callout:React.FC<{x:number;y:number;w:number;h:number;text:string;t
   </div>;
 };
 
-export const TOOLKIT_VERSION = 'toolkit-v1 · 3 修辞工具件（Callout / Checklist / JumpInText）· 自包含';

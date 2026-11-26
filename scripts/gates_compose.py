@@ -1,7 +1,6 @@
-"""gates_compose.py — 3.2.0 那一批负向用例：compose-story / 自动修 / 音效元数据 / 背景库 / 评审拦截。
+"""gates_compose.py — 负向用例：compose-story / 自动修 / 音效元数据 / 背景库 / 评审拦截。
 
-从 `negative-gate-check.py` 切出来的一整块（导入即注册，顺序与原先一致）。
-放在单独文件里的理由：这批夹具都要"造一个带 story 的工程再跑脚本"，跟前面那些
+由 `negative-gate-check.py` 导入即注册。放在单独文件里的理由：这批夹具都要"造一个带 story 的工程再跑脚本"，跟前面那些
 "改一个 shots.json 字段"的夹具不是一类东西；混在一起时改一个 story 夹具要滚 800 行。
 """
 import io
@@ -15,7 +14,7 @@ from gatelib import (  # noqa: F401
     PY, SKILL, SRC, TPL, case, cleanup, mkproj, resolve, results, run,
 )
 
-# ============================ 3.2.0 · compose-story / 自动修 / 音效元数据 ============================
+# ============================ compose-story / 自动修 / 音效元数据 ============================
 COMPOSE = os.path.join(SKILL, 'scripts/compose-story.py')
 DEMO45 = os.path.join(SKILL, 'examples/code-change-cache.story.json')
 
@@ -85,7 +84,7 @@ _r8 = json.load(io.open(os.path.join(td, 'manifests/shots.resolved.json'), encod
 _settle = [k for k in (_r8.get('cinema') or {}).get('focus', []) if k.get('settle')]
 case('V8 resolve · 镜尾 >1.5s 无事件 → 自动收束焦点', [('must_pass', f'settle 焦点 {len(_settle)} 个', (0 if _settle else 1, ''))])
 cleanup(td)
-# V9 音效增益与库元数据不一致 → 拦（3.2.0 增益以 manifest 为准）
+# V9 音效增益与库元数据不一致 → 拦（增益以 manifest 为准）
 td = tempfile.mkdtemp(prefix='nv-sfx-')
 shutil.copytree(os.path.join(TPL, 'public'), os.path.join(td, 'public'))
 os.makedirs(os.path.join(td, 'src'))
@@ -96,7 +95,7 @@ io.open(os.path.join(td, 'src/sfx.ts'), 'w', encoding='utf-8').write(_sfx.replac
 case('V9 audio-levels · SFX_GAIN 与 manifest gain 漂移', [('must_block:不一致', 'validate-audio-levels', run([PY, os.path.join(SKILL, 'scripts/validate-audio-levels.py'), td]))])
 cleanup(td)
 
-# ---------------------------------------------------------------- 3.2.0 真实素材门禁（validate-media / prepare-media）
+# ---------------------------------------------------------------- 真实素材门禁（validate-media / prepare-media）
 VMEDIA = os.path.join(SKILL, 'scripts/validate-media.py')
 PMEDIA = os.path.join(SKILL, 'scripts/prepare-media.py')
 PNG = os.path.join(SKILL, 'examples/real-media/pr-placeholder.png')
@@ -165,9 +164,9 @@ td = media_proj(scene='<MediaFrame f={f} id="pr" x={L.x} y={L.y} w={L.w} h={L.h}
 case('M9 media · 尺寸来自布局对象量不出 → 按占满画布估，可能糊 → 提醒', [('must_warn:量不出', 'validate-media', run([PY, VMEDIA, td]))])
 cleanup(td)
 
-# ── BG · 3.3.0 背景库门禁（validate-backgrounds.py）+ resolve-shots 的背景解析 ──
+# ── BG · 背景库门禁（validate-backgrounds.py）+ resolve-shots 的背景解析 ──
 # 判据逐条：许可白名单、CC BY 必须署名、sha256 绑定、字幕区对比度（按 manifest 指标）、亮底、
-# 显式 bg 不存在 / 跨皮肤 → resolve-shots 拦；自动轮换绝不相邻重复；没有背景库的旧工程解析结果逐字节不变。
+# 显式 bg 不存在 / 跨皮肤 → resolve-shots 拦；自动轮换绝不相邻重复；没有背景库的工程解析结果不变。
 VBG = os.path.join(SKILL, 'scripts/validate-backgrounds.py')
 _LIB = json.load(io.open(os.path.join(TPL, 'manifests/backgrounds.json'), encoding='utf-8'))
 
@@ -241,14 +240,14 @@ case('BGL10 分镜 · 没有背景库的旧工程 → 不出 bgFile（3.3.0 行�
 cleanup(td)
 
 
-# ── SFX1：非法的 sfxDensity 必须被 resolve-shots 拦下（3.3.0）──
+# ── SFX1：非法的 sfxDensity 必须被 resolve-shots 拦下──
 _td, _rc, _out = mkproj(lambda d: (d.__setitem__('sfxDensity', 'loud'), d)[1])
 case('SFX1 分镜 · 非法 sfxDensity → resolve-shots 拦', [
     ('must_block:sfxDensity', 'resolve-shots', (_rc, _out))])
 cleanup(_td)
 
 
-# ── SFX2：缺省不写 sfxDensity 时按 sparse 生成（3.3.0 行为变更）──
+# ── SFX2：缺省不写 sfxDensity 时按 sparse 生成（行为变更）──
 _td, _rc, _out = mkproj()
 case('SFX2 分镜 · 缺省 sfxDensity = sparse（值由 tests/test_sfx_density.py 核对）', [
     ('must_pass', 'resolve-shots', (_rc, _out))])

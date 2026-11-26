@@ -1,6 +1,6 @@
 // Remotion 浏览器解析：环境变量优先，其次用本机已有缓存，都没有才让 Remotion 自己下载。
-// 抽成模块是为了让 make-video 的静帧与 notebook-video 的渲染/预览共用同一套解析——
-// 以前 make-video 不传 --browser-executable，于是明明本机已有缓存它还要再下一个。
+// 抽成模块是为了让 make-video 的静帧与 notebook-video 的渲染/预览共用同一套解析
+//（本机已有浏览器缓存时不再重复下载）。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -14,7 +14,7 @@ export function resolveBrowserExecutable(resolvePath = (p) => path.resolve(proce
   const browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE;
   if (browserExecutable) {
     const resolved = resolvePath(browserExecutable);
-    // 3.5.2：补回 3.5.0 的存在性检查——指错路径要明确报错，不能把坏路径交给 Remotion
+    // 存在性检查——指错路径要明确报错，不能把坏路径交给 Remotion
     if (!fs.existsSync(resolved)) throw new Error(`REMOTION_BROWSER_EXECUTABLE does not exist: ${resolved}`);
     return resolved;
   }

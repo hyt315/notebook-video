@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""story_layout.py — compose-story 的「每种版式把元素摆在哪」（P2-24 第四切片）
+"""story_layout.py — compose-story 的「每种版式把元素摆在哪」
 
 从 `compose-story.py` 切出的第五块，也是最大的一块：`el()` 的元素构造、十三种版式的几何、
 手账页 / 配方 / 版式页的取景框常量，以及版式分发表 `LAY`。
@@ -29,9 +29,12 @@ from story_acts import check_draw, resolve_ink_acts  # noqa: E402
 
 TYPE = {"display": 76, "title": 46, "body": 36}  # 三档字号；hero 数字另算（同镜仍 ≤3 种）
 BAND = {"x": 200, "y": 214, "w": 1520, "h": 630}  # 内容带（页眉下、字幕上）
+SUBTITLE_CLEAR_Y = 890  # 距最厚字幕条(y≈940)留 50px 余量，抗 1.05× 缓推
 # flow / compare 这类「一字排开」的版式，整组宽度上限。留白不是纯审美：满铺 1520 时
 # 屏幕安全框（1660×666）被内容占满，相机没有任何可动余量，招牌镜想推都推不进去。
 FLOW_TOTAL_MAX = 1300
+# flow 节点顶上的步骤序号（01 / 02 …）字号，取 body 档。
+FLOW_BADGE = TYPE["body"]
 
 # 允许直接上屏的单位（符号 / 公制短单位）。故事里的 `unit` 只该写这一列里的东西；
 # 写成「占比 %」「公斤燃料 / 公斤干重」这类说明句，会把柱顶读数拼成「85占比 %」并折行压到柱子上。
@@ -42,6 +45,15 @@ UNIT_TOKENS = (
     "cm", "mm", "kWh", "W", "V", "A", "Gbps", "Mbps", "万次", "亿次", "万", "亿",
 )
 UNIT_OK = set(UNIT_TOKENS)
+
+
+class _Quiet:
+    """试排用：只量字号，不记修复 / 提示（正式排版那一遍才记）。"""
+    def fix(self, *_a, **_k): pass
+    hint = err = fix
+
+
+_QUIET = _Quiet()
 
 
 def clean_unit(p: "Problems", sid: str, raw) -> str:
@@ -117,7 +129,7 @@ def lay_define(p, sid, c, variant):
     lx, rx = (X + 40, X + 720) if variant != "mirror" else (X + 900, X + 40)
     y0 = Y + 120
     # 术语框高与读音行高都走 SAFE_LH（与渲染端 Lines 的 safeLh 同一真源）。
-    # 以前按 ts*1.2 排，reading 会压进术语的行盒里（OverlapGate 硬拦「哈希」压「hash」）。
+    # 按 ts*1.2 排时 reading 会压进术语的行盒里（被 OverlapGate 硬拦）。
     term_h = ts * SAFE_LH
     els.append(el("term", "text", lx, y0, tw, term_h, term, ts, "display", 0, lh=SAFE_LH))
     if c.get("reading"):
@@ -130,10 +142,32 @@ def lay_define(p, sid, c, variant):
     return els
 
 
+# 数字块（数字 + 单位）最宽多少：与注释列（480 + 间距 80）合起来 ≤ 1360，
+# 整组在 1.16 倍推近下仍放得进安全框（1660 宽），且留出取景搜索的余量。
+NUMBER_BLOCK_MAX = 800
+# 数字块的下限宽度与字号上限：短数字按这个宽度放大，字号不超过 NUMBER_SIZE_MAX。
+NUMBER_BLOCK_MIN = 640
+NUMBER_SIZE_MAX = 320
+# 上下排法（数字太宽、注释排到下面）时数字块的最宽值：1.16 倍推近下仍放得进安全框。
+NUMBER_STACK_MAX = 1300
+# 并排排法最多把数字缩到原字号的这个比例，再小就改上下排法。
+NUMBER_SHRINK_MIN = 0.8
+
+
+def hero_number_w(txt: str, unit: str, size: float) -> float:
+    """大数字（KineticNumber：Clash 粗体）的上屏宽度估计，宁宽勿窄。"""
+    w = 0.0
+    for ch in txt:
+        w += (0.46 if ch == "1" else 0.72) * size if ch.isdigit() else text_w(ch, size) * 1.15
+    if unit:
+        u = size * 0.42
+        w += sum(text_w(ch, u) if ord(ch) > 0x2E80 else text_w(ch, u) * 1.15 for ch in unit) + size * 0.10
+    return w + size * 0.04
+
+
 def lay_number(p, sid, c, variant):
     X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
     # 缺 value 是作者写漏，不是运行时意外：给一条能照着改的话，不要抛 KeyError 让整片 compose 崩在栈里
-    # （P2-25 长片/退化夹具抓到的：weak model 写 "layout":"number" 却只填 text 时整次 compose 失败）。
     if "value" not in c:
         p.err(f'{sid}：layout="number" 必须给 content.value（要显示的数字），'
               f'例如 {{"value": 100, "unit": "万次", "label": "挨个比的最坏情况"}}；'
@@ -147,27 +181,67 @@ def lay_number(p, sid, c, variant):
         return []
     dec = int(c.get("decimals", 0 if float(val).is_integer() else 1))
     txt = f"{c.get('prefix', '')}{val:.{dec}f}"
-    size = 230
+    # 招牌数字：hero 档单独定字号（不占 TYPE 三档）。整组收拢后靠数字本身的分量撑起画面。
+    size = 260
     unit = clean_unit(p, sid, c.get("unit", ""))
-    # 预留宽度要**宽于**实际：数字用 tabular-nums 且字距 -0.02em，单位有 0.10em 的外边距，
-    # 按 0.98 收窄去算会让「1.852」和「公里」叠在一起（实测两个像素级压字）。
-    nw = text_w(txt, size) + text_w(unit, size * 0.42) + size * 0.12
-    if nw > 820:
-        size = int(size * 820 / nw); nw = 820
-    notes = c.get("notes") or []
+    notes = (c.get("notes") or [])[:3]
     left = variant != "mirror"
-    nx = X + 40 if left else X + W - nw - 40
-    ny = Y + 110
+    # 预留宽度要**宽于**实际：数字用 Clash 粗体（「1」约 0.46em，其余每位约 0.72em，含 -0.02em 字距；
+    # 这套字体没有等宽数字，tabular-nums 不生效），单位 0.42 倍字号、0.10em 外边距。
+    # 按正文字体（Kai 数字 0.6em）去估会窄一截，「3000倍」实际比估值宽 15%，单位就压到旁边的注释上。
+    nw = hero_number_w(txt, unit, size)
+    # 两种排法：
+    #   并排：数字块（数字 + 标签）在左、注释列在右，整组按实际宽度收拢后居中；
+    #   上下：数字本身很宽（「1.852公里」），并排要把数字缩到 NUMBER_SHRINK_MIN 以下时，
+    #         改成数字 + 标签在上、注释一行排在下面。
+    # 两种都不把注释钉到内容带另一端：两端拉开时整组宽到 1480，任何 ≥1.12 的推近都会切断注释，
+    # 数字镜就只能一个静帧到底。收拢后整组在 1.16 倍下仍放得进安全框，推近数字不切注释。
+    stacked = bool(notes) and nw * NUMBER_SHRINK_MIN > NUMBER_BLOCK_MAX
+    cap = NUMBER_STACK_MAX if stacked else NUMBER_BLOCK_MAX
+    if nw > cap:
+        size = int(size * cap / nw); nw = hero_number_w(txt, unit, size)
+    elif nw < NUMBER_BLOCK_MIN:
+        # 短数字（「1.2秒」）放大字号把数字块撑到 NUMBER_BLOCK_MIN，而不是留一大块空白：
+        # 画面的分量来自数字本身。
+        size = min(NUMBER_SIZE_MAX, int(size * NUMBER_BLOCK_MIN / nw)); nw = hero_number_w(txt, unit, size)
+    lab = fit_text(p, f"{sid}.label", c["label"], TYPE["title"], 800, 1) if c.get("label") else None
+    block_w = max(nw, lab[2] if lab else 0)
+    notes_at = c.get("notesAt") if isinstance(c.get("notesAt"), list) else None
+    NOTE_W, GAP = 480, 80
+    if stacked:
+        row_w = max(block_w, len(notes) * NOTE_W + 40 * (len(notes) - 1)) if len(notes) > 1 else max(block_w, NOTE_W)
+        row_w = min(row_w, W - 80)
+        group_w = max(block_w, row_w)
+        gx = X + (W - group_w) / 2
+        nx = gx if left else gx + group_w - block_w
+        ny = Y + 40
+    else:
+        group_w = block_w + ((GAP + NOTE_W) if notes else 0)
+        gx = X + (W - group_w) / 2
+        nx = gx if left else gx + group_w - block_w
+        ny = Y + 110
     els = [el("number", "number", nx, ny, nw, size * 1.0, txt, size, "hero", 0, value=val, decimals=dec,
               prefix=c.get("prefix", ""), unit=unit, from_=float(c.get("from", 0)), tone=c.get("tone", "orange"))]
-    if c.get("label"):
-        lls, ls_, lw, lh_ = fit_text(p, f"{sid}.label", c["label"], TYPE["title"], 800, 1)
-        els.append(el("label", "text", nx, ny + size * 1.05 + 24, lw, lh_, c["label"], ls_, "body", 0))
-    rx = X + 960 if left else X + 40
+    below = ny + size * 1.05 + 24
+    if lab:
+        lls, ls_, lw, lh_ = lab
+        els.append(el("label", "text", nx, below, lw, lh_, c["label"], ls_, "body", 0))
+        below += lh_
+    if stacked:
+        n_ = len(notes)
+        each = (row_w - 40 * (n_ - 1)) / n_
+        row = [fit_text(p, f"{sid}.notes[{i}]", n, TYPE["body"], each - 40, 2, lh=1.4) for i, n in enumerate(notes)]
+        # 同一排的注释卡等高（取最高那张），一排读起来是同一级
+        row_h = max(r[3] for r in row) + 28
+        for i, (n, (nls, ns, nw2, nh)) in enumerate(zip(notes, row)):
+            els.append(el(f"note{i + 1}", "note", gx + i * (each + 40), below + 34, each, row_h, n, ns, "body",
+                          notes_at[i] if notes_at and i < len(notes_at) else min(i, 2), lines=nls, lh=1.4))
+        return els
+    rx = gx + block_w + GAP if left else gx
     y = Y + 140
-    for i, n in enumerate(notes[:3]):
-        nls, ns, nw2, nh = fit_text(p, f"{sid}.notes[{i}]", n, TYPE["body"], 520, 2, lh=1.4)
-        els.append(el(f"note{i + 1}", "note", rx, y, 560, nh + 28, n, ns, "body", c.get("notesAt", [0, 1, 2])[i] if isinstance(c.get("notesAt"), list) and i < len(c["notesAt"]) else min(i, 2), lines=nls, lh=1.4))
+    for i, n in enumerate(notes):
+        nls, ns, nw2, nh = fit_text(p, f"{sid}.notes[{i}]", n, TYPE["body"], NOTE_W - 40, 2, lh=1.4)
+        els.append(el(f"note{i + 1}", "note", rx, y, NOTE_W, nh + 28, n, ns, "body", notes_at[i] if notes_at and i < len(notes_at) else min(i, 2), lines=nls, lh=1.4))
         y += nh + 60
     return els
 
@@ -183,7 +257,9 @@ def lay_bars(p, sid, c, variant):
     if title:
         tls, ts, tw, th = fit_text(p, f"{sid}.title", title, TYPE["title"], 1300, 1)
         els.append(el("title", "text", X + 40, Y + 4, tw, th, title, ts, "title", 0))
-    top, bottom = Y + 130, Y + H - 70
+    # 柱区上下收一点（整组高 ≈560）：整张图在 1.16 倍下仍放得进安全框，
+    # 关键词 / 招牌镜推近到柱子时不切标题和柱底标签。
+    top, bottom = Y + 110, Y + H - 112
     n = len(data)
     gap = 60
     bw = min(220, (W - 160 - gap * (n - 1)) / n)
@@ -212,54 +288,87 @@ def lay_bars(p, sid, c, variant):
     return els
 
 
+# compare 栏：标题行高、读数行高、上下内边距 + 顶边（与 auto.tsx 的 panel 一致）、栏高地板
+PANEL_TITLE_LH = 1.3
+PANEL_VALUE_H = 138
+PANEL_PAD = 64
+PANEL_MIN_H = 380
+
+
 def lay_compare(p, sid, c, variant):
     X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
     mode = c.get("mode", "split")
     els = []
+    pw = 800 if mode == "morph" else 620
+    sides = [sd for sd in ("before", "after") if isinstance(c.get(sd), dict)]
+    # 字号：栏标题 display 档、条目 title 档；两栏统一取能放下的最小那格（并排的两栏是同一级信息）。
+    t_size = min([fit_text(_QUIET, f"{sid}.{sd}.title", c[sd].get("title", "之前" if sd == "before" else "之后"), TYPE["display"], pw - 68, 1)[1]
+                  for sd in sides] or [TYPE["display"]])
+    i_size = min([fit_text(_QUIET, f"{sid}.{sd}.items[{i}]", it, TYPE["title"], pw - 90, 2, lh=1.35)[1]
+                  for sd in sides for i, it in enumerate((c[sd].get("items") or [])[:4])] or [TYPE["title"]])
 
     def panel(key, side, x, w, appear):
         d = c[side]
         y = Y + 40
-        parts = []
-        tls, ts, tw, th = fit_text(p, f"{sid}.{side}.title", d.get("title", "之前" if side == "before" else "之后"), TYPE["title"], w - 60, 1)
-        hh = th + 30
+        tls, ts, tw, th = fit_text(p, f"{sid}.{side}.title", d.get("title", "之前" if side == "before" else "之后"), t_size, w - 68, 1)
+        # 高度按渲染端（auto.tsx 的 panel）逐项累加：标题单行、读数一行、每条目上间距 22
+        hh = ts * PANEL_TITLE_LH
         if d.get("value") is not None:
-            hh += 150
+            hh += PANEL_VALUE_H
         items = d.get("items") or []
         ih = []
         for i, it in enumerate(items[:4]):
-            ils, isz, iw, iht = fit_text(p, f"{sid}.{side}.items[{i}]", it, TYPE["body"], w - 90, 2, lh=1.35)
+            ils, isz, iw, iht = fit_text(p, f"{sid}.{side}.items[{i}]", it, i_size, w - 90, 2, lh=1.35)
             ih.append((ils, isz, iht))
             hh += iht + 22
-        # 高度下限 300 → 380：compare 常常只有标题 + 两条短项，撑不满就显空，
-        # 内容占地太小会被 validate-shot-motion 判「内容只占安全区」P0（画得太小=观众看不清）。
-        return el(key, "panel", x, y, w, max(hh + 70, 380), d.get("title", ""), TYPE["title"], "body", appear,
-                  side=side, title=d.get("title", "之前" if side == "before" else "之后"), value=d.get("value"), unit=clean_unit(p, f"{sid}.{side}", d.get("unit", "")),
-                  decimals=int(d.get("decimals", 0)), items=[{"lines": a, "size": b} for a, b, _ in ih], tone=d.get("tone", "orange" if side == "before" else "green"))
+        # 高度下限 PANEL_MIN_H 只是地板（validate-shot-motion 的「内容只占安全区」看整组外接框）；
+        # 内容撑不满时多出来的高度上下均分（padY），不堆在卡片下半截。
+        e = el(key, "panel", x, y, w, max(hh + PANEL_PAD, PANEL_MIN_H), d.get("title", ""), ts, "body", appear,
+               side=side, title=d.get("title", "之前" if side == "before" else "之后"), value=d.get("value"), unit=clean_unit(p, f"{sid}.{side}", d.get("unit", "")),
+               decimals=int(d.get("decimals", 0)), items=[{"lines": a, "size": b} for a, b, _ in ih], tone=d.get("tone", "orange" if side == "before" else "green"))
+        e["_content"] = hh + PANEL_PAD
+        return e
+
+    def settle(panels, own_height=False):
+        """两栏统一上下留白（padY），标题对齐。own_height：并排的两栏各按自己的内容定高，
+        条目少的那栏不留底部空白；整组外接框仍由较高那栏（不低于地板）决定。"""
+        h = max(e["h"] for e in panels)
+        content = max(e["_content"] for e in panels)
+        pad = round(max(0, h - content) / 2)
+        for e in panels:
+            own = e.pop("_content")
+            e["h"] = round(own + 2 * pad, 1) if own_height and own < content else h
+            e["padY"] = pad
+        return h
 
     if mode == "morph":
         e1 = panel("before", "before", X + 360, 800, 0)
         e2 = panel("after", "after", X + 360, 800, c.get("morphLine", 1))
         e2["y"] = e1["y"]
-        h = max(e1["h"], e2["h"]); e1["h"] = e2["h"] = h
+        settle([e1, e2])
         e1["morphTo"] = "after"; e2["morph"] = True
         els += [e1, e2]
     else:
-        # 两栏各 620，整组 1320 居中：留出两侧呼吸（原来 660×2 + 间隙 = 1400 几乎铺满，
-        # 相机没有可动空间，招牌镜推不进去，画面也顶边）。
+        # 两栏各 620，整组 1320 居中：留出两侧呼吸（几乎铺满时相机没有可动空间，招牌镜推不进去，画面也顶边）。
         w = 620
         cx = X + W / 2
         e1 = panel("before", "before", cx - 1320 / 2, w, 0)
         # afterLine 缺省 0：两栏同帧入场。
-        # 原来缺省 1（等第二句才出现），第 1 句时画面里只有左栏、右半屏空着——
-        # 对比的语义是「并列」，缺一半就不是对比了。真要分先后，显式写 afterLine。
+        # 对比的语义是「并列」，等第二句才出现右栏时右半屏是空的，缺一半就不是对比了。真要分先后，显式写 afterLine。
         e2 = panel("after", "after", cx + 1320 / 2 - w, w, c.get("afterLine", 0))
-        h = max(e1["h"], e2["h"]); e1["h"] = e2["h"] = h
+        h = settle([e1, e2], own_height=True)
         els += [e1, e2, el("arrow", "arrow", e1["x"] + w + 40, Y + 40 + h / 2 - 30, 1320 - 2 * w - 80, 60, "", 0, "decor", c.get("afterLine", 0))]
+    vh = 0
     if c.get("verdict"):
         vls, vs, vw, vh = fit_text(p, f"{sid}.verdict", c["verdict"], TYPE["body"], 1200, 1)
         vy = max(e["y"] + e["h"] for e in els if e["kind"] == "panel") + 34
         els.append(el("verdict", "text", X + (W - vw) / 2, vy, vw, vh, c["verdict"], vs, "accent", c.get("verdictLine", 2)))
+        vh += 34
+    # 整组落在安全区中部（视觉中心略偏上），不贴着页眉、把下半张纸空出来
+    group_h = max(e["h"] for e in els if e["kind"] == "panel") + vh
+    dy = max(0, (H - 40 - group_h) * 0.42)
+    for e in els:
+        e["y"] = round(e["y"] + dy, 1)
     return els
 
 
@@ -268,23 +377,23 @@ def lay_code(p, sid, c, variant):
     lines = c["code"].rstrip("\n").split("\n")
     size = TYPE["body"]
     note = c.get("note")
-    longest = max(len(l.expandtabs(4)) for l in lines)
+    longest = max(text_w(l.expandtabs(4), 1, mono=True) for l in lines)  # em 宽：半角 0.6、全角 1.0（CODE_FONT 的中文回落 Kai）
     # 代码框按最长行定宽（不留大片空白），右侧注释拿走剩下的宽度
-    boxw = min(1300 if not note else 1060, max(760, int(longest * size * 0.6 + 100))) if note else 1300
-    while longest * size * 0.6 > boxw - 80 and size > MIN_FONT:
+    boxw = min(1060, max(760, int(longest * size + 100))) if note else 1300
+    while longest * size > boxw - 80 and size > MIN_FONT:
         size -= 2
-    if longest * size * 0.6 > boxw - 80:
-        p.err(f"{sid}: 代码最长一行 {longest} 字符，{MIN_FONT}px 下放不进 {boxw}px —— 每行请 ≤ {int((boxw - 80) / (MIN_FONT * 0.6))} 字符（折行或删减）")
-    lh = size * 1.55
-    maxl = int((H - 110) / lh)
+    if longest * size > boxw - 80:
+        p.err(f"{sid}: 代码最长一行约 {longest / 0.6:.0f} 个半角宽（中文算 2），{MIN_FONT}px 下放不进 {boxw}px —— 每行请 ≤ {int((boxw - 80) / (MIN_FONT * 0.6))} 个半角宽（折行或删减）")
+    lh = 1.55; row = size * lh
+    maxl = int((H - 110) / row)
     if len(lines) > maxl:
         p.err(f"{sid}: 代码 {len(lines)} 行，屏上最多 {maxl} 行 —— 只保留讲到的那几行（其余用 # ... 代替）")
         lines = lines[:maxl]
-    boxh = 90 + len(lines) * lh + 30
+    boxh = 90 + len(lines) * row + 30
     bx, by = X + 20, Y + max(0, (H - boxh) / 2)
     els = [el("code", "codebox", bx, by, boxw, boxh, c.get("title", ""), size, "body", 0, lang=c.get("lang", ""), lh=lh, nlines=len(lines))]
     for i, l in enumerate(lines):
-        els.append(el(f"L{i + 1}", "codeline", bx + 30, by + 90 + i * lh, boxw - 60, lh, l, size, "body", 0, n=i + 1))
+        els.append(el(f"L{i + 1}", "codeline", bx + 30, by + 90 + i * row, boxw - 60, row, l, size, "body", 0, n=i + 1))
     if note:
         nwid = X + W - (bx + boxw + 40) - 40
         nls, ns, nw, nh = fit_text(p, f"{sid}.note", note, TYPE["title"], nwid - 50, 4, lh=1.4)
@@ -295,6 +404,10 @@ def lay_code(p, sid, c, variant):
 def lay_flow(p, sid, c, variant):
     X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
     steps = c["steps"]
+    bad = [i for i, st in enumerate(steps) if not isinstance(st, dict) or not st.get("label")]
+    if bad:
+        p.err(f'{sid}.steps[{bad[0]}]：每一步要写 label —— 照这个填：{_EXAMPLES["flow"]}')
+        return []
     n = len(steps)
     if not 2 <= n <= 5:
         p.err(f"{sid}: flow 需要 2–5 步（现在 {n}）")
@@ -312,36 +425,41 @@ def lay_flow(p, sid, c, variant):
     nw = (total - 80 - arrow * (n - 1)) / n
     x0 = X + (W - total) / 2 + 20
     title_h = (els[0]["h"] + 46) if els else 24
-    # 节点吃掉剩下的高度：给足，别让流程镜变成一排小方块（占比太低会被 shot-motion 判 P0）
     avail = H - title_h - 20
+    # 节点高度由内容决定：步骤名用 display 档（最多两行）、注释用 title 档，顶上一枚步骤序号。
+    # 同一排的字号统一取最小那格（同镜字号 ≤3 档，且并排的卡片读起来是同一级）。
+    # node_min 只是地板：内容撑不满时，多出来的高度上下均分（PAD_Y），不堆在卡片下半截。
     node_min = max(240, int(avail * 0.62))
-    # 0.18 → 0.42：原来整排节点贴着标题往下堆，下面空出一大截，
-    # 观众第一眼读到的是「下半张纸没画完」。0.42 让整排落在安全区中部（视觉中心略偏上）。
-    ny = Y + title_h + max(8, (avail - node_min) * 0.42)
+    inner = nw - 48
+    steps = [st if isinstance(st, dict) else {"label": st} for st in steps]
+    lab_size = min(fit_text(_QUIET, f"{sid}.steps[{i}].label", str(st["label"]), TYPE["display"], inner, 2, lh=SAFE_LH)[1]
+                   for i, st in enumerate(steps))
+    note_size = min([fit_text(_QUIET, f"{sid}.steps[{i}].note", st["note"], TYPE["title"], inner, 3, lh=SAFE_LH)[1]
+                     for i, st in enumerate(steps) if st.get("note")] or [TYPE["title"]])
+    badge_h = round(FLOW_BADGE * SAFE_LH) + 10
+    fitted = []
     for i, st in enumerate(steps):
-        st = st if isinstance(st, dict) else {"label": st}
         # lh 与渲染端（auto.tsx 的 Lines）必须逐字一致，否则多出来那一截就让第二行压到第一行上
-        # （被 OverlapGate 硬拦）。渲染端现在的兜底是 safeLh = max(用户给, 1.42)：
-        # 字号 46 时 1.25 压 414px²、1.32 压 274~282px²（「1665/借来」「今天/住户」都中招），
-        # 1.42（=65.3px）才彻底分开。纯汉字的「今天/住户」也压，说明这是 46px 中文的固有行距需求，
-        # 不是数字字形的特例。
-        lls, ls_, lw, lh_ = fit_text(p, f"{sid}.steps[{i}].label", str(st["label"]), TYPE["title"], nw - 40, 2, lh=SAFE_LH)
-        hh = lh_ + 60
-        nlines = []
+        # （被 OverlapGate 硬拦）。渲染端的兜底是 safeLh = max(用户给, SAFE_LH)。
+        lls, ls_, lw, lh_ = fit_text(p, f"{sid}.steps[{i}].label", str(st["label"]), lab_size, inner, 2, lh=SAFE_LH)
+        hh = badge_h + lh_ + 60
+        nlines, ns = [], note_size
         if st.get("note"):
-            _nlh = SAFE_LH  # 渲染端 safeLh 兜底，1.4 量出来的框会比实际矮
-            nlines, ns, nww, nh = fit_text(p, f"{sid}.steps[{i}].note", st["note"], TYPE["body"], nw - 40, 3, lh=_nlh)
+            nlines, ns, nww, nh = fit_text(p, f"{sid}.steps[{i}].note", st["note"], note_size, inner, 3, lh=SAFE_LH)
             hh += nh + 20
+        fitted.append((st, lls, ls_, nlines, ns, hh))
+    content_h = max(f[5] for f in fitted)
+    node_h = max(content_h, node_min)
+    pad_y = round((node_h - content_h) / 2)
+    # 整排落在安全区中部（视觉中心略偏上）
+    ny = Y + title_h + max(8, (avail - node_h) * 0.42)
+    for i, (st, lls, ls_, nlines, ns, hh) in enumerate(fitted):
         x = x0 + i * (nw + arrow)
-        els.append(el(f"step{i + 1}", "node", x, ny, nw, max(hh, node_min), st["label"], ls_, "accent" if st.get("hot") else "body",
-                      st.get("at", min(i, 99)), lines=lls, note=st.get("note", ""), noteLines=nlines, noteSize=TYPE["body"], hot=bool(st.get("hot"))))
+        els.append(el(f"step{i + 1}", "node", x, ny, nw, node_h, st["label"], ls_, "accent" if st.get("hot") else "body",
+                      st.get("at", min(i, 99)), lines=lls, note=st.get("note", ""), noteLines=nlines, noteSize=ns, hot=bool(st.get("hot")),
+                      n=i + 1, badge=FLOW_BADGE, padY=pad_y))
         if i:
-            els.append(el(f"arrow{i}", "arrow", x - arrow + 10, ny + 70, arrow - 20, 50, "", 0, "decor", st.get("at", min(i, 99))))
-    # 统一节点高度
-    hmax = max(e["h"] for e in els if e["kind"] == "node")
-    for e in els:
-        if e["kind"] == "node":
-            e["h"] = hmax
+            els.append(el(f"arrow{i}", "arrow", x - arrow + 10, ny + node_h / 2 - 25, arrow - 20, 50, "", 0, "decor", st.get("at", min(i, 99))))
     return els
 
 
@@ -360,8 +478,7 @@ def lay_list(p, sid, c, variant):
         ils, isz, iw, ih = fit_text(p, f"{sid}.items[{i}]", it, TYPE["title"] if len(items) <= 3 else TYPE["body"], 1200, 2, lh=1.35)
         rows.append((ils, isz, ih, it))
     # 整体垂直居中，间距固定 34。
-    # 原来从 BAND 顶端往下堆、把剩余空间摊进 gap：条目少时下半屏空着（读作「这张没做完」），
-    # 条目多时 gap 被压到 16 又挤成一团。居中 + 固定间距，条目多少都不会塌。
+    # 从顶端往下堆、把剩余空间摊进 gap 时，条目少则下半屏空着、条目多则挤成一团。居中 + 固定间距，条目多少都不会塌。
     GAP = 34.0
     body_h = sum(r[2] + 24 for r in rows) + GAP * max(0, len(rows) - 1)
     head_h = (th + 46) if title else 0.0
@@ -409,7 +526,7 @@ STORY_MEDIA: dict = {}   # compose() 开头从 story["media"] 填入：id → �
 
 
 def lay_media(p, sid, c, variant):
-    """3.2.0 真实素材：一张截图 / 一段录屏放进 MediaFrame；区域（0–1 相对坐标）变成可被 {{词|区域id}} 点名的元素。"""
+    """真实素材：一张截图 / 一段录屏放进 MediaFrame；区域（0–1 相对坐标）变成可被 {{词|区域id}} 点名的元素。"""
     mid = c.get("media")
     m = STORY_MEDIA.get(mid)
     if not m:
@@ -439,15 +556,15 @@ def lay_media(p, sid, c, variant):
     return els
 
 
-# ---------------------------------------------------------------- 手账页 (3.6.0)
+# ---------------------------------------------------------------- 手账页 
 # 语法来自 cell 片（journal 皮肤）：**容器是纸，不是卡片**。整页不产生任何 card / panel / 圆角框。
 # 一页 = 装裱好的真图版（右，占画宽 45%）+ 手写大字（页标题）+ 印章 + 一行手写说明。
 # 为什么另开一族而不是改现有版式：现有 10 个版式的视觉语言是「白卡片 + 圆角 + 边框」，
-# 那是幻灯片的语言；手账页一旦套上卡片框，就退回成 PPT（实测被评审判「像课件」）。
+# 那是幻灯片的语言；手账页一旦套上卡片框，就退回成 PPT。
 PAGE_MEDIA = {"x": 960, "y": 96, "w": 860, "h": 800}
 # 墨图的画框比真图版收一圈：真图版是「贴上去的一张卡纸」，要顶到边；
 # 墨图是「画在纸上的」，四周必须留出没画的空白，否则相机连推近的余量都没有
-# （实测 860×800 时 anchor 占安全区 132%，画面顶死）。
+# （与真图版同尺寸时 anchor 会超出安全区，画面顶死）。
 INK_BOX = {"x": 980, "y": 130, "w": 780, "h": 700}
 PAGE_LEFT_X, PAGE_TEXT_W = 236, 600
 
@@ -498,8 +615,8 @@ def lay_page(p, sid, c, variant):
     elif page == "loupe":
         look = c.get("look") or [0.5, 0.5]
         try:
-            look = [float(look[0]), float(look[1])]
-        except (TypeError, ValueError, IndexError):
+            look = [float(look['x']), float(look['y'])] if isinstance(look, dict) else [float(look[0]), float(look[1])]
+        except (TypeError, ValueError, IndexError, KeyError):
             p.err(f"{sid}: content.look 要写 [x, y] 两个 0–1 的数（图版上的相对位置）")
             look = [0.5, 0.5]
         els.append(el("plate", "loupe", box["x"], box["y"], box["w"], box["h"], "", 0, "body", 0,
@@ -518,9 +635,7 @@ def lay_page(p, sid, c, variant):
     y = 214
     if big:
         # 字号按真字宽定。HandLettering 用 opentype.js 的 font.getAdvanceWidth 逐字累加排字，
-        # 与 text_metrics 读的是同一份 hmtx——旧版用 1.0em 估算再乘 LEAN=1.06 补标点，
-        # 实测「——」「……」估 0.56 实为 1.0em，LEAN 也盖不住（成片 S1 末尾「的」被裁那条）。
-        # 真字宽下不再要安全系数。
+        # 与 text_metrics 读的是同一份 hmtx（「——」「……」等标点按估算会偏窄）。真字宽下不需要安全系数。
         size = 104
         while text_w(str(big), size) > PAGE_TEXT_W and size > 64:
             size -= 4
@@ -538,7 +653,7 @@ def lay_page(p, sid, c, variant):
         sx = PAGE_LEFT_X + (big_w + 60 if big else 0)
         sy = y + 4
         # 大字写满左侧那一栏时，右侧已经没有 124+60 的余量了：
-        # 硬塞会把章盖在字上（实测「「细胞」这个名字的来历」末尾的「的」被压住）。
+        # 硬塞会把章盖在字上。
         # 这时把章落到大字下面一行——手账上「写完一行、在下面盖个章」本来就是常见的做法。
         if big and sx + stamp_size > 900:
             sx = PAGE_LEFT_X
@@ -552,14 +667,13 @@ def lay_page(p, sid, c, variant):
         els.append(el("stamp", "stamp", sx, sy, stamp_size, stamp_size, str(stamp), 0, "body", 0,
                       afterBig=("big" if big else None)))
     # 手写说明：大字下方一行。
-    # 3.6.2：原来是 64px——比手写大字（88）只小一点，而且和「页标题」抢同一层级，
-    # 一页上出现两行差不多大的字，就成了「排版」而不是「写上去的」。降到 44–56：
+    # 字号 44–56：与手写大字差得太少会和「页标题」抢同一层级，一页上出现两行差不多大的字，
+    # 就成了「排版」而不是「写上去的」。
     # 说明是附注，读者扫一眼就够，主视线仍在大字与图版上。
     note = c.get("note")
     note_y = y + (big_h + 34 if big else 0)
     # 章被挤到大字下面那一行时，批注必须再往下让出整枚章的高度。
-    # 否则两者落在同一行：实测「胡克」章正好压在「第十八篇 · 软木」上，
-    # 而且 OverlapGate 抓不到（章是 SVG 路径，不在它的文字块集合里）——只能靠排版时算准。
+    # 否则两者会落在同一行互压，而且 OverlapGate 抓不到（章是 SVG 路径，不在它的文字块集合里）——只能靠排版时算准。
     if stamp_dropped:
         note_y = y + big_h + 24 + stamp_size + 20
     if note:
@@ -574,35 +688,35 @@ def lay_page(p, sid, c, variant):
         note_y += nsize * 1.35 + 26
     # 页内示意图（可选）：手账页空白处随手画的一张小题图，配一行手写名。
     # 这是 a2e 那套线稿在本 skill 里唯一合适的位置：它不解释概念，只帮观众认出「说的是哪件东西」。
-    # 尺寸硬压 360（画宽 19%）：再大就变成"线稿当解释图"，实测比不画更差。
+    # 尺寸硬压 360（画宽 19%）：再大就变成"线稿当解释图"，比不画更差。
     fig = c.get("figure")
     if fig:
         if not isinstance(fig, dict) or not fig.get("draw"):
             p.err(f"{sid}: content.figure 要写 {{\"draw\": \"lib:<名字>\", \"label\": \"<这东西叫什么>\"}}")
         else:
             check_draw(p, sid, "content.figure", fig)
-            w = min(360, max(220, int(fig.get("size", 340)))
-                    )
-            # 跟着说明往下走：不写死 546，否则大字换成两行时图会压到说明上
-            els.append(el("figure", "figure", PAGE_LEFT_X, max(note_y, 480), w, w, "", 0, "body", 1,
+            fy = max(note_y, 480)
+            w = min(360, max(220, int(fig.get("size") or 340)), max(180, int(SUBTITLE_CLEAR_Y - fy)))
+            # 跟着说明往下走且底边不超过 SUBTITLE_CLEAR_Y，防止压入字幕区
+            els.append(el("figure", "figure", PAGE_LEFT_X, fy, w, w, "", 0, "body", 1,
                           draw=fig.get("draw"), label=fig.get("label"), parts=fig.get("parts"),
                           figAt=int(fig.get("at", 1))))
     return els
 
 
-# ---------------------------------------------------------------- recipes (3.5.0)
+# ---------------------------------------------------------------- recipes 
 # 八个融合配方的**版面**。内容 schema 尽量小：弱模型只填「卡片说什么 / 结论是什么」，
 # 线稿怎么摆、卡片多大、引线从哪拉，都由这里算。
 SKETCH_BOX = {
     "left": {"x": 150, "y": 200, "w": 620, "h": 650},
     "right": {"x": 1150, "y": 200, "w": 620, "h": 650},
     "center": {"x": 560, "y": 170, "w": 800, "h": 700},
-    "corner": {"x": 1480, "y": 700, "w": 280, "h": 280},
+    "corner": {"x": 1480, "y": 620, "w": 260, "h": 260},
 }
 RECIPE_BOX = {
-    "data-with-object": {"x": 1440, "y": 690, "w": 300, "h": 300},
+    "data-with-object": {"x": 1440, "y": 600, "w": 280, "h": 280},
     "list-icons": {"x": 1250, "y": 210, "w": 420, "h": 420},
-    "component-annotated": {"x": 1500, "y": 720, "w": 240, "h": 240},
+    "component-annotated": {"x": 1500, "y": 640, "w": 240, "h": 240},
 }
 
 
@@ -650,7 +764,7 @@ def lay_recipe(p, sid, recipe, c, variant):
 
 
 def lay_type(p, sid, c, variant):
-    """直书页（3.7.0）：把话直接排在纸上，不出卡片。
+    """直书页：把话直接排在纸上，不出卡片。
 
     为什么要这一版式。卡片唯一不可替代的作用是「可指代」——能被箭头指、被圈注、
     被放大镜吃进去。如果这一屏没有任何东西需要被指着说（三个并列的量、一句结论、
@@ -682,7 +796,7 @@ def lay_type(p, sid, c, variant):
     main_w = 820 if has_note else 1320
     note_x, note_w = PAGE_LEFT_X + 800, 470
     # 直书页的字必须比组件标题大一档：它的层级全靠字号与行距，字号一软，
-    # 三行字看起来就是「一张没画完的字卡」。实测 84px 时内容只占安全区 43%（P0）。
+    # 三行字看起来就是「一张没画完的字卡」（内容占不满安全区）。
     base = {1: 132, 2: 120, 3: 108, 4: 92, 5: 82}[len(rows)]
 
     laid = []
@@ -693,16 +807,16 @@ def lay_type(p, sid, c, variant):
         if not txt:
             p.err(f"{sid}.rows[{i}]: 缺 text")
             continue
-        # lh 必须与渲染端 Lines 的下限（1.42）逐字一致，否则量出的高度比实际小，
-        # 行与行就会叠在一起——这个坑在 flow 节点上踩过一次（46px 时压 282px²）。
-        ls, s, w, h = fit_text(p, f"{sid}.rows[{i}]", txt, base, main_w, 2, lh=1.42)
+        # lh 必须与渲染端 Lines 的下限（SAFE_LH）一致，否则量出的高度比实际小，
+        # 行与行就会叠在一起。
+        ls, s, w, h = fit_text(p, f"{sid}.rows[{i}]", txt, base, main_w, 2, lh=SAFE_LH)
         note = r.get("note")
         nl, ns, nw, nh = [], 0, 0.0, 0.0
         if note:
             nl, ns, nw, nh = fit_text(p, f"{sid}.rows[{i}].note", str(note),
-                                      max(34, min(44, s - 40)), note_w, 2, lh=1.42)
+                                      max(34, min(44, s - 40)), note_w, 2, lh=SAFE_LH)
         laid.append(dict(txt=txt, ls=ls, s=s, w=w, h=h, note=note, nl=nl, ns=ns, nw=nw, nh=nh,
-                         mk=r.get("mark")))
+                         mk=r.get("mark"), reveal=str(r.get("reveal", "type"))))
     if not laid:
         return []
 
@@ -712,17 +826,17 @@ def lay_type(p, sid, c, variant):
     lead_h = 0.0
     lls, lsz, lw = [], 0, 0.0
     if lead:
-        lls, lsz, lw, lead_h = fit_text(p, f"{sid}.lead", str(lead), 36, 1320, 2, lh=1.42)
+        lls, lsz, lw, lead_h = fit_text(p, f"{sid}.lead", str(lead), 36, 1320, 2, lh=SAFE_LH)
         total += lead_h + 46
     y = BAND["y"] + (BAND["h"] - total) / 2
     els = []
     if lead:
         els.append(el("lead", "text", PAGE_LEFT_X, y, lw, lead_h, str(lead), lsz, "muted", 0,
-                      lines=lls, align="left", lh=1.42))
+                      lines=lls, align="left", lh=SAFE_LH))
         y += lead_h + 46
     for i, d in enumerate(laid):
-        kw = dict(lines=d["ls"], align="left", lh=1.42,
-                  reveal=str(r.get("reveal", "type")))
+        kw = dict(lines=d["ls"], align="left", lh=SAFE_LH,
+                  reveal=d["reveal"])
         if isinstance(d["mk"], int) and not isinstance(d["mk"], bool):
             kw["markAppear"] = d["mk"]
         # 第 i 行跟第 i 句：说到哪一行，哪一行才开始写。
@@ -734,14 +848,13 @@ def lay_type(p, sid, c, variant):
         if d["note"]:
             els.append(el(f"row{i + 1}note", "text", note_x, y + max(0.0, (d["h"] - d["nh"]) / 2),
                           d["nw"], d["nh"], str(d["note"]), d["ns"], "muted", a,
-                          lines=d["nl"], align="left", lh=1.42))
+                          lines=d["nl"], align="left", lh=SAFE_LH))
         y += max(d["h"], d["nh"]) + GAP
     return els
 
 
 # 每个版式真正会直接下标的 content 键。缺了不是「运行时意外」，是作者写漏——
-# 弱模型常写 "layout":"bars" 却只填 text，以前会在 lay_bars 里抛 KeyError，
-# 整次 compose 崩在栈里，读者只能看到一个 Python traceback（P2-25 夹具抓到的）。
+# 例如写 "layout":"bars" 却只填 text：这里给出可照着改的报错，而不是在 lay_bars 里抛 KeyError。
 # media / custom / number 有自己的检查（能给出更具体的改法），不在这里重复拦。
 REQUIRED_CONTENT = {
     "statement": ("text",),
@@ -761,7 +874,7 @@ _EXAMPLES = {
     "bars": '{"title": "读速对比", "data": [{"label": "SSD", "value": 500}]}',
     "compare": '{"before": {"title": "误解"}, "after": {"title": "实际"}}',
     "code": '{"code": "const x = 1"}',
-    "flow": '{"steps": [{"text": "第一步"}, {"text": "第二步"}]}',
+    "flow": '{"steps": [{"label": "第一步"}, {"label": "第二步"}]}',
     "list": '{"title": "要点", "items": ["第一条", "第二条"]}',
     "quiz": '{"question": "哪个更快？", "options": ["A", "B"]}',
 }

@@ -43,7 +43,7 @@ class CraftPaperTest(unittest.TestCase):
         flat_branch = re.search(
             r"paperCard: React\.CSSProperties = HANDMADE_MEDIUM\s*\?\s*\{[^}]*\}\s*:\s*\{([^}]*)\}", t)
         self.assertTrue(flat_branch, "paperCard 必须写成 HANDMADE_MEDIUM ? 纸感 : 组件皮肤 的三元")
-        self.assertIn("borderRadius: 16", flat_branch.group(1))
+        self.assertIn("borderRadius: THEME.aesthetic.paperRadius", flat_branch.group(1))  # 组件皮肤圆角由主题给（flat 22 / cel 8）
         # panel / node / card / item 四处容器不再各自写死圆角（那是事故原样）
         for marker in ("case 'panel'", "case 'node'", "case 'card': case 'note': case 'quote'", "case 'item'"):
             i = t.find(marker)

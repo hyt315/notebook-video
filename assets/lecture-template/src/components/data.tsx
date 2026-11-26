@@ -23,17 +23,15 @@ import CONTRACT from '../contract.json';
 //   SankeyChart ← d3-sankey      流量图（转化、分流、去向）
 //   QrCode      ← qrcode         二维码（纯计算、不联网）
 //
-// 契约（references/technique.md#dependency-policy §7）：颜色只读 THEME；动画是 f(帧号) 的纯函数；
+// 契约（references/technique.md#dependency-policy）：颜色只读 THEME；动画是 f(帧号) 的纯函数；
 // 四个库都是纯计算或纯字符串渲染，结果确定，可复现。
 //
-// ⚠️ 实测踩到的坑（treemap/pack/partition 三者共存时必读）：
+// ⚠️ treemap/pack/partition 三者共存时：
 //   这三个布局都是**有状态地写回节点**的（x0/x1/y0/y1 或 x/y/r）。
-//   共用同一个 hierarchy() 根时，后跑的布局会覆盖先跑的结果——
-//   第一次渲出来 treemap 全是 20px 细条就是这个原因。**每个布局各拿一个根。**
+//   共用同一个 hierarchy() 根时，后跑的布局会覆盖先跑的结果。**每个布局各拿一个根。**
 //
-// ⚠️ 实测踩到的坑（sankey 标签，2026-09-21）：
-//   `x1 - x0` 恒等于 `nodeWidth`（node 脚本直调 d3-sankey 打印验证），
-//   但**末列的 x1 就是 extent 的右边 = width-2**。标签一律按 `x1+10` 摆时，
+// ⚠️ sankey 标签：
+//   `x1 - x0` 恒等于 `nodeWidth`，但**末列的 x1 就是 extent 的右边 = width-2**。标签一律按 `x1+10` 摆时，
 //   末列标签的起点已经落在 `width+8`，再加字宽必然飘出画布。见 SankeyChart 里的分支。
 // ============================================================================
 
@@ -51,12 +49,11 @@ const sumOf = (n: TreeNode): number => (n.children && n.children.length ? n.chil
 /**
  * fitNodeLabel — 节点的中文标签「反推字号 + 可读性降级」。
  *
- * 这是老问题（中文字号）在新图种上的重演：treemap 的窄矩形、pack 的小圆、
- * sunburst 的窄扇区都塞不下字。判定口径（实测得出，见 diag 页③）：
+ * treemap 的窄矩形、pack 的小圆、sunburst 的窄扇区都可能塞不下字。判定口径：
  *   1. 字号由 fitChineseTextOnNLines 反推（保证每行不超可用宽）；
  *   2. **同时**要求「行数 ≤ maxLines」与「整块高度 ≤ 可用高」——
- *      只看宽度是不够的：实测 treemap 里一个 150×60 的格子被反推到 34px 两行，
- *      整块 68px 高，直接顶出格子（宽度合规、高度溢出）；
+ *      只看宽度是不够的：150×60 的格子可能被反推到 34px 两行、整块 68px 高，
+ *      宽度合规、高度溢出；
  *   3. 反推结果 < MIN_LABEL_FONT → **降级：不画字**（改走图例/引线），
  *      而不是硬塞一个 6px 的瞎字号——那等于没有标签。
  *
@@ -88,8 +85,7 @@ export const fitNodeLabel = (text: string, boxW: number, boxH: number, maxFont =
  * sunburst 有图例兜底）；目录树的节点**不能没有名字**（一个空框等于一个谜语），
  * 所以降到下限字号还放不下时，截断成 `notebook-vi…` 这种写法。
  *
- * 实测动机（接触表 ⑬ 页 frame 375）：根节点 `notebook-video`（14 个半角字符）
- * 在 116px 的框里、按 16px 字号画出来宽出框沿两侧，而它当时**根本没过任何反推**。
+ * 例如 `notebook-video`（14 个半角字符）在 116px 的框里按 16px 字号会宽出框沿两侧。
  */
 export const fitOneLine = (text: string, boxW: number, maxFont: number, fontFamily = 'Kai', maxLines = 1) => {
   const box = Math.max(20, boxW);
@@ -128,14 +124,10 @@ export const TreeView: React.FC<{
   const toneAt = (depth: number, i = 0) => (depth === 0 ? C.ink : TONE[(depth + i) % TONE.length]);
 
   // ---------------- 目录树（默认形态） ----------------
-  // ⚠️ 两处实测逼出来的修正（接触表 ⑬ 页 frame 375）：
-  //   ① 原来用 `d3.tree().size([...])`：size() 会把布局**归一化**到给定宽度，
-  //      而框宽是固定的像素——同一份数据量出来同层相邻节点中心只隔 95px，
-  //      框宽 116px，于是每对兄弟都首尾相接（重叠 21px）。
-  //      正解：改用 `nodeSize` 在「槽」单位里布局（1 槽 = 1 个兄弟位，不被归一化），
-  //      渲染时把 1 槽换成 `slotW` 像素 → 相邻中心的距离恒 ≥ slotW ≥ 框宽 + 间距。
-  //   ② 节点标签当时**完全没过反推**，`notebook-video` 这类长名直接宽出框沿。
-  //      正解：标签走 `fitOneLine`（反推字号，放不下就截断加省略号）。
+  // ① 不用 `d3.tree().size([...])`：size() 会把布局**归一化**到给定宽度，而框宽是固定像素，
+  //    同层相邻节点会首尾相接。改用 `nodeSize` 在「槽」单位里布局（1 槽 = 1 个兄弟位），
+  //    渲染时把 1 槽换成 `slotW` 像素 → 相邻中心的距离恒 ≥ slotW ≥ 框宽 + 间距。
+  // ② 节点标签走 `fitOneLine`（反推字号，放不下就截断加省略号），长名不宽出框沿。
   // 空间不够时（叶子多）等比缩框**和**字，而不是让它们互相压。
   if (variant === 'tree') {
     const gapX = 22; // 兄弟框之间的**最小**水平间距
@@ -157,7 +149,7 @@ export const TreeView: React.FC<{
     // 框宽上限由**两个约束联立**解出（不是拍脑袋）：
     //   内容宽 = spanU·slotW + boxW ≤ availW  与  slotW ≥ boxW + gapX
     //   ⇒ boxW ≤ (availW − gapX·spanU) / (spanU + 1)
-    // 第一次写的时候漏了 "+ boxW" 这一项，实测左右两端各被裁掉 4px（ui 左沿 / references 右沿）。
+    // 漏掉 "+ boxW" 这一项时，左右两端会各被裁掉几像素。
     const boxW = Math.max(30, Math.round(Math.min(nodeW, (availW - gapX * spanU) / (spanU + 1))));
     const slotW = Math.min(boxW + gapX * 2, Math.max(boxW + gapX, (availW - boxW) / spanU));
     const xOf = (u: number) => (u - minU) * slotW + (width - (spanU * slotW + boxW)) / 2 + boxW / 2;
@@ -197,8 +189,7 @@ export const TreeView: React.FC<{
         {nodes.map((n, i) => {
           const siblingsAtDepth = nodes.filter((x) => x.depth === n.depth).indexOf(n);
           // 同层错峰**按总窗口封顶**：不管这一层有多少节点，错开都在 SIBLING_SPREAD 帧内走完。
-          // 原来是「序号 × 5 帧」——10 个叶子的一层要 45 帧、加上层间隔与 18 帧淡入，
-          // 最后一格要到第 ~91 帧才画完（实测），3 秒以内的镜头里等于"缺了一块"。
+          // 按「序号 × 固定帧」错开时，叶子一多最后一格就画不完，短镜头里等于"缺了一块"。
           const p = prog(f, startAt + n.depth * step + siblingsAtDepth * siblingGap, 18);
           const tone = nodeColor(n.depth);
           const x = xOf(n.x);
@@ -281,7 +272,7 @@ export const TreeView: React.FC<{
           );
         })}
         {leaves.map((n, i) => {
-          // 圆内可用盒：内接正方形边长 = r·√2，再按经验收到 1.25r（实测 1.3r 时 5 字标签仍溢出）
+          // 圆内可用盒：内接正方形边长 = r·√2，再按经验收到 1.25r（1.3r 时 5 字标签仍会溢出）
           const lab = fitNodeLabel(n.data.name, n.r * 1.25, n.r * 1.25, 30);
           if (!lab.show) hidden.push(n.data.name);
           const p = prog(f, startAt + (n.depth + 1) * step + i * 2, 18);
@@ -317,7 +308,7 @@ export const TreeView: React.FC<{
   const cy = height / 2;
   // ⚠️ d3.arc 的**默认访问器**读的是 {startAngle,endAngle,innerRadius,outerRadius}，
   // 不是 partition 节点上的 {x0,x1,y0,y1}。不设访问器直接传 partition 节点，
-  // 返回的是 null（不是报错）——实测第一次渲出来旭日图的**环一个都没画**，只剩标签。
+  // 返回的是 null（不是报错）——旭日图的环一个都不画，只剩标签。
   const arcGen = d3arc<{x0: number; x1: number; y0: number; y1: number}>()
     .startAngle((v) => v.x0)
     .endAngle((v) => v.x1)
@@ -351,7 +342,7 @@ export const TreeView: React.FC<{
           // 扇区可用宽 = 弧长 × 0.86（留出两侧描边余量），可用高 = 环宽 × 0.8
           const availW = (n.x1 - n.x0) * mr * 0.86;
           const availH = (n.y1 - n.y0) * 0.8;
-          // ⚠️ 实测（本页 frame 465）：**必须 maxLines=1**。扇区里的字是沿切线写成
+          // ⚠️ **必须 maxLines=1**。扇区里的字是沿切线写成
           // **一整行**的（下面 <text> 直接渲染 n.data.name），而 fitNodeLabel 默认按
           // 2 行反推字号——两者不一致时，反推说"放得下"，实际单行超出弧长，
           // 「帧参数名 / 构图与活性」会横着压到隔壁扇区上。按单行反推后：
@@ -361,7 +352,7 @@ export const TreeView: React.FC<{
           const p = prog(f, startAt + n.depth * step + (i % 7) * 3, 20);
           // 标签沿**切线**方向排（不是沿半径）——环宽只有 ~55px，径向放不下几个字，
           // 而弧长有 100+px。并且下半圈的切线会倒过来写，必须翻 180°：
-          // 实测第一版没翻，圆心下方的「依赖政策 / 介质路由」全是倒着的。
+          // 否则圆心下方的标签全是倒着的。
           const deg = (mid * 180) / Math.PI;
           const flip = deg > 90 && deg < 270;
           return lab.show ? (
@@ -388,7 +379,7 @@ export const TreeView: React.FC<{
 
 /** 放不下字的格子 / 圆 / 扇区：在右上角列一行图例，别让观众对着空块猜。 */
 const Legend: React.FC<{items: string[]; width: number}> = ({items, width}) => {
-  // 条目过多时只列前 5 个（实测：8 条的一行会横穿出图框、压到隔壁格的字上——
+  // 条目过多时只列前 5 个（条目一多，这一行会横穿出图框、压到隔壁格的字上——
   // 这行是 `textAnchor="end"` 靠右排的，越长越往左顶，而 SVG 是 overflow:visible）。
   const shown = items.slice(0, 5);
   const more = items.length - shown.length;
@@ -407,24 +398,24 @@ const Legend: React.FC<{items: string[]; width: number}> = ({items, width}) => {
 // 数据链：`world-atlas` 的 land-110m.json（预简化世界陆地 TopoJSON）
 //         → `topojson-client` 的 feature() 转 GeoJSON
 //         → d3-geo 的 geoPath() 按投影拼 SVG path。
-// **只取 110m 那一档**（55 KB / 130 条弧，2026-09-22 实测）：世界尺度下轮廓够用，
+// **只取 110m 那一档**（55 KB / 130 条弧）：世界尺度下轮廓够用，
 // 50m（545 KB）与 10m（3 MB）是国界/省界级细节，本件不需要——体积也不该进包。
 //
 // 数据怎么到渲染期（**bundler import，不走 public/ 也不 vendoring**，理由三条）：
 //   1. 零运行期 IO：模块级常量，没有 fetch、没有 async → 不需要 delayRender 持柄，
-//      也就不存在"忘了持柄 / 持错了时机"这类时序缺陷（模板 fill-gate 的教训正是"测量晚于截帧"）。
+//      也就不存在"忘了持柄 / 持错了时机"这类时序缺陷。
 //   2. 每条渲染路径都成立：`notebook-video showcase` 不跑 sync-render-inputs，
 //      若数据靠 sync 复制进 public/，接触表这一路会直接读不到文件。
 //   3. 确定性最强 + 仓库不落副本：帧间/进程间同一结果；想换档位只改 import 一行（npm 自带 50m）。
 //
 // 投影（`projection`）：
-//   'globe'（默认，正交投影）：地球隐喻，可绕轴自转。**保持旧形态的默认值**，老场景行为不变。
+//   'globe'（默认，正交投影）：地球隐喻，可绕轴自转。
 //   'flat'（自然地球 / geoNaturalEarth1）：世界地图。为什么不用等距圆柱——它把高纬横向拉伸
 //     （格陵兰看着比非洲大），naturalEarth1 是 d3-geo 自带的折中投影（零附加依赖），
 //     且平面图能把"源站 / 边缘节点"一次全摆出来（球面上总有半个地球背对镜头）。
 //
 // 标记点（`markers`）：给经纬度就落点。球面上**背面的点不画**——
-//   `projection([lon,lat])` 不做裁剪（实测：rotate 到 100°E 时旧金山 108° 之外照样返回坐标，
+//   `projection([lon,lat])` 不做裁剪（背面的点照样返回坐标，
 //   不判就会把点画到球正面来），所以先用 geoDistance 判可见弧（>88° 隐藏）。
 // 确定性：TopoJSON→GeoJSON 与经纬网都在模块加载时算一次；每帧只做投影与 path 拼接，
 //   全是 f(帧号) 的纯函数。标记点逐个落点用 prog(f, startAt + i*markerStep)。
@@ -486,8 +477,7 @@ export const GeoView: React.FC<{
   const centerLat = 22;
   const proj = isGlobe
     ? geoOrthographic().translate([width / 2, height / 2]).scale(r).rotate([-centerLon, -centerLat])
-    : // 按**球面轮廓**（而不是陆地包围盒）装框：实测按陆地装框时轮廓会左右各溢出 2.3px
-      // 被 SVG 视口切掉（land-fit: sphere bounds [5.66,62.4]-[394.3,264.5] vs 框 [8,8]-[392,322]）。
+    : // 按**球面轮廓**（而不是陆地包围盒）装框：按陆地装框时轮廓会左右各溢出几像素被 SVG 视口切掉。
       geoNaturalEarth1().fitExtent(
         [
           [8, 8],
@@ -597,11 +587,11 @@ export const SankeyChart: React.FC<{
         const x0 = (n as never as {x0: number}).x0;
         const x1 = (n as never as {x1: number}).x1;
         const tone = toneOf(n as SankeyNodeIn, i);
-        // 标签锚点（2026-09-21 修）：矩形与标签只用布局给的 x0/x1/y0/y1，不再自己拿 nodeW 另算一套。
-        // 实测（node 脚本直调 d3-sankey，760×460/nodeW=20）：x1-x0 恒等于 nodeWidth；但**末列**
+        // 标签锚点：矩形与标签只用布局给的 x0/x1/y0/y1，不拿 nodeW 另算一套。
+        // x1-x0 恒等于 nodeWidth；但**末列**
         // x1 == width-2，此时标签按 x1+10 摆就等于起点落在 width+8 —— 再叠字宽就出了画布
         // （4 字中文 @18px ≈ 72px）。所以：末列标签锚到节点**左侧**（textAnchor=end），
-        // 其余列锚到右侧；两条分支都在画布内，且末列标签不会再飘进页边空白。
+        // 其余列锚到右侧；两条分支都在画布内，末列标签不会飘进页边空白。
         const atEnd = ((n as never as {layer: number}).layer ?? 0) >= lastLayer;
         return (
           <g key={`n${i}`} opacity={p}>

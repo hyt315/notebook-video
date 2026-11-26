@@ -101,7 +101,13 @@ class BgModeTest(unittest.TestCase):
             self.skipTest("3.3.0 commit not in this clone")
         tmp = Path(tempfile.mkdtemp(prefix="nv-rs360-")) / "rs360.py"
         atexit.register(shutil.rmtree, tmp.parent, True)  # 进程结束时清掉临时目录
-        tmp.write_text(old_src.stdout, encoding="utf-8")
+        # ms→帧取整与渲染端 Math.round 同式（.5 向上）是有意的行为变更，与背景无关：旧脚本换成同一式再比。
+        old_round = "def ms_frame(ms: float) -> int:\n    return int(round(ms * FPS / 1000))"
+        self.assertIn(old_round, old_src.stdout)
+        src = old_src.stdout.replace(old_round, "def ms_frame(ms: float) -> int:\n    return math.floor(ms * FPS / 1000 + 0.5)")
+        if "\nimport math\n" not in src:
+            src = src.replace("\nimport json\n", "\nimport json\nimport math\n", 1)
+        tmp.write_text(src, encoding="utf-8")
         old = load("rs360", tmp)
         # 3.3.0：sfxDensity 是**刻意的**行为变更（shots.ts 多一行导出、resolved 多一个键），
         # 本用例守的是「背景相关输出与 3.3.0 逐字节一致」，所以先把这一行 / 这个键去掉再比。

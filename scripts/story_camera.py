@@ -40,8 +40,15 @@ def partial_clips(look, s, els):
     return bad
 
 
-def frame_rect(r, els, max_s=ZOOM_MAX, min_s=1.0):
-    """把矩形 r 取进安全框：先按 r 求最大推近，再逐级回退，直到没有任何文字元素被取景窗切断。"""
+def in_frame(r, look, s):
+    """r 是否完整落在缩放 s 的画面（1920×1080）里。"""
+    x, y, w, h = to_screen(r, look, s)
+    return x >= -0.5 and y >= -0.5 and x + w <= 1920.5 and y + h <= 1080.5
+
+
+def frame_rect(r, els, max_s=ZOOM_MAX, min_s=1.0, keep=None):
+    """把矩形 r 取进安全框：先按 r 求最大推近，再逐级回退，直到没有任何文字元素被取景窗切断。
+    keep：还必须完整留在画面里的矩形（本镜 anchor，validate-shot-motion 逐关键帧查它）。"""
     pad = 36
     rw, rh = r["w"] + 2 * pad, r["h"] + 2 * pad
     sw, sh = SAFE[2] - SAFE[0], SAFE[3] - SAFE[1]
@@ -63,8 +70,10 @@ def frame_rect(r, els, max_s=ZOOM_MAX, min_s=1.0):
                 sx, sy, sw_, sh_ = to_screen(r, look, s)
                 if sx < SAFE[0] - 1 or sy < SAFE[1] - 1 or sx + sw_ > SAFE[2] + 1 or sy + sh_ > SAFE[3] + 1:
                     continue
-                # 运行时还有 ≤3.5% 的慢推 + 微漂移：两个倍数都要不切字
-                if not partial_clips(look, s, els) and not partial_clips(look, s * 1.035, els):
+                if keep and not in_frame(keep, look, s):
+                    continue
+                # 运行时还有全镜慢推（cinema.tsx pathCamAt 的 1 + 0.018）：两个倍数都要不切字
+                if not partial_clips(look, s, els) and not partial_clips(look, s * 1.018, els):
                     return {"x": round(look[0], 1), "y": round(look[1], 1), "s": round(s, 3)}, tries
         tries.append(round(s, 3))
         s -= 0.03

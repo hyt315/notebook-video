@@ -1,33 +1,24 @@
 import React from 'react';
-import {Easing, interpolate} from 'remotion';
 import {THEME} from './theme/active';
+import {easeIn, easeIO, easeOut} from './motion';
 
 // ============================================================================
-// skeletons · 四种场景骨架 v2
+// skeletons · 四种场景骨架
 //
 //   Stage    单体舞台：一个主体在空间中演变（5–6 态）        → stagekit.StageFrame
 //   Corridor 走廊：持久对象沿共享轨道移动，站点留下完成态      → 本文件 Corridor
 //   Split    双栏对比：两侧各自入场，差异高亮                 → 本文件 SplitStage
 //   Zoom     整体→聚焦→标注→回整体（纯代码局部放大，非图片）  → 本文件 ZoomStage
 //
-// v2 修掉的三类系统性缺陷（全部由静态坐标审计 + 逐帧审计发现）：
-//   1. Corridor 的状态标签原本在承载物**下方 116px**，与站点标签只剩 3.6px 间距，
-//      于是「标签压圆环、圆环压数字」在每个站点都发生 → 标签改到承载物**上方 46px**，
-//      站点标签下移，两者之间留 40px 预算。
-//   2. ZoomStage 的缩放矩阵**数学错误**：transform 写成 translate 再 scale，而 translate
-//      用的是未缩放单位，于是「想聚焦的点」并不落在框心，且放大后内容被框裁掉
-//      （实测四个场景被裁 100–500px）→ 改成标准 `translate(框心) scale(k) translate(-焦点)`
-//      三段式，并按内容尺寸钳制 zoom 上限。
-//   3. SplitStage 原本两侧同时同向入场、胜出只有一次边框跳变 → 改左先右后 6 帧、
-//      分隔线先画后落徽章、胜出按「先让输的一方暗下去再点亮赢的一方」的因果顺序。
+// 版面约束：
+//   1. Corridor 的状态标签在承载物**上方 46px**，站点标签在下方，两者之间留 40px 预算
+//      （标签放在承载物下方时会与站点标签互压）。
+//   2. ZoomStage 用 `translate(框心) scale(k) translate(-焦点)` 三段式，并按内容尺寸钳制 zoom 上限
+//      （先 translate 再 scale 时焦点不落在框心，放大后内容被框裁掉）。
+//   3. SplitStage 左先右后 6 帧、分隔线先画后落徽章、胜出按「先让输的一方暗下去再点亮赢的一方」的因果顺序。
 // ============================================================================
 
-const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
-const easeIO = (f: number, a: number, b: number, from = 0, to = 1) => interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.inOut(Easing.cubic)});
-const easeOut = (f: number, a: number, b: number, from = 0, to = 1) => interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.bezier(0.16, 1, 0.3, 1)});
-const easeIn = (f: number, a: number, b: number, from = 0, to = 1) => interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.in(Easing.quad)});
-// popS / BASE_FPS 已删（tsc TS6133）：本文件的入场一律走上面三条显式曲线，
-// popS 没有任何调用方，而 BASE_FPS 只服务于它 —— 连带 spring 也不再需要。
+// 本文件的入场一律走上面三条显式曲线（不用 spring）。
 /** 单向脉冲：0→1→0（拿来做「点一下」的强调，而不是永久呼吸）。 */
 const pulse = (f: number, at: number, dur = 14) => Math.sin(Math.PI * Math.max(0, Math.min(1, (f - at) / dur)));
 
@@ -38,7 +29,7 @@ export type SkeletonKind = (typeof SKELETONS)[number];
 // Corridor · 走廊骨架
 // 一个持久对象沿共享轨道穿过若干站点，每到一个站点改一次状态。
 //
-// v2 关键约定（修复重叠）：
+// 关键约定（防重叠）：
 //   · 对象状态标签在承载物**上方** `LABEL_ABOVE = 46px`（不要放下面——会和站点标签打架）；
 //   · 站点标签在轨道下方 `STATION_DY = 96px`，与状态标签之间留出 ≥40px；
 //   · 逐段 easeInOut + 每站停留 DWELL 帧（一次性全程缓动会让对象「路过」站点而不是「到站」）；
@@ -113,14 +104,14 @@ export const Corridor: React.FC<{
         {pts.map((px, i) => {
           const s = stations[i];
           const at = s.at;
-          if (f < at - 12) return null;   // 3.5.2：不预铺——还没讲到就不画这块空地
+          if (f < at - 12) return null;   // 不预铺——还没讲到就不画这块空地
           const on = f >= at;
           const color = s.color ?? C.blue;
           const ring = pulse(f, at, 16);            // 到达脉冲：0→1→0
           const checkP = easeOut(f, at, at + 12);      // 对勾描线
           return (
             <g key={s.label}>
-              {/* 3.5.2：站点圈沿边描出（12 帧），不是先摆空心圈再填色 */}
+              {/* 站点圈沿边描出（12 帧），不是先摆空心圈再填色 */}
               <circle cx={px} cy={laneY} r={52} fill={f >= at ? C.paperBase : 'none'} stroke={on ? color : C.line} strokeWidth={3.5}
                 strokeDasharray={2 * Math.PI * 52} strokeDashoffset={(1 - easeOut(f, at - 12, at)) * 2 * Math.PI * 52} />
               {ring > 0 && <circle cx={px} cy={laneY} r={52 + 26 * ring} fill="none" stroke={color} strokeWidth={3} opacity={0.28 * (1 - ring)} />}
@@ -188,7 +179,7 @@ export const Corridor: React.FC<{
 
 // ---------------------------------------------------------------------------
 // SplitStage · 双栏对比骨架
-// v2：左侧先入场 6 帧（同侧对称入场读作「两张幻灯片」）；分隔线先画、徽章后落；
+// 左侧先入场 6 帧（同侧对称入场读作「两张幻灯片」）；分隔线先画、徽章后落；
 //     胜出按因果顺序：先让输的一方暗/去饱和/下沉，再点亮赢的一方，最后落徽章。
 // ---------------------------------------------------------------------------
 export const SplitStage: React.FC<{
@@ -271,11 +262,10 @@ export const SplitStage: React.FC<{
 // ---------------------------------------------------------------------------
 // ZoomStage · 整体 → 聚焦 → 标注 → 回整体
 //
-// v2 修掉两个致命问题：
-//   · 变换顺序错误：原来 `translate(tx,ty) scale(k)` 的 tx 用未缩放单位，导致「要聚焦的点」
-//     不落在框心、放大后内容被框裁掉（实测被裁 100–500px）。正确写法是
-//     `translate(框心) scale(k) translate(-焦点)` 三段式。
-//   · 没有缩放上限：按内容尺寸钳制 `k ≤ min(框宽/内容宽, 框高/内容高)`，否则必然裁切。
+// 两条约束：
+//   · 变换写成 `translate(框心) scale(k) translate(-焦点)` 三段式；`translate(tx,ty) scale(k)` 的 tx
+//     是未缩放单位，焦点不落在框心、放大后内容被框裁掉。
+//   · 缩放上限：按内容尺寸钳制 `k ≤ min(框宽/内容宽, 框高/内容高)`，否则必然裁切。
 //     不知道内容尺寸时用保守默认，宁可少放大也不要裁掉内容。
 // ---------------------------------------------------------------------------
 export const ZoomStage: React.FC<{
@@ -315,7 +305,7 @@ export const ZoomStage: React.FC<{
   const offY = clampOff(h / 2 - k * fyp, h, contentH);
   return (
     <div style={{position: 'absolute', left: x, top: y, width: w, height: h, zIndex: z}}>
-      {/* data-fit-skip：这一层是**缩放取景框**，被放大的子层必然溢出（实测 scrollWidth 1093 vs 996），
+      {/* data-fit-skip：这一层是**缩放取景框**，被放大的子层必然溢出，
           那是"推近"本身的效果，不是文字被裁。里面的卡片仍会各自被 CardFitGate 独立量测。 */}
       <div data-fit-skip="zoom-viewport" style={{position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: 14, background: C.paper, border: `2.5px solid ${C.line}`}}>
         {/* 三段式：先平移到框心，再缩放，再把焦点平移回原点 —— 这样焦点一定落在框心 */}
@@ -346,4 +336,3 @@ export const ZoomStage: React.FC<{
   );
 };
 
-export const SKELETON_VERSION = 'skeletons-v2 · Stage/Corridor/Split/Zoom · state-label-above + correct zoom math';

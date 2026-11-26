@@ -1,7 +1,7 @@
 # 皮肤契约：journal · 博物学家手账
 
 状态：LOCKED。实现在 `assets/lecture-template/src/theme/journal.tsx`。`new-project ./dir --style=journal` 选它（会按需下载 Noto Serif SC Bold，OFL-1.1，sha256 锁定）。
-手作皮肤**必须**先写导演层 `manifests/treatment.json`（[../director.md#director-method](../director.md#director-method)），`validate-treatment.py` 把缺项记 P0。
+手作皮肤**必须**先写导演层 `manifests/treatment.json`（[../director.md#director-method](../director.md#director-method)），`validate-treatment.py` 对缺文件、`<<…>>` 占位、自相矛盾记 P0，其余必填字段缺失记 P1。
 配方（八个轴）见 [../director.md#style-recipes](../director.md#style-recipes)。
 
 ## 媒介
@@ -16,14 +16,14 @@
 - 字幕：**没有胶囊**。72 设计 px（= 96 px@1440）Noto Serif SC Bold 墨字直接写在纸上，下面垫纸色柔光晕（任何底上 ≥7:1）。
 - 章节标识（`Chrome`）：左上角钢笔小字 "No.01 — 章名" + 一条手划线；**没有**右上技术页眉、没有吉祥物。
 - 调色（`Grade`）：轻微暖色 + 暗角。
-- 背景：`bg-journal-{main,chapter,quiet}.jpg`（2560×1440，`scripts/dev/make-craft-textures.py` 确定性生成，sha256 登记）；chapter 变体左下 / 右上各一团水彩晕。
+- 背景：`bg-journal-{main,chapter,quiet}.webp`（2560×1440，`scripts/dev/make-craft-textures.py` 确定性生成，sha256 登记）；chapter 变体左下 / 右上各一团水彩晕。
 - 背景库：再加 8 张——`journal/ruled` 横线本、`grid` 方格本、`dots` 点阵本、`kraft` 牛皮纸本、`watercolor` 水彩纸、`sticky` 便签墙、`oldpage` 旧书页、`graph` 坐标纸；手作皮肤默认 `bgMode: "chapter"`：只在章节首镜换纸、章内沿用（装饰重的 `busy` 背景只给章节卡 / 安静镜）；想全片一张纸写 `"bgMode": "film"`，想改回逐镜轮换写 `"bgMode": "shot"`，见 [../media.md#background-library](../media.md#background-library)。
 - 转场缺省：`pageturn`（真翻页：上一页卷起来翻走，见 [../camera.md#fx-effects](../camera.md#fx-effects)）；探针不通过时自动退回 `pageflip`（纯 CSS 折痕翻页）。章节首镜 `drop`（新的一页盖上来）。
 
 ## 原生动作（顿悟点用）
 1. **晕染即揭示**：`WashBlob` 在结构上晕开，水干后边缘自己变深——"本来就在那里，只是你没看出来"。
 2. **标本 + 批注**：`PinnedPhoto` 贴上真实标本照，`HandNote` 的引线长到细节上再写字。
-3. **放大镜压在真照片上**：`Loupe` / `LoupeMedia`，镜片里的东西和镜外不一样（被刷上颜色、被圈出）。
+3. **放大镜压在真照片上**：`Loupe` / `LoupeMedia`，镜片里的东西和镜外不一样（被刷上颜色、被圈出）。属于手写场景路线；auto 路线的 `page` 版式图版占满整页高，相机推不进，招牌镜改点 `flow` / `list` / `compare`（自动横移扫镜）。
 4. **雾洗回白纸**：结尾一层纸色淡彩盖过整页，回到开头的空白页，但留下一处变化。
 
 ## 不要

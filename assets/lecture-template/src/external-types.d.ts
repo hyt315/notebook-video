@@ -4,7 +4,7 @@
 // 为什么手写而不是装 @types：
 //   · `world-atlas` 是纯数据包（只发 JSON，无 main / 无 types）；
 //     `topojson-client` 也没有自带 .d.ts。两者都是 ISC，登记在
-//     references/technique.md#dependency-policy §4.2。
+//     references/technique.md#dependency-policy。
 //   · 本技能只放行了这两个包，**不再加 `@types/topojson-client`**——那是第三个包。
 //   · `GeoJSON.*` 命名空间来自 `@types/geojson`，它是已声明的 `@types/d3-geo` 的
 //     传递依赖（`{"@types/geojson":"*"}`），不额外装东西；d3-geo 自己的类型也是 import 它。
@@ -48,7 +48,7 @@ declare module 'flubber' {
   ): (t: number) => string;
 }
 
-// 3.3.0：opentype.js 2.x（MIT）不自带类型。只声明 craft/ink.tsx 的 HandLettering 用到的符号。
+// opentype.js 2.x（MIT）不自带类型。只声明 craft/ink.tsx 的 HandLettering 用到的符号。
 declare module 'opentype.js' {
   export interface PathCommand {type: 'M' | 'L' | 'Q' | 'C' | 'Z'; x?: number; y?: number; x1?: number; y1?: number; x2?: number; y2?: number}
   // toPathData 不再使用（2.0.0 的取整在浮点残差上会产出 NaN，见 craft/ink.tsx 的 glyphPathD）

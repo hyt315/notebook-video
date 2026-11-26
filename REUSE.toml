@@ -15,9 +15,9 @@ SPDX-FileCopyrightText = "2026 Notebook Video contributors"
 SPDX-License-Identifier = "Apache-2.0"
 
 # ---- 背景 ----
-# 主题背景 bg-*.jpg：flat / cel 为本项目生成图再脚本合成，手作三皮肤为代码生成（manifests/visual-assets.json）
+# 主题背景 bg-*.webp：flat / cel 为本项目生成图再脚本合成，手作三皮肤为代码生成（manifests/visual-assets.json）
 [[annotations]]
-path = "assets/lecture-template/public/bg/bg-*.jpg"
+path = "assets/lecture-template/public/bg/bg-*.webp"
 precedence = "override"
 SPDX-FileCopyrightText = "2026 Notebook Video contributors"
 SPDX-License-Identifier = "Apache-2.0"
@@ -52,7 +52,7 @@ SPDX-License-Identifier = "CC0-1.0"
 
 # 纸纹 tile：make-craft-textures.py 固定种子生成
 [[annotations]]
-path = "assets/lecture-template/public/craft/fibre-tile.png"
+path = "assets/lecture-template/public/craft/fibre-tile.webp"
 precedence = "override"
 SPDX-FileCopyrightText = "2026 Notebook Video contributors"
 SPDX-License-Identifier = "Apache-2.0"

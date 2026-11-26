@@ -7,10 +7,9 @@ import type {LucideIcon} from 'lucide-react';
 import {THEME} from './theme/active';
 
 // ============================================================================
-// kit · 主题无关的原子组件（从 index.tsx 抽出，供模板场景与工程场景共同引用）
+// kit · 主题无关的原子组件（供模板场景与工程场景共同引用）
 //
-// 抽取原因：这些原子此前定义在 index.tsx 内部，导致工程侧无法复用，只能各写一份；
-// 也是「能力存在但不可达」的一部分。抽出后 index.tsx 与工程都从这里 import。
+// index.tsx 与工程都从这里 import，工程侧不必各写一份。
 //
 // 只放**主题无关**的原子。带题材的构件（如模板里的 git 猫吉祥物 Mascot）留在
 // 各自的场景文件里，换题材时重画。
@@ -25,7 +24,7 @@ export const PillTag: React.FC<{text: string; color?: string; bg?: string; fontS
 );
 
 /**
- * LineIcon：锁定线性图标集。3.2.0 起字形来自 lucide-react（ISC），不再手绘 SVG。
+ * LineIcon：锁定线性图标集。字形来自 lucide-react（ISC），不再手绘 SVG。
  * API 不变：26 个 kind 名、size、color、strokeWidth（仍按 32 视窗的笔画粗细传，
  * 内部换算到 lucide 的 24 视窗：w × 24/32，所以默认 2.2 落在 1.65）。
  * 换题材从这里挑，不要新造风格；需要更多字形时直接从 lucide-react 加映射。
@@ -52,4 +51,3 @@ export const CheckBadge: React.FC<{size?: number}> = ({size = 30}) => (
   </span>
 );
 
-export const KIT_VERSION = 'kit-v2 · PillTag / LineIcon(26 glyphs, lucide-react) / CheckBadge';

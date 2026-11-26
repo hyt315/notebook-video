@@ -1,65 +1,18 @@
-# Theme contract: cel (bold comic / manga)
+# 皮肤契约：cel（明快漫画赛璐珞）
 
-Status: LOCKED. This theme ships fully implemented in `assets/lecture-template/src/theme/cel.tsx` (visual identity rebuilt). Production runs select it with `new-project ./dir --style=cel` and never edit the theme file. Read this document instead of the other theme doc; the two style contracts are mutually exclusive by design (progressive disclosure).
+## 1. 设计语言
 
-## Design language
+- **定位**：面向高能量科普、产品拆解与踩坑提醒（`mode: "component"` 或 `hybrid`），以清晰的深墨描边、硬边平涂阴影与强对比色块营造利落节奏。
 
-Bold comic / shonen-manga energy: off-white comic paper with halftone dots, near-black ink outlines, saturated primary red / blue / yellow in flat fills, hard offset ink shadows, speed lines and starbursts. Loud and graphic at the edges, clean paper in the middle where the content lives.
+## 2. 锁定令牌（禁止自造颜色）
 
-## Locked tokens (do not invent alternatives)
+所有颜色与线条参数直接从 `src/theme/cel.tsx` 的 `C` 读取：
+- **底面**：明快浅纸底，保证深墨线条与正文达到 ≥ `4.5:1` 对比度。
+- **描边与阴影**：统一使用主题锁定的实线描边与硬边偏移阴影，禁止模糊高斯阴影与霓虹发光。
+- **文字**：一律使用 `C.ink`、`C.muted`、`C.*Ink` 安全色令牌。
 
-All hex values are vendored from Radix Colors v3 (MIT); the theme file names the scale and step next to each token.
+## 3. 场景适配与拒绝项
 
-- Canvas: 16:9 only (2560×1440 delivery, 1920×1080 design space; see ../scenes.md#canvas-modes).
-- Surfaces: `paper` `#ffffff` (panels), `paperWarm` `#fdfdf9` (yellow 1), `paperBase` `#fefce9` (yellow 2, comic paper).
-- Ink: `ink` `#111111` (gray-dark 1) for outlines and body text, `muted` `#63635e` (sand 11).
-- Accents (fill → text-safe `*Ink`; every Ink is ≥ 4.6:1 on all three surfaces):
-
-  | Slot | Fill | Ink | Radix source |
-  |---|---|---|---|
-  | orange (comic red, warm lead) | `#e5484d` | `#ce2c31` | red 9 / red 11 |
-  | blue (co-lead) | `#0090ff` | `#0d74ce` | blue 9 / blue 11 |
-  | gold (comic yellow) | `#ffe629` | `#956703` | yellow 9 / yellow 11 mixed 10% toward yellow 12 |
-  | green | `#46a758` | `#2a7e3b` | grass 9 / grass 11 |
-  | red | `#dc3e42` | `#ce2c31` | red 10 / red 11 |
-
-  Yellow is a fill (bursts, highlight blocks, the subtitle's offset shadow); put `ink` text on it, never white.
-- Panel skin: `3px` solid ink border, `8px` radius, hard offset ink shadow `4px 4px 0` growing to `8px 8px 0` with lift, never blurred. Every panel carries a deterministic micro-tilt of ±0.7° max hashed from its position; scene transforms compose on top of it.
-- Background library : five more light backgrounds — `cel/halftone`, `speedlines`, `panels`, `screentone`, `sunburst` — rotate by shot role with no two adjacent shots alike; see [../media.md#background-library](../media.md#background-library). The three below stay as the `legacy` entries.
-- Backgrounds (LOCKED rasters, 2560×1440, `public/bg/`, registered with sha256 in `manifests/visual-assets.json`):
-  - `bg-cel-main.jpg`: black halftone fan + yellow ink-outlined starburst bottom-left, speed lines top-right, red halftone + blue star bottom-right, blue halftone wedge top-left.
-  - `bg-cel-chapter.jpg`: short speed-line ticks along the left and right edges, yellow starburst top-right, red halftone top-left, red star bottom-left, blue halftone bottom-right.
-  - `bg-cel-quiet.jpg`: one small element per corner, for dense shots.
-
-  The central ~70% of every variant is empty paper with no panel border or frame line. Never draw extra ornaments on top of the images, never restore a code-drawn background.
-- Grade: ink corner vignette only (`inset 0 0 120px`, 0.03 alpha).
-- Subtitle: white caption box, `3px` ink border, yellow offset block (`5px 5px 0`) outlined in ink, bold Kai text, padding 10×36. No tape, no solid bar. All trailing punctuation strictly suppressed.
-- Header plate: the top-right technical header sits in a comic caption box (white, `3px` ink border, `4px 4px 0` ink shadow), because the top-right corner of every background carries speed lines or a starburst.
-
-## Theme extra components
-
-- `Burst` (explosion badge): 12-spike star, `3.6px` ink stroke, default yellow fill, rotated 10°. Use at most one per scene, on a hero or key beat, size 110–140. Import from `theme/cel.tsx` via `THEME.extras.Burst`; pass only `x`, `y`, `size`, `text` (≤3 chars).
-
-## Scene adaptation rules
-
-- Keep every layout coordinate, type scale, motion helper and frame contract from the lecture template. Do not redesign zones.
-- Flat fills only: no gradients, no soft shadows, no blurred glows inside scene graphics. Depth comes from border weight and shadow offset.
-- Dashed connector lines keep their animation contract; render them in ink or an accent color at full opacity.
-- Emphasis color rotation (red → blue → green) follows the existing semantic color slots.
-
-## Rejection flags
-
-- Panel borders above 3px or ink shadows above 8px (bulky black slabs).
-- Any blurred or soft drop shadow, or a full-frame translucent wash over the background.
-- Trailing punctuation visible at the end of any subtitle cue.
-- A header without its caption-box plate.
-- More than one `Burst` per scene, or `Burst` text longer than 3 characters.
-- Subtitle rendered as a bar, tape strip or any non-boxed shape.
-- Restoring a code-drawn halftone/speed-line background, drawing ornaments on top of the locked images, a background with a busy centre, baked text or onomatopoeia, or a wrong-ratio image stretched onto the canvas.
-
-## Background decoration zones
-
-The union over the three variants (1920×1080 design space), declared in `cel.tsx`:
-`(0,760,300,320)` bottom-left, `(1580,700,340,380)` bottom-right, `(1540,0,380,340)` top-right, `(0,0,240,230)` top-left, `(0,290,110,440)` left edge, `(1810,330,110,420)` right edge.
-
-**Content that overlaps a decoration zone must sit on a `CoverPanel`** (`tone="paper"`). Keep the plate's `z` above the background and below the content. See [../media.md#media-routing](../media.md#media-routing) §4.
+- **适配**：适合搭配 `StampBanner`、`VerdictBar`、`KineticNumber` 与 `SplitStage` 强化正反对比；每镜仍遵守草稿纸出现规则，不一次全屏弹出。
+- **拒绝项**：面板边框 ≤3px、阴影 ≤8px、`Burst` 每镜 ≤1 个且 ≤3 字、`yellow` 底绝不放白字；禁止使用 `pop` 弹性缩放入场（合法入场仅 `build`/`fade`/`rise`/`slide`/`zoom`）；禁止滥用多色色块导致视觉噪点。
+- **背景装饰区**：漫画网点与角落笔触仅置于安全区外围，严禁侵入底部字幕安全带。

@@ -13,7 +13,7 @@ from pathlib import Path
 ALLOWED_MODES = {"image-text", "pure-text", "pure-graphic"}
 ALLOWED_SOURCES = {"ai-generated", "user-supplied", "licensed-third-party", "code-generated"}
 
-# Locked parameter set for the only delivery canvas (16:9, 3.2.0+). Any other
+# Locked parameter set for the only delivery canvas (16:9). Any other
 # Composition width is rejected.
 CANVAS_MODES = {
     2560: {"label": "16:9", "design_width": 1920, "design_height": 1080, "subtitle_safe_width": 1334, "subtitle_margin": 188, "subtitle_bottom": 34},
@@ -28,10 +28,9 @@ def validate_canvas_mode(project: Path) -> list[str]:
         return []
     text = src.read_text(encoding="utf-8")
     # 画布口径的真身是**影片 Composition**（模板里实名 `NotebookVideoFilm`，见
-    # assets/lecture-template/src/index.tsx:413）。旧版 `re.search` 取全文件**第一个**
-    # `width={数字}`：实测影片标签用变量宽（`width={compW}`）时，判据抓到后面 showcase
-    # 标签的 1920，整段画布一致性拿着另一块画布的档位比对还静默 PASS。
-    # 现在锚定影片标签本身；标签在但抽不到**纯数字**宽 → 判据无法执行（不回落到别的标签）。
+    # assets/lecture-template/src/index.tsx）。不取全文件**第一个** `width={数字}`：影片标签用变量宽时
+    # 会抓到后面 showcase 标签的 1920，拿另一块画布的档位比对还静默 PASS。
+    # 所以锚定影片标签本身；标签在但抽不到**纯数字**宽 → 判据无法执行（不回落到别的标签）。
     film_tag = re.search(r'<Composition[^>]*\bid="NotebookVideoFilm"[^>]*>', text)
     comp = re.search(r'width=\{(\d+)\}', film_tag.group(0)) if film_tag else None
     if not comp:

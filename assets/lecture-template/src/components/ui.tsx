@@ -1,9 +1,9 @@
 import React from 'react';
-// 2026-10-17（3.2.0 · Phase 3）：12 个 Radix 包全部移除。Accordion / Tabs / ControlStack 只需要
-// 结构 + 皮肤，渲染期没有交互，Radix 带来的只是 ARIA 外壳和 Slider 的 ResizeObserver 测量
-// （确定性风险）。现在全部是纯 <div>，状态 100% 来自帧号。
-// 代码高亮从 react-syntax-highlighter（Prism）换成 Shiki（同步核心 + JS 正则引擎，见 ./shiki.ts）。
+// Accordion / Tabs / ControlStack 只需要结构 + 皮肤，渲染期没有交互，所以全部是纯 <div>，
+// 状态 100% 来自帧号（不用 Radix：它只带来 ARIA 外壳和 Slider 的 ResizeObserver 测量，有确定性风险）。
+// 代码高亮用 Shiki（同步核心 + JS 正则引擎，见 ./shiki.ts）。
 import {highlightTokens} from './shiki';
+import {clamp, EASE} from '../motion';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 // 图标：lucide-react（ISC，线条）+ simple-icons（CC0，品牌 logo）。react-icons 已移除。
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import type {LucideIcon} from 'lucide-react';
 import {siReact, siNodedotjs, siPython, siDocker, siGit, siNpm, siGithub} from 'simple-icons';
-import {Easing, interpolate, spring} from 'remotion';
+import {interpolate, spring} from 'remotion';
 import {THEME} from '../theme/active';
 import {TYPE, PillTag} from '../kit';
 import {fitH} from '../fxkit';
@@ -26,7 +26,7 @@ import {fitChineseTextOnNLines, fitsWithin} from './fittext';
 // ============================================================================
 // ui.tsx — 界面结构件（库提供结构，本层提供皮肤 + 帧驱动）
 //
-// 契约（见 references/technique.md#dependency-policy §7）：
+// 契约（见 references/technique.md#dependency-policy）：
 //   1. 场景 import 本层，不直接 import 原始库
 //   2. 颜色/边框/圆角/阴影只从 THEME 取
 //   3. 动画一律 f(帧号) 的纯函数：禁 CSS transition / setTimeout / Math.random
@@ -49,28 +49,19 @@ const toneOf = (t?: string) => TONE[t ?? 'blue'] ?? C.blue;
 /**
  * 帧驱动进度，带夹取。所有入场动画都走这个。
  *
- * 2026-09-21 修（实测）：原来是**匀速直线**（interpolate 不给 easing）。
- * 新层 36 处入场因此全都是"机械地滑到位"，而旧六模块的入场一律是缓出曲线，
- * 一屏之内两种运动质感并存，读起来就是"新组件不如老的顺"。
- * 现在统一用与 scenes 层 enterAt / fxkit easeOutSoft 同一条曲线
- * `bezier(.16,1,.3,1)`（先快后慢、尾巴长），新旧两层的入场手感就此对齐。
+ * 曲线是 motion.ts 的 EASE.out（先快后慢、尾巴长），
+ * 一屏之内不出现两种运动质感（匀速直线读作"机械地滑到位"）。
  * 数值型用法（图层描线进度、可滑动控件的 glide）走同一条曲线也是对的——
  * 它们要的同样是"落位时收住"，不是"匀着走完"。
  */
 export const prog = (f: number, from: number, dur = 22) =>
-  interpolate(f - from, [0, dur], [0, 1], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-    easing: Easing.bezier(0.16, 1, 0.3, 1),
-  });
+  interpolate(f - from, [0, dur], [0, 1], {...clamp, easing: EASE.out});
 
 /**
  * presence — 「入场 → 常驻 → 离场」的通用存在感。
  *
- * 2026-09-21 修（实测）：新层 36 处入场**只进不出**，`exitStart` 出现 0 次
- * （旧六模块的组件件件支持离场）。后果是"一镜之内演第二件事"时，上一件事只能
- * 靠切镜消失——S14 就是这么把弹层叠在手风琴上、造成真实文字遮挡的。
- * 组件拿到 exitStart 就能主动让位：离场用 18 帧 ease-in 收掉并向上退 14px。
+ * 组件要支持离场：否则"一镜之内演第二件事"时，上一件事只能靠切镜消失，
+ * 新旧两件会叠在一起造成文字遮挡。组件拿到 exitStart 就能主动让位：离场用 18 帧 ease-in 收掉并向上退 14px。
  *
  * 返回 {p 入场进度, out 离场进度(0=还在, 1=已走), op 综合不透明度, dx 位移}。
  */
@@ -86,7 +77,7 @@ export const presence = (f: number, startAt: number, exitStart?: number, durIn =
 };
 
 // ---------------------------------------------------------------------------
-// Accordion — 纯 div（3.2.0 起不再依赖 @radix-ui/react-accordion）
+// Accordion — 纯 div（不再依赖 @radix-ui/react-accordion）
 // 用法：<Accordion f={f} items={[{title, body, tone}]} startAt={18} step={58} />
 // 展开项由帧号累积决定；**展开高度按真实文本折几行算出来**（不再猜行数）；支持 exitStart 让位。
 // ---------------------------------------------------------------------------
@@ -105,10 +96,8 @@ export const Accordion: React.FC<{
   exitStart?: number;
 }> = ({f, items, startAt, step, width, rowH = 96, bodyRows = 2, exitStart}) => {
   const openedCount = Math.max(0, Math.min(items.length, Math.floor((f - startAt) / step) + 1));
-  // 2026-09-21 修（实测）：展开高度原来是 `bodyRows` 行 × 行高**猜**出来的。
-  // 正文短于 bodyRows 行时面板偏高（空白），长于 bodyRows 行时正文被 overflow:hidden
-  // **裁掉尾巴**——接触表第 ⑭ 页实测过这件事（"Accordion 塞不进图表，是被裁剩一条"）。
-  // 现在按**真实文本在当前宽度下折几行**算高度：用的是封装层自己的断行器（budoux + UAX#14），
+  // 展开高度按**真实文本在当前宽度下折几行**算（按 `bodyRows` 猜时正文会偏高留白，
+  // 或被 overflow:hidden **裁掉尾巴**）：用的是封装层自己的断行器（budoux + UAX#14），
   // 与渲染同字体同字号，所以"算出来几行"就是"画出来几行"。bodyRows 退化为**下限**（保观感一致）。
   const innerW = Math.max(120, width - 64); // 触发器左右各 32 padding
   const linesOf = (t: string) => {
@@ -223,7 +212,7 @@ export const Accordion: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// Tabs — 纯 div（3.2.0 起不再依赖 @radix-ui/react-tabs）
+// Tabs — 纯 div（不再依赖 @radix-ui/react-tabs）
 // 用法：<Tabs f={f} tabs={[{key,label,title,body,points,verdict,tone}]} startAt={16} step={88} />
 // 激活项由帧号决定；内容淡入不用 CSS 过渡。
 // ---------------------------------------------------------------------------
@@ -365,15 +354,13 @@ export const Tabs: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// ControlStack — 「控件状态随旁白变化」（六种控件，纯 div；3.2.0 起不再依赖 Radix）
+// ControlStack — 「控件状态随旁白变化」（六种控件，纯 div；不再依赖 Radix）
 //
-// 为什么需要它：技能此前**完全没有**「控件被拨动」这个形态——要讲"这个选项被打开了"
-// 只能写一张文字卡片假装。而 validate-composition.py 的硬门禁要求每个讲解场景
+// 为什么需要它：要讲"这个选项被打开了"，最自然的是「控件被拨动」这个形态，而不是一张文字卡片。而 validate-composition.py 的硬门禁要求每个讲解场景
 // ≥1 个真的随旁白变状态的构件，「配置 / 选项 / 参数」类内容最自然的语法就是控件本身。
 //
 // 六种控件（switch / checkbox / radio / segment / slider / progress）全部是纯 div。
-//   以前用 Radix 的受控 primitive，但渲染期没有交互，Radix 只贡献了 ARIA 外壳，
-//   而 Slider 的拇指靠 ResizeObserver 测量定位（确定性风险）。现在位置全是算出来的。
+//   渲染期没有交互，位置全是算出来的（不用 ResizeObserver 测量，保证确定性）。
 //
 // 帧 → 状态是**一张显式的表**（`steps: [{at: 帧号, value}]`），纯函数、可复算：
 //   离散件（开关/复选/单选/分段）在 at 帧**瞬间**切换；
@@ -660,7 +647,7 @@ export const ControlStack: React.FC<{
 };
 
 // ---------------------------------------------------------------------------
-// HighlightCode — Shiki（3.2.0 起替换 react-syntax-highlighter / Prism）
+// HighlightCode — Shiki（替换 react-syntax-highlighter / Prism）
 // 语法色来自 ./shiki.ts 里由当前主题调色板生成的 TextMate 主题（flat / cel 各一套）。
 // token 是同步算出来的（无 WASM、无 Promise），所以不需要 delayRender。
 // 帧驱动逐行聚焦：讲哪一行，哪一行亮起来。
@@ -767,7 +754,7 @@ export const HighlightCode: React.FC<{
 // ---------------------------------------------------------------------------
 // MathBlock — 数学公式（katex）
 // 静态渲染、无动画，确定性。技能是讲解视频，公式是常见内容；
-// 此前只能手写 HTML 硬排（上下标都难对齐），这个件把它变成一行。
+// 手写 HTML 上下标难对齐，这个件把它变成一行。
 // ---------------------------------------------------------------------------
 export const MathBlock: React.FC<{
   f: number;
@@ -799,11 +786,9 @@ export const MathBlock: React.FC<{
 // ---------------------------------------------------------------------------
 // Icon / IconWall — lucide-react（ISC，线条）+ simple-icons（CC0，品牌）
 //
-// 3.2.0 起替换 react-icons（fa / fi / lu 三族）：
-//   · 线条图标直接用 lucide-react（以前的 fi / lu 本来就是 Feather / Lucide 的再打包）；
-//   · 品牌 logo 用 simple-icons 的单色 path（CC0，无署名义务；商标规则仍适用），
-//     替换掉 Font Awesome 品牌（CC BY 4.0，需署名）。
-// **LineIcon（kit.tsx）也改成了 lucide 字形**，两处同一套笔画语法。
+//   · 线条图标直接用 lucide-react；
+//   · 品牌 logo 用 simple-icons 的单色 path（CC0，无署名义务；商标规则仍适用）。
+// **LineIcon（kit.tsx）也用 lucide 字形**，两处同一套笔画语法。
 // 笔画重量：lucide 是 24 视窗 / strokeWidth 2；与 LineIcon 的 32 视窗 / 2.2 对齐
 //   → 2.2 × 24/32 = 1.65。
 // 纪律：图标**只用 THEME 给的 color**，不许用自带的品牌色或多色。

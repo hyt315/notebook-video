@@ -1,5 +1,5 @@
 {
-  "duration": 1150,
+  "duration": 1151,
   "theme": "flat",
   "shots": [
     {
@@ -75,14 +75,14 @@
       "beats": [
         0,
         31,
-        82,
+        83,
         166,
         213
       ],
       "beatsAbs": [
         0,
         31,
-        82,
+        83,
         166,
         213
       ],
@@ -361,8 +361,8 @@
         "StaggerList"
       ],
       "from": 416,
-      "to": 532,
-      "duration": 116,
+      "to": 533,
+      "duration": 117,
       "cueFirst": 7,
       "cueLast": 8,
       "keys": [
@@ -385,7 +385,7 @@
           "s": 1.17
         },
         {
-          "f": 116,
+          "f": 117,
           "x": 960.0,
           "y": 526.0,
           "s": 1.17
@@ -419,12 +419,12 @@
       "beats": [
         0,
         59,
-        116
+        117
       ],
       "beatsAbs": [
         416,
         475,
-        532
+        533
       ],
       "move": "对比",
       "evidence": "StaggerList",
@@ -444,7 +444,7 @@
         "focus": [
           {
             "at": 69,
-            "hold": 41,
+            "hold": 42,
             "rect": {
               "x": 200.0,
               "y": 170.0,
@@ -474,9 +474,9 @@
         "Funnel",
         "ProgressRing"
       ],
-      "from": 532,
+      "from": 533,
       "to": 682,
-      "duration": 150,
+      "duration": 149,
       "cueFirst": 9,
       "cueLast": 10,
       "keys": [
@@ -499,7 +499,7 @@
           "s": 1.08
         },
         {
-          "f": 150,
+          "f": 149,
           "x": 960.0,
           "y": 530.0,
           "s": 1.08
@@ -532,11 +532,11 @@
       "cameraIntent": "push-in",
       "beats": [
         0,
-        74,
-        150
+        73,
+        149
       ],
       "beatsAbs": [
-        532,
+        533,
         606,
         682
       ],
@@ -557,7 +557,7 @@
         },
         "focus": [
           {
-            "at": 84,
+            "at": 83,
             "hold": 60,
             "rect": {
               "x": 200.0,
@@ -573,7 +573,7 @@
       "bgLayout": "component",
       "bgAuto": true,
       "bg": "flat/quiet",
-      "bgFile": "bg/bg-flat-quiet.jpg",
+      "bgFile": "bg/bg-flat-quiet.webp",
       "bgWhy": "auto · role=quiet layout=component · 4 张候选，从没用过优先；已避开上一镜的 bg/lib/flat-mesh-mint.webp"
     },
     {
@@ -686,8 +686,8 @@
       "bgLayout": "component",
       "bgAuto": true,
       "bg": "flat/main",
-      "bgFile": "bg/bg-flat-main.jpg",
-      "bgWhy": "auto · role=main layout=component · 6 张候选，从没用过优先；已避开上一镜的 bg/bg-flat-quiet.jpg"
+      "bgFile": "bg/bg-flat-main.webp",
+      "bgWhy": "auto · role=main layout=component · 6 张候选，从没用过优先；已避开上一镜的 bg/bg-flat-quiet.webp"
     },
     {
       "id": "S7",
@@ -787,7 +787,7 @@
       "bgAuto": true,
       "bg": "flat/shapes",
       "bgFile": "bg/lib/flat-shapes.webp",
-      "bgWhy": "auto · role=main layout=component · 6 张候选，从没用过优先；已避开上一镜的 bg/bg-flat-main.jpg"
+      "bgWhy": "auto · role=main layout=component · 6 张候选，从没用过优先；已避开上一镜的 bg/bg-flat-main.webp"
     },
     {
       "id": "S8",
@@ -803,8 +803,8 @@
         "VerdictBar"
       ],
       "from": 919,
-      "to": 1150,
-      "duration": 231,
+      "to": 1151,
+      "duration": 232,
       "cueFirst": 14,
       "cueLast": 15,
       "keys": [
@@ -827,7 +827,7 @@
           "s": 1.0
         },
         {
-          "f": 231,
+          "f": 232,
           "x": 960.0,
           "y": 540.0,
           "s": 1.0
@@ -861,14 +861,14 @@
       "beats": [
         0,
         100,
-        111,
-        207
+        112,
+        208
       ],
       "beatsAbs": [
         919,
         1019,
-        1030,
-        1126
+        1031,
+        1127
       ],
       "move": "收束",
       "evidence": "VerdictBar",

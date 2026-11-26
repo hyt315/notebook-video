@@ -174,9 +174,9 @@ class EarshotAuditBoundaryTest(unittest.TestCase):
         self.assertIn("skipped", r.stdout, "要说清是跳过不是失败")
 
     def test_document_states_the_boundary(self):
-        doc = (ROOT / "references" / "audio-captions.md").read_text(encoding="utf-8")
-        self.assertIn("维护者离线质检", doc)
-        self.assertIn("1.1GB", doc)
+        # 维护者质检说明不进技能包文档，边界由脚本自己的输出说明（见上一条）。
+        src = (ROOT / "scripts" / "dev" / "sfx-earshot-audit.py").read_text(encoding="utf-8")
+        self.assertIn("1.1GB", src)
 
 
 if __name__ == "__main__":

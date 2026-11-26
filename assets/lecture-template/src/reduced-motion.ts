@@ -1,7 +1,7 @@
 import {getInputProps} from 'remotion';
 
 /**
- * reduced-motion（P2-21 降低动态）。
+ * reduced-motion（降低动态）。
  *
  * 开启方式：`--props '{"nvReducedMotion":"on"}'`，CLI 的 `--reduced-motion` 会代劳。
  * 缺省 false —— **成片不受影响**。这是给预览 / 可访问性用的降动态方案：

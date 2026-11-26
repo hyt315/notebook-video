@@ -51,7 +51,7 @@ class PosterWiringTest(unittest.TestCase):
     def test_poster_is_defined_and_called_by_deliver(self):
         src = CLI.read_text(encoding="utf-8")
         self.assertIn("const poster = async", src)
-        self.assertIn("await poster([project]);", src)
+        self.assertIn("await poster([project, path.join(project, 'renders', 'poster.jpg')]);", src)
         self.assertLess(src.index("const poster = async"), src.index("const deliver = async"))
 
     def test_poster_hides_captions(self):

@@ -1,7 +1,7 @@
 """treatment 写 move=still 时 compose 真的不推镜。
 
-背景：compose 先按版式给 1.00→1.025 的呼吸推，再按 treatment.shots[].move 改 intent；
-改成 still 时 to 没跟着回到 1.0，validate-shot-motion 判 P0（still 镜头却放大 2.5%）。
+auto 路线真正渲染的运镜在 cinema.path：move=still 的镜不加推近、招牌镜、收束慢推，
+镜头表的 intent 也由这条路径读出。
 """
 from __future__ import annotations
 
@@ -32,9 +32,10 @@ class StillMeansStill(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stderr[-800:])
             shots = json.loads((Path(td) / "manifests" / "shots.json").read_text(encoding="utf-8"))
             shots = shots["shots"] if isinstance(shots, dict) else shots
-            cam = next(s for s in shots if s["id"] == "S1")["camera"]
-            self.assertEqual(cam["intent"], "still")
-            self.assertEqual(cam["from"], cam["to"])
+            s1 = next(s for s in shots if s["id"] == "S1")
+            self.assertEqual(s1["camera"]["intent"], "still")
+            path = s1["cinema"]["path"]  # 真正渲染的运镜在 cinema.path：整镜不推不移
+            self.assertEqual({(k["x"], k["y"], k["s"]) for k in path}, {(path[0]["x"], path[0]["y"], path[0]["s"])})
 
 
 if __name__ == "__main__":

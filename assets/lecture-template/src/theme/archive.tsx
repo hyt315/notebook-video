@@ -3,7 +3,7 @@ import type {BgVariant, Theme} from './types';
 import {PaperSubtitle, chromeIn, makeBackground, tiltOf} from './craft-common';
 
 // ============================================================================
-// ARCHIVE 主题（3.3.0，LOCKED）：档案灯台。冷白的背光台面，上面摆着真实的档案物件
+// ARCHIVE 主题（LOCKED）：档案灯台。冷白的背光台面，上面摆着真实的档案物件
 // （Commons 上的公有领域扫描件、老照片、手稿、显微照片），放大镜压上去，物件在镜片里「活」过来。
 // 适合：考据、溯源、"这句话最早是谁说的"、历史上的第一张图、真实数据。
 // 原生动作：放大镜里负片转正、一行字亮起、两份记录并排、台面拉远变索引（见 references/themes/archive.md）。
@@ -19,28 +19,28 @@ const palette: Theme['palette'] = {
   gold: '#d9a020', goldInk: '#7a560b',
   red: '#d33a2c', redInk: '#a5251a', navy: '#1d2328',
   paper: '#ffffff', paperWarm: '#f7f5ef', paperBase: '#edf0f2',
-  line: 'rgba(29,35,40,0.30)', lineOrange: 'rgba(224,72,31,0.65)', lineBlue: 'rgba(59,110,165,0.6)', lineGreen: 'rgba(63,138,106,0.6)',
+  line: 'rgba(29,35,40,0.30)', lineOrange: 'rgba(224,72,31,0.65)', lineBlue: 'rgba(59,110,165,0.6)',
   white: '#ffffff',
   skyTint: '#e4eaee', blueLine: 'rgba(59,110,165,0.42)', dotIdle: '#ccd3d8',
-  mutedFill: 'rgba(80,91,101,0.22)', mutedBar: 'rgba(80,91,101,0.18)', mutedWash: 'rgba(80,91,101,0.12)',
-  orangeSoft: '#f2a48c', orangeDeep: '#ad330e', gaugeTrack: 'rgba(29,35,40,0.12)',
-  greenGlow: 'rgba(63,138,106,0.3)', stageTint: 'rgba(237,240,242,0.6)',
+  mutedFill: 'rgba(80,91,101,0.22)', mutedBar: 'rgba(80,91,101,0.18)',
+  orangeDeep: '#ad330e', gaugeTrack: 'rgba(29,35,40,0.12)',
+  greenGlow: 'rgba(63,138,106,0.3)',
   headerAccent: '#1d2328', headerSub: '#505b65',
 };
 
 const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 2, paperOutline: 0,
   textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: 0.06,
-  subtitleWeight: 700, subtitleLetterSpacing: 2, subtitlePadX: 88,
+  subtitleWeight: 700, subtitleLetterSpacing: 2, subtitlePadX: 104,
   subtitleSize: 72, subtitleFamily: 'NotoSerifSC',
 };
 
 // 物件躺在发光台面上：极浅、偏冷、贴面的影。
 const paperShadow = (lift: number) =>
-  `0 ${1 + 4 * lift}px ${4 + 14 * lift}px rgba(20,30,40,${0.14 + 0.08 * lift})`;
+  `inset 0 1px 0 rgba(255,255,255,0.88), 0 1px 2px rgba(20,30,40,${(0.14 + 0.05 * lift).toFixed(2)}), 0 ${4 + 7 * lift}px ${14 + 16 * lift}px rgba(20,30,40,${(0.09 + 0.06 * lift).toFixed(2)})`;
 
 const BACKGROUNDS: Record<BgVariant, string> = {
-  main: 'bg/bg-archive-main.jpg', chapter: 'bg/bg-archive-chapter.jpg', quiet: 'bg/bg-archive-quiet.jpg',
+  main: 'bg/bg-archive-main.webp', chapter: 'bg/bg-archive-chapter.webp', quiet: 'bg/bg-archive-quiet.webp',
 };
 const Background = makeBackground(palette.paperBase, BACKGROUNDS);
 
@@ -56,7 +56,7 @@ const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) => {
 };
 
 const Grade: React.FC = () => <div style={{position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 190,
-  boxShadow: `inset 0 0 240px rgba(20,30,40,${aesthetic.gradeVignette})`}} />;
+  background: `radial-gradient(ellipse 78% 72% at 50% 46%, rgba(255,255,255,0.06) 0%, transparent 54%, rgba(20,30,40,${(aesthetic.gradeVignette * 1.5).toFixed(3)}) 100%)`}} />;
 
 // 字幕 = 博物馆说明签：白条、细墨边、左侧一道信号色竖线。
 const SubtitleChrome = PaperSubtitle({ink: palette.ink, halo: 'transparent', size: 72, bottom: 34,

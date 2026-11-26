@@ -141,7 +141,7 @@ jobs:
           test -f "$RUNNER_TEMP/notebook-video-smoke/manifests/visual-assets.json"
           test ! -f "$RUNNER_TEMP/notebook-video-smoke/public/illustrations/visual-director.png"
           node scripts/notebook-video.mjs validate-visual-plan "$RUNNER_TEMP/notebook-video-smoke"
-          test -f "$RUNNER_TEMP/notebook-video-smoke/public/bg/bg-flat-main.jpg"
+          test -f "$RUNNER_TEMP/notebook-video-smoke/public/bg/bg-flat-main.webp"
           test -f "$RUNNER_TEMP/notebook-video-smoke/src/fonts.tsx"
           # --classic 已删除，必须明确报错（rc=2）而不是静默复制别的东西
           mkdir "$RUNNER_TEMP/notebook-video-smoke-classic"

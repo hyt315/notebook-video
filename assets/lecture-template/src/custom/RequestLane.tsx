@@ -1,11 +1,11 @@
 import React from 'react';
 import {interpolate} from 'remotion';
 import type {CustomProps} from '../auto';
+import {clamp} from '../motion';
 
 // 定制画面示例：请求从「应用」出发，先到「缓存」，命中就原路返回，没命中才继续走到「数据库」。
 // story.json 里声明的元素：app / cache / db（矩形 = 设计坐标）。台词说到 {{缓存}} 时引擎自动推近 cache。
 // 这张图只为这个题目而画——这正是定制画面存在的理由。
-const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
 
 export const RequestLane: React.FC<CustomProps> = ({f, el, line, C}) => {
   const app = el('app'), cache = el('cache'), db = el('db');

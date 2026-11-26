@@ -6,32 +6,26 @@ import {THEME} from './theme/active';
 import {SHOTS} from './shots';
 
 // ============================================================================
-// FillGate · 「下 1/4 有没有填满」的**实测**门（v1）
+// FillGate · 渲染期量「下 1/4 有没有填满」（references/checks.md#render-gates，只报警）
 //
-// 为什么要新写一个（2026-09-21）：这条判据（references/checks.md#composition-gate 的 P0-4
-// 「zones ∈[3,5]；bottomFill == true（底边接近 y=876，下 1/4 不留空洞）」）**本来就有门禁**，
-// 但它查的是清单里的一个布尔字段：
-//     `if s.get("bottomFill") is not True: → P0`
-// 而 `bottomFill` 是**生成分镜表的脚本自己写死的常量**（make-shots.py 里每一镜都写 `True`），
-// `resolve-shots.py` 再原样透传 —— 于是「生成器写 True → 门禁要求 True」，
-// **这道门在结构上永远不可能失败**。实测成片里 17/21 镜的下三分之一是空的，它一次都没响。
-// 改成实测：**量画面上真实的信息元素铺到多低**，再和 y=876 这条线比。
+// 分镜表里的 `bottomFill` 是生成器写的常量，查它等于自证；这里改为量画面上真实的信息元素
+// 铺到多低，再和 y=876 这条线比。
 //
 // 判据：把「信息元素」的 rect 取并集，取其**最低边**（设计坐标）。
 //   · 信息元素 = 有文字的元素 ∪ 有真实边框的元素 ∪ 有真实描边的图形。
 //     这样自然排除掉渐变底/调色层/整幅铺底（它们不上色就是"底"，不是"信息"）。
 //   · z ≥ 140 的子树（章节卡 150 / 字幕 200）跳过：页眉与字幕不算场景内容。
-//   · 与另三道门同一条纪律：**逐帧持 delayRender**（否则截帧先于测量，装了等于没装）、
-//     **等 `document.fonts.ready`**（不能像旧版 OverlapGate 那样直接 return）。
+//   · 与另三道门同一条纪律：**逐帧持 delayRender**（否则截帧先于测量）、
+//     **等 `document.fonts.ready`**（字体未就绪时不能直接 return）。
 //
 // 为什么默认 warn 而不是 block：
-//   「铺到多低」是**版面审美**（P0-4 是硬条款，但它的口径"底边接近 y=876"本身是观感线），
+//   「铺到多低」是**版面审美**（口径"底边接近 y=876"本身是观感线），
 //   而"文字被裁 / 元素互相压 / 图形被裁"那三件是**画错了**，已经有门禁在硬拦。
 //   为一条观感线把整片渲染打断，代价大于收益 → 出声、进日志、可复查。
 //   （**不设 NODE_ENV 门**：渲染包是 production 模式，dev-only 的门在出片路径上永远看不到。）
 // ============================================================================
 
-/** 内容底线（设计坐标）：references/checks.md#composition-gate P0-4 的同一个数，不新造魔数。 */
+/** 内容底线（设计坐标）：references/checks.md#render-gates 的同一个数，不新造魔数。 */
 const FLOOR_Y = 876;
 /** 容差（设计像素）：卡片下沿与底线差几个像素不算空洞。 */
 const TOL = 24;
@@ -41,9 +35,8 @@ const EVENT_PAD = 2;
 
 type Box = {left: number; top: number; right: number; bottom: number};
 
-// 3.3.0：
 //  · 手作皮肤（journal / papercut / archive，以 theme/active.ts 为准）不判「下 1/4 必须填满」：
-//    一本手账的大留白是设计，不是空洞（以前每次渲染刷几百条，把真正的警告淹没）。
+//    一本手账的大留白是设计，不是空洞。
 //  · 警告按镜头去重：每个浏览器标签里每镜只出一条机器可读的行
 //    `[FillGate] underfilled <镜号> @<帧> y=<底边>`，渲染器（scripts/notebook-video.mjs）把所有标签的这类行
 //    收起来，渲染结束时汇总成一行：`FillGate: 3 shots (S2,S5,S7) bottom-quarter underfilled`。
@@ -51,9 +44,8 @@ type Box = {left: number; top: number; right: number; bottom: number};
 export const FILL_GATE_SKIP_SKINS = ['journal', 'papercut', 'archive'];
 const SKIN_SKIPPED = FILL_GATE_SKIP_SKINS.includes(String(THEME.id));
 const warned = new Set<string>();
-// 3.8.0：横向覆盖（cells / blank 列 / 最大单体占比）。每个镜头只报一行，供阈值实测。
-// 只在"构图更完整"的帧上更新并上报：镜头的入场帧几乎必然是空的（元素还在画），
-// 拿第一帧判"空场"会把每一镜都打成空洞——这是第一版实测踩到的假阳性。
+// 横向覆盖（cells / blank 列 / 最大单体占比）：每个镜头只报一行。
+// 只在"构图更完整"的帧上更新并上报：入场帧几乎必然是空的（元素还在画），拿它判"空场"会误报。
 const coverageSeen = new Map<string, {cells: number; blank: number; largest: number; widest: number}>();
 const COVER_COLS = 8;
 const COVER_ROWS = 6;
@@ -104,8 +96,7 @@ const infoBoxOf = (el: HTMLElement): Box | null => {
   }
   // ⚠️ 必须要求「叶子」：`textContent` 会把**后代**的文字也算进来，于是任何包裹层
   // （最典型的是设计根自己）都"有文字"，它的盒子是整幅 1920×1080 → 底线恒等于 1080，
-  // 门禁永远 PASS。实测（临时诊断打印最低元素）就是这么露出来的：
-  // 最低的 5 个元素全是 `1080:DIV`，也就是设计根自己。
+  // 门禁永远 PASS。
   // 有边框的容器仍然算（卡片的边框是真实的信息边界），所以这条只加在"文字"这一支上。
   const texted = el.children.length === 0 && !!(el.textContent || '').trim();
   if (!texted && !hasInk(el) && !isPaintedGraphic(el)) return null;
@@ -123,14 +114,12 @@ export const FillGate: React.FC<{
   const raw = Math.round(useCurrentFrame());
   const {mode: canvasMode} = useCanvas();
   const {hot, should} = useSampledFrame(raw, sampleEvery, watch, EVENT_PAD);
-  // 3.8.0：手作皮肤不再整条跳过。原来 `SKIN_SKIPPED` 把 journal/papercut/archive 全部短路，
-  // 于是「主体缩在一角、四到七成空」这类横向空洞从来没有被量过（评审两轮都点了这条）。
-  // 现在只跳过「下 1/4 必须填满」这条判据（手账的大留白确实不是空洞），覆盖率照量。
+  // 手作皮肤只跳过「下 1/4 必须填满」这条判据（手账的大留白不是空洞），横向覆盖照量。
   const checkFloor = !SKIN_SKIPPED;
 
   // 骨架（逐帧持柄、等字体就绪、硬拦时 handle 不释放且异常不被自家 catch 吞）在 layout-probe.tsx
   useLayoutProbe({label: `FillGate @${raw}`, tag: '[FillGate]', active: should}, ({block}) => {
-    // 设计坐标 → 输出坐标的比例：从设计根实测，不假设（Remotion 的 --scale 会改它）
+    // 设计坐标 → 输出坐标的比例：从设计根量，不假设（Remotion 的 --scale 会改它）
     const root = document.querySelector('[data-design-root]') as HTMLElement | null;
     if (!root) return;
     const rr = root.getBoundingClientRect();
@@ -154,8 +143,7 @@ export const FillGate: React.FC<{
     if (!n) return;
     const designBottom = (bottom - rr.top) / k;
 
-    // 3.8.0 · 横向覆盖：把同一批实测盒子落到 8×6 网格上。
-    // 只出声、不判 —— 阈值要等这批数字量出来再定，避免又造一个"凭感觉"的门。
+    // 横向覆盖：把同一批盒子落到 8×6 网格上。只出声、不判（阈值未定，不设凭感觉的门）。
     const dw = canvasMode.designW;
     const dh = canvasMode.designH;
     const cellW = dw / COVER_COLS;
@@ -207,8 +195,8 @@ export const FillGate: React.FC<{
     if (checkFloor && !pass) {
       const msg =
         `[FillGate] @${raw} 内容底边只到 y=${Math.round(designBottom)}（设计坐标），` +
-        `P0-4 要求接近 y=${floorY}（下 1/4 不留空洞）；本帧计 ${n} 个信息元素。` +
-        `修法见 references/checks.md#composition-gate：补一个**真实信息元素**（指标条/结论条/清单），不是放大现有卡片凑面积。`;
+        `应接近 y=${floorY}（下 1/4 不留空洞）；本帧计 ${n} 个信息元素。` +
+        `修法见 references/checks.md#render-gates：在空洞处补属于主体的信息层，不改小 anchor、不放大卡片凑面积。`;
       const sid = shotAt(raw);
       if (!warned.has(sid) && typeof console !== 'undefined') {
         warned.add(sid);

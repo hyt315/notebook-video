@@ -1,6 +1,6 @@
 {
   "tiles": {
-    "fibre-tile.png": "7dce74f0b06e13fe9666e979151871f3439b9d354b99cadf610589b4f5f13cbf"
+    "fibre-tile.webp": "2824007b6d23f40c691b4c01cfd90b1e8308e46bba9b5ee5e544dc081ad45ca6"
   },
   "generator": "scripts/dev/make-craft-textures.py"
 }

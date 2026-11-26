@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
 """validate-audio-levels.py · 音效可听度门禁（P0）
 
-病因（实测）：技能自带的 sfx 素材录得极轻——`paper-tap.wav` 峰值只有 −31 dB，
-再乘混音音量 0.13（−17.7 dB）后有效峰值 **−49 dB**；而 BGM 持续在 −22 dB。
-四个音效全被人声与 BGM 压住，成片听起来"几乎没有音效"（用户与实测一致）。
-根因是**双重衰减**：素材轻 × 音量小。
+为什么需要它：素材录得轻（如峰值 −31 dB）再乘一个小混音音量（如 0.13，−17.7 dB），有效峰值会低到
+−49 dB，被人声与 BGM 完全压住，成片听起来"几乎没有音效"。根因是**双重衰减**：素材轻 × 音量小。
 
 判据：
   P0  `public/sfx/*`（bgm 除外）峰值 < -12 dBFS —— 素材太轻，混音后必然听不见
   P0  `src/index.tsx` 里引用的 `sfx/xxx` 文件不存在
   P1  缺少 bgm
   P1  引用了 SFX 但 index.tsx 里查不到任何 `vol:` 设定（可能整段音效被删）
-  3.2.0 预制音效库（public/sfx/lib + sfx-manifest.json）：
+  预制音效库（public/sfx/lib + sfx-manifest.json）：
   P0  manifest 缺失 / 损坏；manifest 里的文件不存在；sha256 与 manifest 不符（被替换或损坏）
   P0  src/sfx.ts 的 SFX_FILES 与 manifest 的事件/文件不一致；引用的 sfx/lib 文件不存在
   P0  库文件实测响度偏离 manifest 目标超过容差（一致性），或峰值 > -0.5 dBFS（削波风险）
   P0  缺少 SFX_EVENTS 里的任一语义事件；SFX_GAIN 任一项 > 0.7（会顶到人声）或 < 0.15（听不见）
 
-测量失败（ffmpeg 不可用 / 读不到峰值）= **门禁自身故障**，直接 rc=2 硬失败：
-旧版把它记成 P1 → rc=0 静默通过，等于这道门在没装 ffmpeg 的环境里从未生效。
+测量失败（ffmpeg 不可用 / 读不到峰值）= **门禁自身故障**，直接 rc=2 硬失败（记 P1 会 rc=0 静默通过）。
 "内容没测出缺陷"与"根本没测成"必须可区分；sfx 目录不存在/为空仍是 P1（内容口径）。
 
 用法：python scripts/validate-audio-levels.py PROJECT_DIR [--json]
@@ -47,7 +44,7 @@ QUIET_P0 = True             # 太轻记 P0（这是"静默失效"型缺陷）
 def peak_db(path: Path) -> tuple[float | None, str]:
     """测峰值 dBFS。返回 (峰值, 失败原因)：原因为空串 = 测成功；
     原因非空 = **测量失败（门禁自身故障）**——调用方必须 rc=2，
-    绝不允许记成 P0/P1 内容问题（旧版记 P1 → rc=0，是静默放行路径）。"""
+    绝不允许记成 P0/P1 内容问题（记 P1 会 rc=0，是静默放行路径）。"""
     try:
         r = subprocess.run(
             ["ffmpeg", "-hide_banner", "-i", str(path), "-af", "volumedetect", "-f", "null", "-"],
@@ -83,9 +80,9 @@ def ebur128_loudness(path: Path) -> tuple[float | None, str]:
 def _transient_ms(path: Path) -> float | None:
     """听感「命中点」= **5 ms RMS 最大值**的位置（毫秒）。
 
-    与 scripts/dev/tune-sfx.py 的量法一致。不能用「最大绝对值采样」：
+    不能用「最大绝对值采样」：
     chart 是上升扫弦、chapter 是闪音，它们的峰值在尾巴上，用峰值判会误报 140 ms
-    的同步误差（实测 chart：峰值 188 ms，命中点 45.5 ms）。只用 ffmpeg + 标准库。
+    的同步误差。只用 ffmpeg + 标准库。
     """
     try:
         r = subprocess.run(
@@ -111,7 +108,7 @@ def _transient_ms(path: Path) -> float | None:
 
 def _sync_transient(p0: list[str], f: Path, meta: dict, offset_ms, where: str) -> None:
     """offsetMs 必须对准文件的真实瞬态：差 > 2 帧（66.7 ms）→ 拦。
-    P2-20 验收「动作音与视觉事件差 ≤2 帧」。量错 offset 的症状是「纸翻了半秒后才听见」，
+    要求「动作音与视觉事件差 ≤2 帧」。量错 offset 的症状是「纸翻了半秒后才听见」，
     比没有音效更糟，所以这里是 P0。"""
     if offset_ms is None:
         return
@@ -160,11 +157,11 @@ def check_library(project: Path, p0: list[str], p1: list[str], checked: list[dic
                 p0.append(f"{e['file']} manifest 响度 {e.get('loudness_lufs_100ms')} LUFS 偏离库目标 {target} 超过容差（库内响度不一致）")
             if pk < PEAK_FLOOR:
                 p0.append(f"{e['file']} 峰值 {pk:.1f} dBFS 低于 {PEAK_FLOOR:.0f} dBFS（素材太轻）")
-        # 瞬态同步（P2-20 验收「动作音与视觉事件差 ≤2 帧」）：
+        # 瞬态同步（「动作音与视觉事件差 ≤2 帧」）：
         # offsetMs 是「文件开头到听感命中点」的距离，引擎按它提前起播。量错了不是音质差，
         # 是「纸翻了半秒后才听见」——比没有音效更糟。这里拿真实峰值位置对账。
         _sync_transient(p0, f, e, e.get("offsetMs"), where=e["file"])
-        # 音色变体（P2-20 翻页轮换）：与主文件同一套质量口径
+        # 音色变体（翻页轮换）：与主文件同一套质量口径
         for vi, v in enumerate(e.get("variants") or []):
             vf = project / "public" / v.get("file", "")
             if not vf.exists():
@@ -219,14 +216,14 @@ def check_library(project: Path, p0: list[str], p1: list[str], checked: list[dic
 
 
 def mix_stats(project: Path) -> dict | None:
-    """成片的音效密度 / 与人声的最近间隔 / 增益余量（3.5.0）。
+    """成片的音效密度 / 与人声的最近间隔 / 增益余量。
 
     只读工程里的机器可读产物，不解码音频：
       · 密度 = 任意 10 秒窗口内的音效个数上限（sfxEvents 的 at 是镜内帧，加镜起点）；
       · 最近人声间隔 = 每个音效时刻到最近一句人声起止的毫秒距离；
-      · 压人声 = 显式音效时刻正好落在某句旁白的 [start_ms, speech_end_ms] 里面（3.8.0，
-        只统计 sfxEvents；chapter / page 这类自动音效在换镜帧上，实测不与人声重叠）；
-      · 增益余量 = 20·log10(1/max(SFX_GAIN))：最大那档音效增益比 1.0 低多少 dB。它不是响度——素材本身多响、人声多响都没算进去（3.5.1 说明；真响度对比放 3.6）。
+      · 压人声 = 显式音效时刻正好落在某句旁白的 [start_ms, speech_end_ms] 里面（
+        只统计 sfxEvents；chapter / page 这类自动音效在换镜帧上，不与人声重叠）；
+      · 增益余量 = 20·log10(1/max(SFX_GAIN))：最大那档音效增益比 1.0 低多少 dB。它不是响度——素材本身多响、人声多响都没算进去。
     """
     shots_p = project / "manifests" / "shots.json"
     cues_p = project / "manifests" / "caption-cues.json"
@@ -260,7 +257,7 @@ def mix_stats(project: Path) -> dict | None:
             break
         d = min(min(abs(ms - a), abs(ms - b)) for a, b in speech)
         nearest = d if nearest is None else min(nearest, d)
-    # 3.8.0：与「离人声多近」不同，这里要的是「是否盖在说话上」——落在语音区间内部才算。
+    # 与「离人声多近」不同，这里要的是「是否盖在说话上」——落在语音区间内部才算。
     overlap: list[str] = []
     for t, ev in events:
         ms = t * 1000.0 / 30.0
@@ -305,8 +302,8 @@ def main() -> int:
             continue
         pk, err = peak_db(f)
         if pk is None:
-            # 旧版这里记 P1 → 整脚本 rc=0：ffmpeg 没装/文件读不出峰值 = 这道门**从未跑成**，
-            # 却被当成"通过"。测量失败不是内容档位问题，直接走门禁自身故障（rc=2）。
+            # ffmpeg 没装/文件读不出峰值 = 这道门**没跑成**，不能当成"通过"。
+            # 测量失败不是内容档位问题，直接走门禁自身故障（rc=2）。
             measure_fail.append(f"{f.name}: {err}")
             continue
         checked.append({"file": f.name, "peak_db": pk})
@@ -326,7 +323,7 @@ def main() -> int:
             print(f"  ·· 测量失败 {mf}", file=sys.stderr)
         return 2
 
-    # 3.5.0 · 默认无 BGM：只有 treatment.sound.music.use=true 时才要求音乐床文件。
+    # 默认无 BGM：只有 treatment.sound.music.use=true 时才要求音乐床文件。
     music_on = False
     tp = project / "manifests" / "treatment.json"
     if tp.is_file():

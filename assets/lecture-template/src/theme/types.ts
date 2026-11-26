@@ -17,7 +17,7 @@ export interface ThemePalette {
   gold: string;
   goldInk: string; red: string; redInk: string; navy: string;
   paper: string; paperWarm: string; paperBase: string;
-  line: string; lineOrange: string; lineBlue: string; lineGreen: string;
+  line: string; lineOrange: string; lineBlue: string;
   white: string;
   // ---- 场景层柔色 token（引擎引用，主题必须提供）----
   // 注：paper / paperWarm / paperBase 是「卡片面 / 暖面 / 底面」的通用 token 名（Paper 卡片组件沿用），与已删除的 paper 主题无关。
@@ -26,12 +26,9 @@ export interface ThemePalette {
   dotIdle: string;      // 未点亮的合并圆点
   mutedFill: string;    // 步骤圆未激活底色
   mutedBar: string;     // 代码条未激活底色
-  mutedWash: string;    // LOCAL HOST 胶囊底色
-  orangeSoft: string;   // CTA 波浪字起始色
   orangeDeep: string;   // 章节序号渐变深色端
   gaugeTrack: string;   // 仪表盘轨道底色
   greenGlow: string;    // 对勾徽章投影色
-  stageTint: string;    // 舞台背板暖色端
   headerAccent: string; // 技术头部主色（flat 上须在色块上可读）
   headerSub: string;    // 技术头部副色
 }
@@ -45,7 +42,7 @@ export interface ThemeAesthetic {
   gradeWarmth: number;
   gradeVignette: number;
   /**
-   * 字幕实测参数（v2.10 新增）：CaptionFitGate 必须按主题真实渲染的字重/字距/内边距来量，
+   * 字幕测量参数：CaptionFitGate 必须按主题真实渲染的字重/字距/内边距来量，
    * 否则门禁会漏判。subtitlePadX = 主题字幕框左右内边距之和（含装饰点），
    * 有效文字宽 = mode.safe - subtitlePadX。
    */
@@ -53,20 +50,20 @@ export interface ThemeAesthetic {
   subtitleLetterSpacing?: number;
   subtitlePadX?: number;
   /**
-   * 3.3.0 新增（可选）：皮肤自己的字幕字号（设计 px）与字族。缺省 = mode.subFont（44）+ 'Kai'。
+   * 新增（可选）：皮肤自己的字幕字号（设计 px）与字族。缺省 = mode.subFont（44）+ 'Kai'。
    * 手作皮肤用 72（= 交付 2560×1440 上的 96 px，用户字幕规范）+ 'NotoSerifSC'（Noto Serif SC Bold）。
    * CaptionFitGate 按这里的真实字号 / 字族量宽度，所以皮肤与门禁永远一致。
    */
   subtitleSize?: number;
   subtitleFamily?: string;
   /**
-   * 3.3.0 新增（可选）：字幕出现方式。'line' = 整行一次出现（5 帧淡入），'type' = 逐字淡入。
+   * 新增（可选）：字幕出现方式。'line' = 整行一次出现（5 帧淡入），'type' = 逐字淡入。
    * 缺省：声明了 craft 的手作皮肤 line，其余 type。工程可在 src/film.ts 用 `export const CAPTION_REVEAL` 覆盖。
    */
   captionReveal?: 'line' | 'type';
 }
 
-/** 3.3.0：皮肤可选的章节标识（替代引擎缺省的「章节卡 + 右上技术页眉」）。 */
+/** 皮肤可选的章节标识（替代引擎缺省的「章节卡 + 右上技术页眉」）。 */
 export interface ChromeProps {
   /** 章节序号（0 起）与本章标题；kicker / header / headerSub 来自 film.ts 的 COPY */
   stage: number; title: string; kicker: string; header: string; headerSub: string;
@@ -74,12 +71,12 @@ export interface ChromeProps {
   local: number;
 }
 
-/** 3.3.0：皮肤的 craft **能力配置** —— 线稿色、字体、缺省转场。
+/** 皮肤的 craft **能力配置** —— 线稿色、字体、缺省转场。
  *  flat / cel 也会声明它；拥有配置不等于“手作媒介”，审美判断统一走 theme/medium.ts。 */
 export interface ThemeCraft {
   /** 媒介名（treatment.json 的 medium 应与之对应）。手作审美与拟音只认 isHandmadeMedium。 */
   medium: 'journal' | 'papercut' | 'archive' | string;
-  /** 卡片上叠的纸纤维纹理强度 0–1（public/craft/fibre-tile.png） */
+  /** 卡片上叠的纸纤维纹理强度 0–1（public/craft/fibre-tile.webp） */
   fibre: number;
   /** 墨线颜色（InkPath / HandNote 缺省色） */
   inkLine: string;
@@ -89,7 +86,7 @@ export interface ThemeCraft {
   bodyFamily: string;
   /** 唯一强调色（lemo 配方「一个强调色」纪律） */
   accent: string;
-  /** 缺省转场（分镜表写 auto 时用）。3.3.0 pageturn / peel = 真卷页（WebGL2，渲染器探针不通过时退回 slide / drop） */
+  /** 缺省转场（分镜表写 auto 时用）。pageturn / peel = 真卷页（WebGL2，渲染器探针不通过时退回 slide / drop） */
   transition: 'slide' | 'drop' | 'pageturn' | 'peel' | 'ink' | 'whip' | 'zoom' | 'fade';
   /** 需要额外加载的字体（AssetGate 会 load 并校验；缺字体则拒绝渲染并提示 `fonts --serif`） */
   fonts?: string[];
@@ -122,13 +119,13 @@ export interface Theme {
   /** 字幕容器：负责定位与外壳；内部的逐词浮现由引擎渲染为 children 传入。 */
   SubtitleChrome: React.FC<{mode: ModeSpec; children?: React.ReactNode}>;
   /**
-   * 页眉底板（可选，3.2.0）：右上角技术页眉的外壳样式。背景右上角有高对比装饰的主题
+   * 页眉底板（可选）：右上角技术页眉的外壳样式。背景右上角有高对比装饰的主题
    * （cel 的速度线 / 爆炸星）必须给页眉垫一块底板，否则墨字会被装饰吃掉；flat 不需要。
    */
   headerPlate?: React.CSSProperties;
-  /** 3.3.0（可选）：皮肤自己的章节标识。给了就替换引擎缺省 chrome（章节卡 + 技术页眉）。 */
+  /** （可选）皮肤自己的章节标识。给了就替换引擎缺省 chrome（章节卡 + 技术页眉）。 */
   Chrome?: React.FC<ChromeProps>;
-  /** 3.3.0（可选）：手作材质参数，src/craft/ 组件读取。 */
+  /** （可选）手作材质参数，src/craft/ 组件读取。 */
   craft?: ThemeCraft;
   /** 主题专属锁定构件（如赛璐璐爆炸贴 Burst），场景层只传内容参数。 */
   extras?: Record<string, React.FC<any>>;
@@ -136,7 +133,7 @@ export interface Theme {
    * 背景装饰区（可选）：三张背景位图里「画幅级、高对比」的锁定装饰所占矩形的并集
    * （1920×1080 设计坐标）。这些区域会吃掉压在上面的文字，因此：
    *   1. 内容压到装饰区时，必须坐在 CoverPanel（tone='paper'）上；
-   *   2. 不要铺成片级整幅底托（3.2.0 删除：它把四角装饰洗成幽灵）；背景中央本就是安全区。
+   *   2. 不要铺成片级整幅底托（它把四角装饰洗成幽灵）；背景中央本就是安全区。
    * 背景图本身不改——它很好看；只解决可读性。
    */
   backgroundDecorZones?: {x: number; y: number; w: number; h: number}[];

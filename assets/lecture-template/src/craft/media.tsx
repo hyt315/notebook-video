@@ -1,5 +1,5 @@
 // ============================================================================
-// craft/media.tsx · 真实素材「放进媒介里」（3.3.0）
+// craft/media.tsx · 真实素材「放进媒介里」
 //
 //   ArchivePhoto  档案件：素材原样（真实比例、真实破损）躺在纸托 / 灯台上，下方编目签 = 署名
 //   PinnedPhoto   贴进手账的照片：白边、胶带或图钉、微倾，可选做旧（sepia）/ 双色调
@@ -46,13 +46,13 @@ const fitBox = (id: string, w: number, h: number) => {
 
 /** 编目签的宽度（side 版式固定；below 版式跟图同宽、至少 240）。 */
 const SLIP_SIDE_W = 300, SLIP_GAP = 18;
-/** 3.3.0 层级：图片区至少占纸托卡片（图 + 纸托边）面积的 70%——纸托边按这个比例自动收窄（不超过传入的 mount）。 */
+/** 层级：图片区至少占纸托卡片（图 + 纸托边）面积的 70%——纸托边按这个比例自动收窄（不超过传入的 mount）。 */
 export const ARCHIVE_MIN_IMAGE_FRAC = 0.7;
-/** 3.3.0 层级：编目签（编号 / 名称）字号不超过图片区高度的 12%——签不能比文物还抢眼。署名字号不缩（CC BY 要可读）。 */
+/** 层级：编目签（编号 / 名称）字号不超过图片区高度的 12%——签不能比文物还抢眼。署名字号不缩（CC BY 要可读）。 */
 export const ARCHIVE_LABEL_MAX_FRAC = 0.12;
 const LABEL_FONT_MAX = 30, CREDIT_FONT = 22;
-/** 署名的字宽 / 行高估算：跟着 CREDIT_FONT 走，字号一改签高自动跟上（3.3.0 P1-10）。 */
-const CREDIT_CHAR_W = 12, CREDIT_LINE_H = 27;   // 3.3.0 评审 P1-10：18/20 px 在手机上读不出，等于署名缺失
+/** 署名的字宽 / 行高估算：跟着 CREDIT_FONT 走，字号一改签高自动跟上。 */
+const CREDIT_CHAR_W = 12, CREDIT_LINE_H = 27;   // 更小的字号在手机上读不出，等于署名缺失
 /** 编目签标题字号：≤ 30，且 ≤ 图高 × 12%（下限 12，再小就不是字了）。编号字号 = 标题 × 0.8。 */
 export const archiveLabelFont = (dh: number) => Math.max(12, Math.min(LABEL_FONT_MAX, Math.floor(dh * ARCHIVE_LABEL_MAX_FRAC)));
 /** 纸托边：满足 dw·dh ≥ 70%·(dw+2m)(dh+2m) 的最大 m（不超过 mount）。 */
@@ -63,9 +63,9 @@ export const archiveMount = (dw: number, dh: number, mount: number) => {
 };
 
 /**
- * 3.3.0 组件规则：署名签不进字幕带。字幕框顶 = designH − subBottom − subH（16:9 为 934）；
+ * 组件规则：署名签不进字幕带。字幕框顶 = designH − subBottom − subH（16:9 为 934）；
  * 再让出 CAPTION_CLEAR，这样招牌镜头以画面中心推 12.5% 后签底也压不到字幕
- * （540 + (874 − 540) × 1.125 ≈ 916 < 934）。cell 演示片 S3/S4 的 Schem. XI 署名曾被 OCR 读进字幕带。
+ * （540 + (874 − 540) × 1.125 ≈ 916 < 934），OCR 也不会把署名读进字幕带。
  */
 export const CAPTION_CLEAR = 60;
 const CANVAS = MODES['16:9'];
@@ -80,11 +80,11 @@ export const archiveSafeH = (y: number | undefined, h: number) =>
  *   auto（缺省）：两种都算，取图更大的那个。
  * 签高按字数估（署名在窄签里换行，不截断），图为它让出位置，签不会被挤出框外。
  * 传入 y（框在画面上的设计坐标）时，整件底边不越过 CREDIT_SAFE_BOTTOM（署名签不进字幕带）。
- * 3.3.0：纸托边按 ARCHIVE_MIN_IMAGE_FRAC 收窄、编目签字号按 ARCHIVE_LABEL_MAX_FRAC 封顶（见上面两个常量）。
+ * 纸托边按 ARCHIVE_MIN_IMAGE_FRAC 收窄、编目签字号按 ARCHIVE_LABEL_MAX_FRAC 封顶（见上面两个常量）。
  */
 export type ArchiveLabel = 'auto' | 'below' | 'side';
 export const archiveLayout = (id: string, w: number, frameH: number, mount: number, labelled: boolean, label: ArchiveLabel = 'auto', y?: number) => {
-  const h = archiveSafeH(y, frameH); // 3.3.0：传入 y 时整件（图 + 签）收在字幕安全线以上
+  const h = archiveSafeH(y, frameH); // 传入 y 时整件（图 + 签）收在字幕安全线以上
   const credit = creditOf(id);
   const has = labelled || Boolean(credit);
   const slipH = (sw: number, dh: number) => !has ? 0 : 17 + (labelled ? Math.ceil(archiveLabelFont(dh) * 1.2) : 0) + (credit ? 4 + CREDIT_LINE_H * Math.ceil((credit.length * CREDIT_CHAR_W) / Math.max(120, sw - 19)) : 0);
@@ -126,12 +126,16 @@ export const ArchivePhoto: React.FC<Base & {catalogue?: string; title?: string; 
     const L = archiveLayout(id, w, h, mount, Boolean(catalogue || title), label, y);
     const drop = 24 * (1 - p);
     return <div style={{position: 'absolute', left: x, top: y - drop, width: w, height: h, opacity: Math.min(1, p * 2), transform: `rotate(${rot}deg)`}}>
-      <div style={{position: 'absolute', left: L.left, top: L.top, background: C.paperWarm, padding: L.mount, border: '1px solid rgba(0,0,0,0.08)',
-        boxShadow: `0 ${3 + 12 * (1 - p)}px ${8 + 14 * (1 - p)}px rgba(20,25,30,0.22)`}}>
-        <Img src={staticFile(`media/${m.file}`)} style={{display: 'block', width: L.dw, height: L.dh, filter: filterOf(treatment)}} />
+      <div style={{position: 'absolute', left: L.left, top: L.top, background: C.paperWarm, padding: L.mount, border: '1px solid rgba(20,25,30,0.10)',
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.75), 0 ${1 + 3 * (1 - p)}px ${3 + 4 * (1 - p)}px rgba(20,25,30,0.18), 0 ${7 + 14 * (1 - p)}px ${20 + 18 * (1 - p)}px rgba(20,25,30,0.16)`}}>
+        <div style={{position: 'relative', width: L.dw, height: L.dh}}>
+          <Img src={staticFile(`media/${m.file}`)} style={{display: 'block', width: L.dw, height: L.dh, filter: filterOf(treatment)}} />
+          <div style={{position: 'absolute', inset: 0, pointerEvents: 'none', boxShadow: 'inset 0 0 0 1px rgba(20,25,30,0.15), inset 0 2px 6px rgba(20,25,30,0.08)'}} />
+        </div>
       </div>
       {(catalogue || title || credit) && <div style={{position: 'absolute', left: L.slipX, top: L.slipY, width: L.slipW, boxSizing: 'border-box', background: C.paper,
-        padding: '8px 14px 9px', borderLeft: `5px solid ${THEME.craft?.accent ?? C.orange}`, boxShadow: '0 1px 3px rgba(0,0,0,0.12)'}}>
+        padding: '8px 14px 9px', border: '1px solid rgba(20,25,30,0.08)', borderLeft: `3px solid ${THEME.craft?.accent ?? C.orange}`,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.75), 0 1px 2px rgba(20,25,30,0.10), 0 5px 12px rgba(20,25,30,0.08)'}}>
         {(catalogue || title) && <div style={{fontFamily: 'NotoSerifSC,Kai', fontWeight: 700, fontSize: L.labelFont, lineHeight: 1.2, color: C.ink, whiteSpace: 'nowrap'}}>
           {catalogue && <span style={{fontFamily: 'Space,Kai', fontSize: L.catalogueFont, letterSpacing: 3, color: C.orangeInk, marginRight: 12}}>{catalogue}</span>}{title}</div>}
         {/* 署名不截断（CC BY 要求完整署名）：窄签里换行，而不是省略号 */}
@@ -148,19 +152,23 @@ export const PinnedPhoto: React.FC<Base & {caption?: string; fix?: 'tape' | 'pin
   const border = 18;
   const credit = creditOf(id);
   // 下沿：说明一行 + 署名（按宽度估行数，换行不截断）；图为它让位，整张照片装进 w×h。
-  // 文字区宽度不随图缩小而塌（否则署名越换行图越小、图越小署名越窄——样张实测会塌成一条竖缝）：
+  // 文字区宽度不随图缩小而塌（否则署名越换行图越小、图越小署名越窄，最后塌成一条竖缝）：
   // 至少 280，或照片框宽的 70%；照片卡片宽 = max(图宽, 文字区宽)。
   const textW = Math.min(w - border * 2, Math.max(280, (w - border * 2) * 0.7));
   // 说明与署名之间留 20px：卡片是斜贴的（rot），渲染期 OverlapGate 量的是旋转后的外接矩形，
-  // 紧贴的两行在 -2° 下外接框会互相压住（cell 演示片 S7 实测「今天的软木切片」压「Giovanna Canu et」被硬拦）
+  // 紧贴的两行在 -2° 下外接框会互相压住而被硬拦
   const CAPTION_GAP = 24;
   const bottom = 14 + (caption ? 40 + CAPTION_GAP : 0) + (credit ? 26 * Math.ceil((credit.length * 10) / textW) : 0);
   const {dw, dh} = fitBox(id, w - border * 2, h - border - bottom);
   const cardW = Math.max(dw, textW) + border * 2;
   const top = y + Math.max(0, (h - (dh + border + bottom)) / 2);
   return <div style={{position: 'absolute', left: x + (w - cardW) / 2, top: top - 30 * (1 - p), width: cardW, boxSizing: 'border-box', opacity: Math.min(1, p * 2.5),
-    transform: `rotate(${rot + 2 * (1 - p)}deg)`, background: '#fffdf8', padding: `${border}px ${border}px 0`, boxShadow: `0 ${2 + 12 * (1 - p)}px ${6 + 16 * (1 - p)}px rgba(60,40,15,0.25)`}}>
-    <Img src={staticFile(`media/${m.file}`)} style={{display: 'block', width: dw, height: dh, margin: '0 auto', filter: filterOf(treatment)}} />
+    transform: `rotate(${rot + 2 * (1 - p)}deg)`, background: '#fffdf8', padding: `${border}px ${border}px 0`, border: '1px solid rgba(60,40,15,0.08)',
+    boxShadow: `inset 0 1px 0 rgba(255,255,255,0.85), 0 ${1 + 3 * (1 - p)}px ${3 + 4 * (1 - p)}px rgba(60,40,15,0.20), 0 ${7 + 14 * (1 - p)}px ${18 + 18 * (1 - p)}px rgba(60,40,15,0.15)`}}>
+    <div style={{position: 'relative', width: dw, height: dh, margin: '0 auto'}}>
+      <Img src={staticFile(`media/${m.file}`)} style={{display: 'block', width: dw, height: dh, filter: filterOf(treatment)}} />
+      <div style={{position: 'absolute', inset: 0, pointerEvents: 'none', boxShadow: 'inset 0 0 0 1px rgba(60,40,15,0.12)'}} />
+    </div>
     <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '6px 0 8px'}}>
       {caption && <div style={{fontFamily: THEME.craft?.handFamily ?? 'Kai', fontWeight: 700, fontSize: 32, lineHeight: 1.2, color: C.ink, whiteSpace: 'nowrap'}}>{caption}</div>}
       {credit && <div style={{fontFamily: 'Space,Kai', fontSize: 20, color: C.ink, lineHeight: 1.25, overflowWrap: 'anywhere', marginTop: caption ? CAPTION_GAP : 0}}>{credit}</div>}
@@ -184,7 +192,7 @@ export const LoupeMedia: React.FC<Base & {look: {x: number; y: number}; lensAt: 
     const ix = x + imgX, iy = y + imgY;
     const tgt = {x: ix + look.x * dw, y: iy + look.y * dh};
     const L = lens ?? tgt;
-    // 3.3.0：手柄不许压署名（CC BY 署名必须完整可读）——按编目签的位置选手柄方向
+    // 手柄不许压署名（CC BY 署名必须完整可读）——按编目签的位置选手柄方向
     const slip = {left: x + A.slipX, top: y + A.slipY, right: x + A.slipX + A.slipW, bottom: y + A.slipY + A.slipH};
     const handleAngle = A.slipH > 0 ? pickHandleAngle(L.x, L.y, r, [slip]) : 45;
     return <Loupe f={f} x={L.x} y={L.y} r={r} zoom={zoom} target={tgt} at={lensAt} handleAngle={handleAngle}

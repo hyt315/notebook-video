@@ -1,25 +1,24 @@
 #!/usr/bin/env python3
 """validate-composition.py · 构图与活性门禁（P0 阻断渲染 / P1 仅警告）
 
-这是整套体系里**唯一能把"审美"变成门禁**的部分，也是让改进不随时间退化的保障。
-没有它，v2.8 的强制条款再多也会像今天一样全部空转——规范强制使用活性组件、
-实现引用数为 0，9 个校验脚本没有一条能发现。
+这是整套体系里**唯一能把"审美"变成门禁**的部分：规范要求使用活性组件，
+这里核对场景实现真的引用了它们。
 
 检查项（判据与档位见 references/checks.md#composition-gate）：
 
   P1-1  骨架重复度        相邻场景同骨架 / 同布局、全片 <3 种 → 提示（未知骨架名仍 P0）
   P0-2  活性组件覆盖率     每个讲解场景 ≥1 个活性组件；**且每个名字必须能在场景文件里找到**
   P1-3  镜头意图多样性     全片 ≥3 种 intent（不含 still）
-  P0-4  密度硬条款         3–5 个功能分区；下 1/4 填满（**不再被 explanation:false 绕过**）
+  P0-4  密度硬条款         3–5 个功能分区（**explanation:false 也不豁免**）
   P1-5  介质多样性         全片 ≥3 种不同视觉介质（取值闭合仍由 P0-6 拦）
   P0-6  枚举闭合           转场 / 入场 / 介质 / 骨架 / 意图 全是闭合集合，写错名字即 fail
   P1-7  单镜过长           单镜 > 300 帧（10s）提示锯开（基准 4–6s、最长 ≤9s）
   P1-8  骨架指纹重复       同一 (骨架,意图,转场,入场) 组合每出现一次就提示
-  P1-7b 一个构图撑太久     单镜 > 12s 且没有镜内焦点（cinema.focus）或插入镜（3.3.0）
+  P1-7b 一个构图撑太久     单镜 > 12s 且没有镜内焦点（cinema.focus）或插入镜
   P1-9  镜长分布           最长/最短 < 2 倍、变异系数 < 0.35、或 >80% 镜头集中在同一档 → 读起来是节拍器
   P1-10 主角尺寸           hero 必须声明，且 size 是"主体短边设计像素"（图形 ≥255 / 大字 ≥144）
   P1-11 转场 / 入场多样性  ≥2 种 / ≥3 种
-  P1-12 状态变化间隔       汇总报告（带帧区间与所涉台词），不再每镜刷 1 条
+  P1-12 状态变化间隔       汇总报告（带帧区间与所涉台词），不每镜刷 1 条
 
 用法：
     python scripts/validate-composition.py PROJECT_DIR [--strict] [--json]
@@ -37,12 +36,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gate_report import finish  # noqa: E402  统一结果：设了 NV_GATE_JSON 就逐条追加一行 JSON
 
-# 闭合集合：写错名字必须被拦下（v2.11 前这些字段是自由字符串，
-# 实测把 media 写成 ["FAKE_MEDIUM_A",...]、live 写成 ["NO_SUCH_COMPONENT"] 也能 P0=0 通过）
+# 闭合集合：写错名字必须被拦下（自由字符串会让 ["FAKE_MEDIUM_A"] 这类名字也 P0=0 通过）
 SKELETONS = {"Stage", "Corridor", "Split", "Zoom"}
 INTENTS = {"establish", "push-in", "pull-back", "pan-follow", "reveal", "micro-orbit", "still"}
 TRANSITIONS = {"auto", "cut", "handoff", "reveal", "whip", "whip-left", "whip-right", "zoom", "fade", "hard", "slide", "drop", "pageturn", "peel"}   # 引擎级转场（src/cinema.tsx resolveTransition）；auto = 皮肤的翻页（pageturn / peel，无 GPU 退 pageflip）
-ENTRIES = {"rise", "slide", "fade", "zoom", "build"}  # 3.5.1：build = 边讲边长（草稿纸），不是整镜入场
+ENTRIES = {"rise", "slide", "fade", "zoom", "build"}  # build = 边讲边长（草稿纸），不是整镜入场
 MEDIA_KINDS = {"chart", "console", "code", "graphic", "text", "metric"}
 
 MIN_SKELETONS = 3
@@ -51,16 +49,16 @@ MIN_INTENTS = 3
 MIN_TRANSITIONS = 2
 MIN_ENTRIES = 3
 ZONE_RANGE = (3, 5)
-# 3.3.0 手作皮肤（journal / papercut / archive）：一镜常常只有一个主体（一张真铜版画 + 放大镜、一枚墨线画的瓶塞）
+# 手作皮肤（journal / papercut / archive）：一镜常常只有一个主体（一张真铜版画 + 放大镜、一枚墨线画的瓶塞）
 # 加字幕与一两处批注。硬要 3–5 个"功能分区"会逼作者往空白里塞清单 / 指标条 / 卡片——
-# 正是 3.3.0 要去掉的"满屏卡片"。手作皮肤放宽到 1–5（上限不变：一帧仍不许超过 5 区）；组件皮肤不变。
+# 正是 要去掉的"满屏卡片"。手作皮肤放宽到 1–5（上限不变：一帧仍不许超过 5 区）；组件皮肤不变。
 CRAFT_SKINS = {"journal", "papercut", "archive"}
 CRAFT_ZONE_RANGE = (1, 5)
 MAX_EXPLANATION_FALSE = 1     # 一部片最多 1 镜可以不走"讲解场景"的活性要求（章节卡）
 MAX_SHOT_FRAMES = 300         # 单镜上限 10s
 MIN_LENGTH_RATIO = 2.0        # 最长/最短 倍数下限（测出来是节拍器）
-MIN_LENGTH_CV = 0.35          # 3.3.0 镜长变异系数（标准差/平均）下限：低于它 = 节拍器（references/camera.md#camera-language §5）
-LONG_HOLD_FRAMES = 360        # 3.3.0 单个构图 > 12 s 必须镜内换焦点（cinema.focus）或接插入镜
+MIN_LENGTH_CV = 0.35          # 镜长变异系数（标准差/平均）下限：低于它 = 节拍器（references/camera.md#shot-language）
+LONG_HOLD_FRAMES = 360        # 单个构图 > 12 s 必须镜内换焦点（cinema.focus）或接插入镜
 MAX_BAND_SHARE = 0.8          # 同一时长档最多占 80%
 MAX_BEAT_GAP = 120            # 文档的慢章节上限（3–4s）；超过它才算越界
 SLOW_GAP = 90                 # 汇总时把 >3s 的间隔也列出来（供评审，不判缺陷）
@@ -80,9 +78,8 @@ def load(project: Path) -> dict:
 def scene_source(project: Path) -> str:
     """场景文件全文：用来确认 live 里的名字真的被引用过（而不是编出来的）。
 
-    ⚠️ 必须**递归**扫（与同文件 import_integrity 的 rglob 对齐）：旧版写成
-    `src.glob("*.tsx")` 只扫一层，场景文件放在子目录（src/scenes/ 等）时整段读不到，
-    于是所有"需要场景源码"的 P0 判据因 `if scene_text` 为空而**静默跳过**——
+    ⚠️ 必须**递归**扫（与同文件 import_integrity 的 rglob 对齐）：只扫一层时，
+    场景文件放在子目录（src/scenes/ 等）整段读不到，于是所有"需要场景源码"的 P0 判据因 `if scene_text` 为空而**静默跳过**——
     门在名义上存在、实际从未生效。场景源码读不到的镜由 check() 里的覆盖率
     自述补报 P0（"测量没跑成"不许混进"没报"）。
     """
@@ -102,12 +99,12 @@ def import_integrity(project: Path) -> tuple[list[dict], str]:
     这样的语句——11 个名字指向已删除的导出。打包器对"缺失的具名导出"通常只告警不报错，
     于是在运行时变成静默的 `undefined`：**这正是本技能最怕的那类失败**（没报错，但坏了）。
 
-    覆盖范围（第二轮复核实测后补齐——此前只扫 `src/*.tsx` 一层、正则只认 `'./名字'`）：
+    覆盖范围：
       · **递归**扫 `src/**`：组件层内部文件互引同样会静默失败；
       · 认得 `./x` / `../x` / 目录桶文件 `./components`（= `components/index.ts`）；
       · 跟随 `export * from './y'`；桶文件上的 `export {A} from './y'` 只在该名字
         真在 y 里时才认（否则坏名字会被桶文件"洗白"）；
-      · **别名再导出**（第三轮复核指出后修）：`export {Accordion as MyAccordion} from './ui'` 里
+      · **别名再导出**：`export {Accordion as MyAccordion} from './ui'` 里
         对外名是 `MyAccordion`、上游名是 `Accordion`——**比对用源名、登记用别名**；
         `export {default as Widget}` 的 `default` 追不到名字，归"核实不了"（放行），**不许判"不存在"**；
       · **只扫代码位置**：注释与**字符串字面量内部**先被抹成空格（长度/行号不变），
@@ -129,12 +126,12 @@ def import_integrity(project: Path) -> tuple[list[dict], str]:
 
     # ⚠️ 必须先剥掉"不是代码"的部分再扫：用法示例常常写成
     # `// 用法：import {FitCard, Typewriter, ...} from './fxkit';`
-    # 第一版没剥，于是 `...` 被当成一个名字报成 P0 —— 会哭狼的检查等于没有检查。
+    # 不剥的话 `...` 会被当成一个名字报成 P0 —— 会哭狼的检查等于没有检查。
     def code_only(text: str) -> str:
         """把注释内部与**字符串字面量内部**换成空格，长度与行号一字不动。
 
         字符串也要抹，是因为**字符串里放代码样例**是本仓库的常规写法
-        （接触表/测试页里的 `const CODE = `import {...} from './x';``）。第三轮复核指出：
+        （接触表/测试页里的 `const CODE = `import {...} from './x';``）：
         那种样例既会被当成真 import 扫（假 P0），也会给本检查贡献"幽灵导出"。
         引号只在**值位置**才算开字符串（前一个代码位置的非空白字符属于 `=([{,:;?|&!+*-<>~^` 或行首），
         免得 JSX 文本里的撇号（`don't`）毒化整行；`'…'`/`"…"` 不跨行，行尾未闭合即收尾。
@@ -196,9 +193,8 @@ def import_integrity(project: Path) -> tuple[list[dict], str]:
         """(确定存在的名字, 存在但核实不了的名字, 是否 open)。
 
         open=True 表示这个模块 `export * from '<包>'` —— 可能有任意名字，导入方一律豁免。
-        "核实不了"与"不存在"必须分开：`export {X} from '<包名>'` 这类**库再导出**（v3.1.1 前的模板里
-        真有过两条：`@remotion/motion-blur` 的 CameraMotionBlur / Trail；后来按「零引用」判据删了）
-        里的名字**是真的**，把它当成不存在会让整条链上全是假 P0（第一版本版就这么错了）。
+        "核实不了"与"不存在"必须分开：`export {X} from '<包名>'` 这类**库再导出**
+        里的名字**是真的**，把它当成不存在会让整条链上全是假 P0。
         """
         if depth > 3 or key in seen:
             return set(), set(), True
@@ -208,9 +204,8 @@ def import_integrity(project: Path) -> tuple[list[dict], str]:
         # `export {A, B as C}`，也可能带 from（多行花括号：`[^}]*` 本来就跨行）
         # ⚠️ 认领的必须是**对外名**（别名），比对上游用的是**源名**：
         # `export {Accordion as MyAccordion} from './ui'` 里，上游有的是 `Accordion`，
-        # 本模块对外给的是 `MyAccordion`。第一版拿别名去上游找 → 合法写法被判"导出不存在"
-        # （第三轮复核抓到的潜在假阳性；技能文档正教人"新组件登记进 components/index.ts"，
-        #  改名再导出是自然的下一步，所以必须现在改）。
+        # 本模块对外给的是 `MyAccordion`。拿别名去上游找会把合法写法判成"导出不存在"
+        # （技能文档教人"新组件登记进 components/index.ts"，改名再导出是自然的写法）。
         for m in re.finditer(r"export\s+(?:type\s+)?\{([^}]*)\}\s*(?:from\s*'([^']*)')?", body):
             pairs: list[tuple[str, str]] = []
             for part in m.group(1).split(","):
@@ -282,9 +277,8 @@ def _shot_body(scene_text: str, sid: str) -> str:
     """切出某一镜的组件函数体（从本镜声明到下一条镜声明），并去掉注释 ——
     注释里写到的 `b[3]` 不算"用过一次"。
 
-    识别的声明形态（批7 F1：此前只认 `const S…: React.FC<`，实测工程写
-    `import {FC} from 'react'` + `export const S1: FC<…>` 或 `export function S1(...)`
-    时 8/8 镜全片误报 P0"场景源码不可读"）：
+    识别的声明形态（只认 `const S…: React.FC<` 时，`export const S1: FC<…>` /
+    `export function S1(...)` 这类写法会全片误报 P0"场景源码不可读"）：
       · `const S1Xxx: React.FC<…>` / `const S1Xxx: FC<…>`（`export` 前缀均可）
       · `function S1Xxx(...)` / `export function S1Xxx(...)`
       · `const S1Xxx = (props…): JSX.Element …`（箭头函数带返回类型标注）
@@ -320,10 +314,9 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
         return p0, p1, notes
 
     # ---- 覆盖率自述：场景源码存在时，每一镜都必须找得到自己的场景函数体 ----
-    # 病因（2026-09 修复）：scene_source 此前只扫 src 一层，子目录里的场景文件读不到，
-    # 下面所有 `if scene_text` 判据（live 名字可解析 / 转场声明是否兑现 / beats 下标越界）
-    # 就整段静默跳过，rc 照样 0 —— "没报"和"没跑"必须可区分。
-    # 口径：工程里一份 .tsx 都没有时维持原行为（负向抽查的最小夹具只有分镜表，无从比对）；
+    # 场景源码读不到时，下面所有 `if scene_text` 判据（live 名字可解析 / 转场声明是否兑现 / beats 下标越界）
+    # 会整段静默跳过、rc 照样 0 —— "没报"和"没跑"必须可区分。
+    # 口径：工程里一份 .tsx 都没有时不做这项自述（负向抽查的最小夹具只有分镜表，无从比对）；
     #       只要有场景源码，某镜在源码里切不出函数体就是**测量没跑成**，记 P0 点名。
     if scene_text:
         for s in shots:
@@ -353,7 +346,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     # 背景：两条成片都出现过"分镜表声明 handoff、代码里从未实现"，以及 SWE-2 的 S1
     # "表写 cut、代码写 reveal"。声明不兑现 = 分镜表在说谎，必须拦下。
     def shot_block(sid: str) -> str:
-        # 收到本镜 </Shot> 为止：旧版窗口 400 字符，实测窗口长 413，会越过边界吞掉下一镜
+        # 收到本镜 </Shot> 为止：按固定字符数取窗口会越过边界吞掉下一镜
         m = re.search(r"<Shot\b[^>]*\bid=\"%s\"[\s\S]*?</Shot>" % re.escape(sid), scene_text)
         return m.group(0) if m else ""
 
@@ -398,7 +391,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
 
     # ---- P0-2 活性组件覆盖率（含"名字可解析"）+ P0-4 密度 ----
     # explanation:false 只能豁免"活性组件"这一条，且全片最多 1 镜；
-    # zones / bottomFill 与 explanation 无关，永远校验（旧版一个 false 就能把整块跳过）。
+    # zones 与 explanation 无关，永远校验（一个 false 不能把整块跳过）。
     non_expl = [s.get("id", "?") for s in shots if s.get("explanation", True) is False]
     if len(non_expl) > MAX_EXPLANATION_FALSE:
         p0.append({"id": "-", "issue": f"{len(non_expl)} 镜标了 explanation:false（{non_expl}），最多允许 {MAX_EXPLANATION_FALSE} 镜"})
@@ -421,23 +414,21 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
         elif not isinstance(zones, int) or not (zone_range[0] <= zones <= zone_range[1]):
             p0.append({"id": sid, "issue": f"功能分区 {zones!r}，契约要求 {zone_range[0]}–{zone_range[1]} 个整数"
                        + ("（手作皮肤已放宽下限到 1）" if skin in CRAFT_SKINS else "")})
-        # 逐镜取函数体，再去注释后扫描（两件都是实测踩出来的）：
-        #   · 整份文件一起扫会把"某镜用了 b[9]"算到每一镜头上（夹具只改 S19 却报了 21 条）；
-        #   · 不去注释会把解释性注释里写到的 `b[3]` 当成真代码（实测第一次跑误报两镜）。
+        # 逐镜取函数体，再去注释后扫描：
+        #   · 整份文件一起扫会把"某镜用了 b[9]"算到每一镜头上；
+        #   · 不去注释会把解释性注释里写到的 `b[3]` 当成真代码。
         code_only = "" if not scene_text else _shot_body(scene_text, sid)
         if code_only:
-            # ---- beats 下标越界（2026-09-21 加。**这条本来能救两次事故**）----
+            # ---- beats 下标越界 ----
             # 场景里写 `SHOTS.Sx.beats[k]` 取节拍，而 beats 的长度由分镜的 cue 区间决定。
             # 一旦镜里只有 3 拍而场景写了 `b[3]`：
             #   · 传给 `interpolate`/`ClipReveal` 的 `from` 就是 undefined → 抛
-            #     "inputRange must contain only numbers" → **整帧渲染失败**（S17 实测）；
+            #     "inputRange must contain only numbers" → **整帧渲染失败**；
             #   · 传给某个比较（`f >= at`）就**永远为假** → 那件东西**从头到尾不出现**，
-            #     不报错、不警告（S15 的第三条聊天消息实测从未出现）。
+            #     不报错、不警告。
             # 两种都不该靠人眼发现：这里用静态扫描把每个 `b[k]` 的 k 与真实拍数比一遍。
             #
-            # ⚠️ 2026-09-21 收窄盲区：**同一个错误有两种写法，只认一种等于没拦**。
-            # 原来只扫本地别名 `b[k]`（`const b = SHOTS.Sx.beats` 之后再取下标）——
-            # 写成全路径 `SHOTS.S19.beats[9]` 就整条漏掉。现在两种都认：
+            # ⚠️ **同一个错误有两种写法，只认一种等于没拦**，两种都认：
             #   ① 别名：`b[k]`  → 与本镜拍数比；
             #   ② 全路径：`SHOTS.<id>.beats[k]` → 与被引用的那一镜的拍数比（镜号不一定是本镜）；
             #      引用了不存在的镜号也一并报（那是另一种真错，同样只会静默拿到 undefined）。
@@ -468,14 +459,6 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
                 mark(f"SHOTS.{ref}.beats[{mm.group(2)}]", int(mm.group(2)), ref_idx, f"{ref} 这一镜")
             for _expr in sorted(too_far):
                 p0.append({"id": sid, "issue": too_far[_expr]})
-        # 2026-09-21 降级（**这道门原来永远不会失败**）：它校验 `bottomFill == True`，
-        # 而这个字段是生成分镜表的脚本**自己写死的常量**（make-shots.py 每一镜都写 True），
-        # resolve-shots 再原样透传 —— 生成器写 True、门禁要求 True，结构上不可能报错。
-        # 实测成片里 17/21 镜的下 1/4 是空的，它一次都没响。
-        # 现在只查"字段在不在"（缺字段是真配置错误），真正的判据交给渲染期的 FillGate
-        # （实测信息元素的最低边 vs y=876，量的是画面而不是声明）。
-        if "bottomFill" not in s:
-            p0.append({"id": sid, "issue": "缺 bottomFill 字段（下 1/4 密度的声明位；实测判据见渲染期 FillGate）"})
 
     # ---- P1-3 镜头意图多样性 ----
     intents = {s.get("cameraIntent", "still") for s in shots}
@@ -497,12 +480,12 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
             # 注意：f-string 里不要复用同种引号（PEP 701 只在 Python 3.12+ 合法，本脚本声明支持 3.10+）
             p1.append({"id": s.get("id", "?"), "issue": "单镜 %d 帧（%.1fs）超过 %d 帧参考上限；基准是单镜 4–6s、最长 ≤9s" % (dur, dur / 30, MAX_SHOT_FRAMES)})
 
-    # ---- P1-7b 一个构图撑太久（3.3.0）：> 12 s 必须有镜内焦点或插入镜 ----
+    # ---- P1-7b 一个构图撑太久：> 12 s 必须有镜内焦点或插入镜 ----
     for s in shots:
         dur = int(s.get("duration") or 0)
         focus = [f for f in ((s.get("cinema") or {}).get("focus") or []) if not f.get("settle")]
         if dur > LONG_HOLD_FRAMES and not focus and not s.get("insert"):
-            p1.append({"id": s.get("id", "?"), "issue": "单镜 %.1fs 一个构图到底：> 12s 要在镜内换焦点（cinema.focus）或接插入镜（references/camera.md#camera-language §5）" % (dur / 30)})
+            p1.append({"id": s.get("id", "?"), "issue": "单镜 %.1fs 一个构图到底：> 12s 要在镜内换焦点（cinema.focus）或接插入镜（references/camera.md#shot-language）" % (dur / 30)})
 
     # ---- P1-8 骨架指纹重复 ----
     fp: dict[tuple, list[str]] = {}
@@ -522,9 +505,9 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
             p1.append({"id": "-", "issue": f"最长/最短镜头仅 {ratio:.2f} 倍（{hi}/{lo}），全片一个速度=节拍器；建议 2.5–3 倍以上"})
         mean = sum(durs) / len(durs)
         cv = (sum((d - mean) ** 2 for d in durs) / len(durs)) ** 0.5 / max(mean, 1)
-        # 比较与显示用同一精度：0.349 显示成 0.35，却报「0.35 < 0.35」，读者无法理解（实测 P1 里出现过）。
+        # 比较与显示用同一精度：否则 0.349 显示成 0.35，却报「0.35 < 0.35」。
         if round(cv, 2) < round(MIN_LENGTH_CV, 2):
-            p1.append({"id": "-", "issue": f"镜长变异系数 {cv:.2f} < {MIN_LENGTH_CV:.2f}（平均 {mean / 30:.1f}s）：镜长太整齐，读起来是节拍器；长短镜交替（references/camera.md#camera-language §5）"})
+            p1.append({"id": "-", "issue": f"镜长变异系数 {cv:.2f} < {MIN_LENGTH_CV:.2f}（平均 {mean / 30:.1f}s）：镜长太整齐，读起来是节拍器；长短镜交替（references/camera.md#shot-language）"})
         share = {}
         for d in durs:
             for a, b, name in BANDS:
@@ -580,7 +563,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
         detail = "；".join(f"{i}({w}帧 f={a}-{b})" for w, i, a, b in sorted(near, reverse=True)[:4])
         p1.append({"id": "-", "issue": f"{len(near)} 处变化间隔在 3–4s（慢章节正常范围，但连成片会让节奏偏平）；若这些区段画面完全静止，按 motion-design 补一次呼吸：{detail}"})
 
-    # ---- P1 组件词汇多样性（阈值用 DeepSeek 与 SWE-2 两条成片实测校准）----
+    # ---- P1 组件词汇多样性 ----
     # 结构件与标注豁免：骨架/外壳/相机/底托/小标签/标注本来就该反复出现，要求它们多样化是荒谬的。
     STRUCTURAL = {"StageFrame", "Corridor", "SplitStage", "ZoomStage", "PhaseRail",
                   "ShotCamera", "CoverPanel", "LineIcon", "CheckBadge", "PillTag",

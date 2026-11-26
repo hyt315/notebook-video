@@ -1,13 +1,13 @@
 // transition-plan.mjs · 分镜转场计划（卷页窗口的唯一真源）
 //
-// 为什么要这一层：`render` 要按帧窗把「GPU 卷页片段」拼回整片，窗口原先靠**逐行正则扫 src/shots.ts**。
-// shots.ts 是生成物（resolve-shots 从 manifests/shots.json 写出来，一行一镜、字段极多），
-// 正则隐含三条契约：① `from:` 与 `id:` 必须同一行；② `from` 必须在 `id` 之后也能命中（顺序变了就漏）；
+// 为什么要这一层：`render` 要按帧窗把「GPU 卷页片段」拼回整片。若靠**逐行正则扫 src/shots.ts**
+//（shots.ts 是生成物（resolve-shots 从 manifests/shots.json 写出来，一行一镜、字段极多），
+//），正则隐含三条契约：① `from:` 与 `id:` 必须同一行；② `from` 必须在 `id` 之后也能命中（顺序变了就漏）；
 // ③ 新字段里出现 `from:` 也不会误伤。任何一条被格式化 / 换行 / 注释 / 生成方式变化打破，
 // 症状都不是报错，而是**某些翻页悄悄退回折痕版**：渲染成功、时长照对、门禁照样过。
 //
-// 现在：以 `manifests/shots.resolved.json`（resolve-shots 的产物，结构化）为输入，
-// `src/shots.ts` 只在旧工程没有 manifest 时兜底，并打一次 warn（让人知道这条片子走的是旧路径）。
+// 所以以 `manifests/shots.resolved.json`（resolve-shots 的产物，结构化）为输入，
+// `src/shots.ts` 只在工程没有 manifest 时兜底，并打一次 warn（让人知道这条片子走的是兜底路径）。
 //
 // 判据本身（哪种转场是卷页）必须与引擎一致，唯一真源是 `src/cinema.tsx` 的 resolveTransition；
 // 这里逐条复刻，并由 tests/test_transition_plan.py 与源码交叉校验。
@@ -36,7 +36,7 @@ export const effectiveTransition = (declared, index, craftTransition = null) => 
   if (d === 'whip') return index % 2 ? 'whip-left' : 'whip-right'; // 引擎按镜号交替，不是随机
   if (craftTransition === 'pageturn' || craftTransition === 'peel') return craftTransition;
   if (craftTransition === 'slide' || craftTransition === 'drop') return craftTransition;
-  // 既没声明卷页、皮肤也没声明 → pageflip（纯 CSS 折痕翻页，不需要 WebGL2）。3.9.0 的缺省。
+  // 既没声明卷页、皮肤也没声明 → pageflip（纯 CSS 折痕翻页，不需要 WebGL2）。的缺省。
   // cut / reveal / handoff / 未知名在引擎里**没有**单独分支，同样落到这里——别为了"看起来更合理"给它们单开分支，
   // 那会让本函数与 resolveTransition 悄悄分叉，而症状只是某处翻页换了种翻法。
   return 'pageflip';
@@ -106,7 +106,7 @@ export const readShotPlan = (project) => {
   }
 
   if (!shots) {
-    // 旧工程兜底：一行一镜的正则。它比 manifest 脆得多，所以只在没有结构化输入时用。
+    // 没有 manifest 时兜底：一行一镜的正则。它比 manifest 脆得多，所以只在没有结构化输入时用。
     const ts = read(path.join(project, 'src', 'shots.ts'));
     const rows = [];
     ts.split('\n').forEach((line, i) => {

@@ -12,7 +12,7 @@ import {prog} from './ui';
 //
 // 确定性：roughjs 用种子化伪随机，**同一个 seed 永远画出同一笔迹**，
 // 不破坏"同一份代码渲出同一支片"（references/technique.md#dependency-policy 判据第二条）。
-// ⚠️ 两处例外，都是实测抓到的（见下面 fillStyle 的注释）：
+// ⚠️ 两处例外（见下面 fillStyle 的注释）：
 //   ① `fillStyle:'dots'` 的填充器无条件调 `Math.random()` → **已从本组件移除**；
 //   ② `seed: 0` 是假值 → roughjs 的 LCG 退回 `Math.random()` → 所有填充失效。
 //
@@ -44,12 +44,11 @@ export type SketchStyle = {
    *   'hachure'（默认）单排线 · 'zigzag' 锯齿线 · 'cross-hatch' 交叉排线
    *   'dashed' 虚线 · 'zigzag-line' 锯齿描边 · 'solid' 实心
    *
-   * ⚠️ **没有 `'dots'`**（实测，2026-09-21）：roughjs 的 `dots` 填充器在
+   * ⚠️ **没有 `'dots'`**：roughjs 的 `dots` 填充器在
    * `bundled/rough.cjs.js` 里**无条件调用 `Math.random()` 两次/每点**
    * （`M=d-s+2*Math.random()*s, k=v-s+2*Math.random()*s`，`dotsOnLines` 内），
    * **与 seed 无关**——其余填充器都走种子化 LCG，只有它走真随机。
-   * 后果是同一帧渲两次像素不一致（实测接触表第 ⑭ 页同一帧渲三次得到三个不同哈希，
-   * 差异全部落在 dots 那一格），直接违反「同一份代码渲出同一支片」。
+   * 后果是同一帧渲两次像素不一致，直接违反「同一份代码渲出同一支片」。
    * → 需要点状质感时用 `'dashed'` 或 `hachureGap` 调大的 `hachure`。
    *
    * ⚠️ **`seed` 不要传 0**：roughjs 的 LCG 是 `this.seed ? … : Math.random()`，
@@ -90,14 +89,14 @@ export const SketchFx: React.FC<{
     svg.innerHTML = ''; // 每帧重画前先清空，否则会叠加出越来越重的笔迹
     const rc = rough.svg(svg);
     const base = {seed: 1, roughness: 1.5, stroke: C.ink, strokeWidth: 2.6, ...style};
-    // ---- seed 运行期护栏（2026-09-21）----
+    // ---- seed 运行期护栏 ----
     // roughjs 的 LCG 写作 `this.seed ? imul(48271, seed) : Math.random()`：**0 是假值**，
     // 于是 `seed: 0`（或第一个图形算出的 `0 + 0*7`）会让整条随机链退回真随机，
     // 所有笔迹每帧都不一样 —— 直接违反"同一份代码渲出同一支片"。
     // 处置：告警 + **自动换成非零种子**，保证"给 0 也不会产出不确定结果"。
     // ⚠️ 这条告警**刻意不加 `NODE_ENV !== 'production'` 门**（本仓库其它开发期告警是加的）：
     // 渲染包由 webpack 以 production 模式打包，`process.env.NODE_ENV` 会被替换成
-    // 'production'，加门等于"真正出片的那条路径上永远看不到告警"（实测确认过）。
+    // 'production'，加门等于"真正出片的那条路径上永远看不到告警"。
     // 它只在作者真的传了 0 时才响，正常渲染零噪音。
     if (!base.seed) {
       console.warn(
@@ -109,13 +108,13 @@ export const SketchFx: React.FC<{
 
     draw.forEach((prim, i) => {
       const s = base.seed + i * 7;
-      // ---- 几何护栏（2026-09-21，实测量出来的，不是推测）----
+      // ---- 几何护栏 ----
       // `ellipse` / `circle` 的圆心字段是 **cx / cy**（圆的直径是 `d`）。作者按惯性写 `x / y` 时
       // 拿到的是 NaN，后果分两种，两种都很坏：
       //   · 没有 fill：roughjs 照旧产出一条含 NaN 的 path → 浏览器画出**位置乱跑的畸形图形**
-      //     （实测 S16 的"圆"被画成偏左约 400px 的一枚扁透镜，没有任何报错）；
+      //     （没有任何报错）；
       //   · 带 fill（`fill:'none'` 也是**真值**，roughjs 会照填）：hachure 填充器在 NaN 边界上
-      //     **死循环** —— 实测 S6 单帧 33s 超时、整帧渲染直接失败。
+      //     **死循环** —— 单帧超时、整帧渲染直接失败。
       // 处置两件一起做：收 `x/y`（圆的 `w`）作别名替作者兜住；归一后仍算不出有限几何就**抛错**。
       // 宁可渲染失败也不要"看起来渲成功了"的坏画面。
       const bad = (need: string): never => {
@@ -184,22 +183,3 @@ export const SketchFx: React.FC<{
     </div>
   );
 };
-
-// ---------------------------------------------------------------------------
-// 常用形状的便捷构造器（纯函数，不是组件——按 dependency-policy §8「效果不新开组件」）
-// ---------------------------------------------------------------------------
-
-/** 手绘圈住一块区域（配合 Callout 式的"圈重点"修辞动作）。 */
-export const sketchCircleArea = (x: number, y: number, w: number, h: number): SketchPrim => ({
-  kind: 'ellipse',
-  cx: x + w / 2,
-  cy: y + h / 2,
-  w: w + 26,
-  h: h + 22,
-});
-
-/** 手绘下划线。 */
-export const sketchUnderline = (x: number, y: number, w: number): SketchPrim => ({kind: 'line', x1: x, y1: y, x2: x + w, y2: y});
-
-/** 手绘方框。 */
-export const sketchBox = (x: number, y: number, w: number, h: number): SketchPrim => ({kind: 'rect', x, y, w, h});

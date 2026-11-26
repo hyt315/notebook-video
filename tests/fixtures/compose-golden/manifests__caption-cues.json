@@ -706,117 +706,117 @@
    "words": [
     {
      "part": "算",
-     "start": 34072,
-     "end": 34273
+     "start": 33732,
+     "end": 33933
     },
     {
      "part": "出",
-     "start": 34283,
-     "end": 34484
+     "start": 33943,
+     "end": 34144
     },
     {
      "part": "位",
-     "start": 34494,
-     "end": 34695
+     "start": 34154,
+     "end": 34355
     },
     {
      "part": "置，",
-     "start": 34705,
-     "end": 34906
+     "start": 34365,
+     "end": 34566
     },
     {
      "part": "不",
-     "start": 35066,
-     "end": 35268
+     "start": 34726,
+     "end": 34928
     },
     {
      "part": "用",
-     "start": 35278,
-     "end": 35479
+     "start": 34938,
+     "end": 35139
     },
     {
      "part": "挨",
-     "start": 35489,
-     "end": 35690
+     "start": 35149,
+     "end": 35350
     },
     {
      "part": "个",
-     "start": 35700,
-     "end": 35901
+     "start": 35360,
+     "end": 35561
     },
     {
      "part": "找。",
-     "start": 35911,
-     "end": 36112
+     "start": 35571,
+     "end": 35772
     }
    ],
-   "start_ms": 34012,
-   "speech_end_ms": 36112,
-   "reveal_end_ms": 36112,
-   "start": 34.012,
-   "speech_end": 36.112,
-   "reveal_end": 36.112
+   "start_ms": 33672,
+   "speech_end_ms": 35772,
+   "reveal_end_ms": 35772,
+   "start": 33.672,
+   "speech_end": 35.772,
+   "reveal_end": 35.772
   },
   {
    "text": "这就是哈希表快的原因。",
    "words": [
     {
      "part": "这",
-     "start": 36692,
-     "end": 36893
+     "start": 36352,
+     "end": 36553
     },
     {
      "part": "就",
-     "start": 36903,
-     "end": 37104
+     "start": 36563,
+     "end": 36764
     },
     {
      "part": "是",
-     "start": 37114,
-     "end": 37315
+     "start": 36774,
+     "end": 36975
     },
     {
      "part": "哈",
-     "start": 37325,
-     "end": 37526
+     "start": 36985,
+     "end": 37186
     },
     {
      "part": "希",
-     "start": 37536,
-     "end": 37738
+     "start": 37196,
+     "end": 37398
     },
     {
      "part": "表",
-     "start": 37748,
-     "end": 37949
+     "start": 37408,
+     "end": 37609
     },
     {
      "part": "快",
-     "start": 37959,
-     "end": 38160
+     "start": 37619,
+     "end": 37820
     },
     {
      "part": "的",
-     "start": 38170,
-     "end": 38371
+     "start": 37830,
+     "end": 38031
     },
     {
      "part": "原",
-     "start": 38381,
-     "end": 38582
+     "start": 38041,
+     "end": 38242
     },
     {
      "part": "因。",
-     "start": 38592,
-     "end": 38793
+     "start": 38252,
+     "end": 38453
     }
    ],
-   "start_ms": 36632,
-   "speech_end_ms": 38793,
-   "reveal_end_ms": 38793,
-   "start": 36.632,
-   "speech_end": 38.793,
-   "reveal_end": 38.793
+   "start_ms": 36292,
+   "speech_end_ms": 38453,
+   "reveal_end_ms": 38453,
+   "start": 36.292,
+   "speech_end": 38.453,
+   "reveal_end": 38.453
   }
  ]
 }

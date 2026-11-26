@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""story_text.py — compose-story 的「文字怎么量、怎么折、怎么放进框」（P2-24 第一切片）
+"""story_text.py — compose-story 的「文字怎么量、怎么折、怎么放进框」
 
 从 `compose-story.py` 切出的第二块（第一块是 `story_camera.py` 的取景计算）。
 切它的理由不是行数，是**变化原因**：字宽、折行、孤字调整、字号收敛、行高地板
-是同一类改动（P2-17 那一批全落在这里），每次调都要在 2300 行里翻；单独成文件后，
-这类改动只碰这一个文件，改版式 / 时间轴的人不用读它。
+是同一类改动；单独成文件后，这类改动只碰这一个文件，改版式 / 时间轴的人不用读它。
 
 边界（写清，避免又把别的东西塞回来）：
   - **在这里**：字宽（问 text_metrics 的真字体）、折行、孤字调整、字号收敛（fit_text）、
@@ -45,7 +44,7 @@ def is_wide(ch: str) -> bool:
     """全角/表意（含全宽通用标点）。只服务 mono 与无字体兜底。
 
     允许传入多字符 token（units() 的分词会给出 `/report` 这种）——
-    多字符一律按「不是单个全角字」处理，与旧版正则语义一致。
+    多字符一律按「不是单个全角字」处理。
     """
     if len(ch) != 1:
         return False
@@ -81,7 +80,7 @@ def line_len(s: str) -> float:
 
 def wrap(text: str, size: float, maxw: float, mono=False) -> list[str]:
     """按宽度折行：中文按字、英文按词，不拆开英文单词 / 数字 / 破折号对。"""
-    # 「——」是一个视觉单位，劈成两行的「—」/「—」读起来像两根杂线（实测 @maxw=200 会拆）。
+    # 「——」是一个视觉单位，劈成两行的「—」/「—」读起来像两根杂线。
     toks = re.findall(r"[A-Za-z0-9.%+\-_/@()']+|——|\s+|.", text)
     lines, cur = [], ""
     for t in toks:

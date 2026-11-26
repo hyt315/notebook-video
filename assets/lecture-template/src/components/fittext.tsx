@@ -15,11 +15,9 @@ import {TYPE} from '../kit';
 //
 // ⚠️ 为什么不用 @remotion/layout-utils 的 fitTextOnNLines：
 //    它的实现是 `text.split(' ')` —— 按**空格**切词。中文没有空格，整段会被
-//    当成一个不可断的「词」，于是只能塞进一行，字号被压到 maxBoxWidth/字数
-//    （实测：44 字、738px 容器 → 16.77px/1 行，而正确答案是 46px/3 行）。
-//    它对空格分词的语言是对的，对中文是失效的，而且**不会报错，只会静默给出
-//    一个很小的字号**。所以本层只用它的 measureText（实测准确、严格线性，
-//    已验证 46px 时 44 字 = 2024px、比值 2.300），断行与二分自己做。
+//    当成一个不可断的「词」，于是只能塞进一行，字号被压到 maxBoxWidth/字数，
+//    而且**不会报错，只会静默给出一个很小的字号**。
+//    所以本层只用它的 measureText（准确、随字号严格线性），断行与二分自己做。
 // ============================================================================
 
 const C = THEME.palette;
@@ -67,17 +65,11 @@ const wordBreaks = (chars: string[]): Set<number> => {
 
 // ---- 断行机会：改用 **UAX #14 真实算法**（`@cto.af/linebreak`，MIT，纯离线表）----
 //
-// 2026-09-21 换掉手写的两张字符表：那两张表是 UAX #14 的粗糙近似，实测在**中英混排**上会切错——
-// 对 '在GitHub，全世界的开发者，' 我们的表允许 5 个非法断点（在G|itH、Git|Hub…），
-// 对 '主页搜hyt315，…' 允许 5 个（hyt|315…），对 'notebook-video' 允许 13 个；
-// 而 UAX #14 在这些位置**一律不许断**（拉丁/数字串内部不断）。纯中文时两者完全一致
-// （实测 '第一步，参与别人的项目，' 与 '给容器宽度和行数上限，反推该用多大字号' 断点逐一相同），
-// 所以这次换掉的正是"我们写得更差"的那部分。
+// 手写字符表在**中英混排**上会切错（如 `Git|Hub`、`hyt|315`），UAX #14 在拉丁/数字串内部一律不断；
+// 纯中文时两者断点一致。
 // 确定性：算法 + 随包发布的 Unicode 表，纯函数，无 timer / 无 Math.random，版本由 lock 锁死。
-// 选包口径（2026-09-21 复核）：先用过 foliojs 的 `linebreak@1.1.0`，它**钉死 base64-js@0.0.8（2014 年）**，
-// 正是"旧依赖可能不兼容"的那类风险 → 换成 `@cto.af/linebreak@4.0.3`（同一算法的现代实现，
-// 自我描述为 foliojs 那包的 refresh，UAX #14 / Unicode 17，2026-03 发版，依赖是现代的
-// @cto.af/unicode-trie-runtime → fflate）。实测两包在同一批真实文本上**断点逐一相同**。
+// 选包：`@cto.af/linebreak@4.0.3`（UAX #14 / Unicode 17，依赖 @cto.af/unicode-trie-runtime → fflate）；
+// foliojs 的 `linebreak@1.1.0` 是同一算法，但钉死了 base64-js@0.0.8 这类旧依赖。
 const legalBreakCache = new Map<string, Set<number>>();
 /** UAX #14 规则机（无状态，建一次即可复用；`{string:true}` 让每个断点带上左侧片段）。 */
 let lbRules: Rules | null = null;
@@ -97,7 +89,7 @@ const legalBreaks = (text: string): Set<number> => {
   return out;
 };
 
-const REF_SIZE = 100; // 参考字号：宽度在此尺寸下量一次，再按比例缩放（实测严格线性）
+const REF_SIZE = 100; // 参考字号：宽度在此尺寸下量一次，再按比例缩放（严格线性）
 
 const widthCache = new Map<string, number[]>();
 /** 逐字宽度（在参考字号下量一次）；CJK 字体度量对字号严格线性，缩放安全。 */
@@ -141,7 +133,7 @@ const layout = (text: string, widths: number[], fontSize: number, maxBoxWidth: n
     const w = widths[i] * scale;
     if (cur !== '' && curW + w > maxBoxWidth) {
       // 避头尾：标点不该行首。但**只有在放得下时才拽到上一行**——
-      // 否则行宽会超出容器，浏览器会再折一次，行数直接翻倍（实测过 3 行变 6 行）。
+      // 否则行宽会超出容器，浏览器会再折一次，行数直接翻倍。
       // 宁可偶尔标点行首，也不能让行宽超容器。
       // 这里本来该断，但 UAX #14 说"不许在这个字符前断"（标点避头、拉丁串内部…）：
       // 只有在放得下时才把它留在本行；放不下就走下面的应急断行——
@@ -227,7 +219,7 @@ export const fitChineseTextOnNLines = (opts: {
  * 主题字体加载完再测量，所以调用方不需要记得这件事。
  *
  * 与 FitCard 的分工：FitCard 管「卡片多高」（fitH 算高度），FitTextBox 管
- * 「这段文字该多大」（实测反推字号）。两者一起用，卡片裁切从源头消失。
+ * 「这段文字该多大」（量字反推字号）。两者一起用，卡片裁切从源头消失。
  */
 export const FitTextBox: React.FC<{
   text: string;
@@ -300,7 +292,7 @@ export const assertFits = (opts: {text: string; boxWidth: number; fontFamily?: s
  *
  * 这是 StatRow / VerdictBar 这类"固定尺寸卡片 + 可变文案"组件在开发期自用的检查：
  * 文案比卡片宽时在控制台出声，而不是把渲染打断。
- * 判定用的仍是同一套 measureText 实测，不是估算。
+ * 判定用的仍是同一套 measureText 量宽，不是估算。
  */
 export const fitsWithin = (opts: {text: string; boxWidth: number; fontFamily?: string; fontSize: number; fontWeight?: number; label?: string}) => {
   const m = measureFits(opts);

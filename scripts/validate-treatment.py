@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""validate-treatment.py — 导演层门禁：manifests/treatment.json 是否真的想清楚了（3.3.0）。
+"""validate-treatment.py — 导演层门禁：manifests/treatment.json 是否真的想清楚了。
 
 用法：python scripts/validate-treatment.py PROJECT [--json]
 
@@ -7,9 +7,9 @@
   · 手作皮肤（journal / papercut / archive）：缺 treatment.json、留 <<…>> 占位、写了却自相矛盾 = P0（阻断）；
   · 必填字段空着、facts 为空、native_move.at_sec 没写是纸面字段，一律 P1（与 validate-facts 同口径：
     缺标注只提示，写了的标注说不通才拦）；
-  · flat / cel：同样的问题只记 P1（向后兼容：老工程没有这一层）；
+  · flat / cel：同样的问题只记 P1（导演层对它们是可选的）；
   · 风格 / 节奏类建议（转向你的时间点、运镜种类、评审分数）永远是 P1；
-  · 3.3.0：treatment 的 move / framing 对照镜头表（shots.resolved.json）的 cameraIntent / keys 缩放（P1）；
+  · treatment 的 move / framing 对照镜头表（shots.resolved.json）的 cameraIntent / keys 缩放（P1）；
     招牌镜头实推 < 12% 记入 hard（手作 P0）；候选结构 family 至少 2 族（P1）；sound 段（P1）。
 只用标准库。退出码：0 通过，1 有 P0，2 用法错误。
 """
@@ -26,9 +26,9 @@ from gate_report import finish  # noqa: E402  统一结果：设了 NV_GATE_JSON
 
 CRAFT = {"journal", "papercut", "archive"}
 SKINS = CRAFT | {"flat", "cel"}
-# 3.3.0：叙事结构族（候选结构至少 2 族，见 references/director.md#director-method 第 5 步、blueprints/*.json 的 family）
+# 叙事结构族（候选结构至少 2 族，见 references/director.md#director-method 第 5 步、blueprints/*.json 的 family）
 FAMILIES = ("medium-metaphor", "kishotenketsu", "mystery", "scale-ladder", "experiment", "one-take-journey", "myth-flip", "lecture-arc")
-# 3.3.0：treatment 的景别 / 运镜要在镜头表里兑现（references/camera.md#camera-language §2）
+# treatment 的景别 / 运镜要在镜头表里兑现（references/camera.md#shot-language）
 MOVES = ("establish", "push-in", "pull-back", "pan-follow", "reveal", "micro-orbit", "still")
 SIGNATURE_PUSH_MIN = 0.12   # 招牌镜头至少真推 12%（缩放变化，或 cinema.focus 的 zoom）
 SIGNATURE_SHIFT_MIN = 120.0 # 或者屏幕位移 ≥120px（横移 / 拉远）：招牌镜的另一个合法做法
@@ -39,6 +39,7 @@ FRAMING_RULES = {           # 景别 → 实际取景（镜头表 keys 的缩放
     "特写": "插入镜、峰值缩放 ≥ 1.35（纯图形 ≥ 1.5），或主体 ≥ 2/3 画高",
 }
 REVIEW_KEYS = ("构图主体", "调度节奏", "隐喻媒介一致", "顿悟惊艳", "字幕可读", "手作质感色彩纪律", "叙事完整")
+RUBRIC_5_KEYS = ("复述核心概念", "先打掉常见误解", "专属例子或隐喻", "画面时机帮助理解", "记住的锤子句")
 REQUIRED = ("topic", "question", "metaphor.idea", "metaphor.why_unique", "medium.skin", "medium.why",
             "native_move.what", "native_move.why_only_this_medium", "chosen", "chosen_why", "logline",
             "arc.setup", "arc.turn", "arc.ending", "ending_echo.opening_image", "ending_echo.one_change",
@@ -154,7 +155,7 @@ def check_camera(t: dict, resolved: list[dict]) -> tuple[list[str], list[str]]:
 def check_sound(t: dict) -> list[str]:
     snd = t.get("sound")
     if not isinstance(snd, dict) or placeholder(snd):
-        return ["treatment.sound 没写完：原生动作前静多久、全片最重要的一声、配乐用不用（为什么）、每种媒介配什么拟音（references/director.md#director-method 第 8 步）"]
+        return ["treatment.sound 没写完：原生动作前静多久、全片最重要的一声、配乐用不用（为什么）、每种媒介配什么拟音（references/director.md#director-method 第 7 步）"]
     out = []
     sil = snd.get("silence_before_native_move_sec")
     if not isinstance(sil, (int, float)) or sil < 0.5:
@@ -175,12 +176,20 @@ def check(proj: Path) -> tuple[list[str], list[str], str]:
     soft: list[str] = []   # 永远 P1
     tf = proj / "manifests" / "treatment.json"
     if not tf.is_file():
-        hard.append("没有 manifests/treatment.json —— 复制 manifests/treatment.example.json 填好（references/director.md#director-method）")
+        if skin in CRAFT:
+            hard.append("没有 manifests/treatment.json —— 复制 manifests/treatment.example.json 填好（references/director.md#director-method）")
         return hard, soft, skin
     try:
         t = json.loads(tf.read_text(encoding="utf-8"))
     except ValueError as e:
         hard.append(f"treatment.json 不是合法 JSON：{e}")
+        return hard, soft, skin
+    # 手作皮肤、story.json 生成的工程（有 manifests/fusion.json）还留着模板示例片的导演层：
+    # 它的选题、招牌镜都是别的片子的，逐项判只会报一串与本片无关的错，只报这一条。
+    if (skin in CRAFT and str(t.get("$about") or "").startswith("模板示例片")
+            and (proj / "manifests" / "fusion.json").is_file()):
+        hard.append("manifests/treatment.json 还是模板示例片（GitHub 三部曲）的导演层，不是本片的 —— "
+                    "复制 manifests/treatment.example.json 改成本片的（示例 story 旁有同名 .treatment.json 时直接用它）")
         return hard, soft, skin
     for k in REQUIRED:
         v = get(t, k)
@@ -212,7 +221,7 @@ def check(proj: Path) -> tuple[list[str], list[str], str]:
     elif ms and ms not in SKINS and not placeholder(ms):
         hard.append(f"medium.skin={ms} 不是已有皮肤（{', '.join(sorted(SKINS))}）")
     # why 必须为**自己这个皮肤**辩护：出现别的皮肤名、且同一句里是推荐语气（更 / 适合 / 不如 / 优于）
-    # → P1。旧版只换 skin 不换 why，新建 journal 工程的 treatment 却在论证 flat 更直接（自相矛盾）。
+    # → P1（只换 skin 不换 why 时，journal 工程的 treatment 会在论证 flat 更直接，自相矛盾）。
     why = str(get(t, "medium.why") or "")
     for other in sorted(SKINS - {skin}):
         for sent in re.split(r"[；;。\n]", why):
@@ -315,12 +324,16 @@ def check(proj: Path) -> tuple[list[str], list[str], str]:
                 pass
     rounds = get(t, "review.rounds") or []
     if not rounds:
-        soft.append("还没有独立评审（review.rounds 为空）：新会话只看联系表 + 镜头表，七项打分")
+        soft.append("还没有独立评审（review.rounds 为空）：新会话只看联系表 + storyboard.md + treatment.json，"
+                    "按 references/rubric.md 五项评审卡打分")
     else:
         last = rounds[-1].get("scores", {})
-        low = [f"{k}={last.get(k)}" for k in REVIEW_KEYS if not isinstance(last.get(k), (int, float)) or last.get(k) < 8]
+        # 评审卡五项、每项 1–5 分（references/rubric.md）；旧的七项十分制轮次仍按原口径判。
+        legacy = not any(k in last for k in RUBRIC_5_KEYS) and any(k in last for k in REVIEW_KEYS)
+        keys, floor = (REVIEW_KEYS, 8) if legacy else (RUBRIC_5_KEYS, 4)
+        low = [f"{k}={last.get(k)}" for k in keys if not isinstance(last.get(k), (int, float)) or last.get(k) < floor]
         if low:
-            soft.append(f"最后一轮评审有项 <8 或缺：{', '.join(low)} —— 改完再评")
+            soft.append(f"最后一轮评审有项 <{floor} 或缺：{', '.join(low)} —— 改完再评")
     return hard, soft, skin
 
 

@@ -15,7 +15,7 @@
   {
    "id": "flat/main",
    "skin": "flat",
-   "file": "public/bg/bg-flat-main.jpg",
+   "file": "public/bg/bg-flat-main.webp",
    "legacy": "main",
    "name": {
     "zh": "天空吉祥物·常规",
@@ -31,16 +31,16 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (AI-generated, project-owned)",
-   "sha256": "7827abd435ff5231a8b43a07ad6de296703dc947e8201385f74a9b9f4128f46a",
+   "sha256": "6a89db1d1133a10837284143d6dbfa54c42b41b8fd8e90d70b66a5a4df2a3bda",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.8853,
-    "zone_mean_lum": 0.9245,
-    "zone_p05_lum": 0.9064,
-    "centre_std": 0.0137
+    "mean_lum": 0.8862,
+    "zone_mean_lum": 0.9238,
+    "zone_p05_lum": 0.9086,
+    "centre_std": 0.0135
    },
    "use": {
     "layouts": [
@@ -54,7 +54,7 @@
   {
    "id": "flat/chapter",
    "skin": "flat",
-   "file": "public/bg/bg-flat-chapter.jpg",
+   "file": "public/bg/bg-flat-chapter.webp",
    "legacy": "chapter",
    "name": {
     "zh": "天空吉祥物·章节",
@@ -70,16 +70,16 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (AI-generated, project-owned)",
-   "sha256": "5388140dfd270f2ac36b9da60552f6fc84c13990b4aac431c18dde07df1e8d66",
+   "sha256": "e9910249f94c4a3047f82cb89b60f0b49ef5cc319b018b826c073631c9db6faa",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.882,
-    "zone_mean_lum": 0.9196,
-    "zone_p05_lum": 0.9002,
-    "centre_std": 0.0182
+    "mean_lum": 0.8829,
+    "zone_mean_lum": 0.9207,
+    "zone_p05_lum": 0.902,
+    "centre_std": 0.0186
    },
    "use": {
     "layouts": [
@@ -95,7 +95,7 @@
   {
    "id": "flat/quiet",
    "skin": "flat",
-   "file": "public/bg/bg-flat-quiet.jpg",
+   "file": "public/bg/bg-flat-quiet.webp",
    "legacy": "quiet",
    "name": {
     "zh": "天空吉祥物·安静",
@@ -111,16 +111,16 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (AI-generated, project-owned)",
-   "sha256": "0e346418b8dea17262f2a464c6a8b9cb586b7ad58638eafa16c25d3202ca0dca",
+   "sha256": "b2c9ce76d2ae3d100024187f2f23faeee9ad4f1ff914b67d23cf679bdaada3c8",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.8903,
-    "zone_mean_lum": 0.9269,
-    "zone_p05_lum": 0.9068,
-    "centre_std": 0.0137
+    "mean_lum": 0.891,
+    "zone_mean_lum": 0.9261,
+    "zone_p05_lum": 0.9094,
+    "centre_std": 0.0136
    },
    "use": {
     "layouts": [
@@ -137,7 +137,7 @@
   {
    "id": "cel/main",
    "skin": "cel",
-   "file": "public/bg/bg-cel-main.jpg",
+   "file": "public/bg/bg-cel-main.webp",
    "legacy": "main",
    "name": {
     "zh": "漫画角饰·常规",
@@ -153,16 +153,16 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (AI-generated, project-owned)",
-   "sha256": "6155d11de9865a463475238cebe05c8db3d8f7f700d894ab60b149a38fc0b349",
+   "sha256": "4400c75c6e80abe771974d84cdf300e8d153fd4e9218483a8a6c0696f4bc24f8",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.9385,
-    "zone_mean_lum": 0.9657,
-    "zone_p05_lum": 0.9593,
-    "centre_std": 0.0067
+    "mean_lum": 0.9408,
+    "zone_mean_lum": 0.9689,
+    "zone_p05_lum": 0.9612,
+    "centre_std": 0.0064
    },
    "use": {
     "layouts": [
@@ -176,7 +176,7 @@
   {
    "id": "cel/chapter",
    "skin": "cel",
-   "file": "public/bg/bg-cel-chapter.jpg",
+   "file": "public/bg/bg-cel-chapter.webp",
    "legacy": "chapter",
    "name": {
     "zh": "漫画角饰·章节",
@@ -192,16 +192,16 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (AI-generated, project-owned)",
-   "sha256": "834d9266df2e3780e1dbc9bdf44df9beb0cab12c199e6d0d879c0ffa4116d521",
+   "sha256": "5b47be5a74e37a69e06cabcda0aba3059e691b9ba8c76599f37b99afab87aefa",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.9348,
-    "zone_mean_lum": 0.9722,
-    "zone_p05_lum": 0.965,
-    "centre_std": 0.02
+    "mean_lum": 0.9363,
+    "zone_mean_lum": 0.9747,
+    "zone_p05_lum": 0.9669,
+    "centre_std": 0.0198
    },
    "use": {
     "layouts": [
@@ -215,7 +215,7 @@
   {
    "id": "cel/quiet",
    "skin": "cel",
-   "file": "public/bg/bg-cel-quiet.jpg",
+   "file": "public/bg/bg-cel-quiet.webp",
    "legacy": "quiet",
    "name": {
     "zh": "漫画角饰·安静",
@@ -231,16 +231,16 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (AI-generated, project-owned)",
-   "sha256": "d32beba960ccd686afe047de79944dcc6cda04a31c43ce771b1e7c8e113fd9a7",
+   "sha256": "d5b6a897e7b2930097699e09ae6813ae96b36df01e00b861d6113695f161e839",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.9503,
-    "zone_mean_lum": 0.9632,
-    "zone_p05_lum": 0.9525,
-    "centre_std": 0.0055
+    "mean_lum": 0.9518,
+    "zone_mean_lum": 0.9648,
+    "zone_p05_lum": 0.9582,
+    "centre_std": 0.006
    },
    "use": {
     "layouts": [
@@ -257,7 +257,7 @@
   {
    "id": "journal/main",
    "skin": "journal",
-   "file": "public/bg/bg-journal-main.jpg",
+   "file": "public/bg/bg-journal-main.webp",
    "legacy": "main",
    "name": {
     "zh": "棉纸·常规",
@@ -273,15 +273,15 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (generated)",
-   "sha256": "3294eaf2ee8cb2ba3d39a82a0e628ad8dd1c097de8762187650bcd4dcbd54c7d",
+   "sha256": "a571f15f24d8679514eb313c27f5ea55205bd920e7c51bab8c162abb1c41f001",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.7619,
-    "zone_mean_lum": 0.7282,
-    "zone_p05_lum": 0.6748,
+    "mean_lum": 0.7632,
+    "zone_mean_lum": 0.7297,
+    "zone_p05_lum": 0.6745,
     "centre_std": 0.0348
    },
    "use": {
@@ -297,7 +297,7 @@
   {
    "id": "journal/chapter",
    "skin": "journal",
-   "file": "public/bg/bg-journal-chapter.jpg",
+   "file": "public/bg/bg-journal-chapter.webp",
    "legacy": "chapter",
    "name": {
     "zh": "棉纸·章节",
@@ -313,15 +313,15 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (generated)",
-   "sha256": "7b3cd50f0e78f0e39d5a167f5167fc499b0881675bc7719be50a76a1e702936d",
+   "sha256": "1e808c5dcb3dcdda6069bfffda19e4efc0800ef62d9bf472185ba3ba2cbc5a97",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.7566,
-    "zone_mean_lum": 0.7179,
-    "zone_p05_lum": 0.6192,
+    "mean_lum": 0.7577,
+    "zone_mean_lum": 0.7193,
+    "zone_p05_lum": 0.6211,
     "centre_std": 0.0364
    },
    "use": {
@@ -336,7 +336,7 @@
   {
    "id": "journal/quiet",
    "skin": "journal",
-   "file": "public/bg/bg-journal-quiet.jpg",
+   "file": "public/bg/bg-journal-quiet.webp",
    "legacy": "quiet",
    "name": {
     "zh": "棉纸·安静",
@@ -352,16 +352,16 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (generated)",
-   "sha256": "8ee4eb7213a386237100c2e66db3466d7b6fc923d15fd25d5a367b191d793ff7",
+   "sha256": "bd44369d487099796e205bd10cb1afca7836bb6f74d0c6a1a85a881c0529c118",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.7589,
-    "zone_mean_lum": 0.7317,
-    "zone_p05_lum": 0.6891,
-    "centre_std": 0.0304
+    "mean_lum": 0.7602,
+    "zone_mean_lum": 0.7334,
+    "zone_p05_lum": 0.6887,
+    "centre_std": 0.0302
    },
    "use": {
     "layouts": [
@@ -376,7 +376,7 @@
   {
    "id": "papercut/main",
    "skin": "papercut",
-   "file": "public/bg/bg-papercut-main.jpg",
+   "file": "public/bg/bg-papercut-main.webp",
    "legacy": "main",
    "name": {
     "zh": "米纸·常规",
@@ -392,16 +392,16 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (generated)",
-   "sha256": "5137537e9b9c53fbb3b05b1f6d8960cb61a3e36bc7560e4f5b832209e1b2fa01",
+   "sha256": "defe179edd3d02f58fd7540853358d5295a8d6b552298d1af9c4cc6ba997238b",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.6973,
-    "zone_mean_lum": 0.6726,
-    "zone_p05_lum": 0.6109,
-    "centre_std": 0.0292
+    "mean_lum": 0.6984,
+    "zone_mean_lum": 0.6734,
+    "zone_p05_lum": 0.6114,
+    "centre_std": 0.0295
    },
    "use": {
     "layouts": [
@@ -419,7 +419,7 @@
   {
    "id": "papercut/chapter",
    "skin": "papercut",
-   "file": "public/bg/bg-papercut-chapter.jpg",
+   "file": "public/bg/bg-papercut-chapter.webp",
    "legacy": "chapter",
    "name": {
     "zh": "米纸·章节",
@@ -435,16 +435,16 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (generated)",
-   "sha256": "a5b6d1ff77db5c2907bb0ec066f4173527474b69a60d60a87866b57f55e5eb37",
+   "sha256": "1fdb5fd92ee2645eea4c8dd78c8002d5a34e30e4fcadc2c4ef139d3745cb9370",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.6643,
-    "zone_mean_lum": 0.6598,
-    "zone_p05_lum": 0.6176,
-    "centre_std": 0.037
+    "mean_lum": 0.6652,
+    "zone_mean_lum": 0.6606,
+    "zone_p05_lum": 0.6181,
+    "centre_std": 0.0373
    },
    "use": {
     "layouts": [
@@ -458,7 +458,7 @@
   {
    "id": "papercut/quiet",
    "skin": "papercut",
-   "file": "public/bg/bg-papercut-quiet.jpg",
+   "file": "public/bg/bg-papercut-quiet.webp",
    "legacy": "quiet",
    "name": {
     "zh": "米纸·安静",
@@ -474,16 +474,16 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (generated)",
-   "sha256": "0fe336ce765c2da40af50dd544a07bd579b992b5d449e00d2ff64e188d8148cc",
+   "sha256": "269dbf0820aab205f1ffda88e684f3bc9d278444835efd8b545585ff42cb1b95",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.6967,
-    "zone_mean_lum": 0.6647,
-    "zone_p05_lum": 0.6176,
-    "centre_std": 0.0285
+    "mean_lum": 0.6977,
+    "zone_mean_lum": 0.6655,
+    "zone_p05_lum": 0.6172,
+    "centre_std": 0.0288
    },
    "use": {
     "layouts": [
@@ -500,7 +500,7 @@
   {
    "id": "archive/main",
    "skin": "archive",
-   "file": "public/bg/bg-archive-main.jpg",
+   "file": "public/bg/bg-archive-main.webp",
    "legacy": "main",
    "name": {
     "zh": "灯箱·常规",
@@ -516,16 +516,16 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (generated)",
-   "sha256": "74c722e4bc5b841b2320b056de2594168b03788f6453452d127174bfdd340225",
+   "sha256": "8d9d07c314e5b2b537a45af5292a53f9462d8cb342e96bf6e31c70c1b412bab5",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.788,
-    "zone_mean_lum": 0.7418,
+    "mean_lum": 0.7899,
+    "zone_mean_lum": 0.7435,
     "zone_p05_lum": 0.6457,
-    "centre_std": 0.031
+    "centre_std": 0.032
    },
    "use": {
     "layouts": [
@@ -543,7 +543,7 @@
   {
    "id": "archive/chapter",
    "skin": "archive",
-   "file": "public/bg/bg-archive-chapter.jpg",
+   "file": "public/bg/bg-archive-chapter.webp",
    "legacy": "chapter",
    "name": {
     "zh": "灯箱·章节",
@@ -559,16 +559,16 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (generated)",
-   "sha256": "56457e2223fbc684ae0f1072f95e2d8d0e0bb6d45f5e3162508afee94566589b",
+   "sha256": "d7ad178b3ec300338a538110d3bb78f4b05967f3746423aad0db2686540e0b80",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.7601,
-    "zone_mean_lum": 0.7427,
-    "zone_p05_lum": 0.6457,
-    "centre_std": 0.03
+    "mean_lum": 0.7619,
+    "zone_mean_lum": 0.7445,
+    "zone_p05_lum": 0.6471,
+    "centre_std": 0.0309
    },
    "use": {
     "layouts": [
@@ -582,7 +582,7 @@
   {
    "id": "archive/quiet",
    "skin": "archive",
-   "file": "public/bg/bg-archive-quiet.jpg",
+   "file": "public/bg/bg-archive-quiet.webp",
    "legacy": "quiet",
    "name": {
     "zh": "灯箱·安静",
@@ -598,16 +598,16 @@
    },
    "license": "Apache-2.0",
    "attribution": "notebook-video contributors (generated)",
-   "sha256": "79ddbd58663c6627a5d01e16c8294352d16577ace42c0367c2d8749c6660f3f3",
+   "sha256": "48cc2fbf2614aa733e33bff86bb87b24d25bdd3f60a71c0fc215519b6a218ca0",
    "metrics": {
     "size": [
      2560,
      1440
     ],
-    "mean_lum": 0.7882,
-    "zone_mean_lum": 0.7488,
+    "mean_lum": 0.79,
+    "zone_mean_lum": 0.7504,
     "zone_p05_lum": 0.7111,
-    "centre_std": 0.0302
+    "centre_std": 0.0311
    },
    "use": {
     "layouts": [

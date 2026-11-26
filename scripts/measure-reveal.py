@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""measure-reveal.py · 出现方式的代理指标（3.5.1 T-P1-06）
+"""measure-reveal.py · 出现方式的代理指标
 
 只报告，不拦：退出码恒为 0。门禁要拦的是客观问题，这一项是给人和评审看的。
 
@@ -27,13 +27,15 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from story_acts import annot_dur  # noqa: E402  标注时长与排程同源（contract.json 的 ANNOT）
+
 W, H = 320, 180
 FRAME = W * H
 TOP, BOT = int(H * 0.10), int(H * 0.80)      # 裁掉上 10%、下 20%
 ARRIVE = 24                                   # 到场帧偏移
 MIN_SHOT = ARRIVE + 10
 EDGE = 36
-NOTE_DUR = {"circle": 14, "underline": 12, "arrow": 12, "note": 24}
 
 
 def load_story(project: Path):
@@ -65,7 +67,7 @@ def events_of(sh: dict) -> list[tuple[str, int, int]]:
     for e in sh.get("elements") or []:
         ev.append((e["id"], e["at"], dur_of(e)))
     for a in sh.get("annotate") or []:
-        ev.append(("ann-" + a["kind"], a["at"], NOTE_DUR.get(a["kind"], 12)))
+        ev.append(("ann-" + a["kind"], a["at"], annot_dur(a)))
     for t in sh.get("tips") or []:
         ev.append(("tip", t["at"], 10))
     return ev
@@ -139,7 +141,7 @@ def read_frames(mp4: Path, wanted: dict[int, str]) -> dict[str, bytes]:
 
 
 def growth_rows(project: Path, mp4: Path) -> list[dict]:
-    # 3.5.2：手写场景工程的 from/to 只在 shots.resolved.json 里；auto 工程两份都有
+    # 手写场景工程的 from/to 只在 shots.resolved.json 里；auto 工程两份都有
     man = project / "manifests" / "shots.resolved.json"
     if not man.is_file():
         man = project / "manifests" / "shots.json"
@@ -179,7 +181,7 @@ COMP_RE = re.compile(r"(?:export\s+)?(?:const|function)\s+([A-Z][A-Za-z0-9]*)\s*
 
 
 def opacity_audit(project: Path | None) -> int:
-    """列出仍用「透明度」做出现的组件（3.5.2 · 只报告，不拦）。
+    """列出仍用「透明度」做出现的组件（只报告，不拦）。
 
     判据：一行里有 `opacity: <时钟函数或进度变量>`，且它前后几行的同一个 style 里没有 clipPath
     ——有 clipPath 说明它是「展开」而不是「淡入」，`opacity: dim` 这类退后也仍然会被列出来，

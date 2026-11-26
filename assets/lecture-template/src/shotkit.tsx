@@ -1,12 +1,13 @@
 import React from 'react';
-import {Easing, interpolate} from 'remotion';
+import {interpolate} from 'remotion';
 import {THEME} from './theme/active';
 import CONTRACT from './contract.json';
+import {clamp, EASE} from './motion';
 
 // ============================================================================
-// shotkit · 镜头层 v1（每个 shot 一段受限相机）
+// shotkit · 镜头层（每个 shot 一段受限相机）
 //
-// 为什么需要它：v2.8 的 CameraRig 是「全片一条关键帧轨道」，且被
+// 为什么需要它：「全片一条关键帧轨道」的 CameraRig 被
 // Camera Micro-Framing Invariant 锁在 x∈[945,975] / s∈[1.00,1.018]
 // ——这三个界是 16:9 的 1920×1080 设计空间里的取值；景别变化 1.8%，等同定焦，观众感受到的是「翻页」。
 //
@@ -21,7 +22,7 @@ import CONTRACT from './contract.json';
 //     references/camera.md#shot-language；
 //   - 含文字的镜头 zoom ≤ 1.35（纯图形镜头可到 1.60，硬上限 1.60）；
 //   - Chrome / 章节卡 / 字幕永远在相机之外（屏幕空间），不受任何运镜影响；
-//   - 无 3D 关键帧时走纯 translate+scale 路径，渲染结果与旧版逐像素一致。
+//   - 无 3D 关键帧时走纯 translate+scale 路径。
 // ============================================================================
 
 // `still` 补进来（tsc TS2367）：`stillCam` 的注释明写「still 是合法选择，但全片配额受限」，
@@ -42,11 +43,10 @@ export const STAGE = CONTRACT.STAGE;
 export const TEXT_ZOOM_MAX = CONTRACT.TEXT_ZOOM_MAX;
 export const GRAPHIC_ZOOM_MAX = CONTRACT.GRAPHIC_ZOOM_MAX;
 
-const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
 
 /**
  * 平移安全预算（**镜头铁律之二**）：相机平移会整层移动内容，所以在 s=1.00 时
- * 任何平移都会把内容推出画面、露出边缘（实测：pan-follow 在 s=1.0 下把左侧站名裁掉）。
+ * 任何平移都会把内容推出画面、露出边缘（如 pan-follow 在 s=1.0 下会裁掉左侧站名）。
  *
  * 几何上，缩放为 s 时可见窗半宽 = 960/s，只要窗口仍落在 1920×1080 舞台内就不会露边，
  * 因此可用的最大平移量为：
@@ -67,7 +67,6 @@ const clampPan = (x: number, y: number, s: number) => {
     y: Math.min(STAGE.cy + b.y, Math.max(STAGE.cy - b.y, y)),
   };
 };
-const easeInOut = Easing.inOut(Easing.cubic);
 
 /** 运镜默认时长（帧）：references/camera.md#shot-language 规定单次 30–45 帧。 */
 export const CAM_DUR = CONTRACT.CAM_DUR;
@@ -124,10 +123,9 @@ export const shotCam = (intent: ShotIntent, o: IntentOpts): CamKey[] => {
     case 'reveal':
       return [head, {f: at, x, y, s: o.from ?? 1}, {f: at + dur, x, y, s: o.to ?? 1.08}, {f: holdEnd, x, y, s: o.to ?? 1.08}];
     // 单体 hero 微环绕：rotY ≤ 6°
-    // ⚠️ 已知差异（批7 F6，**只记不改**）：TS 侧末 hold 帧（下面第 4 键）不带 rotY，
-    // camAt 取 `k.rotY ?? 0` → 收尾把环绕角摆回 0°；而 resolved 数据侧（scripts/resolve-shots.py
-    // 的 expand_cam）第 4 键**保留 rotY**（收尾停在摆到位的角度）。两侧行为不一致，
-    // 改哪一侧属行为决策，等用户拍板——拍板前别"顺手对齐"任何一侧。
+    // ⚠️ 已知差异：TS 侧末 hold 帧（下面第 4 键）不带 rotY，camAt 取 `k.rotY ?? 0` → 收尾把环绕角摆回 0°；
+    // 而 resolved 数据侧（scripts/resolve-shots.py 的 expand_cam）第 4 键**保留 rotY**（收尾停在摆到位的角度）。
+    // 两侧行为不一致；对齐任一侧都会改变成片画面。
     case 'micro-orbit':
       return [head, {f: at, x, y, s: o.from ?? 1, rotY: 0}, {f: at + dur, x, y, s: o.to ?? o.from ?? 1, rotY: o.rotY ?? CONTRACT.ORBIT_ROT}, {f: holdEnd, x, y, s: o.to ?? o.from ?? 1}];
     default:
@@ -153,7 +151,7 @@ export const camAt = (keys: readonly CamKey[], f: number): {x: number; y: number
   while (i < keys.length - 2 && f > keys[i + 1].f) i++;
   const a = keys[i];
   const b = keys[i + 1];
-  const p = interpolate(f, [a.f, Math.max(a.f + 1, b.f)], [0, 1], {...clamp, easing: easeInOut});
+  const p = interpolate(f, [a.f, Math.max(a.f + 1, b.f)], [0, 1], {...clamp, easing: EASE.io});
   const s = a.s + (b.s - a.s) * p;
   const c = clampPan(a.x + (b.x - a.x) * p, a.y + (b.y - a.y) * p, s);
   return {
@@ -308,4 +306,3 @@ export const ambientBreath = (f: number, period = 150, amp = 0.03) => {
   return 1 + a * (0.5 - 0.5 * Math.cos((f / p) * Math.PI * 2));
 };
 
-export const SHOTKIT_VERSION = 'shotkit-v3 · 6 intents · anchored safety · pan budget · ambientBreath';

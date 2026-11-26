@@ -1,4 +1,4 @@
-// windows-hide-console.cjs · Windows 上不让子进程闪出控制台窗口（3.3.0）
+// windows-hide-console.cjs · Windows 上不让子进程闪出控制台窗口
 //
 // 为什么要它：
 //   Remotion 的 @remotion/renderer 拉浏览器、收尾杀浏览器时**从不**设 windowsHide：
@@ -8,7 +8,7 @@
 //         childProcess.exec(`taskkill /pid ${proc.pid} /T /F`)                              ← 没 windowsHide
 //   而在 Windows 上 `child_process.exec` 固定经 cmd.exe /d /s /c 启动 —— 于是每关一次浏览器
 //   就闪一个 CMD 窗口。静帧模式逐帧起进程（26 帧 = 26 次开关 = 26 次闪），整片渲染更多。
-//   实测抓到的命令行：cmd.exe /d /s /c "taskkill /pid 18280 /T /F"
+//   闪窗的命令行形如：cmd.exe /d /s /c "taskkill /pid <pid> /T /F"
 //   （chrome-headless-shell.exe 的 PE 子系统也是 CONSOLE，同样会带控制台。）
 //
 // 怎么修：
@@ -27,7 +27,7 @@ const childProcess = require('node:child_process');
 // 只在 Windows 上动手：POSIX 没有控制台窗口这回事。
 if (process.platform === 'win32') {
   // Node 内部实现里 exec → execFile → spawn 会层层转调。若每一层都重新包装 options，
-  // 参数位就会被搞乱（实测 exec(cmd, cb) 会把 options 当成 callback 传给 execFile，
+  // 参数位就会被搞乱（exec(cmd, cb) 会把 options 当成 callback 传给 execFile，
   // 报 ERR_INVALID_ARG_TYPE）。
   // 解法：用内部 Symbol 标记「这份 options 本 shim 已处理过」，下游层看到标记就直接放行。
   const HANDLED = Symbol('nvWindowsHideHandled');

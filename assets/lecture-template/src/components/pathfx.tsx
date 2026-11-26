@@ -19,9 +19,7 @@ import {slide} from '@remotion/transitions/slide';
 import {wipe} from '@remotion/transitions/wipe';
 import {clockWipe} from '@remotion/transitions/clock-wipe';
 import {iris} from '@remotion/transitions/iris';
-// 2026-09-21：把包里**全部** 20 种官方转场都登记进来（此前只封了 5 种，
-// 其余 15 种"装了但没人知道名字"，等于不存在）。全部在 `diag-upgrade` 页⑥
-// 逐个实渲过一帧（含 WebGL 着色器那几种，见该页的结论）。
+// 包里**全部** 20 种官方转场都登记在 PRESENTATIONS 里（含 WebGL 着色器那几种）。
 import {flip} from '@remotion/transitions/flip';
 import {bookFlip} from '@remotion/transitions/book-flip';
 import {dissolve} from '@remotion/transitions/dissolve';
@@ -51,7 +49,7 @@ import {prog} from './ui';
 const C = THEME.palette;
 
 // `ShapeInfo` 是 `@remotion/shapes` 内部 utils/shape-info 的类型，**没有从包根导出**
-// （tsc TS2305，此前一直靠 `any` 混过去）。用 ReturnType 就地取：与库里那个类型
+// 用 ReturnType 就地取：与库里那个类型
 // 逐字段相同，且不依赖深路径导入。
 type ShapeInfo = ReturnType<typeof makeRect>;
 
@@ -132,7 +130,7 @@ export const PathDraw: React.FC<{
 /**
  * MorphShape — 形状连续变形（方变圆、圆变星、星变心……）。
  *
- * 3.2.0 起由 **flubber**（MIT）插值：它把两个形状重采样成同样多的点再一一配对，
+ * 由 **flubber**（MIT）插值：它把两个形状重采样成同样多的点再一一配对，
  * 所以**任意两个闭合形状**都能平滑变形（@remotion/paths 的 interpolatePath 要求两条
  * path 指令结构一致，方→星这类就会乱跳或直接报错）。flubber 的插值器是纯函数
  * t → path 字符串，与帧驱动天然相容：每个 (from, to) 只建一次插值器（useMemo），
@@ -186,8 +184,7 @@ export const MorphShape: React.FC<{
 /**
  * 参数化几何图形：由 make* 算出 path，再用 evolvePath 描线。
  *
- * `@remotion/shapes` 有 22 个导出，此前只用了 5 个。补进来的三个正是
- * 讲解片高频的**修辞动作**：callout 是「标注框」、arrow 是「指向」、
+ * 除基本形外，`@remotion/shapes` 的这三个是讲解片高频的**修辞动作**：callout 是「标注框」、arrow 是「指向」、
  * heart 是「要点/喜欢」。手写这三个的 path 既费劲又不好看。
  */
 export const SHAPES = {
@@ -247,7 +244,7 @@ export const ShapeDraw: React.FC<{
 // ---------------------------------------------------------------------------
 // 转场：20 种官方演示型转场，不用再手写（含 blurSlide；`PRESENTATIONS` 的键即全部）
 //
-// 全部登记（2026-09-21 补齐余下 15 种）。每项收一个统一的 ctx，返回官方的
+// 每项收一个统一的 ctx，返回官方的
 // presentation 对象——调用方是 `SceneTransitions`，或直接用 PRESENTATIONS[name](ctx)。
 // `none` 是真的"不转场"（硬切），要"什么都不做"时用它而不是随便挑一个。
 // ---------------------------------------------------------------------------
@@ -269,7 +266,7 @@ export const PRESENTATIONS = {
   // PushCutProps 里没有 `direction`（是 cutProgress/outgoingScale/…）：传了也没用。
   pushCut: () => pushCut({}),
   none: () => none(),
-  // ---- 着色器式（走 WebGL；本机实测见 diag-upgrade 页⑥）----
+  // ---- 着色器式（走 WebGL）----
   // 注意：这几个的 `props` 在类型上是**必填**（只是属性都可选），所以传 `{}` 而不是不传。
   dissolve: () => dissolve({spreadColor: C.paper, hotColor: C.orange}),
   ripple: () => ripple({}),
@@ -287,18 +284,11 @@ export const PRESENTATIONS = {
 export type PresentationName = keyof typeof PRESENTATIONS;
 
 /**
- * SceneTransitions — 把若干片段用指定转场串起来。
+ * SceneTransitions — 把若干片段用指定转场串起来。仅供样张：成片换镜走镜头的 transition 字段，不接这里。
  *
  * 注意时长运算：TransitionSeries 的总长 = Σ片段长 − Σ转场长（转场是两镜重叠的部分）。
  *   例：6 段 × 60 帧、5 个 12 帧转场 → 360 − 60 = 300 帧
- *
- * 20 种可选（名称 = 官方包名去掉连字符；`clock-wipe`→`clockWipe`、`cross-warp`→`crosswarp`、
- * `cross-zoom`→`crossZoom`、`zoom-in-out`→`zoomInOut`、`blur-slide`→`blurSlide`、
- * `dreamy-zoom`→`dreamyZoom`、`film-burn`→`filmBurn`、`linear-blur`→`linearBlur`、
- * `push-cut`→`pushCut`、`book-flip`→`bookFlip`、`zoom-blur`→`zoomBlur`）：
- *   fade / slide / wipe / flip / clockWipe / iris / dissolve / ripple /
- *   blurSlide / zoomBlur / filmBurn / bookFlip / swap / crosswarp / crossZoom /
- *   zoomInOut / dreamyZoom / linearBlur / pushCut / none
+ * 可选名 = PRESENTATIONS 的键（官方包名去掉连字符，如 `clock-wipe`→`clockWipe`）。
  */
 export const SceneTransitions: React.FC<{
   children: React.ReactNode[];

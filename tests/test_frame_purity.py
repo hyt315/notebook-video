@@ -43,8 +43,15 @@ class PurityContract(unittest.TestCase):
         auto = read(SRC / "auto.tsx")
         body = auto[auto.index("export const enter"):auto.index("export const growDur")]
         self.assertIn("if (p < 1) (style as Record<string, string>)[GROW_VAR]", body,
-                      "--nv-grow 只能在展开中带上：落定态 DOM 必须与 3.5.3 逐字节相同")
-        self.assertIn("inset(-6% ${((1 - p) * 100).toFixed(2)}% -6% -2%)", body, "展开边的形状不许变")
+                      "--nv-grow 只能在展开中带上")
+        self.assertIn("if (p >= 1) return {};", body, "落定后不带 clip-path / --nv-grow：落定态 DOM 不随展开状态变化")
+        self.assertLess(body.index("if (p >= 1) return {};"), body.index("clipPath: revealClip("),
+                        "落定判断要在设 clip-path 之前")
+        self.assertIn("revealClip(`calc(${((1 - p) * 100).toFixed(2)}% - ${(p * REVEAL_BLEED).toFixed(2)}px)`)", body,
+                      "展开边沿「盒宽 + REVEAL_BLEED」线性扫过")
+        snap = read(SRC / "glyph-snap.tsx")
+        self.assertIn("inset(calc(-6% - ${REVEAL_BLEED}px) ${right} calc(-6% - ${REVEAL_BLEED}px) calc(-2% - ${REVEAL_BLEED}px))",
+                      snap, "展开中 clip 的上下左边向外让出 REVEAL_BLEED")
 
     def test_glyph_snap_and_font_gate_wired(self):
         idx = read(SRC / "index.tsx")

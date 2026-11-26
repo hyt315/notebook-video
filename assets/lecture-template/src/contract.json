@@ -11,5 +11,6 @@
   "TEXT_ZOOM_MAX": 1.35,
   "GRAPHIC_ZOOM_MAX": 1.6,
   "CAM_DUR": {"short": 30, "std": 38, "long": 45},
-  "GROW": {"min": 12, "max": 45, "perChar": 4, "codelineMax": 24, "codelinePerChar": 1.5}
+  "GROW": {"min": 12, "max": 45, "perChar": 4, "codelineMax": 24, "codelinePerChar": 1.5},
+  "ANNOT": {"mark": 12, "noteLead": 8, "noteMin": 10, "notePerChar": 2.2}
 }

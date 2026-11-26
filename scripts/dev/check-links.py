@@ -47,7 +47,7 @@ for p in files:
             if not dest.exists(): problems.append(f'{rel}: broken link {tgt}'); continue
             if a and dest.suffix == '.md' and a not in get_anchors(dest):
                 problems.append(f'{rel}: missing anchor {tgt}')
-    if rel in ('MAINTAINING.md', 'references/MOVED.md'): continue   # 新旧对照表本身
+    if rel in ('MAINTAINING.md', '变更说明.md'): continue   # 新旧对照表与历次批次记录：保留历史文件名
     for m in PATH.finditer(t):
         path, a = m.group(1), m.group(2)
         cands = [(ROOT / path.lstrip('./')).resolve(), (p.parent / path).resolve()]

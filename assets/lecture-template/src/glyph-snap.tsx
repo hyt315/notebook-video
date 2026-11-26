@@ -1,27 +1,33 @@
 // ============================================================================
-// glyph-snap.tsx · 3.5.4 展开边按整字落（不把汉字切成半个）
+// glyph-snap.tsx · 展开边按整字落（不把汉字切成半个）
 //
-// 问题（3.5.3 体检 frames/hash-S1-f45-midgrow.png 等）：auto.tsx 的 enter() 用
+// 问题：auto.tsx 的 enter() 用
 // `clip-path: inset(... (1-p)*100% ...)` 做「左→右展开」，展开边是线性的，于是中间帧里
 // 展开边经常落在一个字的中间——观众看到的是「被切开的字」，不是「写出来的字」。
 //
 // 做法（不改风格：仍是同一条左→右展开边，同样的起止帧，同样的落定态）：
 //   · enter() 在展开中（0<p<1）给元素多带一个 CSS 自定义属性 `--nv-grow: p`（落定后不带，
-//     DOM 与 3.5.3 逐字节相同）；
+//     落定态也不再有 clip-path）；
 //   · 本组件每帧在 layout 阶段（DOM 已提交、截图之前）找出所有带 `--nv-grow` 的元素，
 //     用 Range 量出元素里每个字的真实字框，把展开边往左退到「不落在任何字内部」的最近位置，
 //     重写该元素的 clip-path。展开边只会后退、不会前进，所以永远不会提前露出没轮到的字。
 //
-// 纯度契约（这正是 3.5.4 P0 修的那一类缺陷，别在这里再造一个）：
+// 纯度契约（同一帧的画面不能取决于之前渲过哪些帧）：
 //   · 每一帧对**每个**展开中的元素都重算、重写，不读任何上一帧留下的值；
 //   · 落定 / 未入场的元素不碰：它们的 clip-path 由 React 按 props 写（属性一变 React 就会覆盖）；
 //   · 字体没就绪时先 delayRender 等字体，再量——否则 still 的第一帧会按回退字体量出错的字框。
-//   scripts/dev/frame-purity.mjs 逐像素比对「连续渲」与「单帧渲」，守的就是这条。
+//   「连续渲」与「单帧渲」必须逐像素一致。
 // ============================================================================
 import {useLayoutEffect} from 'react';
 import {continueRender, delayRender, useCurrentFrame} from 'remotion';
 
 export const GROW_VAR = '--nv-grow';
+/** 展开时裁切框向盒外让出的余量（设计 px）：偏移影、柔影、描边都画在盒外，余量不够的那一截会在落定那一帧
+ *  （clip-path 撤掉时）突然冒出来。展开边扫过「盒宽 + 余量」，最后一帧与落定态画面一致。 */
+export const REVEAL_BLEED = 32;
+/** 展开中的 clip-path：右边是展开边（距盒右缘 rightPx，可为负 = 伸到盒外），上下左向外让 REVEAL_BLEED。 */
+export const revealClip = (right: string) =>
+  `inset(calc(-6% - ${REVEAL_BLEED}px) ${right} calc(-6% - ${REVEAL_BLEED}px) calc(-2% - ${REVEAL_BLEED}px))`;
 /** 退让容差（设计 px）：展开边离字框边缘不足 0.5px 的不算「切进字里」（亚像素取整）。 */
 const EDGE_TOL = 0.5;
 
@@ -73,10 +79,11 @@ const snapAll = () => {
     if (!w) return;
     const rect = el.getBoundingClientRect();
     const scale = rect.width / w || 1;
-    const x = p * w;
+    // 展开边扫过「盒宽 + REVEAL_BLEED」，与 enter() 同一条线性轨迹
+    const x = p * (w + REVEAL_BLEED);
     const e = safeEdge(x, glyphBoxes(el, rect.left, scale));
-    // 与 enter() 同一形状：上下各让 6%、左让 2%，只有右边是展开边
-    el.style.clipPath = `inset(-6% ${(Math.min(100, Math.max(0, 100 - (e / w) * 100))).toFixed(3)}% -6% -2%)`;
+    // 与 enter() 同一形状（revealClip）：只有右边是展开边
+    el.style.clipPath = revealClip(`${(w - e).toFixed(2)}px`);
   });
 };
 

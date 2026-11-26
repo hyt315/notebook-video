@@ -1,7 +1,7 @@
 {
   "style_version": "notebook-video-3.2.0-flat-cel",
   "composition": "NotebookVideoFilm",
-  "duration_frames": 1150,
+  "duration_frames": 1151,
   "visual_asset_ids": [
     "bg-flat-main",
     "bg-flat-chapter",
@@ -92,7 +92,7 @@
     {
       "id": "S4",
       "start_frame": 416,
-      "end_frame": 532,
+      "end_frame": 533,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-flat-chapter",
@@ -114,7 +114,7 @@
     },
     {
       "id": "S5",
-      "start_frame": 532,
+      "start_frame": 533,
       "end_frame": 682,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
@@ -184,7 +184,7 @@
     {
       "id": "S8",
       "start_frame": 919,
-      "end_frame": 1150,
+      "end_frame": 1151,
       "visual_mode": "pure-graphic",
       "visual_asset_ids": [
         "bg-flat-main",

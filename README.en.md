@@ -26,10 +26,10 @@ full, editable source project.
 
 - **Draft-paper narration**: no pen on screen — things appear only when the voice-over reaches them and grow in progressively: text unfolds left to right, a sketch is traced part by part, annotations are drawn as they are spoken; at most two things grow at once (rules in references/draftpaper.md#reveal-rules).
 - **A notebook page carries the shot, not slides**: every shot is either a **page** (a real archival plate or specimen photo, a magnifier over it, handwriting and a red seal) or a **component** doing the explaining (consoles, code diffs, checklists, stat rows, bars, verdict strips…). **Line drawings are optional**: they only ever draw a specimen, because a clip-art sketch that fails to explain a concept reads worse than no drawing — so they live inside the page as a figure (`content.figure`, ≤19 % of the drawing width) instead of leading the shot.
-- **The camera follows the narration**: an engine-level virtual camera pushes in by default, moves to the component the narration names (a sketch shot only does a 1.00→1.03 slow push-in, never a crop), and cuts with whip pans or zoom-throughs; push-ins keep margins so the drawing is never cropped.
+- **The camera follows the narration**: an engine-level virtual camera pushes in by default, moves to the component the narration names (a sketch shot only does a 1.00→1.03 slow push-in, never a crop), and defaults to page turns (`CURL_FRAMES` = 22 frames); push-ins keep margins so the drawing is never cropped.
 - **Reproducible by weaker models**: seven fusion recipes decide where the sketch sits and how big the cards are — the author only fills content. Ten teaching blueprints (five component routes + five hand-made structure families) name the skeleton and components for every shot, plus golden examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
 
-- **One paper per notebook, review before render**: hand-made skins default to `bgMode: "chapter"` (one paper per chapter; `"film"` keeps one for the whole film, `"shot"` rotates per shot), and decorative `busy` backgrounds stay off regular shots; `resolve-shots` generates `storyboard.md` from the real shot table for the independent review; for hand-made skins `make-video --render` prints a P1 reminder until a review round is recorded (it still renders; `--skip-review` silences it); without running TTS, caption timing is estimated at the reading pace `--cps` (default 6.5 chars/s); use `notebook-video tts` to get word-level timing for a real film.
+- **One paper per notebook, review before render**: hand-made skins default to `bgMode: "chapter"` (one paper per chapter; `"film"` keeps one for the whole film, `"shot"` rotates per shot), and decorative `busy` backgrounds stay off regular shots; `resolve-shots` generates `storyboard.md` from the real shot table; the independent review scores it with the rubric in [references/rubric.md](references/rubric.md), and the scores lead `renders/report.md`; for hand-made skins `make-video --render` prints a P1 reminder until a review round is recorded (it still renders; `--skip-review` silences it); without running TTS, caption timing is estimated at the timing pace `--cps` (component default `READ_CPS` = 4.5 weighted chars/s, handmade estimate 6.5); use `notebook-video tts` to get word-level timing for a real film.
 
 - **A background library**: 8 more light backgrounds per craft skin and 5 more for flat / cel (ruled notebook,
   xuan paper, window-flower papercut, a 1630 map, film strips, screentone, mesh gradients…), rotated by shot role with no two
@@ -43,14 +43,14 @@ full, editable source project.
   that writes itself, watercolour washes, paper cuts, a loupe), and a **Wikimedia Commons / Openverse** search for every topic
   with licence filtering and on-screen credits.
 
-One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×1080 design space, native 30 fps). Five themes:
+One canvas only: **16:9** (1920×1080 delivery by default, i.e. `make-video --scale=0.75`; `--scale=1` gives 2560×1440; 1920×1080 design space, native 30 fps). Five themes:
 `flat` (default, calm modern edu illustration), `cel` (bold comic ink) and the craft skins `journal` / `papercut` / `archive`.
 
 ## Key features
 
 | Capability | Details |
 | --- | --- |
-| **Look at 30 seconds first** | `notebook-video preview <project>` renders one window (first 30 s, half resolution by default) plus a contact sheet and a loudness readout; `--shot=S6` narrows it to a single shot. Checking a revision no longer costs a full render. Timing varies a lot by machine: about 40 s for a 30 s window on the author's dev machine, about 170 s of rendering (about 5 min including bundling) on a 2-core / 8 GB Linux aarch64 box |
+| **Look at 30 seconds first** | `notebook-video preview <project>` renders one window (first 30 s, half resolution by default) plus a contact sheet and a loudness readout; `--shot=S6` narrows it to a single shot. Checking a revision no longer costs a full render. Timing varies a lot by machine, and the first run adds bundling time |
 | **No shot left unchecked** | `notebook-video sweep <project>` grabs one settled frame per shot and tiles them into `renders/sweep-sheet.jpg` — eight shots in about 60 s, judged by the same empty-space thresholds the render uses. `preview` only covers the opening; on a longer film the tail silently escapes, and this closes that gap |
 | **A delivery is not just an mp4** | A finished render also writes `renders/captions.srt` (the same line breaks burned into the film, not a re-recognition) and `renders/poster.jpg` (a settled frame of `treatment.signature_shot`, with captions suppressed). Standalone: `poster` / `export-srt` / `deliver` |
 | **Compare two cuts** | `eval-project old/ new/` turns a film into comparable numbers (shot-length spread, variety of skeletons / media / transitions, camera coverage, caption density, empty-space readings) and prints the delta. No score: thresholds live in the gates, in one place only |
@@ -61,7 +61,7 @@ One canvas only: **16:9** (2560×1440 delivery, 1920×1080 by default; 1920×108
 | **Real media** | Screenshots, ≤10 s recordings and GIFs inside `MediaFrame` (same card look as the components, optional browser / window / device chrome, region zoom, highlight boxes, callouts, credit badge); `prepare-media` transcodes, `validate-media` blocks blurry or unlicensed media |
 | **Weak-model friendly** | 7 fusion recipes + 10 blueprints (5 component routes + 5 hand-made structure families) with a per-shot `$components` pick; golden examples in `examples/` (including `examples/recipes/`); unfilled `<<placeholders>>` fail loudly |
 | **One command** | `make-video.mjs`: resolve-shots → gates → tsc → stills contact sheet or full render → `renders/report.md`; `make-video.cmd` on Windows |
-| **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤4.5 chars/s reading speed, frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
+| **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤9.0 weighted chars/s (`CPS_MAX`) reading-speed cap (timing estimate `READ_CPS` = 4.5), frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
 | **Deterministic** | Every animation is a pure function of the frame (no `Math.random`, CSS animation or timers); no image-generation model, no online API required |
 
 ## Recent changes
@@ -189,12 +189,12 @@ Each theme ships three locked backgrounds (main / chapter / quiet) with a calm c
 
 | Stage | Checks | Typical catches |
 | --- | --- | --- |
-| Build time (Python) | `resolve-shots`, `validate-composition`, `validate-shot-motion`, `validate-presentation`, `validate-caption-sync`, `validate-semantic-breaks`, `validate-layering`, `validate-visual-plan`, `validate-fusion`, `validate-glyphs`, `validate-silence`, `validate-audio-levels`, `validate-media` | Same layout in adjacent shots, content too small, low contrast, caption lines over 16 characters or too fast to read, unbalanced sketch ratio or a missing subject, a cropped sketch, no silence between sentences or SFX drowning the voice, SFX gain out of sync with the library, blurry media |
+| Build time (Python) | `resolve-shots`, `validate-composition`, `validate-shot-motion`, `validate-presentation`, `validate-caption-sync`, `validate-semantic-breaks`, `validate-layering`, `validate-visual-plan`, `validate-fusion`, `validate-glyphs`, `validate-silence`, `validate-audio-levels`, `validate-media` | Content too small, low contrast, caption lines over 16 characters or too fast to read, unbalanced sketch ratio or a missing subject, a cropped sketch, no silence between sentences or SFX drowning the voice, SFX gain out of sync with the library, blurry media |
 | Render time (in the browser) | `OverlapGate`, `ClippingGate`, `CanvasBoundsGate`, `FillGate`, `CaptionFitGate`, `MascotGate` | Overlapping text, clipped graphics, content off-canvas, caption overflow |
 | Final film | `validate-video`, `validate-motion-gaps` | Wrong size / codec / colour tags, frames frozen too long |
 | Skill self-checks | `validate-skill-consistency`, `selftest`, `negative-gate-check`, `dev/check-examples`, `dev/check-test-collection`, `dev/purity-smoke` | Docs naming components that do not exist, broken links; every gate must block a deliberately broken input; positive examples must pass and negatives must be blocked; a test file collects nothing; continuous and single-frame renders differ |
 
-Gate results are written to `renders/gates.json`: P0 blocks the film, P1 goes to the report as advice. Frame props are required types checked by `tsc` (replacing the old `validate-frame-props`); cross-language constants live in the template's `src/contract.json` only.
+Gate results (including the in-browser render-time gates) are written to `renders/gates.json`: P0 only ever means the film is blocked, P1 goes to the report as advice; aesthetic and structural items (same skeleton / layout in adjacent shots, camera quotas, missing `$asks`) are P1 only. Frame props are required types checked by `tsc`; cross-language constants live in the template's `src/contract.json` only.
 
 Details: [references/checks.md#composition-gate](references/checks.md#composition-gate), [references/checks.md#presentation-gate](references/checks.md#presentation-gate), [references/checks.md#quality-checklist](references/checks.md#quality-checklist).
 
@@ -208,14 +208,14 @@ notebook-video/
 ├── examples/                    # Positive story.json examples (CI requires all to pass the gates), real-media, weak-model test; negative/ deliberate negatives; cell-notebook/ docs only
 ├── assets/
 │   ├── lecture-template/        # The only project template (Remotion + React + TS)
-│   │   ├── src/                 # Engine (index / cinema / sfx), components, themes, gates, custom/ escape hatch
+│   │   ├── src/                 # Engine (index / cinema / sfx), components, themes, gates, custom/ escape hatch; showcase-entry is the separate entry for component sheets
 │   │   ├── manifests/           # shots.json, captions, media manifests
-│   │   ├── public/              # Fonts, backgrounds, SFX library sfx/, real media media/
+│   │   ├── public/              # Fonts, backgrounds (WebP), SFX library sfx/, real media media/
 │   │   └── scripts/             # Optional TTS adapter, speed post-processing
 │   └── fonts/                   # Download cache for LXGW WenKai Lite (OFL-1.1) and Clash Display (ITF FFL); not committed, fetched on first use
 ├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; Windows entry points notebook-video.cmd / make-video.cmd only
 │   └── dev/                     # Maintainer tools (one-command test-all.py, SFX and background library builds; not packaged)
-├── references/                  # Author manuals and specs (camera, layouts, themes, linework, recipes, SFX, captions, gates, cross-platform)
+├── references/                  # Author manuals and specs (narration, review rubric, camera, layouts, themes, linework, recipes, SFX, captions, gates, cross-platform), 11 files + themes/ 6
 ├── tests/                       # offline unit tests (a few skip when an optional dependency is missing or NV_ONLINE=1 is unset) (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
 └── CHANGELOG.md · CONTRIBUTING.md · NOTICE · DEPENDENCIES.md · REUSE.toml (per-file licences) · LICENSE
 ```

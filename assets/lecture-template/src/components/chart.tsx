@@ -158,7 +158,7 @@ export const Chart: React.FC<{
   tone?: string;
   /** 环形图的中心孔径（0 = 实心饼） */
   innerRadius?: number;
-  /** 3.2.0 bar 变体：要点名的那根柱（下标），用强调色实心填充，其余柱用主色浅填充 */
+  /** bar 变体：要点名的那根柱（下标），用强调色实心填充，其余柱用主色浅填充 */
   highlight?: number;
 }> = ({
   f,
@@ -200,9 +200,8 @@ export const Chart: React.FC<{
   let maxStack = 1;
 
   // ⚠️ 变体名写错时**必须响亮地失败**，不许静默渲出一张空图。
-  // 实测（overview-film 第 1 章 S2，f=420）：`variant="bar"` 不在闭合集里 →
-  // `body` 落到 null → 画面上只剩标题、没有柱子，而十道门禁没有一道能拦（构图门禁只查 live 名字存在）。
-  // 这种"没报错但坏了"正是本技能最怕的一类失败，所以在这里直接抛。
+  // 例如 `variant="bar"` 不在闭合集里 → `body` 落到 null → 画面上只剩标题、没有柱子，
+  // 而构图门禁只查 live 名字存在、拦不住。所以在这里直接抛。
   if (!(CHART_VARIANTS as readonly string[]).includes(variant)) {
     throw new Error(
       `Chart: 未知 variant "${String(variant)}"。合法值：${CHART_VARIANTS.join(' / ')}` +
@@ -211,8 +210,7 @@ export const Chart: React.FC<{
   if (multi && (variant === 'stack' || variant === 'stackExpand' || variant === 'stream')) {
     const offset = variant === 'stackExpand' ? stackOffsetExpand : variant === 'stream' ? stackOffsetWiggle : stackOffsetNone;
     // ⚠️ d3stack 的入参是「数据点数组」，每个点按 key 取值：points[i][si]。
-    // 直接传 series 数组等于**转置错**——实测第一次渲出来三块面积只铺了 40% 宽、
-    // 而且是三条近似水平的带（每列被当成了一个数据点）。这里显式转置。
+    // 直接传 series 数组等于**转置错**（每列被当成了一个数据点）。这里显式转置。
     const wide = multi.map((s) => s.values);
     const points: number[][] = Array.from({length: n}, (_, i) => multi.map((s) => s.values[i] ?? 0));
     void wide;
@@ -282,8 +280,8 @@ export const Chart: React.FC<{
   // `body = multi ? (radar ? radarSvg : pie ? pieSvg : stackSvg) : singleSvg`，
   // 而 stackSvg 只在 stack/stackExpand/stream 下才被定义 → 这里会落到 undefined，
   // 画面上只剩标题、没有图。多序列想画"两条线"，要么用 stack 系列变体，
-  // 要么拆成两张单序列 Chart（本片第 1 章 S2 就是拆开画的）。
-  // 实测口径：`series`（**任意条数**，1 条也算）走的是 multi 路径，而 multi 路径只实现了
+  // 要么拆成两张单序列 Chart。
+  // `series`（**任意条数**，1 条也算）走的是 multi 路径，而 multi 路径只实现了
   // stack / stackExpand / stream / radar / pie —— 配 line/area 会落到 undefined，渲出空图。
   // 想画折线要用**单序列的 `data`/`csv`**（ChartDatum = {label, value}）。
   if (multi && !(['stack', 'stackExpand', 'stream', 'radar', 'pie'] as readonly string[]).includes(variant)) {
@@ -293,7 +291,7 @@ export const Chart: React.FC<{
   }
   if (multi && variant === 'radar') {
     // 雷达的外接圆受**较短边**限制，所以留白只按轴标签需要的一圈算（56）——
-    // 之前用 74 时半径只剩 135px，四个维度挤在中间，远看像个墨点。
+    // 留白再大，半径太小，四个维度挤在中间远看像个墨点。
     const rMax = Math.min(innerW, innerH) / 2 - 56;
     const cxr = innerW / 2;
     const cyr = innerH / 2;
@@ -414,7 +412,7 @@ export const Chart: React.FC<{
   // ---- 单序列：line（默认）/ bar（分类对比用实心柱，不再用平滑折线把四个接口连成一条「钟形曲线」）/ area ----
   const isArea = variant === 'area';
   const isBar = variant === 'bar';
-  // scaleBand 取代原来手算的 barW：柱宽、柱心、X 轴刻度位置全部由刻度尺给出
+  // scaleBand：柱宽、柱心、X 轴刻度位置全部由刻度尺给出
   const band = scaleBand<string>()
     .domain(rows.map((d, i) => `${d.label}#${i}`))
     .range([0, innerW])
@@ -504,7 +502,7 @@ export const Chart: React.FC<{
         }
         const q = prog(f, startAt + 8 + (i / Math.max(1, rows.length - 1)) * 36, 12);
         // 面积变体的首尾点是**贴着绘图区边缘**的（X 铺满整宽），数值标签若仍居中，
-        // 头一个标签会伸到 Y 轴刻度字的下面（实测 frame 435：「12」压在「20k」上）。
+        // 头一个标签会伸到 Y 轴刻度字的下面。
         // 所以只在两端改成 start/end 锚点——标签始终留在绘图区内。
         const edge = isArea && rows.length > 1 && (i === 0 || i === rows.length - 1);
         const anchor = edge ? (i === 0 ? 'start' : 'end') : 'middle';

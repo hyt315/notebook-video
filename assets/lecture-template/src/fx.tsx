@@ -2,6 +2,7 @@ import React from 'react';
 import {getInputProps, HtmlInCanvas, interpolate, Easing} from 'remotion';
 import {CURL_FRAMES, FX_FALLBACK, PAGETURN_FOLD_DIRECTION, isCurl, type CurlKind} from './transitions/meta';
 import {pageTurn} from '@remotion/effects/page-turn';
+import {clamp} from './motion';
 
 // ============================================================================
 // fx.tsx · 真翻页 / 揭纸转场（@remotion/effects 的 pageTurn，WebGL2）
@@ -15,7 +16,7 @@ import {pageTurn} from '@remotion/effects/page-turn';
 // ============================================================================
 
 // CurlKind / CURL_FRAMES / PAGETURN_FOLD_DIRECTION / isCurl / FX_FALLBACK 的真源在 transitions/meta.ts
-// （P2-23 解耦：转场元数据一处注册，新增一种转场只改那张表 + 一个实现模块）。这里 re-export 保持旧 API。
+// （转场元数据一处注册，新增一种转场只改那张表 + 一个实现模块），这里 re-export。
 export type {CurlKind};
 export {CURL_FRAMES, PAGETURN_FOLD_DIRECTION, isCurl, FX_FALLBACK};
 
@@ -25,13 +26,12 @@ export const FX_ENABLED: boolean = (() => {
 })();
 
 // FX_FALLBACK（无 GPU 退回：翻页→pageflip 折痕翻页，揭纸→drop）与 CURL_FRAMES（22 帧 = 手翻的速度）
-// 已搬到 transitions/meta.ts 的 TRANSITION_META。退回**不等于不翻页**——观众看到的还是「翻过去一张纸」。
+// 定义在 transitions/meta.ts 的 TRANSITION_META。退回**不等于不翻页**——观众看到的还是「翻过去一张纸」。
 
-// PAGETURN_FOLD_DIRECTION（折线方向，近乎竖直、下角领先）与 isCurl 已搬到 transitions/meta.ts。
+// PAGETURN_FOLD_DIRECTION（折线方向，近乎竖直、下角领先）与 isCurl 定义在 transitions/meta.ts。
 // CSS 折页（transitions/pagefold.tsx）与 GPU 卷页（下面的 curlParams）共用那一个方向值。
 
-const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
-const ease = Easing.bezier(0.3, 0, 0.3, 1); // 起手稍慢（掀起页角）、中段匀速、落定柔（实测 0.42/0.22 时中段 8 帧就翻完，看不清卷曲）
+const ease = Easing.bezier(0.3, 0, 0.3, 1); // 起手稍慢（掀起页角）、中段匀速、落定柔（中段再快就看不清卷曲）
 
 /**
  * 卷页几何（设计坐标 1920×1080 下的比例值；foldRadius 按设计像素给，渲染时乘像素密度）。

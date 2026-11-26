@@ -40,7 +40,6 @@ const palette: Theme['palette'] = {
   line: 'rgba(28,32,36,0.34)',
   lineOrange: 'rgba(229,77,46,0.60)',
   lineBlue: 'rgba(0,144,255,0.60)',
-  lineGreen: 'rgba(41,163,131,0.60)',
   white: '#ffffff',
   // 场景层柔色
   skyTint: '#e6f4fe',      // blue 3
@@ -48,12 +47,9 @@ const palette: Theme['palette'] = {
   dotIdle: '#cdced6',      // slate 7
   mutedFill: 'rgba(96,100,108,0.26)',
   mutedBar: 'rgba(96,100,108,0.22)',
-  mutedWash: 'rgba(96,100,108,0.14)',
-  orangeSoft: '#f5a898',   // tomato 7
   orangeDeep: '#d13415',   // tomato 11
   gaugeTrack: 'rgba(28,32,36,0.14)',
   greenGlow: 'rgba(41,163,131,0.35)',
-  stageTint: 'rgba(230,244,254,0.55)',
   headerAccent: '#113264', // blue 12（在天空底上 ≥ 11:1）
   headerSub: '#60646c',
 };
@@ -61,7 +57,7 @@ const palette: Theme['palette'] = {
 const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 22, paperOutline: 0,
   textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: 0,
-  subtitleWeight: 700, subtitleLetterSpacing: 1.6, subtitlePadX: 108,
+  subtitleWeight: 700, subtitleLetterSpacing: 1.6, subtitlePadX: 148,
 };
 
 // 偏移实色影：无模糊、无墨边（扁平语言）。场景层直接调用时用主蓝；
@@ -76,9 +72,9 @@ const paperShadow = (lift: number) =>
 //   quiet   最安静：只剩右下角机器人头顶 + 左下一线山丘，给信息密集的镜头
 // 禁止改回代码自绘背景；换图要连同 manifests/visual-assets.json 的 sha256 一起换。
 const BACKGROUNDS: Record<BgVariant, string> = {
-  main: 'bg/bg-flat-main.jpg',
-  chapter: 'bg/bg-flat-chapter.jpg',
-  quiet: 'bg/bg-flat-quiet.jpg',
+  main: 'bg/bg-flat-main.webp',
+  chapter: 'bg/bg-flat-chapter.webp',
+  quiet: 'bg/bg-flat-quiet.webp',
 };
 
 const Background: Theme['Background'] = ({variant = 'main'}) => (
@@ -91,8 +87,11 @@ const Background: Theme['Background'] = ({variant = 'main'}) => (
 const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) =>
   <div style={{position: 'absolute', backgroundColor: palette.paper, border: '2px solid rgba(28,32,36,0.14)', borderRadius: aesthetic.paperRadius, color: palette.ink, boxShadow: `${6 + 3 * lift}px ${6 + 3 * lift}px 0 ${borderColor || palette.blue}`, ...style}}>{children}</div>;
 
-// 扁平风不加任何调色层：纯色块对比即为视觉语言。
-const Grade: React.FC = () => null;
+// 扁平风：中心安全区保持纯白通透，仅做极轻的椭圆画幅光学收束与棚顶微光。
+const Grade: React.FC = () => (
+  <AbsoluteFill style={{pointerEvents: 'none', zIndex: 190,
+    background: 'radial-gradient(ellipse 86% 80% at 50% 45%, transparent 60%, rgba(17,50,100,0.045) 100%)'}} />
+);
 
 // 悬浮圆角字幕条：深一级的主蓝胶囊（白字 ≥ 4.6:1）+ 海军蓝硬偏移影，两侧珊瑚 / 阳光黄小圆点。
 const SubtitleChrome: Theme['SubtitleChrome'] = ({mode, children}) =>
@@ -119,7 +118,7 @@ export const THEME: Theme = {
   id: 'flat',
   palette,
   aesthetic,
-  // 3.5.0：线稿层在 flat 下也要能用（以前只有手作皮肤声明 craft，InkPath / HandNote 读不到墨线色）。
+  // 线稿层在 flat 下也要能用：声明 craft，InkPath / HandNote 才读得到墨线色。
   // 笔触口径：干净等宽描边、圆角端点、皮肤主色淡填——产品插画线稿，不是手绘抖动。
   craft: {
     medium: 'flat', fibre: 0, inkLine: palette.ink, handFamily: 'Kai', bodyFamily: 'Kai',

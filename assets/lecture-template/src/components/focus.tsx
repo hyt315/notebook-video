@@ -5,8 +5,7 @@ import {prog} from './ui';
 // ============================================================================
 // focus.tsx — 注意力三件：把"其余压暗"这件事变成一件可复用的动作
 //
-// 替换掉什么：此前我们只会**往画面上加**——GlowFrame 整块发亮、ShimmerText 一句发光、
-// Callout 圈一处、StampSeal 盖一下。全是"加东西强调"。而讲解视频里最有效的一手恰恰相反：
+// 与 GlowFrame / ShimmerText / Callout / StampSeal 这类"加东西强调"相反，讲解视频里最有效的一手是：
 // **把不是重点的部分压下去**（focusing / 视觉钝化）。缺的从来不是"更亮的边框"，是"暗下去的背景"。
 //
 // 四种模式（闭合集，一镜只用一种）：
@@ -27,23 +26,17 @@ export type FocusRect = {x: number; y: number; w: number; h: number};
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-/** 入场曲线：ease-out（本件自带，不依赖 ui.prog 的线性——新层统一缓动是另一件待办）。
- *  实测依据：线性入场在 t=50% 时比 ease-out 落后 180px（探针 Probe-prog-ease 渲出来的数字）。 */
+/** 入场曲线：ease-out（本件自带）。线性入场在 t=50% 时明显落后，读起来拖沓。 */
 const easeOut3 = (v: number) => 1 - Math.pow(1 - clamp01(v), 3);
 
 /**
  * 遮罩浓度。
  *
- * 2026-09-21 修（三个原因叠加，全部有单帧实测数字，探针见交付报告）：
- *   ① **颜色是纸色** —— 原来是 `background: C.paperBase`，而纸色底上的纸色遮罩
- *      等于没画：亮底 249.2 → 247.4（Δ-1.9），中灰块 128 → **214（反而提亮了 86）**。
- *      "把其余压暗"这句话一个字都没画出来。改成 `muted` + `multiply`：亮底 → 146.8、
- *      中灰 128 → 76.1，是真的往下压；`muted` 两套皮肤都有，比写死一个灰更稳。
- *   ② **不是覆盖层** —— 原来没有 z-index，只有 `position:absolute`，于是"写在内容前面"
- *      就被内容盖住（DOM 顺序从来不是契约）。见 SCENE_ANCHOR 的 zIndex。
- *   ③ **坐标随宿主漂移** —— 注释写"rect 是场景坐标"，实现却按最近的定位祖先算：
- *      放进 `left:200,top:300` 的包裹层，蒙版整体偏出画布左边与上边（左缘 60px 处
- *      实测 247.3 = 完全没被盖到），"洞"也落在别处。见 SCENE_ANCHOR 的 position。
+ * 三条约束缺一不可：
+ *   ① **颜色用 `muted` + `multiply`**：纸色底上的纸色遮罩等于没画（中灰块甚至被提亮），
+ *      `muted` + `multiply` 才是真的往下压；`muted` 每套皮肤都有，比写死一个灰更稳。
+ *   ② **必须是覆盖层**：要有 z-index，DOM 顺序不是契约。见 SCENE_ANCHOR 的 zIndex。
+ *   ③ **坐标不随宿主漂移**：rect 是场景坐标，放进带偏移的包裹层也不能偏。见 SCENE_ANCHOR 的 position。
  */
 const VEIL = 0.72;
 const VEIL_COLOR_KEY = 'muted' as const;
@@ -61,18 +54,15 @@ const VEIL_BLEND: React.CSSProperties['mixBlendMode'] = 'multiply';
  *     整片的层级梯子（改这个值前先数一遍它）：场景内容 ≤130（含 130 的镜头交接层）
  *     → 页眉 140 / 章节卡 150 → **本遮罩 160** → Grade 190（颗粒与暗角）
  *     → SubtitleChrome 200（两套皮肤一致）。
- *     ⚠️ 2026-09-21 修：这里原先是 9000，于是遮罩盖过字幕 —— S8 的字幕被 `multiply`
- *     同一档（实测同一帧的字形核心 25.1 → 15.1 = 墨色 × 0.594，而周围背景不动）。
- *     **z-index 压过 DOM 顺序**：旧注释写"Grade/Subtitle 排在场景之后，所以字幕不会被压暗"，
- *     那条理由在设了 z-index 之后**根本不成立**（这次事故的根子就是注释与实现不符）。
- *     取 160 之后：压暗照旧盖住场景内容与 chrome（"其余"确实暗下去），
- *     而 Grade / 字幕回到遮罩之上 —— 与"字幕是屏幕空间、不属于'其余'"的本意一致。
+ *     ⚠️ 不能取更高的值：z-index 压过 DOM 顺序，遮罩一旦高过 200 就会把字幕也 `multiply` 压暗。
+ *     取 160：压暗盖住场景内容与 chrome（"其余"确实暗下去），Grade / 字幕留在遮罩之上
+ *     ——字幕是屏幕空间，不属于"其余"。
  */
 const SCENE_ANCHOR: React.CSSProperties = {position: 'fixed', zIndex: 160};
 
 /**
  * 四块（或四边）遮罩：把 rect 之外盖住。用四条而不是"整块 + 挖洞"，
- * 是因为 clip-path/evenodd 在不同浏览器与 Remotion 的截图路径上表现不一致——实测踩过。
+ * 是因为 clip-path/evenodd 在不同浏览器与 Remotion 的截图路径上表现不一致。
  */
 const Veil: React.FC<{rect: FocusRect; canvas: {w: number; h: number}; p: number; round?: number}> =
 ({rect, canvas, p, round = 0}) => {

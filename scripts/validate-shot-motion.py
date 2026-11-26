@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 """validate-shot-motion.py · 镜头出界证明门禁（P0，可阻断渲染）
 
-把"相机契约"从"靠自觉"变成"可执行证明"。v2.8 的 Camera Micro-Framing Invariant
-把相机锁在 x∈[945,975] / s∈[1.00,1.018]（这是 16:9 的 1920×1080 设计空间口径；
-景别变化 1.8%，等同定焦），代价是全片没有镜头在动；而按 v2.8.0 源码复算，
-CAM_KEYS_P（轨道已随 v2.9.0 删除）10 个关键帧 s 超旧上限 1.018，真正可见窗出画的是
-8 个关键帧（最大 383px，逐帧扫描非零露底约 862–892 帧、随亚像素容差浮动）——无人发现，
-两个极端都是"没有校验"造成的。本脚本用纯算术证明"镜头运动后，本镜声明必须可见的 anchor
+把"相机契约"从"靠自觉"变成"可执行证明"。把相机锁死在极窄的区间里（景别变化 1.8%，等同定焦）
+等于全片没有镜头在动；放开而不校验又会让可见窗出画。两个极端都是"没有校验"造成的。
+本脚本用纯算术证明"镜头运动后，本镜声明必须可见的 anchor
 仍然完整落在可见窗内"，因此可以把"不出界"从"靠不动"换成"靠证明"。
 
 数学（与 assets/lecture-template/src/shotkit.tsx 完全一致）：
@@ -87,9 +84,13 @@ expand_cam = _load_expand_cam()
 
 
 def cam_keys(shot: dict) -> list[dict]:
-    """解析后的记录把展开好的关键帧放在顶层 keys（唯一真源）；不要再去"猜"一遍。
-    后备路径（陈旧/手改的 resolved 缺 keys）直接调 resolve-shots.expand_cam，
+    """本镜真正渲染的相机关键帧。有 cinema.path 时引擎直接走 pathCamAt（auto 路线），按 path 查，补到镜尾；
+    否则用解析后顶层的 keys（唯一真源）。后备路径（陈旧/手改的 resolved 缺 keys）直接调 resolve-shots.expand_cam，
     隐式默认（intent 的 to / pull-back 的 from / micro-orbit 的 rotY）与渲染端 shotCam 同源。"""
+    path = (shot.get("cinema") or {}).get("path")
+    if path:
+        ks = [{"f": int(k["at"]), "x": float(k["x"]), "y": float(k["y"]), "s": float(k["s"])} for k in path]
+        return ks + ([{**ks[-1], "f": int(shot["duration"])}] if ks[-1]["f"] < int(shot["duration"]) else [])
     if shot.get("keys"):
         return shot["keys"]
     return expand_cam(shot.get("camera") or {}, int(shot["duration"]))
@@ -120,14 +121,17 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
             p0.append({"id": sid, "issue": "缺少 anchor（本镜必须始终可见的矩形）；无法证明不出界"})
             continue
         frames = [k["f"] for k in keys]
-        if frames != sorted(frames):
-            p0.append({"id": sid, "issue": "相机关键帧 f 不是单调递增"})
+        has_path = bool((s.get("cinema") or {}).get("path"))
+        if any(b < a or (has_path and b == a) for a, b in zip(frames, frames[1:])):
+            p0.append({"id": sid, "issue": "相机关键帧 f 不是单调递增" + ("（cinema.path 的 at 必须严格递增）" if has_path else "")})
         if frames[0] != 0 or frames[-1] != s["duration"]:
             p0.append({"id": sid, "issue": f"相机关键帧必须覆盖 [0,{s['duration']}]，实际 [{frames[0]},{frames[-1]}]"})
         cam = s.get("camera") or {}
         intent = s.get("cameraIntent", cam.get("intent", "still"))
-        hero_kind = s.get("hero", {}).get("kind", "text")
-        cap = min(INTENT_MAX_ZOOM.get(intent, 1.0), GRAPHIC_ZOOM_MAX if hero_kind == "graphic" else TEXT_ZOOM_MAX)
+        hero_kind = (s.get("hero") or {}).get("kind", "text")
+        zmax = GRAPHIC_ZOOM_MAX if hero_kind == "graphic" else TEXT_ZOOM_MAX
+        # path 镜的 intent 是从路径读出的描述，不是声明的预算：只受总缩放上限约束
+        cap = zmax if has_path else min(INTENT_MAX_ZOOM.get(intent, 1.0), zmax)
         for k in keys:
             if k["s"] < 1.0 - 1e-6:
                 p0.append({"id": sid, "f": k["f"], "issue": f"缩放 s={k['s']} < 1.00（画面会露出画布外）"})
@@ -188,8 +192,6 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
     # ---- 背景装饰区可读性：内容压到装饰区必须声明 cover ----
     decor = DECOR_ZONES.get(theme, [])
     for s in shots:
-        # 2026-09-21：这里原来只在 `bottomFill is False` 时报（生成器永远写 True → 死门）。
-        # 与 validate-composition 同步降级：声明位只查存在性，实测交给渲染期 FillGate。
         band = s.get("contentBand")
         if not band or not decor:
             continue
@@ -204,13 +206,15 @@ def check(shots: list[dict], duration: int, theme: str = 'cel') -> tuple[list[di
 
 
 # ---------------------------------------------------------------------------
-# 3.2.0 引擎摄影机（src/cinema.tsx，resolve-shots 预算的 cinema 块）
+# 引擎摄影机（src/cinema.tsx，resolve-shots 预算的 cinema 块）
 #   · 内容自动放大：anchor 占内容带（安全区）面积放大后应落在 60–80%。
 #     放大后仍 < 45% → P0（引擎已推到上限仍太小：内容本身画小了，PPT 感的头号来源）；
 #     45–60% → P1；> 90% → P1（太满、没有呼吸空间；80–90% 视作 anchor 外接框的正常余量）。
 #   · 焦点推近：focus.zoom × 场景缩放不超过 TEXT_ZOOM_MAX；焦点矩形放大后必须放得进画面。
-#   · 缺 cinema 块 → P1（旧工程没重跑 resolve-shots，引擎只剩缺省漂移、没有自动放大）。
+#   · 缺 cinema 块 → P1（没重跑 resolve-shots，引擎只剩缺省漂移、没有自动放大）。
 FIT_P0, FIT_LO, FIT_HI_WARN = 0.45, 0.60, 0.90
+# 修法与 references/checks.md#render-gates「被判空怎么修」同一句；红线：不改小 anchor
+FILL_FIX = "在空洞处补属于本镜主体的信息层，anchor 如实框住它（不改小 anchor、不放大卡片凑面积），目标 60–80%"
 
 
 def check_cinema(shots: list[dict]) -> tuple[list[dict], list[dict]]:
@@ -225,15 +229,15 @@ def check_cinema(shots: list[dict]) -> tuple[list[dict], list[dict]]:
         fit = cin.get("fit") or {}
         fa = fit.get("fillAfter")
         if isinstance(fa, (int, float)):
-            text_first = str(s.get("layout") or "").split("-")[0] in ("statement", "define", "quiz", "list", "custom")
+            text_first = str(s.get("layout") or "").split("-")[0] in ("statement", "define", "quiz", "list", "custom", "type")
             if fa < FIT_P0 and text_first:
-                p1.append({"id": sid, "issue": f"内容占安全区 {fa:.0%}：卡片 / 定制版式，留白是有意的（3.2.0 起只提示）—— 若显得空，加大字号或补一句副标题"})
+                p1.append({"id": sid, "issue": f"内容占安全区 {fa:.0%}：卡片 / 定制版式，留白是有意的（只提示）—— 若显得空，加大字号或补一句副标题"})
             elif fa < FIT_P0:
-                p0.append({"id": sid, "issue": f"内容只占安全区 {fa:.0%}（自动放大已到上限）：把内容本身画大（代码/差异镜头尤其要大），目标 60–80%"})
+                p0.append({"id": sid, "issue": f"内容只占安全区 {fa:.0%}（自动放大已到上限）：{FILL_FIX}"})
             elif fa < FIT_LO:
-                p1.append({"id": sid, "issue": f"内容占安全区 {fa:.0%} < 60%：偏小，建议放大内容或收紧 anchor"})
+                p1.append({"id": sid, "issue": f"内容占安全区 {fa:.0%} < 60%：偏小，{FILL_FIX}"})
             elif fa > FIT_HI_WARN:
-                p1.append({"id": sid, "issue": f"anchor 占安全区 {fa:.0%} > 90%：太满，没有呼吸空间（或 anchor 写得比内容大）"})
+                p1.append({"id": sid, "issue": f"anchor 占安全区 {fa:.0%} > 90%：太满，没有呼吸空间：精简本镜内容或拆成两镜"})
         scene_s = max([float(k.get("s", 1.0)) for k in cam_keys(s)] or [1.0])
         for i, fk in enumerate(cin.get("focus") or []):
             r = fk.get("rect") or {}
@@ -250,18 +254,10 @@ def check_cinema(shots: list[dict]) -> tuple[list[dict], list[dict]]:
 # ---------------------------------------------------------------------------
 # 节拍空档（P1，**代理指标**，不是判据）
 #
-# 2026-09-21 加。起因：用户在成片 2:58 报「那个组件它没有动」——S19 里走廊停稳、
-# 下一件还没入场，画面 2.5 秒没动，而当时**十道门禁全部 PASS**。
-#
-# ⚠️ **先离线标定，再定阈值**（实测数据，别拍脑袋）：
-#     本片 21 镜的「相邻节拍最大间隔 / 镜长」：中位 31.6%、最大 56.9%。
-#     · 按调研建议的 **40%** 判：S8(56.9%) / S4(45.9%) / S13(45.3%) / S14(44.8%) /
-#       S15(43.5%) / S17(43.5%) / S11(41.3%) —— **七张已被用户接受的镜会被判死**；
-#     · 而真正出事的那一镜 **S19 只有 30.4%** —— **按 40% 判它照样 PASS**。
-#   根因：beats 是**旁白节拍**，不是**画面事件**。元素绑在某一拍上，但它的入场动画
-#   可能在 30 帧内就演完了，离下一拍还有几十帧什么都不动（S19 正是如此）。
-#   所以这条**只当"这一镜是不是整段没词"的粗筛**，定在 60%（抓明显异常，放过已被接受的片）；
-#   真正的判据是 `validate-motion-gaps.py`（量成片里画面到底动没动，T3 后验）。
+# beats 是**旁白节拍**，不是**画面事件**：元素绑在某一拍上，但它的入场动画可能在 30 帧内就演完了，
+# 离下一拍还有几十帧什么都不动。按 40% 这类阈值判，节奏正常的镜会被判死、真正停住的镜反而 PASS。
+# 所以这条**只当"这一镜是不是整段没词"的粗筛**，定在 60%（抓明显异常）；
+# 真正的判据是 `validate-motion-gaps.py`（量成片里画面到底动没动，T3 后验）。
 BEAT_GAP_MAX_RATIO = 0.60
 
 

@@ -1,9 +1,9 @@
 import React from 'react';
-import {Easing, interpolate} from 'remotion';
 import {THEME} from './theme/active';
+import {easeIO} from './motion';
 
 // ============================================================================
-// insert · 辅助取证层（B 场景）+ 转场清单 v1
+// insert · 辅助取证层（B 场景）+ 转场清单
 //
 // 两个概念（references/media.md#media-routing）：
 //   A 场景 = 主线演化轨：一个主体常驻，随旁白换内部状态（StageFrame）。
@@ -18,10 +18,6 @@ import {THEME} from './theme/active';
 // 帧约定：所有组件接收显式 f（本镜本地帧）。
 // ============================================================================
 
-const clamp = {extrapolateLeft: 'clamp' as const, extrapolateRight: 'clamp' as const};
-// 原来还有 BASE_FPS 与 easeOut 两个局部 helper，本文件从头到尾没用过（tsc TS6133）。
-const easeIO = (f: number, a: number, b: number, from = 0, to = 1) =>
-  interpolate(f, [a, Math.max(a + 1, b)], [from, to], {...clamp, easing: Easing.inOut(Easing.cubic)});
 
 export type Pose = {x: number; y: number; scale: number};
 
@@ -68,14 +64,12 @@ export const TRANSITIONS = ['auto', 'cut', 'handoff', 'reveal', 'whip', 'whip-le
 // 转场由引擎实现（src/cinema.tsx 的 resolveTransition / transitionStyle）：auto（缺省）= 皮肤的翻页
 // （pageturn / peel，无 GPU 退 pageflip）；cut / handoff / reveal 是旧写法，引擎按 auto 处理（reveal 另由 RevealMask 做镜内揭示）；
 // fade = 交叉淡化；hard = 真硬切；slide / drop = 手作皮肤的纸面横移 / 新纸落下；
-// pageturn / peel（3.3.0）= 真卷页 / 揭纸（src/fx.tsx，WebGL2；渲染器探针不通过时自动退回 slide / drop）。
+// pageturn / peel= 真卷页 / 揭纸（src/fx.tsx，WebGL2；渲染器探针不通过时自动退回 slide / drop）。
 export type TransitionKind = (typeof TRANSITIONS)[number];
 
 /**
  * 本模块版本串。清单**从 `TRANSITIONS` 派生**（不要让第二份手写副本再出现）：
- * 上一轮漂过一次 —— 数组已经删到 3 式，这串里还留着已删的 whip / paper-turn
- * （这串会渲进接触表第 ④ 页的页脚，所以"漂"是会被看见的）。
+ * （这串会渲进接触表第 ④ 页的页脚，手写副本一旦与数组不一致就会被看见）。
  * ⚠️ `scripts/validate-composition.py` 里仍自带一份集合（那份是判据），两处由
  * `scripts/validate-skill-consistency.py` 交叉校验；改动 `TRANSITIONS` 时若两侧不一致会被拦下。
  */
-export const INSERT_VERSION = `insert-v3 · RevealMask · 转场清单（${TRANSITIONS.join('/')}）`;

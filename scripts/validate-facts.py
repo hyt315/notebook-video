@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""validate-facts · 内容事实质量的标注与审读（P2-22）。
+"""validate-facts · 内容事实质量的标注与审读。
 
 **这条门禁保证什么、不保证什么**（先说清，免得当成事实核查器）：
 
     保证的：标注**本身**合法 —— 引用的来源存在、类比没被当事实、AI 生成的图不当来源。
     不保证的：story 里的事实、数字、历史说法**正确**。那需要人工审读。
 
-所以它**不是无差别硬门禁**（清单 P2-22 明说「不宜做成无差别硬门禁」）：
+所以它**不是无差别硬门禁**：
     · 不强制每镜都有 claim —— 过渡句、观点、比喻不必逐条标注；
-    · 缺标注只报 P1 提示，不拦出片；
+    · **主要事实**（片子核心论点直接依赖的数字、年份、因果）找不到出处时，应停下问用户，不要编造；
+    · **次要事实**（背景补充、旁枝例子）缺标注只报 P1 提示，不拦出片；
     · P0 只拦**标注自己说不通**的三种情况（引用不存在的来源 / 类比带来源 / 来源不是文献）。
 
 作者在 story.json 里写：
@@ -132,20 +133,61 @@ def check_facts(story: dict) -> tuple[list[dict], list[dict]]:
     return p0, p1
 
 
+SKIP_REVIEW_KEYS = {"id", "layout", "role", "variant", "recipe", "see", "$asks", "$why", "mode", "theme", "lang", "at", "subAt", "size"}
+
+
+def _walk_texts(obj, prefix: str = "") -> list[tuple[str, str]]:
+    out: list[tuple[str, str]] = []
+    if isinstance(obj, str) and obj.strip():
+        out.append((prefix or "text", obj))
+    elif isinstance(obj, (int, float)) and not isinstance(obj, bool):
+        out.append((prefix or "value", str(obj)))
+    elif isinstance(obj, list):
+        for i, item in enumerate(obj):
+            out.extend(_walk_texts(item, f"{prefix}[{i}]" if prefix else f"[{i}]"))
+    elif isinstance(obj, dict):
+        for k, v in obj.items():
+            if k in SKIP_REVIEW_KEYS or k.startswith("$"):
+                continue
+            out.extend(_walk_texts(v, f"{prefix}.{k}" if prefix else k))
+    return out
+
+
 def review_list(story: dict) -> list[dict]:
-    """人工审读清单：含数字 / 年份的**未标注**文本。机器判不了对错，但保证它们被看见。"""
+    """人工审读清单：含数字 / 年份的**未标注**文本（递归扫 lines 与 content 嵌套字段，类比不屏蔽事实数字）。"""
     out = []
     for sid, shot in shots_of(story):
-        claimed = bool(claims_of(shot))
-        texts = []
-        c = shot.get("content") or {}
-        for k, v in list(c.items()) + [(k, v) for k, v in shot.items() if k not in ("content", "claim")]:
-            if isinstance(v, str) and v.strip():
-                texts.append((k, v))
+        fact_claimed = any(
+            str(c.get("kind") or "").strip() == "fact" and str(c.get("source") or "").strip()
+            for _, c in claims_of(shot)
+        )
+        if fact_claimed:
+            continue
+        texts = _walk_texts(shot.get("title") or "", "title") + _walk_texts(shot.get("lines") or [], "lines") + _walk_texts(shot.get("content") or {}, "content")
         for k, v in texts:
             hits = NUM_RE.findall(v) + YEAR_RE.findall(v)
-            if hits and not claimed:
+            if hits:
                 out.append({"shot": sid, "field": k, "text": v, "numbers": sorted(set(hits))})
+    return out
+
+
+ABSOLUTE_RE = re.compile(r"(史上最|全网最|最全|最佳|最强|顶级|全球第一|世界第一|行业第一|国内第一|第一名|NO\.?1|No\.?1)")
+
+
+def absolute_terms(story: dict) -> list[dict]:
+    """没有出处撑着的绝对化说法（最全 / 最佳 / 第一 …）。挂了 fact 来源的镜不报。"""
+    out = []
+    for sid, shot in shots_of(story):
+        if any(str(c.get("kind") or "").strip() == "fact" and str(c.get("source") or "").strip()
+               for _, c in claims_of(shot)):
+            continue
+        texts = _walk_texts(shot.get("title") or "", "title") + _walk_texts(shot.get("lines") or [], "lines") + _walk_texts(shot.get("content") or {}, "content")
+        for k, v in texts:
+            hits = sorted(set(ABSOLUTE_RE.findall(v)))
+            if hits:
+                out.append({"id": f"{sid}.{k}", "issue": (
+                    f"绝对化说法「{'、'.join(hits)}」没有出处（{v[:24]}…）—— "
+                    f"换成具体事实与数字，或给这镜挂 fact 来源")})
     return out
 
 
@@ -162,6 +204,7 @@ def main(argv: list[str]) -> int:
         return 2
 
     p0, p1 = check_facts(story)
+    p1 += absolute_terms(story)
     review = review_list(story)
     def show_review():
         if not a.review:
@@ -174,7 +217,7 @@ def main(argv: list[str]) -> int:
 
     return finish("validate-facts", p0, p1, "story.json",
                   payload={"p0": p0, "p1": p1, "review": review} if a.json else None,
-                  header="validate-facts · 内容事实质量的标注与审读（P2-22）\n"
+                  header="validate-facts · 内容事实质量的标注与审读（主要事实找不到出处须停下问用户；次要事实缺标注记 P1）\n"
                          "  这条只保证标注合法，不保证事实正确 —— 事实对错要人工审读。",
                   extra=show_review, suffix="（P1 不拦出片；P0 是标注自己说不通）")
 
