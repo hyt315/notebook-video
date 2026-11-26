@@ -16,7 +16,10 @@ class RenderPipelineTest(unittest.TestCase):
         self.assertFalse((ROOT / "scripts" / "fx-pipeline.mjs").exists())
 
     def test_render_entry_has_one_default(self):
-        self.assertIn("remotionCli, 'render', REMOTION_ENTRY_POINT, composition, output", SRC)
+        # 成片入口只有一个缺省值；showcase 显式传自己的入口（src/showcase-entry.tsx）。
+        self.assertIn("const remotionRender = async ({project, entry = REMOTION_ENTRY_POINT,", SRC)
+        self.assertIn("remotionCli, 'render', entry, composition, output", SRC)
+        self.assertEqual(SRC.count("entry: SHOWCASE_ENTRY_POINT"), 1)
 
     def test_positional_args_do_not_swallow_flags(self):
         self.assertRegex(SRC, r"const positional = \(args \|\| \[\]\)\.filter\(\(a\) => !String\(a\)\.startsWith\('--'\)\);")

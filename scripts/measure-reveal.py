@@ -86,7 +86,8 @@ def static_rows(project: Path) -> list[dict]:
         same = max(starts.count(a) for a in starts)
         gaps = [b - a for a, b in zip(starts, starts[1:])]
         end = max(a + d for _, a, d in ev) + 1
-        conc = max(sum(1 for _, a, d in ev if a <= f < a + d) for f in range(end))
+        lo = min(starts)  # 冷开的题眼 at 为负（镜头开始前已落定），从最早的事件起算
+        conc = max((sum(1 for _, a, d in ev if a <= f < a + d) for f in range(lo, end)), default=0)
         pre = sum(1 for _, a, _ in ev if a < 6)
         line_ends = sh.get("lineEnds") or [0]
         after = sum(1 for _, a, _ in ev if a > line_ends[-1])

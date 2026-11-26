@@ -94,7 +94,7 @@ class RecipeEndToEnd(unittest.TestCase):
         p.write_text(json.dumps(story, ensure_ascii=False), encoding="utf-8")
         r = compose(p, tmp / "out")
         self.assertNotEqual(r.returncode, 0, "photo-traced 已移除，却还当有效配方处理")
-        self.assertIn("3.5.1 已移除", r.stdout)
+        self.assertIn("已移除（没有实现）", r.stdout)
 
     def test_reveal_schedule(self):
         # 讲到哪长到哪：不许同帧扎堆、不许间隔过密、不许同时在长超过 2 样
@@ -123,11 +123,13 @@ class RecipeEndToEnd(unittest.TestCase):
                            .read_text(encoding="utf-8"))["shots"]
         picked = [s for s in shots if s["id"] in sketch_ids]
         self.assertEqual(len(picked), len(sketch_ids), "线稿镜头在镜头表里对不上")
+        # 线稿镜只做 1.00→1.03 慢推（推近会把画框边上的线稿顶出去）：真正渲染的运镜在 cinema.path，
+        # 镜头表的 intent 由这条路径读出，所以必须是 push-in，而不是「不动」。
         for s in picked:
-            self.assertAlmostEqual(s["camera"]["to"], 1.03, places=3,
-                                   msg=f"{s['id']} 的镜头又变回「不动」了")
-        intents = {s["camera"]["intent"] for s in picked}
-        self.assertGreaterEqual(len(intents), 2, f"线稿镜头只有 {len(intents)} 种意图，运镜被判重复")
+            path = s["cinema"]["path"]
+            self.assertAlmostEqual(path[0]["s"], 1.0, places=3, msg=f"{s['id']} 线稿镜起幅不是全景")
+            self.assertAlmostEqual(path[-1]["s"], 1.03, places=3, msg=f"{s['id']} 的镜头又变回「不动」了")
+            self.assertEqual(s["camera"]["intent"], "push-in", f"{s['id']} 的 intent 与运镜路径不符")
 
 
 if __name__ == "__main__":
