@@ -138,14 +138,15 @@ export const StageFrame: React.FC<{
   z?: number;
   railW?: number;
   pad?: number;
-}> = ({x, y, w, h, f, phases, header, rail, stamp, children, borderColor, lift = 0.24, z = 70, railW = 0, pad = 26}) => {
+  settled?: boolean;
+}> = ({x, y, w, h, f, phases, header, rail, stamp, children, borderColor, lift = 0.24, z = 70, railW = 0, pad = 26, settled = false}) => {
   const C = THEME.palette;
   const ctx = useStageMachine(phases, f);
   // 入场：位移/缩放与透明度用**不同时钟**（22px 上浮 26 帧、透明度 20 帧、描影 30 帧）。
   // 同一时长会让整块读成「一个刚体出现」；错开 4–6 帧才读成「纸落下来」。
-  const opIn = easeIO(f, 0, 20);
-  const mvIn = easeIO(f, 0, 26);
-  const shadowIn = easeIO(f, 0, 30);
+  const opIn = settled ? 1 : easeIO(f, 0, 20);
+  const mvIn = settled ? 1 : easeIO(f, 0, 26);
+  const shadowIn = settled ? 1 : easeIO(f, 0, 30);
   const railPx = rail ? railW || Math.round(w * 0.26) : 0;
   const headH = header ? 56 : 0;
   const stampH = stamp ? 56 : 0;

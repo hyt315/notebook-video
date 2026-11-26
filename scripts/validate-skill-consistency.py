@@ -280,25 +280,33 @@ def check_skill_description() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# 过程词 / 内部版本号守护（思路借自 lemo-opuscar tools/release.py 的 PROCESS_WORDS，MIT，此处重写）
-# 面向 agent 的指令文档（SKILL.md、references/）只写"现在怎么做"，不写版本史、事故复述、
-# 评审过程（版本变化只写进 CHANGELOG.md）。依赖库自己的版本号不算（见豁免）。
+# 过程词 / 内部版本号守护
+# 面向使用者与 agent 的随包文档只写"现在怎么做"，不写版本史、测试记录、评审分数或事故复述。
 # ---------------------------------------------------------------------------
-PROCESS_WORDS = ('踩过', '事故', '上一版', '那一轮', '复核第二轮', r'(?:提交|commit) [0-9a-f]{7}\b')
+PROCESS_WORDS = (
+    '踩过', '事故', '上一版', '那一轮', '复核第二轮', '回归夹具', '病灶', '止血',
+    r'均分\s*\d', r'没过\s*\d+\s*分', r'P[012]-\d+', r'(?:提交|commit) [0-9a-f]{7}\b',
+)
+DOC_ONLY_PROCESS_WORDS = ('实测',)
 INTERNAL_VERSION = (r'(?<![\w@./\-])v?[1-3]\.\d+\.(?:\d+|x)(?![\w.])',   # 3.6.0 / v3.1.1 / 3.1.x
                     r'(?<![\w@./\-])v[1-3]\.\d+(?![\w.])')                 # v3.7 / v2.10
-VERSION_OK_NEAR = ('perfect-freehand', 'opentype.js', 'shaders@', 'SC 1.4.3')           # 依赖库版本，不是本技能的版本
+VERSION_OK_NEAR = ('perfect-freehand', 'opentype.js', 'shaders@', 'SC 1.4.3', 'OFL-1.1', 'CC BY', 'Apache-2.0', 'GPL-3.0')
 _PROCESS_RE = re.compile('|'.join(PROCESS_WORDS))
+_DOC_PROCESS_RE = re.compile('|'.join(DOC_ONLY_PROCESS_WORDS))
 _VERSION_RE = re.compile('|'.join(INTERNAL_VERSION))
 
 
-def process_word_hits(text: str) -> list[str]:
+def process_word_hits(text: str, *, include_doc_words: bool = False) -> list[str]:
     """返回 `行号: 片段` 列表；空列表 = 干净。"""
     hits = []
     for n, line in enumerate(text.splitlines(), 1):
         m = _PROCESS_RE.search(line)
         if m:
             hits.append(f'{n}: 过程词「{m.group(0)}」')
+        if include_doc_words:
+            dm = _DOC_PROCESS_RE.search(line)
+            if dm:
+                hits.append(f'{n}: 过程词「{dm.group(0)}」')
         for v in _VERSION_RE.finditer(line):
             if not any(ok in line for ok in VERSION_OK_NEAR):
                 hits.append(f'{n}: 内部版本号「{v.group(0).strip()}」')
@@ -308,17 +316,24 @@ def process_word_hits(text: str) -> list[str]:
 def check_process_words() -> list[str]:
     problems = []
     docs = [SKILL / 'SKILL.md'] + sorted((SKILL / 'references').rglob('*.md'))
-    # CI 与仓库模板（.github/）的注释同样只写「现在为什么这样」，不写版本史。
     docs += sorted(p for p in (SKILL / '.github').rglob('*')
                    if p.is_file() and p.suffix.lower() in ('.yml', '.yaml', '.md'))
-    # 蓝图是模型照抄的模板，同样只写现在怎么做。
     docs += sorted((SKILL / 'blueprints').glob('*.json'))
+    docs += sorted((SKILL / 'agents').glob('*.yaml'))
+    vendor_readme = SKILL / 'assets' / 'vendor' / 'README.md'
+    if vendor_readme.is_file():
+        docs.append(vendor_readme)
+    dev_ex = {'negative', 'regress', 'weak-model-test'}
+    if (SKILL / 'examples').is_dir():
+        for p in sorted((SKILL / 'examples').rglob('*')):
+            if p.is_file() and p.suffix.lower() in ('.md', '.json') and not (dev_ex & set(p.relative_to(SKILL / 'examples').parts)):
+                docs.append(p)
     for doc in docs:
         if not doc.is_file():
             continue
-        for hit in process_word_hits(doc.read_text(encoding='utf-8', errors='ignore')):
+        for hit in process_word_hits(doc.read_text(encoding='utf-8', errors='ignore'), include_doc_words=True):
             problems.append(f'process wording in {doc.relative_to(SKILL)}:{hit}'
-                            '（版本史 / 事故复述写进 CHANGELOG.md 或 MAINTAINING.md）')
+                            '（随包文件只保留现行规则，不写版本史/测试记录/事故复述）')
     return problems
 
 
@@ -421,10 +436,10 @@ def main() -> None:
         if forbidden_path.exists():
             problems.append(f"obsolete dual-track path remains: {forbidden_path.relative_to(SKILL)}")
 
-    # 暖象牙纸面示例工程（--classic）与它的一致性锁整体删除，不许回来。
+    # 暖象牙纸面示例工程与旧双轨检查保持移除。
     for removed in (SKILL / 'assets' / 'example-project', SKILL / 'scripts' / 'validate-official-example.py'):
         if removed.exists():
-            problems.append(f"removed example project is back: {removed.relative_to(SKILL)} (3.2.0 ships the lecture template only)")
+            problems.append(f"removed example project is back: {removed.relative_to(SKILL)}")
 
     if (SKILL / 'CANDIDATE-VALIDATION.md').exists():
         problems.append('one-run environment validation report remains inside the reusable skill')
@@ -507,7 +522,7 @@ def main() -> None:
                     problems.append(f"validate-backgrounds.py INK[{theme_id}] must equal {theme_id}.tsx palette.ink {m.group(1)}")
         for removed in ('paper.tsx', 'sticker.tsx'):
             if (theme_dir / removed).exists():
-                problems.append(f"removed theme file is back: assets/lecture-template/src/theme/{removed} (paper / sticker were removed in 3.2.0)")
+                problems.append(f"removed theme file is back: assets/lecture-template/src/theme/{removed}")
 
     with tempfile.TemporaryDirectory(prefix='notebook-video-package-test-') as temp:
         root = Path(temp)
@@ -538,15 +553,20 @@ def main() -> None:
             if obsolete_command in text:
                 problems.append(f"platform-specific command remains in {doc.relative_to(SKILL)}: {obsolete_command}")
 
+    repo_only_docs = {'CHANGELOG.md', 'CONTRIBUTING.md', 'SECURITY.md', 'CODE_OF_CONDUCT.md', 'MAINTAINING.md'}
+    has_git = (SKILL / '.git').exists()
     for p in SKILL.rglob('*.md'):
         if not reusable_file(p):
             continue
         if p.relative_to(SKILL).parts[:2] == ('docs', 'history'):
             continue                      # 归档的历史记录：链接按当时的目录结构写，不再维护
+        is_root_readme = p.parent == SKILL and p.name in ('README.md', 'README.en.md')
         text = p.read_text(encoding='utf-8')
         for match in re.finditer(r'\[[^\]]+\]\(([^)]+)\)', text):
             link = match.group(1).split('#')[0]
             if not link or '://' in link or link.startswith('mailto:'):
+                continue
+            if not has_git and is_root_readme and link.lstrip('./') in repo_only_docs:
                 continue
             if not (p.parent / link).resolve().exists():
                 problems.append(f"broken link: {p.relative_to(SKILL)} -> {link}")

@@ -31,8 +31,8 @@ const palette: Theme['palette'] = {
 const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 3, paperOutline: 0,
   textureOpacity: 0.55, gridOpacity: 0, gradeWarmth: 0.04, gradeVignette: 0.10,
-  subtitleWeight: 700, subtitleLetterSpacing: 2, subtitlePadX: 68,
-  subtitleSize: 72, subtitleFamily: 'NotoSerifSC',
+  subtitleWeight: 700, subtitleLetterSpacing: 2, subtitlePadX: 56,
+  subtitleSize: 64, subtitleFamily: 'NotoSerifSC',
 };
 
 // 纸在纸上：极短、偏暖、贴面的投影（不是 UI 卡片的悬浮影）。
@@ -62,7 +62,7 @@ const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) => {
 const Grade: React.FC = () => <div style={{position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 190, mixBlendMode: 'multiply',
   background: `radial-gradient(ellipse 84% 78% at 36% 28%, rgba(255,228,178,${(aesthetic.gradeWarmth * 0.65).toFixed(3)}) 0%, transparent 56%, rgba(82,54,20,${aesthetic.gradeVignette}) 100%)`}} />;
 
-const SubtitleChrome = PaperSubtitle({ink: palette.ink, halo: 'rgba(250,245,232,0.96)', size: 72});
+const SubtitleChrome = PaperSubtitle({ink: palette.ink, halo: 'rgba(250,245,232,0.96)', size: 64});
 
 // 章节标识：左上角一行钢笔小字「No.01 — 标题」，下面一条手划线；不要右上技术页眉。
 const Chrome: Theme['Chrome'] = (p) => {

@@ -39,8 +39,10 @@ REQUIRED = [
     "assets/fonts/metrics.json",
 ]
 # 绝不能出现的
-FORBIDDEN_DIRS = ("tests/", ".git/", "node_modules/", ".cache/", "renders/", "__pycache__/")
-FORBIDDEN_FILES = (".env", "id_rsa", "id_ed25519", "credentials.json", ".DS_Store")
+FORBIDDEN_DIRS = ("tests/", ".git/", "node_modules/", ".cache/", "renders/", "__pycache__/",
+                  "examples/negative/", "examples/regress/", "examples/weak-model-test/")
+FORBIDDEN_FILES = (".env", "id_rsa", "id_ed25519", "credentials.json", ".DS_Store",
+                   "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", "locked-style-contract.json")
 
 
 def sha256(path: Path) -> str:

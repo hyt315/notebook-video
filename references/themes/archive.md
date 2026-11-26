@@ -13,7 +13,7 @@
 - 墨：`ink` `#1d2328`、`muted` `#505b65`；辅助蓝 `#3b6ea5`。
 - **一个信号色**：`orange` `#e0481f`（字用 `orangeInk` `#ad330e`），只做标注、读数、锚点。
 - 卡片：白档案纸、细灰边、2 px 圆角，躺在台面上的短投影，微倾 ±0.4°。
-- 字幕：博物馆说明签——白条、左侧 8 px 信号色竖线，墨字 72 设计 px（= 96 px@1440）Noto Serif SC Bold。
+- 字幕：**没有底条与边框**。64 设计 px（= 85.3 px@1440）Noto Serif SC Bold 墨字配冷白纸面柔光晕（≥7:1）。
 - 章节标识：左上编目号 + 宋体章名；无技术页眉。
 - 调色：冷灰暗角。背景：`bg-archive-{main,chapter,quiet}.webp`（背光台面的明暗与网格痕）。
 - 背景库：再加 8 张——`archive/envelope` 档案袋、`newsprint` 旧报纸、`map` 古地图、`catalog` 卡片目录、`filmstrip` 胶片灯箱、`linen` 展柜布面、`ledger` 登记簿、`vellum` 描图纸；手作皮肤默认 `bgMode: "chapter"`：只在章节首镜换纸、章内沿用（装饰重的 `busy` 背景只给章节卡 / 安静镜）；想全片一张纸写 `"bgMode": "film"`，想改回逐镜轮换写 `"bgMode": "shot"`，见 [../media.md#background-library](../media.md#background-library)。

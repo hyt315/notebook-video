@@ -20,6 +20,8 @@ class ProcessWordsTest(unittest.TestCase):
     def test_incident_wording_is_caught(self):
         self.assertTrue(VSC.process_word_hits("这里踩过两次假阳性"))
         self.assertTrue(VSC.process_word_hits("上一版是 465 行的实现"))
+        self.assertTrue(VSC.process_word_hits("回归夹具只讲来历"))
+        self.assertTrue(VSC.process_word_hits("两轮实测均分 7.1", include_doc_words=True))
 
     def test_dependency_versions_and_plain_numbers_pass(self):
         for ok in ("perfect-freehand 1.2.3（MIT）", "`@paper-design/shaders@0.0.82`", "Remotion 4.0.539",

@@ -60,7 +60,8 @@ def main() -> int:
 
     # ---- 好夹具 1：关键产物齐全 ----
     files = [
-        "SKILL.md", "CHANGELOG.md",
+        "SKILL.md",
+        *(["CHANGELOG.md"] if (ROOT / ".git").exists() else []),
         "scripts/notebook-video.mjs",
         "scripts/validate-caption-sync.py",
         "scripts/export-srt.py",

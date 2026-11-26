@@ -29,8 +29,7 @@
      "license": "No restrictions",
      "verdict": "ok"
     }
-   ],
-   "note": "本机 Python 的 TLS 走代理会 SSL EOF，这条记录由同一个 Commons API 查询（相同参数）经 curl 取回后按 commons-search.py 的日志格式落盘；结果与许可未改动。"
+   ]
   }
  ]
 }

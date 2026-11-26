@@ -16,7 +16,7 @@ import {THEME} from './theme/active';
 // ============================================================================
 
 const C = THEME.palette;
-export const TYPE = {displayXL: 58, displayL: 50, displayML: 45, displayM: 43, displayS: 36, displayXS: 34, titleXL: 32, titleL: 30, titleM: 28, titleS: 27, titleXS: 26, bodyL: 26, bodyM: 24, bodyS: 23, labelL: 22, labelM: 21, labelS: 20, microL: 18, microS: 16, subtitle: 44} as const;
+export const TYPE = {displayXL: 58, displayL: 50, displayML: 45, displayM: 43, displayS: 36, displayXS: 34, titleXL: 32, titleL: 30, titleM: 28, titleS: 27, titleXS: 26, bodyL: 26, bodyM: 24, bodyS: 23, labelL: 22, labelM: 21, labelS: 20, microL: 18, microS: 16, subtitle: 64} as const;
 
 /** PillTag：胶囊贴标。 */
 export const PillTag: React.FC<{text: string; color?: string; bg?: string; fontSize?: number; fontFamily?: string; fontWeight?: number | string; style?: React.CSSProperties}> = ({text, color = C.orange, bg = C.orangeLight, fontSize = TYPE.microS, fontFamily = 'Space,Kai', fontWeight = 700, style}) => (

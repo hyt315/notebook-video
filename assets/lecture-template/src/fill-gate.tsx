@@ -213,4 +213,4 @@ export const FillGate: React.FC<{
 };
 
 export const FILL_GATE_VERSION =
-  'fill-gate-v4 · 手作皮肤不再整条跳过（只跳过下 1/4 判据）· 横向覆盖 8×6 网格 / 空白列 / 最大单体占比，先只报不拦 · 阈值由 cell 实测得出（largest<0.06、blank≥3/8）· fill-gate-v3 · 每镜一条、渲染结束汇总一行 · v2 · 实测信息元素最低边 vs y=876（替代"校验生成器自己写死的常量"的假门）· delayRender 逐帧持柄 · 等字体就绪 · 硬拦时 handle 不释放且异常不被自家 catch 吞';
+  'fill-gate · 横向覆盖 8×6 网格 / 空白列 / 最大单体占比与下缘落点实时探测 · delayRender 逐帧持柄 · 等字体就绪 · 硬拦时异常不吞';

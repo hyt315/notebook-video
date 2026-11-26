@@ -218,7 +218,7 @@ def main() -> int:
         try:
             p0, p1 = check_library(root, parse_min(a.min_per_skin))
         except FileNotFoundError as e:
-            print(f"validate-backgrounds：没有背景库 {e}（3.3.0 之前的工程：按 main/chapter/quiet 三张图渲染，不受影响）")
+            print(f"validate-backgrounds：没有背景库 {e}（按 main/chapter/quiet 三张图渲染，不受影响）")
             return 0
         label = "背景库"
     emit("validate-backgrounds", p0, p1, "manifests/shots.resolved.json" if a.shots else "assets/backgrounds")

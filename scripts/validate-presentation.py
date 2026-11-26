@@ -713,6 +713,74 @@ def check_rhythm_bounds(project: Path) -> tuple[list, list]:
     return p0, p1
 
 
+def check_overlay_budget(project: Path) -> tuple[list, list]:
+    """统计常驻顶部章节标识 + 底部最大字幕框的画幅占比（P0 > 30%，P1 > 5%）。"""
+    p0, p1 = [], []
+    canvas_area = 1920 * 1080
+    theme_dir = project / "src" / "theme"
+    active_p = theme_dir / "active.ts"
+    skin = "flat"
+    if active_p.is_file():
+        m = re.search(r"from\s+'\.\/(\w+)'", active_p.read_text(encoding="utf-8", errors="ignore"))
+        if m:
+            skin = m.group(1)
+
+    # 顶部常驻 Chrome 面积
+    chrome_area = 0.0
+    idx_p = project / "src" / "index.tsx"
+    skin_p = theme_dir / f"{skin}.tsx"
+    skin_src = skin_p.read_text(encoding="utf-8", errors="ignore") if skin_p.is_file() else ""
+    if re.search(r"\bChrome\b", skin_src):
+        if skin == "journal":
+            chrome_area = 360 * 58
+        elif skin == "papercut":
+            chrome_area = 260 * 64
+        elif skin == "archive":
+            chrome_area = 240 * 72
+    elif idx_p.is_file():
+        idx_src = idx_p.read_text(encoding="utf-8", errors="ignore")
+        cm = re.search(r"const Chrome=\(\)=>.*?return\s+(.*?);\s*\n\};", idx_src, re.S)
+        body = cm.group(1) if cm else idx_src
+        m_box = re.search(r"width:(\d+),height:(\d+)", body)
+        chrome_area = (int(m_box.group(1)) * int(m_box.group(2))) if m_box else (392 * 90)
+        if "headerPlate" in body:
+            chrome_area += 460 * 58
+
+    # 底部字幕框面积（按模板内最长字幕或 14 字均值测算）
+    sub_size = 64.0
+    m_sz = re.search(r"subtitleSize:\s*(\d+)", skin_src)
+    if m_sz:
+        sub_size = float(m_sz.group(1))
+    else:
+        cp = theme_dir / "canvas.ts"
+        if cp.is_file():
+            m_sf = re.search(r"subFont:\s*(\d+)", cp.read_text(encoding="utf-8", errors="ignore"))
+            if m_sf:
+                sub_size = float(m_sf.group(1))
+    avg_chars = 13.0
+    cues_p = project / "manifests" / "caption-cues.json"
+    if cues_p.is_file():
+        cues = (json.loads(cues_p.read_text(encoding="utf-8")) or {}).get("cues") or []
+        if cues:
+            lens = [
+                sum(0.5 if (ch.isascii() and ch.isalnum()) else 1.0
+                    for ch in re.sub(r"[，。！？；、,.!?;:\s]+$", "", str(c.get("text") or "")) if not ch.isspace())
+                for c in cues
+            ]
+            avg_chars = max(1.0, sum(lens) / len(lens))
+    sub_w = min(1334.0, avg_chars * (sub_size + 2.0) + 56.0)
+    sub_h = sub_size * 1.16 + 10.0
+    if "border:" in skin_src and "SubtitleChrome" in skin_src and "3px solid" in skin_src[skin_src.find("SubtitleChrome"):]:
+        sub_h += 16.0
+        sub_w += 24.0
+    ratio = (chrome_area + sub_w * sub_h) / canvas_area
+    if ratio > 0.30:
+        p0.append({"id": "overlay", "issue": f"常驻遮挡（章节徽标+字幕）平均占画幅 {ratio:.1%} > 30%：精简顶栏与字幕底框"})
+    elif ratio > 0.05:
+        p1.append({"id": "overlay", "issue": f"常驻遮挡（章节徽标+字幕）平均占画幅 {ratio:.1%} > 5%：建议收窄章节卡或采用无框柔光晕字幕"})
+    return p0, p1
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("project")
@@ -752,6 +820,9 @@ def main() -> int:
     p0 += a
     p1 += b
     a, b = check_rhythm_bounds(project)
+    p0 += a
+    p1 += b
+    a, b = check_overlay_budget(project)
     p0 += a
     p1 += b
 

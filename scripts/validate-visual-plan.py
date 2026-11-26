@@ -46,7 +46,7 @@ def validate_canvas_mode(project: Path) -> list[str]:
     width = int(comp.group(1))
     mode = CANVAS_MODES.get(width)
     if mode is None:
-        return [f"canvas: Composition width {width} is not the locked 16:9 canvas (2560; 3.2.0 dropped 4:3 / 3:4)"]
+        return [f"canvas: Composition width {width} is not the locked 16:9 canvas (2560)"]
     errors: list[str] = []
     label = mode["label"]
 

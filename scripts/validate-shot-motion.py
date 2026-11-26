@@ -65,7 +65,7 @@ def pan_budget(s: float) -> tuple[float, float]:
 
 
 # 渲染键展开的**唯一真源**在 resolve-shots.py（它同时喂渲染）：本门禁 import 复用，
-# 不再手写第二份同形展开——两份各自演化正是"validate 与渲染不一致"的病灶（2026-09 收口）。
+# 不再手写第二份同形展开，保证校验与渲染始终同源。
 # importlib 按文件路径加载，同 validate-semantic-breaks.py 载入 build-semantic-captions 的先例；
 # resolve-shots.py 的 CLI/写盘全在 `if __name__ == "__main__"` 守护里，import 无副作用。
 _RESOLVE_SOURCE = Path(__file__).resolve().parent / "resolve-shots.py"

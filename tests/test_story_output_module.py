@@ -128,7 +128,7 @@ class StaleNarrationHintTest(unittest.TestCase):
             (proj / "audio" / "narration.meta.json").write_text('{"text_sha256":"old"}', encoding="utf-8")
             p = Collector()
             write(proj, p)
-            self.assertTrue(any("上一版" in h for h in p.hints),
+            self.assertTrue(any("旧版" in h for h in p.hints),
                             f"旁白指纹不一致时必须提示重跑 tts，实际 hints={p.hints}")
 
 

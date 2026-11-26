@@ -20,7 +20,7 @@ export interface ThemePalette {
   line: string; lineOrange: string; lineBlue: string;
   white: string;
   // ---- 场景层柔色 token（引擎引用，主题必须提供）----
-  // 注：paper / paperWarm / paperBase 是「卡片面 / 暖面 / 底面」的通用 token 名（Paper 卡片组件沿用），与已删除的 paper 主题无关。
+  // 注：paper / paperWarm / paperBase 是「卡片面 / 暖面 / 底面」的通用 token 名（Paper 卡片组件沿用）。
   skyTint: string;      // 地球/舷窗淡色填充
   blueLine: string;     // git main 主干线
   dotIdle: string;      // 未点亮的合并圆点
@@ -50,8 +50,8 @@ export interface ThemeAesthetic {
   subtitleLetterSpacing?: number;
   subtitlePadX?: number;
   /**
-   * 新增（可选）：皮肤自己的字幕字号（设计 px）与字族。缺省 = mode.subFont（44）+ 'Kai'。
-   * 手作皮肤用 72（= 交付 2560×1440 上的 96 px，用户字幕规范）+ 'NotoSerifSC'（Noto Serif SC Bold）。
+   * 新增（可选）：皮肤自己的字幕字号（设计 px）与字族。缺省 = mode.subFont（64）+ 'Kai'。
+   * 手作皮肤用 64（= 交付 2560×1440 上的 85.3 px）+ 'NotoSerifSC'（Noto Serif SC Bold）。
    * CaptionFitGate 按这里的真实字号 / 字族量宽度，所以皮肤与门禁永远一致。
    */
   subtitleSize?: number;

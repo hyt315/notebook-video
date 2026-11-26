@@ -44,16 +44,26 @@ def negatives() -> dict[Path, str]:
     return out
 
 
+def _link_dir(src: Path, dst: Path) -> None:
+    try:
+        os.symlink(src, dst, target_is_directory=True)
+    except OSError:
+        if sys.platform != "win32":
+            raise
+        subprocess.run(["cmd", "/c", "mklink", "/J", str(dst), str(src)], check=True, capture_output=True)
+
+
 def run_one(story: Path, nm: Path | None, keep_root: Path | None) -> tuple[Path, int, str]:
     base = Path(tempfile.mkdtemp(prefix="nbv-ex-", dir=keep_root))
     proj = base / story.name.replace(".story.json", "")
+    nm_dst = proj / "node_modules"
     try:
         r = subprocess.run(["node", str(ROOT / "scripts" / "notebook-video.mjs"), "new-project", str(proj),
                             f"--style={_theme(story)}"], capture_output=True, text=True, encoding="utf-8", errors="replace")
         if r.returncode:
             return story, r.returncode, "new-project 失败\n" + r.stdout[-1500:] + r.stderr[-1500:]
-        if nm and nm.is_dir() and not (proj / "node_modules").exists():
-            os.symlink(nm, proj / "node_modules")
+        if nm and nm.is_dir() and not nm_dst.exists():
+            _link_dir(nm, nm_dst)
         # 手作皮肤示例自带导演层：<名>.treatment.json 与 story 同目录（与 make-video 新建工程时的行为一致）
         tr = story.with_name(story.name.replace(".story.json", ".treatment.json"))
         if tr.is_file():
@@ -63,6 +73,11 @@ def run_one(story: Path, nm: Path | None, keep_root: Path | None) -> tuple[Path,
         return story, r.returncode, r.stdout + r.stderr
     finally:
         if keep_root is None:
+            if nm_dst.is_symlink() or (sys.platform == "win32" and nm_dst.exists()):
+                try:
+                    os.rmdir(nm_dst)
+                except OSError:
+                    pass
             shutil.rmtree(base, ignore_errors=True)
 
 

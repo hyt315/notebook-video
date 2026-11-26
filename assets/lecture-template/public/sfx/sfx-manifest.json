@@ -312,7 +312,7 @@
             "tool": "ffmpeg (pitch/tempo micro-variation of page.ogg)",
             "recipe": "asetrate+atempo+highpass/lowpass",
             "base": "sfx/lib/page.ogg",
-            "note": "P2-20 音色轮换：连续翻页不再机械。三份同源微变体，瞬态位置差 <0.5 ms，可共用 offsetMs"
+            "note": "音色轮换：连续翻页不再机械。三份同源微变体，瞬态位置差 <0.5 ms，可共用 offsetMs"
           },
           "license": "CC0-1.0 (Kenney RPG Audio, recorded samples; derived)",
           "description": "page.ogg 的微变体（音高/音色略不同），用于连续翻页轮换",
@@ -333,7 +333,7 @@
             "tool": "ffmpeg (pitch/tempo micro-variation of page.ogg)",
             "recipe": "asetrate+atempo+highpass/lowpass",
             "base": "sfx/lib/page.ogg",
-            "note": "P2-20 音色轮换：连续翻页不再机械。三份同源微变体，瞬态位置差 <0.5 ms，可共用 offsetMs"
+            "note": "音色轮换：连续翻页不再机械。三份同源微变体，瞬态位置差 <0.5 ms，可共用 offsetMs"
           },
           "license": "CC0-1.0 (Kenney RPG Audio, recorded samples; derived)",
           "description": "page.ogg 的微变体（音高/音色略不同），用于连续翻页轮换",

@@ -53,7 +53,7 @@ const palette: Theme['palette'] = {
 const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 8, paperOutline: 3,
   textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: .03,
-  subtitleWeight: 700, subtitleLetterSpacing: 1.6, subtitlePadX: 78,
+  subtitleWeight: 700, subtitleLetterSpacing: 1.6, subtitlePadX: 56,
 };
 
 // 硬偏移墨影：4px 起步，举起时加到 8px，无模糊。
@@ -94,28 +94,18 @@ const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) => {
 const Grade: React.FC = () => <AbsoluteFill style={{pointerEvents: 'none', zIndex: 190,
   background: `radial-gradient(ellipse 86% 80% at 48% 45%, transparent 60%, rgba(17,17,17,${(aesthetic.gradeVignette * 1.6).toFixed(3)}) 100%)`}} />;
 
-// 字幕：白底对白框 + 3px 墨边 + 黄色硬偏移影（漫画对白框的「贴纸」感），左侧一枚红色三角指针。
+// 字幕：纯字无框，米白漫画纸光晕 + 轻描边，不挡画面。
 const SubtitleChrome: Theme['SubtitleChrome'] = ({mode, children}) =>
-  <div style={{position: 'absolute', left: 0, right: 0, bottom: 44, zIndex: 200, display: 'flex', justifyContent: 'center'}}>
-    <div style={{position: 'relative', background: palette.white, border: `3px solid ${palette.ink}`, boxShadow: `5px 5px 0 ${palette.gold}, 5px 5px 0 3px ${palette.ink}`, padding: '10px 36px', maxWidth: mode.safe}}>
-      <div style={{fontFamily: 'Kai', fontSize: mode.subFont, fontWeight: 700, lineHeight: 1.18, letterSpacing: 1.6, color: palette.ink, whiteSpace: 'nowrap'}}>
+  <div style={{position: 'absolute', left: 0, right: 0, bottom: 34, zIndex: 200, display: 'flex', justifyContent: 'center'}}>
+    <div style={{position: 'relative', padding: '4px 28px 6px', maxWidth: mode.safe}}>
+      <div aria-hidden style={{position: 'absolute', inset: '-8px -24px', borderRadius: 48,
+        background: 'radial-gradient(ellipse at center, rgba(254,252,233,0.96) 0%, rgba(254,252,233,0.92) 52%, transparent 76%)', filter: 'blur(5px)'}} />
+      <div style={{position: 'relative', fontFamily: 'Kai', fontSize: mode.subFont, fontWeight: 700, lineHeight: 1.16, letterSpacing: 1.6, color: palette.ink, whiteSpace: 'nowrap',
+        textShadow: '-1.5px 0 rgba(254,252,233,0.96), 1.5px 0 rgba(254,252,233,0.96), 0 -1.5px rgba(254,252,233,0.96), 0 1.5px rgba(254,252,233,0.96), 0 0 8px rgba(254,252,233,0.96)'}}>
         {children}
       </div>
     </div>
   </div>;
-
-// 页眉底板：漫画旁白框（白底 + 3px 墨边 + 墨色硬影），压在右上角速度线 / 爆炸星上也清楚可读。
-// 宽度必须同时避开左右两块装饰：右上装饰从 x=1540 开始，左上章节框占 92–484。
-// 因此可用宽度 = 画布宽 − 右侧露出的装饰 − 章节框右缘 − 两侧各 28px 间隙；
-// 只改 right 只能证明右缘安全，超长标题仍会从左侧压进章节框。
-const CEL_HEADER_RIGHT = 1920 - 1540 + 28;              // 右缘 1512，与装饰留 28px
-const CEL_CHAPTER_RIGHT = 92 + 392;                     // 公共 Chrome 的章节框固定几何
-const CEL_HEADER_MAX_W = 1920 - CEL_HEADER_RIGHT - CEL_CHAPTER_RIGHT - 28; // 1000px
-const headerPlate: React.CSSProperties = {
-  right: CEL_HEADER_RIGHT,
-  maxWidth: CEL_HEADER_MAX_W,
-  background: palette.white, border: `3px solid ${palette.ink}`, boxShadow: `4px 4px 0 ${palette.ink}`, padding: '10px 18px 9px',
-};
 
 // 爆炸贴（锁定构件）：12 角星形 + 3.4px 墨边，场景层只给 x/y/size/text。
 export const Burst: React.FC<{x: number; y: number; size: number; text: string; color?: string}> =
@@ -162,6 +152,5 @@ export const THEME: Theme = {
   Grade,
   SubtitleChrome,
   backgroundDecorZones,
-  headerPlate,
   extras: {Burst},
 };

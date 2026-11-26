@@ -92,12 +92,7 @@ def scene_source(project: Path) -> str:
 
 
 def import_integrity(project: Path) -> tuple[list[dict], str]:
-    """**import 的每个名字必须真的存在于目标模块的导出里**（P0）。
-
-    为什么单列一条：清掉 23 件组件之后，`src/index.tsx` 还留着
-    `import {Mascot, RollDigit, WaveText, CodeBlock, BrowserChrome, Connector, CountUp, ProgressBar} from './toolkit'`
-    这样的语句——11 个名字指向已删除的导出。打包器对"缺失的具名导出"通常只告警不报错，
-    于是在运行时变成静默的 `undefined`：**这正是本技能最怕的那类失败**（没报错，但坏了）。
+    """**import 的每个名字必须真的存在于目标模块的导出里**（P0），防止遗留无效导出在运行时变成 `undefined`。
 
     覆盖范围：
       · **递归**扫 `src/**`：组件层内部文件互引同样会静默失败；
@@ -342,9 +337,7 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     if bad_media:
         p0.append({"id": "-", "issue": f"未知介质 {sorted(bad_media)}；只能是 {sorted(MEDIA_KINDS)}"})
 
-    # ---- P0 声明即承诺：声明的转场必须真的被实现 ----
-    # 背景：两条成片都出现过"分镜表声明 handoff、代码里从未实现"，以及 SWE-2 的 S1
-    # "表写 cut、代码写 reveal"。声明不兑现 = 分镜表在说谎，必须拦下。
+    # ---- P0 声明即承诺：声明的转场必须与场景源码实现一致 ----
     def shot_block(sid: str) -> str:
         # 收到本镜 </Shot> 为止：按固定字符数取窗口会越过边界吞掉下一镜
         m = re.search(r"<Shot\b[^>]*\bid=\"%s\"[\s\S]*?</Shot>" % re.escape(sid), scene_text)
@@ -354,16 +347,16 @@ def check(data: dict, scene_text: str = "") -> tuple[list[dict], list[dict], lis
     # 排除 revealAt / revealSpeed 这类同前缀属性（负向断言 `(?![A-Za-z0-9_$])`）。
     def has_reveal(blk: str) -> bool:
         return re.search(r'\breveal(?![A-Za-z0-9_$])', blk) is not None
+    has_shot_tag = bool(scene_text and re.search(r"<Shot\b", scene_text))
     for i, s in enumerate(shots):
         tr = s.get("transition", "auto")
-        # 场景源码缺失时（负向抽查的最小夹具只有分镜表）无从比对实现——跳过，只查分镜表内部自洽。
-        # 与上面 live 名字的 `if scene_text` 同一口径：没源码不等于声明没兑现。
-        blk = shot_block(s.get("id", "?")) if scene_text else ""
-        if scene_text and tr == "reveal" and not has_reveal(blk):
+        # 场景源码缺失或 auto 路线（AutoShot 走 index.tsx 全局切镜）时不做 <Shot> 声明兑现检查。
+        blk = shot_block(s.get("id", "?")) if has_shot_tag else ""
+        if has_shot_tag and tr == "reveal" and not has_reveal(blk):
             p0.append({"id": s.get("id", "?"), "issue": "声明 transition=reveal，但场景里该镜的 <Shot> 没有 reveal（声明没兑现）"})
-        if scene_text and tr == "cut" and has_reveal(blk):
+        if has_shot_tag and tr == "cut" and has_reveal(blk):
             p0.append({"id": s.get("id", "?"), "issue": "声明 transition=cut，但场景里写了 reveal（表与实现不一致）"})
-        if tr == "handoff":
+        if tr == "handoff" and has_shot_tag:
             carrier = (s.get("carrier") or "").strip()
             nxt = shots[i + 1] if i + 1 < len(shots) else None
             if not carrier:

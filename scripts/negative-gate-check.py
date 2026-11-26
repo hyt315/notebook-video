@@ -44,7 +44,7 @@ PROBE_NEEDLES = (
     ('逐帧持柄', 'delayRender(', '缺 delayRender：测量晚于截帧，门禁等于不存在'),
     ('逐帧持柄', 'continueRender(', '缺 continueRender：handle 永远不释放，渲染卡死'),
     ('逐帧持柄', 'cancelRender(', '缺 cancelRender：硬拦根本无从谈起'),
-    ('等字体', 'document.fonts.ready', '字体未就绪直接 return 会让每帧都跳过（另外两道门禁都踩过）'),
+    ('等字体', 'document.fonts.ready', '字体未就绪直接 return 会让每帧都跳过（其他门禁均已验证）'),
 )
 CANVAS_BOUNDS_NEEDLES = (
     # 判据的**收窄**就是这道门禁的全部价值所在（也是它不与 ClippingGate 重复报的原因），

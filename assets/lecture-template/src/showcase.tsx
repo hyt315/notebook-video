@@ -201,7 +201,7 @@ export const Showcase: React.FC = () => {
     {name: 'FitTextBox · 中文反推字号（封装层）', node: <div style={{background: C.paper, border: `2.5px solid ${C.ink}`, borderRadius: 10, padding: 24, width: 800}}><FitTextBox text="给容器宽度和行数上限，反推该用多大字号，并返回断好的行——卡片文字被裁这件事从源头消失。" maxLines={3} boxWidth={748} maxFontSize={40} showMeasure /></div>},
   ];
   const p4 = [
-    {name: 'ChatThread · 对话气泡', node: <div style={{position: 'relative', width: 840, height: 380}}><ChatThread x={0} y={10} w={620} frame={F} msgs={[{side: 'l', text: '还在用旧版？', at: 0}, {side: 'r', text: '已升级 v3.1', at: 20}, {side: 'l', text: '账单呢？', at: 40}]} /></div>},
+    {name: 'ChatThread · 对话气泡', node: <div style={{position: 'relative', width: 840, height: 380}}><ChatThread x={0} y={10} w={620} frame={F} msgs={[{side: 'l', text: '还在用旧版？', at: 0}, {side: 'r', text: '已切新版', at: 20}, {side: 'l', text: '账单呢？', at: 40}]} /></div>},
     {name: 'PhaseRail · 阶段状态轨', node: <div style={{position: 'relative', width: 840, height: 400}}><div style={{position: 'absolute', left: 10, top: 20}}><PhaseRail phases={PHASES} ctx={railCtx} /></div></div>},
     {name: 'Tabs · 标签页（封装层，纯 div）', node: <div style={{transform: 'scale(0.6)'}}><Tabs f={F} startAt={0} step={30} width={1180} height={620} tabs={[{key: 'a', label: '标签一', title: '激活项由帧号决定', body: '内容随帧更替，不做 CSS 过渡。', points: [{mark: '01', text: '要点一'}, {mark: '02', text: '要点二'}], verdict: '验证通过', tone: 'green'}, {key: 'b', label: '标签二', title: '第二个面板', body: '面板下半用要点行填满。', points: [{mark: '01', text: '要点三'}, {mark: '02', text: '要点四'}], verdict: '验证通过', tone: 'gold'}]} /></div>},
   ];
@@ -255,10 +255,8 @@ export const Showcase: React.FC = () => {
         <Series.Sequence durationInFrames={PAGE}>
           <Page title="⑥ 场景骨架：Corridor / Split / Zoom / Stage" note={`骨架 ${SKELETONS.join(' / ')} · 转场 ${TRANSITIONS.join(' / ')}`}>
             <div style={{position: 'absolute', left: 40, top: 84, width: 1840, height: 300}}>
-              {/* x/w 要留出站点标签块的半宽：组件内标签块是 `left: pts[i]-150, width: 300`，
-                  端点 40+x 与 40+x+w 取画布中心 960 对称，标签块才落在 20..1900 的对称留白里。
-                  旧值 x=100/w=1720 → 端点 140/1860，第三站标签块伸到 2010，
-                  “按 Flash 结算”与说明被右边缘裁掉（实测 ink 到 x=1919 仍是字）。 */}
+              {/* x/w 留出站点标签块的半宽：组件内标签块为 left: pts[i]-150, width: 300，
+                  端点 40+x 与 40+x+w 对称居中于 960，使两侧标签完整落在画布安全留白内。 */}
               <Corridor x={130} y={0} w={1580} f={F} laneY={60} stations={[{label: '发起请求', at: 0, detail: '调用方不用改代码'}, {label: '自动路由', at: 30, detail: '请求送往 Flash'}, {label: '按 Flash 结算', at: 60, detail: '账单只按 Flash 价'}]} startBanner={{at: 0, text: 'Corridor · 走廊骨架'}} />
             </div>
             <div style={{position: 'absolute', left: 40, top: 410, width: 900, height: 620}}>
@@ -333,10 +331,10 @@ export const Showcase: React.FC = () => {
                     height={560}
                     title="刻度由 d3 算，画还是我们画"
                     data={[
-                      {label: 'v2.8', value: 2},
-                      {label: 'v2.9', value: 9},
-                      {label: 'v3.0.1', value: 27},
-                      {label: 'v3.1', value: 39},
+                      {label: '第一批', value: 2},
+                      {label: '第二批', value: 9},
+                      {label: '第三批', value: 27},
+                      {label: '第四批', value: 39},
                     ]}
                   />
                 </div>
@@ -436,11 +434,7 @@ export const Showcase: React.FC = () => {
                 <div style={{position: 'relative', width: 820, height: 400}}>
                   {/* 总长必须压进这一页的 30 帧里：TransitionSeries 总长 = Σ片段 − Σ转场
                       = 4×12 − 3×6 = 30 帧，三个转场正好落在第 6–12 / 12–18 / 18–24 帧。
-                      旧值 durations=[20,20,20,20] + td=10 → 总长 50 帧：第 3 个转场（30–40 帧）
-                      整段在页外，永远渲不出来（⑪ 页"转场格看不见"的病灶之一）。
-                      病灶之二（只抽页首帧的 1fps 抽样）已在 scripts/notebook-video.mjs 的
-                      showcase() 改为 select 按帧号取每页第 6 / 21 帧：本页第 21 帧实测
-                      正好是第 3 个转场的 50% 处 —— wipe 的中态在接触表 JPG 里直接看得见。 */}
+                      取样第 6 / 21 帧时，第 21 帧正好落在第 3 个转场的 50% 处（wipe 中态可见）。 */}
                   <SceneTransitions durations={[12, 12, 12, 12]} transition="wipe" transitionDuration={6} width={820} height={400} direction="from-left">
                     {[C.blue, C.orange, C.green, C.gold].map((tone, i) => (
                       <AbsoluteFill key={i} style={{alignItems: 'center', justifyContent: 'center'}}>
@@ -568,8 +562,7 @@ export const Showcase: React.FC = () => {
                 <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>
                   <div style={{display: 'flex', flexDirection: 'column', gap: 22, alignItems: 'center'}}>
                     {/* roughjs 的填充 = 手账风的招牌质感（只有空心描边会显得单薄）。
-                        这里只放**确定性**的四种：'dots' 的填充器内部**无条件调 Math.random()**
-                        （实测同一帧渲三次得到三个哈希，差异全落在 dots 那一格），
+                        这里只放**确定性**的四种：'dots' 的填充器内部调用 Math.random()，
                         已从 `SketchStyle.fillStyle` 里移除。 */}
                     <div style={{display: 'flex', gap: 24}}>
                       {([['hachure', C.gold], ['cross-hatch', C.blue], ['dashed', C.green], ['zigzag', C.orange]] as const).map(([fs, tone]) => (
@@ -616,7 +609,7 @@ export const Showcase: React.FC = () => {
                     <span style={{color: C.blueInk}}>词组边界</span>
                     上。<br />
                     <span style={{color: C.orangeInk, fontWeight: 700}}>但它是辅助不是保证</span>
-                    ——实测它对"反推"「并返回」也会切错，模型本身不够准。所以：标题可以依赖，正文别指望。
+                    ——模型对特定短词组边界仍可能切分不理想。所以：标题可以依赖，正文别指望。
                   </div>
                 </div>
               </Tile>
@@ -624,7 +617,7 @@ export const Showcase: React.FC = () => {
           </Page>
         </Series.Sequence>
         <Series.Sequence durationInFrames={PAGE}>
-          <Page title="⑮ 封装层 · 图表变体（d3-shape 62 个导出，此前只用了 2 个）" note={`同一个 Chart，换 variant：面积 / 百分比堆叠 / 雷达 / 饼图`}>
+          <Page title="⑮ 封装层 · 图表变体" note={`同一个 Chart，换 variant：面积 / 百分比堆叠 / 雷达 / 饼图`}>
             <div style={{position: 'absolute', left: 20, top: 76, width: 900, height: 470}}>
               <Tile name="Chart variant=area · 面积图（份额随时间）">
                 <div style={{transform: 'scale(0.66)'}}>
@@ -637,7 +630,7 @@ export const Showcase: React.FC = () => {
               <Tile name="Chart variant=stackExpand · 百分比堆叠">
                 <div style={{transform: 'scale(0.66)'}}>
                   <Chart f={F} variant="stackExpand" startAt={0} width={1300} height={600} title="百分比堆叠：结构怎么变"
-                    labels={['v2.8', 'v2.9', 'v3.0', 'v3.1']}
+                    labels={['一季度', '二季度', '三季度', '四季度']}
                     series={[
                       {name: '结构件', values: [4, 6, 9, 12]},
                       {name: '表意件', values: [9, 12, 13, 12]},

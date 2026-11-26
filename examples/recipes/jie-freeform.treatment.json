@@ -1,5 +1,5 @@
 {
-  "$about": "jie-freeform.story.json 配套的导演层（回归夹具）。make-video 新建工程时自动拷到 manifests/treatment.json；手作皮肤必填，validate-treatment 检查。",
+  "$about": "jie-freeform.story.json 配套的导演层。make-video 新建工程时自动拷到 manifests/treatment.json；手作皮肤必填，validate-treatment 检查。",
   "topic": "「节」这个速度单位是怎么来的",
   "question": "船速为什么叫「节」？",
   "metaphor": {
@@ -121,7 +121,7 @@
       "quote": "The first known description of the device in print is in A Regiment for the Sea by William Bourne, in 1574."
     }
   ],
-  "facts_note": "回归夹具只讲来历，事实引维基百科 Knot (unit) / Chip log 词条原文；正式片请换成一手出处。",
+  "facts_note": "事实引维基百科 Knot (unit) / Chip log 词条原文；正式成片可按需核对并补充一手出处。",
   "sound": {
     "bed": "皮肤自带的纸面底噪（无旋律）",
     "foley": [
@@ -134,7 +134,7 @@
     "most_important_sound": "收束镜「定义」印章按下的那一声",
     "music": {
       "use": false,
-      "why": "回归夹具，留白优于凑数",
+      "why": "留白优先，避免无效配乐干扰",
       "mood_curve": []
     },
     "foley_per_medium": [

@@ -57,7 +57,7 @@ const palette: Theme['palette'] = {
 const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 22, paperOutline: 0,
   textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: 0,
-  subtitleWeight: 700, subtitleLetterSpacing: 1.6, subtitlePadX: 148,
+  subtitleWeight: 700, subtitleLetterSpacing: 1.6, subtitlePadX: 56,
 };
 
 // 偏移实色影：无模糊、无墨边（扁平语言）。场景层直接调用时用主蓝；
@@ -93,15 +93,16 @@ const Grade: React.FC = () => (
     background: 'radial-gradient(ellipse 86% 80% at 50% 45%, transparent 60%, rgba(17,50,100,0.045) 100%)'}} />
 );
 
-// 悬浮圆角字幕条：深一级的主蓝胶囊（白字 ≥ 4.6:1）+ 海军蓝硬偏移影，两侧珊瑚 / 阳光黄小圆点。
+// 字幕：纯字无框，浅纸色柔光晕衬底（保持画面整洁，任何底面 ≥7:1）。
 const SubtitleChrome: Theme['SubtitleChrome'] = ({mode, children}) =>
-  <div style={{position: 'absolute', left: 0, right: 0, bottom: 40, zIndex: 200, display: 'flex', justifyContent: 'center'}}>
-    <div style={{background: palette.blueInk, borderRadius: 999, padding: '15px 40px', boxShadow: `0 6px 0 ${palette.navy}`, display: 'flex', alignItems: 'center', maxWidth: mode.safe}}>
-      <div style={{width: 12, height: 12, background: palette.orange, borderRadius: '50%', marginRight: 22, flexShrink: 0}} />
-      <div style={{fontFamily: 'Kai', fontSize: mode.subFont, fontWeight: 700, lineHeight: 1.18, letterSpacing: 1.6, color: palette.white, whiteSpace: 'nowrap'}}>
+  <div style={{position: 'absolute', left: 0, right: 0, bottom: 34, zIndex: 200, display: 'flex', justifyContent: 'center'}}>
+    <div style={{position: 'relative', padding: '4px 28px 6px', maxWidth: mode.safe}}>
+      <div aria-hidden style={{position: 'absolute', inset: '-8px -24px', borderRadius: 48,
+        background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.92) 52%, transparent 76%)', filter: 'blur(5px)'}} />
+      <div style={{position: 'relative', fontFamily: 'Kai', fontSize: mode.subFont, fontWeight: 700, lineHeight: 1.16, letterSpacing: 1.6, color: palette.ink, whiteSpace: 'nowrap',
+        textShadow: '0 0 10px rgba(255,255,255,0.98), 0 0 4px rgba(255,255,255,0.98)'}}>
         {children}
       </div>
-      <div style={{width: 12, height: 12, background: palette.gold, borderRadius: '50%', marginLeft: 22, flexShrink: 0}} />
     </div>
   </div>;
 

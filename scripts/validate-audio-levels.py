@@ -309,7 +309,7 @@ def main() -> int:
         checked.append({"file": f.name, "peak_db": pk})
         if pk < PEAK_FLOOR:
             msg = (f"{f.name} 峰值 {pk:.1f} dBFS 低于 {PEAK_FLOOR:.0f} dBFS —— 素材本身太轻，"
-                   f"乘上混音音量后必然被 BGM/人声压住（实测过 paper-tap 有效峰值 −49 dB）。"
+                   f"乘上混音音量后必然被 BGM/人声压住。"
                    f"修法：`ffmpeg -i {f.name} -af volume={-3.0 - pk:.1f}dB <out>` 归一到 −3 dBFS")
             (p0 if QUIET_P0 else p1).append(msg)
 

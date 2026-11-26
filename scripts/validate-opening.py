@@ -16,7 +16,7 @@ YouTube 把"30 秒后还剩多少观众"单列为 Intro 指标，并建议把精
 像素检查（--video，要 ffmpeg；没有就 SKIPPED）：
   O6 第 0 / 15 / 45 / 90 帧：非背景像素占比 > 8%（第 0 帧就有主体）
   O7 相邻两张（0→15、15→45、45→90）画面有变化（平均差 > 1.5 / 255）
-档位：全部 P1。O1–O5 是开场写法规则；O6/O7 量的是成片，片子已经出了，只进报告。
+档位：O1–O5、O7 为 P1；O6（第 0 帧空白）为 P0（--video 时可拦片）。
 只用标准库（像素检查调用 ffmpeg 输出 rawvideo）。退出码：0 通过，2 用法错误。
 """
 from __future__ import annotations
@@ -174,10 +174,16 @@ def check(proj: Path, video: Path | None = None) -> dict:
     cc = load(proj / "manifests" / "caption-cues.json") or {}
     issues = static_checks(rs.get("shots") or [], cc.get("cues") or [], story_title(proj))
     pixel = "not requested"
+    p0: list[str] = []
     measured: list[str] = []
     if video is not None:
-        measured, pixel = pixel_checks(video)
-    return {"skin": skin, "p0": [], "p1": issues + measured, "pixel": pixel}
+        measured_all, pixel = pixel_checks(video)
+        for msg in measured_all:
+            if msg.startswith("O6 第 0 帧") or msg.startswith("O6 只抽到"):
+                p0.append(msg)
+            else:
+                measured.append(msg)
+    return {"skin": skin, "p0": p0, "p1": issues + measured, "pixel": pixel}
 
 
 def main(argv: list[str]) -> int:
@@ -189,7 +195,7 @@ def main(argv: list[str]) -> int:
     r = check(proj, video)
     return finish("validate-opening", r["p0"], r["p1"], "manifests/shots.resolved.json",
                   payload=r if "--json" in argv else None, indent=1,
-                  header=f"validate-opening · 皮肤 {r['skin']}（只提示）· 像素检查 {r['pixel']}",
+                  header=f"validate-opening · 皮肤 {r['skin']}（写法 P1 · 第 0 帧空白 P0）· 像素检查 {r['pixel']}",
                   marks=("  ✗ P0 ", "  · P1 "))
 
 

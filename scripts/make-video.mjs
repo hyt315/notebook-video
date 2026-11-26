@@ -4,7 +4,7 @@
 //
 //   node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel] [--stills] [--render OUT.mp4] [--skip-review]
 //   --skip-review：手作皮肤 treatment.review.rounds 为空时 --render 会给一条 P1 评审提示（不拦），用它关掉提示
-//                                         [--scale=0.75] [--no-gates]
+//                                         [--scale=1] [--no-gates]
 //
 // 流程：建工程（不存在时）→ compose-story（排版 + 字幕定时 + 关键词同步 + 相机 + 自动修）
 //      → 静音旁白占位（无 TTS）→ resolve-shots → 构建期门禁 → tsc
@@ -29,7 +29,7 @@ const flag = (name) => args.find((a) => a === `--${name}` || a.startsWith(`--${n
 const flagVal = (name, dflt) => { const f = flag(name); if (!f) return dflt; const i = f.indexOf('='); if (i > 0) return f.slice(i + 1); const k = args.indexOf(f); return args[k + 1] && !args[k + 1].startsWith('--') ? args[k + 1] : dflt; };
 const positional = args.filter((a, i) => !a.startsWith('--') && !(i > 0 && /^--(render|scale|style)$/.test(args[i - 1])));
 if (!positional[0]) {
-  console.error('用法：node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel] [--stills] [--render OUT.mp4] [--scale=0.75] [--skip-review]');
+  console.error('用法：node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel] [--stills] [--render OUT.mp4] [--scale=1] [--skip-review]');
   process.exit(2);
 }
 // 两种入口。① 工程目录（推荐，手写组件场景路线：shots.json + scenes.tsx 里用默认组件）；
@@ -51,7 +51,7 @@ const storyPath = HAND ? null : (linkedStory ?? path.resolve(positional[0]));
 const story = HAND ? {title: path.basename(path.resolve(positional[0]))} : JSON.parse(fs.readFileSync(storyPath, 'utf8'));
 const project = isProject ? path.resolve(positional[0]) : path.resolve(positional[1] ?? storyPath.replace(/\.json$/i, '') + '-project');
 const style = flagVal('style', story.theme ?? 'flat');
-const scale = flagVal('scale', '0.75');
+const scale = flagVal('scale', '1');
 const renderOut = flag('render') ? path.resolve(flagVal('render', path.join(project, 'renders', 'final.mp4'))) : null;
 
 const run = (cmd, argv, opts = {}) => new Promise((resolve) => {
@@ -331,8 +331,8 @@ if (!flag('no-gates')) {
     ['validate-semantic-breaks.py', [path.join(project, 'manifests', 'caption-cues.json'),
       path.join(project, 'manifests', 'protected-caption-phrases.txt'), '--require-budoux'], true],
     ...((fs.existsSync(path.join(project, 'story.json')) || fs.existsSync(path.join(project, 'manifests', 'story.json'))) ? [['validate-facts.py', [project], true]] : []),
-    // 手写场景的结构门禁（骨架 / 组件多样性）：auto 版式由引擎保证结构，这里只作参考
-    ['validate-composition.py', [project], HAND],
+    // 结构与枚举门禁（auto 路线只跳过 <Shot> 标签独占检查，仍拦截错枚举与断 import）
+    ['validate-composition.py', [project], true],
   ];
   for (const [g, argv, hard] of gates) {
     const r = await gate(g, argv, hard);
@@ -440,9 +440,13 @@ if (fs.existsSync(path.join(project, 'src', 'caption-cues.json'))) {
   fs.copyFileSync(path.join(project, 'manifests', 'caption-cues.json'), path.join(project, 'src', 'caption-cues.json'));
 }
 fs.copyFileSync(path.join(project, 'audio', 'narration.mp3'), path.join(project, 'public', 'narration.mp3'));
+if (fs.existsSync(path.join(project, 'sync-render-inputs.cjs'))) {
+  const sr = await node([path.join(project, 'sync-render-inputs.cjs')], {cwd: project, capture: true});
+  if (sr.code) die(`sync-render-inputs 失败：\n${sr.out}`);
+}
 
 if (flag('stills')) {
-  step('静帧报告（一次打包，逐帧出图；不渲整片）');
+  step('静帧报告（一次打包，单浏览器会话出图；不渲整片）');
   const bundle = path.join(project, 'renders', '.bundle');
   // Windows 上杀毒/索引器会短暂占用文件，rmSync 会抛 EBUSY/EPERM；maxRetries 是 Node 官方给的重试开关。
   fs.rmSync(bundle, {recursive: true, force: true, maxRetries: 5, retryDelay: 120});
@@ -453,34 +457,24 @@ if (flag('stills')) {
   const frames = frameList();
   const dir = path.join(project, 'renders', 'stills');
   fs.mkdirSync(dir, {recursive: true});
-  const pngs = [];
-  let logs = '';
-  for (const x of frames) {
-    const out = path.join(dir, `f${String(x.f).padStart(5, '0')}.png`);
-    // 用单帧 render 而不是 still：still 不转发浏览器 console，渲染期门禁的报警就进不了 gates.json
-    const seq = fs.mkdtempSync(path.join(os.tmpdir(), 'nv-still-'));
-    const r = await nodeRemotion([cli, 'render', bundle, 'NotebookVideoFilm', seq, `--frames=${x.f}-${x.f}`, '--sequence', '--image-format=png', '--scale=0.5', ...browserArgsOrDie()], {cwd: project, capture: true});
-    const png = fs.readdirSync(seq).find((n) => n.endsWith('.png'));
-    if (png) fs.copyFileSync(path.join(seq, png), out);
-    fs.rmSync(seq, {recursive: true, force: true});
-    logs += r.out;
-    if (r.code) {
-      const blocked = browserGates(r.out, {failed: true, full: false, file: path.relative(project, out)});
-      console.log(r.out.split('\n').filter((l) => /Error|Gate|overflow|溢出|越出/.test(l)).slice(0, 6).join('\n'));
-      // 缺字体时 Chrome 抛的是 NetworkError（cancelRender），报错里一个字都不提字体——
-      // 只看输出会误判成「渲染进程报错」。所以先问文件系统：工程里到底有没有那几个必需字体。
-      const reqFonts = ['LXGWWenKaiLite-Regular.ttf', 'LXGWWenKaiLite-Medium.ttf', ...(['journal', 'papercut', 'archive'].includes(activeSkinName()) ? ['NotoSerifSC-Bold.otf'] : [])];
-      const missingFonts = reqFonts
-        .filter((n) => !fs.existsSync(path.join(project, 'public', n)));
-      const why = missingFonts.length ? `缺字体文件（跑 node scripts/notebook-video.mjs fonts 补齐）——缺 ${missingFonts.join(' / ')}`
-        : blocked ? `渲染期门禁 ${blocked} 拦下了，见上`
-        : /font|字体|ENOENT.*\.(ttf|otf|woff2?)/i.test(r.out) ? '缺字体文件（跑 node scripts/notebook-video.mjs fonts 补齐）'
-        : '渲染进程报错，见上（不是门禁）';
-      die(`静帧 f${x.f} 渲染失败：${why}`);
-    }
-    pngs.push(out);
-    process.stdout.write('.');
+  const jobs = frames.map((x) => ({f: x.f, out: path.join(dir, `f${String(x.f).padStart(5, '0')}.png`)}));
+  const specFile = path.join(project, 'renders', '.stills-spec.json');
+  fs.writeFileSync(specFile, JSON.stringify(jobs));
+  const r = await nodeRemotion([path.join(SCRIPT_DIR, 'render-stills.mjs'), project, `--bundle=${bundle}`, `--spec=${specFile}`, '--scale=0.5'], {cwd: project, capture: true});
+  fs.rmSync(specFile, {force: true});
+  const logs = r.out;
+  if (r.code) {
+    const blocked = browserGates(r.out, {failed: true, full: false, file: 'renders/stills'});
+    console.log(r.out.split('\n').filter((l) => /Error|Gate|overflow|溢出|越出/.test(l)).slice(0, 6).join('\n'));
+    const reqFonts = ['LXGWWenKaiLite-Regular.ttf', 'LXGWWenKaiLite-Medium.ttf', ...(['journal', 'papercut', 'archive'].includes(activeSkinName()) ? ['NotoSerifSC-Bold.otf'] : [])];
+    const missingFonts = reqFonts.filter((n) => !fs.existsSync(path.join(project, 'public', n)));
+    const why = missingFonts.length ? `缺字体文件（跑 node scripts/notebook-video.mjs fonts 补齐）——缺 ${missingFonts.join(' / ')}`
+      : blocked ? `渲染期门禁 ${blocked} 拦下了，见上`
+      : /font|字体|ENOENT.*\.(ttf|otf|woff2?)/i.test(r.out) ? '缺字体文件（跑 node scripts/notebook-video.mjs fonts 补齐）'
+      : '渲染进程报错，见上（不是门禁）';
+    die(`静帧渲染失败：${why}`);
   }
+  const pngs = jobs.map((j) => j.out);
   browserGates(logs, {failed: false, full: false, file: 'renders/stills'});
   const sheets = [];
   for (let i = 0; i < pngs.length; i += 12) {
@@ -501,7 +495,13 @@ if (renderOut) {
   const r = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'render', project, renderOut], {capture: true, tee: true});
   browserGates(r.out, {failed: Boolean(r.code), full: true, file: path.relative(project, renderOut)});
   if (r.code) die('渲染失败（渲染期门禁或 Remotion 报错，见上）');
-  step('成片门禁：静止段 / 编码 / 时长');
+  step('成片门禁：编码 / 流畅度 / 曝光 / 静止段 / 静音 / 开场第 0 帧');
+  const expectedSec = (rep.frames / 30).toFixed(3);
+  const vv = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'validate-video', renderOut, expectedSec, '--no-contact'], {capture: true});
+  const vvRec = {gate: 'validate-video', code: vv.code, hard: true, verdict: vv.code ? 'FAIL' : 'PASS'};
+  results.push(vvRec);
+  console.log(`  ${vv.code ? '✗' : '✓'} validate-video — ${vvRec.verdict}`);
+  if (vv.code) console.log(vv.out);
   const mg = await gate('validate-motion-gaps.py', [project, '--video', renderOut], true);
   // 句间必须是真安静（music.use=false 时）。
   const sil = await gate('validate-silence.py', [project, renderOut], true);
@@ -517,8 +517,8 @@ if (renderOut) {
   }
   const sheets = [];
   for (let i = 0; i < pngs.length; i += 12) { const out = path.join(project, 'renders', `frames-${i / 12 + 1}.jpg`); await sheet(pngs.slice(i, i + 12), out); sheets.push(out); }
-  // 开场像素复核（第 0 / 15 / 45 / 90 帧有主体、在变化）：成片已出，只进报告（P1）。
-  await gate('validate-opening.py', [project, '--video', renderOut], false, 'validate-opening.py --video');
+  // 开场像素复核（第 0 帧空白 P0，第 15/45/90 帧与连续变化 P1）。
+  const op = await gate('validate-opening.py', [project, '--video', renderOut], true, 'validate-opening.py --video');
   // 字幕真的读得出吗？（RapidOCR 可选；没装 → SKIPPED）成片已出，不拦，结论记 P1 进报告。
   step('字幕 OCR 复核（validate-ocr，可选）');
   await gate('validate-ocr.py', [project, '--video', renderOut, '--json', path.join(project, 'renders', 'ocr.json')], false);
@@ -534,8 +534,10 @@ if (renderOut) {
   }
   saveGates();
   writeReport(frames, sheets, `\n成片：${renderOut}`);
+  if (vv.code) die('validate-video 未通过（容器 / 色彩 / 流畅度 / 曝光 / 响度不达标）');
   if (mg.code) die('validate-motion-gaps 未通过（画面有超长静止段）');
   if (sil.code) die('validate-silence 未通过（句间不安静：music.use=false 时不该有配乐 / 持续底噪）');
+  if (op.code) die('validate-opening 未通过（成片第 0 帧为空白）');
   console.log(`✓ 成片 ${renderOut}；抽帧接触表 ${sheets.join(', ')}；报告 renders/report.md`);
 }
 console.log('\n完成。');

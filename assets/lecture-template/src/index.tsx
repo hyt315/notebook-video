@@ -28,7 +28,7 @@ import CONTRACT from './contract.json';
 // Keep authored scene time separate from delivery frames.
 import {MODES, CanvasContext, useCanvas} from './theme/canvas';
 import {THEME} from './theme/active';
-import {PillTag, TYPE} from './kit';
+import {TYPE} from './kit';
 import {clamp, EASE} from './motion';
 // 视觉体系四层：镜头 / 骨架 / 介质 / 门禁。用法见 references/camera.md#shot-language、
 // references/scenes.md#scene-skeletons、references/media.md#media-routing、references/checks.md#composition-gate。
@@ -260,40 +260,28 @@ const Subtitle=({off=false}:{off?:boolean})=>{
 
 const Chrome=()=>{
   const f=q(useCurrentFrame()),stage=Math.max(0,CHAPTER_STARTS.filter((x)=>f>=x).length-1),local=f-CHAPTER_STARTS[stage],titles=COPY.chapterTitles;
-  // 皮肤自带章节标识（手作皮肤）时整块替换，不画 SaaS 式章节卡与技术页眉。
+  // 皮肤自带章节标识（手作皮肤）时整块替换，不画章节卡。
   if(THEME.Chrome){const ThemeChrome=THEME.Chrome;return <ThemeChrome stage={stage} title={String(titles[stage]??'')} kicker={COPY.chromeKicker} header={COPY.header} headerSub={COPY.headerSub} local={local}/>;}
-  // 章节卡与正文同一种出现方式：左→右展开 18 帧、不回弹（展开边交给 GlyphSnap 退到字缝）。
-  const g=interpolate(local,[0,18],[0,1],clamp),grow=g<1?{clipPath:revealClip(`calc(${((1-g)*100).toFixed(2)}% - ${(g*REVEAL_BLEED).toFixed(2)}px)`),[GROW_VAR]:g.toFixed(4)}:{};
-  return <>
-    <Paper lift={0.3} style={{left:92,top:74,width:392,height:90,zIndex:150,display:'flex',alignItems:'center',...grow,overflow:'hidden',padding:0}}>
-      <div style={{width:72,height:'100%',background:`linear-gradient(135deg,${C.orangeInk},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash,Space,Kai',fontWeight:600,fontSize:31,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
-      <div style={{padding:'8px 16px',flex:1,minWidth:0}}>
-        <div style={{display:'flex',alignItems:'center',gap:6}}>
-          <PillTag text={COPY.chromeKicker} color={C.blue} bg={C.blueLight} fontSize={TYPE.microS}/>
-        </div>
+  // 章节卡：第 0 章第 0 帧即落定，切章左→右展开 18 帧；收窄为单行紧凑徽标（总常驻遮挡 ≤ 5%）。
+  const g=stage===0?1:interpolate(local,[0,18],[0,1],clamp),grow=g<1?{clipPath:revealClip(`calc(${((1-g)*100).toFixed(2)}% - ${(g*REVEAL_BLEED).toFixed(2)}px)`),[GROW_VAR]:g.toFixed(4)}:{};
+  return <Paper lift={0.3} style={{left:92,top:64,width:268,height:52,zIndex:150,display:'flex',alignItems:'center',...grow,overflow:'hidden',padding:0}}>
+      <div style={{width:52,height:'100%',background:`linear-gradient(135deg,${C.orangeInk},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash,Space,Kai',fontWeight:600,fontSize:24,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
+      <div style={{padding:'0 14px',flex:1,minWidth:0}}>
         {(() => {
-          // 字号用 components/fittext.tsx 量字反推（measureText + UAX #14 + budoux），不按字数估算：
-          // 标题处在「差 1px 就折行」的临界，估算证明不了不会折。
-          // 可用内宽 286px（392 − 2 描边 − 72 编号块 − 32 内边距）；下限 19。
           const title = String(titles[stage] ?? '');
-          const availW = 286;
+          const availW = 186;
           const {fontSize: measured} = fitChineseTextOnNLines({
             text: title, maxLines: 1, maxBoxWidth: availW,
-            fontFamily: 'Kai', fontWeight: 700, maxFontSize: TYPE.titleS, minFontSize: 19,
+            fontFamily: 'Kai', fontWeight: 700, maxFontSize: TYPE.labelL, minFontSize: 16,
           });
-          const fitSize = Math.max(19, Math.min(TYPE.titleS, Math.floor(measured)));
-          return <div style={{marginTop:3,fontSize:fitSize,fontWeight:700,color:C.ink,whiteSpace:'nowrap',overflow:'hidden',maxWidth:availW}}>{title}</div>;
+          const fitSize = Math.max(16, Math.min(TYPE.labelL, Math.floor(measured)));
+          return <div style={{fontSize:fitSize,fontWeight:700,color:C.ink,whiteSpace:'nowrap',overflow:'hidden',maxWidth:availW}}>{title}</div>;
         })()}
       </div>
-    </Paper>
-    <div style={{position:'absolute',right:88,top:70,zIndex:140,textAlign:'right',maxWidth:1180,overflow:'hidden',...THEME.headerPlate}}>
-      <div style={{fontSize:TYPE.labelM,fontWeight:700,letterSpacing:4,color:C.headerAccent,fontFamily:'Clash,Space,Kai'}}>{COPY.header}</div>
-      <div style={{fontSize:TYPE.microL,marginTop:6,color:C.headerSub,fontFamily:'Space,Kai'}}>{COPY.headerSub}</div>
-    </div>
-  </>;
+    </Paper>;
 };
 
-// 3.2.0 引擎级虚拟摄影机（src/cinema.tsx）：每镜自动慢推/漂移、按分镜表 `cinema.focus` 推近当前拍、
+// 引擎级虚拟摄影机（src/cinema.tsx）：每镜自动慢推/漂移、按分镜表 `cinema.focus` 推近当前拍、
 // 宽画布横摇、镜间 whip/zoom 转场、背景视差。分镜表什么都不写也有默认运动。
 const shotIndexAt=(f:number)=>{let idx=0;for(let i=0;i<SHOT_IDS.length;i++){ if(f>=SHOTS[SHOT_IDS[i]].from) idx=i; }return idx;};
 const camFor=(i:number,local:number)=>{const s:any=(SHOTS as any)[SHOT_IDS[i]];return cinemaCamAt(s.cinema,local,s.duration,i,s.keys);};

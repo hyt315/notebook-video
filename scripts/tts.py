@@ -311,7 +311,7 @@ def main() -> int:
     elif not a.allow_stale and story.is_file() and story.stat().st_mtime > narr.stat().st_mtime:
         return fail(
             "story.json 比 narration.txt 新：你大概改了 story 但还没重跑 compose-story。\n"
-            "继续的话 TTS 会读**上一版**旁白，出半截音频且不报错。\n"
+            "继续的话 TTS 会读**旧版**旁白，出半截音频且不报错。\n"
             "（这份工程没有 manifests/narration.contract.json，只能按时间判断。）\n"
             "下一步：\n"
             f"  1) python scripts/compose-story.py \"{story}\" \"{project}\"\n"

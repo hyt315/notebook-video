@@ -123,7 +123,7 @@ console.log(JSON.stringify({a, b, all: records, hints: rep.hints}));"""
         self.assertEqual(len(r["hints"]), 1, "降成 P1 的记录进报告建议")
 
     @unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg not installed")
-    def test_opening_pixels_are_p1_on_craft_skin(self):
+    def test_opening_frame0_blank_is_p0_and_o7_is_p1(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("vo", SCRIPTS / "validate-opening.py")
         vo = importlib.util.module_from_spec(spec)
@@ -137,8 +137,8 @@ console.log(JSON.stringify({a, b, all: records, hints: rep.hints}));"""
                             "-pix_fmt", "yuv420p", str(mp4)], check=True)
             r = vo.check(proj, mp4)
             self.assertEqual(r["skin"], "journal")
-            self.assertEqual(r["p0"], [], "成片已出、make-video 不拦：不能记 P0")
-            self.assertTrue(any(x.startswith("O6") for x in r["p1"]), r["p1"])
+            self.assertTrue(any(x.startswith("O6 第 0 帧") for x in r["p0"]), r)
+            self.assertTrue(any(x.startswith("O7") for x in r["p1"]), r["p1"])
 
 
 class EmptyFrameFix(unittest.TestCase):

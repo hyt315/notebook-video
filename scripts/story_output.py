@@ -61,10 +61,8 @@ def registered_customs(proj: Path) -> set[str]:
 
 
 def check_customs(p: Problems, proj: Path, story_ts: dict) -> None:
-    """P0：story.json 引用了未注册的定制组件 → 构建期停止。
-
-    旧行为是渲染期用一行红字顶替（成片 74 秒处真的出过这行红字），既没有门禁也不出片失败。
-    现在在写盘前拦：说清组件名、哪几镜、注册文件、照抄哪个范例。
+    """P0：story.json 引用了未注册的定制组件 → 构建期停止，避免渲染时缺失组件。
+    报出组件名、涉及镜次、注册文件以及可参照的自定义组件模板。
     """
     need = sorted({v.get("custom") for v in story_ts.values() if v.get("custom")})
     if not need:
@@ -109,7 +107,7 @@ def write_narration_contract(proj: Path, text: str, lines: int, p) -> None:
     old = meta.get("text_sha256")
     if old and old != doc["text_sha256"]:
         p.hint(
-            "audio/narration.mp3 是**上一版**旁白合成的（内容指纹不一致）："
+            "audio/narration.mp3 是**旧版**旁白合成的（内容指纹不一致）："
             "字幕会按新文本排，声音还是旧的。出片前重跑 tts。"
         )
 

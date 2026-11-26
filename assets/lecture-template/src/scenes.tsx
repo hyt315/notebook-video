@@ -41,7 +41,8 @@ const enterAt = (f: number, at: number): React.CSSProperties => {
 };
 // 各镜的离场交给 RevealMask/ShotCamera 或写成行内表达式，这里不提供 exitAt()。
 type Entry = 'rise' | 'slide' | 'fade' | 'zoom';
-const useEntry = (f: number, entry: Entry) => {
+const useEntry = (f: number, entry: Entry, settled = false) => {
+  if (settled) return {opacity: 1, transform: 'none'};
   const p = easeOut(f, 0, IN);
   const dx = entry === 'slide' ? (1 - p) * 70 : 0;
   const dy = entry === 'rise' ? (1 - p) * 26 : 0;
@@ -56,9 +57,9 @@ const useEntry = (f: number, entry: Entry) => {
  * 背景图的中央约 70% 本身就是安静的安全区；内容真压到装饰区时，按 readability 规则单独用
  * CoverPanel（tone='paper'）垫那一块。
  */
-const Shot: React.FC<{id: keyof typeof SHOTS; f: number; entry: Entry; reveal?: boolean; children: React.ReactNode}> = ({id, f, entry, reveal, children}) => {
+const Shot: React.FC<{id: keyof typeof SHOTS; f: number; entry: Entry; reveal?: boolean; settled?: boolean; children: React.ReactNode}> = ({id, f, entry, reveal, settled = false, children}) => {
   const s = SHOTS[id];
-  const e = useEntry(f, entry);
+  const e = useEntry(f, entry, settled);
   // 镜末不淡到全透明：那会在镜头边界留下 1–2 个空帧。
   // 交接由 index.tsx 的 FinalDemo 负责——下一镜开始时把上一镜的末帧叠在上面淡出。
   const body = (
@@ -98,9 +99,9 @@ const S1Lonely: React.FC<{f: number}> = ({f}) => {
     {k: '结果', v: '一起造软件', c: C.green, at: at(2, 56)},
   ];
   return (
-    <Shot id="S1" f={f} entry="rise">
+    <Shot id="S1" f={f} entry="rise" settled>
       <StageFrame
-        x={210} y={176} w={1500} h={710} f={f} phases={phases} railW={380}
+        x={210} y={176} w={1500} h={710} f={f} phases={phases} railW={380} settled
         header={() => (
           <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
             <PillTag text="GITHUB 新手三部曲" color={C.blue} bg={C.blueLight} />

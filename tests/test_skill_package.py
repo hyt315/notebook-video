@@ -20,10 +20,16 @@ class SkillPackageTest(unittest.TestCase):
         self.assertIn("scripts/notebook-video.mjs", files)
         self.assertIn("examples/recipes/jie-freeform.story.json", files)
         for r in files:
-            self.assertFalse(r.startswith((".git/", ".github/", "tests/", "dist/", "scripts/dev/", "docs/")), r)
+            self.assertFalse(r.startswith((
+                ".git/", ".github/", "tests/", "dist/", "scripts/dev/", "docs/",
+                "examples/negative/", "examples/regress/", "examples/weak-model-test/",
+            )), r)
+            self.assertNotIn(r, {"CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md"})
+            self.assertFalse(r.endswith("locked-style-contract.json"), r)
             self.assertNotIn("__pycache__", r)
             self.assertNotIn("node_modules", r)
             self.assertFalse(r.endswith((".pyc", ".mp4", ".zip")), r)
+        self.assertEqual(PKG.scan_banned_patterns(PKG.collect_files()), [])
 
     def test_downloaded_fonts_are_opt_in(self):
         # 只判路径，不往共享的 assets/fonts/ 里写占位文件：结果不取决于这台机器下没下过字体。

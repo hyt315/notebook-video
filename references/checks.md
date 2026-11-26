@@ -78,9 +78,9 @@
 | 成片静止上限 | 普通镜 ≤ `DEFAULT_MAX_STATIC`（2.5s）；锤子镜 ≤ `HAMMER_MAX_STATIC`（3.0s） | P0 | `validate-motion-gaps.py` 逐段检测 |
 | 音效与静音 | 音效峰值 ≥ `-12 dBFS` 且 `sha256` 一致；`music.use=false` 时句间真安静 | P0 | `validate-audio-levels.py` / `validate-silence.py` |
 
-**成片文件规格**（`notebook-video validate-video <mp4> <期望时长>` 校验）：2560×1440 或 1920×1080（16:9，由 `--scale` 决定）、原生 30fps（不做插帧）；H.264 + AAC 48kHz 立体声；色彩元数据必须是 `tv / bt709 / bt709 / bt709`（range / space / transfer / primaries），任一不符即失败；响度约 −16 LUFS、真峰 ≤ −1.5 dBTP；旁白结束后至少留 0.7 秒；无黑帧、无截断结尾。局部复查用 `notebook-video render-range` / `review-frames`。
+**成片文件规格**（`notebook-video validate-video <mp4> <期望时长>` 校验）：默认 2560×1440（`--scale=1`，16:9；可选 `--scale=0.75` 输出 1920×1080）、原生 30fps（不做插帧）；H.264 + AAC 48kHz 立体声；色彩元数据必须是 `tv / bt709 / bt709 / bt709`（range / space / transfer / primaries），任一不符即失败；响度约 −16 LUFS、真峰 ≤ −1.5 dBTP；音画流零偏移、无丢帧卡顿、无异常过暗/过曝、旁白结束后至少留 0.7 秒；无黑帧、无截断结尾。局部复查用 `notebook-video render-range` / `review-frames`。
 
-**字幕整洁**：每镜底部一行居中纯文字（无底条、描边框、侧标）；句中标点保留，句末标点（`，。！？；、,.!?;:`）不上屏；型号、产品名、数字加单位、固定术语写进保护短语清单，不跨条断开，ASCII 标识符不拆开；字幕比语音的词级时间最多提前约 80ms。
+**字幕整洁**：五套主题统一为每镜底部一行居中 64 设计 px 纯文字配纸色柔光晕（无实心底条、描边框、侧标），合并左上章节徽标的常驻屏幕遮挡 ≤ 5%；句中标点保留，句末标点（`，。！？；、,.!?;:`）不上屏；型号、产品名、数字加单位、固定术语写进保护短语清单，不跨条断开，ASCII 标识符不拆开；字幕比语音的词级时间最多提前约 80ms。
 
 ## 5. 包装验收与低质画面排雷
 

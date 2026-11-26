@@ -31,8 +31,8 @@ const palette: Theme['palette'] = {
 const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 2, paperOutline: 0,
   textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: 0.06,
-  subtitleWeight: 700, subtitleLetterSpacing: 2, subtitlePadX: 104,
-  subtitleSize: 72, subtitleFamily: 'NotoSerifSC',
+  subtitleWeight: 700, subtitleLetterSpacing: 2, subtitlePadX: 56,
+  subtitleSize: 64, subtitleFamily: 'NotoSerifSC',
 };
 
 // 物件躺在发光台面上：极浅、偏冷、贴面的影。
@@ -58,10 +58,8 @@ const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) => {
 const Grade: React.FC = () => <div style={{position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 190,
   background: `radial-gradient(ellipse 78% 72% at 50% 46%, rgba(255,255,255,0.06) 0%, transparent 54%, rgba(20,30,40,${(aesthetic.gradeVignette * 1.5).toFixed(3)}) 100%)`}} />;
 
-// 字幕 = 博物馆说明签：白条、细墨边、左侧一道信号色竖线。
-const SubtitleChrome = PaperSubtitle({ink: palette.ink, halo: 'transparent', size: 72, bottom: 34,
-  plate: {background: 'rgba(255,255,255,0.96)', padding: '8px 44px 12px 52px', boxShadow: '0 2px 8px rgba(20,30,40,0.16)',
-    borderLeft: `8px solid ${palette.orange}`}});
+// 字幕：纯字无框，冷白纸面光晕衬底。
+const SubtitleChrome = PaperSubtitle({ink: palette.ink, halo: 'rgba(255,255,255,0.96)', size: 64, bottom: 34});
 
 // 章节标识：左上编目号「ARCHIVE · 01 / 标题」，等宽小字 + 章名。
 const Chrome: Theme['Chrome'] = (p) => {

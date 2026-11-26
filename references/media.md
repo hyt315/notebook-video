@@ -106,7 +106,7 @@ python scripts/commons-search.py credits <工程>
 - **清晰度门禁（`validate-media.py`）**：原图尺寸与最终显示尺寸（含相机推近倍数）之比不得放大超过 **1.5 倍**，否则判 P0（「会糊」）；显示框 `w`/`h` 应写成字面量或同文件常量，量不出时按占满画布估算并给 P1 提示。
 - **防冲突与去幽灵遮罩**：`MediaFrame` 的 `focus` 与 `cinema.focus` 二选一不叠放大；`flat`/`cel` 压到背景装饰区须坐 `CoverPanel`，禁止整幅半透明 wash 洗成幽灵。
 - **区域引用**：`focusRegion` 引用的区域名必须在 `manifests/media.json` 中存在，否则判 P0。
-- **位图登记（`validate-visual-plan.py`）**：用到的每张位图（皮肤背景、用户图；用户图放在 `public/illustrations/`）都登记到 `manifests/visual-assets.json`：`id`、`path`、`source_type`（`ai-generated` / `user-supplied` / `licensed-third-party` / `code-generated`）、`use_context`、`crop_policy`、`rights`、`sha256`；`ai-generated` 另需 `provider`、`prompt_summary` 与 `baked_text: false`。这里的 ID 要与工程声明、各场景引用的 `visual_asset_ids` 完全一致。交付物里不留没用到的图，再分发权利不明的素材不进工程。
+- **位图登记（`validate-visual-plan.py`）**：用到的每张位图（皮肤背景、用户图；用户图放在 `public/illustrations/`）都登记到 `manifests/visual-assets.json`：`id`、`path`、`source_type`（`user-supplied` / `licensed-third-party` / `code-generated`）、`use_context`、`crop_policy`、`rights`、`sha256`。这里的 ID 要与工程声明、各场景引用的 `visual_asset_ids` 完全一致。交付物里不留没用到的图，再分发权利不明的素材不进工程。
 
 <a id="html-capture"></a>
 ## 5. 网页与界面截图规范

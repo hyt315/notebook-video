@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -26,6 +27,23 @@ export const Missing: React.FC<{f: number}> = () => <Callout x={0} y={0} w={10} 
 """
 
 
+def _link_dir(src: Path, dst: Path) -> None:
+    try:
+        os.symlink(src, dst, target_is_directory=True)
+    except OSError:
+        if sys.platform != "win32":
+            raise
+        subprocess.run(["cmd", "/c", "mklink", "/J", str(dst), str(src)], check=True, capture_output=True)
+
+
+def _unlink_dir(dst: Path) -> None:
+    if dst.is_symlink() or (sys.platform == "win32" and dst.exists()):
+        try:
+            os.rmdir(dst)
+        except OSError:
+            pass
+
+
 @unittest.skipUnless(NODE, "node 未安装")
 @unittest.skipUnless(TSC.is_file(), "没有 typescript 依赖：在模板跑 npm ci，或设 NV_E2E_NODE_MODULES")
 class FrameTypesTest(unittest.TestCase):
@@ -35,10 +53,14 @@ class FrameTypesTest(unittest.TestCase):
             shutil.copytree(TPL / "src", proj / "src")
             shutil.copytree(TPL / "manifests", proj / "manifests")  # index.tsx import ../manifests/caption-cues.json（#14）
             shutil.copy(TPL / "tsconfig.json", proj / "tsconfig.json")
-            os.symlink(DEPS, proj / "node_modules", target_is_directory=True)
-            (proj / "src" / "zz-frame-negative.tsx").write_text(BAD_SCENE, encoding="utf-8")
-            r = subprocess.run([NODE, str(TSC), "--noEmit", "-p", "."], cwd=proj,
-                               capture_output=True, text=True, timeout=300)
+            nm = proj / "node_modules"
+            _link_dir(DEPS, nm)
+            try:
+                (proj / "src" / "zz-frame-negative.tsx").write_text(BAD_SCENE, encoding="utf-8")
+                r = subprocess.run([NODE, str(TSC), "--noEmit", "-p", "."], cwd=proj,
+                                   capture_output=True, text=True, timeout=300)
+            finally:
+                _unlink_dir(nm)
             out = r.stdout + r.stderr
             self.assertNotEqual(r.returncode, 0, out)
             bad = [ln for ln in out.splitlines() if "zz-frame-negative.tsx" in ln]

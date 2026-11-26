@@ -157,7 +157,7 @@ export const Corridor: React.FC<{
       </div>
       {/* 状态标签：在承载物**上方**（下方会与站点标签重叠）。
           切换时：当前标签跟随承载物；上一个标签锚在**它自己的站点 x** 上淡出——
-          若让它跟着承载物走，两个标签会叠在一起（实测门禁报到 3500px²）。 */}
+          若让它跟着承载物走，两个标签会叠在一起触发重叠门禁。 */}
       {stations.map((s, i) => {
         if (!s.state) return null;
         const isCurrent = current === s;

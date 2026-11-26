@@ -22,18 +22,28 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
-# README 里链到 CHANGELOG / CONTRIBUTING / SECURITY / README.en，这四个都很小；
-# 不带上的话用户解包后点 README 就断链（打包自检在解包目录里跑 validate-skill-consistency 会报出来）。
-ROOT_FILES = ("SKILL.md", "README.md", "README.en.md", "LICENSE", "NOTICE", "DEPENDENCIES.md",
-              "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", "manifest.json")
+# 面向使用者的根文件：不随包分发版本历史或仓库治理文档。
+ROOT_FILES = ("SKILL.md", "README.md", "README.en.md", "LICENSE", "NOTICE", "DEPENDENCIES.md", "manifest.json")
 RUNTIME_DIRS = ("agents", "assets", "blueprints", "examples", "references", "scripts")
 REQUIRED = ROOT_FILES + ("scripts/notebook-video.mjs", "assets/lecture-template/package.json")
 SKIP_DIRS = {".git", ".github", ".pytest_cache", "__pycache__", "node_modules", "renders", "dist", "build", ".bundle", ".remotion"}
 SKIP_SUFFIXES = {".pyc", ".pyo", ".log", ".tmp", ".mp4", ".mov", ".webm", ".zip"}
 SKIP_NAMES = {".DS_Store", "Thumbs.db"}
-# 开发期目录：维护工具与历史归档，只在仓库里用，不进上传包（与 .gitattributes 的 export-ignore 一致）。
-DEV_PREFIXES = ("scripts/dev/", "docs/")
+# 开发期与测试夹具目录：只在仓库里用，不进上传包（与 .gitattributes 的 export-ignore 一致）。
+DEV_PREFIXES = ("scripts/dev/", "docs/", "examples/negative/", "examples/regress/", "examples/weak-model-test/")
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+BANNED_TEXT_EXTS = {".md", ".markdown", ".json", ".py", ".mjs", ".cjs", ".ts", ".tsx", ".txt", ".yaml", ".yml"}
+BANNED_SCAN_SKIP = ("assets/vendor/budoux/", "assets/lecture-template/package-lock.json", "assets/lecture-template/package.json",
+                    "LICENSE", "NOTICE")
+BANNED_RE = re.compile(
+    r"踩过|事故|上一版|那一轮|复核第二轮|均分\s*\d|没过\s*\d+\s*分|病灶|止血|回归夹具|P2-\d+"
+    r"|(?<![\w@./\-])v?[23]\.\d+\.(?:\d+|x)(?![\w.])|(?<![\w@./\-])v[23]\.\d+(?![\w.])"
+)
+BANNED_LINE_ALLOW = (
+    "perfect-freehand", "opentype.js", "shaders@", "SC 1.4.3", "OFL-1.1", "CC BY", "GPL-3.0",
+    "Apache-2.0", "package.json", "remotion", "Serif2.003", "1.522", "v2.0", "validate-skill-consistency.py",
+    "manifest.json", "test_process_words.py",
+)
 
 
 def rel(path: Path) -> str:
@@ -108,7 +118,27 @@ def validate_skill_links(files: list[Path]) -> list[str]:
 
 
 FIXED_DATE = (1980, 1, 1, 0, 0, 0)      # 固定时间戳：同输入必须得到同字节
-LINK_CHECK_EXCLUDE = {"README.md"}      # 见 validate_skill_links 的注释
+LINK_CHECK_EXCLUDE = {"README.md", "README.en.md"}      # 面向仓库的门面文档，不参与包内断链检查
+
+
+def scan_banned_patterns(files: list[Path]) -> list[str]:
+    """检查打进发行包的文件是否残留测试记录、内部版本号或过程词。"""
+    hits: list[str] = []
+    for path in files:
+        r = rel(path)
+        if path.suffix.lower() not in BANNED_TEXT_EXTS or r.startswith(BANNED_SCAN_SKIP):
+            continue
+        if r == "manifest.json" or r == "scripts/validate-skill-consistency.py" or r == "scripts/package-skill.py":
+            continue
+        if r in {"README.md", "README.en.md", "DEPENDENCIES.md"}:
+            continue
+        for lineno, line in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), 1):
+            if any(ok in line for ok in BANNED_LINE_ALLOW):
+                continue
+            m = BANNED_RE.search(line)
+            if m:
+                hits.append(f"{r}:{lineno} 禁用模式「{m.group(0)}」")
+    return hits
 
 
 def _sha256(path: Path) -> str:
@@ -141,7 +171,7 @@ def _write_entry(zf: zipfile.ZipFile, name: str, data: bytes) -> None:
 
 def build(output: Path, include_fonts: bool) -> dict:
     files = collect_files(include_fonts)
-    problems = validate_skill_links(files)
+    problems = validate_skill_links(files) + scan_banned_patterns(files)
     if problems:
         raise ValueError("\n".join(problems))
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -173,11 +203,13 @@ def main() -> int:
     args = ap.parse_args()
     try:
         files = collect_files(args.include_fonts)
-        problems = validate_skill_links(files)
+        banned = scan_banned_patterns(files)
+        problems = validate_skill_links(files) + banned
         if problems:
             raise ValueError("\n".join(problems))
         if args.check_only:
             print(f"PASS · {len(files)} 个文件 · {sum(p.stat().st_size for p in files) / 1024 / 1024:.1f} MiB（未压缩）")
+            print(f"禁用模式命中：{len(banned)}")
             print("上传白名单与 SKILL.md 本地链接完整。")
             return 0
         built = build(args.output.resolve(), args.include_fonts)

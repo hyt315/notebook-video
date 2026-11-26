@@ -175,7 +175,7 @@ def main() -> int:
             p1.append(f"[{mode}] 组件（含直书）只占 {component_share:.0%} < {rule['comp']:.0%}：概念靠什么讲？"
                       f"手账页负责「看」，组件负责「懂」；至少 {rule['comp']:.0%} 片长要是推理或直书版面。")
         if sketch_as_explainer > 0.20:
-            p1.append(f"「文字 + 简笔线稿」镜头占 {sketch_as_explainer:.0%} > 20%：实测这类画面比不画更差（像剪贴画）。"
+            p1.append(f"「文字 + 简笔线稿」镜头占 {sketch_as_explainer:.0%} > 20%：容易显得像剪贴画。"
                       f"要么改成手账页放真素材，要么删掉 sketch 只留文字。")
         if rule["comp_ceiling"] is not None:
             multi = max(0.0, component_share - typeface_share)

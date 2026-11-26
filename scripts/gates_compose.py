@@ -234,7 +234,7 @@ case('BGL9 分镜 · 显式写了相邻同一张 → P1 提示（不拦）', [('
 cleanup(td)
 td, _rc, _out = mkproj()
 _before = io.open(os.path.join(td, 'src/shots.ts'), encoding='utf-8').read()
-case('BGL10 分镜 · 没有背景库的旧工程 → 不出 bgFile（3.3.0 行为）', [
+case('BGL10 分镜 · 没有背景库的工程 → 不出 bgFile', [
     ('must_pass', 'resolve-shots', (_rc, _out)),
     ('must_absent:bgFile', 'shots.ts 不含 bgFile', (1, _before))])
 cleanup(td)

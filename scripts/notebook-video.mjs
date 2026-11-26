@@ -422,7 +422,7 @@ const ensureProjectFonts = async (project) => {
 // ----------------------------------------------------------------------
 const newProject = async (args) => {
   // --classic（暖象牙纸面示例工程 example-project）已整体删除，给出明确报错而不是静默忽略。
-  if (args.includes('--classic')) fail('--classic was removed in 3.2.0 (the warm-ivory example project is gone). Use --style=flat (default) or --style=cel.', 2);
+  if (args.includes('--classic')) fail('--classic is not supported (only the 16:9 lecture template is provided). Use --style=flat (default) or --style=cel.', 2);
   const styleFlag = args.find((a) => a.startsWith('--style='));
   const style = styleFlag ? styleFlag.slice('--style='.length) : 'flat';
   if (!THEME_IDS.includes(style)) fail(`Unknown style "${style}". Valid values: ${THEME_IDS.join(', ')}`, 2);
@@ -506,6 +506,10 @@ const syncProjectAssets = async ([projectArg], {quiet = false} = {}) => {
     fs.copyFileSync(source, target);
     if (hashFile(source) !== hashFile(target)) fail(`Render input sync failed: ${from} -> ${to}`);
   }
+  const syncScript = path.join(project, 'sync-render-inputs.cjs');
+  if (fs.existsSync(syncScript)) {
+    await run(process.execPath, [syncScript], {cwd: project, capture: true});
+  }
   if (!quiet) console.log('Synchronized canonical render inputs into public/.');
 };
 
@@ -530,7 +534,12 @@ const prepareBrowser = async ([projectArg]) => {
 // ----------------------------------------------------------------------
 // 渲染基础：并发、色彩契约、fx 探测、覆盖率
 // ----------------------------------------------------------------------
-const suggestedConcurrency = () => Math.max(2, Math.min(6, Math.floor(os.availableParallelism() / 2)));
+const suggestedConcurrency = (scaleArg = '1', fxOn = false) => {
+  const base = Math.max(2, Math.min(6, Math.floor(os.availableParallelism() / 2)));
+  const s = Number(scaleArg);
+  if (Number.isFinite(s) && s >= 1) return Math.min(base, fxOn ? 2 : 3);
+  return base;
+};
 
 // Remotion CLI entry point is a POSITIONAL argument:
 //   remotion render [<entry-point|serve-url>] [<composition-id>] [<output-location>]
@@ -652,9 +661,7 @@ const fxProbe = async ([projectArg, ...rest]) => {
   console.log(JSON.stringify(fx, null, 2));
 };
 
-// 覆盖率判据**只写这一处**。渲染收尾的汇总行和 `sweep` 的全片表都调它 ——
-// 这个项目已经在"两个地方各判一次"上栽过三次（响度读数、空场采样、耗时推算），
-// 症状都是"终端说 pass、报告说有问题"，查半天才发现判的不是同一件事。
+// 覆盖率判据仅在此一处定义。渲染收尾的汇总行和 `sweep` 的全片表共用它，避免两端判据漂移。
 const assessCoverage = (coverage) => {
   const ids = [...coverage.keys()].sort((a, b) => a.localeCompare(b, 'en', {numeric: true}));
   const rows = ids.map((id) => {
@@ -821,7 +828,7 @@ const buildPropsArg = (extra = {}) => {
   return `--props=${file}`;
 };
 
-const remotionRender = async ({project, entry = REMOTION_ENTRY_POINT, composition, output, frames, concurrency, colorTagged = false, scale, fxMode = 'auto', crf = 16, muted = false, measure = true, persist = true, reducedMotion = false}) => {
+const remotionRender = async ({project, entry = REMOTION_ENTRY_POINT, composition, output, frames, concurrency, colorTagged = false, scale, fxMode = 'auto', crf = Number(process.env.NOTEBOOK_VIDEO_CRF || 18), x264Preset = process.env.NOTEBOOK_VIDEO_X264_PRESET ?? 'veryfast', muted = false, measure = true, persist = true, reducedMotion = false}) => {
   const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
   if (!fs.existsSync(remotionCli)) await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
   if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after npm ci: ${remotionCli}`);
@@ -837,6 +844,7 @@ const remotionRender = async ({project, entry = REMOTION_ENTRY_POINT, compositio
   // fxMode：auto = 探针说行就开；off = 不开。
   const fx = composition === 'NotebookVideoFilm' && fxMode !== 'off' ? await fxFor(project) : {on: false};
   nodeArgs.push(remotionCli, 'render', entry, composition, output, '--codec=h264', `--crf=${crf}`, ...REMOTION_COLOR_ARGS, `--concurrency=${concurrency}`);
+  if (x264Preset) nodeArgs.push(`--x264-preset=${x264Preset}`);
   if (muted) nodeArgs.push('--muted');
   if (frames) nodeArgs.push(`--frames=${frames}`);
   // 缩放必须是**十进制字面量**：CLI 不接受分数字面量（`--scale=4/3` 会被判非法参数而拒绝渲染），
@@ -947,8 +955,7 @@ const takeRenderLock = (project, output) => {
 // render 命令：准备 → fx → 指纹 → 渲染/分段 → 合流 → 收尾
 // ----------------------------------------------------------------------
 const render = async (args) => {
-  // 位置参数必须先剔除标志位：否则 `render . out.mp4 --fx=off` 会把 '--fx=off' 当成 composition，
-  // 于是 fx 判定、raw key、Remotion 合成名全错——`--fx=off` 当年的「卡死」有一部分就是这么来的。
+  // 位置参数必须先剔除标志位，避免 `--fx=off` 被误当成 composition 参数影响 fx 判定与 raw key。
   const positional = (args || []).filter((a) => !String(a).startsWith('--'));
   const [projectArg, outputArg, composition = 'NotebookVideoFilm'] = positional;
   // --fx=off：跳过卷页探测。关掉的只是 WebGL2 卷页，翻页本身不会消失——没开 fx 时走纯 CSS 的 pageflip（折痕翻页）。
@@ -968,13 +975,11 @@ const render = async (args) => {
   // 中间文件放系统临时目录。Remotion 的 faststart 第二遍要回写文件头，网络 / FUSE 盘（如 JuiceFS）上会
   // `Error writing trailer: Input/output error`，整片渲完却拿不到文件。
   ensureParent(output);
-  const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency());
-  console.log(`Rendering at concurrency ${concurrency}. Override with REMOTION_CONCURRENCY after running benchmark-render.`);
-  // 交付路径：这是"真正出交付物"的渲染，色彩元数据必须打全（见 applyColorTags）。
-  // NOTEBOOK_VIDEO_SCALE=0.75 → 1920×1080 交付（缺省 2560×1440）
   const scaleArg = process.env.NOTEBOOK_VIDEO_SCALE || undefined;
   // 真卷页（WebGL2）与其余帧同一个浏览器、同一遍渲完。
   const fx = composition === 'NotebookVideoFilm' && !fxOff ? await stage('fx-probe', () => fxFor(project)) : {on: false};
+  const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency(scaleArg ?? '1', fx.on));
+  console.log(`Rendering at concurrency ${concurrency}. Override with REMOTION_CONCURRENCY after running benchmark-render.`);
   const total = composition === 'NotebookVideoFilm' ? readFilmDuration(project) : null;
   // raw 的 key 必须包含所有会改变画面的渲染参数：工程、分辨率、合成、GPU 卷页还是 CSS 折页。
   // （不能用 process.pid：每次跑都是新文件，「失败后接着跑」无从谈起。）
@@ -1144,9 +1149,7 @@ const preview = async (argv) => {
   if (totalFrames) {
     console.log(`Done in ${took.toFixed(0)}s — 按 ${scale}x 推算全片约 ${Math.round(took * totalFrames / Math.max(1, end - start))}s（交付分辨率另计）`);
   }
-  // 预览只盖一段时，**当场说出后面还有几镜没看**。
-  // 文档里写"记得补跑"不算工程手段——cell 的 S7/S8 就是整片漏掉的，
-  // 直到补量才发现 S7 右下角空 30%。这句话是把那次教训变成自动提醒。
+  // 预览只覆盖局部窗口时，提示未查看的后续镜头，引导使用 sweep 做全片巡检。
   if (totalFrames && end < totalFrames) {
     const unseen = shots.filter((s) => Number(s.from) >= end).map((s) => s.id);
     const tailNote = unseen.length
@@ -1156,26 +1159,14 @@ const preview = async (argv) => {
   }
 };
 
-// `sweep`：全片每一镜都量一遍，一分钟出头。
-//
-// 存在的理由不是"再多一个检查"，是补一个**已经发生过的漏检**：`preview` 默认只盖前 30 秒，
-// 片子比 30 秒长的时候，后半段的镜头**一次都没有被任何门禁看过**。cell 的 S7/S8 就是这么漏的
-// ——补跑 `--from=32` 才发现 S7 右下角空 30%。靠"记得补跑尾巴"不是工程手段。
-//
-// 做法是每镜截**一张落定态**，不是渲一段视频：45 帧里 44 帧长得一样，渲成 mp4 只是把
-// 同一个数字量 45 遍；而一张 PNG 既能出数字，又能直接拼成"全片体检表"一眼看完。
+// `sweep`：全片每一镜截取一张落定态帧（复用与成片相同的 FillGate 阈值）并拼成全片体检表。
 
 // ----------------------------------------------------------------------
 // sweep：静帧巡检与拼图（FillGate 的取样口径在这里）
 // ----------------------------------------------------------------------
 const SWEEP_GRID = 15;   // FillGate 的 sampleEvery 缺省值，见 fill-gate.tsx
 
-// 每镜一个采样帧：**必须是 15 的倍数**——FillGate 只在 `frame % 15 === 0` 或 watch 事件
-// ±2 帧上采样。取一个不在网格上的帧会得到**零数据**，而零数据和"这镜没问题"长得一模一样，
-// 这是这个项目已经犯过三次的错（量错东西，但数字看着合理）。
-//
-// 位置取"切点前最近的一个网格帧"：入场帧几乎必然是空的（元素还在画），拿它判空场会把
-// 每一镜都打成空洞。切点前是落定态。
+// 每镜取切点前落定态且为 15 的倍数的网格帧，以匹配 FillGate 的采样网格。
 /** 一镜的落定帧：后半段里最后一个网格点；短于一个网格就退回末帧。
  *  sweep（量密度）与 poster（取封面）必须用同一个规则——两处各写一份，迟早会一个改了另一个没改。 */
 const settledFrame = (shot) => {
@@ -1211,8 +1202,7 @@ const renderStill = async ({project, output, frame, scale}) => {
   const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
   if (!fs.existsSync(remotionCli)) fail(`Remotion CLI 缺失：${remotionCli}（先在工程里跑 npm ci）`, 1);
   const nodeArgs = [...hideConsoleArgs()];
-  // 用 `render --frames=N-N --sequence` 而不是 `still`：Remotion 4.0.539 的 `still` 在 Linux 上不转发组件内的
-  // console（连 FillGate 的 delayRender 都看不到），sweep 因此 0/8 镜量到；`render` 单帧序列会转发。
+  // 使用 `render --frames=N-N --sequence` 确保转发组件内的浏览器 console（供 FillGate 统计）。
   const seqDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nv-still-'));
   nodeArgs.push(remotionCli, 'render', REMOTION_ENTRY_POINT, 'NotebookVideoFilm', seqDir, `--frames=${frame}-${frame}`, '--sequence', '--image-format=png', `--scale=${scale}`, '--log=verbose');
   // ⚠ 必须放在 remotion 子命令参数里（nodeArgs 末尾），不是 node 自己的参数——
@@ -1399,14 +1389,16 @@ const makeContactSheet = async (video, contact, durationSec) => {
 // ----------------------------------------------------------------------
 // 校验：时长/音轨/黑帧/静音
 // ----------------------------------------------------------------------
-const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
-  if (!videoArg || !expectedArg) fail('Usage: notebook-video validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG]', 2);
+const validateVideo = async (argv) => {
+  const noContact = argv.includes('--no-contact');
+  const [videoArg, expectedArg, contactArg] = argv.filter((a) => !a.startsWith('--'));
+  if (!videoArg || !expectedArg) fail('Usage: notebook-video validate-video VIDEO_MP4 EXPECTED_DURATION [CONTACT_SHEET_JPG] [--no-contact]', 2);
   const video = resolvePath(videoArg);
   const expected = Number(expectedArg);
   if (!Number.isFinite(expected) || expected <= 0) fail(`EXPECTED_DURATION must be a positive number: ${expectedArg}`);
   if (!isNonEmptyFile(video)) fail(`Video is missing or empty: ${video}`);
   const contact = contactArg ? resolvePath(contactArg) : path.join(path.dirname(video), 'contact-sheet.jpg');
-  const probe = await run('ffprobe', ['-v', 'error', '-show_entries', 'stream=codec_name,codec_type,width,height,r_frame_rate,duration,sample_rate,channels,pix_fmt,color_range,color_space,color_transfer,color_primaries', '-show_entries', 'format=duration', '-of', 'json', video], {capture: true});
+  const probe = await run('ffprobe', ['-v', 'error', '-show_entries', 'stream=codec_name,codec_type,width,height,r_frame_rate,duration,start_time,sample_rate,channels,pix_fmt,color_range,color_space,color_transfer,color_primaries', '-show_entries', 'format=duration', '-of', 'json', video], {capture: true});
   const data = JSON.parse(probe.stdout);
   const streams = data.streams ?? [];
   const videoStream = streams.find((s) => s.codec_type === 'video');
@@ -1414,7 +1406,7 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   if (!videoStream || !audioStream) fail('Both video and audio streams are required.');
   if (videoStream.codec_name !== 'h264' || audioStream.codec_name !== 'aac') fail('Expected H.264 video and AAC audio.');
   // One locked delivery canvas: 2560x1440 (16:9).
-  // 同一张 16:9 画布的 1080p 交付（NOTEBOOK_VIDEO_SCALE=0.75，make-video 的缺省）也接受；其他尺寸 / 比例一律拒。
+  // 同一张 16:9 画布的 1080p 交付（NOTEBOOK_VIDEO_SCALE=0.75）也接受；其他尺寸 / 比例一律拒。
   const canvasOk = (videoStream.width === 2560 && videoStream.height === 1440) || (videoStream.width === 1920 && videoStream.height === 1080);
   if (!canvasOk) fail(`Expected 2560x1440 or 1920x1080 (16:9), got ${videoStream.width}x${videoStream.height}.`);
   const expectedFps = Number(process.env.NOTEBOOK_VIDEO_FPS || 30);
@@ -1422,7 +1414,31 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   if (String(audioStream.sample_rate) !== '48000' || Number(audioStream.channels) !== 2) fail('Expected 48kHz stereo audio.');
   const duration = Number(data.format?.duration);
   if (Math.abs(duration - expected) > 0.2) fail(`Duration mismatch: ${duration} vs ${expected}`);
-  console.log(`container valid: H.264/AAC ${videoStream.width}x${videoStream.height} ${expectedFps}fps, ${duration.toFixed(3)}s`);
+  const vStart = Number(videoStream.start_time ?? 0);
+  const aStart = Number(audioStream.start_time ?? 0);
+  if (Math.abs(vStart - aStart) > 0.034) fail(`A/V stream start_time offset too large: video=${vStart.toFixed(3)}s audio=${aStart.toFixed(3)}s (> 1 frame)`);
+  console.log(`container valid: H.264/AAC ${videoStream.width}x${videoStream.height} ${expectedFps}fps, ${duration.toFixed(3)}s, av_offset=${Math.abs(vStart - aStart).toFixed(3)}s`);
+
+  // CFR 流畅稳定检查：逐帧 PTS 间隔不能有掉帧 / 卡顿（≥3 次或累计 ≥3s 或单次 >0.25s 即判失败）
+  const ptsRun = await run('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'frame=pts_time', '-of', 'default=noprint_wrappers=1:nokey=1', video], {capture: true, allowFailure: true});
+  if (ptsRun.code === 0) {
+    const pts = ptsRun.stdout.split(/\r?\n/).map((x) => x.trim()).filter(Boolean).map(Number).filter((x) => Number.isFinite(x));
+    const step = 1 / expectedFps;
+    let gaps = 0, excessSec = 0, maxGap = 0;
+    for (let i = 1; i < pts.length; i++) {
+      const dt = pts[i] - pts[i - 1];
+      if (dt <= 0) { gaps++; maxGap = Math.max(maxGap, 1); continue; }
+      if (dt > step * 1.5) {
+        gaps++;
+        excessSec += dt - step;
+        maxGap = Math.max(maxGap, dt);
+      }
+    }
+    if (pts.length >= 2 && (gaps >= 3 || excessSec >= 3.0 || maxGap > 0.25)) {
+      fail(`Frame timing stutter detected: gaps=${gaps}, cumulative=${excessSec.toFixed(2)}s, max_dt=${maxGap.toFixed(3)}s`);
+    }
+    console.log(`smoothness valid: ${pts.length} frames, stutter_gaps=${gaps}, max_dt=${maxGap.toFixed(3)}s`);
+  }
 
   // 色彩断言：四项元数据必须精确等于交付契约（理由见 DELIVERY_COLOR_CONTRACT 上方的注释）。
   // 缺字段的流 ffprobe 直接不返回该项 → 一律按 unknown 报出来，不静默放过。
@@ -1441,6 +1457,22 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   const blackLog = `${black.stdout}\n${black.stderr}`;
   if (/black_(start|end)/.test(blackLog)) fail(`Black frames detected:\n${blackLog.match(/.*black_(?:start|end).*$/gm)?.join('\n') ?? blackLog}`);
 
+  // 曝光检查：每秒抽 1 帧跑 signalstats，拦截过暗死黑与高光死白
+  const sig = await run('ffmpeg', ['-hide_banner', '-i', video, '-vf', 'fps=1,signalstats,metadata=print:file=-', '-an', '-f', 'null', '-'], {capture: true, allowFailure: true});
+  const yavgs = [...sig.stdout.matchAll(/lavfi\.signalstats\.YAVG=([0-9.]+)/g)].map((m) => Number(m[1]));
+  const ymins = [...sig.stdout.matchAll(/lavfi\.signalstats\.YMIN=([0-9.]+)/g)].map((m) => Number(m[1]));
+  const ymaxs = [...sig.stdout.matchAll(/lavfi\.signalstats\.YMAX=([0-9.]+)/g)].map((m) => Number(m[1]));
+  const yhighs = [...sig.stdout.matchAll(/lavfi\.signalstats\.YHIGH=([0-9.]+)/g)].map((m) => Number(m[1]));
+  if (yavgs.length) {
+    const minAvg = Math.min(...yavgs), maxAvg = Math.max(...yavgs);
+    if (minAvg < 35) fail(`Underexposed/dark frame detected: min YAVG=${minAvg.toFixed(1)} < 35`);
+    const blown = yavgs.findIndex((avg, idx) => avg > 248 && (yhighs[idx] ?? 0) >= 253);
+    if (blown >= 0) fail(`Overexposed/blown-out frame at ~${blown}s: YAVG=${yavgs[blown].toFixed(1)}, YHIGH=${yhighs[blown]}`);
+    const minSpan = Math.min(...yavgs.map((_, idx) => (ymaxs[idx] ?? 255) - (ymins[idx] ?? 0)));
+    if (minSpan < 40) console.warn(`  ⚠ P1 画面对比度偏平：动态范围 YMAX-YMIN=${minSpan.toFixed(1)} < 40`);
+    console.log(`exposure valid: YAVG=${minAvg.toFixed(1)}..${maxAvg.toFixed(1)} (${yavgs.length} samples)`);
+  }
+
   const loud = await run('ffmpeg', ['-hide_banner', '-i', video, '-af', 'loudnorm=I=-16:LRA=11:TP=-1.5:print_format=summary', '-f', 'null', '-'], {capture: true, allowFailure: true});
   const loudLog = `${loud.stdout}\n${loud.stderr}`;
   const integrated = Number(loudLog.match(/Input Integrated:\s*([-0-9.]+) LUFS/)?.[1]);
@@ -1451,9 +1483,11 @@ const validateVideo = async ([videoArg, expectedArg, contactArg]) => {
   if (peak > -1.5) fail(`True peak above the documented -1.5 dBTP ceiling: ${peak} dBTP`);
   console.log(`audio valid: ${integrated.toFixed(1)} LUFS, ${peak.toFixed(1)} dBTP`);
 
-  await makeContactSheet(video, contact, expected);
+  if (!noContact) {
+    await makeContactSheet(video, contact, expected);
+    console.log(`Contact sheet: ${contact}`);
+  }
   console.log('No black frames detected.');
-  console.log(`Contact sheet: ${contact}`);
 };
 
 

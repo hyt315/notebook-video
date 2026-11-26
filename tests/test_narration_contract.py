@@ -140,7 +140,8 @@ class FileEngineTimelineTest(unittest.TestCase):
             p = self._project(td)
             before = (p / "audio" / "narration.mp3.json").read_text(encoding="utf-8")
             r = subprocess.run([sys.executable, str(TTS), str(p), "--engine=file", "--allow-stale"],
-                               capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180)
+                               env=NO_WHISPER, capture_output=True, text=True, encoding="utf-8",
+                               errors="replace", timeout=180)
             self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
             self.assertIn("实测", r.stderr)
             self.assertEqual((p / "audio" / "narration.mp3.json").read_text(encoding="utf-8"), before,
@@ -151,7 +152,8 @@ class FileEngineTimelineTest(unittest.TestCase):
             p = self._project(td)
             r = subprocess.run([sys.executable, str(TTS), str(p), "--engine=file",
                                 "--allow-stale", "--force-estimate"],
-                               capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180)
+                               env=NO_WHISPER, capture_output=True, text=True, encoding="utf-8",
+                               errors="replace", timeout=180)
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             backups = list((p / "audio").glob("narration.mp3.json.bak-*"))
             self.assertEqual(len(backups), 1, "改写时间轴必须留备份")
