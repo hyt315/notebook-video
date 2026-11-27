@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import {createRequire} from 'node:module';
-import {resolveBrowserExecutable} from './browser-exec.mjs';
+import {resolveBrowserInfo} from './browser-exec.mjs';
 
 const die = (msg, code = 2) => { console.error(`render-stills: ${msg}`); process.exit(code); };
 const args = process.argv.slice(2);
@@ -37,14 +37,17 @@ try {
   die(`缺少 @remotion/renderer：${e.message}`);
 }
 
-let browserExecutable;
+let browserInfo;
 try {
-  browserExecutable = resolveBrowserExecutable();
+  browserInfo = resolveBrowserInfo();
 } catch (e) {
   die(e.message);
 }
+const browserExecutable = browserInfo.executable;
+const chromeMode = browserInfo.chromeMode;
 if (!browserExecutable) await renderer.ensureBrowser();
-const browser = await renderer.openBrowser('chrome', {browserExecutable, chromiumOptions: {}});
+const browserOpts = {browserExecutable, chromiumOptions: {}, ...(chromeMode ? {chromeMode} : {})};
+const browser = await renderer.openBrowser('chrome', browserOpts);
 try {
   const composition = await renderer.selectComposition({
     serveUrl: bundle,
@@ -52,6 +55,7 @@ try {
     inputProps: {},
     puppeteerInstance: browser,
     browserExecutable,
+    ...(chromeMode ? {chromeMode} : {}),
   });
   for (const job of jobs) {
     fs.mkdirSync(path.dirname(job.out), {recursive: true});
@@ -66,6 +70,7 @@ try {
         scale,
         puppeteerInstance: browser,
         browserExecutable,
+        ...(chromeMode ? {chromeMode} : {}),
         overwrite: true,
         onBrowserLog: (log) => {
           const line = String(log.text ?? '').trim();

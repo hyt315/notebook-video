@@ -9,6 +9,7 @@ The full earlier history (1.0.0 – 3.5.4) is archived in the repository at `doc
 ## [3.8.0] - 2026-11-27
 
 ### Added
+- 新增 `scripts/deps-cache.mjs` 与增强版 `scripts/browser-exec.mjs`：跨工程按锁文件哈希与校验和优先扫描并复用本机/共享缓存的 `node_modules`、渲染浏览器与字体，首次缺失时仅安装或下载一次。 / Added `scripts/deps-cache.mjs` and enhanced `scripts/browser-exec.mjs` to scan and reuse cached `node_modules`, rendering browsers, and fonts across projects by lockfile hash and checksum, fetching once only when absent.
 - 运镜导演支持多意图调度（`push-in` / `pull-back` / `pan-follow` / `still`、`CinemaSpec.driftDir`）与章节切换转场联动，并按镜标题分布版式变体。 / Multi-intent camera director (`push-in`, `pull-back`, `pan-follow`, `still`, `CinemaSpec.driftDir`), chapter-aware transitions, and title-seeded layout variants.
 - `validate-presentation.py` 新增前景叠加占比检查（`check_overlay_budget`）；`validate-video` 新增逐帧节奏与曝光/对比度校验。 / Added foreground overlay budget checks in `validate-presentation.py`, plus frame pacing and exposure/contrast checks in `validate-video`.
 

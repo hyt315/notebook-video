@@ -88,6 +88,7 @@ GitHub CLI 2.90+ 也可以：`gh skill install hyt315/notebook-video notebook-vi
 ### 2. 准备环境
 
 - **Node.js 20+**、**Python 3**、**ffmpeg / ffprobe**（抽帧、转码、响度）
+- 多视频工程会自动复用本机已有与用户级共享缓存中的 `node_modules`、渲染浏览器（`chrome-headless-shell`）及字体（按校验和/锁文件匹配，缺时按需下载一次并持久复用）
 - 第一次用前体检并准备渲染用的 Chromium：
 
 ```bash

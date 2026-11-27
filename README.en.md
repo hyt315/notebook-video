@@ -90,6 +90,7 @@ With GitHub CLI 2.90+: `gh skill install hyt315/notebook-video notebook-video --
 ### 2. Prepare the environment
 
 - **Node.js 20+**, **Python 3**, **ffmpeg / ffprobe** (frame extraction, transcoding, loudness)
+- Multiple video projects automatically reuse existing and user-cached `node_modules`, headless Chromium (`chrome-headless-shell`), and fonts across runs (matched by lockfile hash / checksum; missing assets are downloaded once and shared)
 - Before the first render, check dependencies and prepare the rendering Chromium:
 
 ```bash

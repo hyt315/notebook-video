@@ -20,6 +20,7 @@ import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
 import {writeSilentNarration} from './silent-audio.mjs';
+import {ensureProjectNodeModules, sharedNpmCacheDir} from './deps-cache.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const IS_WIN = process.platform === 'win32';
@@ -346,19 +347,26 @@ requireNarrationForRender();
 
 // 6. tsc
 step('TypeScript 检查');
-const tscJs = path.join(project, 'node_modules', 'typescript', 'bin', 'tsc');
-if (!fs.existsSync(tscJs)) {
-  // Node 18 起禁止直接 spawn .cmd（CVE-2024-27980），Windows 上 spawn('npm.cmd') 会抛 EINVAL。
-  // 优先用随 Node 安装的 npm-cli.js 直接跑；找不到才退回 shell。
+const runNpm = async (npmArgs, opts = {}) => {
   const npmCli = [
     path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js'),
     path.resolve(path.dirname(process.execPath), '..', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
   ].find((q) => fs.existsSync(q));
+  const cache = sharedNpmCacheDir();
+  fs.mkdirSync(cache, {recursive: true});
+  const env = {...process.env, npm_config_cache: cache};
   const r = npmCli
-    ? await node([npmCli, 'ci', '--no-audit', '--no-fund'], {cwd: project})
-    : await run(IS_WIN ? 'npm.cmd' : 'npm', ['ci', '--no-audit', '--no-fund'], {cwd: project, shell: IS_WIN});
-  if (r.code) die(`npm ci 失败（在 ${project} 里手动跑一次 npm ci 看具体报错）`);
-}
+    ? await node([npmCli, ...npmArgs], {...opts, env})
+    : await run(IS_WIN ? 'npm.cmd' : 'npm', npmArgs, {...opts, shell: IS_WIN, env});
+  if (r.code) die(`npm ${npmArgs[0]} 失败（在 ${opts.cwd ?? project} 里手动跑一次看具体报错）`);
+};
+await ensureProjectNodeModules(project, {
+  skillDir: path.dirname(SCRIPT_DIR),
+  runNpm,
+  verifyRel: path.join('typescript', 'bin', 'tsc'),
+});
+const tscJs = path.join(project, 'node_modules', 'typescript', 'bin', 'tsc');
+if (!fs.existsSync(tscJs)) die(`缺少 typescript：${tscJs}`);
 if ((await node([tscJs, '--noEmit', '-p', '.'], {cwd: project})).code) die('tsc 报错（多半是 src/custom/ 里的定制组件）');
 
 // 7. stills / render

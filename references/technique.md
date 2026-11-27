@@ -30,6 +30,7 @@
 | `edge-tts`（可选） | Python CLI 或 `--engine=file` | 生成中文配音与词级时间 | 无真实配音时 `--render` 自动阻断 |
 
 - **自检命令**：`node scripts/notebook-video.mjs check-deps` 与 `capabilities`（`--json` 不支持时退码 1）；预下浏览器运行 `prepare-browser`。
+- **依赖与资源跨工程复用**：多视频工程优先复用本地用户缓存目录（`NOTEBOOK_VIDEO_CACHE_DIR`，默认操作系统标准缓存路径）下同 `package-lock.json` 哈希的 `node_modules`、`npm-cache`、已有的 `chrome-headless-shell` 渲染浏览器与校验过 `sha256` 的字体文件，缺什么才按需下载一次并写入共享缓存（停用共享依赖链接可设 `NOTEBOOK_VIDEO_SHARED_DEPS=0`）。
 - **常见隐性故障**：交付自动加 `--require-budoux`，缺 `budoux` 直接拦截而非静默跳过；手作皮肤缺 Noto Serif SC 时先 `notebook-video fonts --serif`。
 
 <a id="cross-platform-compatibility"></a>

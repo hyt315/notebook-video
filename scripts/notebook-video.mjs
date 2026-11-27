@@ -11,7 +11,8 @@ import {readShotPlan} from './transition-plan.mjs';
 import {acquireRenderLock, canResume, inputFingerprint, lockPathFor, manifestPathFor, projectKeyFor, readManifest, writeManifest} from './render-lock.mjs';
 import {appendRunLog, classifyExit, formatSummary, readRunLog, RUN_LOG_REL, summarize} from './render-log.mjs';
 import {writeSilentNarration} from './silent-audio.mjs';
-import {resolveBrowserExecutable} from './browser-exec.mjs';
+import {resolveBrowserExecutable, resolveBrowserInfo} from './browser-exec.mjs';
+import {ensureProjectNodeModules, fileSha256, sharedFontsDir, sharedNpmCacheDir} from './deps-cache.mjs';
 import {killTree} from './kill-tree.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -36,12 +37,18 @@ const fail = (message, code = 1) => {
 };
 
 // REMOTION_BROWSER_EXECUTABLE 指错路径时一行报错，不打印整段堆栈
-const browserExecutableOrFail = () => {
+const browserInfoOrFail = () => {
   try {
-    return resolveBrowserExecutable();
+    return resolveBrowserInfo();
   } catch (error) {
     return fail(error.message);
   }
+};
+const browserExecutableOrFail = () => browserInfoOrFail().executable;
+const browserCliFlagsOrFail = () => {
+  const {executable, chromeMode} = browserInfoOrFail();
+  if (!executable) return [];
+  return chromeMode ? [`--browser-executable=${executable}`, `--chrome-mode=${chromeMode}`] : [`--browser-executable=${executable}`];
 };
 
 const resolvePath = (value, base = process.cwd()) => path.resolve(base, value);
@@ -162,8 +169,7 @@ const npmInvocation = () => {
 
 const runNpm = (args, options = {}) => {
   const npm = npmInvocation();
-  const cwd = options.cwd ?? process.cwd();
-  const cache = process.env.NOTEBOOK_VIDEO_NPM_CACHE || path.join(cwd, '.tools', 'npm-cache');
+  const cache = sharedNpmCacheDir();
   fs.mkdirSync(cache, {recursive: true});
   return run(npm.command, [...npm.prefix, ...args], {...options, shell: options.shell ?? npm.shell ?? false, env: {...process.env, npm_config_cache: cache}});
 };
@@ -356,19 +362,28 @@ const downloadPinned = async (url, file, sha) => {
   return null;
 };
 
-// 补齐一套字体，返回 assets/fonts/ 目录。必需的字体下载失败直接 fail；可选的（optional）只调 onMissing。
+// 补齐一套字体，返回 assets/fonts/ 目录：先查技能与用户共享字体缓存，命中 sha256 直接复用；必需的下载失败才报错。
 const ensureFontSet = async (id) => {
   const set = FONT_SETS[id];
   fs.mkdirSync(FONT_DIR, {recursive: true});
+  const sharedFonts = sharedFontsDir();
   const mirror = (process.env[set.mirrorEnv] || '').replace(/\/+$/, '');
   const missing = [];
   for (const [name, sha] of Object.entries(set.files)) {
     const file = path.join(FONT_DIR, name);
     if (fs.existsSync(file) && hashFile(file) === sha) continue;
+    const sharedFile = path.join(sharedFonts, name);
+    if (fs.existsSync(sharedFile) && fileSha256(sharedFile) === sha) {
+      fs.copyFileSync(sharedFile, file);
+      continue;
+    }
     const url = !mirror ? set.url(name) : set.mirrorIsFile ? mirror : `${mirror}/${name}`;
     console.log(`Downloading font ${name} (${set.label}) from ${url}`);
     const err = await downloadPinned(url, file, sha);
-    if (!err) continue;
+    if (!err) {
+      try { fs.mkdirSync(sharedFonts, {recursive: true}); fs.copyFileSync(file, sharedFile); } catch {}
+      continue;
+    }
     if (set.optional) { missing.push(name); continue; }
     if (err === 'fetch') fail(`Font download failed: ${url}\n${set.manual(name, FONT_DIR)}`);
     fail(`Font checksum mismatch for ${name}; expected ${set.label} sha256 ${sha}.`);
@@ -516,16 +531,11 @@ const syncProjectAssets = async ([projectArg], {quiet = false} = {}) => {
 const prepareBrowser = async ([projectArg]) => {
   if (!projectArg) fail('Usage: notebook-video prepare-browser PROJECT_DIRECTORY', 2);
   const project = resolvePath(projectArg);
+  await ensureProjectNodeModules(project, {skillDir: SKILL_DIR, runNpm});
   const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
-  if (!fs.existsSync(remotionCli)) await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
-  if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after npm ci: ${remotionCli}`);
-  const args = [remotionCli, 'browser', 'ensure'];
-  const browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE;
-  if (browserExecutable) {
-    const resolved = resolvePath(browserExecutable);
-    if (!fs.existsSync(resolved)) fail(`REMOTION_BROWSER_EXECUTABLE does not exist: ${resolved}`);
-    args.push(`--browser-executable=${resolved}`);
-  }
+  if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after dependency setup: ${remotionCli}`);
+  const flags = browserCliFlagsOrFail();
+  const args = [remotionCli, 'browser', 'ensure', ...flags];
   await run(process.execPath, [...hideConsoleArgs(), ...args], {cwd: project});
   console.log('Remotion rendering browser is ready.');
 };
@@ -636,8 +646,8 @@ const fxFor = async (project, {force = false, quiet = false} = {}) => {
   const runStill = async (args) => {
     if (!fs.existsSync(remotionCli)) return {code: 1, out: `Remotion CLI missing: ${remotionCli}`};
     // 探针用与成片相同的浏览器；有上限，到点就杀，按失败处理（退回 pageflip）。
-    const browser = browserExecutableOrFail();
-    const r = await run(process.execPath, [...hideConsoleArgs(), remotionCli, 'still', REMOTION_ENTRY_POINT, ...args, ...(browser ? [`--browser-executable=${browser}`] : [])],
+    const flags = browserCliFlagsOrFail();
+    const r = await run(process.execPath, [...hideConsoleArgs(), remotionCli, 'still', REMOTION_ENTRY_POINT, ...args, ...flags],
       {cwd: project, capture: true, allowFailure: true, timeoutMs: FX_PROBE_TIMEOUT_MS});
     return {code: r.code, out: `${r.stdout}\n${r.stderr}`};
   };
@@ -829,9 +839,9 @@ const buildPropsArg = (extra = {}) => {
 };
 
 const remotionRender = async ({project, entry = REMOTION_ENTRY_POINT, composition, output, frames, concurrency, colorTagged = false, scale, fxMode = 'auto', crf = Number(process.env.NOTEBOOK_VIDEO_CRF || 18), x264Preset = process.env.NOTEBOOK_VIDEO_X264_PRESET ?? 'veryfast', muted = false, measure = true, persist = true, reducedMotion = false}) => {
+  await ensureProjectNodeModules(project, {skillDir: SKILL_DIR, runNpm});
   const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
-  if (!fs.existsSync(remotionCli)) await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
-  if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after npm ci: ${remotionCli}`);
+  if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after dependency setup: ${remotionCli}`);
   ensureParent(output);
   const nodeArgs = [...hideConsoleArgs()];
   if (process.env.REMOTION_USE_NETWORK_SHIM === '1') {
@@ -854,11 +864,7 @@ const remotionRender = async ({project, entry = REMOTION_ENTRY_POINT, compositio
   if (fx.on) mergedProps.nvFx = 'on';
   if (reducedMotion) mergedProps.nvReducedMotion = 'on';
   if (Object.keys(mergedProps).length) nodeArgs.push(buildPropsArg(mergedProps));
-  // Browser resolution: explicit env wins, then the local Remotion cache that
-  // `prepare-browser` already populated — never trigger a fresh 100MB+ shell
-  // download when a cached copy exists on this machine.
-  const browserExecutable = browserExecutableOrFail();
-  if (browserExecutable) nodeArgs.push(`--browser-executable=${browserExecutable}`);
+  nodeArgs.push(...browserCliFlagsOrFail());
   // 返回 FillGate 的测量结果：`render` 不看，`sweep` 要拿它打全片表（不另读终端输出，免得出现第二个真源）。
   const result = await runRemotionFiltered(nodeArgs, project, {measure, persist});
   if (colorTagged) await applyColorTags(output);
@@ -1207,8 +1213,7 @@ const renderStill = async ({project, output, frame, scale}) => {
   nodeArgs.push(remotionCli, 'render', REMOTION_ENTRY_POINT, 'NotebookVideoFilm', seqDir, `--frames=${frame}-${frame}`, '--sequence', '--image-format=png', `--scale=${scale}`, '--log=verbose');
   // ⚠ 必须放在 remotion 子命令参数里（nodeArgs 末尾），不是 node 自己的参数——
   // 放前面 node 会报 `bad option: --browser-executable=…` 然后 rc=9，而且八镜会连报八次。
-  const browser = browserExecutableOrFail();
-  if (browser) nodeArgs.push(`--browser-executable=${browser}`);
+  nodeArgs.push(...browserCliFlagsOrFail());
   try {
     const r = await runRemotionFiltered(nodeArgs, project, {quiet: true});
     const png = fs.readdirSync(seqDir).find((f) => f.endsWith('.png'));
@@ -1632,16 +1637,14 @@ const showcase = async (args) => {
   const project = resolvePath(projectArg);
 
   if (craft) {
+    await ensureProjectNodeModules(project, {skillDir: SKILL_DIR, runNpm});
     const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
-    if (!fs.existsSync(remotionCli)) await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
-    if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after npm ci: ${remotionCli}`);
+    if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after dependency setup: ${remotionCli}`);
     const out = resolvePath(outputArg ?? path.join(project, 'renders', 'craft-sheet.png'));
     ensureParent(out);
     const frame = Number(opt('frame', 72));
     const scale = Number(opt('scale', 1));
-    const nodeArgs = [...hideConsoleArgs(), remotionCli, 'still', SHOWCASE_ENTRY_POINT, 'NotebookVideoCraftSheet', out, `--frame=${frame}`, `--scale=${scale}`];
-    const browser = browserExecutableOrFail();
-    if (browser) nodeArgs.push(`--browser-executable=${browser}`);
+    const nodeArgs = [...hideConsoleArgs(), remotionCli, 'still', SHOWCASE_ENTRY_POINT, 'NotebookVideoCraftSheet', out, `--frame=${frame}`, `--scale=${scale}`, ...browserCliFlagsOrFail()];
     await run(process.execPath, nodeArgs, {cwd: project});
     console.log(`Craft sheet written: ${out} — 读它判断当前皮肤下的手作组件（references/components.md#craft-kit）。`);
     return;
@@ -1724,16 +1727,14 @@ const poster = async (argv) => {
   ensureParent(out);
   await ensureProjectFonts(project);
   await syncProjectAssets([project]);
+  await ensureProjectNodeModules(project, {skillDir: SKILL_DIR, runNpm});
   const remotionCli = path.join(project, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
-  if (!fs.existsSync(remotionCli)) await runNpm(['ci', '--no-audit', '--no-fund'], {cwd: project});
-  if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after npm ci: ${remotionCli}`);
+  if (!fs.existsSync(remotionCli)) fail(`Remotion CLI is missing after dependency setup: ${remotionCli}`);
   const scale = Number(opt('scale', 1));
   const props = {hideCaptions: true};
   if (reducedMotion) props.nvReducedMotion = 'on';
   const nodeArgs = [...hideConsoleArgs(), remotionCli, 'still', REMOTION_ENTRY_POINT, 'NotebookVideoFilm', out,
-    `--frame=${frame}`, `--scale=${scale}`, ...(/\.jpe?g$/i.test(out) ? ['--image-format=jpeg', '--jpeg-quality=92'] : []), buildPropsArg(props)];
-  const browser = browserExecutableOrFail();
-  if (browser) nodeArgs.push(`--browser-executable=${browser}`);
+    `--frame=${frame}`, `--scale=${scale}`, ...(/\.jpe?g$/i.test(out) ? ['--image-format=jpeg', '--jpeg-quality=92'] : []), buildPropsArg(props), ...browserCliFlagsOrFail()];
   await run(process.execPath, nodeArgs, {cwd: project});
   console.log(`Poster written: ${out} — 第 ${frame} 帧（${why}），字幕已隐去。`);
 };
