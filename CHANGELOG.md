@@ -6,6 +6,24 @@ Format follows Keep a Changelog: one section per release, one line per change. T
 更早的完整记录（1.0.0 – 3.5.4，中英双写的长条目）已归档到仓库内的 `docs/history/CHANGELOG-legacy.md`（只在仓库里，不进发布包）。
 The full earlier history (1.0.0 – 3.5.4) is archived in the repository at `docs/history/CHANGELOG-legacy.md` (repository only, not shipped).
 
+## [3.8.0] - 2026-11-27
+
+### Added
+- 运镜导演支持多意图调度（`push-in` / `pull-back` / `pan-follow` / `still`、`CinemaSpec.driftDir`）与章节切换转场联动，并按镜标题分布版式变体。 / Multi-intent camera director (`push-in`, `pull-back`, `pan-follow`, `still`, `CinemaSpec.driftDir`), chapter-aware transitions, and title-seeded layout variants.
+- `validate-presentation.py` 新增前景叠加占比检查（`check_overlay_budget`）；`validate-video` 新增逐帧节奏与曝光/对比度校验。 / Added foreground overlay budget checks in `validate-presentation.py`, plus frame pacing and exposure/contrast checks in `validate-video`.
+
+### Changed
+- 默认交付分辨率设为 2560×1440（`--scale=1 --crf=18 --x264-preset=veryfast`）；`--stills` 采用单浏览器会话连续出图；`remotion.config.ts` 关闭源码映射生成并剥离内置映射引用。 / Default render output set to 2560×1440 (`--scale=1 --crf=18 --x264-preset=veryfast`), `--stills` reuses one browser session, and `remotion.config.ts` disables and strips sourcemaps.
+- 字幕默认采用 64px 纸色描边无框样式，精简顶部角标与前景叠加占比；进场与媒框显隐切换为 `clipPath` / `translateY` 合成属性动效。 / Open 64px paper-halo subtitles with compact top-left chapter badges; composited `clipPath` and `translateY` reveal/media transitions.
+- TTS 对齐支持模糊匹配降级、音节加权切分、语音起止检测、口语规范与削波检查，以及句间停顿切镜；冷开重音重叠阶段人声压低触发系数为 `0.78`。 / Resilient TTS alignment with fuzzy fallback, weighted splitting, speech bounds, spoken-form/clipping checks, pause-midpoint shot cuts, and `0.78` cold-open ducking.
+- `SKILL.md` 与 `references/` 围绕冷开承诺呼应与讲稿契约合并精简，`README.md` / `README.en.md` 口径与实现保持同步。 / Consolidated `SKILL.md` and `references/` around cold-open promise/payoff and narration contracts, and synced `README.md` / `README.en.md`.
+
+### Fixed
+- 修复 Windows 下目录链接、缺少 Whisper 的测试隔离、`ffprobe` 帧时间戳字段、同目录处理稿精确匹配及空卡片边界校验。 / Fixed Windows directory linking, Whisper-absent test isolation, `ffprobe` frame timestamp fields, sibling treatment lookup, and empty-deck bounds.
+
+### Removed
+- 移除静态样式镜像 `references/locked-style-contract.json`；`package-skill.py` 排除开发/示例文档并执行包内禁用模式扫描。 / Removed redundant `references/locked-style-contract.json` and excluded dev/example docs in `package-skill.py` with banned-pattern scanning.
+
 ## [3.7.0] - 2026-11-26
 
 ### Added

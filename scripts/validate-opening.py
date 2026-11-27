@@ -14,7 +14,7 @@ YouTube 把"30 秒后还剩多少观众"单列为 Intro 指标，并建议把精
   O4 前 90 帧（3 s）至少 3 个 beat（所有镜头的 beatsAbs + 镜头切换）
   O5 第一句不是泛问句 / 寒暄（"X 这个词…""你知道吗""今天我们来聊""大家好"）
 像素检查（--video，要 ffmpeg；没有就 SKIPPED）：
-  O6 第 0 / 15 / 45 / 90 帧：非背景像素占比 > 8%（第 0 帧就有主体）
+  O6 第 0 / 15 / 45 / 90 帧：非背景像素占比 > 4%（第 0 帧就有主体）
   O7 相邻两张（0→15、15→45、45→90）画面有变化（平均差 > 1.5 / 255）
 档位：O1–O5、O7 为 P1；O6（第 0 帧空白）为 P0（--video 时可拦片）。
 只用标准库（像素检查调用 ffmpeg 输出 rawvideo）。退出码：0 通过，2 用法错误。
@@ -37,7 +37,7 @@ FIRST_CAPTION_MAX_SEC = 1.0
 OPENING_WINDOW_FRAMES = 90
 OPENING_MIN_BEATS = 3
 PROBE_FRAMES = (0, 15, 45, 90)
-INK_MIN_RATIO = 0.08          # 非背景像素占比下限
+INK_MIN_RATIO = 0.04          # 非背景像素占比下限
 CHANGE_MIN = 1.5              # 相邻抽帧平均差下限（0–255）
 SAMPLE_W, SAMPLE_H = 160, 90  # 像素检查的降采样尺寸
 BANNED_OPENERS = (

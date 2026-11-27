@@ -583,8 +583,8 @@ const H264_COLOR_TAG_FILTER = 'h264_metadata=colour_primaries=1:transfer_charact
 //   · 删掉 `h264_metadata` 回写 → range/space 还是 bt709，但 transfer / primaries 仍是 unknown
 //     （`--color-space=bt709` 单独一条盖不住这两项，Remotion 最后一道 stitch 是 `-c:v copy`）。
 // 为什么只认 `tv + bt709×3`、不接受"别的自洽组合"：
-//   ① 交付画布都是 SDR 网络播放，`pc`（满幅）会让严格播放器把信号当有限幅解释 → 对比度/饱和色偏移，
-//      正是上一轮修掉的那个缺陷；`bt470bg`（BT.601）与 `bt709` 的矩阵不同，同样偏色；
+//   ① 交付画布都是 SDR 网络播放，`pc`（满幅）会让严格播放器把信号当有限幅解释 → 对比度/饱和色偏移；
+//      `bt470bg`（BT.601）与 `bt709` 的矩阵不同，同样偏色；
 //   ② "自洽"无法只从这四项推出来：`pc + bt709×3` 字段上也自洽，但它不是本链路产的片
 //      （渲染端已按 `range=limited` 转换过像素），放行它等于把"标错范围"的片子当合格；
 //   ③ 门禁的作用是抓**漂移**，判据就该是精确等于契约，而不是"看起来合理"。
@@ -979,7 +979,7 @@ const render = async (args) => {
   // 真卷页（WebGL2）与其余帧同一个浏览器、同一遍渲完。
   const fx = composition === 'NotebookVideoFilm' && !fxOff ? await stage('fx-probe', () => fxFor(project)) : {on: false};
   const concurrency = Number(process.env.REMOTION_CONCURRENCY || suggestedConcurrency(scaleArg ?? '1', fx.on));
-  console.log(`Rendering at concurrency ${concurrency}. Override with REMOTION_CONCURRENCY after running benchmark-render.`);
+  console.log(`Rendering at concurrency ${concurrency}. Override with REMOTION_CONCURRENCY.`);
   const total = composition === 'NotebookVideoFilm' ? readFilmDuration(project) : null;
   // raw 的 key 必须包含所有会改变画面的渲染参数：工程、分辨率、合成、GPU 卷页还是 CSS 折页。
   // （不能用 process.pid：每次跑都是新文件，「失败后接着跑」无从谈起。）

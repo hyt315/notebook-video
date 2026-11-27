@@ -411,12 +411,12 @@
  "examples/real-media/git-pr.story.json": {
   "manifests/caption-cues.json": "a5fcd9dbcc09c89d4115f6a9fb8ffbaff409baee3bd34f150948a34ed52437e6",
   "manifests/protected-caption-phrases.txt": "4608079b2084891ba25330ad2d7f5f0d2fa0ec1ca54662cc268d8edb5578a3bb",
-  "manifests/shots.json": "2bcd41d43e6c5e13e9ad6b779867cd7c0fe8bfea35592123d4c858f2bbd414f3",
-  "manifests/shots.resolved.json": "70f2c335f5c2c61fb5c71b688443362724482afae370dbd87b86c1caa943094d",
+  "manifests/shots.json": "280dd8af66bf36c858023c33816014c696bde85b7ce597c924e66ee5f18b0b0e",
+  "manifests/shots.resolved.json": "8dcb91a45e75ea2a6e987661920a79a1065415ac1c603341f478aee53745db23",
   "narration.txt": "50e93faa60e9046ee484e2d63b47b179a9052746b5ee59481f57c8e47562d49b",
   "src/film.ts": "fd71b96427d3a18f8b72b4ae73b1aa03a011624c21ebafe75baab3aa7b209aff",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "295b97e9da80982a2ed0ff721379a9f8c0728c83a48c7842e1603c86b98d1530",
+  "src/shots.ts": "44c7564186195e7eac454ca47e8f608996bfcde63b1e1c547c0783dd15c9e320",
   "src/story.ts": "0823d462aa83dcc921a2fca7077668eaf96854da5b17336c56b3d768a8d6e8da",
   "validate-audio-levels.py": {
    "P0": 0,
@@ -430,8 +430,9 @@
   },
   "validate-composition.py": {
    "P0": 0,
-   "P1": 2,
+   "P1": 3,
    "rules": [
+    "P1|全片仅 # 种镜头意图，要求",
     "P1|可选组件只用了 # 件（[]",
     "P1|镜长变异系数 # < #（平"
    ]
@@ -478,23 +479,25 @@
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 6,
+   "P1": 7,
    "rules": [
     "P1|S1",
     "P1|S3",
     "P1|S3",
     "P1|S4",
     "P1|S4",
-    "P1|全片仅 # 次运镜，按片长 "
+    "P1|全片仅 # 次运镜，按片长 ",
+    "P1|全片仅 # 种镜头意图（不含"
    ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 6,
+   "P1": 7,
    "rules": [
     "P1|S1",
     "P1|S2",
     "P1|S3",
+    "P1|S4",
     "P1|turn_to_you_se",
     "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"

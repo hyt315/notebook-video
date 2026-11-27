@@ -81,8 +81,7 @@ export const ConsoleWindow: React.FC<{
   // Any hand-rolled row-height estimate drifts with font/weight (measured: 27px short with the old
   // `24 + rows*rowGap`, still 12px short with an estimate), and the last row gets clipped by hidden overflow.
   const bodyH = h;
-  // 调色板外色值（与上一轮修的 `#efe9dc` 同一类）：'out' 与默认色都写死了十六进制。
-  // 换成调色板里最近的合法值：'out' → C.white（暗底上的输出行），默认 → C.dotIdle。
+  // 调色板外色值：'out' 与默认色统一使用调色板语义常量 C.white / C.dotIdle。
   const tone = (t?: string) => (t === 'ok' ? C.green : t === 'warn' ? C.gold : t === 'cmd' ? C.blue : t === 'out' ? C.white : C.dotIdle);
   const statusTone = status?.tone === 'ok' ? C.green : status?.tone === 'warn' ? C.gold : C.blue;
   const rowAt = (r: ConsoleRow, i: number) => r.at ?? start + i * ROW_INTERVAL;

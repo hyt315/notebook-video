@@ -488,7 +488,7 @@ def build(story, comp, p: Problems):
         moves.append(m)
     for k, sh in enumerate(shots):
         sid = sh["sid"]
-        frm = frame(sh["start_ms"])
+        frm = 0 if k == 0 else frame(sh["start_ms"])
         to = frame(shots[k + 1]["start_ms"]) if k + 1 < len(shots) else total
         dur = to - frm
         els = sh["els"]
@@ -657,6 +657,7 @@ def build(story, comp, p: Problems):
         is_sig = bool(sig_id and sid == sig_id and not frozen)
         pref_move = TREATMENT_MOVES.get(sid)
         director_done = False
+        director_still = False
 
         if not frozen and not is_sig and dur >= 75:
             # 1) 横移扫镜（pan-follow）：flow / compare / bars 或 treatment 显式指定
@@ -706,6 +707,7 @@ def build(story, comp, p: Problems):
                 path = [{"at": 0, "x": 960.0, "y": 540.0, "s": 1.0}]
                 cur = path[0]; last_at = 0
                 director_done = True
+                director_still = True
 
         if not director_done and prev_gaze is not None and focus:
             # 视线连续：本镜第一个出现的元素放在上一镜最后注视的屏幕位置附近，再滑到全景
@@ -841,7 +843,7 @@ def build(story, comp, p: Problems):
         events = [e["at"] for e in els] + [f["at"] for f in focus_out] + line_end + [path[-1]["at"]]
         tail_gap = dur - max(events)
         cur_intent = path_intent(path)
-        if tail_gap > 36 and not frozen and cur_intent not in ("pull-back", "pan-follow"):
+        if tail_gap > 36 and not frozen and not director_still and cur_intent not in ("pull-back", "pan-follow"):
             t_st = max(last_at + 1, dur - tail_gap + 6)
             t_en = max(t_st + 8, dur - 8)
             if t_en < dur:
@@ -1250,11 +1252,11 @@ def retime_to_tts(comp: dict, words: list[dict], p: "Problems") -> bool:
         ix = [ci_ for grp in (sh.get("line_cues") or []) for ci_ in grp]
         cur_end_ms = max((int(cues[ci_]["speech_end_ms"]) for ci_ in ix), default=prev_end_ms)
         if k_sh == 0:
-            if ix and ix[0] in old_start:
+            if int(sh.get("start_ms", 0)) == 0:
+                sh["start_ms"] = 0
+            elif ix and ix[0] in old_start:
                 ci = ix[0]
                 sh["start_ms"] = max(0, int(sh["start_ms"]) + (int(cues[ci]["start_ms"]) - old_start[ci]))
-            else:
-                sh["start_ms"] = max(0, int(sh.get("start_ms", 0)))
         elif ix and ix[0] in old_start:
             ci = ix[0]
             cur_start_ms = int(cues[ci]["start_ms"])

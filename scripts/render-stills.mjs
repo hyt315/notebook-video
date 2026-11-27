@@ -37,7 +37,12 @@ try {
   die(`缺少 @remotion/renderer：${e.message}`);
 }
 
-const browserExecutable = resolveBrowserExecutable();
+let browserExecutable;
+try {
+  browserExecutable = resolveBrowserExecutable();
+} catch (e) {
+  die(e.message);
+}
 if (!browserExecutable) await renderer.ensureBrowser();
 const browser = await renderer.openBrowser('chrome', {browserExecutable, chromiumOptions: {}});
 try {

@@ -181,7 +181,7 @@ python scripts/commons-search.py credits ./my-video   # → CREDITS.md
 | `flat`（默认） | 天空 / 奶油底面、圆角卡片、柔和硬影，安静的现代教育插画 | `--style=flat` |
 | `cel` | 米白漫画纸、3px 墨边、墨色偏移影、红蓝黄三原色 | `--style=cel` |
 | `journal` | 博物学家手账：暖白棉纸、胶带贴纸、钢笔批注、水彩淡彩，朱砂唯一强调 | `--style=journal` |
-| `papercut` | 红色窗花剪纸：米色宣纸、红纸剪片、双轮廓、深红横批字幕 | `--style=papercut` |
+| `papercut` | 红色窗花剪纸：米色宣纸、红纸剪片、双轮廓、朱红无框纯字字幕 | `--style=papercut` |
 | `archive` | 档案灯台：冷白背光台面上的真实档案物件，一个信号色，放大镜 | `--style=archive` |
 
 五套皮肤的字幕统一为底部居中 **64 设计像素**（1440p 下 85.3 px）无框纯文字配纸色柔光晕，合并左上紧凑章节徽标的常驻屏幕遮挡 ≤ 5%；手作皮肤同时下载 Noto Serif SC Bold（约 12 MB，校验 `sha256`）用于手账大字，并要求写导演层 `manifests/treatment.json`

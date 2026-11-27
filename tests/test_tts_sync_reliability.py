@@ -101,6 +101,22 @@ class TtsSyncReliabilityTest(unittest.TestCase):
         hits = TTS.check_spoken_form(["耗时 >= 10ms 时看 https://example.com", "正常中文一句。"])
         self.assertEqual(len(hits), 1)
 
+    def test_leading_silence_keeps_first_shot_at_zero(self):
+        comp = self._sample_comp()
+        # Simulate default initial FIRST_LEAD_MS = 400 on S1 while audio starts at 650ms (leading silence >= 417ms)
+        comp["cues"][0]["start_ms"] = 400
+        text0 = "第一句说完停顿"
+        text1 = "第二句从这开始"
+        words = (
+            [{"part": c, "start": 650 + i * 120, "end": 650 + (i + 1) * 120} for i, c in enumerate(text0)]
+            + [{"part": c, "start": 2100 + i * 120, "end": 2100 + (i + 1) * 120} for i, c in enumerate(text1)]
+        )
+        p = _Problems()
+        ok = CS.retime_to_tts(comp, words, p)
+        self.assertTrue(ok, p.hints)
+        self.assertEqual(comp["shots"][0]["start_ms"], 0)
+        self.assertGreater(comp["shots"][1]["start_ms"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

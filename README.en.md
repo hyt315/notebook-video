@@ -184,7 +184,7 @@ Details: [references/media.md#commons-media](references/media.md#commons-media).
 | `flat` (default) | Sky / cream surfaces, rounded cards, soft hard shadows; calm modern edu illustration | `--style=flat` |
 | `cel` | Off-white comic paper, 3 px ink outlines, ink offset shadows, red / blue / yellow primaries | `--style=cel` |
 | `journal` | Naturalist's field journal: warm cotton paper, taped sheets, pen notes, watercolour washes, vermilion as the only accent | `--style=journal` |
-| `papercut` | Red window paper-cut: rice paper, red cut-outs with double contours, a deep-red banner subtitle | `--style=papercut` |
+| `papercut` | Red window paper-cut: rice paper, red cut-outs with double contours, vermilion borderless subtitles | `--style=papercut` |
 | `archive` | Archive light table: real archival objects on a cool backlit surface, one signal colour, a loupe | `--style=archive` |
 
 All five themes use clean bottom-centred **64 design-px** (`85.3 px` @ 1440p) borderless text with a paper-tinted halo, keeping combined chrome + subtitle occlusion ≤ 5 %; craft skins also fetch Noto Serif SC Bold (~12 MB, sha256-checked) for hand-lettered display text and require a director

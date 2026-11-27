@@ -20,7 +20,6 @@ import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
 import {writeSilentNarration} from './silent-audio.mjs';
-import {browserArgs} from './browser-exec.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const IS_WIN = process.platform === 'win32';
@@ -82,14 +81,6 @@ const hideConsoleArgs = () => (IS_WIN && fs.existsSync(HIDE_CONSOLE_SHIM) ? ['--
 const nodeRemotion = (argv, opts) => run(process.execPath, [...hideConsoleArgs(), ...argv], opts);
 const step = (t) => console.log(`\n── ${t}`);
 const die = (m) => { console.error(`\n✗ ${m}`); process.exit(1); };
-// 浏览器路径指错时一行报错（不打印堆栈）
-const browserArgsOrDie = () => {
-  try {
-    return browserArgs();
-  } catch (error) {
-    return die(error.message);
-  }
-};
 
 // 成片必须有真实旁白：静音占位只允许用于 --stills / preview（否则"成片"可以是一个没人说话的空壳，而门禁照样全绿）。
 const activeSkinName = () => {
