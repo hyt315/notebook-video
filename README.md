@@ -8,6 +8,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/technique.md#cross-platform-compatibility)
 [![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel%20%7C%20journal%20%7C%20papercut%20%7C%20archive-ff7a59)](references/themes/system.md)
+[![Output](https://img.shields.io/badge/output-2560%C3%971440%20%7C%2016%3A9%2030fps-0ea5e9)](references/technique.md#environment-matrix)
 [![Validate](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml/badge.svg)](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
 
@@ -54,17 +55,24 @@
 | **对拍音效** | 9 个语义音效（6 个代码合成 + 3 个 Kenney RPG Audio CC0 真录音，`public/sfx/lib/`），**默认无 BGM**（只有 `treatment.sound.music.use=true` 才加载音乐床）；每条 cue 带 `gain` / `offsetMs` 并提前起播落地视觉帧（±1 帧）；`validate-silence` 核对句间静音 |
 | **真实素材** | 截图 / ≤10 秒录屏 / 动图放进 `MediaFrame`（与组件同一套卡片外观，可选浏览器 / 窗口 / 手机外壳，区域推近、描框、旁注、署名徽章）；`prepare-media` 一键转码，`validate-media` 拦糊图与许可缺失 |
 | **弱模型友好** | 7 个融合配方 + 10 个蓝图（5 个组件路线 + 5 个手作结构族），每镜的 `$components` 写明骨架与组件；黄金样例 `examples/`（含 `examples/recipes/`）；未填的 `<<占位符>>` 直接报错 |
-| **一条命令** | `make-video.mjs`：resolve-shots → 门禁 → tsc → 静帧接触表或整片渲染 → `renders/report.md`；Windows 有 `make-video.cmd` |
+| **一条命令** | `make-video.mjs`：resolve-shots → 门禁 → tsc → 单浏览器 `--stills` 静帧接触表或 1440p 整片渲染 → `renders/report.md`（首屏含客观摘要与评审卡）；Windows 有 `make-video.cmd` |
+| **跨工程共享缓存** | `deps-cache.mjs` 与 `browser-exec.mjs` 按锁文件哈希与校验和自动复用用户级缓存（`NOTEBOOK_VIDEO_CACHE_DIR`）中的 `node_modules`、`npm-cache`、已有 `chrome-headless-shell` 渲染浏览器与字体，多片并行或连续新建不重复下载（`NOTEBOOK_VIDEO_SHARED_DEPS=0` 可关闭链接复用） |
 | **交付不只是一个 mp4** | 整片渲完自动再出 `renders/captions.srt`（画面里那套断句，不是重新识别）和 `renders/poster.jpg`（取 `treatment.signature_shot` 的落定帧，且不画字幕）。单独重出：`poster` / `export-srt` / `deliver` |
-| **改完能对比** | `eval-project 旧工程 新工程` 把片子拆成可比的数据（镜长分布、版式 / 介质 / 转场种类、运镜覆盖、字幕密度、空场读数）并给 Δ。**不打分**：阈值只在门禁里存一处 |
+| **改完能对比** | `eval-project 旧工程 新工程` 把片子拆成可比的数据（镜长分布、版式 / 介质 / 转场 / 运镜意图种类、运镜覆盖、字幕密度、空场读数）并给 Δ。**不打分**：阈值只在门禁里存一处 |
 | **先看 30 秒再渲全片** | `notebook-video preview <工程>` 只渲一段（缺省前 30 秒、半分辨率）并出接触片和响度读数；`--shot=S6` 只看一镜。改一版看一版不必等整片。30 秒片段的耗时随机器差异很大，首次还要加上打包时间 |
 | **全片一镜不漏** | `notebook-video sweep <工程>` 每镜截一张落定态、拼成一张体检表（`renders/sweep-sheet.jpg`），八镜约 60 秒跑完，判空场用的是渲染期同一套阈值。`preview` 只看开头，片子长了尾巴容易漏——这一步补的就是它 |
-| **门禁与自动修** | 硬门禁只管客观问题（取景切字、字号地板、对比度 ≥4.5:1、字幕每行 ≤16 字、字幕读速硬上限 `CPS_MAX` ≤9 加权字/秒（无配音排时长基准 `READ_CPS` = 4.5 字/秒，手作估算可用 6.5 字/秒）、画面静止、音画同步、音效电平），能修的自动修；主观项只给建议 |
+| **门禁与自动修** | 硬门禁只管客观问题（取景切字、字号地板、对比度 ≥4.5:1、字幕每行 ≤16 字、字幕读速硬上限 `CPS_MAX` ≤9 加权字/秒（无配音排时长基准 `READ_CPS` = 4.5 字/秒）、叠层 ≤5% 建议 / >30% 拦截、帧流畅度 / A-V 偏移 / 曝光 / 画面静止、音画同步、音效电平），能修的自动修；主观项只给建议 |
 | **确定可复现** | 所有动画都是帧号的纯函数（不用 `Math.random`、CSS 动画、计时器）；不依赖生图模型，不需要在线 API |
 
-## 近期变化
+## 近期变化（[v3.8.0](https://github.com/hyt315/notebook-video/releases/tag/v3.8.0)）
 
-逐版改动见 [CHANGELOG.md](CHANGELOG.md)。
+- **1440p 高清默认交付与精简包体**：默认输出 `2560×1440`（`--scale=1 --crf=18 --x264-preset=veryfast`），`--stills` 改为单浏览器连续出图（`scripts/render-stills.mjs`），`remotion.config.ts` 关闭与剥离 sourcemap。
+- **清屏字幕与合成动效**：五套皮肤统一 64 设计像素无框纸色柔光晕字幕、收紧凑左上章节徽标并控制常驻叠层 `<=5%`（`check_overlay_budget`），入场与媒框显隐采用 GPU 合成属性。
+- **多意图运镜导演与防同质化**：按内容编排 `push-in` / `pull-back` / `pan-follow` / `still`（含 `CinemaSpec.driftDir` 防对抗），章节切换 `auto` 真翻页与同章内 `slide`/`fade` 交替，并按片名分布版式变体。
+- **TTS 强鲁棒对齐与音频门禁**：支持可读音字流模糊匹配降级与句间停顿切镜，固定首镜起点不断档，补全语音起止边界加权切分、口语符号规范与削波检查。
+- **跨工程共享缓存**：按锁文件哈希与校验和跨视频工程复用 `node_modules`、`npm-cache`、渲染浏览器与字体，避免重复下载与重复占盘。
+
+完整逐版改动见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 快速开始
 
@@ -218,7 +226,7 @@ notebook-video/
 │   │   ├── public/              # 字体、背景（WebP）、音效库 sfx/、真实素材 media/
 │   │   └── scripts/             # 可选 TTS 适配、变速后处理
 │   └── fonts/                   # LXGW 文楷 Lite（OFL-1.1）与 Clash Display（ITF FFL）的下载缓存，不入库，首次使用时自动下载
-├── scripts/                     # make-video、notebook-video CLI、compose / resolve、各门禁、自检；Windows 入口只有 notebook-video.cmd / make-video.cmd
+├── scripts/                     # make-video、notebook-video CLI、render-stills、deps-cache / browser-exec、compose / resolve、各门禁、自检；Windows 入口只有 notebook-video.cmd / make-video.cmd
 │   └── dev/                     # 维护者工具（一条命令全检 test-all.py、音效库与背景库构建；不进发布包）
 ├── references/                  # 作者手册与规格（讲稿、评审卡、镜头、版式、主题、线稿、配方、音效、字幕、门禁、跨平台），11 篇 + themes/ 6 篇
 ├── tests/                       # 离线单元测试（少数在缺可选依赖或未设 NV_ONLINE=1 时跳过）（背景 / 蓝图 / 运镜 / 字幕 / 素材 / 融合配方 / TTS / 静音 / 门禁 / 评审 …）
@@ -227,7 +235,8 @@ notebook-video/
 
 ## 常见问题与限制
 
-- **自带配音吗？** 带一条 TTS 命令，不带声音模型。`notebook-video tts <工程>` 默认走 edge-tts（需联网），也可以 `--engine=file` 直接给录音；两种情况都按词级时间对齐字幕与镜头（录音对齐可选装 `faster-whisper`，没装就按字数均分）。没有真实旁白时 `--render` 会停下，不静音出片。
+- **自带配音吗？** 带一条 TTS 命令，不带声音模型。`notebook-video tts <工程>` 默认走 edge-tts（需联网），也可以 `--engine=file` 直接给录音；两种情况都支持词级对齐、可读音模糊兜底与句间静音切镜（录音对齐可选装 `faster-whisper`，没装时基于静音起止边界与字/标点权重切分），并检查口语符号与音频削波。没有真实旁白时 `--render` 会停下，不静音出片。
+- **新建多个视频工程会反复下载依赖和浏览器吗？** 不会。`deps-cache.mjs` 与 `browser-exec.mjs` 会在用户级缓存目录（`NOTEBOOK_VIDEO_CACHE_DIR`）按 `package-lock.json` 哈希集中缓存并目录链接复用 `node_modules` 与 `npm-cache`，并优先扫描复用本机或共享目录中已有的 `chrome-headless-shell` 与校验过 `sha256` 的字体；仅首次缺失时下载安装一次（可用 `NOTEBOOK_VIDEO_SHARED_DEPS=0` 停用共享依赖链接）。
 - **要用生图模型吗？** 不用，技能不调用生图模型。画面由组件绘制；图来自用户、Wikimedia Commons / Openverse 或其他授权来源，需要真实界面时用截图 / 录屏。
 - **能做竖屏或 4:3 吗？** 不能，只有 16:9；早期的 4:3 / 3:4 画布、`paper` / `sticker` 皮肤与 `--classic` 示例工程已删除，旧工程不再支持。
 - **题目需要一张专属的图怎么办？** 照 `src/custom/RequestLane.tsx` 写一个组件，在 `src/custom/index.ts` 注册即可。

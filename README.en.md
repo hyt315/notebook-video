@@ -8,6 +8,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)](references/technique.md#cross-platform-compatibility)
 [![Themes](https://img.shields.io/badge/themes-flat%20%7C%20cel%20%7C%20journal%20%7C%20papercut%20%7C%20archive-ff7a59)](references/themes/system.md)
+[![Output](https://img.shields.io/badge/output-2560%C3%971440%20%7C%2016%3A9%2030fps-0ea5e9)](references/technique.md#environment-matrix)
 [![Validate](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml/badge.svg)](https://github.com/hyt315/notebook-video/actions/workflows/validate.yml)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-1f6feb)](SKILL.md)
 
@@ -53,18 +54,25 @@ One canvas only: **16:9** (`2560×1440` delivery by default via `make-video --sc
 | **Look at 30 seconds first** | `notebook-video preview <project>` renders one window (first 30 s, half resolution by default) plus a contact sheet and a loudness readout; `--shot=S6` narrows it to a single shot. Checking a revision no longer costs a full render. Timing varies a lot by machine, and the first run adds bundling time |
 | **No shot left unchecked** | `notebook-video sweep <project>` grabs one settled frame per shot and tiles them into `renders/sweep-sheet.jpg` — eight shots in about 60 s, judged by the same empty-space thresholds the render uses. `preview` only covers the opening; on a longer film the tail silently escapes, and this closes that gap |
 | **A delivery is not just an mp4** | A finished render also writes `renders/captions.srt` (the same line breaks burned into the film, not a re-recognition) and `renders/poster.jpg` (a settled frame of `treatment.signature_shot`, with captions suppressed). Standalone: `poster` / `export-srt` / `deliver` |
-| **Compare two cuts** | `eval-project old/ new/` turns a film into comparable numbers (shot-length spread, variety of skeletons / media / transitions, camera coverage, caption density, empty-space readings) and prints the delta. No score: thresholds live in the gates, in one place only |
+| **Compare two cuts** | `eval-project old/ new/` turns a film into comparable numbers (shot-length spread, variety of skeletons / media / transitions / camera intents, camera coverage, caption density, empty-space readings) and prints the delta. No score: thresholds live in the gates, in one place only |
 | **Page + components** | Two kinds of shots alternate: a notebook page carrying the real thing (archival plate, magnifier, handwriting, seal) and components doing the explaining. Line drawings are optional specimen figures (`content.figure`, ≤19 % of drawing width); `validate-fusion` checks the page-plus-component mix |
 | **Component scenes** | 4 skeletons (Stage / Split / Zoom / Corridor) and a component library (`ConsoleWindow`, `DiffView`, `HighlightCode`, `StatRow`, `Funnel`, `ProgressRing`, `KineticNumber`, `StampSeal`, `VerdictBar`, …), all coloured from theme tokens |
 | **Virtual camera** | Directs `push-in`, `pull-back`, `pan-follow`, and `still` shots from content and layout; keyword highlights; page-turn chapter transitions with intra-chapter `slide` / `fade` variety; background parallax and title-safe framing |
 | **On-the-beat SFX** | 9 semantic sounds (6 code-synthesised + 3 real-recorded Kenney RPG Audio CC0 foley effects, `public/sfx/lib/`), **no BGM by default** (a music bed loads only when `treatment.sound.music.use=true`); every cue carries `gain` / `offsetMs` and pre-rolls to land on the visual hit (±1 frame); `validate-silence` checks inter-sentence silence |
 | **Real media** | Screenshots, ≤10 s recordings and GIFs inside `MediaFrame` (same card look as the components, optional browser / window / device chrome, region zoom, highlight boxes, callouts, credit badge); `prepare-media` transcodes, `validate-media` blocks blurry or unlicensed media |
 | **Weak-model friendly** | 7 fusion recipes + 10 blueprints (5 component routes + 5 hand-made structure families) with a per-shot `$components` pick; golden examples in `examples/` (including `examples/recipes/`); unfilled `<<placeholders>>` fail loudly |
-| **One command** | `make-video.mjs`: resolve-shots → gates → tsc → stills contact sheet or full render → `renders/report.md`; `make-video.cmd` on Windows |
-| **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤9.0 weighted chars/s (`CPS_MAX`) reading-speed cap (timing estimate `READ_CPS` = 4.5), frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
+| **One command** | `make-video.mjs`: resolve-shots → gates → tsc → single-browser `--stills` contact sheet or 1440p full render → `renders/report.md` (with digest & review rubric at top); `make-video.cmd` on Windows |
+| **Cross-project cache** | `deps-cache.mjs` & `browser-exec.mjs` share `node_modules` (by lockfile hash), `npm-cache`, cached `chrome-headless-shell`, and checksum-verified fonts under `NOTEBOOK_VIDEO_CACHE_DIR`, eliminating repeated installs across projects (`NOTEBOOK_VIDEO_SHARED_DEPS=0` disables linking) |
+| **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤9.0 weighted chars/s (`CPS_MAX`) reading-speed cap (timing estimate `READ_CPS` = 4.5), overlay budget ≤5% / >30%, frame pacing / A-V offset / exposure / frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
 | **Deterministic** | Every animation is a pure function of the frame (no `Math.random`, CSS animation or timers); no image-generation model, no online API required |
 
-## Recent changes
+## Recent changes ([v3.8.0](https://github.com/hyt315/notebook-video/releases/tag/v3.8.0))
+
+- **1440p default output & lean bundles**: renders default to `2560×1440` (`--scale=1 --crf=18 --x264-preset=veryfast`), `--stills` reuses one browser session (`scripts/render-stills.mjs`), and `remotion.config.ts` disables/strips sourcemaps.
+- **Open captions & composited motion**: all five themes share 64 design-px borderless paper-halo subtitles with compact top-left badges (≤5 % standing occlusion via `check_overlay_budget`) and composited reveals.
+- **Multi-intent camera director & variant rhythm**: directs `push-in`, `pull-back`, `pan-follow`, and `still` shots (`CinemaSpec.driftDir`), keeps `auto` page turns at chapters with intra-chapter `slide` / `fade` variety, and seeds layout variants by title.
+- **Resilient TTS & audio checks**: adds fuzzy spoken-stream fallback, pause-midpoint shot cuts, pinned shot-0 start, speech-bound weighted splitting, and spoken-form / clipping checks.
+- **Cross-project resource reuse**: shares lockfile-hashed `node_modules`, `npm-cache`, cached headless Chromium discovery, and verified fonts across projects.
 
 Per-release changes: [CHANGELOG.md](CHANGELOG.md).
 
@@ -222,7 +230,7 @@ notebook-video/
 │   │   ├── public/              # Fonts, backgrounds (WebP), SFX library sfx/, real media media/
 │   │   └── scripts/             # Optional TTS adapter, speed post-processing
 │   └── fonts/                   # Download cache for LXGW WenKai Lite (OFL-1.1) and Clash Display (ITF FFL); not committed, fetched on first use
-├── scripts/                     # make-video, the notebook-video CLI, compose / resolve, gates, self-checks; Windows entry points notebook-video.cmd / make-video.cmd only
+├── scripts/                     # make-video, notebook-video CLI, render-stills, deps-cache / browser-exec, compose / resolve, gates, self-checks; Windows entry points notebook-video.cmd / make-video.cmd only
 │   └── dev/                     # Maintainer tools (one-command test-all.py, SFX and background library builds; not packaged)
 ├── references/                  # Author manuals and specs (narration, review rubric, camera, layouts, themes, linework, recipes, SFX, captions, gates, cross-platform), 11 files + themes/ 6
 ├── tests/                       # offline unit tests (a few skip when an optional dependency is missing or NV_ONLINE=1 is unset) (backgrounds / blueprints / camera / captions / media / fusion recipes / TTS / silence / gates / review …)
@@ -231,7 +239,8 @@ notebook-video/
 
 ## FAQ and limitations
 
-- **Is there built-in voice-over?** There is a TTS command, not a voice model. `notebook-video tts <project>` uses edge-tts by default (needs network), or `--engine=file` for your own recording; either way captions and shots align to word-level time (recording alignment uses the optional `faster-whisper`; without it timings are spread by character count). Without real narration `--render` stops instead of shipping a silent film.
+- **Is there built-in voice-over?** There is a TTS command, not a voice model. `notebook-video tts <project>` uses edge-tts by default (needs network), or `--engine=file` for your own recording; both support word-level alignment, fuzzy spoken fallback, and pause-midpoint shot cuts (`faster-whisper` optional for recordings; otherwise speech-bound weighted character/punctuation splitting), plus spoken-form and clipping checks. Without real narration `--render` stops instead of shipping a silent film.
+- **Does creating multiple video projects re-download dependencies and the browser?** No. `deps-cache.mjs` and `browser-exec.mjs` share lockfile-hashed `node_modules` and `npm-cache` under `NOTEBOOK_VIDEO_CACHE_DIR` via directory links, scan existing/cached `chrome-headless-shell` installations before downloading, and reuse checksum-verified fonts (`NOTEBOOK_VIDEO_SHARED_DEPS=0` disables dependency linking).
 - **Does it use an image-generation model?** No, the skill never calls image models. Scenes are drawn by components; images come from the user, Wikimedia Commons / Openverse or other licensed sources, and screenshots / recordings cover real interfaces.
 - **Portrait or 4:3?** No. The only canvas is 16:9; the earlier 4:3 / 3:4 canvases, the `paper` / `sticker` skins and the `--classic` example project are gone, and older projects are not supported.
 - **My topic needs a one-off diagram.** Copy `src/custom/RequestLane.tsx`, write your component and register it in `src/custom/index.ts`.
