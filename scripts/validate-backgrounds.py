@@ -36,6 +36,8 @@ SKINS = ("flat", "cel", "journal", "papercut", "archive")
 ROLES = ("main", "chapter", "quiet")
 # 皮肤墨色（= src/theme/<skin>.tsx 的 palette.ink；validate-skill-consistency 会核对两边一致）
 INK = {"flat": "#1c2024", "cel": "#111111", "journal": "#2b2420", "papercut": "#2a1a14", "archive": "#1d2328"}
+# 实际字幕墨色（仅覆盖与 palette.ink 不同的皮肤，validate-skill-consistency 同步核对）
+SUBTITLE_INK = {**INK, "papercut": "#6e0c10"}
 LICENSES = {
     "PD": "public domain",
     "CC0-1.0": "CC0 1.0",
@@ -73,7 +75,7 @@ def judge_metrics(skin: str, m: dict) -> tuple[list[str], list[str]]:
     p0, p1 = [], []
     if m.get("size") != [W, H]:
         return [f"尺寸 {m.get('size')} ≠ {W}×{H}"], p1
-    ink = hex_lum(INK[skin])
+    ink = hex_lum(SUBTITLE_INK[skin])
     if m["mean_lum"] < MIN_MEAN_LUM:
         p0.append(f"不是亮底：平均相对亮度 {m['mean_lum']:.3f} < {MIN_MEAN_LUM}")
     cm, cp = contrast(ink, m["zone_mean_lum"]), contrast(ink, m["zone_p05_lum"])

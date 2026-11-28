@@ -97,8 +97,8 @@ const Grade: React.FC = () => <AbsoluteFill style={{pointerEvents: 'none', zInde
 // 字幕：纯字无框，米白漫画纸光晕 + 轻描边，不挡画面。
 const SubtitleChrome: Theme['SubtitleChrome'] = ({mode, children}) =>
   <div style={{position: 'absolute', left: 0, right: 0, bottom: 34, zIndex: 200, display: 'flex', justifyContent: 'center'}}>
-    <div style={{position: 'relative', padding: '4px 28px 6px', maxWidth: mode.safe}}>
-      <div aria-hidden style={{position: 'absolute', inset: '-8px -24px', borderRadius: 48,
+    <div style={{position: 'relative', padding: '2px 12px 2px', maxWidth: mode.safe}}>
+      <div aria-hidden style={{position: 'absolute', inset: '-3px -10px', borderRadius: 48,
         background: 'radial-gradient(ellipse at center, rgba(254,252,233,0.96) 0%, rgba(254,252,233,0.92) 52%, transparent 76%)', filter: 'blur(5px)'}} />
       <div style={{position: 'relative', fontFamily: 'Kai', fontSize: mode.subFont, fontWeight: 700, lineHeight: 1.16, letterSpacing: 1.6, color: palette.ink, whiteSpace: 'nowrap',
         textShadow: '-1.5px 0 rgba(254,252,233,0.96), 1.5px 0 rgba(254,252,233,0.96), 0 -1.5px rgba(254,252,233,0.96), 0 1.5px rgba(254,252,233,0.96), 0 0 8px rgba(254,252,233,0.96)'}}>

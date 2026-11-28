@@ -13,7 +13,7 @@
 判据（每条 cue）
   ✗ P0  OCR 文本与 cue 原文相似度 < 0.60（字幕缺失 / 被遮 / 被切 / 豆腐块）
   · P1  相似度 < 0.90，或识别置信度均值 < 0.85（读得出但吃力：衬底弱、纹理干扰）
-  · P1  字高（检测框高度，按 1440 高折算）< --min-px（缺省 80 ≈ 96 px 字号的字身）
+  · P1  字高（检测框高度，按 1440 高折算）< --min-px（缺省 80 ≈ 64 设计 px（85.3 px@1440）的汉字字身）
 只看画面底部 --band（缺省 26%）的字幕带；文本比较前做 NFKC、去空白与标点。
 
 依赖：ffmpeg（抽帧、裁切）；RapidOCR 可选——
@@ -46,7 +46,7 @@ DEFAULT_BAND = 0.26
 # 与 src/index.tsx Subtitle 的 lead = round(FPS*.18) 同口径：下一条字幕提前这么多秒出现
 NEXT_CUE_LEAD = 0.18
 SAMPLE_GUARD = 0.07   # 再留约 2 帧，避开 5 帧淡入
-DEFAULT_MIN_PX = 80.0   # @1440：96 px 字号的汉字字身检测框约 85–100 px
+DEFAULT_MIN_PX = 80.0   # @1440：64 设计 px（85.3 px@1440）实测汉字字身约 81 px
 
 _PUNCT = re.compile(r"[\s\u3000-\u303f\uff00-\uff0f\uff1a-\uff20\uff3b-\uff40\uff5b-\uff65\u2010-\u206f!-/:-@\[-`{-~·•…—–]+")
 

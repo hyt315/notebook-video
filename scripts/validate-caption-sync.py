@@ -34,6 +34,7 @@ def main() -> None:
     # （https://partnerhelp.netflixstudios.com/hc/en-us/articles/215758617）。短于下限读不完 = 失败；长于上限只警告。
     parser.add_argument("--min-cue-sec", type=float, default=0.83, help="minimum on-screen seconds per cue (0 = off)")
     parser.add_argument("--max-cue-sec", type=float, default=7.0, help="warn above this many on-screen seconds per cue (0 = off)")
+    parser.add_argument("--audio", type=Path, default=None, help="optional narration audio file to verify duration against last TTS word")
     args = parser.parse_args()
 
     source = json.loads(args.tts_words_json.read_text(encoding="utf-8"))
@@ -80,6 +81,23 @@ def main() -> None:
 
     if [core(word) for word in flattened] != [core(word) for word in source]:
         failures.append("flattened cue words do not exactly match the complete TTS word stream")
+    if isinstance(data, dict) and data.get("estimated") is True:
+        warnings.append("caption timings are marked estimated=true (fallback split); run TTS or faster-whisper for word-exact sync")
+    if args.audio is not None and args.audio.is_file() and source:
+        import subprocess
+        try:
+            r = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", str(args.audio)],
+                capture_output=True, text=True, timeout=15,
+            )
+            dur_ms = round(float(r.stdout.strip()) * 1000)
+            last_end = max(int(w["end"]) for w in source)
+            if last_end - dur_ms > 500:
+                failures.append(f"last TTS word ends at {last_end}ms but audio duration is only {dur_ms}ms (>500ms overrun)")
+            elif dur_ms - last_end > 2500:
+                warnings.append(f"audio duration {dur_ms}ms exceeds last TTS word {last_end}ms by {dur_ms - last_end}ms")
+        except (OSError, ValueError, subprocess.SubprocessError):
+            pass
     emit("validate-caption-sync", failures, warnings, str(args.caption_cues_json))
     if failures:
         for failure in failures:

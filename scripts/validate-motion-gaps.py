@@ -51,6 +51,10 @@ MIN_SEG = 1.0  # 只统计 ≥1s 的段（低于 1s 的是正常呼吸/停顿）
 # 锤子帧（满屏一句话，SKILL.md 规定停 1.5–2.5 s）本来就该静止：落在锤子镜里的静止段
 # 放宽到 3.0 s（2.5 s + 前后半秒的入场收尾），超过仍是 P0。
 HAMMER_MAX_STATIC = 3.0
+# 片尾定格统一口径（与 ffmpeg freezedetect 同源）：末镜落在片尾最后 1.5s 内的自然收尾定格放宽至 3.5s，
+# 并在报告中单独标注为 closing_hold；片中任何非片尾静止段仍严格按 max_static（2.5s）判 P0。
+CLOSING_HOLD_MAX_STATIC = 3.5
+CLOSING_TAIL_WINDOW_S = 1.5
 HAMMER_LIVE = {"StampBanner", "HandLettering", "Seal"}
 
 
@@ -64,9 +68,13 @@ def hammer_shots(project: Path, shots: list) -> set:
     return ids
 
 
-def judge(rows: list, max_static: float, hammers: set) -> list:
-    """超限的静止段：一般镜 ≥ max_static，锤子镜 ≥ HAMMER_MAX_STATIC（取两者较大）。"""
-    lim = lambda r: max(max_static, HAMMER_MAX_STATIC) if r.get("shot") in hammers else max_static  # noqa: E731
+def judge(rows: list, max_static: float, hammers: set, total_s: float = 0.0) -> list:
+    """超限的静止段：一般镜 ≥ max_static；锤子镜 ≥ HAMMER_MAX_STATIC；末镜片尾定格 ≥ CLOSING_HOLD_MAX_STATIC。"""
+    def lim(r: dict) -> float:
+        base = max(max_static, HAMMER_MAX_STATIC) if r.get("shot") in hammers else max_static
+        if total_s > 0 and r.get("is_closing_hold"):
+            return max(base, CLOSING_HOLD_MAX_STATIC)
+        return base
     return [r for r in rows if r["dur_s"] >= lim(r)]
 
 
@@ -129,7 +137,12 @@ def main() -> int:
     rows.sort(key=lambda r: -r["dur_s"])
 
     hammers = hammer_shots(project, shots)
-    bad = judge(rows, args.max_static, hammers)
+    total_s = max((int(s.get("to", 0)) for s in shots), default=0) / FPS
+    last_shot_id = shots[-1].get("id") if shots else None
+    for r in rows:
+        end_s = r["start_s"] + r["dur_s"]
+        r["is_closing_hold"] = bool(total_s > 0 and r.get("shot") == last_shot_id and end_s >= total_s - CLOSING_TAIL_WINDOW_S)
+    bad = judge(rows, args.max_static, hammers, total_s=total_s)
     total = sum(r["dur_s"] for r in rows)
 
     if args.json:

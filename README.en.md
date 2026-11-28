@@ -28,7 +28,7 @@ full, editable source project.
 - **Draft-paper narration**: no pen on screen — things appear only when the voice-over reaches them and grow in progressively: text unfolds left to right, a sketch is traced part by part, annotations are drawn as they are spoken; at most two things grow at once (rules in references/draftpaper.md#reveal-rules).
 - **A notebook page carries the shot, not slides**: every shot is either a **page** (a real archival plate or specimen photo, a magnifier over it, handwriting and a red seal) or a **component** doing the explaining (consoles, code diffs, checklists, stat rows, bars, verdict strips…). **Line drawings are optional**: they only ever draw a specimen, because a clip-art sketch that fails to explain a concept reads worse than no drawing — so they live inside the page as a figure (`content.figure`, ≤19 % of the drawing width) instead of leading the shot.
 - **The camera follows the narration**: an engine-level virtual camera directs `push-in`, `pull-back`, `pan-follow`, and `still` shots from content and pacing, highlights spoken keywords, and defaults to real page turns (`CURL_FRAMES` = 22) at chapter cuts and on craft skins while alternating `slide` and `fade` intra-chapter (overridable per shot).
-- **Reproducible by weaker models**: seven fusion recipes decide where the sketch sits and how big the cards are — the author only fills content. Ten teaching blueprints (five component routes + five hand-made structure families) name the skeleton and components for every shot, plus golden examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
+- **Blueprints and golden examples**: seven fusion recipes decide where the sketch sits and how big the cards are — the author only fills content. Ten teaching blueprints (five component routes + five hand-made structure families) name the skeleton and components for every shot, plus golden examples, a five-step workflow and one command. Anything that can be judged objectively is auto-fixed by the engine.
 
 - **One paper per notebook, review before render**: hand-made skins default to `bgMode: "chapter"` (one paper per chapter; `"film"` keeps one for the whole film, `"shot"` rotates per shot), and decorative `busy` backgrounds stay off regular shots; `resolve-shots` generates `storyboard.md` from the real shot table; the independent review scores it with the rubric in [references/rubric.md](references/rubric.md), and the scores lead `renders/report.md`; for hand-made skins `make-video --render` prints a P1 reminder until a review round is recorded (it still renders; `--skip-review` silences it); without running TTS, caption timing is estimated at the timing pace `--cps` (component default `READ_CPS` = 4.5 weighted chars/s, handmade estimate 6.5); use `notebook-video tts` to get word-level timing for a real film.
 
@@ -60,21 +60,21 @@ One canvas only: **16:9** (`2560×1440` delivery by default via `make-video --sc
 | **Virtual camera** | Directs `push-in`, `pull-back`, `pan-follow`, and `still` shots from content and layout; keyword highlights; page-turn chapter transitions with intra-chapter `slide` / `fade` variety; background parallax and title-safe framing |
 | **On-the-beat SFX** | 9 semantic sounds (6 code-synthesised + 3 real-recorded Kenney RPG Audio CC0 foley effects, `public/sfx/lib/`), **no BGM by default** (a music bed loads only when `treatment.sound.music.use=true`); every cue carries `gain` / `offsetMs` and pre-rolls to land on the visual hit (±1 frame); `validate-silence` checks inter-sentence silence |
 | **Real media** | Screenshots, ≤10 s recordings and GIFs inside `MediaFrame` (same card look as the components, optional browser / window / device chrome, region zoom, highlight boxes, callouts, credit badge); `prepare-media` transcodes, `validate-media` blocks blurry or unlicensed media |
-| **Weak-model friendly** | 7 fusion recipes + 10 blueprints (5 component routes + 5 hand-made structure families) with a per-shot `$components` pick; golden examples in `examples/` (including `examples/recipes/`); unfilled `<<placeholders>>` fail loudly |
+| **Blueprints & golden examples** | 7 fusion recipes + 10 blueprints (5 component routes + 5 hand-made structure families) with a per-shot `$components` pick; golden examples in `examples/` (including `examples/recipes/`); unfilled `<<placeholders>>` fail loudly |
 | **One command** | `make-video.mjs`: resolve-shots → gates → tsc → single-browser `--stills` contact sheet or 1440p full render → `renders/report.md` (with digest & review rubric at top); `make-video.cmd` on Windows |
 | **Cross-project cache** | `deps-cache.mjs` & `browser-exec.mjs` share `node_modules` (by lockfile hash), `npm-cache`, cached `chrome-headless-shell`, and checksum-verified fonts under `NOTEBOOK_VIDEO_CACHE_DIR`, eliminating repeated installs across projects (`NOTEBOOK_VIDEO_SHARED_DEPS=0` disables linking) |
-| **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, font floor, contrast ≥4.5:1, ≤16-character caption lines, ≤9.0 weighted chars/s (`CPS_MAX`) reading-speed cap (timing estimate `READ_CPS` = 4.5), overlay budget ≤5% / >30%, frame pacing / A-V offset / exposure / frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
-| **Deterministic** | Every animation is a pure function of the frame (no `Math.random`, CSS animation or timers); no image-generation model, no online API required |
+| **Gates & auto-fix** | Hard gates cover objective problems only (clipped framing, a computed font floor (`validate-typography` reads the layout: every readable text ≥64 design px, no OCR needed), contrast ≥4.5:1, ≤16-character caption lines, ≤9.0 weighted chars/s (`CPS_MAX`) reading-speed cap (timing estimate `READ_CPS` = 4.5), overlay budget ≤5% / >30%, frame pacing / A-V offset / exposure / frozen frames, A/V sync, SFX levels) and auto-fix what they can; subjective rules only advise |
+| **Deterministic** | Every animation is a pure function of the frame (no `Math.random`, CSS animation or timers); no runtime image-generation model, no online API required |
 
-## Recent changes ([v3.8.0](https://github.com/hyt315/notebook-video/releases/tag/v3.8.0))
+## Recent changes ([v3.9.0](https://github.com/hyt315/notebook-video/releases/tag/v3.9.0))
 
-- **1440p default output & lean bundles**: renders default to `2560×1440` (`--scale=1 --crf=18 --x264-preset=veryfast`), `--stills` reuses one browser session (`scripts/render-stills.mjs`), and `remotion.config.ts` disables/strips sourcemaps.
-- **Open captions & composited motion**: all five themes share 64 design-px borderless paper-halo subtitles with compact top-left badges (≤5 % standing occlusion via `check_overlay_budget`) and composited reveals.
-- **Multi-intent camera director & variant rhythm**: directs `push-in`, `pull-back`, `pan-follow`, and `still` shots (`CinemaSpec.driftDir`), keeps `auto` page turns at chapters with intra-chapter `slide` / `fade` variety, and seeds layout variants by title.
-- **Resilient TTS & audio checks**: adds fuzzy spoken-stream fallback, pause-midpoint shot cuts, pinned shot-0 start, speech-bound weighted splitting, and spoken-form / clipping checks.
-- **Cross-project resource reuse**: shares lockfile-hashed `node_modules`, `npm-cache`, cached headless Chromium discovery, and verified fonts across projects.
+- **A typography gate that always runs**: new `validate-typography.py` computes font sizes from the render layout and blocks any readable text (captions, chapter badges, main card copy) under 64 design px (12 CSS px on a phone). No dependencies, no OCR, never SKIPPED; wired into `make-video`.
+- **Five skins redrawn**: `archive` becomes a cool backlit archive light table, `flat` moves to sky-blue / cream surfaces with pure-white cards, and the `journal` and `papercut` main backgrounds are redrawn so each skin is recognisable from a single frame; the background library is about 559 KB smaller; `papercut` caption ink deepened to `#6e0c10` (≥7:1).
+- **Less template feel on the auto route**: a two-column card grid for `list` (`grid`), narrative-aware `whip` / `slide` / `zoom` / `fade` transitions on component skins, rewritten examples, and two new runnable recipes (`archive-first-msg`, `papercut-symmetry`).
+- **Audio and still-segment rules**: true-peak target tightened to `-2.0 dBTP` (mastered at `-2.6`, gate ceiling `-1.8`); `tts.py` normalises narration before mixing; the closing hold now uses the same rule as `freezedetect`, while mid-film stills are still judged at 2.5 s.
+- **Tooling fixes**: relative `--render` paths resolve against the project; an existing project also picks up an example's own treatment; VP8/VP8L WebP sizes in `validate-media`, 1080p bounds in `coords-lint`, and an optional `--audio` duration check in `validate-caption-sync`.
 
-Per-release changes: [CHANGELOG.md](CHANGELOG.md).
+Per-release changes: [CHANGELOG.md](https://github.com/hyt315/notebook-video/blob/main/CHANGELOG.md).
 
 ## Quick start
 
@@ -241,7 +241,7 @@ notebook-video/
 
 - **Is there built-in voice-over?** There is a TTS command, not a voice model. `notebook-video tts <project>` uses edge-tts by default (needs network), or `--engine=file` for your own recording; both support word-level alignment, fuzzy spoken fallback, and pause-midpoint shot cuts (`faster-whisper` optional for recordings; otherwise speech-bound weighted character/punctuation splitting), plus spoken-form and clipping checks. Without real narration `--render` stops instead of shipping a silent film.
 - **Does creating multiple video projects re-download dependencies and the browser?** No. `deps-cache.mjs` and `browser-exec.mjs` share lockfile-hashed `node_modules` and `npm-cache` under `NOTEBOOK_VIDEO_CACHE_DIR` via directory links, scan existing/cached `chrome-headless-shell` installations before downloading, and reuse checksum-verified fonts (`NOTEBOOK_VIDEO_SHARED_DEPS=0` disables dependency linking).
-- **Does it use an image-generation model?** No, the skill never calls image models. Scenes are drawn by components; images come from the user, Wikimedia Commons / Openverse or other licensed sources, and screenshots / recordings cover real interfaces.
+- **Does it use an image-generation model?** No, the skill never calls image-generation models or fetches remote assets at runtime; pre-generated static backgrounds are tracked with license and SHA-256 in `manifests/backgrounds.json`. Scenes are drawn by components; images come from the user, Wikimedia Commons / Openverse or other licensed sources, and screenshots / recordings cover real interfaces.
 - **Portrait or 4:3?** No. The only canvas is 16:9; the earlier 4:3 / 3:4 canvases, the `paper` / `sticker` skins and the `--classic` example project are gone, and older projects are not supported.
 - **My topic needs a one-off diagram.** Copy `src/custom/RequestLane.tsx`, write your component and register it in `src/custom/index.ts`.
 - **Does story.json look as good as hand-written scenes?** Close, but not identical: its layouts are drawn by `auto.tsx`. Start with story.json + a blueprint; switch to hand-written component scenes when you need shot-by-shot layout control.
@@ -262,13 +262,13 @@ The default package holds the entry point, runtime scripts, template, blueprints
 
 ## Contributing
 
-Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). Before submitting, run:
+Issues and pull requests are welcome; see [CONTRIBUTING.md](https://github.com/hyt315/notebook-video/blob/main/CONTRIBUTING.md). Before submitting, run:
 
 ```bash
 python3 scripts/dev/test-all.py   # one command: unit tests + selftest + negative checks + validate-skill + links + reuse lint (skipped if not installed)
 ```
 
-History: [CHANGELOG.md](CHANGELOG.md). Security reports: [SECURITY.md](SECURITY.md).
+History: [CHANGELOG.md](https://github.com/hyt315/notebook-video/blob/main/CHANGELOG.md). Security reports: [SECURITY.md](https://github.com/hyt315/notebook-video/blob/main/SECURITY.md).
 
 ## Licence
 

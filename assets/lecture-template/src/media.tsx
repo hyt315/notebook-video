@@ -185,7 +185,7 @@ export const MetricGrid: React.FC<{
               <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
                 <span style={{fontSize: 22, fontWeight: 700, color: C.ink}}>{m.label}</span>
                 {m.win && badgeP > 0.02 && (
-                  <span style={{width: 24, height: 24, borderRadius: 99, background: C.green, color: '#fff', display: 'grid', placeItems: 'center', fontSize: 15, fontWeight: 700, opacity: badgeP, transform: `scale(${0.001 + 1.12 * Math.max(0, Math.sin(Math.PI * Math.min(1, badgeP)))})`}}>✓</span>
+                  <span style={{width: 24, height: 24, borderRadius: 99, background: C.green, color: '#fff', display: 'grid', placeItems: 'center', fontSize: 16, fontWeight: 700, opacity: badgeP, transform: `scale(${0.001 + 1.12 * Math.max(0, Math.sin(Math.PI * Math.min(1, badgeP)))})`}}>✓</span>
                 )}
               </div>
               <div style={{marginTop: 12, position: 'relative', height: 56, overflow: 'hidden', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1'}}>

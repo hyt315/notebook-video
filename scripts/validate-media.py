@@ -49,8 +49,16 @@ def img_size(p: Path) -> tuple[int, int] | None:
                 h, w = struct.unpack(">HH", b[i + 5:i + 9])
                 return w, h
             i += 2 + struct.unpack(">H", b[i + 2:i + 4])[0]
-    if b[:4] == b"RIFF" and b[8:12] == b"WEBP" and b[12:16] == b"VP8X":
-        return 1 + int.from_bytes(b[24:27], "little"), 1 + int.from_bytes(b[27:30], "little")
+    if b[:4] == b"RIFF" and b[8:12] == b"WEBP":
+        chunk = b[12:16]
+        if chunk == b"VP8X" and len(b) >= 30:
+            return 1 + int.from_bytes(b[24:27], "little"), 1 + int.from_bytes(b[27:30], "little")
+        if chunk == b"VP8 " and len(b) >= 30 and b[23:26] == b"\x9d\x01\x2a":
+            w, h = struct.unpack("<HH", b[26:30])
+            return w & 0x3FFF, h & 0x3FFF
+        if chunk == b"VP8L" and len(b) >= 25 and b[20] == 0x2F:
+            bits = int.from_bytes(b[21:25], "little")
+            return (bits & 0x3FFF) + 1, ((bits >> 14) & 0x3FFF) + 1
     return None
 
 

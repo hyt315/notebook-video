@@ -32,7 +32,7 @@ const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 2, paperOutline: 0,
   textureOpacity: 0, gridOpacity: 0, gradeWarmth: 0, gradeVignette: 0.06,
   subtitleWeight: 700, subtitleLetterSpacing: 2, subtitlePadX: 56,
-  subtitleSize: 64, subtitleFamily: 'NotoSerifSC',
+  subtitleSize: 70, subtitleFamily: 'NotoSerifSC',
 };
 
 // 物件躺在发光台面上：极浅、偏冷、贴面的影。
@@ -59,14 +59,15 @@ const Grade: React.FC = () => <div style={{position: 'absolute', inset: 0, point
   background: `radial-gradient(ellipse 78% 72% at 50% 46%, rgba(255,255,255,0.06) 0%, transparent 54%, rgba(20,30,40,${(aesthetic.gradeVignette * 1.5).toFixed(3)}) 100%)`}} />;
 
 // 字幕：纯字无框，冷白纸面光晕衬底。
-const SubtitleChrome = PaperSubtitle({ink: palette.ink, halo: 'rgba(255,255,255,0.96)', size: 64, bottom: 34});
+const SubtitleChrome = PaperSubtitle({ink: palette.ink, halo: 'rgba(255,255,255,0.96)', size: 70, bottom: 34});
 
 // 章节标识：左上编目号「ARCHIVE · 01 / 标题」，等宽小字 + 章名。
 const Chrome: Theme['Chrome'] = (p) => {
   const k = chromeIn(p);
-  return <div style={{position: 'absolute', left: 92, top: 64, zIndex: 150, opacity: k, transform: `translateX(${(1 - k) * -10}px)`}}>
-    <div style={{fontFamily: 'Space,Kai', fontWeight: 600, fontSize: 24, letterSpacing: 5, color: palette.orangeInk}}>No. {String(p.stage + 1).padStart(3, '0')}</div>
-    <div style={{fontFamily: 'NotoSerifSC,Kai', fontWeight: 700, fontSize: 36, color: palette.ink, letterSpacing: 2, marginTop: 2, whiteSpace: 'nowrap'}}>{p.title}</div>
+  return <div style={{position: 'absolute', left: 88, top: 42, zIndex: 150, opacity: k, transform: `translateX(${(1 - k) * -10}px)`}}>
+    <div style={{fontFamily: 'NotoSerifSC,Kai', fontWeight: 700, fontSize: 64, lineHeight: 1.15, color: palette.ink, letterSpacing: 2, whiteSpace: 'nowrap', borderBottom: `3px solid ${palette.orange}`, paddingBottom: 4}}>
+      <span style={{fontFamily: 'Space,Kai', color: palette.orangeInk, marginRight: 14}}>{String(p.stage + 1).padStart(2, '0')}</span>{p.title}
+    </div>
   </div>;
 };
 

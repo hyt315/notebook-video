@@ -1,0 +1,94 @@
+{
+  "title": "互联网第一条消息只传了两个字母",
+  "theme": "archive",
+  "subject_of_film": "ARPANET",
+  "mode": "hybrid",
+  "protect": [
+    "LOGIN"
+  ],
+  "chapters": [
+    {
+      "title": "历史现场",
+      "shots": [
+        {
+          "role": "hook",
+          "layout": "page",
+          "$asks": "1969 年人类第一条跨网消息到底发了什么？",
+          "lines": [
+            "1969 年互联网发出的第一条跨网消息。",
+            "不是你好世界，而是两个字母 LO。"
+          ],
+          "content": {
+            "page": "ink",
+            "ink": {
+              "draw": "lib:chiplog",
+              "label": "ARPANET 节点连接",
+              "parts": [
+                "hull",
+                "line"
+              ]
+            },
+            "title": "1969 · LO",
+            "stamp": "档案"
+          }
+        },
+        {
+          "role": "explain",
+          "layout": "compare",
+          "$asks": "本来打算发什么，实际为什么停在 LO？",
+          "lines": [
+            "工程师原本想敲五个字母 LOGIN。",
+            "刚发完前两个字母，远端主机就内存溢出宕机了。"
+          ],
+          "content": {
+            "before": {
+              "title": "预期输入",
+              "items": [
+                "完整单词 LOGIN",
+                "远程登录测试"
+              ]
+            },
+            "after": {
+              "title": "实际到达",
+              "items": [
+                "只收到 L 和 O",
+                "发到 G 时远端崩溃"
+              ]
+            }
+          }
+        },
+        {
+          "role": "climax",
+          "layout": "number",
+          "$asks": "一小时修复后，整条消息才完整通过？",
+          "lines": [
+            "一小时后重启修复，五个字母才完整到达。",
+            "现代互联网，就从这两个崩溃前的字母起步。"
+          ],
+          "content": {
+            "value": 1969,
+            "unit": "年",
+            "label": "ARPANET 首次跨城通信",
+            "notes": [
+              "两台主机相隔五百公里",
+              "首条消息是一次宕机"
+            ]
+          }
+        },
+        {
+          "role": "verdict",
+          "layout": "statement",
+          "$asks": "这段档案留给工程界什么启示？",
+          "lines": [
+            "伟大系统的第一次上线往往并不完美。",
+            "先连上，再修好，这就是互联网的起点。"
+          ],
+          "content": {
+            "text": "先连上，再修好",
+            "sub": "ARPANET · 1969 历史档案"
+          }
+        }
+      ]
+    }
+  ]
+}

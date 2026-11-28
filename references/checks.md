@@ -69,7 +69,7 @@
 | 音效与静音 | 音效峰值 ≥ `-12 dBFS` 且 `sha256` 一致；无 BGM 时句间真静音 | P0 | `validate-audio-levels.py` / `validate-silence.py` |
 | 屏幕叠层面积 | 字幕 + 角标常驻面积 ≤ 5%（超 5% 记 P1，超 30% 判 P0） | P1 / P0 | `check_overlay_budget` 核算 |
 
-- **成片文件规格**（`notebook-video validate-video`）：默认 2560×1440（`--scale=1`；或 `--scale=0.75` 为 1920×1080）、30fps CFR 无卡顿；H.264 + AAC 48kHz 立体声、`av_offset ≤ 0.034s`；色彩 `tv / bt709 / bt709 / bt709`；响度约 `-16 LUFS`、真峰 ≤ `-1.5 dBTP`；帧级亮度 `YAVG ≥ 35` 无死黑/死白；旁白后至少留 `0.7s`（`END_TAIL_F` 42 帧）。
+- **成片文件规格**（`notebook-video validate-video`）：默认 2560×1440（`--scale=1`；或 `--scale=0.75` 为 1920×1080）、30fps CFR 无卡顿；H.264 + AAC 48kHz 立体声、`av_offset ≤ 0.034s`；色彩 `tv / bt709 / bt709 / bt709`；响度约 `-16 LUFS`、真峰 ≤ `-1.8 dBTP`（母带 `-2.6`）；帧级亮度 `YAVG ≥ 35` 无死黑/死白；旁白后至少留 `0.7s`（`END_TAIL_F` 42 帧）。
 - **字幕整洁**：五套主题统一为底部单行居中 64 设计像素纯文字配纸色柔光晕（无实心框/侧标）；保护短语不跨行拆分；保留句中标点，去句末标点；音画同步 ≤ 80ms。
 
 ## 5. 包装验收与低质画面排雷

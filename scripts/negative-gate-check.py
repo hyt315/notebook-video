@@ -1082,7 +1082,10 @@ def mk_custom_proj():
     td = tempfile.mkdtemp(prefix='nv-custom-')
     for sub in ('src', 'manifests'):
         shutil.copytree(os.path.join(TPL, sub), os.path.join(td, sub))
-    story = json.load(io.open(os.path.join(SKILL, 'examples/weak-model-test/float.story.json'), encoding='utf-8'))
+    _sf = os.path.join(SKILL, 'examples/weak-model-test/float.story.json')
+    if not os.path.isfile(_sf):
+        _sf = os.path.join(SKILL, 'examples/concept-hash-table.story.json')
+    story = json.load(io.open(_sf, encoding='utf-8'))
     story['chapters'][0]['shots'][0] = {
         'layout': 'custom',
         'lines': ['这一镜想手画一枚火箭。', '但组件没有注册。'],
@@ -1150,10 +1153,24 @@ case('TTS1 成片没有真实旁白（只有静音占位）→ make-video --rend
 ])
 cleanup(_td)
 
+def _mk_story(src: str, out_dir: str, **patch) -> str:
+    """复制一份 story，改顶层键，写到 out_dir/story.json（运行包不含 negative/ 时退回内置极简夹具）。"""
+    import json as _j
+    _p = pathlib.Path(SKILL) / src
+    if _p.is_file():
+        d = _j.loads(_p.read_text(encoding='utf-8'))
+    else:
+        d = {'title': '火箭为什么要分级（全组件版·测试示例）', 'theme': 'flat', 'kicker': '回归', 'header': '火箭 / ROCKET', 'headerSub': 'COMPONENTS ONLY', 'subject_of_film': '火箭', 'captions': {'mode': 'line'}, 'chapters': [{'title': '为什么不是一整根', 'shots': [{'role': 'hook', 'layout': 'statement', 'lines': ['先看一枚完整的火箭。', '它其实分成好几节。'], 'content': {'text': '一枚完整的火箭'}}, {'role': 'breakdown', 'layout': 'bars', 'lines': ['第一级最重。', '占了八成多。'], 'content': {'title': '起飞质量占比', 'unit': '%', 'data': [{'label': '第一级', 'value': 85}, {'label': '第二级', 'value': 10}, {'label': '载荷', 'value': 3}]}}, {'role': 'example', 'layout': 'compare', 'lines': ['不分级，全程推着空壳。', '分级，烧完一节扔一节。'], 'content': {'before': {'title': '不分级', 'items': ['空壳也要加速', '死重一路带着']}, 'after': {'title': '分级', 'items': ['烧完就分离', '只推有用的部分']}}}, {'role': 'recap', 'layout': 'statement', 'lines': ['记住这一句。', '分级，是为了扔掉死重。'], 'content': {'text': '分级，是为了扔掉死重'}}]}], 'mode': 'component'}
+    d.update(patch)
+    sp = pathlib.Path(out_dir) / 'story.json'
+    sp.write_text(_j.dumps(d, ensure_ascii=False), encoding='utf-8')
+    return str(sp)
+
+
 # ---- 画面三层：讲火箭却没有火箭 → P0 ----
 _td = tempfile.mkdtemp(prefix='nv-fusion-')
 _r = run([PY, os.path.join(SKILL, 'scripts/compose-story.py'),
-          os.path.join(SKILL, 'examples/negative/rocket-components-only.story.json'), _td])
+          _mk_story('examples/negative/rocket-components-only.story.json', _td), _td])
 case('FUS1 全组件 + 主题物「火箭」从未出现 → validate-fusion P0', [
     ('must_pass', 'compose-story', _r),
     ('must_block:火箭', 'validate-fusion', run([PY, os.path.join(SKILL, 'scripts/validate-fusion.py'), _td])),
@@ -1162,14 +1179,6 @@ cleanup(_td)
 
 # ---- 呈现模式：全组件 / 全非组件 / 混合，三套配额 ----
 # 模式不是风格开关，是门禁契约。三条负向各自钉住一处越界。
-def _mk_story(src: str, out_dir: str, **patch) -> str:
-    """复制一份 story，改顶层键，写到 out_dir/story.json。"""
-    import json as _j
-    d = _j.loads((pathlib.Path(SKILL) / src).read_text(encoding='utf-8'))
-    d.update(patch)
-    sp = pathlib.Path(out_dir) / 'story.json'
-    sp.write_text(_j.dumps(d, ensure_ascii=False), encoding='utf-8')
-    return str(sp)
 
 
 _td = tempfile.mkdtemp(prefix='nv-mode-')

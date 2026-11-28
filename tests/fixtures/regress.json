@@ -2,13 +2,13 @@
  "examples/code-change-cache.story.json": {
   "manifests/caption-cues.json": "0e314186643894b6bfa4d8eb315cd922c4060aad099aebc2172531f0ce7aef37",
   "manifests/protected-caption-phrases.txt": "de99ff7bdd41002d37797fc96e4ab7e9a5aaed87eb8961aeed4a9e678223735a",
-  "manifests/shots.json": "f6fc18a6c67cf2e8bf19ddbce1053c8c7cea64e23bb81afc1e086d02a70e2f6d",
-  "manifests/shots.resolved.json": "839213aaf7ef940bfe2581f111e0b1bd5aaa9733a9d8c570e0392d984594aacb",
+  "manifests/shots.json": "fd1124645c9fb595ee64fe1eff6b6970ea07daa65d30447b34d525663c8519aa",
+  "manifests/shots.resolved.json": "dc8aeddd07550636b75a2460ef581cdef88da11bf6a6f766dd142660327e64a9",
   "narration.txt": "b98237e3c5b1faaba92bad9aebdddba8d9335c093ead6e74e1c8db70a17cf490",
   "src/film.ts": "d3b13941ff3879efcb170bb85224f0211dd73b466587af4917a107d66a92cd9e",
   "src/scenes.tsx": "e13db802e3f90cea9d22a75510362c6f9e237e8eb29d611b1b4da048d9748336",
-  "src/shots.ts": "eaf6ec2537c701ac389f16baa30277031750b3f59c2de8983881cb4f0403d9e7",
-  "src/story.ts": "d54906b7b1598028d2ad04e24502ff72a8246d35f61233965f9cb24d31c90888",
+  "src/shots.ts": "474e635a0d80baad551c7d6d77847ae39967d7d815c372988521ac319378953b",
+  "src/story.ts": "d13d2b5436d5af8485150abc95c74e1284a02832e85557402350ddcdc85a4a58",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -21,11 +21,12 @@
   },
   "validate-composition.py": {
    "P0": 0,
-   "P1": 7,
+   "P1": 8,
    "rules": [
     "P1|# 处变化间隔 ># 帧（#",
     "P1|# 处变化间隔在 #–#s（",
     "P1|#/# 镜落在同一时长档（#",
+    "P1|全片仅 # 种镜头意图，要求",
     "P1|全片没有 ≤#s 的短镜；插",
     "P1|可选组件只用了 # 件（[]",
     "P1|最长/最短镜头仅 # 倍（#",
@@ -39,10 +40,9 @@
   },
   "validate-fusion.py": {
    "P0": 0,
-   "P1": 2,
+   "P1": 1,
    "rules": [
-    "P1|[hybrid] 手账页只占",
-    "P1|story 没有写 subj"
+    "P1|[component] 组件"
    ]
   },
   "validate-glyphs.py": {
@@ -64,12 +64,10 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 4,
+   "P1": 2,
    "rules": [
     "P1|S4",
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t"
+    "P1|overlay"
    ]
   },
   "validate-shot-motion.py": {
@@ -78,12 +76,12 @@
    "rules": [
     "P1|S1",
     "P1|S1",
-    "P1|S3",
-    "P1|S5",
     "P1|S6",
     "P1|S7",
     "P1|S7",
-    "P1|S8"
+    "P1|S8",
+    "P1|chapter:先懂一个词",
+    "P1|全片仅 # 种镜头意图（不含"
    ]
   },
   "validate-treatment.py": {
@@ -97,7 +95,7 @@
     "P1|S5",
     "P1|S6",
     "P1|S7",
-    "P1|S8",
+    "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
    ]
   }
@@ -105,13 +103,13 @@
  "examples/concept-hash-table.story.json": {
   "manifests/caption-cues.json": "bf9e67939e0406f9b00b221aa28d95efa9b3ade6844be5faccbde592d718d58c",
   "manifests/protected-caption-phrases.txt": "6672d01207516326695fd5ea6dc6179fca186eea2163385bbcc3ac7a6dda2700",
-  "manifests/shots.json": "78a46363442225c83b70434702f1a70ba1a8b29a8e94e318c5824af14f98b2fa",
-  "manifests/shots.resolved.json": "44dd3313a7d599ed7e12078cfe4ec3175a4df1d11f9c952b80840ca8236f78fb",
+  "manifests/shots.json": "c6d788c37cfacfcbdf007050adf109cfe00c109a5e5394db7bfb50a202616b05",
+  "manifests/shots.resolved.json": "1e79fd0311e7694d47bac869b9f72631ef5f74000962976db29a49b079790b8f",
   "narration.txt": "68ff99bf39ed2ed928c33313409cbe2768ad59d2c4600ca79544d02b8b48598a",
   "src/film.ts": "2eb3206a43c5c4b1e2a933593a793d09edf7713721da850f6e65417e2f37ca03",
   "src/scenes.tsx": "528796fd4404d7deb0c6ccfbd56376b7393bec356754971912a1e01756fc2e2f",
-  "src/shots.ts": "7d8e197d9e515e5a2976d23cbb78fb213b3e2321acf2bf143a644b5f3db12eb2",
-  "src/story.ts": "d62e21e2b6c1428bf958562592eee5279b017717670aa6b7368fe6dc4502be85",
+  "src/shots.ts": "b533853be291fec7cd27b06740e56370f3ee6de9fc1d2be6d1d89784c4bb0ebe",
+  "src/story.ts": "d6881714035cbbf63504bd00f004f72c73642d5f12f088abfde6d556b564435a",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -124,15 +122,14 @@
   },
   "validate-composition.py": {
    "P0": 0,
-   "P1": 7,
+   "P1": 6,
    "rules": [
     "P1|# 处变化间隔在 #–#s（",
     "P1|#/# 镜落在同一时长档（#",
     "P1|全片没有 ≤#s 的短镜；插",
     "P1|可选组件只用了 # 件（[]",
     "P1|最长/最短镜头仅 # 倍（#",
-    "P1|镜长变异系数 # < #（平",
-    "P1|骨架指纹 ('Split',"
+    "P1|镜长变异系数 # < #（平"
    ]
   },
   "validate-elem-kinds.py": {
@@ -142,10 +139,9 @@
   },
   "validate-fusion.py": {
    "P0": 0,
-   "P1": 2,
+   "P1": 1,
    "rules": [
-    "P1|[hybrid] 手账页只占",
-    "P1|story 没有写 subj"
+    "P1|[component] 组件"
    ]
   },
   "validate-glyphs.py": {
@@ -168,32 +164,29 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 3,
+   "P1": 1,
    "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t"
+    "P1|overlay"
    ]
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 8,
+   "P1": 6,
    "rules": [
     "P1|S1",
-    "P1|S2",
     "P1|S3",
     "P1|S3",
-    "P1|S4",
-    "P1|S5",
     "P1|S6",
-    "P1|S6"
+    "P1|S6",
+    "P1|chapter:一个现象"
    ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 8,
+   "P1": 9,
    "rules": [
     "P1|S1",
+    "P1|S2",
     "P1|S3",
     "P1|S4",
     "P1|S5",
@@ -207,13 +200,13 @@
  "examples/data-ssd-vs-hdd.story.json": {
   "manifests/caption-cues.json": "e29439d8b884387e259bfe98a3ebfef5ab2d86ce3ef7d6bea7659d50b320c4d9",
   "manifests/protected-caption-phrases.txt": "74aa6fee06220e07ef9184f02c355edc6f1d172e3a4a61961af5d61745b5000e",
-  "manifests/shots.json": "7520f9f771e89b632b274a191ee8d8aa1e332e707b6f46b859072e7fd06cfc1f",
-  "manifests/shots.resolved.json": "b6807050aba4e8dea7b7f07972a99339fbc408ae5d761b26827f11313e21a901",
+  "manifests/shots.json": "8ddb0e8a79f6dababddefdd55a3df077c5d8183b262d7e58a4633f03bc5fcfbd",
+  "manifests/shots.resolved.json": "f8b8af48944bdd8916fe17d792aa730a2a30c66168102948421b86ff639b13c3",
   "narration.txt": "3482bb5cd7ad72473e45911d890c2610705d8da67a2c8095a2af50c41b060836",
   "src/film.ts": "865cadc9fc7d50a970e189000677aef714d96717a1f27346ff68fba2292f71e4",
   "src/scenes.tsx": "528796fd4404d7deb0c6ccfbd56376b7393bec356754971912a1e01756fc2e2f",
-  "src/shots.ts": "8e03649b34a365e9cd8a3999cbf1e13980f9b8c417614422cd57649f10f3260f",
-  "src/story.ts": "58415d60e61eecfe1d471a79a3600c030b1375befa65ee841174bccf851840f4",
+  "src/shots.ts": "0e6b01f0f0874770ca350208d99f6eec7e6d6c0ad575bf83ded387a1a9bb4452",
+  "src/story.ts": "5918532e991b66e6d26ec90b0e777984d57af42068239175dc7f3a7bedff870a",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -244,10 +237,9 @@
   },
   "validate-fusion.py": {
    "P0": 0,
-   "P1": 3,
+   "P1": 2,
    "rules": [
-    "P1|[hybrid] 手账页只占",
-    "P1|story 没有写 subj",
+    "P1|[component] 组件",
     "P1|纯文字镜头占 #% > #%"
    ]
   },
@@ -271,37 +263,31 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 3,
+   "P1": 1,
    "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t"
+    "P1|overlay"
    ]
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 8,
+   "P1": 6,
    "rules": [
     "P1|S1",
-    "P1|S1",
     "P1|S3",
-    "P1|S4",
     "P1|S5",
     "P1|S6",
     "P1|S6",
-    "P1|S6"
+    "P1|chapter:问题"
    ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 9,
+   "P1": 7,
    "rules": [
     "P1|S1",
     "P1|S2",
     "P1|S3",
-    "P1|S4",
     "P1|S5",
-    "P1|S6",
     "P1|turn_to_you_se",
     "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
@@ -311,13 +297,13 @@
  "examples/negative/rocket-components-only.story.json": {
   "manifests/caption-cues.json": "4e4d2c76fa93edce8b4f45c096bb9254d5c5955ef053a40c6b90ffb30a739559",
   "manifests/protected-caption-phrases.txt": "857e1f6beba316bbcf11ba93bf2142d8bf993709914f50ae55cd16e39afecd7c",
-  "manifests/shots.json": "74e18fc569ec89ed6cccb3470d9ea25c32a44bd96627e6cd9df2387bf4829b91",
-  "manifests/shots.resolved.json": "08d4aa3bb709904ca87b5c48f1a0e88a60e65d7a79f868150fa57fc70975b172",
+  "manifests/shots.json": "7cb912905196d99c0674d51a09f18158c2537e66f692ce900af4c0c9a121c1e0",
+  "manifests/shots.resolved.json": "075531ecef4719d1ea75a8d9086bceb4ceb0caaf9492a2379cc61557ff96e5af",
   "narration.txt": "df8ba6323f58fa8770dfe2c0e050b4938183fc3b00ac34a6a73cd484e5ed7b16",
   "src/film.ts": "23471f68f61be9da919c9f00f1d72d8ad14be2ff044c03a4e18784836820f2f1",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "4162bd07a33ee211633b62cede3e9a9db8b8e0a3c11707e527ffec0d3bc96dbb",
-  "src/story.ts": "52f693d45231decd45b05d34e93df2ec6ea954b180d62657253b7c05124d108d",
+  "src/shots.ts": "2d63363189acef6a734692d699860855f7b76eecb5b4974d4ca2cd188b881bd6",
+  "src/story.ts": "d43819730da4e073ede3254178952e271528ce4372c20fad0881370e8b1372c3",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -373,11 +359,8 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 4,
+   "P1": 1,
    "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
     "P1|全片只用到 # 种叙事动作（"
    ]
   },
@@ -396,12 +379,11 @@
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 7,
+   "P1": 6,
    "rules": [
     "P1|S1",
     "P1|S2",
     "P1|S3",
-    "P1|S4",
     "P1|turn_to_you_se",
     "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
@@ -411,13 +393,13 @@
  "examples/real-media/git-pr.story.json": {
   "manifests/caption-cues.json": "a5fcd9dbcc09c89d4115f6a9fb8ffbaff409baee3bd34f150948a34ed52437e6",
   "manifests/protected-caption-phrases.txt": "4608079b2084891ba25330ad2d7f5f0d2fa0ec1ca54662cc268d8edb5578a3bb",
-  "manifests/shots.json": "280dd8af66bf36c858023c33816014c696bde85b7ce597c924e66ee5f18b0b0e",
-  "manifests/shots.resolved.json": "8dcb91a45e75ea2a6e987661920a79a1065415ac1c603341f478aee53745db23",
+  "manifests/shots.json": "f3463d8186b78b7c24b974007fcf009118bff6a5f23e953f660b10f469203b88",
+  "manifests/shots.resolved.json": "1b1b1bbe97ae1ad9787ef7560810c21cb92fa0479be559c479c52e23442a5afa",
   "narration.txt": "50e93faa60e9046ee484e2d63b47b179a9052746b5ee59481f57c8e47562d49b",
   "src/film.ts": "fd71b96427d3a18f8b72b4ae73b1aa03a011624c21ebafe75baab3aa7b209aff",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "44c7564186195e7eac454ca47e8f608996bfcde63b1e1c547c0783dd15c9e320",
-  "src/story.ts": "0823d462aa83dcc921a2fca7077668eaf96854da5b17336c56b3d768a8d6e8da",
+  "src/shots.ts": "5457638fac510601ef1dc55ad32a56828a991d03b607b899cf148030b69e723e",
+  "src/story.ts": "d9426b3866f02f7d3b26a263da27a9a8a8808e51d2485730ee8c257ffa6c6f9b",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -444,9 +426,10 @@
   },
   "validate-fusion.py": {
    "P0": 0,
-   "P1": 2,
+   "P1": 3,
    "rules": [
     "P1|[hybrid] 手账页只占",
+    "P1|[hybrid] 组件（含直",
     "P1|story 没有写 subj"
    ]
   },
@@ -462,27 +445,25 @@
   },
   "validate-opening.py": {
    "P0": 0,
-   "P1": 1,
+   "P1": 2,
    "rules": [
-    "P1|O# 第一个可见事件在第 #"
+    "P1|O# 第一个可见事件在第 #",
+    "P1|O# 第一句「这是一个真实的"
    ]
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 4,
+   "P1": 2,
    "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
+    "P1|overlay",
     "P1|全片只用到 # 种叙事动作（"
    ]
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 7,
+   "P1": 6,
    "rules": [
     "P1|S1",
-    "P1|S3",
     "P1|S3",
     "P1|S4",
     "P1|S4",
@@ -507,13 +488,13 @@
  "examples/recipes/annotated.story.json": {
   "manifests/caption-cues.json": "edad7aa0916bf9e1ca31d2dc08936560c5e8c53de2b466007bbb0c926e8f4e25",
   "manifests/protected-caption-phrases.txt": "9764e152eb788b9a2b192192e44b053db734165f63922788545adc2f4e1a24db",
-  "manifests/shots.json": "cf3703f5f5c0f841e339b83bf1254daa791b603ab88051a44626d96b40ca85cc",
-  "manifests/shots.resolved.json": "73c1ba1b23f4e3f35fe8a8155be61317f844dd7f2155f75cd2bf71f56a4c7f31",
+  "manifests/shots.json": "17616e073a673a0d1b601d0e5aac670080a2133274446445ebe661b1ca62dce6",
+  "manifests/shots.resolved.json": "41752b1c79d791123891e00f6275654e7b71493505da8fa7f0b53a2be479ae16",
   "narration.txt": "a21cc7f1845ccab0ca5c46130e31eee0bac9e6560bac37d32db3b46ce74486de",
   "src/film.ts": "aeb67c28f0dcb1399b01a5e0e535f30a341e6cf5f20bac889d5e9ca722c46bb2",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "3d83b48b754050192c1c290c6790a7af6ff680e5cbdef640872b8aae8385339e",
-  "src/story.ts": "c57b79a38faf1856e8b401f008e96515c54589b3dd5e85d581eaa17f90b9c978",
+  "src/shots.ts": "d26f6a09c1c50f29c7b9bebc942d1d49817b816e2b583b98e5a803901d124852",
+  "src/story.ts": "e680d36ba8beb22f73918f033e70706107624d6a9dfadfe94070bcb2f69b614a",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -568,20 +549,112 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 4,
+   "P1": 1,
    "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
     "P1|全片只用到 # 种叙事动作（"
    ]
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 3,
+   "P1": 4,
    "rules": [
+    "P1|S2",
     "P1|S3",
     "P1|S4",
+    "P1|全片仅 # 种镜头意图（不含"
+   ]
+  },
+  "validate-treatment.py": {
+   "P0": 0,
+   "P1": 6,
+   "rules": [
+    "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|turn_to_you_se",
+    "P1|招牌镜头 S# 既没真推（#",
+    "P1|还没有独立评审（review"
+   ]
+  }
+ },
+ "examples/recipes/archive-first-msg.story.json": {
+  "manifests/caption-cues.json": "24a643ed781ba841d0877c8d1feb2c14d60744a78d08e11d76b2d43d69df7876",
+  "manifests/protected-caption-phrases.txt": "d648d24552ecc00f115a46b3ecb7e5bdef9745999c12e07cc81122c6370a83dd",
+  "manifests/shots.json": "c9536e2d042405f8a2935e0030375c0e9aacef8ea763a7072a6cf22410cb8beb",
+  "manifests/shots.resolved.json": "badb6827cdf43e7418c827afaba88b2b198be3a0d80f5dd8d9ad2327ca9c6a3a",
+  "narration.txt": "24b6811d00e09cbf666f2ce5b31928da362cc5d2a0844373f710e68cbab2e00a",
+  "src/film.ts": "5fc0e24d0eec1f247f9a533f63912114bbf2f731cd857ec24ea0fbc3a2df70ff",
+  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
+  "src/shots.ts": "adbfc7890ecdca92e68f9efe107328b599e5d93bc702de451c5cf50f51cef7c7",
+  "src/story.ts": "4a80f78f948fce033128b2bfdea754abba9929cc91607bc914b0a85f343727b5",
+  "validate-audio-levels.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-backgrounds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-composition.py": {
+   "P0": 0,
+   "P1": 7,
+   "rules": [
+    "P1|# 处变化间隔在 #–#s（",
+    "P1|#/# 镜落在同一时长档（>",
+    "P1|全片仅 # 种镜头意图，要求",
+    "P1|全片没有 ≤#s 的短镜；插",
+    "P1|可选组件只用了 # 件（[]",
+    "P1|最长/最短镜头仅 # 倍（#",
+    "P1|镜长变异系数 # < #（平"
+   ]
+  },
+  "validate-elem-kinds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-fusion.py": {
+   "P0": 0,
+   "P1": 1,
+   "rules": [
+    "P1|[hybrid] 组件（含直"
+   ]
+  },
+  "validate-glyphs.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-media.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-opening.py": {
+   "P0": 0,
+   "P1": 1,
+   "rules": [
+    "P1|O# 第一个可见事件在第 #"
+   ]
+  },
+  "validate-presentation.py": {
+   "P0": 0,
+   "P1": 2,
+   "rules": [
+    "P1|overlay",
+    "P1|全片只用到 # 种叙事动作（"
+   ]
+  },
+  "validate-shot-motion.py": {
+   "P0": 0,
+   "P1": 5,
+   "rules": [
+    "P1|S1",
+    "P1|S4",
+    "P1|chapter:历史现场",
+    "P1|全片仅 # 次运镜，按片长 ",
     "P1|全片仅 # 种镜头意图（不含"
    ]
   },
@@ -601,13 +674,13 @@
  "examples/recipes/cork-page.story.json": {
   "manifests/caption-cues.json": "4a2fddd624c89417ab165f3daef1049c5e160b7dd158597dea959963433af6f4",
   "manifests/protected-caption-phrases.txt": "1fcfb8b448c7b101ca55a75f91fa25008c3a6a99350f6504f0261747789c6a44",
-  "manifests/shots.json": "d626b4586a73a84c0367cfd26b2d4eded2e971a2174f61f3f6a0e52b8a4328c9",
-  "manifests/shots.resolved.json": "b8dc5dea069a95601faef2ade6cf2465be996e434e0b89c0a6e7404fd49af831",
+  "manifests/shots.json": "5d1b66b0f00de493b392bb3c5664bfbd306de740050c717191208b621d4b06d7",
+  "manifests/shots.resolved.json": "9f6dc02178c1759ecd132b14bdba1503105d66d06e44d8a9e4a757ac36388cfc",
   "narration.txt": "1ad11579bd54bff5eae9a4f7ab2f65830bdee04e9227a46821ee1df3d9e26490",
   "src/film.ts": "f80d3de03addeeaed63f72c199556c1d31465ac9257b9ad35102d84ca4c497a8",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "c3f5ced489e3c867c920138db4d2eea97b613dcc69935a2ea0e1103923dab271",
-  "src/story.ts": "c3c9a7b9605febd4d28c552c7918c02b79eebaa6e65f131d9cc1be1f6169ea67",
+  "src/shots.ts": "dfbbc832176ce30aa48e4d4efe7ee0853a803913acbff5aa665d3fe49b3f14ae",
+  "src/story.ts": "acebad20dafeefb0f0f02dd36e78292f6f5104761a1841bb3a98e8367f9c04eb",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -663,20 +736,19 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 5,
+   "P1": 3,
    "rules": [
     "P1|S2",
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
+    "P1|overlay",
     "P1|全片只用到 # 种叙事动作（"
    ]
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 6,
+   "P1": 7,
    "rules": [
     "P1|S1",
+    "P1|S2",
     "P1|S3",
     "P1|S4",
     "P1|chapter:一个词",
@@ -686,9 +758,10 @@
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 6,
+   "P1": 7,
    "rules": [
     "P1|S1",
+    "P1|S2",
     "P1|S3",
     "P1|S4",
     "P1|turn_to_you_se",
@@ -700,13 +773,13 @@
  "examples/recipes/data-with-object.story.json": {
   "manifests/caption-cues.json": "aa91607c169092766803edd71d37469f40b2a186f1b64b1759f251ba5e52efb1",
   "manifests/protected-caption-phrases.txt": "cfebe88e8aeb9a08ebe97a0372380573f904db2ba335479ce159c067fc75d11a",
-  "manifests/shots.json": "8bfdba9df1c351b479c8b26a82705d77487fdfdf6ab2060bbeba2328c1fa5b5d",
-  "manifests/shots.resolved.json": "39b8e94fe45888e18fa62b0ccf70293771025812c59a21c70fe796f819feab6a",
+  "manifests/shots.json": "f0cc5333384dde9f3dd5fa3eb3ee44f4d400d67d8b7ed24068984fb9b49e5a7c",
+  "manifests/shots.resolved.json": "fa3a88657dd33ced55c2e00f1ec46af6909a145f42a841c2f2a896acd5589987",
   "narration.txt": "b253efe0a173e1626abc5d6c1e68eeaaee122deec1ae2694d97d726d40f44c3b",
   "src/film.ts": "9b492f8b4c51773d6ae3433bcbd8e24bde3f3a7bc1983d7404f7e251426156fa",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "259e719b577663528bee2b1fc890a0717fefdae76ee66cd6b8e71c06ef495ba1",
-  "src/story.ts": "9ee2cfd5ed26c2283ed60a5d1f9cee28f72cfbf8f2ea8170293a094df009c7bd",
+  "src/shots.ts": "f2fa91c27d3dd35ad2aeed9f719b44eff6557b2c52a6226b086cc923a2244151",
+  "src/story.ts": "5bdd8bf878f2633eb6a1cb31602281ef1c20d54271da131e0e0245d7b210c0c9",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -763,19 +836,18 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 4,
+   "P1": 1,
    "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
     "P1|全片只用到 # 种叙事动作（"
    ]
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 2,
+   "P1": 4,
    "rules": [
+    "P1|S1",
     "P1|S3",
+    "P1|S4",
     "P1|全片仅 # 种镜头意图（不含"
    ]
   },
@@ -795,13 +867,13 @@
  "examples/recipes/jie-component.story.json": {
   "manifests/caption-cues.json": "8cdbe05afe700803aa20d91ed491e6baef999fe6b85a722c3f89795879ea716f",
   "manifests/protected-caption-phrases.txt": "ab21dd9663471de19939aeb6d49b402ef3d437681bc76d6bead801d5a80f6d6c",
-  "manifests/shots.json": "bd484a3699cdb81d5c4be8d71934a3b205f88e030a96998fa76875e3c41ca3f4",
-  "manifests/shots.resolved.json": "81f21faf39b2132fdc23fac1638f8f06b000dfe4407288f571e90872314bd651",
+  "manifests/shots.json": "dfe00ffcf0e5b47ca222d8dd6cdc5a17f001cf3af627b15a5f5c5d7cddb39bd4",
+  "manifests/shots.resolved.json": "c47c82d97fd611548d21ce3819521faecf6d30451f09483772e1883eeddbef2e",
   "narration.txt": "466dc8ee192d8bf4c12215c9920ab5416cebd8b1ded3aa3b142d7edcec7ab8cc",
   "src/film.ts": "34339f875eac5970d8a01319d5fd5275fe630bf81f198407b5d564dba40fd134",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "1a1aa9456b247c3b9e0196a51ee9437bd0ab4d0ce429edb4d184a80c97203e8d",
-  "src/story.ts": "4ec44d44c8cb918f18e3b28e158639a67cc0c3a0690f595da70d7d3db4381ed5",
+  "src/shots.ts": "e97e710988d74d8174782c6f1265ef9a1911632f95e24c377e37b94db477bdf0",
+  "src/story.ts": "f52eb9984df3415eec774c5c8ff2bd7202b63bbc65f7ad3c43e94560d793d9e1",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -853,22 +925,19 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 5,
+   "P1": 3,
    "rules": [
     "P1|S3",
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
+    "P1|overlay",
     "P1|全片只用到 # 种叙事动作（"
    ]
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 6,
+   "P1": 5,
    "rules": [
     "P1|S1",
     "P1|S2",
-    "P1|S3",
     "P1|chapter:一个速度单位",
     "P1|全片仅 # 次运镜，按片长 ",
     "P1|全片仅 # 种镜头意图（不含"
@@ -891,13 +960,13 @@
  "examples/recipes/jie-freeform.story.json": {
   "manifests/caption-cues.json": "fd19c3b604a5256fc01073f56b650311d6e44fbb8ddedcdc12f1b4f855e18884",
   "manifests/protected-caption-phrases.txt": "7c03c914a6fddfcb4165443c31316712bebce29a6432f178bb737f92c5f84aeb",
-  "manifests/shots.json": "25602c295880e8b45ba416bb0578ebe79be784837ae0197c4bc61ea766f7616b",
-  "manifests/shots.resolved.json": "c49714b37766bc59ebdca193ece4c526a41c1fa95367dd277c3dc1aefc0958db",
+  "manifests/shots.json": "426f5898a89c74bfdfc54ee9743a70e692c9f2a0472c587013d582c265c3bf95",
+  "manifests/shots.resolved.json": "679cdd5f728d2109b8bbe222d9e23c3120edf172b3ad7c1fb98a4f726857ec7d",
   "narration.txt": "b3e7ca8afab109a4a50f66489aff4ca570948c409d51bd9693a01c82bfa41b68",
   "src/film.ts": "07765d1fb28b5f06d70ca6f704b8c3f2bc2ffa6b26ee94bb29238033080db2b5",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "b009ad410ebb3e1d502ae3b405a580cfc51274dc25c84210bb8d1ad4374a4efd",
-  "src/story.ts": "92e1b62d9e7d6b3f65535faaa6522e7f644dcf6910227b30ce92354bc16e494d",
+  "src/shots.ts": "70860a6b1afd14b5b918691db55c4eaf9ce1cd32a3ce29b5cadc090cdd94d8e0",
+  "src/story.ts": "4494ba5e35dacb2281c713423459b78673f05b50fda79054e4aa3f1020c6d0d2",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -957,11 +1026,9 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 4,
+   "P1": 2,
    "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
+    "P1|overlay",
     "P1|全片只用到 # 种叙事动作（"
    ]
   },
@@ -994,13 +1061,13 @@
  "examples/recipes/jie-hybrid.story.json": {
   "manifests/caption-cues.json": "91d430924420737bbd1de250787233e09b78534d04ea2e07c10ff1e5ec01e918",
   "manifests/protected-caption-phrases.txt": "3f13a8fce8c53805a9daa1181b0377d9d410987d444691d4d1e0e2b57a230d3f",
-  "manifests/shots.json": "b4ccde4ec47a8eb5f92ef92b9166f14994c4dd16d434446e0359acdc4dc452c6",
-  "manifests/shots.resolved.json": "72a64b54369597ad79760ecc3c90ebc1121e438b4d84ba75988c293232d68db4",
+  "manifests/shots.json": "e0c11dcfff5483ada815f103a027cd4fb5ac4538bce51dc4f46853949c6a433e",
+  "manifests/shots.resolved.json": "1361a7088bdda86f48ac67dbe8429e3c3c7acfbee9dc4dbb1d5bc3e1b5c205d3",
   "narration.txt": "2abe56b3e6dcec12cde1e0afa2f0341739af386ae4e4f7dc59579ce7e27e5ef4",
   "src/film.ts": "45fcca21fb88c5f578287d102421b2b6c4ac717344981cb28fd3c56361f0da22",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "60196a0ee936b82e296b64a0cc243738f605c8389ccdf062d7165908e56c020e",
-  "src/story.ts": "bfc5825fb784880d7cef4911130bacce22c0a3306b896c6a228810da6e7a4671",
+  "src/shots.ts": "d39591130843517ab6d1cced27a533759e189cd89e3971305746f0a838379af4",
+  "src/story.ts": "e469472e1c6160e25e2c0c651611f94e8aff6818fe7e3dfcf037b30f1d9e9d4d",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -1056,19 +1123,18 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 4,
+   "P1": 2,
    "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
+    "P1|overlay",
     "P1|全片只用到 # 种叙事动作（"
    ]
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 5,
+   "P1": 6,
    "rules": [
     "P1|S1",
+    "P1|S3",
     "P1|S4",
     "P1|chapter:绳上的结",
     "P1|全片仅 # 次运镜，按片长 ",
@@ -1092,13 +1158,13 @@
  "examples/recipes/list-icons.story.json": {
   "manifests/caption-cues.json": "f34694284e33f3d2f0e62180a0612201888e7463b129dd4fbf6213da3d0f1dfd",
   "manifests/protected-caption-phrases.txt": "2d6e51f51074b44ccdfc2d06ea9d7faa4001e7fa1091baf5fa828b9db107f27d",
-  "manifests/shots.json": "45af0bd5bea813b40bbd84fb2624dd3d447b058ab5642968bd05e7868309678e",
-  "manifests/shots.resolved.json": "923ecb8e5a171682dd11c203eee450c5c0f555a456f9b3da9fc731d6530e785a",
+  "manifests/shots.json": "1907cf34a3fb538744c2045b41dd2ccdbdd6f7a70f8c534019c70ef936d61897",
+  "manifests/shots.resolved.json": "ae81017e4c67c6a67a2f76fcb0ac57af529ed1fc0d8e3da7ee4f9f38112da2c3",
   "narration.txt": "bbf1beb7e3c54a7ce09c159d37431cc3f4a6a7f7e9f324a4e3a83784a922edbb",
   "src/film.ts": "0832ab83963dd84c915c62bf4216b9150b49569f13110d336ac4c1a635a82048",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "ad1b6d8e7969e7f8b6b9071b1cdb58ea896ac6ebba05707574541cfebf1a8ef9",
-  "src/story.ts": "0ab84a1e81a672df9108a848c63a3c6beec4cc19abbb875a226623553d3dced4",
+  "src/shots.ts": "bf0bc7d42d3de4744a8cdb5b17391187724204ac50e5e5fcdd9bb4e84415d361",
+  "src/story.ts": "4c20b801b329397a7374627d06489d5fec46486961cef908a3a10f618503e7c1",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -1154,20 +1220,114 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 4,
+   "P1": 2,
    "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
+    "P1|overlay",
     "P1|全片只用到 # 种叙事动作（"
    ]
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 3,
+   "P1": 4,
    "rules": [
+    "P1|S1",
     "P1|S3",
     "P1|S4",
+    "P1|全片仅 # 种镜头意图（不含"
+   ]
+  },
+  "validate-treatment.py": {
+   "P0": 0,
+   "P1": 6,
+   "rules": [
+    "P1|S1",
+    "P1|S2",
+    "P1|S3",
+    "P1|turn_to_you_se",
+    "P1|招牌镜头 S# 既没真推（#",
+    "P1|还没有独立评审（review"
+   ]
+  }
+ },
+ "examples/recipes/papercut-symmetry.story.json": {
+  "manifests/caption-cues.json": "246528643419cfb651d5cef4e8023b717f2ffafb80c08d2019d104a923eb9a1e",
+  "manifests/protected-caption-phrases.txt": "ebde13affcd51b89c5e97b7ffdea854b34b9b9d61a8354c95cde0ee998018912",
+  "manifests/shots.json": "af685b154e2d9e524d70547821d2a40c8eebcda7e9176ddf9566077934bf7292",
+  "manifests/shots.resolved.json": "51b94b609b7abed30ee05610e4d0b5e59b7ebf53ffba9efb37dff5af2203c4fc",
+  "narration.txt": "94de5dbfc5378abd82e4c95603e6fa5b0ca9837edf4ea81a709e6c371c4c809d",
+  "src/film.ts": "a87219e7673f79057c2d58f38d784fc62c24081105d53b0e8b0ba2ee515d81bb",
+  "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
+  "src/shots.ts": "50061db6ee228f4e737e60b211c0ba2486b06cd3857cda581addfb2b0f41bb5b",
+  "src/story.ts": "147547a41c63dc2d2f688adc2cc008a401dae64b08b6247a905cea2ae76dc314",
+  "validate-audio-levels.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-backgrounds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-composition.py": {
+   "P0": 0,
+   "P1": 7,
+   "rules": [
+    "P1|# 处变化间隔 ># 帧（#",
+    "P1|# 处变化间隔在 #–#s（",
+    "P1|全片仅 # 种镜头意图，要求",
+    "P1|全片没有 ≤#s 的短镜；插",
+    "P1|可选组件只用了 # 件（[]",
+    "P1|最长/最短镜头仅 # 倍（#",
+    "P1|镜长变异系数 # < #（平"
+   ]
+  },
+  "validate-elem-kinds.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-fusion.py": {
+   "P0": 0,
+   "P1": 1,
+   "rules": [
+    "P1|纯文字镜头占 #% > #%"
+   ]
+  },
+  "validate-glyphs.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-media.py": {
+   "P0": 0,
+   "P1": 0,
+   "rules": []
+  },
+  "validate-opening.py": {
+   "P0": 0,
+   "P1": 1,
+   "rules": [
+    "P1|O# 第一个可见事件在第 #"
+   ]
+  },
+  "validate-presentation.py": {
+   "P0": 0,
+   "P1": 2,
+   "rules": [
+    "P1|overlay",
+    "P1|全片只用到 # 种叙事动作（"
+   ]
+  },
+  "validate-shot-motion.py": {
+   "P0": 0,
+   "P1": 6,
+   "rules": [
+    "P1|S1",
+    "P1|S3",
+    "P1|S4",
+    "P1|chapter:对称纠错",
+    "P1|全片仅 # 次运镜，按片长 ",
     "P1|全片仅 # 种镜头意图（不含"
    ]
   },
@@ -1187,13 +1347,13 @@
  "examples/recipes/rocket-fusion.story.json": {
   "manifests/caption-cues.json": "0b5724c15b3b102eb3c520102fa3a69944ef639f43ca248bb2f117874a5d22b4",
   "manifests/protected-caption-phrases.txt": "cfebe88e8aeb9a08ebe97a0372380573f904db2ba335479ce159c067fc75d11a",
-  "manifests/shots.json": "fd0bd0473cff9889916c5c9f0537ba98549c7cfe17d87755b9b65a617755812d",
-  "manifests/shots.resolved.json": "345189a21b3f1376bf98bf0e19485331ae1422756fd0455fa36f6ec2e2f3359e",
+  "manifests/shots.json": "a9a9bf56775189ac644c9c0cfe21c3e84ab730b321ccf8cf5bca1e94ebc7027c",
+  "manifests/shots.resolved.json": "3bad55c37e26cffa78bb0f009e23ea9cb05c7c9c5b3e7677d6f97193c0d76598",
   "narration.txt": "3ec66aeb1f0c7596cdbc77e07645158818e68785562de226dbf9c2de7ced63d4",
   "src/film.ts": "6edd16ce64bac49f1f8b7c8e23578e9156c6a3743f0125e50cf79c1e099920f7",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "bc4a8152b9fc1ef38d974eb095ed8592904dd4d429b9929792458d9904949e38",
-  "src/story.ts": "3f703e6cabc6085a43badf6ba8b340344b01c5734d3d62398fdec607d53a8baa",
+  "src/shots.ts": "2c80af45a561f655a493802bc5e9e87babed9e608cc2dd2f1946bd59e4881893",
+  "src/story.ts": "998a96c47dc36d6091fd846f0f667df8a12a1e5eefca16af986ad337fbdcd8ee",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -1253,18 +1413,17 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 4,
+   "P1": 2,
    "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
+    "P1|overlay",
     "P1|全片只用到 # 种叙事动作（"
    ]
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 3,
+   "P1": 4,
    "rules": [
+    "P1|S1",
     "P1|S2",
     "P1|S3",
     "P1|全片仅 # 种镜头意图（不含"
@@ -1286,13 +1445,13 @@
  "examples/regress/curl-window-smoke.story.json": {
   "manifests/caption-cues.json": "fcec97f46d0fda263356bdbda1f4ef2f916953052edb4d25827a0e3063e8e3b4",
   "manifests/protected-caption-phrases.txt": "407813f14279cb18f67a48f495ec476a3c386eae0ec0b8d810091c689d5dc146",
-  "manifests/shots.json": "4a936aa3216f841b21a7cf6206592b0edb51d0b76472db59d3a6f46e1fc4bef7",
-  "manifests/shots.resolved.json": "cccc8ae7b33fa8858f1f32f31c9cff245194d883adb877910356c6a93b4ec3b8",
+  "manifests/shots.json": "fca54e65755838d2ec8b7078e77c01ca00d6217c5e94f5824192da75fa16c77c",
+  "manifests/shots.resolved.json": "90b86d24f3eb02a26091748175efd1e69fb530ed9c5b950d88f9ceeb650b61c7",
   "narration.txt": "c4638f3d60844c3170f1acc5d1faea8774a0366c58b51ba374c3286776251033",
   "src/film.ts": "25df7e971590311fcc1065b04a9a8a4205b1f350da99bc4bd57c12d1025f3265",
   "src/scenes.tsx": "528796fd4404d7deb0c6ccfbd56376b7393bec356754971912a1e01756fc2e2f",
-  "src/shots.ts": "0a33a3b57f25e0754e94986025e9d1b970c14ec9305bd11116a8e936aa313f85",
-  "src/story.ts": "0ffb976b9117a75d1c4c0d5953a911aa393340d197c430b0b18417e4edc061de",
+  "src/shots.ts": "371dccc5daa092e2b7a32dac9b9100082f1a779c3b5623cba4ec18a20e9c0b80",
+  "src/story.ts": "1e58dc1640cf3a19fe4ef811feda3073ff96ecaf1837472b981f4a678ceccb44",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -1343,22 +1502,18 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 3,
+   "P1": 1,
    "rules": [
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t"
+    "P1|overlay"
    ]
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 8,
+   "P1": 6,
    "rules": [
-    "P1|S1",
     "P1|S4",
     "P1|S4",
     "P1|S5",
-    "P1|S6",
     "P1|S6",
     "P1|全片仅 # 次运镜，按片长 ",
     "P1|全片仅 # 种镜头意图（不含"
@@ -1366,7 +1521,7 @@
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 8,
+   "P1": 9,
    "rules": [
     "P1|S1",
     "P1|S2",
@@ -1375,20 +1530,21 @@
     "P1|S5",
     "P1|S6",
     "P1|turn_to_you_se",
+    "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
    ]
   }
  },
  "examples/regress/list-card-variants.story.json": {
-  "manifests/caption-cues.json": "a8a8577f962d679b7422947df49c8c33821dc3e16b601350b496c92f862fcc8c",
+  "manifests/caption-cues.json": "299ecfeb8c6bffd7fde0cb4421f26e05571069527a0fd9d7b962b7332b86017a",
   "manifests/protected-caption-phrases.txt": "407813f14279cb18f67a48f495ec476a3c386eae0ec0b8d810091c689d5dc146",
-  "manifests/shots.json": "6459d505b8b224c91e05cd08874c7f2fb04a938269e0ffd03adf0f83845832c7",
-  "manifests/shots.resolved.json": "f96349504b6e9ff7fa46c71a3a241dc00811d83e12f656d2526ff8e8467dc2d2",
-  "narration.txt": "66170bf309a2ac6957ca11d5f1f2da23f475624e6fddb30c7660fa5dd9915636",
+  "manifests/shots.json": "e36a46cacf46603f6949044f3dd2521d4deede2e980a0206c6024e88fe2009a4",
+  "manifests/shots.resolved.json": "65016bde0b9ce69c8cba43a33c8b29027a4cfb394f5c5ff6838e3743ff81cfee",
+  "narration.txt": "45fbb5b90e1c29e7337c2b5bf848e44afb8ba9460025f9838d3575d6b5d30781",
   "src/film.ts": "2813d4bd8632fade43731748ffe2b341b0b0d8f2d0cf1e49f7900c6476ebd4d4",
   "src/scenes.tsx": "9ab954d09bccab89394019d6984180ce4423cdd5a0d7b89412e637a45b821099",
-  "src/shots.ts": "09de3429cb30414d42536ab96b4e00af72109bee1ba10c13ff527b278c8ecc1e",
-  "src/story.ts": "dfdbf728da622e49874fc8cf03bf89f2b267f479eeb4ada11b24c46c4c107720",
+  "src/shots.ts": "eb2f36e0b4175bf7947f733af0468b8c74ff2c673ca63de922c1a56df9ff1424",
+  "src/story.ts": "b349aea496c11f98b29fca89e40f1442e50658877b94dfcd85f661160df0f7dc",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -1401,11 +1557,9 @@
   },
   "validate-composition.py": {
    "P0": 0,
-   "P1": 10,
+   "P1": 8,
    "rules": [
     "P1|# 处变化间隔 ># 帧（#",
-    "P1|S2",
-    "P1|S3",
     "P1|全片仅 # 种视觉介质 ['",
     "P1|全片仅 # 种镜头意图，要求",
     "P1|全片仅 # 种骨架，要求 ≥",
@@ -1445,23 +1599,22 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 8,
+   "P1": 6,
    "rules": [
     "P1|S1",
     "P1|S2",
     "P1|S3",
     "P1|S4",
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t",
+    "P1|overlay",
     "P1|全片只用到 # 种叙事动作（"
    ]
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 5,
+   "P1": 6,
    "rules": [
     "P1|S1",
+    "P1|S2",
     "P1|S3",
     "P1|chapter:清单纸卡边界",
     "P1|全片仅 # 次运镜，按片长 ",
@@ -1485,13 +1638,13 @@
  "examples/weak-model-test/float.story.json": {
   "manifests/caption-cues.json": "fbd84773fce9881acff784383f0b38c01e5c84993da18599eadf3a60d3211104",
   "manifests/protected-caption-phrases.txt": "5d4f7d66f7e9b2e37b96d152153c67e158adb04f3affdf05e557bd8395e176a1",
-  "manifests/shots.json": "bc70297dae910a5795a37134cf87612bdc3f5a24e738ed919de61195ab76877a",
-  "manifests/shots.resolved.json": "c62ce1a251dd79c41eb604e8e93e97b53c9cfb61538db9ee77415177e9786c0e",
+  "manifests/shots.json": "8683bd1dd6b22cff0a667e8b5356ae16175ed6710a14bf10198d80a35411ae1f",
+  "manifests/shots.resolved.json": "e7a1bff870ea49d43a36a707415d0f269e678eb3c3414d6fd8ef4c4156a52acb",
   "narration.txt": "7e7e8ba4f2c3a394ee03dc1edaa296d9cbf1ad2f53f34996ef2d0a71fd1f3996",
   "src/film.ts": "186190eb6fef0f2c130304b624828c20c09c1b930aa34f5819c4394b6e4fe0c1",
   "src/scenes.tsx": "528796fd4404d7deb0c6ccfbd56376b7393bec356754971912a1e01756fc2e2f",
-  "src/shots.ts": "b21ff875d8bff067cbed1d5486a7186760995372827c774075887a27194e3d23",
-  "src/story.ts": "e2f52fb8ded34410d51de2399442207944265ae8abf77673e6c936e38dade32a",
+  "src/shots.ts": "56c2edb5abd127c60a8954ae101109a4692416ec95a87b9c8dda4e4263af07ee",
+  "src/story.ts": "e2ed3cee65d12ebd8bc76bfaeba15a4d81f97a686b4ff462224eaa41fdb3e93c",
   "validate-audio-levels.py": {
    "P0": 0,
    "P1": 0,
@@ -1504,11 +1657,12 @@
   },
   "validate-composition.py": {
    "P0": 0,
-   "P1": 7,
+   "P1": 8,
    "rules": [
     "P1|# 处变化间隔 ># 帧（#",
     "P1|# 处变化间隔在 #–#s（",
     "P1|#/# 镜落在同一时长档（#",
+    "P1|全片仅 # 种镜头意图，要求",
     "P1|全片没有 ≤#s 的短镜；插",
     "P1|可选组件只用了 # 件（[]",
     "P1|最长/最短镜头仅 # 倍（#",
@@ -1548,30 +1702,27 @@
   },
   "validate-presentation.py": {
    "P0": 0,
-   "P1": 5,
+   "P1": 3,
    "rules": [
     "P1|S1",
     "P1|S2",
-    "P1|src/media.tsx ",
-    "P1|src/showcase.t",
-    "P1|src/stagekit.t"
+    "P1|overlay"
    ]
   },
   "validate-shot-motion.py": {
    "P0": 0,
-   "P1": 6,
+   "P1": 5,
    "rules": [
-    "P1|S1",
-    "P1|S2",
     "P1|S3",
-    "P1|S4",
     "P1|S5",
-    "P1|S5"
+    "P1|S5",
+    "P1|chapter:先懂一个词",
+    "P1|全片仅 # 种镜头意图（不含"
    ]
   },
   "validate-treatment.py": {
    "P0": 0,
-   "P1": 7,
+   "P1": 8,
    "rules": [
     "P1|S1",
     "P1|S2",
@@ -1579,6 +1730,7 @@
     "P1|S4",
     "P1|S6",
     "P1|turn_to_you_se",
+    "P1|招牌镜头 S# 既没真推（#",
     "P1|还没有独立评审（review"
    ]
   }

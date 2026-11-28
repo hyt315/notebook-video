@@ -28,7 +28,6 @@ import CONTRACT from './contract.json';
 // Keep authored scene time separate from delivery frames.
 import {MODES, CanvasContext, useCanvas} from './theme/canvas';
 import {THEME} from './theme/active';
-import {TYPE} from './kit';
 import {clamp, EASE} from './motion';
 // 视觉体系四层：镜头 / 骨架 / 介质 / 门禁。用法见 references/camera.md#shot-language、
 // references/scenes.md#scene-skeletons、references/media.md#media-routing、references/checks.md#composition-gate。
@@ -264,18 +263,18 @@ const Chrome=()=>{
   if(THEME.Chrome){const ThemeChrome=THEME.Chrome;return <ThemeChrome stage={stage} title={String(titles[stage]??'')} kicker={COPY.chromeKicker} header={COPY.header} headerSub={COPY.headerSub} local={local}/>;}
   // 章节卡：第 0 章第 0 帧即落定，切章左→右展开 18 帧；收窄为单行紧凑徽标（总常驻遮挡 ≤ 5%）。
   const g=stage===0?1:interpolate(local,[0,18],[0,1],clamp),grow=g<1?{clipPath:revealClip(`calc(${((1-g)*100).toFixed(2)}% - ${(g*REVEAL_BLEED).toFixed(2)}px)`),[GROW_VAR]:g.toFixed(4)}:{};
-  return <Paper lift={0.3} style={{left:92,top:64,width:268,height:52,zIndex:150,display:'flex',alignItems:'center',...grow,overflow:'hidden',padding:0}}>
-      <div style={{width:52,height:'100%',background:`linear-gradient(135deg,${C.orangeInk},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash,Space,Kai',fontWeight:600,fontSize:24,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
-      <div style={{padding:'0 14px',flex:1,minWidth:0}}>
+  return <Paper lift={0.3} style={{left:88,top:40,width:520,height:86,zIndex:150,display:'flex',alignItems:'center',...grow,overflow:'hidden',padding:0}}>
+      <div style={{width:82,height:'100%',flex:'0 0 auto',background:`linear-gradient(135deg,${C.orangeInk},${C.orangeDeep})`,color:C.white,display:'grid',placeItems:'center',fontFamily:'Clash,Space,Kai',fontWeight:700,fontSize:44,boxShadow:'inset -2px 0 6px rgba(0,0,0,0.1)'}}>{String(stage+1).padStart(2,'0')}</div>
+      <div style={{padding:'0 22px',flex:1,minWidth:0}}>
         {(() => {
           const title = String(titles[stage] ?? '');
-          const availW = 186;
+          const availW = 394;
           const {fontSize: measured} = fitChineseTextOnNLines({
             text: title, maxLines: 1, maxBoxWidth: availW,
-            fontFamily: 'Kai', fontWeight: 700, maxFontSize: TYPE.labelL, minFontSize: 16,
+            fontFamily: 'Kai', fontWeight: 700, maxFontSize: 64, minFontSize: 48,
           });
-          const fitSize = Math.max(16, Math.min(TYPE.labelL, Math.floor(measured)));
-          return <div style={{fontSize:fitSize,fontWeight:700,color:C.ink,whiteSpace:'nowrap',overflow:'hidden',maxWidth:availW}}>{title}</div>;
+          const fitSize = Math.max(48, Math.min(64, Math.floor(measured)));
+          return <div style={{fontSize:fitSize,lineHeight:1.15,fontWeight:700,color:C.ink,whiteSpace:'nowrap',overflow:'hidden',maxWidth:availW}}>{title}</div>;
         })()}
       </div>
     </Paper>;

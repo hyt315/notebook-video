@@ -322,6 +322,7 @@ def compose(story: dict, p: Problems):
         "media": ("", "mirror"),
         "bars": ("", "center"),
         "code": ("", "mirror"),
+        "list": ("", "grid"),
     }
     for ci, ch in enumerate(chapters):
         if ci > 0:

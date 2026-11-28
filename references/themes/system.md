@@ -5,11 +5,11 @@
 
 | 皮肤 | 路线 | 定位 | 详细契约 |
 |---|---|---|---|
-| `flat`（默认） | 组件 | 清爽现代科普插画，低饱和暖白底 + 清晰结构色 | [flat.md](flat.md) |
+| `flat`（默认） | 组件 | 清爽现代科普插画，淡天空蓝/奶油底 + 纯白圆角卡片 | [flat.md](flat.md) |
 | `cel` | 组件 | 明快漫画赛璐珞，粗描边 + 强对比强调块 | [cel.md](cel.md) |
 | `journal` | 手作 | 博物手账纸面，水彩淡彩 + 钢笔批注 + 朱砂印 | [journal.md](journal.md) |
 | `papercut` | 手作 | 纸艺分层剪纸，柔和纸影与折痕层次 | [papercut.md](papercut.md) |
-| `archive` | 手作 | 历史档案考据，泛黄纸卡 + 编号印章 + 原版图版 | [archive.md](archive.md) |
+| `archive` | 手作 | 历史档案灯台，冷白背光台面 + 纯白纸卡 + 放大镜与原版图版 | [archive.md](archive.md) |
 
 ## 2. 切换与锁定规则
 

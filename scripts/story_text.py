@@ -25,6 +25,9 @@ from contract import C  # noqa: E402
 
 # 字号地板：低于它就是「手机上看不清」，不是审美选择（设计像素，1920 宽）。
 MIN_FONT = 32
+# 要读的字（正文、结论、条目、注记）自动缩字的地板，与 validate-typography 的阅读地板一致：
+# 放不下就报错让作者删字或拆镜，而不是悄悄缩到手机上读不清。
+READ_MIN = 64
 # 上屏标点集。折行「行首不放标点」、朗读停顿、字数口径共用这一份。
 PUNCT = "，。！？；：、,.!?;:"
 TAIL_PUNCT_RE = re.compile(r"[，。！？；：、,.!?;:\s]+$")
@@ -144,8 +147,9 @@ def fit_text(p: "Problems", where: str, text: str, size: int, maxw: float, max_l
                 p.fix(f"{where}: 字号 {size}→{s} 以放进 {max_lines} 行")
             w = max(text_w(l, s, mono) for l in ls)
             return ls, s, w, len(ls) * s * safe_lh(lh)
-        if s <= MIN_FONT:
-            cap = int(maxw / (MIN_FONT * 1.0)) * max_lines
-            p.err(f"{where}: 「{text[:14]}…」在 {MIN_FONT}px 下仍超过 {max_lines} 行 —— 请删到约 {cap} 个汉字以内，或拆成两镜")
+        floor = READ_MIN if size >= READ_MIN else MIN_FONT
+        if s <= floor:
+            cap = int(maxw / (floor * 1.0)) * max_lines
+            p.err(f"{where}: 「{text[:14]}…」在 {floor}px 下仍超过 {max_lines} 行 —— 请删到约 {cap} 个汉字以内，或拆成两镜")
             return ls[:max_lines], s, maxw, max_lines * s * safe_lh(lh)
-        s = max(MIN_FONT, s - 2)
+        s = max(floor, s - 2)

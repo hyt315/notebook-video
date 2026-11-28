@@ -747,7 +747,7 @@ def check_overlay_budget(project: Path) -> tuple[list, list]:
             chrome_area += 460 * 58
 
     # 底部字幕框面积（按模板内最长字幕或 14 字均值测算）
-    sub_size = 64.0
+    sub_size = 70.0
     m_sz = re.search(r"subtitleSize:\s*(\d+)", skin_src)
     if m_sz:
         sub_size = float(m_sz.group(1))

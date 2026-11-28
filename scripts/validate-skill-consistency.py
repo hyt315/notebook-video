@@ -257,8 +257,7 @@ def check_canvas_mode_dual_source() -> list[str]:
 def check_skill_description() -> list[str]:
     """SKILL.md 的 description ≤ 1024 字符（Agent Skills 规范上限），且纯标量里不能有「: 」。
 
-    事故：description 长到 1805 字符；不加引号的纯标量里还夹着「comes first: there is」，
-    严格 YAML 解析直接报错，frontmatter 整个读不出来。详见 tests/test_skill_frontmatter.py。
+    纯标量若含未加引号的冒号空格或超长，严格 YAML 解析会直接失败。
     """
     try:
         text = (SKILL / 'SKILL.md').read_text(encoding='utf-8')
@@ -520,6 +519,25 @@ def main() -> None:
                 m = re.search(r"\bink:\s*'(#[0-9a-fA-F]{6})'", tsx)
                 if m and f'"{theme_id}": "{m.group(1).lower()}"' not in vb_text.lower():
                     problems.append(f"validate-backgrounds.py INK[{theme_id}] must equal {theme_id}.tsx palette.ink {m.group(1)}")
+                ms = re.search(r"PaperSubtitle\(\{[^}]*\bink:\s*'(#[0-9a-fA-F]{6})'", tsx)
+                if ms and f'"{theme_id}": "{ms.group(1).lower()}"' not in vb_text.lower():
+                    problems.append(f"validate-backgrounds.py SUBTITLE_INK[{theme_id}] must equal {theme_id}.tsx PaperSubtitle ink {ms.group(1)}")
+            canvas_ts = (theme_dir / 'canvas.ts').read_text(encoding='utf-8', errors='ignore') if (theme_dir / 'canvas.ts').is_file() else ''
+            mc_sub = re.search(r"\bsubFont:\s*(\d+)", canvas_ts)
+            if mc_sub:
+                sub_px = mc_sub.group(1)
+                for theme_id in THEME_IDS:
+                    tsx = (theme_dir / f'{theme_id}.tsx').read_text(encoding='utf-8', errors='ignore') if (theme_dir / f'{theme_id}.tsx').is_file() else ''
+                    ma = re.search(r"\bsubtitleSize:\s*(\d+)", tsx)
+                    if ma and ma.group(1) != sub_px:
+                        problems.append(f"{theme_id}.tsx subtitleSize={ma.group(1)} != canvas.ts subFont={sub_px}")
+                    mp = re.search(r"PaperSubtitle\(\{[^}]*\bsize:\s*(\d+)", tsx)
+                    if mp and mp.group(1) != sub_px:
+                        problems.append(f"{theme_id}.tsx PaperSubtitle size={mp.group(1)} != canvas.ts subFont={sub_px}")
+                vp_txt = (SKILL / 'scripts' / 'validate-presentation.py').read_text(encoding='utf-8', errors='ignore') if (SKILL / 'scripts' / 'validate-presentation.py').is_file() else ''
+                mvp = re.search(r"\bsub_size\s*=\s*(\d+)\.0", vp_txt)
+                if mvp and mvp.group(1) != sub_px:
+                    problems.append(f"validate-presentation.py sub_size={mvp.group(1)} != canvas.ts subFont={sub_px}")
         for removed in ('paper.tsx', 'sticker.tsx'):
             if (theme_dir / removed).exists():
                 problems.append(f"removed theme file is back: assets/lecture-template/src/theme/{removed}")

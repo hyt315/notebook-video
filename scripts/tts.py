@@ -121,7 +121,12 @@ def synth_edge(text: str, voice: str, rate: str, out_mp3: Path) -> tuple[list[di
             asyncio.run(run())
             last_err = None
             break
-        except Exception as e:  # 网络 / 服务端 403 / 证书……
+        except Exception as e:
+            if 'A ":" is not allowed in login' in str(e) or "is not allowed in login" in str(e):
+                raise RuntimeError(
+                    f"edge-tts 代理配置解析失败（{e}）：环境变量 HTTP_PROXY/HTTPS_PROXY 的账号或密码中含未转义的冒号 `:`。"
+                    "请将密码里的 `:` 编码为 `%3A`，或临时取消代理后重跑（或改用 --engine=file）。"
+                ) from e  # 网络 / 服务端 403 / 证书……
             last_err = e
             detail = f"{e.__class__.__name__}: {e}"
             if any(k in detail for k in ("403", "401", "Sec-MS-GEC", "Unauthorized")) or attempt == 2:
@@ -209,6 +214,47 @@ def check_spoken_form(lines: list[str]) -> list[str]:
         if m:
             hits.append(f"第 {i} 行含未口语化符号 {m.group(1)!r}，TTS 可能直接逐字符或跳过朗读")
     return hits
+
+
+
+def normalize_narration_loudness(audio: Path, target_i: float = -16.0, target_tp: float = -2.6, target_lra: float = 11.0) -> bool:
+    """混音前两遍 loudnorm 把旁白归一化到 -16 LUFS / -2.6 dBTP，稳住人声与音效相对阶梯。"""
+    import tempfile
+    try:
+        r1 = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-i", str(audio),
+             "-af", f"loudnorm=I={target_i}:TP={target_tp}:LRA={target_lra}:print_format=json",
+             "-f", "null", "-"],
+            capture_output=True, text=True, timeout=120,
+        )
+        m = re.search(r'\{[^{}]*"input_i"[^{}]*\}', f"{r1.stdout}\n{r1.stderr}", re.S)
+        if not m:
+            return False
+        st = json.loads(m.group(0))
+        if st.get("input_i") in (None, "-inf", "inf"):
+            return False
+        af = (
+            f"loudnorm=I={target_i}:TP={target_tp}:LRA={target_lra}:linear=true"
+            f":measured_I={st['input_i']}:measured_TP={st['input_tp']}"
+            f":measured_LRA={st['input_lra']}:measured_thresh={st['input_thresh']}"
+            f":offset={st.get('target_offset', '0')}"
+        )
+        with tempfile.NamedTemporaryFile(dir=str(audio.parent), suffix=".norm.mp3", delete=False) as tmp:
+            tmp_p = Path(tmp.name)
+        try:
+            r2 = subprocess.run(
+                ["ffmpeg", "-hide_banner", "-y", "-i", str(audio), "-af", af, "-c:a", "libmp3lame", "-q:a", "2", str(tmp_p)],
+                capture_output=True, text=True, timeout=120,
+            )
+            if r2.returncode == 0 and tmp_p.exists() and tmp_p.stat().st_size > 0:
+                tmp_p.replace(audio)
+                return True
+        finally:
+            if tmp_p.exists():
+                tmp_p.unlink(missing_ok=True)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        pass
+    return False
 
 
 def check_audio_clipping(audio: Path) -> str | None:
@@ -316,7 +362,7 @@ def align_to_script(chars: list[str], heard: list[tuple[str, int, int]], total_m
     return words
 
 
-def synth_file(project: Path, lines: list[str]) -> tuple[list[dict], str, bool]:
+def synth_file(project: Path, lines: list[str], normalize: bool = True) -> tuple[list[dict], str, bool]:
     """自备音频。返回 (词级时间, 引擎名, 是否估计)。装了 faster-whisper 就按台词对齐，否则按字数均分。"""
     audio = project / "audio" / "narration.mp3"
     if not audio.is_file() or audio.stat().st_size == 0:
@@ -325,6 +371,11 @@ def synth_file(project: Path, lines: list[str]) -> tuple[list[dict], str, bool]:
             "  1) 先把录音 / 别家 TTS 的音频放到 audio/narration.mp3，再重跑\n"
             "  2) 用在线引擎：python scripts/tts.py . --engine=edge"
         )
+    clip_warn = check_audio_clipping(audio)
+    if clip_warn:
+        print(f"⚠ {clip_warn}", file=sys.stderr)
+    if normalize:
+        normalize_narration_loudness(audio)
     total = audio_duration_ms(audio)
     if not total:
         raise RuntimeError("读不出 audio/narration.mp3 的时长（需要 ffprobe）")
@@ -332,9 +383,6 @@ def synth_file(project: Path, lines: list[str]) -> tuple[list[dict], str, bool]:
     chars = [c for c in text if not c.isspace()]
     if not chars:
         raise RuntimeError("narration.txt 是空的：先写每行一句的旁白")
-    clip_warn = check_audio_clipping(audio)
-    if clip_warn:
-        print(f"⚠ {clip_warn}", file=sys.stderr)
     heard = whisper_words(audio, text)
     if heard is not None:
         aligned = align_to_script(chars, heard, total)
@@ -351,6 +399,7 @@ def main() -> int:
     ap.add_argument("--engine", choices=["edge", "file"], default="edge")
     ap.add_argument("--voice", default="zh-CN-YunxiNeural")
     ap.add_argument("--rate", default="+0%")
+    ap.add_argument("--no-normalize", action="store_true", help="跳过混音前旁白响度归一化（-16 LUFS）")
     ap.add_argument("--allow-stale", action="store_true",
                     help="有意自己维护 narration.txt（不跟 story 走）时，跳过旁白内容核对")
     ap.add_argument("--force-estimate", action="store_true",
@@ -409,7 +458,7 @@ def main() -> int:
             words = merge_punctuation(words, source)
             estimated = False
         else:
-            words, engine, estimated = synth_file(project, lines)
+            words, engine, estimated = synth_file(project, lines, normalize=not a.no_normalize)
     except RuntimeError as e:
         return fail(f"✗ TTS 没有完成：{e}")
     words_p = project / "audio" / "narration.mp3.json"

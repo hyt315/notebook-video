@@ -13,7 +13,7 @@
   - 商用 API（可选）：通过环境变量 `TTS_API_BASE`、`TTS_API_KEY`、`TTS_MODEL`、`TTS_VOICE` 传入，禁止把密钥写入工程文件。
 - **多音字与换配音**：配音前跑 `python scripts/audition.py` 扫多音字，易错词一律在 `narration.txt`（每语义句一行）源头改写并同步画面文字，不事后打音频补丁；锁台词换音色用 `match-timing --lock` 或 `speed-post.py`。
 - **重跑纪律**：改过 `story.json` 台词后，必须先重跑 `compose-story.py` 再跑 `tts`，否则音画错位；手写 `narration.txt` 需加 `--allow-stale`。
-- **响度规范**：渲染输出统一规范到 `-16 LUFS`（真峰 ≤ `-1.5 dBTP`），可用 `NOTEBOOK_VIDEO_LUFS=-24` 回退旧电平。
+- **响度规范**：渲染输出统一规范到 `-16 LUFS`（母带真峰 `-2.6 dBTP`，门禁上限 `-1.8 dBTP`），可用 `NOTEBOOK_VIDEO_LUFS=-24` 回退旧电平。
 
 <a id="subtitle-timing"></a>
 ## 2. 字幕断句与绝对帧契约

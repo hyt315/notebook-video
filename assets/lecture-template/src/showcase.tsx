@@ -530,11 +530,11 @@ export const Showcase: React.FC = () => {
                 <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 26}}>
                   <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6}}>
                     <GeoView f={F} width={400} height={330} spin={0.35} startAt={0} tone={C.blue} markers={GEO_MARKERS} />
-                    <span style={{fontFamily: 'Space,monospace', fontSize: 15, color: C.muted}}>globe · 正交投影 + 自转 · 背面的点不画</span>
+                    <span style={{fontFamily: 'Space,monospace', fontSize: 16, color: C.muted}}>globe · 正交投影 + 自转 · 背面的点不画</span>
                   </div>
                   <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6}}>
                     <GeoView f={F} width={400} height={330} projection="flat" startAt={0} tone={C.blue} markers={GEO_MARKERS} />
-                    <span style={{fontFamily: 'Space,monospace', fontSize: 15, color: C.muted}}>flat · naturalEarth1 · 源站/边缘节点一次看全</span>
+                    <span style={{fontFamily: 'Space,monospace', fontSize: 16, color: C.muted}}>flat · naturalEarth1 · 源站/边缘节点一次看全</span>
                   </div>
                 </div>
               </Tile>
@@ -568,7 +568,7 @@ export const Showcase: React.FC = () => {
                       {([['hachure', C.gold], ['cross-hatch', C.blue], ['dashed', C.green], ['zigzag', C.orange]] as const).map(([fs, tone]) => (
                         <div key={fs} style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6}}>
                           <SketchFx f={F} width={150} height={130} startAt={0} draw={[{kind: 'rect', x: 14, y: 12, w: 122, h: 104}]} style={{fill: `${tone}55`, fillStyle: fs, stroke: C.ink}} />
-                          <span style={{fontFamily: 'Space,monospace', fontSize: 14, color: C.muted}}>{fs}</span>
+                          <span style={{fontFamily: 'Space,monospace', fontSize: 16, color: C.muted}}>{fs}</span>
                         </div>
                       ))}
                     </div>
@@ -601,7 +601,7 @@ export const Showcase: React.FC = () => {
               <Tile name="budoux · 中文词组边界（辅助，非保证）">
                 <div style={{display: 'flex', gap: 26, alignItems: 'flex-start'}}>
                   <div style={{background: C.paper, border: `2.5px solid ${C.ink}`, borderRadius: 10, padding: 22, width: 400}}>
-                    <div style={{fontFamily: 'Space,monospace', fontSize: 15, color: C.greenInk, marginBottom: 8}}>断行优先落 budoux 边界</div>
+                    <div style={{fontFamily: 'Space,monospace', fontSize: 16, color: C.greenInk, marginBottom: 8}}>断行优先落 budoux 边界</div>
                     <FitTextBox text="给容器宽度和行数上限反推该用多大字号并返回断好的行" maxLines={3} boxWidth={356} maxFontSize={30} />
                   </div>
                   <div style={{fontFamily: 'Kai,sans-serif', fontSize: 19, color: C.ink, lineHeight: 1.7, maxWidth: 320}}>

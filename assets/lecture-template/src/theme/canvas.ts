@@ -5,7 +5,7 @@ import React from 'react';
 // 交付缩放 4/3。所有主题共用这一份；主题文件通过 useCanvas() 读取字幕安全宽等参数。
 // ============================================================================
 export const MODES = {
-  '16:9': {compW: 2560, compH: 1440, designW: 1920, designH: 1080, subMar: 188, subBottom: 34, subH: 112, safe: 1334, subFont: 64, scale: 4 / 3},
+  '16:9': {compW: 2560, compH: 1440, designW: 1920, designH: 1080, subMar: 188, subBottom: 34, subH: 112, safe: 1334, subFont: 70, scale: 4 / 3},
 } as const;
 export type CanvasMode = keyof typeof MODES;
 export type ModeSpec = (typeof MODES)[CanvasMode];

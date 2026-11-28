@@ -23,16 +23,16 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from story_text import MIN_FONT, SAFE_LH, fit_text, text_w  # noqa: E402
+from story_text import MIN_FONT, READ_MIN, SAFE_LH, fit_text, text_w  # noqa: E402
 from story_acts import check_draw, resolve_ink_acts  # noqa: E402
 
 
-TYPE = {"display": 76, "title": 46, "body": 36}  # 三档字号；hero 数字另算（同镜仍 ≤3 种）
-BAND = {"x": 200, "y": 214, "w": 1520, "h": 630}  # 内容带（页眉下、字幕上）
+TYPE = {"display": 100, "title": 72, "body": 68}  # 三档字号；hero 数字另算（同镜仍 ≤3 种；68 设计 px = 90.7px@1440 → 12.7 CSS px）
+BAND = {"x": 140, "y": 198, "w": 1640, "h": 658}  # 内容带（页眉下、字幕上，严格落在 SAFE 框内）
 SUBTITLE_CLEAR_Y = 890  # 距最厚字幕条(y≈940)留 50px 余量，抗 1.05× 缓推
 # flow / compare 这类「一字排开」的版式，整组宽度上限。留白不是纯审美：满铺 1520 时
 # 屏幕安全框（1660×666）被内容占满，相机没有任何可动余量，招牌镜想推都推不进去。
-FLOW_TOTAL_MAX = 1300
+FLOW_TOTAL_MAX = 1320
 # flow 节点顶上的步骤序号（01 / 02 …）字号，取 body 档。
 FLOW_BADGE = TYPE["body"]
 
@@ -90,7 +90,7 @@ def el(id_, kind, x, y, w, h, text="", size=0, role="body", appear=0, **kw):
 def lay_statement(p, sid, c, variant):
     X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
     els = []
-    maxw = 1360
+    maxw = 1240
     big = TYPE["display"] - 12  # statement 渲染成默认组件风格的卡片（Callout），不是满屏大字页
     ls, s, w, h = fit_text(p, f"{sid}.text", c["text"], big, maxw, 3, lh=1.32)
     kick = c.get("kicker")
@@ -98,18 +98,22 @@ def lay_statement(p, sid, c, variant):
     sub_h = 0
     if sub:
         sls, ss, sw, sub_h = fit_text(p, f"{sid}.sub", sub, TYPE["body"], maxw, 2, lh=1.45)
-    total = h + (70 if kick else 0) + (sub_h + 40 if sub else 0)
-    y = Y + (H - total) / 2
     left = variant == "left"
     bx = X + 60 if left else X + (W - w) / 2
+    cw = max(min(W - 80, max(w + 120, 1080)), min(W - 140, 1380))
+    kick_h = TYPE["body"] * 1.3 if kick else 0
+    extra_h = (kick_h + 24 if kick else 0) + (sub_h + 34 if sub else 0)
+    ch = max(h + 100, min(H - extra_h - 32, 300 if (sub or kick) else 380))
+    top_y = Y + max(16, (H - (ch + extra_h)) * 0.42)
     if kick:
         kw = text_w(kick, TYPE["body"])
-        els.append(el("kicker", "text", bx if left else X + (W - kw) / 2, y, kw, TYPE["body"] * 1.3, kick, TYPE["body"], "muted", c.get("kickerAt", 0)))
-        y += 70
-    cw = min(W - 80, max(w + 120, 1080))
+        els.append(el("kicker", "text", bx if left else X + (W - kw) / 2, top_y, kw, kick_h, kick, TYPE["body"], "muted", c.get("kickerAt", 0)))
+        cy = top_y + kick_h + 24
+    else:
+        cy = top_y
     cx = X + 40 if left else X + (W - cw) / 2
-    els.append(el("text", "card", cx, y - 40, cw, h + 80, c["text"], s, "display", 0, lines=ls, align="left" if left else "center", lh=1.32, pad=40))
-    y += h + 40
+    els.append(el("text", "card", cx, cy, cw, ch, c["text"], s, "display", 0, lines=ls, align="left" if left else "center", lh=1.32, pad=56, padY=max(20, round((ch - h) / 2))))
+    y = cy + ch + 30
     if sub:
         sx = bx if left else X + (W - sw) / 2
         els.append(el("sub", "text", sx, y, sw, sub_h, sub, ss, "muted", c.get("subAt", 1), lines=sls, align="left" if left else "center", lh=1.45))
@@ -119,26 +123,35 @@ def lay_statement(p, sid, c, variant):
 def lay_define(p, sid, c, variant):
     X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
     term = c["term"]
-    ts = 104
+    ts = 116
     tw = text_w(term, ts)
-    if tw > 620:
-        ts = max(64, int(ts * 620 / tw)); tw = text_w(term, ts)
-    ls, s, w, h = fit_text(p, f"{sid}.definition", c["definition"], TYPE["title"], 780, 4, lh=1.45)
+    if tw > 520:
+        ts = max(68, int(ts * 520 / tw)); tw = text_w(term, ts)
+    ls, s, w, h = fit_text(p, f"{sid}.definition", c["definition"], TYPE["title"], 816, 4, lh=1.42)
     ex = c.get("example")
     els = []
-    lx, rx = (X + 40, X + 720) if variant != "mirror" else (X + 900, X + 40)
-    y0 = Y + 120
-    # 术语框高与读音行高都走 SAFE_LH（与渲染端 Lines 的 safeLh 同一真源）。
-    # 按 ts*1.2 排时 reading 会压进术语的行盒里（被 OverlapGate 硬拦）。
-    term_h = ts * SAFE_LH
-    els.append(el("term", "text", lx, y0, tw, term_h, term, ts, "display", 0, lh=SAFE_LH))
-    if c.get("reading"):
-        els.append(el("reading", "text", lx, y0 + term_h + 10, text_w(c["reading"], TYPE["body"]),
-                      TYPE["body"] * SAFE_LH, c["reading"], TYPE["body"], "muted", 0, lh=SAFE_LH))
-    els.append(el("definition", "card", rx, y0, 800, h + 60, c["definition"], s, "body", c.get("definitionAt", 0), lines=ls, lh=1.45, pad=30))
+    left_w, right_w, gap_x = 540, 920, 48
+    total_w = left_w + gap_x + right_w
+    gx = X + (W - total_w) / 2
+    lx, rx = (gx, gx + left_w + gap_x) if variant != "mirror" else (gx + right_w + gap_x, gx)
+    def_h = max(340, h + 96)
+    ex_h = 0
     if ex:
-        els_, es, ew, eh = fit_text(p, f"{sid}.example", ex, TYPE["body"], 760, 2, lh=1.45)
-        els.append(el("example", "quote", rx, y0 + h + 100, 800, eh + 40, ex, es, "muted", c.get("exampleAt", 1), lines=els_, lh=1.45, pad=20))
+        els_, es, ew, eh = fit_text(p, f"{sid}.example", ex, TYPE["body"], right_w - 64, 2, lh=1.4)
+        ex_h = eh + 56
+    group_h = def_h + (ex_h + 28 if ex else 0)
+    y0 = Y + max(24, (H - group_h) * 0.42)
+    term_h = ts * SAFE_LH
+    read_h = TYPE["body"] * SAFE_LH if c.get("reading") else 0
+    term_y = y0 + max(28, (def_h - term_h - (read_h + 16 if read_h else 0)) / 2)
+    els.append(el("term", "card", lx, y0, left_w, def_h, term, ts, "display", 0, lines=[term], align="center", lh=SAFE_LH, pad=36, padY=round(term_y - y0)))
+    if c.get("reading"):
+        rw = text_w(c["reading"], TYPE["body"])
+        els.append(el("reading", "text", lx + max(24, (left_w - rw) / 2), term_y + term_h + 14, rw,
+                      read_h, c["reading"], TYPE["body"], "muted", 0, lh=SAFE_LH))
+    els.append(el("definition", "card", rx, y0, right_w, def_h, c["definition"], s, "body", c.get("definitionAt", 0), lines=ls, lh=1.42, pad=44, padY=round((def_h - h) / 2)))
+    if ex:
+        els.append(el("example", "quote", rx, y0 + def_h + 28, right_w, ex_h, ex, es, "muted", c.get("exampleAt", 1), lines=els_, lh=1.4, pad=28))
     return els
 
 
@@ -182,7 +195,7 @@ def lay_number(p, sid, c, variant):
     dec = int(c.get("decimals", 0 if float(val).is_integer() else 1))
     txt = f"{c.get('prefix', '')}{val:.{dec}f}"
     # 招牌数字：hero 档单独定字号（不占 TYPE 三档）。整组收拢后靠数字本身的分量撑起画面。
-    size = 260
+    size = 280
     unit = clean_unit(p, sid, c.get("unit", ""))
     notes = (c.get("notes") or [])[:3]
     left = variant != "mirror"
@@ -207,7 +220,7 @@ def lay_number(p, sid, c, variant):
     lab = fit_text(p, f"{sid}.label", c["label"], TYPE["title"], 800, 1) if c.get("label") else None
     block_w = max(nw, lab[2] if lab else 0)
     notes_at = c.get("notesAt") if isinstance(c.get("notesAt"), list) else None
-    NOTE_W, GAP = 480, 80
+    NOTE_W, GAP = 560, 64
     if stacked:
         row_w = max(block_w, len(notes) * NOTE_W + 40 * (len(notes) - 1)) if len(notes) > 1 else max(block_w, NOTE_W)
         row_w = min(row_w, W - 80)
@@ -230,9 +243,9 @@ def lay_number(p, sid, c, variant):
     if stacked:
         n_ = len(notes)
         each = (row_w - 40 * (n_ - 1)) / n_
-        row = [fit_text(p, f"{sid}.notes[{i}]", n, TYPE["body"], each - 40, 2, lh=1.4) for i, n in enumerate(notes)]
-        # 同一排的注释卡等高（取最高那张），一排读起来是同一级
-        row_h = max(r[3] for r in row) + 28
+        row = [fit_text(p, f"{sid}.notes[{i}]", n, TYPE["body"], each - 72, 2, lh=1.4) for i, n in enumerate(notes)]
+        # 同一排的注释卡等高（取最高那张），一排读起来是同一级（预留上下内边距防 CardFitGate 溢出）
+        row_h = max(r[3] for r in row) + 64
         for i, (n, (nls, ns, nw2, nh)) in enumerate(zip(notes, row)):
             els.append(el(f"note{i + 1}", "note", gx + i * (each + 40), below + 34, each, row_h, n, ns, "body",
                           notes_at[i] if notes_at and i < len(notes_at) else min(i, 2), lines=nls, lh=1.4))
@@ -240,9 +253,9 @@ def lay_number(p, sid, c, variant):
     rx = gx + block_w + GAP if left else gx
     y = Y + 140
     for i, n in enumerate(notes):
-        nls, ns, nw2, nh = fit_text(p, f"{sid}.notes[{i}]", n, TYPE["body"], NOTE_W - 40, 2, lh=1.4)
-        els.append(el(f"note{i + 1}", "note", rx, y, NOTE_W, nh + 28, n, ns, "body", notes_at[i] if notes_at and i < len(notes_at) else min(i, 2), lines=nls, lh=1.4))
-        y += nh + 60
+        nls, ns, nw2, nh = fit_text(p, f"{sid}.notes[{i}]", n, TYPE["body"], NOTE_W - 76, 2, lh=1.4)
+        els.append(el(f"note{i + 1}", "note", rx, y, NOTE_W, nh + 64, n, ns, "body", notes_at[i] if notes_at and i < len(notes_at) else min(i, 2), lines=nls, lh=1.4, pad=22))
+        y += nh + 88
     return els
 
 
@@ -260,10 +273,10 @@ def lay_bars(p, sid, c, variant):
         els.append(el("title", "text", tx, Y + 4, tw, th, title, ts, "title", 0))
     # 柱区上下收一点（整组高 ≈560）：整张图在 1.16 倍下仍放得进安全框，
     # 关键词 / 招牌镜推近到柱子时不切标题和柱底标签。
-    top, bottom = Y + 110, Y + H - 112
+    top, bottom = Y + 92, Y + H - 86
     n = len(data)
     gap = 60
-    bw = min(220, (W - 160 - gap * (n - 1)) / n)
+    bw = min(260, (W - 120 - gap * (n - 1)) / n)
     total = bw * n + gap * (n - 1)
     x0 = X + (W - total) / 2
     vmax = max(float(d["value"]) for d in data) or 1
@@ -292,14 +305,14 @@ def lay_bars(p, sid, c, variant):
 PANEL_TITLE_LH = 1.3
 PANEL_VALUE_H = 138
 PANEL_PAD = 64
-PANEL_MIN_H = 380
+PANEL_MIN_H = 430
 
 
 def lay_compare(p, sid, c, variant):
     X, Y, W, H = BAND["x"], BAND["y"], BAND["w"], BAND["h"]
     mode = c.get("mode", "split")
     els = []
-    pw = 800 if mode == "morph" else 620
+    pw = 960 if mode == "morph" else 740
     sides = [sd for sd in ("before", "after") if isinstance(c.get(sd), dict)]
     # 字号：栏标题 display 档、条目 title 档；两栏统一取能放下的最小那格（并排的两栏是同一级信息）。
     t_size = min([fit_text(_QUIET, f"{sid}.{sd}.title", c[sd].get("title", "之前" if sd == "before" else "之后"), TYPE["display"], pw - 68, 1)[1]
@@ -349,20 +362,21 @@ def lay_compare(p, sid, c, variant):
         e1["morphTo"] = "after"; e2["morph"] = True
         els += [e1, e2]
     else:
-        # 两栏各 620，整组 1320 居中：留出两侧呼吸（几乎铺满时相机没有可动空间，招牌镜推不进去，画面也顶边）。
-        w = 620
+        # 两栏各 680，整组 1440 居中（占画宽 75%），同时保留相机推近与横扫余量。
+        w = 680
+        span = 1440
         cx = X + W / 2
-        e1 = panel("before", "before", cx - 1320 / 2, w, 0)
+        e1 = panel("before", "before", cx - span / 2, w, 0)
         # afterLine 缺省 0：两栏同帧入场。
         # 对比的语义是「并列」，等第二句才出现右栏时右半屏是空的，缺一半就不是对比了。真要分先后，显式写 afterLine。
-        e2 = panel("after", "after", cx + 1320 / 2 - w, w, c.get("afterLine", 0))
+        e2 = panel("after", "after", cx + span / 2 - w, w, c.get("afterLine", 0))
         h = settle([e1, e2], own_height=True)
-        els += [e1, e2, el("arrow", "arrow", e1["x"] + w + 40, Y + 40 + h / 2 - 30, 1320 - 2 * w - 80, 60, "", 0, "decor", c.get("afterLine", 0))]
+        els += [e1, e2, el("arrow", "arrow", e1["x"] + w + 20, Y + 40 + h / 2 - 30, span - 2 * w - 40, 60, "", 0, "decor", c.get("afterLine", 0))]
     vh = 0
     if c.get("verdict"):
-        vls, vs, vw, vh = fit_text(p, f"{sid}.verdict", c["verdict"], TYPE["body"], 1200, 1)
+        vls, vs, vw, vh = fit_text(p, f"{sid}.verdict", c["verdict"], TYPE["body"], 1200, 2)
         vy = max(e["y"] + e["h"] for e in els if e["kind"] == "panel") + 34
-        els.append(el("verdict", "text", X + (W - vw) / 2, vy, vw, vh, c["verdict"], vs, "accent", c.get("verdictLine", 2)))
+        els.append(el("verdict", "text", X + (W - vw) / 2, vy, vw, vh, c["verdict"], vs, "accent", c.get("verdictLine", 2), lines=vls))
         vh += 34
     # 整组落在安全区中部（视觉中心略偏上），不贴着页眉、把下半张纸空出来
     group_h = max(e["h"] for e in els if e["kind"] == "panel") + vh
@@ -432,7 +446,7 @@ def lay_flow(p, sid, c, variant):
     # 节点高度由内容决定：步骤名用 display 档（最多两行）、注释用 title 档，顶上一枚步骤序号。
     # 同一排的字号统一取最小那格（同镜字号 ≤3 档，且并排的卡片读起来是同一级）。
     # node_min 只是地板：内容撑不满时，多出来的高度上下均分（PAD_Y），不堆在卡片下半截。
-    node_min = max(240, int(avail * 0.62))
+    node_min = max(320, int(avail * 0.72))
     inner = nw - 48
     steps = [st if isinstance(st, dict) else {"label": st} for st in steps]
     lab_size = min(fit_text(_QUIET, f"{sid}.steps[{i}].label", str(st["label"]), TYPE["display"], inner, 2, lh=SAFE_LH)[1]
@@ -440,18 +454,32 @@ def lay_flow(p, sid, c, variant):
     note_size = min([fit_text(_QUIET, f"{sid}.steps[{i}].note", st["note"], TYPE["title"], inner, 3, lh=SAFE_LH)[1]
                      for i, st in enumerate(steps) if st.get("note")] or [TYPE["title"]])
     badge_h = round(FLOW_BADGE * SAFE_LH) + 10
-    fitted = []
-    for i, st in enumerate(steps):
-        # lh 与渲染端（auto.tsx 的 Lines）必须逐字一致，否则多出来那一截就让第二行压到第一行上
-        # （被 OverlapGate 硬拦）。渲染端的兜底是 safeLh = max(用户给, SAFE_LH)。
-        lls, ls_, lw, lh_ = fit_text(p, f"{sid}.steps[{i}].label", str(st["label"]), lab_size, inner, 2, lh=SAFE_LH)
-        hh = badge_h + lh_ + 60
-        nlines, ns = [], note_size
-        if st.get("note"):
-            nlines, ns, nww, nh = fit_text(p, f"{sid}.steps[{i}].note", st["note"], note_size, inner, 3, lh=SAFE_LH)
-            hh += nh + 20
-        fitted.append((st, lls, ls_, nlines, ns, hh))
-    content_h = max(f[5] for f in fitted)
+    # 节点高度不得撑破内容带（否则底部越出安全框，相机无法推近招牌镜）；超限时同步微调注记/标题字号
+    # 有标题时把节点上限收在 430px 内，确保整排加标题在 1.12× 推镜时仍完整落在安全框内
+    max_node_h = min(int(avail - 16), 410 if title else 450)
+    while True:
+        fitted = []
+        for i, st in enumerate(steps):
+            # lh 与渲染端（auto.tsx 的 Lines）必须逐字一致，否则多出来那一截就让第二行压到第一行上
+            # （被 OverlapGate 硬拦）。渲染端的兜底是 safeLh = max(用户给, SAFE_LH)。
+            lls, ls_, lw, lh_ = fit_text(_QUIET, f"{sid}.steps[{i}].label", str(st["label"]), lab_size, inner, 2, lh=SAFE_LH)
+            hh = badge_h + lh_ + 52
+            nlines, ns = [], note_size
+            if st.get("note"):
+                nlines, ns, nww, nh = fit_text(_QUIET, f"{sid}.steps[{i}].note", st["note"], note_size, inner, 3, lh=SAFE_LH)
+                hh += nh + 18
+            fitted.append((st, lls, ls_, nlines, ns, hh))
+        content_h = max(f[5] for f in fitted)
+        if content_h <= max_node_h or (note_size <= 44 and lab_size <= 64):
+            break
+        if lab_size > 72:
+            lab_size = max(72, lab_size - 4)
+        elif note_size > 64:
+            note_size = max(64, note_size - 4)
+        elif lab_size > 64:
+            lab_size = max(64, lab_size - 4)
+        else:
+            note_size = max(44, note_size - 4)
     node_h = max(content_h, node_min)
     pad_y = round((node_h - content_h) / 2)
     # 整排落在安全区中部（视觉中心略偏上）
@@ -476,9 +504,30 @@ def lay_list(p, sid, c, variant):
     tls, ts, tw, th = [], 0, 0.0, 0.0
     if title:
         tls, ts, tw, th = fit_text(p, f"{sid}.title", title, TYPE["title"], 1300, 1)
+    if variant == "grid" and 2 <= len(items) <= 4:
+        col_w, col_gap, row_gap = 740.0, 40.0, 34.0
+        cells = []
+        for i, it in enumerate(items):
+            ils, isz, iw, ih = fit_text(p, f"{sid}.items[{i}]", it, TYPE["body"], col_w - 110, 4, lh=1.35)
+            cells.append((ils, isz, ih, it))
+        row_h = max(r[2] for r in cells) + 36.0
+        n_rows = (len(items) + 1) // 2
+        body_h = n_rows * row_h + row_gap * max(0, n_rows - 1)
+        head_h = (th + 46) if title else 0.0
+        y = Y + max(16.0, (H - head_h - body_h) / 2)
+        els = []
+        if title:
+            els.append(el("title", "text", X + 80, y, tw, th, title, ts, "title", 0, lines=tls, lh=1.35))
+            y += th + 46
+        for i, (ils, isz, ih, it) in enumerate(cells):
+            col, row = i % 2, i // 2
+            cx = X + 80 + col * (col_w + col_gap)
+            cy = y + row * (row_h + row_gap)
+            els.append(el(f"item{i + 1}", "item", cx, cy, col_w, row_h, it, isz, "body", i, lines=ils, lh=1.35, n=i + 1, style=c.get("style", "number")))
+        return els
     rows = []
     for i, it in enumerate(items):
-        ils, isz, iw, ih = fit_text(p, f"{sid}.items[{i}]", it, TYPE["title"] if len(items) <= 3 else TYPE["body"], 1200, 2, lh=1.35)
+        ils, isz, iw, ih = fit_text(p, f"{sid}.items[{i}]", it, TYPE["title"] if len(items) <= 3 else TYPE["body"], 1400, 2, lh=1.35)
         rows.append((ils, isz, ih, it))
     # 整体垂直居中，间距固定 34。
     # 从顶端往下堆、把剩余空间摊进 gap 时，条目少则下半屏空着、条目多则挤成一团。居中 + 固定间距，条目多少都不会塌。
@@ -491,7 +540,7 @@ def lay_list(p, sid, c, variant):
         els.append(el("title", "text", X + 80, y, tw, th, title, ts, "title", 0, lines=tls, lh=1.35))
         y += th + 46
     for i, (ils, isz, ih, it) in enumerate(rows):
-        els.append(el(f"item{i + 1}", "item", X + 80, y, 1320, ih + 24, it, isz, "body", i, lines=ils, lh=1.35, n=i + 1, style=c.get("style", "number")))
+        els.append(el(f"item{i + 1}", "item", X + 80, y, 1520, ih + 32, it, isz, "body", i, lines=ils, lh=1.35, n=i + 1, style=c.get("style", "number")))
         y += ih + 24 + GAP
     return els
 
@@ -680,8 +729,8 @@ def lay_page(p, sid, c, variant):
     if stamp_dropped:
         note_y = y + big_h + 24 + stamp_size + 20
     if note:
-        nsize = 56
-        while text_w(str(note), nsize) > PAGE_TEXT_W + 100 and nsize > 40:
+        nsize = 64
+        while text_w(str(note), nsize) > PAGE_TEXT_W + 140 and nsize > READ_MIN:
             nsize -= 4
         if text_w(str(note), nsize) > PAGE_TEXT_W + 100:
             p.hint(f"{sid}: content.note={note!r} 太长（一行手写说明 ≤16 字）")
@@ -740,7 +789,7 @@ def lay_recipe(p, sid, recipe, c, variant):
         if not v:
             p.err(f"{sid}: scene-verdict 需要 content.verdict（一句结论）")
             return [], SKETCH_BOX["center"]
-        ls, s_, w_, h_ = fit_text(p, f"{sid}.verdict", v, TYPE["title"], 1200, 1)
+        ls, s_, w_, h_ = fit_text(p, f"{sid}.verdict", v, TYPE["title"], 1200, 2)
         x = BAND["x"] + (BAND["w"] - (w_ + 80)) / 2
         return [el("verdict", "card", x, 790, w_ + 80, h_ + 60, v, s_, "body", 99, lines=ls, lh=1.3, pad=26)], {"x": 560, "y": 150, "w": 800, "h": 560}
     if recipe == "before-after":
@@ -815,7 +864,7 @@ def lay_type(p, sid, c, variant):
         nl, ns, nw, nh = [], 0, 0.0, 0.0
         if note:
             nl, ns, nw, nh = fit_text(p, f"{sid}.rows[{i}].note", str(note),
-                                      max(34, min(44, s - 40)), note_w, 2, lh=SAFE_LH)
+                                      READ_MIN, note_w, 3, lh=SAFE_LH)
         laid.append(dict(txt=txt, ls=ls, s=s, w=w, h=h, note=note, nl=nl, ns=ns, nw=nw, nh=nh,
                          mk=r.get("mark"), reveal=str(r.get("reveal", "type"))))
     if not laid:
@@ -827,7 +876,7 @@ def lay_type(p, sid, c, variant):
     lead_h = 0.0
     lls, lsz, lw = [], 0, 0.0
     if lead:
-        lls, lsz, lw, lead_h = fit_text(p, f"{sid}.lead", str(lead), 36, 1320, 2, lh=SAFE_LH)
+        lls, lsz, lw, lead_h = fit_text(p, f"{sid}.lead", str(lead), READ_MIN, 1320, 2, lh=SAFE_LH)
         total += lead_h + 46
     y = BAND["y"] + (BAND["h"] - total) / 2
     els = []

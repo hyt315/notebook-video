@@ -153,6 +153,8 @@ def check_library(project: Path, p0: list[str], p1: list[str], checked: list[dic
         if pk > -0.5:
             p0.append(f"{e['file']} 峰值 {pk:.1f} dBFS > -0.5（削波风险）")
         if ev != "bed":
+            if isinstance(lu, (int, float)) and lu > -69.0 and abs(lu - target) > 6.0:
+                p1.append(f"{e['file']} 实测综合响度 {lu:.1f} LUFS 偏离库目标 {target:.1f} 超过 6 LU")
             if abs(float(e.get("loudness_lufs_100ms", target)) - target) > float(man.get("tolerance_lu", 1.5)):
                 p0.append(f"{e['file']} manifest 响度 {e.get('loudness_lufs_100ms')} LUFS 偏离库目标 {target} 超过容差（库内响度不一致）")
             if pk < PEAK_FLOOR:

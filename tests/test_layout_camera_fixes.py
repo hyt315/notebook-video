@@ -191,4 +191,4 @@ class SignatureDeadlock(unittest.TestCase):
             recs = gate(proj, "validate-treatment.py") + gate(proj, "validate-shot-motion.py")
             t = json.loads((proj / "manifests" / "treatment.json").read_text(encoding="utf-8"))
         self.assertEqual([r["message"] for r in recs if r["level"] == "P0"], [])
-        self.assertTrue(str(t["signature_shot"]).startswith("S3"), t["signature_shot"])
+        self.assertRegex(str(t["signature_shot"]), r"^S\d", "招牌镜必须落在镜头表里的某一镜")

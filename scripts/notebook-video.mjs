@@ -1018,18 +1018,18 @@ const render = async (args) => {
   }
   // raw 到这里才算完整。只有这个状态允许 --resume 复用（见 render-lock.mjs 的 canResume）。
   writeManifest(manifestPath, {state: 'raw-complete', rawBytes: fs.statSync(raw).size, rawCompletedAt: new Date().toISOString()});
-  // 响度目标可调（NOTEBOOK_VIDEO_LUFS）。缺省 −16 LUFS、真峰 −1.5 dBTP；静音占位旁白的片子也用 −16
+  // 响度目标可调（NOTEBOOK_VIDEO_LUFS）。缺省 −16 LUFS、母带真峰 −2.6 dBTP（门禁上限 −1.8）；静音占位旁白的片子也用 −16
   //（AES TD1004：流媒体 −16…−20，−23/−24 在手机上不够响）。
   const LUFS = process.env.NOTEBOOK_VIDEO_LUFS || '-16';
   // 两遍响度规范化：先测（linear 模式需要 measured_* 才能同时打准 LUFS 与真峰）
-  const probe = await stage('loudprobe', () => run('ffmpeg', ['-hide_banner', '-i', raw, '-af', `loudnorm=I=${LUFS}:LRA=11:TP=-1.5:print_format=json`, '-f', 'null', '-'], {capture: true, allowFailure: true}));
-  let loudFilter = `loudnorm=I=${LUFS}:LRA=11:TP=-1.5`;
+  const probe = await stage('loudprobe', () => run('ffmpeg', ['-hide_banner', '-i', raw, '-af', `loudnorm=I=${LUFS}:LRA=11:TP=-2.6:print_format=json`, '-f', 'null', '-'], {capture: true, allowFailure: true}));
+  let loudFilter = `loudnorm=I=${LUFS}:LRA=11:TP=-2.6`;
   const probeJson = `${probe.stdout || ''}
 ${probe.stderr || ''}`.match(/\{[^{}]*"input_i"[^{}]*\}/);
   if (probeJson) {
     try {
       const m = JSON.parse(probeJson[0]);
-      loudFilter = `loudnorm=I=${LUFS}:LRA=11:TP=-1.5:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true`;
+      loudFilter = `loudnorm=I=${LUFS}:LRA=11:TP=-2.6:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true`;
     } catch { console.warn('loudnorm 测量解析失败，退回单遍模式'); }
   }
   // 末尾只是换封装：视频流已经是 bt709/limited 的 yuv420p 并带齐四项标记（见 applyColorTags），
@@ -1039,7 +1039,7 @@ ${probe.stderr || ''}`.match(/\{[^{}]*"input_i"[^{}]*\}/);
   // 所以成品也先落在临时目录，写完再整文件拷到交付路径（顺序写，FUSE 盘没问题）。
   const finalTmp = path.join(os.tmpdir(), `nv-final-${process.pid}.mp4`);
   try {
-    await stage('finalize', () => run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', raw, '-map', '0:v:0', '-map', '0:a:0', '-c:v', 'copy', '-af', `highpass=f=75,${loudFilter},alimiter=limit=-1.5dB:level=false`, '-ar', '48000', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', finalTmp]));
+    await stage('finalize', () => run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', raw, '-map', '0:v:0', '-map', '0:a:0', '-c:v', 'copy', '-af', `highpass=f=75,${loudFilter},alimiter=limit=-2.0dB:level=false`, '-ar', '48000', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', finalTmp]));
     fs.copyFileSync(finalTmp, output);
     writeManifest(manifestPath, {state: 'delivered', output, deliveredAt: new Date().toISOString()});
     fs.rmSync(raw, {force: true});   // 只在成功后删：失败时留着 raw，可以只重跑这一步而不必重渲
@@ -1136,7 +1136,7 @@ const preview = async (argv) => {
   // 响度：用 loudnorm 的 JSON（和正片 §probe 同口径）。不用 ebur128 + 正则：
   // ebur128 每 100 ms 打一行运行值，正则会抓到**第一行**——开场静音段，于是报 −70 LUFS。
   // 预览片明明有声音（ffprobe 有 aac 流、RMS 约 −24 dB）。读数错比没有读数更坏。
-  const lufs = await run('ffmpeg', ['-hide_banner', '-i', output, '-af', 'loudnorm=I=-16:TP=-1.5:print_format=json', '-f', 'null', '-'],
+  const lufs = await run('ffmpeg', ['-hide_banner', '-i', output, '-af', 'loudnorm=I=-16:TP=-2.6:print_format=json', '-f', 'null', '-'],
     {capture: true, allowFailure: true});
   const lufsJson = `${lufs.stdout || ''}\n${lufs.stderr || ''}`.match(/\{[\s\S]*\}/);
   let loudness = null;
@@ -1478,14 +1478,14 @@ const validateVideo = async (argv) => {
     console.log(`exposure valid: YAVG=${minAvg.toFixed(1)}..${maxAvg.toFixed(1)} (${yavgs.length} samples)`);
   }
 
-  const loud = await run('ffmpeg', ['-hide_banner', '-i', video, '-af', 'loudnorm=I=-16:LRA=11:TP=-1.5:print_format=summary', '-f', 'null', '-'], {capture: true, allowFailure: true});
+  const loud = await run('ffmpeg', ['-hide_banner', '-i', video, '-af', 'loudnorm=I=-16:LRA=11:TP=-2.6:print_format=summary', '-f', 'null', '-'], {capture: true, allowFailure: true});
   const loudLog = `${loud.stdout}\n${loud.stderr}`;
   const integrated = Number(loudLog.match(/Input Integrated:\s*([-0-9.]+) LUFS/)?.[1]);
   const peak = Number(loudLog.match(/Input True Peak:\s*([-0-9.]+) dBTP/)?.[1]);
   if (!Number.isFinite(integrated) || !Number.isFinite(peak)) fail('Unable to parse loudness analysis from FFmpeg output.');
   const lufsTarget = Number(process.env.NOTEBOOK_VIDEO_LUFS || -16);
   if (integrated < lufsTarget - 2 || integrated > lufsTarget + 2) fail(`Integrated loudness outside target range: ${integrated} LUFS (target ${lufsTarget}; set NOTEBOOK_VIDEO_LUFS to validate another target)`);
-  if (peak > -1.5) fail(`True peak above the documented -1.5 dBTP ceiling: ${peak} dBTP`);
+  if (peak > -1.8) fail(`True peak above the -1.8 dBTP ceiling (target -2.0 dBTP, mastered at -2.6 dBTP): ${peak} dBTP`);
   console.log(`audio valid: ${integrated.toFixed(1)} LUFS, ${peak.toFixed(1)} dBTP`);
 
   if (!noContact) {

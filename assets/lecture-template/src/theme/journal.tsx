@@ -32,7 +32,7 @@ const aesthetic: Theme['aesthetic'] = {
   subtitleSafeWidth: 1334, paperRadius: 3, paperOutline: 0,
   textureOpacity: 0.55, gridOpacity: 0, gradeWarmth: 0.04, gradeVignette: 0.10,
   subtitleWeight: 700, subtitleLetterSpacing: 2, subtitlePadX: 56,
-  subtitleSize: 64, subtitleFamily: 'NotoSerifSC',
+  subtitleSize: 70, subtitleFamily: 'NotoSerifSC',
 };
 
 // 纸在纸上：极短、偏暖、贴面的投影（不是 UI 卡片的悬浮影）。
@@ -62,17 +62,17 @@ const Paper: Theme['Paper'] = ({children, style, lift = 0, borderColor}) => {
 const Grade: React.FC = () => <div style={{position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 190, mixBlendMode: 'multiply',
   background: `radial-gradient(ellipse 84% 78% at 36% 28%, rgba(255,228,178,${(aesthetic.gradeWarmth * 0.65).toFixed(3)}) 0%, transparent 56%, rgba(82,54,20,${aesthetic.gradeVignette}) 100%)`}} />;
 
-const SubtitleChrome = PaperSubtitle({ink: palette.ink, halo: 'rgba(250,245,232,0.96)', size: 64});
+const SubtitleChrome = PaperSubtitle({ink: palette.ink, halo: 'rgba(250,245,232,0.96)', size: 70});
 
 // 章节标识：左上角一行钢笔小字「No.01 — 标题」，下面一条手划线；不要右上技术页眉。
 const Chrome: Theme['Chrome'] = (p) => {
   const k = chromeIn(p);
-  return <div style={{position: 'absolute', left: 96, top: 62, zIndex: 150, opacity: k, transform: `translateY(${(1 - k) * 8}px)`}}>
-    <div style={{fontFamily: 'Kai', fontWeight: 700, fontSize: 34, color: palette.ink, letterSpacing: 2, whiteSpace: 'nowrap'}}>
-      <span style={{fontFamily: 'Caveat,Kai', fontSize: 38, color: palette.orangeInk, marginRight: 14}}>No.{String(p.stage + 1).padStart(2, '0')}</span>{p.title}
+  return <div style={{position: 'absolute', left: 88, top: 42, zIndex: 150, opacity: k, transform: `translateY(${(1 - k) * 8}px)`}}>
+    <div style={{fontFamily: 'Kai', fontWeight: 700, fontSize: 64, lineHeight: 1.15, color: palette.ink, letterSpacing: 2, whiteSpace: 'nowrap'}}>
+      <span style={{fontFamily: 'Caveat,Kai', fontSize: 64, color: palette.orangeInk, marginRight: 16}}>{String(p.stage + 1).padStart(2, '0')}</span>{p.title}
     </div>
-    <svg width={360} height={14} style={{display: 'block', marginTop: 2}} aria-hidden>
-      <path d={`M2 8 C 80 ${4 + 3 * Math.sin(p.stage)}, 200 11, ${2 + 356 * k} 6`} stroke={palette.orange} strokeWidth={3} fill="none" strokeLinecap="round" opacity={0.75} />
+    <svg width={440} height={14} style={{display: 'block', marginTop: 2}} aria-hidden>
+      <path d={`M2 8 C 110 ${4 + 3 * Math.sin(p.stage)}, 260 11, ${2 + 436 * k} 6`} stroke={palette.orange} strokeWidth={3.5} fill="none" strokeLinecap="round" opacity={0.75} />
     </svg>
   </div>;
 };

@@ -44,8 +44,8 @@ export const TapeStrip: React.FC<{x: number; y: number; w?: number; rot?: number
 export const PaperSubtitle = (o: {ink: string; halo: string; family?: string; size: number; bottom?: number; letterSpacing?: number; plate?: React.CSSProperties}):
   Theme['SubtitleChrome'] => ({mode, children}) =>
   <div style={{position: 'absolute', left: 0, right: 0, bottom: o.bottom ?? 34, zIndex: 200, display: 'flex', justifyContent: 'center'}}>
-    <div style={{position: 'relative', padding: '4px 28px 6px', maxWidth: mode.safe, ...o.plate}}>
-      {!o.plate && <div aria-hidden style={{position: 'absolute', inset: '-10px -30px', borderRadius: 60,
+    <div style={{position: 'relative', padding: '2px 12px 2px', maxWidth: mode.safe, ...o.plate}}>
+      {!o.plate && <div aria-hidden style={{position: 'absolute', inset: '-3px -10px', borderRadius: 60,
         background: `radial-gradient(ellipse at center, ${o.halo} 0%, ${o.halo} 52%, transparent 76%)`, filter: 'blur(6px)'}} />}
       <div style={{position: 'relative', fontFamily: o.family ?? 'NotoSerifSC,Kai', fontSize: o.size, fontWeight: 700, lineHeight: 1.16,
         letterSpacing: o.letterSpacing ?? 2, color: o.ink, whiteSpace: 'nowrap',

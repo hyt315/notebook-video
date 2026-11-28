@@ -253,6 +253,33 @@ def main() -> int:
     good = run(sys.executable, str(ROOT / "scripts/linework_index.py"), "--geometry")
     check("线稿几何：模板通过", good.returncode == 0, f"rc={good.returncode}")
 
+    # ---- 五套皮肤各自从空目录可一条路径 compose + resolve ----
+    skin_recipes = [
+        ("flat", "examples/concept-hash-table.story.json", None),
+        ("cel", "examples/concept-hash-table.story.json", None),
+        ("journal", "examples/recipes/jie-freeform.story.json", "examples/recipes/jie-freeform.treatment.json"),
+        ("papercut", "examples/recipes/papercut-symmetry.story.json", "examples/recipes/papercut-symmetry.treatment.json"),
+        ("archive", "examples/recipes/archive-first-msg.story.json", "examples/recipes/archive-first-msg.treatment.json"),
+    ]
+    skin_ok = True
+    skin_fail = ""
+    for sk, sp_rel, tr_rel in skin_recipes:
+        with tempfile.TemporaryDirectory() as td_sk:
+            proj = Path(td_sk) / f"p-{sk}"
+            shutil.copytree(ROOT / "assets" / "lecture-template", proj)
+            if sk != "flat":
+                run(sys.executable, str(ROOT / "scripts" / "set-skin.py"), str(proj), sk)
+            if tr_rel:
+                shutil.copy(ROOT / tr_rel, proj / "manifests" / "treatment.json")
+            r_c = run(sys.executable, str(ROOT / "scripts" / "compose-story.py"), str(ROOT / sp_rel), str(proj))
+            r_r = run(sys.executable, str(ROOT / "scripts" / "resolve-shots.py"), str(proj)) if r_c.returncode == 0 else r_c
+            r_t = run(sys.executable, str(ROOT / "scripts" / "validate-treatment.py"), str(proj)) if tr_rel else r_r
+            if r_c.returncode != 0 or r_r.returncode != 0 or r_t.returncode != 0:
+                skin_ok = False
+                skin_fail = f"{sk}: compose={r_c.returncode} resolve={r_r.returncode}"
+                break
+    check("五套皮肤空目录构建管线（flat/cel/journal/papercut/archive）", skin_ok, "5/5 PASS" if skin_ok else skin_fail)
+
     failed = [r for r in results if not r[1]]
     if not failed:
         print(f"SELFTEST PASS (all {len(results)} checks passed)")

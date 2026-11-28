@@ -6,6 +6,28 @@ Format follows Keep a Changelog: one section per release, one line per change. T
 更早的完整记录（1.0.0 – 3.5.4，中英双写的长条目）已归档到仓库内的 `docs/history/CHANGELOG-legacy.md`（只在仓库里，不进发布包）。
 The full earlier history (1.0.0 – 3.5.4) is archived in the repository at `docs/history/CHANGELOG-legacy.md` (repository only, not shipped).
 
+## [3.9.0] - 2026-11-28
+
+### Added
+- 新增必跑字号门禁 `scripts/validate-typography.py`：按渲染布局与主题令牌计算字号，要读的字（字幕、章节标、卡片 / 对比栏 / 清单 / 流程主文案）低于 64 设计 px 即 P0；代码行与密集柱标可自动收缩，低于地板记 P1。零依赖，不依赖 OCR，不会 SKIPPED；已接入 `make-video` 构建期门禁。 / Added the always-on `validate-typography.py` gate: computed font sizes, P0 below 64 design px for readable text, no OCR, never skipped; wired into `make-video`.
+- `list` 版式新增两列卡片网格变体 `grid`；组件皮肤按叙事关系调度 `whip` / `slide` / `zoom` / `fade` 转场。 / Two-column `grid` variant for `list`; narrative-aware transitions on component skins.
+- 新增可跑配方 `examples/recipes/archive-first-msg` 与 `papercut-symmetry`（story + treatment）。 / New runnable recipes `archive-first-msg` and `papercut-symmetry`.
+- `tts.py` 混音前把旁白自动归一化到 `-16 LUFS / -1.5 dBTP`（`--no-normalize` 关闭）；`validate-caption-sync.py` 可选 `--audio` 核对音频时长；`selftest` 增加对应检查。 / Pre-mix narration normalisation in `tts.py`; optional `--audio` check in `validate-caption-sync.py`.
+
+### Changed
+- 五套皮肤视觉重做：`archive` 改为冷白背光档案灯台与纯白纸卡，`flat` 改为淡天空蓝 / 奶油底配纯白卡片，`journal`、`papercut` 主背景重绘；五套皮肤一帧可辨，背景库总体积下降约 559 KB。 / Redrew the five skins so each is recognisable from one frame; background library about 559 KB smaller.
+- `papercut` 字幕墨色加深至 `#6e0c10`（对比度 ≥ 7:1），字幕字号与墨色改为跨文件单一来源并做一致性校验。 / Deeper `papercut` caption ink; single source of truth for caption size and ink.
+- 母带响度：真峰值目标收紧为 `-2.0 dBTP`（`loudnorm` 打到 `-2.6`、限幅 `-2.0`），`validate-video` 上限由 `-1.5` 收紧为 `-1.8 dBTP`。 / True-peak target tightened to -2.0 dBTP; `validate-video` ceiling now -1.8 dBTP.
+- `validate-motion-gaps.py`：片尾最后 1.5 s 内的末镜自然定格放宽到 3.5 s 并单独标注，与 `ffmpeg freezedetect` 口径一致；片中静止段仍按 2.5 s 判 P0。 / Closing hold rule aligned with `freezedetect`; mid-film stills still 2.5 s.
+- auto 路线排版：`story_layout.py` 三档字号由 76 / 46 / 36 提到 100 / 72 / 68 设计 px，内容带加宽到 1640 px，卡片按内容区放大；随包示例与配方 story 同步重写。 / Auto-route type scale raised to 100 / 72 / 68 design px with a wider content band; examples rewritten.
+- 文档口径：运行时不调用生图模型、不联网取图，维护期预置背景在 `backgrounds.json` 登记来源、生成方式、许可与 `sha256`；精简 `narration.md` 示例对照。 / Docs clarify no runtime image generation or network fetches; pre-built backgrounds are fully registered.
+
+### Fixed
+- `make-video --render` 的相对路径按工程目录解析；已有工程在仍是模板默认导演层时也会同步示例自带的 `treatment.json`；未传 `--stills` / `--render` 时给出提示。 / Relative `--render` paths, treatment sync for existing projects, and a hint when nothing is rendered.
+- auto 路线要读的字（结论、条目、注记、导语、手写说明）自动缩字的地板由 32 提到 64 设计 px，与字号门禁一致；放不下时报错并提示删字或拆镜，不再悄悄缩小。结论允许两行，两列网格条目允许四行；随包示例的超长文案相应精简。 / Readable auto-route text no longer shrinks below 64 design px (matching the typography gate); overflow now errors with a cut-or-split hint. Over-long example copy shortened.
+- 示例导演层同步只在工程尚无导演层、或与模板默认导演层一致时进行，不再按文本关键词判断，避免覆盖作者已写的 `treatment.json`。 / Example treatment sync now only replaces a missing or untouched template treatment.
+- `validate-media.py` 支持 VP8 / VP8L WebP 尺寸解析；`coords-lint.py` 增加 1080p 纵向越界检查；`validate-audio-levels.py` 对音效库实测响度偏离给出 P1。 / WebP VP8/VP8L sizes, 1080p Y-bounds, SFX loudness drift warning.
+
 ## [3.8.0] - 2026-11-27
 
 ### Added

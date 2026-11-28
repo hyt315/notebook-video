@@ -2,7 +2,7 @@
 // ============================================================================
 // make-video.mjs · 一条命令出片（Windows / macOS / Linux 同一套 Node 实现）
 //
-//   node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel] [--stills] [--render OUT.mp4] [--skip-review]
+//   node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel|journal|papercut|archive] [--stills] [--render OUT.mp4] [--skip-review]
 //   --skip-review：手作皮肤 treatment.review.rounds 为空时 --render 会给一条 P1 评审提示（不拦），用它关掉提示
 //                                         [--scale=1] [--no-gates]
 //
@@ -29,7 +29,7 @@ const flag = (name) => args.find((a) => a === `--${name}` || a.startsWith(`--${n
 const flagVal = (name, dflt) => { const f = flag(name); if (!f) return dflt; const i = f.indexOf('='); if (i > 0) return f.slice(i + 1); const k = args.indexOf(f); return args[k + 1] && !args[k + 1].startsWith('--') ? args[k + 1] : dflt; };
 const positional = args.filter((a, i) => !a.startsWith('--') && !(i > 0 && /^--(render|scale|style)$/.test(args[i - 1])));
 if (!positional[0]) {
-  console.error('用法：node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel] [--stills] [--render OUT.mp4] [--scale=1] [--skip-review]');
+  console.error('用法：node scripts/make-video.mjs STORY.json [PROJECT_DIR] [--style=flat|cel|journal|papercut|archive] [--stills] [--render OUT.mp4] [--scale=1] [--skip-review]');
   process.exit(2);
 }
 // 两种入口。① 工程目录（推荐，手写组件场景路线：shots.json + scenes.tsx 里用默认组件）；
@@ -51,8 +51,9 @@ const storyPath = HAND ? null : (linkedStory ?? path.resolve(positional[0]));
 const story = HAND ? {title: path.basename(path.resolve(positional[0]))} : JSON.parse(fs.readFileSync(storyPath, 'utf8'));
 const project = isProject ? path.resolve(positional[0]) : path.resolve(positional[1] ?? storyPath.replace(/\.json$/i, '') + '-project');
 const style = flagVal('style', story.theme ?? 'flat');
-const scale = flagVal('scale', '1');
-const renderOut = flag('render') ? path.resolve(flagVal('render', path.join(project, 'renders', 'final.mp4'))) : null;
+const scale = flagVal('scale', process.env.NOTEBOOK_VIDEO_SCALE ?? '1');
+const _rawRender = flag('render') ? flagVal('render', path.join(project, 'renders', 'final.mp4')) : null;
+const renderOut = _rawRender ? (path.isAbsolute(_rawRender) ? _rawRender : path.resolve(project, _rawRender)) : null;
 
 const run = (cmd, argv, opts = {}) => new Promise((resolve) => {
   const child = spawn(cmd, argv, {cwd: opts.cwd, env: opts.env, stdio: opts.capture ? ['ignore', 'pipe', 'pipe'] : 'inherit', windowsHide: true, shell: opts.shell ?? false});
@@ -134,12 +135,28 @@ if (!fs.existsSync(path.join(project, 'src', 'index.tsx'))) {
   step(`新建工程 ${project}（${style}）`);
   const r = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'new-project', project, `--style=${style}`]);
   if (r.code) die('new-project 失败');
-  // 示例自带导演层（STORY 旁边的 <名>.treatment.json）时，新工程直接用它，
-  // 不然模板示例片的 treatment（别的选题、招牌镜 S4）会套到这支片上，手作皮肤的门禁按错的导演层判。
+}
+// 无论工程是否新建，只要 STORY 旁边带同名 <名>.treatment.json 且工程里还是模板默认导演层（或尚无导演层），自动同步过去
+{
   const sibling = storyPath && storyPath.replace(/(?:\.story)?\.json$/i, '.treatment.json');
+  const dstTreat = path.join(project, 'manifests', 'treatment.json');
   if (sibling && sibling !== storyPath && fs.existsSync(sibling)) {
-    fs.copyFileSync(sibling, path.join(project, 'manifests', 'treatment.json'));
-    step(`沿用示例自带的导演层 ${path.basename(sibling)} → manifests/treatment.json`);
+    const cur = fs.existsSync(dstTreat) ? fs.readFileSync(dstTreat, 'utf8') : '';
+    // 只有「尚无导演层」或「与模板默认导演层一致（仅 medium.skin 可能被 new-project 改过）」才覆盖；
+    // 不按文本关键词猜，免得把作者已写好的导演层冲掉。
+    const sameAsTemplate = (() => {
+      try {
+        const tpl = JSON.parse(fs.readFileSync(path.join(SCRIPT_DIR, '..', 'assets', 'lecture-template', 'manifests', 'treatment.json'), 'utf8'));
+        const mine = JSON.parse(cur);
+        for (const o of [tpl, mine]) if (o && o.medium && typeof o.medium === 'object') delete o.medium.skin;
+        return JSON.stringify(tpl) === JSON.stringify(mine);
+      } catch { return false; }
+    })();
+    const isTplDefault = !cur.trim() || sameAsTemplate;
+    if (isTplDefault) {
+      fs.copyFileSync(sibling, dstTreat);
+      step(`沿用示例自带的导演层 ${path.basename(sibling)} → manifests/treatment.json`);
+    }
   }
 }
 fs.mkdirSync(path.join(project, 'renders'), {recursive: true});
@@ -325,6 +342,7 @@ if (!flag('no-gates')) {
     ...((fs.existsSync(path.join(project, 'story.json')) || fs.existsSync(path.join(project, 'manifests', 'story.json'))) ? [['validate-facts.py', [project], true]] : []),
     // 结构与枚举门禁（auto 路线只跳过 <Shot> 标签独占检查，仍拦截错枚举与断 import）
     ['validate-composition.py', [project], true],
+    ['validate-typography.py', [project], true],
   ];
   for (const [g, argv, hard] of gates) {
     const r = await gate(g, argv, hard);
@@ -500,7 +518,7 @@ if (flag('stills')) {
 if (renderOut) {
   step(`整片渲染 → ${renderOut}（scale ${scale}）`);
   process.env.NOTEBOOK_VIDEO_SCALE = scale;
-  // 静音旁白片也规范到 −16 LUFS（真峰 ≤ −1.5 dBTP），与有人声的片子同一目标（不用 −24）：
+  // 静音旁白片也规范到 −16 LUFS（母带真峰 −2.6 dBTP，门禁上限 −1.8），与有人声的片子同一目标（不用 −24）：
   // AES TD1004 建议流媒体 −16…−20 LUFS，并点名 −23/−24 在手机上开到最大也不够响；YouTube 只压低过响的内容、不抬高轻的。
   // 要回到旧电平：NOTEBOOK_VIDEO_LUFS=-24。
   const r = await node([path.join(SCRIPT_DIR, 'notebook-video.mjs'), 'render', project, renderOut], {capture: true, tee: true});
@@ -552,3 +570,5 @@ if (renderOut) {
   console.log(`✓ 成片 ${renderOut}；抽帧接触表 ${sheets.join(', ')}；报告 renders/report.md`);
 }
 console.log('\n完成。');
+
+if (!flag('stills') && !renderOut) console.log('提示：未传 --stills 或 --render，本次仅完成构建期门禁校验，未生成静帧或视频。');

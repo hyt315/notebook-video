@@ -124,19 +124,23 @@ const tiltOf = (id: string) => {
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 1000;
   return ((h / 1000) * 2 - 1) * 0.8;
 };
-const paperCard: React.CSSProperties = HANDMADE_MEDIUM
-  ? {
-      background: C.paper,
-      borderRadius: THEME.aesthetic.paperRadius,
-      border: THEME.id === 'archive' ? '1px solid rgba(29,35,40,0.16)' : '1px solid rgba(70,50,25,0.16)',
-      boxShadow: THEME.paperShadow(0),
-    }
-  : {
-      background: C.paper,
-      borderRadius: THEME.aesthetic.paperRadius,
-      border: `${Math.max(2, THEME.aesthetic.paperOutline)}px solid ${THEME.id === 'cel' ? C.ink : 'rgba(28,32,36,0.14)'}`,
-      boxShadow: THEME.paperShadow(0),
-    };
+const ARCHIVE_TOP = `5px solid ${C.blue}`;
+const PAPERCUT_SHADOW = `${THEME.paperShadow(0)}, inset 0 0 0 6px ${C.paper}, inset 0 0 0 9px ${C.orange}, inset 0 0 0 13px ${C.paper}, inset 0 0 0 14px ${C.orange}`;
+const CEL_BORDER = `4px solid ${C.ink}`;
+const CEL_SHADOW = `8px 8px 0 ${C.ink}`;
+const paperCard: React.CSSProperties = HANDMADE_MEDIUM ? {
+  background: C.paper,
+  borderRadius: THEME.id === 'archive' ? 2 : 0,
+  border: THEME.id === 'archive' ? '1.5px solid rgba(29,35,40,0.28)' : THEME.id === 'papercut' ? '1px solid rgba(60,20,10,0.16)' : '1px solid rgba(70,50,25,0.22)',
+  borderTop: THEME.id === 'archive' ? ARCHIVE_TOP : undefined,
+  boxShadow: THEME.id === 'papercut' ? PAPERCUT_SHADOW : THEME.paperShadow(0),
+} : {
+  background: C.paper,
+  borderRadius: THEME.id === 'cel' ? 4 : Math.max(16, THEME.aesthetic.paperRadius),
+  border: THEME.id === 'cel' ? CEL_BORDER : '1.5px solid rgba(28,32,36,0.12)',
+  borderTop: THEME.id === 'cel' ? undefined : ARCHIVE_TOP,
+  boxShadow: THEME.id === 'cel' ? CEL_SHADOW : THEME.paperShadow(0),
+};
 /** 和纸胶带：贴在纸片左上角，半透明淡彩，随纸片一起倾。
  *  不透明度 0.72 + 两端撕口 + 一条亮边（更淡在纸色底上看不见）——「贴上去的」必须一眼能认出来。 */
 const Tape: React.FC<{color: string}> = ({color}) => (
@@ -259,23 +263,52 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
       </Box>;
     }
     case 'card': case 'note': case 'quote': {
+      const accentColor = e.kind === 'note' ? C.orange : e.kind === 'quote' ? C.mutedBar : C.blue;
+      const line1End = Math.max(e.at + 75, shot.lineEnds[0] ?? (e.at + 90));
+      const railP = interpolate(f, [e.at, Math.max(e.at + 36, Math.round(line1End * 0.65))], [0, 1], clamp);
+      const sweepP = interpolate(f, [e.at, line1End], [0, 1], clamp);
+      const padX = e.pad ?? (e.kind === 'note' ? 22 : 28);
+      const padTop = e.padY ?? (e.kind === 'note' ? 20 : padX);
+      const cardLines = e.lines && e.lines.length > 0 ? e.lines : [e.text];
       return <Box e={e} f={f} dim={dim}>
         <HiBox w={w} pad={4} radius={THEME.aesthetic.paperRadius + 4} />
         <div style={{...paperCard, position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
           background: e.kind === 'quote' ? 'transparent' : C.paper,
-          border: e.kind === 'quote' ? 'none' : (HANDMADE_MEDIUM ? '1px solid rgba(70,50,25,0.10)' : `2px solid ${C.line}`),
-          borderLeft: `3.5px solid ${e.kind === 'note' ? C.orange : e.kind === 'quote' ? C.mutedBar : C.blue}`,
+          border: e.kind === 'quote' ? 'none' : paperCard.border,
+          borderTop: e.kind === 'quote' ? 'none' : paperCard.borderTop,
           boxShadow: e.kind === 'quote' ? 'none' : paperCard.boxShadow,
-          padding: e.pad ?? 22, boxSizing: 'border-box'}}>
-          <Lines lines={e.lines} text={e.text} size={e.size} lh={e.lh} color={e.kind === 'quote' ? C.muted : C.ink} weight={bold} align={e.align} />
+          paddingLeft: padX, paddingRight: padX, paddingTop: padTop, paddingBottom: e.kind === 'note' ? 20 : padX, boxSizing: 'border-box', overflow: 'hidden'}}>
+          {/* Progressive vertical accent rail drawing along the card edge */}
+          <div style={{position: 'absolute', left: 0, top: 0, width: 6, height: `${(railP * 100).toFixed(1)}%`, background: accentColor}} />
+          {/* Progressive per-line reveal instead of static whole-card fade */}
+          <div style={{display: 'flex', flexDirection: 'column', gap: 4}}>
+            {cardLines.map((ln, li) => {
+              const lnAt = li === 0 ? e.at : Math.min(e.at + li * 12, (shot.lines[li] ?? (e.at + li * 16)));
+              const lp = interpolate(f, [lnAt, lnAt + 14], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
+              return <div key={li} style={{opacity: lp, transform: `translateY(${((1 - lp) * 14).toFixed(1)}px)`}}>
+                <Lines lines={[ln]} text={ln} size={e.size} lh={e.lh} color={e.kind === 'quote' ? C.muted : C.ink} weight={bold ?? (e.role === 'display' ? 700 : undefined)} align={e.align} />
+              </div>;
+            })}
+          </div>
+          {/* Beat-synced bottom progress rule for continuous non-PPT progression */}
+          {e.kind === 'card' && sweepP > 0.001 && (
+            <div style={{position: 'absolute', left: padX, right: padX, bottom: 18, height: 5, background: 'rgba(28,32,36,0.08)', borderRadius: 2, overflow: 'hidden'}}>
+              <div style={{width: `${(sweepP * 100).toFixed(1)}%`, height: '100%', background: accentColor, borderRadius: 2}} />
+            </div>
+          )}
         </div>
       </Box>;
     }
-    case 'number':
-      // 整串左→右展开、直接写终值（不弹簧放大、不滚动计数）
+    case 'number': {
+      const barP = interpolate(f, [e.at + 4, e.at + 34], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
+      const barW = Math.max(320, Math.min(820, e.w));
       return <div data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, opacity: dim, ...enter(f, e.at, 0, Math.max(G.min, Math.min(G.max, `${e.prefix ?? ''}${e.value}${e.unit ?? ''}`.length * G.perChar)))}}>
-        <KineticNumber f={f} at={e.at} from={e.from_ ?? 0} to={e.value} decimals={e.decimals} prefix={e.prefix} suffix={e.unit} size={e.size} color={tt.fill} ink={tt.ink} dur={30} draft />
+        <KineticNumber f={f} at={e.at} from={e.from_ ?? 0} to={e.value} decimals={e.decimals} prefix={e.prefix} suffix={e.unit} size={e.size} color={tt.fill} ink={tt.ink} dur={26} />
+        <div style={{marginTop: 10, width: barW, height: 10, borderRadius: 5, background: 'rgba(28,32,36,0.10)', overflow: 'hidden'}}>
+          <div style={{width: `${(barP * 100).toFixed(1)}%`, height: '100%', background: tt.fill, borderRadius: 5}} />
+        </div>
       </div>;
+    }
     case 'bar': {
       const g = interpolate(f, [e.at + e.idx * 4, e.at + e.idx * 4 + 24], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
       const hot = e.hot || w > 0.3;
@@ -322,19 +355,32 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
           {HANDMADE_MEDIUM && <Tape color={t2.light} />}
           <div style={{fontSize: e.size, lineHeight: 1.3, fontWeight: 700, color: t2.ink, whiteSpace: 'nowrap', fontFamily: HANDMADE_MEDIUM ? 'Kai' : undefined}}>{e.title}</div>
           {num !== null && <div style={{fontSize: 120, fontWeight: 700, color: C.ink, fontFamily: 'Clash,Space,Kai', lineHeight: 1.15, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap'}}>{num}<span style={{fontSize: 52, marginLeft: 8}}>{e.unit}</span></div>}
-          {(e.items as any[]).map((it, i) => <div key={i} style={{marginTop: 22, ...enter(f, e.at + 6 + i * 5, 8), borderLeft: HANDMADE_MEDIUM ? `2px solid ${C.line}` : 'none', paddingLeft: HANDMADE_MEDIUM ? 16 : 0}}><Lines lines={it.lines} text="" size={it.size} /></div>)}
+          {(e.items as any[]).map((it, i) => {
+            const beatAt = e.side === 'after' && shot.lines.length > 1
+              ? Math.max(e.at + 8, (shot.lines[Math.min(1 + i, shot.lines.length - 1)] ?? (e.at + 18 + i * 16)))
+              : e.at + 8 + i * 14;
+            const ip = interpolate(f, [beatAt, beatAt + 14], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
+            return <div key={i} style={{marginTop: 22, opacity: ip, transform: `translateX(${((1 - ip) * 18).toFixed(1)}px)`, borderLeft: `3px solid ${t2.fill}`, paddingLeft: 16}}><Lines lines={it.lines} text="" size={it.size} /></div>;
+          })}
         </div>
       </div>;
     }
     case 'arrow': {
-      const p = drawOn(f, e.at, 16);
+      const p = drawOn(f, e.at, 18);
+      const travel = p >= 0.99 ? ((f - e.at) % 45) / 45 : p;
+      const dotX = Math.max(4, Math.min(e.w - 16, (e.w - 18) * travel));
       return <svg data-auto-el={e.id} style={{position: 'absolute', left: e.x, top: e.y, overflow: 'visible'}} width={e.w} height={e.h}>
-        <line x1={0} y1={e.h / 2} x2={Math.max(0, (e.w - 16) * p)} y2={e.h / 2} stroke={C.muted} strokeWidth={5} strokeLinecap="round" />
-        {p > 0.9 && <path d={`M ${e.w - 22} ${e.h / 2 - 13} L ${e.w - 4} ${e.h / 2} L ${e.w - 22} ${e.h / 2 + 13}`} fill="none" stroke={C.muted} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />}
+        <line x1={0} y1={e.h / 2} x2={Math.max(0, (e.w - 16) * p)} y2={e.h / 2} stroke={C.blue} strokeWidth={6} strokeLinecap="round" opacity={0.85} />
+        {p > 0.2 && <circle cx={dotX} cy={e.h / 2} r={6} fill={C.orange} opacity={0.9} />}
+        {p > 0.85 && <path d={`M ${e.w - 24} ${e.h / 2 - 14} L ${e.w - 4} ${e.h / 2} L ${e.w - 24} ${e.h / 2 + 14}`} fill="none" stroke={C.blue} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" />}
       </svg>;
     }
-    case 'node':
-      // 流程节点：手作皮肤下也是一张裁下的纸条，热的那张压一条朱砂淡彩
+    case 'node': {
+      // 流程节点分步搭建：先出编号与标题，10 帧后滑入注记，底部随当前步口播推进进度条
+      const noteP = interpolate(f, [e.at + 10, e.at + 24], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
+      const stepIdx = Math.max(0, (e.n ?? 1) - 1);
+      const stepEnd = shot.lineEnds[Math.min(stepIdx, shot.lineEnds.length - 1)] ?? (e.at + 60);
+      const prog = interpolate(f, [e.at, Math.max(e.at + 24, stepEnd)], [0, 1], clamp);
       return <Box e={e} f={f} dim={dim}>
         <InkFrame w={w} pad={4} />
         <div style={{...paperCard, position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
@@ -343,13 +389,17 @@ const ElemView: React.FC<{e: Elem; f: number; shot: StoryShot; all: Elem[]}> = (
             borderTop: `5px solid ${e.hot ? C.orange : C.lineBlue}`,
           } : {}),
           borderLeft: HANDMADE_MEDIUM ? 'none' : `2px solid ${e.hot ? C.orange : C.line}`,
-          padding: HANDMADE_MEDIUM ? '26px 24px' : '24px 22px', paddingTop: (HANDMADE_MEDIUM ? 26 : 24) + (e.padY ?? 0), boxSizing: 'border-box'}}>
+          padding: HANDMADE_MEDIUM ? '26px 24px' : '24px 22px', paddingTop: (HANDMADE_MEDIUM ? 26 : 24) + (e.padY ?? 0), boxSizing: 'border-box', overflow: 'hidden'}}>
           {HANDMADE_MEDIUM && <Tape color={e.hot ? C.orangeLight : C.blueLight} />}
           {e.badge ? <StepBadge n={e.n} size={e.badge} hot={!!e.hot} /> : null}
           <Lines lines={e.lines} text={e.text} size={e.size} weight={700} lh={1.25} color={e.hot ? C.orangeInk : C.ink} />
-          {e.note && <div style={{marginTop: 16, opacity: 0.85}}><Lines lines={e.noteLines} text={e.note} size={e.noteSize} color={C.muted} lh={1.4} /></div>}
+          {e.note && <div style={{marginTop: 16, opacity: 0.88 * noteP, transform: `translateY(${((1 - noteP) * 12).toFixed(1)}px)`}}><Lines lines={e.noteLines} text={e.note} size={e.noteSize} color={C.muted} lh={1.4} /></div>}
+          <div style={{position: 'absolute', left: 0, right: 0, bottom: 0, height: 5, background: 'rgba(28,32,36,0.06)'}}>
+            <div style={{width: `${(prog * 100).toFixed(1)}%`, height: '100%', background: e.hot ? C.orange : C.blue}} />
+          </div>
         </div>
       </Box>;
+    }
     case 'item': {
       const mark = e.style === 'check' ? '✓' : e.style === 'plain' ? '·' : String(e.n);
       return <Box e={e} f={f} dim={dim}>
@@ -496,7 +546,9 @@ export const AutoShot: React.FC<{id: string; f: number}> = ({id, f}) => {
       {shot.tips.map((t, i) => <TipView key={i} t={t} f={f} />)}
     </div>;
   }
-  return <div style={{position: 'absolute', inset: 0}}>
+  const shotSpan = Math.max(90, shot.lineEnds[shot.lineEnds.length - 1] ?? 150);
+  const breath = COVER_STILL ? 1 : 1 + 0.022 * Math.min(1, Math.max(0, f / shotSpan));
+  return <div style={{position: 'absolute', inset: 0, transform: `scale(${breath.toFixed(5)})`, transformOrigin: '50% 48%'}}>
     {shot.sketch ? <SketchLayer spec={shot.sketch} f={f} box={shot.sketch.box} /> : null}
     {els.map((e) => <ElemView key={e.id} e={e} f={f} shot={shot} all={els} />)}
     {shot.annotate ? <AnnotLayer list={shot.annotate} f={f} /> : null}

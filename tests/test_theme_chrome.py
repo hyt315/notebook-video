@@ -14,7 +14,8 @@ class ThemeChromeTest(unittest.TestCase):
         m = re.search(r"width:(\d+),height:(\d+)", chrome)
         self.assertIsNotNone(m, "Chrome 章节徽标必须声明设计尺寸")
         w, h = int(m.group(1)), int(m.group(2))
-        self.assertLessEqual(w * h / (1920 * 1080), 0.01, "左上常驻徽标占画布面积应 ≤ 1%")
+        # 章节名要在手机上读得清（≥48 设计 px），徽标放大到约 2.2%；与字幕合计仍受 ≤5% 叠层预算约束。
+        self.assertLessEqual(w * h / (1920 * 1080), 0.025, "左上常驻徽标占画布面积应 ≤ 2.5%")
         self.assertNotIn("THEME.headerPlate", chrome, "不渲染常驻右上角页眉底板")
 
     def test_no_skin_specific_branch_in_common_chrome(self):
